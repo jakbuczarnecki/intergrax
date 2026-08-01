@@ -472,3 +472,144 @@ async def test_msgraph_teams_chat_facade_coordinator_reconciliation() -> None:
         }
     )
     _assert_no_secrets(public_proof)
+
+
+@pytest.mark.asyncio
+async def test_msgraph_teams_chat_sink_failure_does_not_commit_checkpoint_or_state() -> None:
+    coordinator, sink, checkpoint_repo, state_repo, fake, integration = _build_coordinator(
+        _TeamsChatFakeCollaborationSuite()
+    )
+    integration_id = id(integration)
+    sink.fail_times = 1
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(binding_id="msgraph-teams-chat-binding", restart=True)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert len(sink.calls) == 1
+    assert sink.durable_delivery_ids == []
+    assert checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+    ) is None
+    for message_id in (_MSG_1, _MSG_2):
+        assert (
+            state_repo.get(
+                tenant_id="tenant-1",
+                binding_id="msgraph-teams-chat-binding",
+                remote_id=_encode_message_remote_id(message_remote_id=message_id),
+            )
+            is None
+        )
+    assert len(fake.snapshot_calls) == 1
+    assert fake.snapshot_calls[0]["continuation"] is None
+    assert id(integration) == integration_id
+
+
+@pytest.mark.asyncio
+async def test_msgraph_teams_chat_retry_same_page_after_sink_failure() -> None:
+    fake = _TeamsChatFakeCollaborationSuite()
+    single_page = fake._snapshot_pages_backup[0]
+    fake._snapshot_pages = [single_page]
+    fake._snapshot_pages_backup = [single_page]
+    coordinator, sink, checkpoint_repo, state_repo, fake, integration = _build_coordinator(fake)
+    integration_id = id(integration)
+    sink.fail_times = 1
+    with pytest.raises(VendorKnowledgeError):
+        await coordinator.reconcile_once(binding_id="msgraph-teams-chat-binding", restart=True)
+    first_delivery = sink.calls[0].delivery_id
+    first_snapshot_calls = len(fake.snapshot_calls)
+    result = await coordinator.reconcile_once(
+        binding_id="msgraph-teams-chat-binding",
+        restart=True,
+    )
+    assert result.delivery_id == first_delivery
+    assert sink.calls[1].delivery_id == first_delivery
+    assert len(sink.durable_delivery_ids) == 1
+    assert sink.durable_delivery_ids[0] == first_delivery
+    assert len(fake.snapshot_calls) == first_snapshot_calls + 1
+    assert fake.snapshot_calls[0] == fake.snapshot_calls[first_snapshot_calls]
+    checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+    )
+    assert checkpoint is not None
+    assert checkpoint.cursor is not None
+    assert state_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+        remote_id=_encode_message_remote_id(message_remote_id=_MSG_1),
+    ) is not None
+    assert id(integration) == integration_id
+
+
+@pytest.mark.asyncio
+async def test_msgraph_teams_chat_absence_is_not_deletion() -> None:
+    fake = _TeamsChatFakeCollaborationSuite()
+    coordinator, sink, checkpoint_repo, state_repo, fake, _integration = _build_coordinator(fake)
+    await _reconcile_until_complete(coordinator)
+    active_remote_id = _encode_message_remote_id(message_remote_id=_MSG_1)
+    active_state = state_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+        remote_id=active_remote_id,
+    )
+    assert active_state is not None
+    assert active_state.status is KnowledgeRemoteItemStatus.ACTIVE
+    prior_sink_calls = len(sink.calls)
+    fake._snapshot_pages = [
+        _snapshot_page(
+            items=(
+                _active_message(
+                    remote_id=_MSG_2,
+                    revision=_ETAG_2,
+                    subject="Message two",
+                    body_content="body-two",
+                ),
+            ),
+        ),
+    ]
+    restart_result = await coordinator.reconcile_once(
+        binding_id="msgraph-teams-chat-binding",
+        restart=True,
+    )
+    assert restart_result.has_more is False
+    assert len(sink.calls) == prior_sink_calls + 1
+    latest_batch = sink.calls[-1]
+    assert all(
+        envelope.change_kind.value != "deleted"
+        for envelope in latest_batch.envelopes
+    )
+    assert active_remote_id not in {envelope.remote_id for envelope in latest_batch.envelopes}
+    still_active = state_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+        remote_id=active_remote_id,
+    )
+    assert still_active is not None
+    assert still_active.status is KnowledgeRemoteItemStatus.ACTIVE
+
+
+@pytest.mark.asyncio
+async def test_msgraph_teams_chat_explicit_deleted_record_produces_tombstone() -> None:
+    fake = _TeamsChatFakeCollaborationSuite()
+    fake._snapshot_pages = [
+        _snapshot_page(
+            items=(
+                _deleted_message(remote_id=_MSG_1, revision=_ETAG_1),
+            ),
+        ),
+    ]
+    coordinator, sink, _checkpoint_repo, state_repo, _fake, _integration = _build_coordinator(fake)
+    await coordinator.reconcile_once(binding_id="msgraph-teams-chat-binding", restart=True)
+    assert any(
+        envelope.change_kind.value == "deleted"
+        for batch in sink.calls
+        for envelope in batch.envelopes
+    )
+    deleted_state = state_repo.get(
+        tenant_id="tenant-1",
+        binding_id="msgraph-teams-chat-binding",
+        remote_id=_encode_message_remote_id(message_remote_id=_MSG_1),
+    )
+    assert deleted_state is not None
+    assert deleted_state.status is KnowledgeRemoteItemStatus.DELETED

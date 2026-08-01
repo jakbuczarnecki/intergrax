@@ -8,12 +8,13 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
@@ -35,9 +36,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChatAttachmentKind,
     MsGraphTeamsChatAttachmentReference,
     MsGraphTeamsChatBodyKind,
+    MsGraphTeamsChatContentTooLarge,
     MsGraphTeamsChatImportance,
     MsGraphTeamsChatMention,
     MsGraphTeamsChatMessage,
+    MsGraphTeamsChatMessageChanged,
     MsGraphTeamsChatMessageSnapshotPage,
     MsGraphTeamsChatMessageState,
     MsGraphTeamsChatMessageType,
@@ -70,7 +73,9 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_chat import (
     MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
     MsGraphTeamsChatKnowledgeAdapter,
     _MsGraphTeamsChatCursor,
+    _MsGraphTeamsChatMessageRevision,
     _MsGraphTeamsChatScope,
+    _validate_opaque_revision,
     encode_msgraph_teams_chat_scope_id,
     register_msgraph_teams_chat_knowledge_adapter,
 )
@@ -538,8 +543,11 @@ async def test_encoded_scope_id_hides_raw_ids() -> None:
 
 
 async def test_scope_encoding_round_trip_and_timezone_normalization() -> None:
-    local_start = datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc)
-    local_end = datetime(2024, 2, 1, 1, 0, tzinfo=timezone.utc)
+    offset = timezone(timedelta(hours=1))
+    local_start = datetime(2024, 1, 1, 1, 0, tzinfo=offset)
+    local_end = datetime(2024, 2, 1, 1, 0, tzinfo=offset)
+    expected_start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    expected_end = datetime(2024, 2, 1, 0, 0, tzinfo=timezone.utc)
     window = MsGraphTeamsChatMessageWindow(start_at=local_start, end_at=local_end)
     scope_id = encode_msgraph_teams_chat_scope_id(
         mailbox_user_id=_MAILBOX_USER_ID,
@@ -551,8 +559,8 @@ async def test_scope_encoding_round_trip_and_timezone_normalization() -> None:
     )
     assert decoded.mailbox_user_id == _MAILBOX_USER_ID
     assert decoded.chat_remote_id == _CHAT_ID
-    assert decoded.window_start_at == local_start
-    assert decoded.window_end_at == local_end
+    assert decoded.window_start_at == expected_start
+    assert decoded.window_end_at == expected_end
 
 
 @pytest.mark.parametrize(
@@ -895,7 +903,601 @@ async def test_fetch_permissions_unsupported() -> None:
             item=_message_descriptor(),
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
+    assert exc_info.value.retryable is False
     assert fake.forbidden_calls == []
+    assert fake.snapshot_calls == []
+    assert fake.content_calls == []
+
+
+def _noncanonical_scope_id(*, start_at: datetime, end_at: datetime) -> str:
+    return _encode_canonical_payload(
+        {
+            "schema_version": "msgraph.teams-chat.scope.v1",
+            "mailbox_user_id": _MAILBOX_USER_ID,
+            "chat_remote_id": _CHAT_ID,
+            "window_start_at": start_at.isoformat(),
+            "window_end_at": end_at.isoformat(),
+        }
+    )
+
+
+@pytest.mark.parametrize("revision", [" revision", "revision ", "\trevision", "revision\n"])
+def test_private_revision_model_rejects_whitespace(revision: str) -> None:
+    with pytest.raises(ValidationError):
+        _MsGraphTeamsChatMessageRevision(
+            schema_version="msgraph.teams-chat.revision.v1",
+            revision=revision,
+        )
+
+
+@pytest.mark.parametrize("revision", [" revision", "revision ", "\trevision", "revision\n"])
+def test_validate_opaque_revision_rejects_whitespace(revision: str) -> None:
+    with pytest.raises(ValueError, match="whitespace"):
+        _validate_opaque_revision(revision)
+
+
+@pytest.mark.parametrize("padding", [" ", "\t", "\n"])
+async def test_encoded_descriptor_revision_rejects_whitespace(padding: str) -> None:
+    corrupted = _encode_canonical_payload(
+        {
+            "schema_version": "msgraph.teams-chat.revision.v1",
+            "revision": f"{padding}{_ETAG_1}",
+        }
+    )
+    exc_info = await _fetch_content_invalid_descriptor(
+        KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=corrupted,
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+            ),
+            metadata=_base_metadata(),
+        )
+    )
+    _assert_invalid_descriptor_boundary(exc_info)
+
+
+@pytest.mark.parametrize("padding", [" ", "\t", "\n"])
+async def test_encoded_descriptor_revision_rejects_trailing_whitespace(padding: str) -> None:
+    corrupted = _encode_canonical_payload(
+        {
+            "schema_version": "msgraph.teams-chat.revision.v1",
+            "revision": f"{_ETAG_1}{padding}",
+        }
+    )
+    exc_info = await _fetch_content_invalid_descriptor(
+        KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=corrupted,
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+            ),
+            metadata=_base_metadata(),
+        )
+    )
+    _assert_invalid_descriptor_boundary(exc_info)
+
+
+async def test_valid_exact_revision_round_trips_unchanged() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    encoded = adapter._encode_revision(_ETAG_1)
+    decoded = adapter._decode_revision(encoded)
+    assert decoded.revision == _ETAG_1
+    assert repr(decoded) == "_MsGraphTeamsChatMessageRevision(schema_version='msgraph.teams-chat.revision.v1')"
+
+
+async def test_invalid_revision_does_not_invoke_provider() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(
+        content_by_key={(_MSG_1, _ETAG_1): _active_message(body_content="x")}
+    )
+    corrupted = _encode_canonical_payload(
+        {
+            "schema_version": "msgraph.teams-chat.revision.v1",
+            "revision": f" {_ETAG_1}",
+        }
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=KnowledgeItemDescriptor.model_construct(
+                identity=KnowledgeItemIdentity.model_construct(
+                    remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                    parent_remote_id=None,
+                    logical_key=None,
+                ),
+                revision=KnowledgeItemRevision.model_construct(
+                    version=corrupted,
+                    etag=None,
+                    updated_at=_TS,
+                ),
+                title="Sprint planning",
+                item_type="msgraph_teams_chat_message",
+                content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+                content_available=True,
+                provenance=KnowledgeItemProvenance.model_construct(
+                    provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                    source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                    remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                ),
+                metadata=_base_metadata(),
+            ),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.content_calls == []
+    assert fake.snapshot_calls == []
+    assert fake.forbidden_calls == []
+
+
+async def test_scope_encoder_normalizes_offset_to_utc() -> None:
+    offset = timezone(timedelta(hours=1))
+    window = MsGraphTeamsChatMessageWindow(
+        start_at=datetime(2024, 1, 1, 1, 0, tzinfo=offset),
+        end_at=datetime(2024, 2, 1, 1, 0, tzinfo=offset),
+    )
+    scope_id = encode_msgraph_teams_chat_scope_id(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+        window=window,
+    )
+    decoded = _MsGraphTeamsChatScope.model_validate(
+        json.loads(base64.urlsafe_b64decode(scope_id + "==").decode())
+    )
+    assert decoded.window_start_at == datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    assert decoded.window_end_at == datetime(2024, 2, 1, 0, 0, tzinfo=timezone.utc)
+
+
+async def test_noncanonical_source_payload_rejected() -> None:
+    offset = timezone(timedelta(hours=1))
+    noncanonical = _noncanonical_scope_id(
+        start_at=datetime(2024, 1, 1, 1, 0, tzinfo=offset),
+        end_at=datetime(2024, 2, 1, 1, 0, tzinfo=offset),
+    )
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(snapshot_pages=[_snapshot_page(items=(_active_message(),))])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(remote_scope_id=noncanonical),
+            cursor=None,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.snapshot_calls == []
+
+
+async def test_noncanonical_cursor_payload_rejected() -> None:
+    offset = timezone(timedelta(hours=1))
+    noncanonical_cursor = _encode_cursor(
+        {
+            "schema_version": MSGRAPH_TEAMS_CHAT_CURSOR_VERSION,
+            "mailbox_user_id": _MAILBOX_USER_ID,
+            "chat_remote_id": _CHAT_ID,
+            "window_start_at": datetime(2024, 1, 1, 1, 0, tzinfo=offset).isoformat(),
+            "window_end_at": datetime(2024, 2, 1, 1, 0, tzinfo=offset).isoformat(),
+            "phase": "messages",
+            "continuation_url": _NEXT_URL,
+        }
+    )
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(snapshot_pages=[_snapshot_page(items=(_active_message(),))])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=noncanonical_cursor,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert fake.snapshot_calls == []
+    assert _SECRET_SKIP not in f"{exc_info.value!r} {exc_info.value.safe_message}"
+
+
+async def test_naive_scope_timestamp_rejected() -> None:
+    naive_scope = _encode_canonical_payload(
+        {
+            "schema_version": "msgraph.teams-chat.scope.v1",
+            "mailbox_user_id": _MAILBOX_USER_ID,
+            "chat_remote_id": _CHAT_ID,
+            "window_start_at": "2024-01-01T00:00:00",
+            "window_end_at": _WINDOW_END.isoformat(),
+        }
+    )
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(snapshot_pages=[_snapshot_page(items=(_active_message(),))])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(remote_scope_id=naive_scope),
+            cursor=None,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.snapshot_calls == []
+
+
+async def test_naive_cursor_timestamp_rejected() -> None:
+    naive_cursor = _encode_cursor(
+        {
+            "schema_version": MSGRAPH_TEAMS_CHAT_CURSOR_VERSION,
+            "mailbox_user_id": _MAILBOX_USER_ID,
+            "chat_remote_id": _CHAT_ID,
+            "window_start_at": "2024-01-01T00:00:00",
+            "window_end_at": _WINDOW_END.isoformat(),
+            "phase": "messages",
+            "continuation_url": _NEXT_URL,
+        }
+    )
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(snapshot_pages=[_snapshot_page(items=(_active_message(),))])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=naive_cursor,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert fake.snapshot_calls == []
+
+
+async def test_different_actual_window_instant_rejected() -> None:
+    offset = timezone(timedelta(hours=1))
+    equivalent_noncanonical = _noncanonical_scope_id(
+        start_at=datetime(2024, 1, 1, 1, 0, tzinfo=offset),
+        end_at=datetime(2024, 2, 1, 1, 0, tzinfo=offset),
+    )
+    canonical = _scope_id()
+    assert equivalent_noncanonical != canonical
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(snapshot_pages=[_snapshot_page(items=(_active_message(),))])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(remote_scope_id=equivalent_noncanonical),
+            cursor=None,
+            limit=50,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.snapshot_calls == []
+
+
+async def test_generated_cursor_stores_utc_values() -> None:
+    offset = timezone(timedelta(hours=1))
+    window = MsGraphTeamsChatMessageWindow(
+        start_at=datetime(2024, 1, 1, 1, 0, tzinfo=offset),
+        end_at=datetime(2024, 2, 1, 1, 0, tzinfo=offset),
+    )
+    scope_id = encode_msgraph_teams_chat_scope_id(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+        window=window,
+    )
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(
+        snapshot_pages=[_snapshot_page(items=(_active_message(),), continuation_url=_NEXT_URL, window=window)]
+    )
+    page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(remote_scope_id=scope_id),
+        cursor=None,
+        limit=50,
+    )
+    assert page.next_cursor is not None
+    padding = "=" * (-len(page.next_cursor.value) % 4)
+    decoded = _MsGraphTeamsChatCursor.model_validate(
+        json.loads(base64.urlsafe_b64decode(page.next_cursor.value + padding).decode())
+    )
+    assert decoded.window_start_at == datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    assert decoded.window_end_at == datetime(2024, 2, 1, 0, 0, tzinfo=timezone.utc)
+    assert _MAILBOX_USER_ID not in repr(decoded)
+    assert _CHAT_ID not in repr(decoded)
+    assert _SECRET_SKIP not in repr(decoded)
+
+
+async def _fetch_permissions_invalid_descriptor(
+    item: KnowledgeItemDescriptor,
+) -> pytest.ExceptionInfo[VendorKnowledgeError]:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_permissions(
+            integration=_integration(fake),
+            source=_source(),
+            item=item,
+        )
+    assert fake.forbidden_calls == []
+    assert fake.snapshot_calls == []
+    assert fake.content_calls == []
+    return exc_info
+
+
+@pytest.mark.parametrize(
+    "item_factory",
+    [
+        lambda: _message_descriptor(item_type="wrong_type"),
+        lambda: _message_descriptor(content_mode=KnowledgeContentMode.BINARY),
+        lambda: _message_descriptor(content_available=False),
+        lambda: _message_descriptor(mailbox_user_id=_OTHER_MAILBOX),
+        lambda: _message_descriptor(chat_remote_id=_OTHER_CHAT_ID),
+        lambda: _message_descriptor(provenance_source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND),
+        lambda: KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id="parent",
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=_encode_revision(_ETAG_1),
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+            ),
+            metadata=_base_metadata(),
+        ),
+        lambda: KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key="logical",
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=_encode_revision(_ETAG_1),
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+            ),
+            metadata=_base_metadata(),
+        ),
+        lambda: _message_descriptor(
+            revision=_ETAG_1,
+        ).model_copy(
+            update={
+                "revision": KnowledgeItemRevision.model_construct(
+                    version="not-valid-base64!!!",
+                    etag=None,
+                    updated_at=_TS,
+                )
+            }
+        ),
+        lambda: _message_descriptor(
+            revision=_ETAG_1,
+        ).model_copy(
+            update={
+                "revision": KnowledgeItemRevision.model_construct(
+                    version=_encode_canonical_payload(
+                        {
+                            "schema_version": "msgraph.teams-chat.revision.v1",
+                            "revision": f" {_ETAG_1}",
+                        }
+                    ),
+                    etag=None,
+                    updated_at=_TS,
+                )
+            }
+        ),
+        lambda: _message_descriptor(metadata={"unexpected_key": True}, metadata_only=True),
+        lambda: _message_descriptor(metadata={"message_state": "active"}, metadata_only=True),
+        lambda: _message_descriptor(
+            metadata={"last_modified_at": datetime(2024, 1, 16, 11, 0, tzinfo=timezone.utc).isoformat()}
+        ),
+        lambda: KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=_encode_revision(_ETAG_1),
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                web_url="https://example.test",
+            ),
+            metadata=_base_metadata(),
+        ),
+        lambda: KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=_encode_revision(_ETAG_1),
+                etag=None,
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                safe_locator="secret-locator",
+            ),
+            metadata=_base_metadata(),
+        ),
+        lambda: KnowledgeItemDescriptor.model_construct(
+            identity=KnowledgeItemIdentity.model_construct(
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+                parent_remote_id=None,
+                logical_key=None,
+            ),
+            revision=KnowledgeItemRevision.model_construct(
+                version=_encode_revision(_ETAG_1),
+                etag="etag",
+                updated_at=_TS,
+            ),
+            title="Sprint planning",
+            item_type="msgraph_teams_chat_message",
+            content_mode=KnowledgeContentMode.STRUCTURED_RECORD,
+            content_available=True,
+            provenance=KnowledgeItemProvenance.model_construct(
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                remote_id=_encode_message_identity(message_remote_id=_MSG_1),
+            ),
+            metadata=_base_metadata(),
+        ),
+    ],
+)
+async def test_fetch_permissions_rejects_invalid_descriptor(item_factory) -> None:
+    exc_info = await _fetch_permissions_invalid_descriptor(item_factory())
+    _assert_invalid_descriptor_boundary(exc_info)
+
+
+async def test_fetch_content_message_changed_maps_to_dependency_unavailable() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+
+    class _ChangedSuite(_FakeTeamsChatCollaborationSuite):
+        def read_teams_chat_message_content(self, *, message, max_chars: int):
+            raise MsGraphTeamsChatMessageChanged()
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(_ChangedSuite()),
+            source=_source(),
+            item=_message_descriptor(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    _assert_error_hides_secrets(exc_info.value)
+
+
+async def test_fetch_content_content_too_large_maps_to_configuration_error() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+
+    class _TooLargeSuite(_FakeTeamsChatCollaborationSuite):
+        def read_teams_chat_message_content(self, *, message, max_chars: int):
+            raise MsGraphTeamsChatContentTooLarge()
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(_TooLargeSuite()),
+            source=_source(),
+            item=_message_descriptor(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.retryable is False
+    _assert_error_hides_secrets(exc_info.value)
+
+
+async def test_read_page_malformed_provider_page_maps_to_invalid_provider_response() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    fake = _FakeTeamsChatCollaborationSuite(
+        snapshot_pages=[
+            MsGraphTeamsChatMessageSnapshotPage.model_construct(
+                mailbox_user_id=_MAILBOX_USER_ID,
+                chat_remote_id=_CHAT_ID,
+                window=_window(),
+                items=(_active_message(mailbox_user_id=_OTHER_MAILBOX),),
+                continuation=None,
+            )
+        ]
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(integration=_integration(fake), source=_source(), cursor=None, limit=50)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    _assert_error_hides_secrets(exc_info.value)
+
+
+async def test_fetch_content_malformed_exact_content_maps_to_invalid_provider_response() -> None:
+    adapter = MsGraphTeamsChatKnowledgeAdapter()
+    bad_message = MsGraphTeamsChatMessage.model_construct(
+        mailbox_user_id=_MAILBOX_USER_ID,
+        chat_remote_id=_CHAT_ID,
+        remote_id=_MSG_1,
+        revision=_ETAG_1,
+        state=MsGraphTeamsChatMessageState.ACTIVE,
+        message_type=MsGraphTeamsChatMessageType.MESSAGE,
+        importance=MsGraphTeamsChatImportance.NORMAL,
+        created_at=_CREATED_TS,
+        last_modified_at=_TS,
+        body_kind=MsGraphTeamsChatBodyKind.TEXT,
+        body_content=None,
+    )
+    fake = _FakeTeamsChatCollaborationSuite(content_by_key={(_MSG_1, _ETAG_1): bad_message})
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=_message_descriptor(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    _assert_error_hides_secrets(exc_info.value)
+
+
+def _assert_error_hides_secrets(err: VendorKnowledgeError) -> None:
+    rendered = f"{err!r} {err.safe_message}"
+    for secret in (
+        _MAILBOX_USER_ID,
+        _CHAT_ID,
+        _MSG_1,
+        _ETAG_1,
+        _SECRET_SKIP,
+        _NEXT_URL,
+        "skiptoken",
+        "Message body",
+        "body-one",
+    ):
+        assert secret not in rendered
 
 
 async def test_integration_dependency_error_translated() -> None:

@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
@@ -538,8 +538,29 @@ class MsGraphTeamsChatKnowledgeAdapter:
     ) -> KnowledgePermissions:
         self._require_graph_integration(integration=integration, source=source)
         validated_source = self._validate_source_ref(source)
-        validated_item = self._deep_validate_item_descriptor(item)
-        self._validate_item_provenance(validated_item, source=validated_source)
+        try:
+            mailbox_user_id, chat_remote_id, _window = self._decode_scope(validated_source)
+            validated_item = self._deep_validate_item_descriptor(item)
+            _message_identity, _revision = self._validate_message_item(
+                validated_item,
+                source=validated_source,
+                mailbox_user_id=mailbox_user_id,
+                chat_remote_id=chat_remote_id,
+            )
+            self._validate_descriptor_metadata(
+                validated_item.metadata,
+                updated_at=validated_item.revision.updated_at,
+            )
+        except VendorKnowledgeError:
+            raise
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Microsoft Graph Teams Chat message descriptor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         raise VendorKnowledgeError(
             code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
             safe_message=(
@@ -600,7 +621,10 @@ class MsGraphTeamsChatKnowledgeAdapter:
                 source_kind=validated_source.source_kind,
             )
         try:
-            _decode_scope_payload(scope.remote_scope_id)
+            decoded = _decode_scope_payload(scope.remote_scope_id)
+            canonical = _encode_canonical_payload(decoded.model_dump(mode="json"))
+            if canonical != scope.remote_scope_id:
+                raise ValueError("scope id is not canonical")
         except (ValueError, TypeError, AttributeError, ValidationError):
             raise self._invalid_source_scope_error(
                 provider_id=validated_source.provider_id,
@@ -933,15 +957,6 @@ class MsGraphTeamsChatKnowledgeAdapter:
                 source_kind=source.source_kind,
                 retryable=False,
             )
-        version = item.revision.version
-        if not isinstance(version, str) or not version.strip():
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message="Microsoft Graph Teams Chat message descriptor is invalid",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            )
         if item.revision.updated_at is None:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_SCOPE,
@@ -961,7 +976,7 @@ class MsGraphTeamsChatKnowledgeAdapter:
                 source_kind=source.source_kind,
                 retryable=False,
             )
-        revision = self._decode_revision(version)
+        revision = self._decode_revision(item.revision.version)
         return message_identity, revision
 
     def _validate_descriptor_metadata(
@@ -1226,6 +1241,9 @@ class MsGraphTeamsChatKnowledgeAdapter:
         try:
             data = _decode_canonical_payload(cursor.value)
             decoded = _MsGraphTeamsChatCursor.model_validate(data)
+            canonical = _encode_canonical_payload(decoded.model_dump(mode="json"))
+            if canonical != cursor.value:
+                raise ValueError("cursor value is not canonical")
         except Exception:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
@@ -1328,7 +1346,7 @@ def _parse_scope_window_datetime(value: object) -> datetime:
     if isinstance(value, datetime):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("window timestamp must be timezone-aware")
-        return value
+        return value.astimezone(timezone.utc)
     if not isinstance(value, str):
         raise ValueError("window timestamp must be a datetime")
     cleaned = value.strip()
@@ -1341,7 +1359,7 @@ def _parse_scope_window_datetime(value: object) -> datetime:
         raise ValueError("window timestamp must be valid ISO-8601") from None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("window timestamp must be timezone-aware")
-    return parsed
+    return parsed.astimezone(timezone.utc)
 
 
 def _validate_optional_metadata_string(value: object, *, max_length: int) -> str | None:
@@ -1382,14 +1400,15 @@ def _decode_scope_payload(value: str) -> _MsGraphTeamsChatScope:
 def _validate_opaque_revision(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError("revision must be a string")
-    trimmed = value.strip()
-    if not trimmed:
+    if value == "":
         raise ValueError("revision must not be empty")
-    if _ASCII_CONTROL.search(trimmed):
+    if value != value.strip():
+        raise ValueError("revision must not have leading or trailing whitespace")
+    if _ASCII_CONTROL.search(value):
         raise ValueError("revision must not contain control characters")
-    if len(trimmed) > _MAX_REVISION_LEN:
+    if len(value) > _MAX_REVISION_LEN:
         raise ValueError("revision exceeds maximum length")
-    return trimmed
+    return value
 
 
 def _validate_continuation_url(value: object) -> str:
