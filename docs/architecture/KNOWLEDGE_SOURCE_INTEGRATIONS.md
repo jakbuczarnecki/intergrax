@@ -1156,21 +1156,30 @@ application database/store       LKW Knowledge Intake
 13. Indexed permission and live-access authorization are separate grants.
 14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
 
-**Planned provider-specific read primitives (conceptual only — not implemented):**
+**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1`):**
 
 ```text
-list accessible conversation inventory
-read bounded conversation-history page
-read bounded thread/reply page
-read an exact message or exact revision
-read safe attachment inventory
-read explicit edit/deletion state
-read bounded search result where Slack and policy support it
+list_accessible_conversations_page
+read_conversation_history_page
+read_thread_replies_page
+read_exact_message
+read_file_info (safe inventory only)
 ```
 
-Do not freeze Python method signatures in this architecture task. Do not claim that these primitives, the Slack Vendor Knowledge adapter or Slack live capability are implemented. Required Slack scopes for knowledge reads must be audited against official Slack documentation in the implementation task and preserve least privilege.
+**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, fixed-window reconciliation, structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**.
 
-**Three-mode reuse (planned — not implemented):**
+**Not implemented:** LKW bridge, live capability, authoritative ACL, durable deletion feed, binary file download.
+
+**Planned provider-specific read primitives (future live/search — not implemented):**
+
+```text
+read bounded search result where Slack and policy support it
+read explicit durable deletion feed via Events API
+```
+
+Required Slack scopes for knowledge reads must be audited per installation against official Slack documentation and preserve least privilege.
+
+**Three-mode reuse:**
 
 | Mode | Slack direction |
 |---|---|

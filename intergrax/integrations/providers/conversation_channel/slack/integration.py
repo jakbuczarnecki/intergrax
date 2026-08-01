@@ -25,6 +25,16 @@ from intergrax.integrations.providers.conversation_channel.slack.backend import 
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    DEFAULT_MESSAGE_MAX_CHARS,
+    SlackConversationExactMessageResult,
+    SlackConversationFileReference,
+    SlackConversationInventoryPage,
+    SlackConversationKnowledgeReadClient,
+    SlackConversationMessagePage,
+    SlackConversationReadConfigurationError,
+    SlackConversationSourceWindow,
+)
 from intergrax.runtime.integrations.categories.messaging import ConversationChannelIntegrationContract
 
 SLACK_CONVERSATION_CHANNEL_PROVIDER_ID = "slack"
@@ -61,6 +71,75 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
             raise ConversationAttachmentFetchError(kind="attachment_fetch_unavailable")
         return await backend.fetch_attachment(attachment, max_bytes=max_bytes)
 
+    async def list_accessible_conversations_page(
+        self,
+        *,
+        cursor: str | None,
+        limit: int,
+    ) -> SlackConversationInventoryPage:
+        return await self._require_knowledge_read_client().list_accessible_conversations_page(
+            cursor=cursor,
+            limit=limit,
+        )
+
+    async def read_conversation_history_page(
+        self,
+        *,
+        conversation_id: str,
+        window: SlackConversationSourceWindow,
+        cursor: str | None,
+        limit: int,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+    ) -> SlackConversationMessagePage:
+        return await self._require_knowledge_read_client().read_conversation_history_page(
+            conversation_id=conversation_id,
+            window=window,
+            cursor=cursor,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    async def read_thread_replies_page(
+        self,
+        *,
+        conversation_id: str,
+        root_message_ts: str,
+        window: SlackConversationSourceWindow,
+        cursor: str | None,
+        limit: int,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+    ) -> SlackConversationMessagePage:
+        return await self._require_knowledge_read_client().read_thread_replies_page(
+            conversation_id=conversation_id,
+            root_message_ts=root_message_ts,
+            window=window,
+            cursor=cursor,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    async def read_exact_message(
+        self,
+        *,
+        conversation_id: str,
+        message_ts: str,
+        root_thread_ts: str | None,
+        window: SlackConversationSourceWindow,
+        expected_revision: str | None = None,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+    ) -> SlackConversationExactMessageResult:
+        return await self._require_knowledge_read_client().read_exact_message(
+            conversation_id=conversation_id,
+            message_ts=message_ts,
+            root_thread_ts=root_thread_ts,
+            window=window,
+            expected_revision=expected_revision,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    async def read_file_info(self, *, file_id: str) -> SlackConversationFileReference:
+        return await self._require_knowledge_read_client().read_file_info(file_id=file_id)
+
     def health(self) -> HealthStatus:
         return probe_client_health(
             self._require_backend(),
@@ -74,6 +153,14 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
                 f"{type(self).__name__} requires an injected ConversationChannelBackend",
             )
         return self._backend
+
+    def _require_knowledge_read_client(self) -> SlackConversationKnowledgeReadClient:
+        backend = self._require_backend()
+        if not isinstance(backend, SlackConversationKnowledgeReadClient):
+            raise SlackConversationReadConfigurationError(
+                "Slack conversation knowledge read requires SlackConversationChannelBackend",
+            )
+        return backend
 
     @classmethod
     def from_backend(

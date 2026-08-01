@@ -85,9 +85,8 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1
 NEXT:
-SLACK-KNOWLEDGE-FOUNDATION-1
-PLANNED:
 LKW-SLACK-CONNECTED-SOURCE-1
+PLANNED:
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -96,7 +95,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. Slack knowledge reads, adapter and live capability are **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **implemented**. LKW bridge and live capability remain **not** implemented.
 
 **Execution order (frozen):**
 
@@ -110,10 +109,10 @@ CONFLUENCE-KNOWLEDGE-ADAPTER-1
 Microsoft Graph Drive / Mail / Teams Channel / Teams Chat adapters
 SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 
-NEXT:
+DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
 
-THEN:
+NEXT:
 LKW-SLACK-CONNECTED-SOURCE-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
@@ -964,13 +963,13 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `SLACK-KNOWLEDGE-FOUNDATION-1` (platform — precedes Calendar and LKW Slack bridge)
+**Next:** `LKW-SLACK-CONNECTED-SOURCE-1` (LKW application — depends on completed platform foundation)
 
 **Planned execution order:**
 
 ```text
-SLACK-KNOWLEDGE-FOUNDATION-1
-LKW-SLACK-CONNECTED-SOURCE-1
+SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
+LKW-SLACK-CONNECTED-SOURCE-1 — NEXT
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -1180,15 +1179,15 @@ No duplicate parsing or embedding path is allowed.
 
 ### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
-**Classification:** architecture frozen; implementation **PLANNED**.
+**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; LKW bridge and live capability **PLANNED**.
 
 One existing `SlackConversationChannelIntegration` is reused across indexed RAG, durable materialization without RAG and bounded live access. LKW application tasks remain outside platform ownership.
 
 #### `SLACK-KNOWLEDGE-FOUNDATION-1`
 
-**Status:** `NEXT` (platform)
+**Status:** `DONE` (platform)
 
-**Classification:** `PLANNED` — one complete platform vertical slice, not artificial microtasks.
+**Classification:** `IMPLEMENTED` — platform foundation; not LKW bridge or live capability.
 
 Target scope:
 
@@ -1221,7 +1220,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 | `SlackConversationChannelIntegration` | reused | reused | reused |
 | Slack client, transport, credentials | reused | reused | reused |
 | Shared Slack read primitives | reused | reused | reused |
-| Slack Vendor Knowledge Adapter | required | required | not used |
+| Slack Vendor Knowledge Adapter | implemented | implemented | not used |
 | Slack Live Capability Adapter | not used | not used | required |
 | LKW Knowledge Intake / RAG | optional consumer | not required | not automatic |
 | Ephemeral evidence | not primary | not primary | required |

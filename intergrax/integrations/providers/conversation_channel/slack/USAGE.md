@@ -133,7 +133,84 @@ single_choice
 
 ---
 
-## PLANNED — NOT IMPLEMENTED: Slack knowledge-provider reuse
+## Implemented — Slack Knowledge foundation (`SLACK-KNOWLEDGE-FOUNDATION-1`)
+
+**Classification:** `IMPLEMENTED` platform foundation · `NOT` LKW bridge · `NOT` live capability.
+
+The existing `SlackConversationChannelIntegration` now exposes typed provider-specific knowledge-read operations through the same shared `AsyncWebClient` owned by `SlackConversationChannelBackend`:
+
+```text
+list_accessible_conversations_page(...)
+read_conversation_history_page(...)
+read_thread_replies_page(...)
+read_exact_message(...)
+read_file_info(...)   # safe file inventory only; no binary download
+```
+
+`SlackConversationKnowledgeAdapter` (`source_kind: slack_conversation`) maps these reads into Vendor Knowledge records and synchronizes through the shared Facade / Sync runtime into any injected durable sink.
+
+### Supported conversation kinds (inventory)
+
+```text
+public_channel
+private_channel
+im
+mpim
+```
+
+### Required scopes (knowledge reads — audit per installation)
+
+```text
+channels:history      # public channels
+groups:history         # private channels
+im:history             # direct messages
+mpim:history           # group direct messages
+channels:read          # inventory membership
+groups:read            # inventory membership
+im:read                # inventory membership
+mpim:read              # inventory membership
+files:read             # safe historical file inventory (metadata only)
+```
+
+Current DM conversational runtime scopes (`connections:write`, `chat:write`, `im:history`, `files:read`) remain separate. Enabling the chatbot does **not** authorize knowledge synchronization.
+
+### Fixed-window synchronization
+
+One durable source = one approved `conversation_id` + immutable `oldest`/`latest` Slack timestamp window. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
+
+### Structured message schema
+
+```text
+slack.conversation.message.knowledge.v1
+```
+
+### Safe file inventory
+
+Historical files are projected as safe metadata records (`file_id`, name, mimetype, size, mode, `is_external`). Private URLs, download URLs and binary content are **not** exposed.
+
+### Rate limits
+
+Slack `ratelimited` / timeout / service failures normalize as retryable dependency failures. No sleeps inside provider or adapter code.
+
+### Deletion semantics (provider gap)
+
+Polling does **not** provide an authoritative durable deletion feed. The adapter sets `tombstones=false`. Absence from later reconciliation is **not** treated as provider-confirmed deletion. Events API / Socket Mode deletion durability is **not** implemented.
+
+### Explicitly not implemented here
+
+```text
+LKW-SLACK-CONNECTED-SOURCE-1
+Slack command / UI for attaching conversations
+Knowledge Intake bridge
+RAG / chunks / embeddings
+Slack Live Capability Adapter
+authoritative Slack ACL projection
+binary historical file download
+```
+
+---
+
+## PLANNED — NOT IMPLEMENTED: further Slack knowledge consumption
 
 **Classification:** `ARCHITECTURALLY FROZEN` direction · `PLANNED` implementation.
 
