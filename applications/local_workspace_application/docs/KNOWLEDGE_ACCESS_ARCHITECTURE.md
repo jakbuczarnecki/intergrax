@@ -39,7 +39,7 @@ LKW lets a user:
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
+| **Planned for LKW** | Durable tenant Connection catalog; Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -187,6 +187,10 @@ A Connection owns or references:
 - supported capability descriptors;
 - tenant ownership.
 
+A Connection is **durable platform configuration**. Safe Connection metadata and opaque references must be persisted in the platform Document Store so configured connectors survive process and host restarts. Raw credentials remain exclusively in `SecretsStore`; the durable Connection record stores only an opaque `credential_ref` or equivalent secret reference.
+
+The in-memory `KnowledgeConnectionRegistry` is a runtime projection, not the source of truth. On startup or on-demand resolution, the platform reconstructs integration instances from the durable tenant Connection catalog plus `SecretsStore`. A Connection that cannot be reconstructed or validated becomes unavailable and fails closed; it is not silently forgotten.
+
 A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials.
 
 ### 4.2 Remote Resource
@@ -318,6 +322,8 @@ qualification status
 health status
 ```
 
+Model Runtime Profiles and workspace references to them are durable configuration. Deployment secrets or provider API keys referenced by a profile remain in `SecretsStore`. Runtime health is refreshed dynamically and must not be treated as the durable configuration source of truth.
+
 LKW receives a ready `LLMAdapter` through application wiring. The LKW domain must **not** contain provider branches such as `if provider == "ollama": … elif provider == "vllm": …`.
 
 **Conversation LLM and embedding provider are separate concerns.** Switching from Ollama to vLLM must not silently change the embedding model, vector dimensions, rebuild collections, invalidate indexed data or change LKW product contracts.
@@ -357,6 +363,22 @@ Requirements:
 - no secret-bearing URLs;
 - no unsafe provider payloads;
 - traceability to the operation or tool invocation.
+
+### 4.9 Configuration persistence boundary
+
+The complete effective product configuration must be reconstructable after restart without relying on previous process memory.
+
+| Boundary | Durable contents |
+|----------|------------------|
+| **Platform Document Store** | Tenant Connections; safe connector metadata; opaque secret/configuration references; tenant `KnowledgeSourceBinding` records; Model Runtime Profiles; configuration versions and lifecycle status |
+| **LKW Document Store** | Workspaces; workspace Connection attachments; Indexed Source Bindings; Live Access Bindings; Query Policies; model-runtime-profile references; Source ownership; configuration revision heads; mutation/idempotency and recovery records |
+| **SecretsStore** | OAuth access and refresh tokens; API keys; passwords; client secrets; certificates and other raw credential material |
+| **Runtime memory** | Constructed provider clients; `KnowledgeConnectionRegistry`; adapter registries; active health observations; short-lived discovery results and caches |
+| **Deployment configuration** | Store endpoints; bootstrap wiring; default provider selections; infrastructure-specific addresses and non-product process settings |
+
+Remote Resource discovery results are ephemeral by default. Only an explicitly configured Connection, tenant binding, workspace attachment, Indexed Source or Live Access Binding becomes durable product configuration.
+
+A clean application restart must preserve configured connectors, workspace permissions, indexed/live selection, query policy and runtime-profile selection. Runtime clients and registries may be rebuilt, but durable authorization and configuration must not be rebuilt from Slack messages, environment-only connector definitions or process-local memory.
 
 ---
 
@@ -614,12 +636,14 @@ LKW must **never** instantiate a vendor client for live access when the same Con
 Both indexed and live modes resolve through the shared integration/connection foundation:
 
 ```text
-one Connection
-→ one vendor integration
+one durable tenant Connection
+→ runtime integration reconstructed from durable metadata + SecretsStore
 → shared provider read primitives
    ├── durable path (Vendor Knowledge adapters / sync)
    └── live path (Live Capability adapter / executor)
 ```
+
+The durable tenant Connection catalog is the configuration source of truth; the runtime registry is a rebuildable projection. One catalog entry must not produce separate indexed and live clients for the same `(tenant_id, connection_ref)`.
 
 ### 9.2 Live result promotion semantics
 
@@ -736,6 +760,9 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 18. Target architecture is not evidence of implementation.
 19. Public proof claims require checked-in evidence.
 20. Application-first development remains the governing strategy.
+21. Tenant Connections and workspace knowledge configuration are durable product state and must survive application restart.
+22. `SecretsStore` owns raw credentials; persistent configuration stores only opaque secret references.
+23. Runtime registries and constructed clients are rebuildable projections, never the sole configuration source of truth.
 
 ---
 
