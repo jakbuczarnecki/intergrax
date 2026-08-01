@@ -588,7 +588,7 @@ Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate
 
 ### Application and adapter boundaries
 
-**Slack is only a client.** The Slack companion:
+**Slack is an optional frontend.** The Slack companion:
 
 - does not decide local vs remote deployment;
 - does not know a concrete database provider or Qdrant topology;
@@ -598,7 +598,16 @@ Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate
 - does not become the source of truth for Ingestion Operation state;
 - calls public LKW capabilities / API (including future Knowledge Intake).
 
-A Slack command must behave the same regardless of where storage is located. Binding product detail for Slack: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md). Binding intake contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). This section remains canonical for tenancy/storage and Knowledge Intake boundaries.
+**Separately, Slack may be attached as a provider-backed knowledge source** through platform Connections, approved Slack Remote Resources, Indexed Sources and/or Live Access Bindings. That path uses the same `SlackConversationChannelIntegration` foundation at the platform layer but has an independent authorization lifecycle.
+
+```text
+Slack frontend enabled  does not imply  Slack history ingestion or live access
+Slack Indexed Source    does not imply  Slack Live Access Binding
+```
+
+LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors or implement Slack-specific synchronization. Application-local Slack clients and synchronization are prohibited.
+
+A Slack command must behave the same regardless of where storage is located. Binding product detail for Slack: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md). Binding intake contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Binding knowledge access: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). This section remains canonical for tenancy/storage and Knowledge Intake boundaries.
 
 **Domain / application services:**
 

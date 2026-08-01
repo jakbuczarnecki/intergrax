@@ -37,6 +37,7 @@ JiraIssueTrackerIntegration
 ConfluenceWikiKnowledgeIntegration
 Ms365GraphCollaborationSuiteIntegration
 DatabricksRelationalStoreIntegration
+SlackConversationChannelIntegration
 ```
 
 These integrations must remain the single public provider/category entrypoints. They own vendor communication and implement the appropriate existing category contract. They must not be duplicated merely because an application wants to use their data as knowledge.
@@ -63,7 +64,9 @@ One-sentence result:
 |---|---|---|
 | Existing integration categories remain authoritative | `FROZEN` | Jira remains an issue-tracker integration, Confluence remains a wiki-knowledge integration, Microsoft Graph remains a collaboration-suite integration, and Databricks remains a relational-store integration unless a separately justified domain category is introduced. |
 | No generic `knowledge_source` integration category | `REJECTED` | Knowledge ingestion is a cross-category application use case, not the primary domain identity of every vendor integration. |
-| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
+| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, `SlackKnowledgeIntegration`, `SlackRagIntegration`, `SlackDatabaseIntegration`, `SlackLiveIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
+| Slack remains one `conversation_channel` integration | `FROZEN` | `SlackConversationChannelIntegration` is the only public Slack integration for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse the existing client, transport and credential resolution. Do not create an LKW-owned Slack vendor client. |
+| Slack dual role is independent | `FROZEN` | Slack-as-frontend (LKW companion transport) and Slack-as-knowledge-source (Connection → Remote Resource → bindings) are separate roles. Enabling the Slack chatbot does not authorize indexing or live Slack history access. Conversation transport events do not automatically become durable knowledge. |
 | Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
 | Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
 | Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
@@ -1077,6 +1080,105 @@ Do not create a generic knowledge-source category solely for Power BI.
 First audit whether Atlan fits an existing category. If not, introduce a justified domain category such as `data_catalog` or `data_governance`, with one public Atlan integration.
 
 Above that integration, an adapter may expose assets, glossary, ownership, certification, lineage, quality and governance metadata.
+
+### 13.7 Slack — binding three-mode example (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
+
+**Classification:** `ARCHITECTURALLY FROZEN` — not implemented.
+
+Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution are reused for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. No application-specific or consumption-mode-specific Slack client or public integration may be introduced.
+
+**Rejected duplicate names (do not create):**
+
+```text
+SlackKnowledgeIntegration
+SlackRagIntegration
+SlackDatabaseIntegration
+SlackLiveIntegration
+LkwSlackClient
+```
+
+**Canonical foundation:**
+
+```text
+Connection / credential reference
+        |
+        v
+SlackConversationChannelIntegration
+        |
+        v
+shared typed Slack provider read primitives
+        |
+        +---------------------------+
+        |                           |
+        v                           v
+durable knowledge path          live capability path
+        |                           |
+        v                           v
+Slack Vendor Knowledge          Slack Live Capability
+Adapter                         Adapter / Executor
+        |                           |
+        v                           v
+Vendor Knowledge Facade         ephemeral Live Evidence
+        |
+        v
+Sync / Materialization Runtime
+        |
+        +------------------------------+
+        |                              |
+        v                              v
+application database/store       LKW Knowledge Intake
+                                       |
+                                       v
+                              Documents / Chunks /
+                              Embeddings / RAG
+```
+
+**Binding rules:**
+
+1. `SlackConversationChannelIntegration` remains the only public Slack integration for this provider/category.
+2. The existing integration remains the owner of Slack SDK/client construction, tokens, transport, provider calls, provider errors and provider-specific validation.
+3. Shared Slack read primitives must not know whether their output will be indexed, stored in a database or used as live evidence.
+4. Provider-specific Slack read primitives belong to the same concrete integration and remain independent of persistence mode.
+5. Vendor Knowledge owns durable provider-neutral projection and synchronization.
+6. Live Capability owns bounded request-time access and ephemeral evidence.
+7. LKW owns workspace binding, Indexed Sources, Live Access Bindings, Knowledge Intake, RAG, Ask and frontend behavior.
+8. `vendor_knowledge` and the Slack provider integration must not import or depend on LKW.
+9. Enabling the Slack chatbot does not automatically authorize indexing or querying Slack history.
+10. Conversation transport events must not automatically become durable knowledge.
+11. Durable Slack synchronization may feed any injected sink, not only LKW or RAG.
+12. Live Slack results remain ephemeral unless an explicit promotion/materialization workflow is executed.
+13. Indexed permission and live-access authorization are separate grants.
+14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
+
+**Planned provider-specific read primitives (conceptual only — not implemented):**
+
+```text
+list accessible conversation inventory
+read bounded conversation-history page
+read bounded thread/reply page
+read an exact message or exact revision
+read safe attachment inventory
+read explicit edit/deletion state
+read bounded search result where Slack and policy support it
+```
+
+Do not freeze Python method signatures in this architecture task. Do not claim that these primitives, the Slack Vendor Knowledge adapter or Slack live capability are implemented. Required Slack scopes for knowledge reads must be audited against official Slack documentation in the implementation task and preserve least privilege.
+
+**Three-mode reuse (planned — not implemented):**
+
+| Mode | Slack direction |
+|---|---|
+| Indexed RAG | durable Slack synchronization → optional LKW Knowledge Intake → Documents → Chunks → Embeddings → RAG |
+| Durable materialization without RAG | durable Slack synchronization → DocumentStore / DB / object storage / application repository — no LKW, embeddings or vector store required |
+| Live access | authorized request → validated Slack live capability → bounded provider read → normalized ephemeral evidence — no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
+
+**Platform versus LKW ownership:**
+
+| Platform owns | LKW owns |
+|---|---|
+| `SlackConversationChannelIntegration`; Slack client/SDK and transport; credential references and token isolation; typed provider references; provider inventory/history/thread/exact-read primitives; provider response validation; provider error normalization; Slack Vendor Knowledge Adapter; Vendor Knowledge Facade integration; Sync / Materialization support; Slack Live Capability Adapter; validated live execution support; provider-neutral durable and live results | Workspace Knowledge Configuration; Slack Connection attachment to workspace; Remote Resource selection; Indexed Source; Live Access Binding; workspace and principal authorization; Knowledge Intake; Source / Document / Chunk / Vector ownership; RAG retrieval; Hybrid Ask; evidence provenance; Slack conversational commands and rendering; user-facing operation status |
+
+LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors, implement Slack-specific synchronization or duplicate Slack response validation.
 
 ---
 

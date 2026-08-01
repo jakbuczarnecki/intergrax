@@ -23,6 +23,15 @@ Architecture:
 Next implementation:
   LKW-KNOWLEDGE-ACCESS-1 — NEXT
 
+Platform next (vendor knowledge):
+  SLACK-KNOWLEDGE-FOUNDATION-1 — NEXT after SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+
+Slack Knowledge user vertical (after platform foundation):
+  SLACK-KNOWLEDGE-FOUNDATION-1
+  → LKW-SLACK-CONNECTED-SOURCE-1
+  → SLACK-LIVE-CAPABILITY-1
+  → LKW-SLACK-KNOWLEDGE-PROOF-1
+
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
 ```
@@ -149,6 +158,31 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
 | `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
 | `LKW-LIVE-PLATFORM-PROOF-1` | A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
+
+### 3.2.1 Slack Knowledge vertical (platform + LKW)
+
+Complete Slack Knowledge user vertical precedes Microsoft Graph Calendar and lower-priority provider expansion. Platform foundation must precede LKW bridge tasks.
+
+| Task | Owner | User outcome | Status |
+|---|---|---|---|
+| `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
+| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations for any Intergrax application; no new Slack command or LKW feature implied yet | **NEXT** (platform) |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **PLANNED** |
+| `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
+| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining Slack history, authorized live Slack evidence and other workspace sources with safe citations | **PLANNED** |
+
+**Required dependency:**
+
+```text
+SLACK-KNOWLEDGE-FOUNDATION-1
+→ LKW-SLACK-CONNECTED-SOURCE-1
+→ SLACK-LIVE-CAPABILITY-1
+→ LKW-SLACK-KNOWLEDGE-PROOF-1
+```
+
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the complete Slack user vertical.
+
+**Available today:** The user can operate LKW through Slack and ask about knowledge already present in the selected workspace. The user cannot yet attach and search Slack channel or conversation history as workspace knowledge.
 
 ### 3.3 Internal implementation slices (historical identity preserved)
 
@@ -345,14 +379,15 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 **Execution order:**
 
 ```text
-1. complete Teams Chat and Calendar durable adapters;
-2. perform the adapter-family and three-mode capability audit;
-3. use Jira or Confluence for the first bounded live search/read capability proof;
-4. add bounded Microsoft Graph live capabilities separately;
-5. converge at Hybrid Ask.
+1. complete Slack Knowledge vertical (SLACK-KNOWLEDGE-FOUNDATION-1 → LKW-SLACK-CONNECTED-SOURCE-1 → SLACK-LIVE-CAPABILITY-1 → LKW-SLACK-KNOWLEDGE-PROOF-1);
+2. complete Teams Chat and Calendar durable adapters (Calendar after Slack vertical);
+3. perform the adapter-family and three-mode capability audit;
+4. use Jira or Confluence for the first bounded live search/read capability proof;
+5. add bounded Microsoft Graph live capabilities separately;
+6. converge at Hybrid Ask.
 ```
 
-The immediate current task remains `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`.
+The immediate current platform task is `SLACK-KNOWLEDGE-FOUNDATION-1`. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the complete Slack user vertical.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 

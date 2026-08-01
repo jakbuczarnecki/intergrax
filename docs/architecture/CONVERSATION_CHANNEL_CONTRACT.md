@@ -174,9 +174,68 @@ for this shared contract document.
 
 ---
 
-## 14. Next task
+## 14. Provider-specific organizational-history extension
+
+**Classification:** `ARCHITECTURALLY FROZEN` — not part of the mandatory shared v1 contract.
+
+The shared `ConversationChannelIntegrationContract` remains responsible for near-real-time conversational behavior only:
 
 ```text
-LKW-SLACK-WORKFLOW-1 — product-local Slack conversational workflow
-(authorization, tenant mapping, workspace selection, Ask HTTP, rendering)
+start
+stop
+send
+health
+inbound conversation events
+outbound replies
+conversation addressing
+actions
+attachment fetch where supported
 ```
+
+Do not add generic knowledge-history methods to the shared category contract.
+
+A concrete conversation-channel integration may expose additional typed, bounded provider read primitives when that provider is also a source of organizational knowledge. These methods remain provider-specific operations of the same concrete integration. They do not become mandatory methods of every conversation channel provider and do not create another integration category.
+
+**Slack example (conceptual — `PLANNED`, not implemented):**
+
+```text
+list accessible conversation inventory
+read bounded conversation-history page
+read bounded thread/reply page
+read an exact message or exact revision
+read safe attachment inventory
+read explicit edit/deletion state
+read bounded search result where Slack and policy support it
+```
+
+These names are conceptual only. Do not freeze Python method signatures here. Do not claim implementation.
+
+---
+
+## 15. Current status and Slack Knowledge direction
+
+```text
+CURRENTLY IMPLEMENTED:
+  slack conversation_channel runtime (Socket Mode inbound + Web API outbound)
+  LKW Slack frontend and Ask workflow foundations
+
+ARCHITECTURALLY FROZEN (SLACK-KNOWLEDGE-THREE-MODE-ARCH-1):
+  SlackConversationChannelIntegration remains the only public Slack integration
+  shared typed Slack read primitives on the same integration
+  three consumption modes: indexed RAG, durable materialization, live access
+  Slack-as-frontend and Slack-as-knowledge-source are independent roles
+
+PLANNED — NOT IMPLEMENTED:
+  SLACK-KNOWLEDGE-FOUNDATION-1 (platform — NEXT)
+  LKW-SLACK-CONNECTED-SOURCE-1 (LKW application)
+  SLACK-LIVE-CAPABILITY-1 (platform)
+  LKW-SLACK-KNOWLEDGE-PROOF-1 (LKW application)
+
+Rejected:
+  SlackKnowledgeIntegration, SlackRagIntegration, SlackDatabaseIntegration,
+  SlackLiveIntegration, LkwSlackClient, or any LKW-owned Slack vendor client
+```
+
+Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · Plan: [`plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 8.
+
+Previous next task `LKW-SLACK-WORKFLOW-1` conversational workflow slices are **DONE** or superseded by the LKW implementation plan. Slack historical knowledge access does not yet exist.

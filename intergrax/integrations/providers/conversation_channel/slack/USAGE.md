@@ -130,3 +130,57 @@ optional thread_id → thread_ts
 text
 single_choice
 ```
+
+---
+
+## PLANNED — NOT IMPLEMENTED: Slack knowledge-provider reuse
+
+**Classification:** `ARCHITECTURALLY FROZEN` direction · `PLANNED` implementation.
+
+Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution will be reused for:
+
+- conversational runtime (implemented today);
+- shared typed Slack knowledge reads (`PLANNED`);
+- durable materialization (`PLANNED`);
+- indexed RAG (`PLANNED`);
+- bounded live access (`PLANNED`).
+
+**Rejected duplicate integrations (do not create):**
+
+```text
+SlackKnowledgeIntegration
+SlackRagIntegration
+SlackDatabaseIntegration
+SlackLiveIntegration
+LkwSlackClient
+```
+
+No application-specific or consumption-mode-specific Slack client or public integration may be introduced. LKW must not construct Slack SDK clients or call Slack Web API history endpoints directly.
+
+**Planned provider-specific read primitives (conceptual — not listed under current shared operations):**
+
+```text
+list accessible conversation inventory
+read bounded conversation-history page
+read bounded thread/reply page
+read an exact message or exact revision
+read safe attachment inventory
+read explicit edit/deletion state
+read bounded search result where Slack and policy support it
+```
+
+**Dual role independence:**
+
+```text
+Slack frontend enabled  does not imply  Slack knowledge access enabled
+Slack Indexed Source    does not imply  Slack Live Access Binding
+Slack Live Access Binding does not imply durable synchronization or RAG indexing
+```
+
+Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge.
+
+**Scope audit (future implementation task):** Required Slack scopes for knowledge reads must be audited against official Slack documentation and preserve least privilege. Do not invent or freeze future scopes in this document.
+
+Current required scopes above (`connections:write`, `chat:write`, `im:history`, `files:read`) apply to the **implemented** DM conversational runtime only.
+
+Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.

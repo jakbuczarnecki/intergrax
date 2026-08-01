@@ -38,8 +38,8 @@ LKW lets a user:
 | Category | Examples |
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
-| **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
+| **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; Slack connected source and knowledge proof (`LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1`); live Slack platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -52,7 +52,7 @@ Target architecture is **not** evidence of implementation. Public proof claims r
 
 Knowledge already processed into LKW-owned stores.
 
-**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues.
+**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` — not implemented).
 
 **Benefits:** cross-source semantic retrieval; lower provider API usage; consistent chunking and embeddings; offline or temporarily disconnected usage; stable workspace-owned retrieval.
 
@@ -76,7 +76,7 @@ Connection or direct input
 
 Read-only access executed when the user asks a question.
 
-**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state.
+**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state; bounded current Slack message or thread reads (`PLANNED` — not implemented).
 
 **Benefits:** current information; no requirement to copy every dataset; appropriate for dynamic or large systems.
 
@@ -165,6 +165,18 @@ one Connection
    └── live capability execution → ephemeral evidence
 ```
 
+**Slack foundation (`PLANNED` — architecture frozen):**
+
+```text
+Slack Connection
+→ SlackConversationChannelIntegration
+→ shared typed Slack read primitives
+   ├── Slack Vendor Knowledge Adapter → durable sync → optional LKW RAG
+   └── Slack Live Capability Adapter → ephemeral evidence
+```
+
+Slack frontend transport uses the same integration foundation but does not grant history ingestion or live access by itself.
+
 Hybrid Ask combines indexed and live evidence at the application level. It does not create a fourth vendor integration.
 
 ---
@@ -175,7 +187,7 @@ Hybrid Ask combines indexed and live evidence at the application level. It does 
 
 A tenant-owned configured relationship with an external system.
 
-**Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved MCP server.
+**Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved Slack workspace installation (`PLANNED` for knowledge reads); approved MCP server.
 
 A Connection owns or references:
 
@@ -193,7 +205,7 @@ A Connection must **not** expose credentials to the LLM, Slack, another frontend
 
 A provider-owned resource discoverable through a Connection.
 
-**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection.
+**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection; approved Slack channel or conversation (`PLANNED` — not implemented).
 
 A Remote Resource is **not** automatically an LKW Source.
 
@@ -201,7 +213,7 @@ A Remote Resource is **not** automatically an LKW Source.
 
 A durable workspace-owned Source whose content is ingested or synchronized into LKW knowledge stores.
 
-**Examples:** uploaded PDF; uploaded XLSX; Slack attachment; local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
+**Examples:** uploaded PDF; uploaded XLSX; Slack attachment (managed-file intake — implemented); synchronized Slack channel or conversation (`PLANNED`); local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
 
 Every persisted Document must remain owned by exactly one durable Source.
 
@@ -222,6 +234,20 @@ allowed capabilities:
 - ms365.mail.read
 mode: read-only
 ```
+
+**Slack example (`PLANNED` — not implemented):**
+
+```text
+workspace: Project Orion
+connection: company-slack
+resource: #project-orion channel
+allowed capabilities:
+- slack.conversation.read_bounded
+- slack.thread.read_bounded
+mode: read-only
+```
+
+Indexed permission and live-access authorization are separate grants. A Slack Live Access Binding does not imply durable synchronization or RAG indexing.
 
 A Live Access Binding:
 
@@ -374,8 +400,11 @@ provider resource
 | Confluence space | synchronized into RAG | searched live |
 | Power BI semantic model | metadata may optionally be indexed | usually queried live |
 | SharePoint site | documents may be synchronized | current metadata may be read live |
+| Slack channel or conversation (`PLANNED`) | history may be synchronized into RAG | bounded current reads when authorized |
 
 Do not assume every provider resource must be copied into RAG. Do not assume every indexed Source automatically permits live access.
+
+One `SlackConversationChannelIntegration` serves both Slack frontend transport and platform provider reads, but application bindings and authorization lifecycles remain independent.
 
 ---
 
@@ -420,6 +449,7 @@ Evidence Plan
         ├── Microsoft 365 live reads
         ├── Jira live reads
         ├── Confluence live reads
+        ├── Slack live reads (PLANNED)
         ├── Databricks live reads
         ├── Power BI live reads
         └── Atlan live reads

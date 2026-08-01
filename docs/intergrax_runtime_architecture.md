@@ -216,13 +216,26 @@ Canonical execution order: [pplications/local_workspace_application/docs/IMPLEM
 |-------|-------|--------|
 | **1B-5-2** | End-to-end WEB_URL Knowledge Intake | **ACCEPTED** (including C1 and C2) |
 | **LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1** | Hybrid knowledge access vocabulary and roadmap | **ACCEPTED** |
-| **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **NEXT** |
-| **LKW-KNOWLEDGE-ACCESS-1** | Connections, Indexed Sources, Live Access Bindings | **PLANNED** |
+| **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **ACCEPTED** |
+| **LKW-KNOWLEDGE-ACCESS-1** | Connections, Indexed Sources, Live Access Bindings | **NEXT** |
 | **LKW-HYBRID-ASK-1** | RAG + live with unified provenance | **PLANNED** |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language execution + Slack cutover | **PLANNED** |
 | **LKW-VENDOR-ACCESS-COLLABORATION-1** | MS365, Jira, Confluence | **PLANNED** |
 | **LKW-VENDOR-ACCESS-DATA-1** | Databricks, Power BI, Atlan | **PLANNED** |
 | **LKW-KNOWLEDGE-LIFECYCLE-1** | Sync, freshness, permissions, removal | **PLANNED** |
 | **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof | **PLANNED** |
+### Vendor Knowledge platform backlog
+
+Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md). Architecture: [rchitecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md](architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
+
+| Task | Scope | Status |
+|------|-------|--------|
+| **SLACK-KNOWLEDGE-THREE-MODE-ARCH-1** | Freeze Slack three-mode reuse on SlackConversationChannelIntegration | **DONE** |
+| **SLACK-KNOWLEDGE-FOUNDATION-1** | Platform Slack knowledge read surface, Vendor Knowledge adapter, durable sync proof | **NEXT** |
+| **SLACK-LIVE-CAPABILITY-1** | Bounded Slack live reads via same integration | **PLANNED** |
+| **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after complete Slack user vertical) |
+
+LKW application tasks LKW-SLACK-CONNECTED-SOURCE-1 and LKW-SLACK-KNOWLEDGE-PROOF-1 are tracked in the LKW Implementation Plan, not as platform adapter tasks.
+
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.

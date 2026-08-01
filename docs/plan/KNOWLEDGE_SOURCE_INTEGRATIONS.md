@@ -69,6 +69,7 @@ DONE:     JIRA-KNOWLEDGE-ADAPTER-1
 DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
 DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 DONE:     VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
+DONE:     SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 IN_PROGRESS:
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
@@ -83,12 +84,45 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1
-  NEXT:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+NEXT:
+SLACK-KNOWLEDGE-FOUNDATION-1
+PLANNED:
+SLACK-LIVE-CAPABILITY-1
+LKW-SLACK-CONNECTED-SOURCE-1
+LKW-SLACK-KNOWLEDGE-PROOF-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
+
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. Slack knowledge reads, adapter and live capability are **not** implemented.
+
+**Execution order (frozen):**
+
+```text
+DONE:
+SLACK-CONVERSATION-RUNTIME-1
+LKW Slack frontend and Ask workflow foundations
+VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
+JIRA-KNOWLEDGE-ADAPTER-1
+CONFLUENCE-KNOWLEDGE-ADAPTER-1
+Microsoft Graph Drive / Mail / Teams Channel / Teams Chat adapters
+SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+
+NEXT:
+SLACK-KNOWLEDGE-FOUNDATION-1
+
+THEN:
+LKW-SLACK-CONNECTED-SOURCE-1
+SLACK-LIVE-CAPABILITY-1
+LKW-SLACK-KNOWLEDGE-PROOF-1
+
+AFTER COMPLETE SLACK USER VERTICAL:
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+Microsoft Graph family audit
+remaining Hybrid Ask and provider packs
+```
 
 Microsoft Graph Mail low-level knowledge-read support is complete.
 
@@ -915,11 +949,15 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`
+**Next:** `SLACK-KNOWLEDGE-FOUNDATION-1` (platform — precedes Calendar and LKW Slack bridge)
 
 **Planned:**
 
 ```text
+SLACK-KNOWLEDGE-FOUNDATION-1
+SLACK-LIVE-CAPABILITY-1
+LKW-SLACK-CONNECTED-SOURCE-1
+LKW-SLACK-KNOWLEDGE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 ```
 
@@ -967,8 +1005,10 @@ Recommended implementation/proof order inside the Microsoft scope:
 2. mail
 3. teams_channel
 4. teams_chat
-5. calendar
+5. calendar   ← after complete Slack Knowledge user vertical
 ```
+
+The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-SLACK-CONNECTED-SOURCE-1` → `SLACK-LIVE-CAPABILITY-1` → `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
@@ -1123,7 +1163,111 @@ No duplicate parsing or embedding path is allowed.
 
 ---
 
-### Phase 8 — Slack source management
+### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
+
+**Classification:** architecture frozen; implementation **PLANNED**.
+
+One existing `SlackConversationChannelIntegration` is reused across indexed RAG, durable materialization without RAG and bounded live access. LKW application tasks remain outside platform ownership.
+
+#### `SLACK-KNOWLEDGE-FOUNDATION-1`
+
+**Status:** `NEXT` (platform)
+
+**Classification:** `PLANNED` — one complete platform vertical slice, not artificial microtasks.
+
+Target scope:
+
+```text
+existing Slack integration reuse
+typed bounded Slack knowledge read surface
+safe conversation inventory
+history paging
+thread/reply paging
+exact message/version reads
+edits and explicit deletion semantics
+safe attachment inventory
+provider-safe references and cursors
+Slack Vendor Knowledge Adapter
+capabilities
+Facade registration
+Sync Coordinator durable proof
+injected database/store sink proof
+three-mode reuse assessment
+```
+
+Do not freeze implementation signatures before the repository audit. Do not claim full ACL support unless an authoritative Slack authorization projection is proved.
+
+**User-facing meaning after completion:** The platform can safely read and durably synchronize selected Slack conversations for any Intergrax application. No new Slack command or LKW feature is implied yet.
+
+#### Planned Slack three-mode matrix (`PLANNED` — not implemented)
+
+| Concern | Indexed RAG | Durable materialization | Live access |
+|---|---:|---:|---:|
+| `SlackConversationChannelIntegration` | reused | reused | reused |
+| Slack client, transport, credentials | reused | reused | reused |
+| Shared Slack read primitives | reused | reused | reused |
+| Slack Vendor Knowledge Adapter | required | required | not used |
+| Slack Live Capability Adapter | not used | not used | required |
+| LKW Knowledge Intake / RAG | optional consumer | not required | not automatic |
+| Ephemeral evidence | not primary | not primary | required |
+| Automatic persistence of live results | no | n/a | forbidden by default |
+
+#### `LKW-SLACK-CONNECTED-SOURCE-1`
+
+**Status:** `PLANNED` (LKW application — depends on `SLACK-KNOWLEDGE-FOUNDATION-1`)
+
+Application-only use of the completed platform foundation:
+
+```text
+workspace Connection
+→ approved Slack Remote Resource
+→ Indexed Source
+→ Vendor Knowledge synchronization
+→ LKW Knowledge Intake
+→ RAG
+```
+
+No new Slack client or provider adapter in LKW.
+
+**User-facing meaning after completion:** The user can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history.
+
+#### `SLACK-LIVE-CAPABILITY-1`
+
+**Status:** `PLANNED` (platform)
+
+Platform live path using the same integration and shared read primitives:
+
+```text
+validated capability
+→ bounded Slack read
+→ normalized ephemeral evidence
+```
+
+No automatic durable persistence.
+
+**User-facing meaning after completion:** Authorized applications can read bounded current Slack information at request time without waiting for a complete durable synchronization.
+
+#### `LKW-SLACK-KNOWLEDGE-PROOF-1`
+
+**Status:** `PLANNED` (LKW application)
+
+Required user proof:
+
+```text
+approved user selects a Slack conversation
+→ binds it to an LKW workspace
+→ synchronization and indexing complete
+→ user asks through Slack
+→ answer uses indexed Slack evidence
+→ bounded live Slack evidence may be included when authorized
+→ citations identify safe Slack message/thread provenance
+```
+
+**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources.
+
+---
+
+### Phase 9 — Slack source management (frontend)
 
 #### `LKW-SLACK-CONNECTED-SOURCES-1`
 
