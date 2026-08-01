@@ -252,28 +252,33 @@ TokenOptimizationLLMRouter.route()
 - no global-metric-to-request mapping;
 - no automatic in-cache mutation.
 
-TOKEN-10E adds in-cache compaction.
+TOKEN-10E adds in-cache compaction (architecture defined; creates new prefix lineage — does not mutate provider cache).
 
 Do not claim mixed character/token estimates as measured savings.
 
 ---
 
-## 8. In-cache compaction (TOKEN-10E — planned)
+## 8. In-cache compaction (TOKEN-10E — architecture defined / ready for review)
 
-Promoted from future commentary to explicit planned phase.
+Promoted from future commentary to explicit planned phase. Cross-domain lifecycle architecture frozen under **CTX-UCL-ARCH-1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)); **TOKEN-10E-ARCH-1** superseded. Runtime implementation has **not** started and is **blocked** pending UCL foundation.
+
+**Logical meaning (not provider KV-cache mutation):**
 
 ```text
-existing byte-stable cached conversation
-  + appended compaction instruction
-  → model reuses cached prefix
-  → model produces compact summary
-  → summary validated
-  → new thread generation from approved compacted state
+existing logical context version
+  → build shorter compaction candidate
+  → validate candidate
+  → accept or reject
+  → if accepted, new context version and new cache lineage
 ```
 
-Requires: explicit policy opt-in; protected-region preservation; quality/regression evaluation; receipts with old/new hashes; cache attribution separate from content reduction; operator-visible fallback; no destructive overwrite before validation; rollback metadata; no automatic production enablement by default.
+Accepted compaction creates a **new prefix lineage** — it does not mutate provider-owned cache entries. The system declares that subsequent requests no longer assume compatibility with the previous stable prefix; it does not claim immediate provider cache deletion.
 
-For vLLM, use actual cache-state evidence — not invented Claude-style fixed TTL.
+Canonical detail: [TOKEN_OPTIMIZATION.md §8.10](TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e).
+
+Requires (at implementation): explicit policy opt-in; protected-region preservation; receipts with old/new hashes; cache attribution separate from content reduction; operator-visible fallback; no destructive overwrite before validation; rollback metadata; no automatic production enablement by default.
+
+For vLLM timing, use actual cache-state evidence from TOKEN-10D — not invented Claude-style fixed TTL.
 
 **Historical note:** `TOKEN-OPT-5A` excluded in-cache compaction by design. That scope boundary is superseded by **TOKEN-10E** planning.
 

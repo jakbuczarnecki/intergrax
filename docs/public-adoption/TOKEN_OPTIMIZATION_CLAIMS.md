@@ -40,7 +40,8 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- **TOKEN-10E** — policy-governed in-cache compaction (planned).
+- **CTX-UCL** — unified context lifecycle foundation (architecture defined; implementation not started).
+- **TOKEN-10E** — policy-governed durable compaction (blocked pending accepted UCL; runtime not implemented).
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
 - **TOKEN-10H** — checked-in public promotion (planned; not completed).
@@ -61,6 +62,8 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
+- Unified Context Lifecycle architecture defines integration boundary for session revision and durable compaction (runtime not yet available).
+- TOKEN-10E in-cache compaction architecture and safety boundary are documented (runtime implementation not yet available; blocked pending UCL foundation).
 
 ---
 
@@ -152,6 +155,8 @@ Explicit forbidden examples:
 - Do not say “Intergrax reduces token usage by X%” without a named corpus, provider/model, metric unit, strategy attribution, and checked-in evidence.
 - Do not say “production-proven token savings” before the required production and TOKEN-10G evidence exists.
 - Do not call Intergrax a “token-accurate optimizer” while the general optimization path has no provider-aware tokenizer.
+- Do not say in-cache compaction is implemented, automatic context compaction is available, rollback is available, or long conversations are already cheaper — TOKEN-10E architecture is documented; runtime is not implemented.
+- Do not claim production durable compaction, session revision store, rollback execution, semantic compression active in production, provider cache mutation, measured production savings from UCL, or LKW UCL integration — UCL architecture is defined; runtime is not implemented.
 
 ---
 

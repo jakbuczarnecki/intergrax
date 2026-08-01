@@ -16,6 +16,7 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | -------- | ------- |
 | [Main guide](README.md) | Complete engine overview and usage |
 | [Architecture](../architecture/TOKEN_OPTIMIZATION.md) | Canonical boundaries and invariants |
+| [Unified Context Lifecycle](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) | Cross-domain lifecycle, single budget authority, durable compaction foundation |
 | [Plan](../plan/TOKEN_OPTIMIZATION.md) | Roadmap and implementation status |
 | [Cache-prefix architecture](../architecture/TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md) | Stable-prefix and provider-cache rules |
 | [vLLM live proof](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) | Reviewer execution guide |
@@ -78,7 +79,7 @@ input
 | TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Accepted / Closed |
 | TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3 | Accepted / Closed |
 | TOKEN-10D | Accepted / Closed |
-| TOKEN-10E | Planned / Not Started |
+| TOKEN-10E | Architecture Defined / Ready for Review (runtime not started) |
 | TOKEN-10F | Planned |
 | TOKEN-10G | Planned |
 | TOKEN-10H | Planned |
@@ -571,7 +572,7 @@ foundation (TOKEN-1…9)
 → cache-stable prompt (TOKEN-10B)
 → vLLM prefix cache (TOKEN-10C)
 → cache-aware runtime (TOKEN-10D — accepted / closed)
-→ in-cache compaction (TOKEN-10E)
+→ in-cache compaction architecture (TOKEN-10E — defined; runtime not started)
 → universal proof harness (TOKEN-10F)
 → proof corpus and hard gates (TOKEN-10G)
 → public proof promotion (TOKEN-10H)
