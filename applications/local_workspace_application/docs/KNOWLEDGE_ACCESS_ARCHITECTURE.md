@@ -421,11 +421,15 @@ configuration unless a separately accepted administration-plane task moves
 them into durable product configuration.
 ```
 
-LKW configuration is **not** stored in one monolithic database. Four separate configuration/state classes apply:
+LKW configuration is **not** stored in one monolithic database. Four persistence boundaries apply:
 
-#### 4.9.1 Durable platform and tenant configuration
+#### 4.9.1 Durable Database / DocumentStore state
 
-Durable database / DocumentStore state includes:
+Durable database / DocumentStore state is one persistence boundary. It contains two separate ownership categories:
+
+##### 4.9.1.1 Durable platform and tenant configuration
+
+Durable platform and tenant configuration includes:
 
 ```text
 Tenant Connections
@@ -441,9 +445,9 @@ opaque credential references
 
 **Not owner:** LKW workspace domain, Slack, `KnowledgeConnectionRegistry`, `IntegrationProfile`.
 
-#### 4.9.2 Durable LKW workspace configuration
+##### 4.9.1.2 Durable LKW workspace configuration
 
-Durable LKW state includes:
+Durable LKW workspace configuration includes:
 
 ```text
 Workspace
@@ -464,19 +468,19 @@ idempotency and recovery state
 
 The C3 revision, publication, idempotency and recovery contract in [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) remains authoritative.
 
-#### 4.9.3 SecretsStore state
+#### 4.9.2 SecretsStore state
 
 `SecretsStore` owns OAuth access tokens, OAuth refresh tokens, client secrets, API keys, passwords, certificates and private keys, and other credential material.
 
 Database records may contain only an opaque `credential_ref`. No raw secret may appear in `TenantConnection`, `KnowledgeSourceBinding` public projection, LKW workspace records, logs, traces, Slack, public API responses or provenance.
 
-#### 4.9.4 Runtime-only state
+#### 4.9.3 Runtime-only state
 
 Runtime state includes constructed provider clients, constructed integration objects, `KnowledgeConnectionRegistry` entries, adapter registry entries, in-flight requests, leases held in process memory, current health checks, ephemeral Remote Resource discovery results and ephemeral live evidence.
 
 Runtime state is reconstructed from durable configuration and `SecretsStore`. It is not the source of truth.
 
-#### 4.9.5 Deployment configuration
+#### 4.9.4 Deployment configuration
 
 Deployment configuration includes DocumentStore endpoint, VectorStore endpoint, `SecretsStore` implementation, message bus endpoint, object storage endpoint, default application profile, default runtime provider, container topology, ports and bootstrap flags.
 

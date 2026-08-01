@@ -35,7 +35,7 @@
 **C4 correction:**
 
 - all user-managed product configuration that must survive restart is durable;
-- four separate state classes: durable database configuration, `SecretsStore`, runtime-only state, deployment configuration;
+- four persistence boundaries: durable Database / DocumentStore state (separate platform/tenant and LKW workspace ownership categories), `SecretsStore`, runtime-only state, deployment configuration;
 - durable `TenantConnection` is platform-owned (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**);
 - `KnowledgeConnectionRegistry` is instance-local runtime projection only;
 - `IntegrationProfile` is application composition, not a tenant Connection catalog;
@@ -241,7 +241,14 @@ configuration unless a separately accepted administration-plane task moves
 them into durable product configuration.
 ```
 
-Do **not** claim that all LKW configuration lives in one database. Four state classes apply: durable platform/tenant configuration, durable LKW workspace configuration, `SecretsStore` credentials, runtime-only state, and deployment configuration. See [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) §4.9.
+Do **not** claim that all LKW configuration lives in one database. Four persistence boundaries apply:
+
+1. durable Database / DocumentStore state, containing separate platform/tenant and LKW workspace ownership categories;
+2. `SecretsStore` credentials;
+3. runtime-only state;
+4. deployment configuration.
+
+See [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) §4.9.
 
 ### 5.2 Persistence and ownership matrix
 
