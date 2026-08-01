@@ -210,7 +210,7 @@ LKW.6 closed narrowly as: unified interaction intake; Application Hosting adopti
 
 ### LKW Hybrid Knowledge Workspace — active product roadmap
 
-Canonical execution order: [pplications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+Canonical execution order: [applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md). Architecture: [KNOWLEDGE_ACCESS_ARCHITECTURE.md](../applications/local_workspace_application/docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
 | Block | Scope | Status |
 |-------|-------|--------|
@@ -226,7 +226,7 @@ Canonical execution order: [pplications/local_workspace_application/docs/IMPLEM
 | **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof | **PLANNED** |
 ### Vendor Knowledge platform backlog
 
-Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md). Architecture: [rchitecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md](architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
+Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md). Architecture: [architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md](architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
 
 | Task | Scope | Status |
 |------|-------|--------|

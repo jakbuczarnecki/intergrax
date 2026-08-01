@@ -327,15 +327,18 @@ implemented.
 Chat messages are a flat collection. No synthetic chat-replies endpoint is
 implemented.
 
-Teams Chat Vendor Knowledge adapter, live capability layer and live search are
-not yet implemented.
+The Microsoft Graph Teams Chat Vendor Knowledge adapter and its review correction
+are implemented.
+
+The Teams Chat live capability layer, provider-neutral live search and LKW
+connected-source bridge are not implemented.
 
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
 supported SharePoint and OneDrive references through the existing Drive
 surface.
 
-No beta Graph endpoint, Teams Chat Vendor Knowledge adapter, webhook,
+No beta Graph endpoint, webhook,
 subscription, rich-card semantic renderer or direct external attachment
 download is implemented.
 
@@ -387,9 +390,11 @@ Bounded sync-handler retry/backoff implemented
 Jira issues knowledge adapter implemented
 Confluence pages knowledge adapter implemented
 First real vendor facade/coordinator proof implemented
-Jira Issues, Confluence Pages, Microsoft Graph Drive, Microsoft Graph Mail and Microsoft Graph Teams Channel Vendor Knowledge adapters implemented.
+Jira Issues, Confluence Pages, Microsoft Graph Drive, Microsoft Graph Mail, Microsoft Graph Teams Channel and Microsoft Graph Teams Chat Vendor Knowledge adapters implemented.
 
-Microsoft Graph Teams Chat and Calendar Vendor Knowledge adapters remain planned in the current adapter-family roadmap.
+Microsoft Graph Teams Chat Vendor Knowledge adapter is implemented.
+Microsoft Graph Calendar Vendor Knowledge adapter remains planned after the
+complete Slack Knowledge user vertical.
 LKW connected-source bridge not implemented
 ```
 
@@ -492,12 +497,22 @@ provider-neutral live search/discovery capability: not implemented
 LKW bridge: not implemented
 ```
 
-### Microsoft Graph Teams Chat and Calendar
+### Microsoft Graph Teams Chat
 
 ```text
-low-level read foundations: implemented
-Vendor Knowledge adapters: planned/current roadmap
-live capability layer: not implemented
+durable reconciliation adapter: implemented
+exact message read foundation: implemented
+provider-neutral live search/discovery capability: not implemented
+LKW bridge: not implemented
+```
+
+### Microsoft Graph Calendar
+
+```text
+low-level read foundation: implemented
+Vendor Knowledge adapter: planned after complete Slack Knowledge user vertical
+provider-neutral live capability: not implemented
+LKW bridge: not implemented
 ```
 
 ---

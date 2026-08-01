@@ -183,4 +183,4 @@ Enabling the Slack chatbot does not authorize indexing or querying Slack history
 
 Current required scopes above (`connections:write`, `chat:write`, `im:history`, `files:read`) apply to the **implemented** DM conversational runtime only.
 
-Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.
+Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.
