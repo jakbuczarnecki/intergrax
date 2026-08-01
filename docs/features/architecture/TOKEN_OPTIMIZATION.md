@@ -1067,14 +1067,14 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 TOKEN-10E owns **only** the durable compaction contribution implemented through Token Optimization **typed artifact executors** under Nexus UCL coordination:
 
-`	ext
+```text
 policy evaluation for compaction targets
 MessageSequenceArtifact candidate construction
 candidate schema/structural/protected/quality validation contracts
 receipt and rollback-metadata compilation
 cache-lineage transition calculation
 safe result reporting
-`
+```
 
 TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization.
 
@@ -1088,14 +1088,14 @@ Conversation history compaction **requires** MessageSequenceArtifactExecutor (CT
 
 Executor model:
 
-`	ext
+```text
 Token Optimization executor framework
     ├── TextArtifactExecutor → existing string-based pipeline (compatible)
     ├── MessageSequenceArtifactExecutor → CTX-UCL-4 / TOKEN-10E history compaction
     ├── FragmentSetArtifactExecutor
     ├── ToolCatalogArtifactExecutor
     └── StructuredDataArtifactExecutor
-`
+```
 
 #### 4. TOKEN-10D timing-gate composition
 
@@ -1103,7 +1103,7 @@ TOKEN-10D semantics are **unchanged**: router selects approved configuration; ti
 
 Within UCL durable compaction:
 
-`	ext
+```text
 Nexus resolves ContextOptimizationPolicy
         ↓
 TOKEN-10D timing gate (when applicable)
@@ -1111,13 +1111,13 @@ TOKEN-10D timing gate (when applicable)
 MessageSequenceArtifactExecutor (on RUN)
         ↓
 validated TOKEN-10E candidate
-`
+```
 
 #### 5. Candidate and receipt responsibility
 
 Candidate-first transaction model (Token Optimization boundary):
 
-`	ext
+```text
 CompactionRequest
   → policy validation
   → immutable snapshot validation
@@ -1125,7 +1125,7 @@ CompactionRequest
   → candidate schema / structural / protected / quality validation
   → receipt and rollback-metadata construction
   → acceptance decision (candidate level)
-`
+```
 
 Invariants:
 
@@ -1134,14 +1134,13 @@ Invariants:
 3. Required rollback metadata missing → **fail closed**.
 4. Protected-region failure → reject candidate, preserve original context.
 
-Receipt and safe-report rules from TOKEN-10A–10D remain in force (
-aw_content_included = false; separate content-reduction vs cache-lineage attribution).
+Receipt and safe-report rules from TOKEN-10A–10D remain in force (safe reports and receipts exclude raw content: `raw_content_included = false`; separate content-reduction vs cache-lineage attribution).
 
 #### 6. Memory/Session activation boundary
 
 Durable activation is **Memory/Session** owned via compare-and-swap on ActiveContextRevisionPointer:
 
-`	ext
+```text
 Nexus UCL coordinator
   → CE ContextPlan
   → TOKEN-10D timing gate
@@ -1149,7 +1148,7 @@ Nexus UCL coordinator
   → validated TOKEN-10E candidate
   → SessionContextRevisionActivationRequest
   → Memory/Session CAS activation or conflict
-`
+```
 
 **Application host** chooses and wires the persistence adapter, authorizes the action, configures retention, and presents review/rollback UX. Application does **not** own revision persistence, CAS activation, or rollback execution.
 

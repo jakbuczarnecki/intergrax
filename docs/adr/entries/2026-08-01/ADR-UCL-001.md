@@ -1,11 +1,11 @@
-﻿# ADR-UCL-001 — Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
+# ADR-UCL-001 — Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
 
 | Field | Value |
 |-------|-------|
 | **Status** | Proposed / Ready for Review |
 | **Date** | 2026-08-01 |
 | **Deciders** | Platform architecture review |
-| **Related** | [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) · [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../../plan/UNIFIED_CONTEXT_LIFECYCLE.md) · [ADR-MEM-001](../2026-06-08/ADR-MEM-001.md) · [ADR-CTX-001](../2026-06-12/ADR-CTX-001.md) |
+| **Related** | [UNIFIED_CONTEXT_LIFECYCLE.md](../../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) · [plan/UNIFIED_CONTEXT_LIFECYCLE.md](../../../plan/UNIFIED_CONTEXT_LIFECYCLE.md) · [ADR-MEM-001](../2026-06-08/ADR-MEM-001.md) · [ADR-CTX-001](../2026-06-12/ADR-CTX-001.md) |
 
 ## Context
 

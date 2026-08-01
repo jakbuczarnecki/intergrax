@@ -42,7 +42,7 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 
 | Component / file | Owning domain today | Modifies durable history | Model-facing only | Operates on | Preserves message IDs | Preserves roles | Preserves tool linkage | Protected-region validation | Receipt | Rollback | Concurrency protection | Hot path | Classification | Target decision |
 |------------------|---------------------|--------------------------|-------------------|-------------|----------------------|-----------------|------------------------|----------------------------|---------|----------|------------------------|----------|----------------|-----------------|
-| `ConversationalMemory._trim_if_needed` (`intergrax/memory/conversational_memory.py`) | Memory | **Yes** (FIFO drop) | No | messages | **No** (dropped) | Yes (remaining) | Not validated | No | No | No | `threading.RLock` on aggregate | Active when `max_messages` set | retention-only | **retain** as retention; classify explicitly; not token optimization |
+| `ConversationalMemory._trim_if_needed` (`intergrax/memory/conversational_memory.py`) | Memory | **No** | No — mutates active in-memory session state | messages in RAM | **No** (dropped from active view) | Yes (remaining) | Not validated | No | No | No | `threading.RLock` on aggregate | Active when `max_messages` set | in-memory retention / bounded active history | **retain** with explicit semantics; not durable retention, not ConversationLedger mutation, not token optimization |
 | `InMemorySessionStorage` FIFO (`intergrax/runtime/nexus/session/in_memory_session_storage.py`) | Memory / Session | **Yes** | No | messages | **No** (dropped) | Yes | Not validated | No | No | No | per-session dict | Dev/test default path | retention-only | **retain** dev/test only; document as retention |
 | `SqliteConversationalMemoryStore` max_messages (`intergrax/memory/stores/sqlite_conversational_memory_store.py`) | Memory | **Yes** | No | messages | Partial | Yes | Not validated | No | No | No | store-dependent | Active on SQLite conv path | retention-only | **adapt** — retention policy, not compaction |
 | `SessionManager.append_message` docs (`session_manager.py`) | Memory | Delegates to storage | No | messages | Depends on store | Yes | Depends on store | No | No | No | storage-dependent | Active | canonical write path | **retain** — append-only contract target |
@@ -65,7 +65,7 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 ### 3.1 Duplicate authorities (highest risk)
 
 1. **Pre-`ContextPlan` history slicing** (`messages[-N:]`) vs **ContextCompiler global budget** vs **dormant HistoryLayer token compression**.
-2. **Storage FIFO retention** presented as bounded memory but indistinguishable from optimization in ops.
+2. **Storage-backed FIFO retention** (may cause durable loss) vs **ConversationalMemory in-RAM FIFO** (active in-memory state loss only) — both presented as bounded memory but indistinguishable from optimization in ops.
 3. **`semantic_compression_enabled`** in product defaults without runtime consumer.
 4. **String flattening** (`role: text` fragments) blocks structural validation required for durable compaction.
 

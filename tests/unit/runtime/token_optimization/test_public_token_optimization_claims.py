@@ -218,6 +218,13 @@ def test_token_optimization_section_810_links_canonical_ucl() -> None:
     assert "sole canonical source" in section.lower()
 
 
+def test_token_optimization_section_810_has_valid_safe_reporting_marker() -> None:
+    section = _token_optimization_section_810()
+    assert "raw_content_included = false" in section
+    assert not re.search(r"(?<!r)aw_content_included\s*=\s*false", section)
+    assert "`\\text" not in section
+
+
 def test_allowed_application_boundary_phrases_remain_valid_in_ucl() -> None:
     content = _read_public_doc(_UCL_ARCH).lower()
     assert any(phrase in content for phrase in _ALLOWED_APPLICATION_BOUNDARY_PHRASES)
