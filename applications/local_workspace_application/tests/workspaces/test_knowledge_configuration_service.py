@@ -186,6 +186,23 @@ def _seed_workspace(repo: ManagedWorkspaceRepository) -> Workspace:
     return workspace
 
 
+class _WorkspaceLookupScript:
+    def __init__(self, results: list[Workspace | None]) -> None:
+        self._results = list(results)
+        self.calls = 0
+
+    def require_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> Workspace | None:
+        self.calls += 1
+        if not self._results:
+            return None
+        return self._results.pop(0)
+
+
 class _HeadReadScriptRepository:
     def __init__(
         self,
@@ -517,6 +534,64 @@ def test_empty_projection_updated_at_uses_workspace_updated_at() -> None:
 
 
 # --- Head stability ---
+
+
+def test_stable_first_attempt_performs_single_workspace_lookup() -> None:
+    repo, _, _ = _service_bundle()
+    workspace = _seed_workspace(repo)
+    lookup = _WorkspaceLookupScript([workspace])
+    knowledge = WorkspaceKnowledgeConfigurationService(repo, lookup)
+
+    config = knowledge.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert config is not None
+    assert lookup.calls == 1
+
+
+def test_workspace_deleted_before_retry_returns_none() -> None:
+    repo, _, _ = _service_bundle()
+    workspace = _seed_workspace(repo)
+    lookup = _WorkspaceLookupScript([workspace, None])
+    scripted_repo = _HeadReadScriptRepository(
+        repo,
+        [
+            _head(committed_revision=1),
+            _head(committed_revision=2),
+        ],
+    )
+    knowledge = WorkspaceKnowledgeConfigurationService(scripted_repo, lookup)
+
+    assert knowledge.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE) is None
+    assert lookup.calls == 2
+    assert scripted_repo._index == 2
+
+
+def test_retry_uses_fresh_workspace_updated_at_for_empty_projection() -> None:
+    repo, _, _ = _service_bundle()
+    first_workspace = _workspace(updated_at=_T1)
+    second_workspace = _workspace(updated_at=_T2)
+    repo.put_workspace(first_workspace)
+    lookup = _WorkspaceLookupScript([first_workspace, second_workspace])
+    scripted_repo = _HeadReadScriptRepository(
+        repo,
+        [
+            _head(committed_revision=1),
+            _head(committed_revision=2),
+            _head(committed_revision=2),
+            _head(committed_revision=2),
+        ],
+    )
+    knowledge = WorkspaceKnowledgeConfigurationService(scripted_repo, lookup)
+
+    config = knowledge.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert config is not None
+    assert lookup.calls == 2
+    assert config.configuration_revision == 2
+    assert config.connection_attachments == ()
+    assert config.indexed_sources == ()
+    assert config.live_access_bindings == ()
+    assert config.query_policy is None
+    assert config.updated_at == _T2
+    assert config.updated_at != _T1
 
 
 def test_pending_only_head_change_does_not_trigger_instability() -> None:

@@ -140,20 +140,20 @@ class WorkspaceKnowledgeConfigurationService:
         tenant_id: str,
         workspace_id: str,
     ) -> WorkspaceKnowledgeConfigurationV1 | None:
-        workspace = self._workspace_lookup.require_workspace(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-        )
-        if workspace is None:
-            return None
-
         for attempt in range(2):
+            workspace = self._workspace_lookup.require_workspace(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            if workspace is None:
+                return None
+
             projection, committed_before, committed_after = self._project_once(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 workspace=workspace,
             )
-            if committed_after == committed_before:
+            if committed_before == committed_after:
                 return projection
             if attempt == 1:
                 raise WorkspaceKnowledgeConfigurationServiceError(
