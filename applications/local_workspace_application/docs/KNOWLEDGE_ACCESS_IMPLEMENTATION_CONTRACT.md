@@ -1,8 +1,8 @@
 # Workspace Knowledge Access - Implementation Contract
 
 **Status:** `READY_FOR_REVIEW`
-**Task:** `LKW-KNOWLEDGE-ACCESS-1A-C2 - UTF-8 REPAIR, REVISIONED PUBLICATION PROTOCOL AND IDEMPOTENCY CONTRACT CLOSEOUT`
-**Prior task:** `LKW-KNOWLEDGE-ACCESS-1A-C1` (commit `8d9c1be78af7ab62750d6d52df4329f9acf59986`)
+**Task:** `LKW-KNOWLEDGE-ACCESS-1A-C3 - MUTATION RESERVATION, NO-OP IDEMPOTENCY AND RECOVERY OWNERSHIP CLOSEOUT`
+**Prior task:** `LKW-KNOWLEDGE-ACCESS-1A-C2` (commit `3aa14268cbb268c80f45b4226e74e6675568ec6a`)
 **Classification:** docs-only architecture-to-implementation contract
 
 **C1 correction (preserved):**
@@ -22,6 +22,15 @@
 - exact pre-commit rollback and post-commit recovery;
 - binding status, not Source error status, controls detach;
 - every mutation requires aggregate If-Match.
+
+**C3 correction:**
+
+- `RESERVED` mutations have no `target_revision` before writer-slot acquisition;
+- semantic no-op success is durably stored as `EXISTING_RESULT`;
+- publication recovery is proven from immutable revision rows, not one mutable last-committed pointer;
+- staged Sources carry exact mutation ownership (`creation_mutation_id`, `visibility_revision`);
+- rollback deletion always uses `delete_if_match`;
+- `Idempotency-Key` HTTP header is mandatory for every configuration mutation (not request body).
 
 **Architecture:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Implementation plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
@@ -421,11 +430,13 @@ class WorkspaceIndexedSourceBinding(BaseModel):
 **Request identity** (idempotency replay via `WorkspaceKnowledgeMutationRecord`):
 
 ```text
-(tenant_id, workspace_id, operation, idempotency_key)
+(tenant_id, workspace_id, operation, sha256(normalized Idempotency-Key header))
 ```
 
-- Same key + same normalized request -> replay existing result (200).
+- Same key + same normalized request -> replay stored result (200); no semantic re-evaluation required.
 - Same key + different normalized request -> 409 `configuration_idempotency_conflict`.
+
+The raw `Idempotency-Key` value is **not** included in `normalized_request_hash`. Request hash covers operation intent and normalized request content only.
 
 **Semantic identity** (logical resource):
 
@@ -435,7 +446,7 @@ class WorkspaceIndexedSourceBinding(BaseModel):
 
 First milestone: one Indexed Source authorization per tenant binding per workspace (`sync_mode` excluded from semantic identity).
 
-**Duplicate behavior (frozen):** second request with a different `idempotency_key` but the same semantic identity and an ACTIVE committed record -> **return existing binding** (200) with stable `indexed_source_binding_id`. Do not create a revision.
+**Semantic no-op behavior (frozen):** second request with a different `Idempotency-Key` but the same semantic identity and an ACTIVE committed record that already satisfies the request -> **durable `EXISTING_RESULT` mutation** (200) with stable `indexed_source_binding_id`. No writer slot, no child row, no Source creation, no configuration revision increment. The no-op outcome is persisted in `WorkspaceKnowledgeMutationRecord` with `outcome=EXISTING_RESULT`, `target_revision=None`, `committed_revision=current head.committed_revision`.
 
 **Disabled reactivation:** when a DISABLED committed record exists and the user requests activation -> create a new version of the same logical entity with status ACTIVE and a new committed revision. Do not create a second logical entity ID.
 
@@ -598,7 +609,7 @@ class WorkspaceLiveAccessBinding(BaseModel):
 - `remote_resource_id` required when any selected descriptor has `resource_scope_required=True`.
 - Unknown capability -> 400 `capability_not_found`.
 - Unknown connection, unauthorized workspace, resource outside connection -> fail closed (404 workspace/connection, 400 validation).
-- Duplicate binding same semantic identity -> return existing binding (200).
+- Duplicate binding same semantic identity -> return existing binding via `EXISTING_RESULT` (200).
 - Does **not** imply durable ingestion rights.
 
 **Semantic identity:**
@@ -794,13 +805,18 @@ class WorkspaceKnowledgeConfigurationV1(BaseModel):
     updated_at: datetime
 ```
 
-**Concurrency:** every Workspace Knowledge Configuration mutation requires `If-Match: WKC/{committed_revision}`.
+**Concurrency:** every Workspace Knowledge Configuration mutation requires:
+
+- `If-Match: WKC/{committed_revision}`
+- `Idempotency-Key: <opaque-value>` (HTTP header only; see Section 12.5)
 
 | Condition | Behavior |
 |-----------|----------|
 | Missing `If-Match` | 428 `precondition_required`; stable error `knowledge_configuration_if_match_required` |
+| Missing `Idempotency-Key` | 428 `precondition_required`; stable error `knowledge_configuration_idempotency_key_required` |
+| Invalid `Idempotency-Key` | 400 `knowledge_configuration_idempotency_key_invalid` |
 | Mismatch | 409 `configuration_revision_conflict` |
-| Committed idempotency replay | May return existing result even when caller sends older `If-Match`, but only after idempotency key and normalized request hash are proven identical |
+| Committed idempotency replay | May return stored result even when caller sends older `If-Match`, but only after idempotency key hash and normalized request hash are proven identical |
 
 **Deterministic ordering:** sort attachments by `connection_ref`, indexed by `indexed_source_binding_id`, live by `live_access_binding_id`.
 **Empty state:** all child collections empty, `query_policy=None`, `configuration_revision=0` (head missing).
@@ -855,6 +871,11 @@ class WorkspaceKnowledgeMutationStatusV1(StrEnum):
     COMMITTED = "committed"
     ABORTED = "aborted"
     RECOVERY_REQUIRED = "recovery_required"
+
+
+class WorkspaceKnowledgeMutationOutcomeV1(StrEnum):
+    APPLIED = "applied"
+    EXISTING_RESULT = "existing_result"
 ```
 
 ### 12.2 Exact model (to be implemented in 1B)
@@ -872,10 +893,17 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
 
     idempotency_key_hash: str = Field(..., min_length=64, max_length=64)
     normalized_request_hash: str = Field(..., min_length=64, max_length=64)
-    semantic_identity_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    semantic_identity_hash: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+    )
 
-    target_revision: int = Field(..., ge=1)
+    target_revision: int | None = Field(default=None, ge=1)
+    committed_revision: int | None = Field(default=None, ge=0)
+
     status: WorkspaceKnowledgeMutationStatusV1
+    outcome: WorkspaceKnowledgeMutationOutcomeV1 | None = None
 
     result_entity_type: str | None = Field(default=None, max_length=64)
     result_entity_id: str | None = Field(default=None, max_length=128)
@@ -887,14 +915,61 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
     committed_at: datetime | None = None
 ```
 
+### 12.2.1 Status invariants
+
+**`RESERVED`:**
+
+```text
+target_revision is None
+committed_revision is None
+outcome is None
+```
+
+**`PREPARED`:**
+
+```text
+target_revision is not None
+committed_revision is None
+outcome is None
+```
+
+**`COMMITTED` with `APPLIED`:**
+
+```text
+target_revision is not None
+committed_revision == target_revision
+outcome == APPLIED
+result reference is present when the operation creates or changes an entity
+```
+
+**`COMMITTED` with `EXISTING_RESULT`:**
+
+```text
+target_revision is None
+committed_revision is the current already-committed workspace revision
+outcome == EXISTING_RESULT
+result reference points to the existing entity
+```
+
+**`ABORTED`:**
+
+```text
+committed_revision is None
+outcome is None
+```
+
+**`RECOVERY_REQUIRED`:**
+
+The record preserves all known revision and result information. Do not insert placeholder revisions. Do not assign `target_revision=1` before the writer slot is acquired.
+
 ### 12.3 Persistence
 
 ```text
 partition: lkw.managed_workspace:{tenant_id}:knowledge_configuration_mutation
-row key: {workspace_id}:{operation}:{sha256(idempotency_key)}
+row key: {workspace_id}:{operation}:{sha256(normalized_idempotency_key)}
 ```
 
-Do not put the raw idempotency key in the row key. The mutation row is the durable idempotency record. Do not introduce a second idempotency storage design.
+Do not put the raw idempotency key in the row key. Persist only `sha256(normalized Idempotency-Key)`. The raw key must not appear in row keys, models, logs, traces, error messages or API responses. The mutation row is the durable idempotency record. Do not introduce a second idempotency storage design.
 
 ### 12.4 Idempotency behavior
 
@@ -909,19 +984,71 @@ canonical JSON keys
 exclude timestamps
 exclude server-derived display fields
 exclude generated IDs
+exclude Idempotency-Key header value
 ```
 
-**No existing mutation record:** create `RESERVED` using `put_if_absent`. If the conditional insert loses a race, reload the winning record.
+**No existing mutation record:** create `RESERVED` with `target_revision=None`, `committed_revision=None`, `outcome=None` using `put_if_absent`. If the conditional insert loses a race, reload the winning record.
 
-**Existing record with different request hash:** return `409 configuration_idempotency_conflict`. This applies regardless of status.
+**Existing record with different request hash:** return `409 configuration_idempotency_conflict`. This applies regardless of status and **before** evaluating `If-Match`.
 
-**Existing COMMITTED record with the same request hash:** return the previously committed result. Do not increment revision again.
+**Existing COMMITTED record with the same request hash:** return the previously committed result. Do not increment revision again. Stale `If-Match` is permitted after exact request match.
 
 **Existing RESERVED or PREPARED record with the same request hash:** run deterministic recovery - inspect the head; inspect staged records; complete publication when staged state is complete and valid; otherwise abort and clean the staged mutation. Do not create a second mutation for the same idempotency key while the previous one is pending.
 
-**Existing ABORTED record with the same request hash:** a retry may replace the aborted record through conditional compare-and-swap with new `mutation_id`, new target revision, `status = RESERVED`. The same row key remains.
+**Existing ABORTED record with the same request hash:** a retry may replace the aborted record through conditional compare-and-swap with new `mutation_id`, `status = RESERVED`, `target_revision=None`. The same row key remains.
 
 **Existing RECOVERY_REQUIRED record:** return `503 configuration_recovery_required` until recovery completes.
+
+### 12.5 Canonical Idempotency-Key header (to be implemented in 1B)
+
+Every Workspace Knowledge Configuration mutation requires:
+
+```http
+Idempotency-Key: <opaque-value>
+```
+
+The HTTP header is the **only** canonical idempotency input. Remove `idempotency_key` from mutation request bodies. Request bodies with `idempotency_key` are rejected by `extra="forbid"`.
+
+**Header validation:**
+
+```text
+minimum length: 1
+maximum length: 256
+trim surrounding whitespace
+empty after trim -> reject
+control characters -> reject
+raw value must not be logged or persisted
+```
+
+Recommended safe pattern: printable opaque string without control characters. Do not require UUID format.
+
+| Condition | Behavior |
+|-----------|----------|
+| Missing header | 428 `knowledge_configuration_idempotency_key_required` |
+| Invalid header | 400 `knowledge_configuration_idempotency_key_invalid` |
+
+The domain service must not depend directly on HTTP headers. A future transport adapter may normalize and hash the header before invoking the service.
+
+### 12.6 Semantic no-op flow (to be implemented in 1B)
+
+After validation and idempotency reservation, but **before** acquiring the writer slot:
+
+```text
+1. Calculate semantic identity.
+2. Read the current committed projection.
+3. Find the existing logical entity.
+4. Confirm that its committed state already satisfies the request.
+5. Conditionally replace RESERVED mutation with COMMITTED.
+6. Store outcome=EXISTING_RESULT.
+7. Store committed_revision=current head.committed_revision.
+8. Store result_entity_type and result_entity_id.
+9. Keep target_revision=None.
+10. Return the existing result.
+```
+
+No writer slot is acquired. No child row is written. No Source is created. No configuration revision is incremented.
+
+**Race handling:** between semantic lookup and committing the no-op mutation record, the workspace head may change. Capture committed revision `N`; verify semantic state against projection `N`; before recording `EXISTING_RESULT`, re-read the head; if committed revision changed, retry semantic evaluation once; after repeated change, return `configuration_projection_unstable`. Do not persist `EXISTING_RESULT` against an unverified stale projection.
 
 ---
 
@@ -981,70 +1108,74 @@ Indexed Source detach must create a new version of `WorkspaceIndexedSourceBindin
 
 Live Access Binding disable, Connection detach and Query Policy replacement follow the same revisioned pattern.
 
+### 13.4 Mutation ownership and immutable row validation
+
+Every revisioned child row must contain `mutation_id` and `effective_revision`. Recovery must never infer ownership solely from entity ID, row-key prefix or revision number.
+
+Required exact ownership check:
+
+```text
+record.mutation_id == mutation.mutation_id
+record.effective_revision == mutation.target_revision
+record.tenant_id == mutation.tenant_id
+record.workspace_id == mutation.workspace_id
+```
+
+A mismatch is corruption or ownership conflict. Do not clean it automatically. Return `configuration_recovery_required`.
+
 ---
 
 ## 14. Exact prepare and publish protocol
 
-Freeze the following algorithm for every successful mutation. This is the only allowed transaction design for `1B`.
+Freeze the following algorithm for every successful mutation that requires an actual state change. This is the only allowed transaction design for `1B`. Semantic no-op mutations (Section 12.6) exit before Step 5.
 
-### Phase 1 - validation and normalization
+### Step 1 — validate required headers
 
-Before any persistent mutation:
+Validate `If-Match` and `Idempotency-Key`. Do not mutate durable state yet.
 
-```text
-require workspace
-authorize tenant/workspace
-validate referenced tenant binding / connection / capability
-normalize request
-calculate request hash
-calculate semantic identity
-resolve deterministic entity IDs
-validate If-Match
-```
+### Step 2 — normalize request
 
-No durable child record is changed in this phase.
+Calculate `normalized_request_hash`, `semantic_identity_hash`, deterministic entity IDs.
 
-### Phase 2 - reserve idempotency
+### Step 3 — reserve mutation record
 
-Create or resolve `WorkspaceKnowledgeMutationRecord`. The target revision is not finalized until the writer slot is acquired.
+Create `RESERVED` with `target_revision=None`, `committed_revision=None`, `outcome=None` using `put_if_absent`. Resolve replay or conflict when the row already exists.
 
-### Phase 3 - ensure head
+### Step 4 — semantic no-op detection
 
-Ensure the idle revision-0 head exists using `put_if_absent`.
+Check current committed projection. When state already satisfies the request: commit mutation as `EXISTING_RESULT`, return existing result. No writer slot.
 
-### Phase 4 - acquire the single writer slot
+### Step 5 — validate If-Match against current committed head
 
-Given idle head with committed revision `N`, CAS:
+When mutation requires an actual state change: provided `If-Match` must equal current committed revision. Mismatch -> `409 configuration_revision_conflict`.
+
+### Step 6 — acquire writer slot
+
+CAS idle head:
 
 ```text
-before:
-committed_revision = N
-pending_revision = None
-pending_mutation_id = None
-
-after:
-committed_revision = N
-pending_revision = N + 1
-pending_mutation_id = mutation_id
+N / no pending
+->
+N / pending N+1 / mutation ID
 ```
 
 Use `replace_if_match`. If CAS fails -> `409 configuration_revision_conflict` unless the competing pending mutation requires recovery, in which case -> `503 configuration_recovery_required`.
 
-Set mutation `target_revision = N + 1`.
+### Step 7 — assign target revision
 
-### Phase 5 - write hidden staged records
+Conditionally replace mutation: `RESERVED` -> `RESERVED` with `target_revision=N+1`. The assignment must be persisted **before** staged rows are written. Do not assign placeholder `target_revision=1` before writer-slot acquisition.
 
-Write all required immutable child versions with `effective_revision = N + 1`, `mutation_id = current mutation`.
+### Step 8 — write and validate staged records
 
-For Indexed Source creation, also create the pending connected Source according to Section 15. These records remain invisible because `effective_revision > head.committed_revision`.
-
-### Phase 6 - validate staged state
+Write all required immutable child versions with `effective_revision = N + 1`, `mutation_id = current mutation`. For Indexed Source creation, also create the pending connected Source according to Section 15 using `put_if_absent`. These records remain invisible because `effective_revision > head.committed_revision`.
 
 Read back all staged records. Validate correct tenant, workspace, `mutation_id`, target revision, expected semantic identity, expected result ID, expected Source relationship, no forbidden provider/credential fields.
 
-Only after successful validation set mutation status `PREPARED` through conditional replacement.
+### Step 9 — mark PREPARED
 
-### Phase 7 - atomic publication point
+Use `replace_if_match` to set mutation status `PREPARED`.
+
+### Step 10 — publish head
 
 CAS the head:
 
@@ -1063,18 +1194,21 @@ last_committed_mutation_id = mutation_id
 
 This single head replacement is the publication point. After this succeeds, the configuration mutation is committed. Do not roll the committed revision backwards.
 
-### Phase 8 - finalize idempotency result
+`last_committed_mutation_id` may remain as diagnostic hint, fast-path optimization and recent mutation trace. It must **not** be the only proof that a mutation was published.
 
-Replace the mutation record `PREPARED -> COMMITTED`. Store `result_entity_type`, `result_entity_id`, `committed_at`.
+### Step 11 — finalize mutation
+
+Replace the mutation record `PREPARED -> COMMITTED`, `outcome=APPLIED`, `committed_revision=R`. Store `result_entity_type`, `result_entity_id`, `committed_at`.
 
 When mutation-record finalization fails after the head has committed:
 
 ```text
 - do not roll back the head;
-- retry/recovery observes last_committed_mutation_id;
-- repair the mutation record to COMMITTED;
+- repair the mutation record to COMMITTED using publication proof (Section 16.5);
 - replay returns the committed result.
 ```
+
+Do not depend only on `last_committed_mutation_id` for post-publication repair.
 
 ### Multi-record Source creation ordering
 
@@ -1082,7 +1216,7 @@ For Indexed Source creation use this exact staged set:
 
 ```text
 1. WorkspaceIndexedSourceBinding revision row
-2. WorkspaceSource row with visibility revision
+2. WorkspaceSource row with visibility revision and creation_mutation_id
 3. mutation record
 4. revision head
 ```
@@ -1102,13 +1236,43 @@ WorkspaceIndexedSourceBinding.status is workspace authorization.
 
 Logical detach must not misuse `WorkspaceSourceStatus.ERROR`. `1B` does not add `WorkspaceSourceStatus.DISABLED`.
 
-### 15.2 Required WorkspaceSource field (to be implemented in 1B)
+### 15.2 Required WorkspaceSource fields (to be implemented in 1B)
 
 ```python
-knowledge_configuration_visibility_revision: int | None = Field(default=None, ge=1)
+knowledge_configuration_creation_mutation_id: str | None = Field(
+    default=None,
+    min_length=1,
+    max_length=128,
+)
+
+knowledge_configuration_visibility_revision: int | None = Field(
+    default=None,
+    ge=1,
+)
 ```
 
-Meaning:
+**Field invariants:**
+
+For legacy and non-connected Sources:
+
+```text
+creation_mutation_id is None
+visibility_revision is None
+```
+
+For a connected Source created by Workspace Knowledge Configuration:
+
+```text
+creation_mutation_id is not None
+visibility_revision is not None
+source_type == CONNECTED_SOURCE
+path == ""
+recursive is False
+```
+
+Do not allow only one of the two knowledge-configuration fields to be present.
+
+**Visibility meaning:**
 
 ```text
 None -> legacy/non-connected Source, always visible under existing rules
@@ -1116,20 +1280,46 @@ integer N -> connected Source is product-visible only when
   WorkspaceKnowledgeConfigurationHead.committed_revision >= N
 ```
 
+### 15.3 Source creation (to be implemented in 1B)
+
+Create the deterministic connected Source with `put_if_absent`. Exact identity:
+
+```text
+source_id =
+"src:connected:" +
+sha256(tenant_id, workspace_id, knowledge_source_binding_ref)[:32]
+```
+
+When `put_if_absent` returns false:
+
+1. Load the existing Source.
+2. Validate tenant, workspace, source type and deterministic identity.
+3. Determine whether it is:
+   - the same staged Source owned by the current mutation;
+   - an already committed Source from an earlier mutation;
+   - a conflicting or corrupt Source.
+
+**Same staged Source:** continue idempotent recovery.
+
+**Already committed Source:** do not overwrite it. Do not change its creation mutation ID. Reuse it for reactivation or semantic replay when valid.
+
+**Conflicting Source:** fail closed with `connected_source_identity_conflict`. Do not replace the record.
+
 New connected Source creation:
 
 ```text
 source_type = CONNECTED_SOURCE
 path = ""
 recursive = False
+knowledge_configuration_creation_mutation_id = current mutation_id
 knowledge_configuration_visibility_revision = target revision
 ```
 
-### 15.3 Visibility rule
+### 15.4 Visibility rule
 
 Product services that list or expose Sources must hide a connected Source when `visibility revision > committed configuration revision`. Internal repository and recovery code may access hidden staged Sources. This prevents the Source from becoming visible before the configuration head is committed.
 
-### 15.4 Logical detach
+### 15.5 Logical detach
 
 On Indexed Source detach:
 
@@ -1149,38 +1339,79 @@ The binding is the authorization gate. Do not set Source status to `ERROR`. Do n
 
 ## 16. Failure and recovery protocol
 
-### 16.1 Failure before head publication
+### 16.1 Failure before writer-slot acquisition
 
-When any failure occurs before Phase 7:
+Mutation may be marked `ABORTED`. No head cleanup is needed.
 
-```text
-1. Delete every staged child revision belonging to mutation_id.
-2. Delete any staged connected WorkspaceSource belonging to mutation_id.
-3. Verify that staged records no longer exist.
-4. CAS head from pending mutation back to idle revision N.
-5. Mark mutation ABORTED.
-```
+### 16.2 Failure after writer-slot acquisition but before staged writes
 
-The pending writer slot must not be released before cleanup succeeds.
+CAS the exact pending head back to idle. Mark mutation `ABORTED`.
 
-### 16.2 Cleanup failure
+### 16.3 Failure after staged writes
 
-When any staged record cannot be removed:
+Delete exact owned staged records with `ConditionalDocumentStore.delete_if_match()` using the exact previously read staged record. Do **not** use unconditional `DocumentStore.delete()` for mutation rollback.
+
+**Child cleanup condition:** delete a child row only when the current stored record still exactly matches expected row key, expected data, `mutation_id == current mutation`, `effective_revision == target revision`.
+
+**Source cleanup condition:** delete a connected Source only when the stored record exactly matches the staged expected record and `knowledge_configuration_creation_mutation_id == current mutation_id` and `knowledge_configuration_visibility_revision == target_revision`. Never delete a Source merely because it has the deterministic `source_id`.
+
+After successful conditional deletes: read each staged row again and confirm absence. Only then may recovery CAS head from pending to idle and mark mutation `ABORTED`.
+
+Do not delete the mutation/idempotency record during normal cleanup. It must remain as `ABORTED` so future retries and request conflicts remain deterministic.
+
+### 16.4 Cleanup compare failure
+
+When `delete_if_match` returns false:
 
 ```text
 - do not clear pending_revision;
-- do not allow another mutation;
-- mark mutation RECOVERY_REQUIRED when possible;
+- do not mark mutation ABORTED;
+- mark RECOVERY_REQUIRED when possible;
+- block subsequent workspace configuration mutations;
 - return configuration_recovery_required.
 ```
 
 This prevents an abandoned staged record from becoming visible under a future revision.
 
-### 16.3 Failure after head publication
+### 16.5 Failure after publication
 
-Once Phase 7 succeeds, the mutation is committed. Do not delete committed child rows. Do not decrement the revision. Repair only the mutation/idempotency record.
+Once Step 10 succeeds, the mutation is committed. Do not delete committed child rows. Do not remove Source. Do not decrement the revision. Repair only the mutation/idempotency record through publication proof.
 
-### 16.4 Required recovery operation (to be implemented in 1B)
+A `PREPARED` mutation with target revision `R` is considered already published when all are true:
+
+```text
+head.committed_revision >= R
+the expected immutable child rows exist
+each expected row has:
+  - mutation_id equal to the mutation record;
+  - effective_revision equal to R;
+  - correct tenant_id;
+  - correct workspace_id;
+  - correct deterministic entity identity;
+the staged connected Source, when required, exists with:
+  - creation_mutation_id equal to the mutation;
+  - visibility_revision equal to R
+```
+
+When all conditions hold: `PREPARED -> COMMITTED`, `outcome = APPLIED`, `committed_revision = R`, `committed_at` set. This recovery remains valid even when later revisions have already been committed.
+
+`last_committed_mutation_id` may remain as diagnostic hint, fast-path optimization and recent mutation trace. It must **not** be the only proof that a mutation was published.
+
+### 16.6 Required recovery cases
+
+**Head still pending for the same mutation** (`pending_mutation_id == mutation_id`, `pending_revision == target_revision`):
+
+Recovery either completes publication when all staged records are valid and mutation is `PREPARED`, or cleans incomplete staged state and aborts.
+
+**Head committed revision is at or above target revision:**
+
+Validate immutable rows for that exact mutation and revision. When valid: repair mutation to `COMMITTED`. When missing or inconsistent: `RECOVERY_REQUIRED`. Do not delete rows from an already published revision merely because the mutation record is incomplete.
+
+**Head below target revision and not pending for mutation:**
+
+The mutation was not published. Clean only exact staged rows owned by that mutation using `delete_if_match`.
+
+### 16.7 Required recovery operation (to be implemented in 1B)
 
 Freeze a service-level recovery method:
 
@@ -1198,12 +1429,14 @@ It must:
 ```text
 inspect head pending mutation
 load mutation record
-load staged rows
-either complete valid PREPARED publication
-or clean incomplete staged state
-release the head only after successful cleanup
+load staged rows with exact mutation ownership validation
+either complete valid PREPARED publication via immutable row proof
+or clean incomplete staged state with delete_if_match
+release the head only after successful cleanup verification
 repair COMMITTED mutation record when head already committed it
 ```
+
+Do not depend only on `last_committed_mutation_id` for publication proof.
 
 This is an internal service operation in `1B`. No HTTP recovery endpoint is required in `1B`.
 
@@ -1238,7 +1471,7 @@ Recommended behavior: retry once on head change. After repeated change: `503 con
 | Record | Partition | Row key | Notes |
 |--------|-----------|---------|-------|
 | `WorkspaceKnowledgeConfigurationHead` | `lkw.managed_workspace:{tenant_id}:knowledge_configuration_head` | `{workspace_id}` | one per workspace |
-| `WorkspaceKnowledgeMutationRecord` | `lkw.managed_workspace:{tenant_id}:knowledge_configuration_mutation` | `{workspace_id}:{operation}:{sha256(idempotency_key)}` | durable idempotency |
+| `WorkspaceKnowledgeMutationRecord` | `lkw.managed_workspace:{tenant_id}:knowledge_configuration_mutation` | `{workspace_id}:{operation}:{sha256(normalized_idempotency_key)}` | durable idempotency |
 | `WorkspaceConnectionAttachment` | `lkw.managed_workspace:{tenant_id}:connection_attachment` | `{workspace_id}:{attachment_id}:rev:{revision_padded}` | immutable revisions |
 | `WorkspaceIndexedSourceBinding` | `lkw.managed_workspace:{tenant_id}:indexed_source_binding` | `{workspace_id}:{indexed_source_binding_id}:rev:{revision_padded}` | immutable revisions |
 | `WorkspaceLiveAccessBinding` | `lkw.managed_workspace:{tenant_id}:live_access_binding` | `{workspace_id}:{live_access_binding_id}:rev:{revision_padded}` | immutable revisions |
@@ -1290,14 +1523,18 @@ LKW services **must not** import provider packages (`jira`, `confluence`, `ms365
 
 ```text
 request
--> validation and normalization (Phase 1)
--> reserve idempotency (Phase 2)
--> ensure head (Phase 3)
--> acquire writer slot (Phase 4)
--> write staged binding + connected Source (Phase 5)
--> validate staged state (Phase 6)
--> publish head (Phase 7)
--> finalize mutation record (Phase 8)
+-> validate headers (If-Match, Idempotency-Key) (Step 1)
+-> validation and normalization (Step 2)
+-> reserve mutation RESERVED with target_revision=None (Step 3)
+-> semantic no-op detection (Step 4)
+-> validate If-Match (Step 5)
+-> ensure head (put_if_absent when absent)
+-> acquire writer slot (Step 6)
+-> assign target_revision=N+1 (Step 7)
+-> write staged binding + connected Source via put_if_absent (Step 8)
+-> mark PREPARED (Step 9)
+-> publish head (Step 10)
+-> finalize mutation COMMITTED outcome=APPLIED (Step 11)
 ```
 
 `DocumentStore` has no cross-record transaction. Atomicity is provided by the revision-head CAS publication point plus staged-record cleanup on failure. Do not claim multi-record mutation atomicity beyond the frozen protocol.
@@ -1308,7 +1545,7 @@ request
 
 Base prefix: `/v1/local_workspace`. All endpoints require resolved `tenant_id`. Workspace-scoped endpoints return **404** when workspace unknown (including cross-tenant).
 
-Every mutating endpoint requires `If-Match: WKC/{committed_revision}`. Initial empty configuration uses `If-Match: WKC/0`.
+Every mutating endpoint requires `If-Match: WKC/{committed_revision}` and `Idempotency-Key: <opaque-value>`. Initial empty configuration uses `If-Match: WKC/0`.
 
 ### 20.1 List safe Connections
 
@@ -1344,14 +1581,16 @@ Every mutating endpoint requires `If-Match: WKC/{committed_revision}`. Initial e
 | | |
 |--|--|
 | Method / path | `PUT /workspaces/{workspace_id}/connections/{connection_ref}` |
-| Request | `AttachConnectionRequestV1 { idempotency_key, safe_display_label? }` |
+| Request | `AttachConnectionRequestV1 { safe_display_label? }` |
+| Headers | **Required** `If-Match: WKC/{committed_revision}`; **Required** `Idempotency-Key` |
 | Response | `WorkspaceConnectionAttachment` + `configuration_revision` |
-| If-Match | **Required** `WKC/{committed_revision}`; missing -> 428; mismatch -> 409 |
+| If-Match | Missing -> 428 `knowledge_configuration_if_match_required`; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428 `knowledge_configuration_idempotency_key_required`; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
-| Idempotency conflict | Same key + different request -> 409 `configuration_idempotency_conflict` |
-| Semantic duplicate | Same `(tenant_id, workspace_id, connection_ref)` ACTIVE -> 200 existing; no new revision |
+| Idempotency conflict | Same key + different request -> 409 `configuration_idempotency_conflict` (before If-Match) |
+| Semantic duplicate | Same `(tenant_id, workspace_id, connection_ref)` ACTIVE -> 200 existing via `EXISTING_RESULT`; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
-| Errors | 404 workspace/connection; 409 conflict; 428 missing If-Match |
+| Errors | 404 workspace/connection; 409 conflict; 428 missing headers |
 
 ### 20.5 Detach Connection from workspace
 
@@ -1359,7 +1598,9 @@ Every mutating endpoint requires `If-Match: WKC/{committed_revision}`. Initial e
 |--|--|
 | Method / path | `PATCH /workspaces/{workspace_id}/connections/{connection_ref}` with `{ "status": "detached" }` or `DELETE .../connections/{connection_ref}` |
 | Response | 204 (logical detach) |
-| If-Match | **Required** `WKC/{committed_revision}`; missing -> 428; mismatch -> 409 |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
+| If-Match | Missing -> 428; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
 | Semantic duplicate | N/A for detach |
 | Resulting revision | `committed_revision + 1` on success |
@@ -1379,15 +1620,17 @@ Every mutating endpoint requires `If-Match: WKC/{committed_revision}`. Initial e
 | | |
 |--|--|
 | Method / path | `POST /workspaces/{workspace_id}/indexed-sources` |
-| Request | `CreateWorkspaceIndexedSourceRequestV1 { knowledge_source_binding_ref, sync_mode, idempotency_key }` |
+| Request | `CreateWorkspaceIndexedSourceRequestV1 { knowledge_source_binding_ref, sync_mode }` |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
 | Server-derived | `provider_id`, `integration_kind`, `source_kind`, `connection_ref`, scope, `safe_display_label` - from tenant binding; **not in request schema** |
 | Response | 201 `WorkspaceIndexedSourceBinding` |
 | If-Match | **Required** `WKC/{committed_revision}`; first mutation `WKC/0`; missing -> 428; mismatch -> 409 |
-| Idempotency replay | Same key + same request -> 200 existing result; no new revision |
-| Idempotency conflict | Same key + different request -> 409 `configuration_idempotency_conflict` |
-| Semantic duplicate | Same `knowledge_source_binding_ref` ACTIVE -> 200 existing binding; no new revision |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
+| Idempotency replay | Same key + same request -> 200 stored result; no new revision |
+| Idempotency conflict | Same key + different request -> 409 (before If-Match) |
+| Semantic duplicate | Same `knowledge_source_binding_ref` ACTIVE -> 200 existing binding via `EXISTING_RESULT`; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
-| Errors | 400 validation; 404 workspace/tenant-binding; 409 idempotency/revision conflict; 428 missing If-Match |
+| Errors | 400 validation; 404 workspace/tenant-binding; 409 idempotency/revision conflict; 428 missing headers |
 
 ```python
 class CreateWorkspaceIndexedSourceRequestV1(BaseModel):
@@ -1395,7 +1638,6 @@ class CreateWorkspaceIndexedSourceRequestV1(BaseModel):
 
     knowledge_source_binding_ref: str = Field(..., min_length=1, max_length=128)
     sync_mode: IndexedSourceSyncModeV1 = IndexedSourceSyncModeV1.INCREMENTAL
-    idempotency_key: str = Field(..., min_length=1, max_length=256)
 ```
 
 ### 20.8 Disable / detach Indexed Source binding
@@ -1405,7 +1647,9 @@ class CreateWorkspaceIndexedSourceRequestV1(BaseModel):
 | Method / path | `PATCH /workspaces/{workspace_id}/indexed-sources/{indexed_source_binding_id}` with `{ "status": "disabled" }` |
 | Alternative | `DELETE /workspaces/{workspace_id}/indexed-sources/{indexed_source_binding_id}` - **logical detach only**, not physical indexed-data deletion |
 | Response | 204 (logical detach) |
-| If-Match | **Required** `WKC/{committed_revision}`; missing -> 428; mismatch -> 409 |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
+| If-Match | Missing -> 428; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
 | Effect | Binding -> `DISABLED` (new revision); Source unchanged; Documents/Chunks/Vectors **preserved** |
@@ -1416,12 +1660,14 @@ class CreateWorkspaceIndexedSourceRequestV1(BaseModel):
 | | |
 |--|--|
 | Method / path | `POST /workspaces/{workspace_id}/live-access-bindings` |
-| Request | `CreateWorkspaceLiveAccessBindingRequestV1 { connection_ref, remote_resource_id, allowed_capability_ids, idempotency_key }` |
+| Request | `CreateWorkspaceLiveAccessBindingRequestV1 { connection_ref, remote_resource_id, allowed_capability_ids }` |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
 | Server-derived | `provider_id`, `integration_kind`, `resource_type`, `safe_display_label`, capability effect classification - validated via `TenantLiveCapabilityCatalogPort` |
 | Response | 201 `WorkspaceLiveAccessBinding` |
 | If-Match | **Required** `WKC/{committed_revision}`; missing -> 428; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
-| Semantic duplicate | Same semantic identity ACTIVE -> 200 existing; no new revision |
+| Semantic duplicate | Same semantic identity ACTIVE -> 200 existing via `EXISTING_RESULT`; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
 | Errors | 400 `capability_not_read_only` / `capability_not_found`; 404 workspace/connection; 409 revision conflict; 428 |
 
@@ -1432,7 +1678,6 @@ class CreateWorkspaceLiveAccessBindingRequestV1(BaseModel):
     connection_ref: str = Field(..., min_length=1, max_length=128)
     remote_resource_id: str | None = Field(default=None, max_length=256)
     allowed_capability_ids: tuple[str, ...] = Field(..., min_length=1)
-    idempotency_key: str = Field(..., min_length=1, max_length=256)
 ```
 
 ### 20.10 Disable / detach Live Access Binding
@@ -1441,7 +1686,9 @@ class CreateWorkspaceLiveAccessBindingRequestV1(BaseModel):
 |--|--|
 | Method / path | `PATCH /workspaces/{workspace_id}/live-access-bindings/{live_access_binding_id}` with `{ "status": "disabled" }` or `DELETE .../live-access-bindings/{live_access_binding_id}` |
 | Response | 204 (logical detach, non-destructive) |
-| If-Match | **Required** `WKC/{committed_revision}`; missing -> 428; mismatch -> 409 |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
+| If-Match | Missing -> 428; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
 | Effect | Binding -> `DISABLED` (new revision); no Document changes |
@@ -1452,12 +1699,14 @@ class CreateWorkspaceLiveAccessBindingRequestV1(BaseModel):
 | | |
 |--|--|
 | Method / path | `PUT /workspaces/{workspace_id}/query-policy` |
-| Request | `UpdateQueryPolicyRequestV1` |
+| Request | `UpdateQueryPolicyRequestV1` (policy fields only; no idempotency field) |
+| Headers | **Required** `If-Match`; **Required** `Idempotency-Key` |
 | If-Match | **Required** `WKC/{committed_revision}` (aggregate revision); missing -> 428; mismatch -> 409 |
+| Idempotency-Key | Missing -> 428; invalid -> 400 |
 | Idempotency replay | Same key + same request -> 200 existing result; no new revision |
 | Resulting revision | `committed_revision + 1` on success |
 | Response | `WorkspaceQueryPolicy` |
-| Errors | 400 unsupported mode / invariant violation; 409 `configuration_revision_conflict`; 428 missing If-Match |
+| Errors | 400 unsupported mode / invariant violation; 409 `configuration_revision_conflict`; 428 missing headers |
 
 ---
 
@@ -1483,25 +1732,53 @@ Safe errors: stable snake_case `detail` string; no `connection_ref` in error mes
 
 | Identity | Key components | Purpose |
 |----------|---------------|---------|
-| Request (idempotency) | `(tenant_id, workspace_id, operation, idempotency_key)` via `WorkspaceKnowledgeMutationRecord` | Detect replay vs conflict |
+| Request (idempotency) | `(tenant_id, workspace_id, operation, sha256(normalized Idempotency-Key))` via `WorkspaceKnowledgeMutationRecord` | Detect replay vs conflict |
 | Semantic (logical resource) | Indexed: `(tenant_id, workspace_id, knowledge_source_binding_ref)`; Live: `(tenant_id, workspace_id, connection_ref, normalized_resource_scope, normalized_capability_set)`; Connection: `(tenant_id, workspace_id, connection_ref)` | Prevent duplicate logical bindings |
 
-### 22.2 Idempotency behavior summary
+### 22.2 If-Match and idempotency evaluation order
+
+Freeze exact evaluation order for all mutation API sections:
+
+```text
+1. Validate required headers (If-Match, Idempotency-Key)
+2. Normalize request
+3. Reserve mutation record (RESERVED, target_revision=None)
+4. Semantic no-op detection
+5. Validate If-Match against current committed head (when state change required)
+6. Acquire writer slot
+7. Assign target revision
+8. Write staged records
+9. Mark PREPARED
+10. Publish head
+11. Finalize mutation
+```
+
+For an existing mutation record:
 
 | Scenario | Behavior |
 |----------|----------|
-| Same key + same request, COMMITTED | Return existing result; no new revision |
-| Same key + different request | 409 `configuration_idempotency_conflict` |
+| Same key + different request hash | Return idempotency conflict **before** evaluating `If-Match` |
+| Same key + same request, COMMITTED | Return stored result even when `If-Match` is stale |
+| Same key + same request, RESERVED/PREPARED | Run recovery; do not start a new mutation |
+| No mutation record | Validate semantic state and current revision according to frozen processing order |
+
+### 22.3 Idempotency behavior summary
+
+| Scenario | Behavior |
+|----------|----------|
+| Same key + same request, COMMITTED | Return stored result; no new revision; stale If-Match permitted |
+| Same key + different request | 409 `configuration_idempotency_conflict` (before If-Match) |
 | Same key + same request, RESERVED/PREPARED | Deterministic recovery; no second mutation |
 | Same key + same request, ABORTED | Retry may CAS-replace to RESERVED with new mutation_id |
 | Same key, RECOVERY_REQUIRED | 503 `configuration_recovery_required` |
-| Different key + same semantic identity, ACTIVE | Return existing entity; no new revision |
+| Different key + same semantic identity, ACTIVE, state satisfies request | Durable `EXISTING_RESULT`; no writer slot; no new revision |
 | DISABLED + reactivation request | New revision with ACTIVE; same logical entity ID |
 
-### 22.3 Configuration revision
+### 22.4 Configuration revision
 
 - Single monotonic `committed_revision` on `WorkspaceKnowledgeConfigurationHead`.
-- Every successful mutation increments revision via head CAS publication (Phase 7).
+- Every successful state-changing mutation increments revision via head CAS publication (Step 10).
+- Semantic no-op (`EXISTING_RESULT`) does **not** increment configuration revision.
 - Aggregate projection reads revision from head record only - children do not define aggregate version.
 - Child records store `effective_revision` and `mutation_id` on immutable revision rows.
 
@@ -1557,8 +1834,11 @@ Inject instrumented `TenantKnowledgeSourceBindingPort`, `KnowledgeConnectionRegi
 | Duplicate vendor client | Connection registry | Single registration per ref | Constructor count | **1F proof** |
 | MCP arbitrary exposure | LKW domain | MCP not in configuration models | N/A | Schema scan |
 | Oversized provider result | Query policy | `max_result_bytes`, `max_result_items` | Truncate + receipt | Policy unit test |
-| Abandoned staged record | Publication protocol | Cleanup failure -> RECOVERY_REQUIRED; head stays pending | 503 `configuration_recovery_required` | Failure-injection test |
-| Premature Source visibility | Connected Source staging | `knowledge_configuration_visibility_revision` gate | Source hidden until head commit | Failure-injection test |
+| Abandoned staged record | Publication protocol | Cleanup `delete_if_match` failure -> RECOVERY_REQUIRED; head stays pending | 503 `configuration_recovery_required` | Failure-injection test |
+| Premature Source visibility | Connected Source staging | `knowledge_configuration_visibility_revision` + `creation_mutation_id` gate | Source hidden until head commit | Failure-injection test |
+| Raw idempotency key leakage | API / persistence / logs | Persist only `idempotency_key_hash`; header not in bodies | Raw key absent from records, logs, errors | Failure-injection test |
+| Stale recovery via head pointer only | Post-publication repair | Publication proof from immutable rows + Source ownership; `last_committed_mutation_id` is hint only | `configuration_recovery_required` on inconsistent proof | Failure-injection test |
+| Unconditional rollback delete | Mutation cleanup | All rollback deletions use `delete_if_match` with exact staged record | `RECOVERY_REQUIRED` on compare failure | Failure-injection test |
 
 ---
 
@@ -1586,35 +1866,47 @@ Inject instrumented `TenantKnowledgeSourceBindingPort`, `KnowledgeConnectionRegi
 
 ### 26.2 `LKW-KNOWLEDGE-ACCESS-1B` - provider-neutral durable workspace authorization foundation
 
-**Outcome:** Implement the durable provider-neutral workspace authorization foundation with tenant-binding references, immutable revisioned child records, one CAS-protected configuration head, one durable mutation/idempotency record, hidden staged connected Sources, deterministic crash recovery and non-destructive detach.
+**Outcome:** Implement the durable provider-neutral workspace authorization foundation with tenant-binding references, immutable revisioned child records, one CAS-protected configuration head, one durable mutation/idempotency record, hidden staged connected Sources with exact mutation ownership, deterministic crash recovery, persistent semantic no-op outcomes and non-destructive detach.
 
-**Dependencies:** 1A-C2.
+**Dependencies:** 1A-C3.
 
 **Exact scope:**
 
 ```text
 WorkspaceKnowledgeConfigurationHead
 WorkspaceKnowledgeMutationRecord
+WorkspaceKnowledgeMutationOutcomeV1
+nullable target_revision during RESERVED state
+persistent EXISTING_RESULT no-op records
+stable semantic no-op evaluation
 revisioned child row contracts
 TenantKnowledgeSourceBindingPort
 WorkspaceIndexedSourceBinding
 WorkspaceLiveAccessBinding storage shape
 WorkspaceConnectionAttachment storage shape
 WorkspaceQueryPolicy storage shape
-WorkspaceSource visibility revision
+WorkspaceSource creation_mutation_id
+WorkspaceSource visibility_revision
+put_if_absent Source creation
+delete_if_match cleanup
+canonical Idempotency-Key handling
+raw idempotency-key confidentiality
 ManagedWorkspaceRepository extensions
 WorkspaceKnowledgeConfigurationService
 CAS prepare/publish/recovery protocol
+post-publication proof independent of head last-mutation pointer
 idempotency replay/conflict
 semantic duplicate detection
 reader consistency
-failure-injection tests
+C3 failure-injection tests
 ```
+
+Although HTTP routes remain outside `1B`, shared service request contracts may carry the already-normalized and hashed idempotency key from a future transport adapter. The domain service must not depend directly on HTTP headers.
 
 **Non-goals:**
 
 ```text
-HTTP routes
+HTTP route implementation
 Connection catalog
 Remote Resource discovery
 capability catalog implementation
@@ -1634,18 +1926,33 @@ Do not move capability discovery from `1C` into `1B`.
 |----------|------------------|
 | Two concurrent first mutations | One head created; one writer acquires revision 1; other receives revision conflict |
 | CAS idle -> pending fails | No staged rows written |
-| Failure after binding version write | Binding staged; Source not staged -> cleanup binding; head returns idle; mutation ABORTED |
-| Failure after Source write | Binding + Source staged; PREPARED not reached -> both removed; head returns idle |
-| Failure marking PREPARED | All staged written; PREPARED CAS fails -> cleanup; head returns idle only after successful cleanup |
-| Cleanup failure | One staged delete fails -> head remains pending; mutation RECOVERY_REQUIRED; subsequent mutations fail closed |
-| Failure publishing head | PREPARED records exist; head commit CAS fails -> cleanup staged records; release head |
-| Failure finalizing mutation after head commit | Head committed; mutation still PREPARED -> recovery repairs to COMMITTED; result replayed |
-| Idempotency replay | Same key + same request after commit -> existing result; no new revision |
+| RESERVED mutation created | `target_revision` is None; no placeholder revision |
+| Writer slot acquired at N+1 | Mutation `target_revision` conditionally becomes N+1; staged rows not written before assignment persists |
+| Failure after binding version write | Binding staged; Source not staged -> `delete_if_match` cleanup binding; head returns idle; mutation ABORTED |
+| Failure after Source write | Binding + Source staged; PREPARED not reached -> both removed via `delete_if_match`; head returns idle |
+| Failure marking PREPARED | All staged written; PREPARED CAS fails -> `delete_if_match` cleanup; head returns idle only after successful cleanup verification |
+| Cleanup compare failure | `delete_if_match` returns false -> head remains pending; mutation RECOVERY_REQUIRED; subsequent mutations fail closed |
+| Failure publishing head | PREPARED records exist; head commit CAS fails -> `delete_if_match` cleanup staged records; release head |
+| Failure finalizing mutation after head commit | Head committed; mutation still PREPARED -> recovery repairs to COMMITTED via immutable row proof; result replayed |
+| Older PREPARED repair after later commits | M1 publishes revision 1; M1 finalization fails; M2 publishes revision 2; recovery of M1 validates M1 rows at revision 1; repairs M1 to COMMITTED; does not depend on `last_committed_mutation_id` |
+| Semantic no-op result | Different idempotency key; same semantic identity; existing ACTIVE entity -> mutation COMMITTED; outcome EXISTING_RESULT; target_revision None; committed_revision N; no writer slot; no new child row; no new Source |
+| No-op replay | Same key + same request -> same stored existing result; no semantic re-evaluation required |
+| No-op conflict | Same key + different request -> 409 |
+| No-op race | Head changes during semantic duplicate evaluation -> retry once; persist result only against stable committed projection |
+| Idempotency replay | Same key + same request after commit -> stored result; no new revision |
 | Idempotency conflict | Same key + different request -> 409; no new revision |
-| Semantic duplicate | Different key + same semantic identity -> existing entity; no duplicate Source; no new revision when state matches |
+| Source ownership | Staged Source contains `creation_mutation_id=M`, `visibility_revision=R` |
+| Committed Source reuse | `put_if_absent` loses because committed deterministic Source exists -> Source validated; not overwritten; not deleted |
+| Source conflict | Deterministic Source ID exists with incompatible ownership -> fail closed; no overwrite |
+| Child delete_if_match | `delete_if_match` succeeds only for exact staged record |
+| Source delete_if_match | `delete_if_match` requires exact `creation_mutation_id` and `visibility_revision` |
 | Source visibility | Source staged at N+1; head still N -> hidden; head committed N+1 -> visible |
 | Non-destructive detach | Binding DISABLED; Source remains; document refs remain; Documents remain; vector deletion not called; future sync rejected |
 | Reader retry | Head changes during projection -> retry once -> return stable revision or safe unstable error |
+| Missing idempotency header | Missing `Idempotency-Key` -> 428 |
+| Invalid idempotency header | Blank or control-bearing key -> 400 |
+| Raw-key confidentiality | Raw `Idempotency-Key` absent from stored records, row keys, logs, errors, serialized responses |
+| Body-key rejection | Request body containing `idempotency_key` -> rejected by `extra="forbid"` |
 
 **Gate:** One tenant binding reference; no provider identity duplication; monotonic revision; zero provider-specific imports; publication protocol passes all failure-injection tests.
 
@@ -1689,27 +1996,37 @@ Do not move capability discovery from `1C` into `1B`.
 
 ### Recommended: `LKW-KNOWLEDGE-ACCESS-1B` - PROVIDER-NEUTRAL DURABLE WORKSPACE AUTHORIZATION FOUNDATION
 
-**One-sentence outcome:** Implement the durable provider-neutral workspace authorization foundation with tenant-binding references, immutable revisioned child records, one CAS-protected configuration head, one durable mutation/idempotency record, hidden staged connected Sources, deterministic crash recovery and non-destructive detach.
+**One-sentence outcome:** Implement the durable provider-neutral workspace authorization foundation with tenant-binding references, immutable revisioned child records, one CAS-protected configuration head, one durable mutation/idempotency record, hidden staged connected Sources with exact mutation ownership, persistent semantic no-op outcomes, deterministic crash recovery and non-destructive detach.
 
 **Expected scope:**
 
 ```text
 WorkspaceKnowledgeConfigurationHead
 WorkspaceKnowledgeMutationRecord
+WorkspaceKnowledgeMutationOutcomeV1
+nullable target_revision during RESERVED state
+persistent EXISTING_RESULT no-op records
+stable semantic no-op evaluation
 revisioned child row contracts
 TenantKnowledgeSourceBindingPort
 WorkspaceIndexedSourceBinding
 WorkspaceLiveAccessBinding storage shape
 WorkspaceConnectionAttachment storage shape
 WorkspaceQueryPolicy storage shape
-WorkspaceSource visibility revision
+WorkspaceSource creation_mutation_id
+WorkspaceSource visibility_revision
+put_if_absent Source creation
+delete_if_match cleanup
+canonical Idempotency-Key handling
+raw idempotency-key confidentiality
 ManagedWorkspaceRepository extensions
 WorkspaceKnowledgeConfigurationService
 CAS prepare/publish/recovery protocol
+post-publication proof independent of head last-mutation pointer
 idempotency replay/conflict
 semantic duplicate detection
 reader consistency
-failure-injection tests
+C3 failure-injection tests
 ```
 
 **Explicit non-goals:**
@@ -1768,6 +2085,6 @@ Hybrid Ask, live Jira/Confluence/Graph queries, MCP execution, provider sync wor
 
 ## 30. Final architecture verdict
 
-The repository supports the intended design when LKW stores workspace authorization references to tenant `KnowledgeSourceBinding` records (not duplicated provider identity), maintains one monotonic `committed_revision` via CAS-protected head record with a single pending writer and publication point, uses immutable revisioned child records and a durable `WorkspaceKnowledgeMutationRecord` for idempotency, reuses `to_source_ref(tenant_binding)` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, validates live capabilities through typed `LiveCapabilityDescriptorV1`, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Indexed detach is non-destructive via binding status. Connected Sources remain hidden until head publication. Every configuration mutation requires aggregate `If-Match`. Provider-specific LKW models and credential duplication are rejected.
+The repository supports the intended design when LKW stores workspace authorization references to tenant `KnowledgeSourceBinding` records (not duplicated provider identity), maintains one monotonic `committed_revision` via CAS-protected head record with a single pending writer and publication point, uses immutable revisioned child records and a durable `WorkspaceKnowledgeMutationRecord` with `WorkspaceKnowledgeMutationOutcomeV1` for idempotency (including persistent `EXISTING_RESULT` semantic no-ops), assigns `target_revision` only after writer-slot acquisition, proves post-publication recovery from immutable revision rows and staged Source ownership (not solely `last_committed_mutation_id`), uses `delete_if_match` for all rollback deletions, requires canonical `Idempotency-Key` HTTP header for every mutation, reuses `to_source_ref(tenant_binding)` / `ConnectionAwareVendorResolver` / `VendorKnowledgeFacadeService` for indexed paths, validates live capabilities through typed `LiveCapabilityDescriptorV1`, and keeps live execution on a future shared executor. One `WorkspaceSource` continues to own all persisted Documents. Indexed detach is non-destructive via binding status. Connected Sources remain hidden until head publication and carry exact `creation_mutation_id` ownership. Every configuration mutation requires aggregate `If-Match`. Provider-specific LKW models and credential duplication are rejected.
 
 **STATUS: `READY_FOR_REVIEW`**
