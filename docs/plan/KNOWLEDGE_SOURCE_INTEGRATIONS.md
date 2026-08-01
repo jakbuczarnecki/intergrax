@@ -1189,7 +1189,7 @@ One existing `SlackConversationChannelIntegration` is reused across indexed RAG,
 
 **Classification:** `IMPLEMENTED` — platform foundation; not LKW bridge or live capability.
 
-Delivered scope includes same-integration credential routing (`bot` + optional `knowledge_user` token on one `AsyncWebClient`), dual-stream membership inventory, `conversation_kind`-explicit history/reply/exact reads, strict descriptor validation, `thread_broadcast` exclusion from history materialization, and durable sync retry proof for multi-page reply traversal.
+Delivered scope includes same-integration bot-token credential model on one `AsyncWebClient`, bot-membership inventory via single `users.conversations` stream, `conversation_kind`-explicit history/reply/exact reads, strict descriptor validation, `thread_broadcast` exclusion from history materialization, and durable sync retry proof for multi-page reply traversal followed by history resumption.
 
 Target scope:
 

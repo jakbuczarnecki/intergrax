@@ -71,8 +71,7 @@ Reconnect: owned by slack_sdk auto_reconnect_enabled
 
 ```text
 INTERGRAX_SLACK_APP_TOKEN   # xapp-…  (connections:write)
-INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history)
-INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN  # xoxp-… optional; public/private channel knowledge reads
+INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history, knowledge reads)
 INTERGRAX_SLACK_API_TIMEOUT_SECONDS   # optional
 INTERGRAX_SLACK_CONVERSATION_ENABLED  # optional; or pass enabled=True
 INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS # optional; live-proof wait budget
@@ -150,41 +149,37 @@ read_file_info(...)   # safe file inventory only; no binary download
 
 `SlackConversationKnowledgeAdapter` (`source_kind: slack_conversation`) maps these reads into Vendor Knowledge records and synchronizes through the shared Facade / Sync runtime into any injected durable sink.
 
-### Credential model (one integration, one WebClient)
+### Credential model (one integration, one WebClient, one bot token)
 
 ```text
 bot token (INTERGRAX_SLACK_BOT_TOKEN):
   conversational Socket Mode + Web API runtime
-  IM/MPIM knowledge inventory, history, thread replies and exact reads
-
-knowledge user token (INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN, optional xoxp-):
-  public/private channel knowledge inventory, history, thread replies and exact reads
-  per-call token override on the same shared AsyncWebClient — not a second integration
+  bot-membership inventory via users.conversations
+  public/private/IM/MPIM knowledge reads for conversations the bot can access
 ```
 
-Both credentials must belong to the same Slack workspace. Workspace identity is validated lazily via `auth.test()` on first knowledge read that needs the user token. Token values never appear in errors, logs, health or public views.
+The bot must be a member of each conversation to inventory and read it. Token values never appear in errors, logs, health or public views.
 
 ### Supported durable source kinds
 
 ```text
-without knowledge_user_token:
-  IM, MPIM
-
-with validated knowledge_user_token:
-  IM, MPIM, public_channel, private_channel
+public_channel
+private_channel
+im
+mpim
 ```
 
 ### Required scopes (knowledge reads)
 
 ```text
-channels:history      # public channels (knowledge user token)
-groups:history        # private channels (knowledge user token)
-im:history            # direct messages (bot token)
-mpim:history          # group direct messages (bot token)
-channels:read         # inventory membership (knowledge user token for public channels)
-groups:read           # inventory membership (knowledge user token for private channels)
-im:read               # inventory membership (bot token)
-mpim:read             # inventory membership (bot token)
+channels:read
+groups:read
+im:read
+mpim:read
+channels:history
+groups:history
+im:history
+mpim:history
 files:read            # safe historical file inventory (metadata only)
 ```
 
@@ -206,7 +201,7 @@ One durable source = one approved `conversation_id` + immutable `root_oldest`/`r
 
 A reply whose own timestamp falls inside the window but whose thread root lies outside the configured root window is excluded. `full_inventory=true` means complete inventory **inside this explicit root-window scope only**.
 
-Inventory uses membership-correct `users.conversations`: public/private channels through the knowledge user token override; IM/MPIM through the bot token on the same client (no `user=` bot-id workaround). When both credential routes are enabled, a provider-owned composite inventory cursor paginates both streams without duplication. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
+Inventory uses bot-membership `users.conversations` with `types=public_channel,private_channel,im,mpim` on the shared bot-token `AsyncWebClient` (no `user=` or per-call token override). Provider-owned cursors paginate the single inventory stream. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
 
 ### Structured message schema
 

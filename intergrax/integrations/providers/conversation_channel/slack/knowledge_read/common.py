@@ -27,11 +27,7 @@ _MAX_PROVIDER_CURSOR_LEN = 4096
 _MALFORMED_RESPONSE = "unexpected Slack conversation knowledge response"
 _INVALID_REQUEST = "invalid Slack conversation knowledge request"
 
-_INVENTORY_CURSOR_SCHEMA_VERSION = "slack.conversation.inventory-cursor.v1"
-_INVENTORY_PHASE_CHANNELS = "channels"
-_INVENTORY_PHASE_IM_MPIM = "im_mpim"
-_INVENTORY_CHANNELS_TYPES = "public_channel,private_channel"
-_INVENTORY_IM_TYPES = "im,mpim"
+_INVENTORY_TYPES = "public_channel,private_channel,im,mpim"
 
 _METADATA_ALLOWLIST = frozenset(
     {
@@ -119,11 +115,7 @@ __all__ = [
     "MAX_HISTORY_REPLY_PAGE_LIMIT",
     "MAX_INVENTORY_PAGE_LIMIT",
     "SLACK_CONVERSATION_SOURCE_KIND",
-    "_INVENTORY_CHANNELS_TYPES",
-    "_INVENTORY_CURSOR_SCHEMA_VERSION",
-    "_INVENTORY_IM_TYPES",
-    "_INVENTORY_PHASE_CHANNELS",
-    "_INVENTORY_PHASE_IM_MPIM",
+    "_INVENTORY_TYPES",
     "_METADATA_ALLOWLIST",
     "validate_message_max_chars",
     "validate_optional_safe_text",

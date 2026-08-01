@@ -807,10 +807,7 @@ class SlackConversationChannelBackend:
             raise SlackConversationReadConfigurationError(
                 "Slack conversation knowledge read requires an initialized Web API client",
             )
-        self._knowledge_reader = SlackConversationKnowledgeReader(
-            self._web_client,
-            knowledge_user_token=self._config.knowledge_user_token_value(),
-        )
+        self._knowledge_reader = SlackConversationKnowledgeReader(self._web_client)
         return self._knowledge_reader
 
     async def list_accessible_conversations_page(

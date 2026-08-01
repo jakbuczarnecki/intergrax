@@ -1159,14 +1159,14 @@ application database/store       LKW Knowledge Intake
 **Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
 
 ```text
-list_accessible_conversations_page   # dual-stream users.conversations (user token + bot token)
-read_conversation_history_page       # root-window bounded history; conversation_kind routing
-read_thread_replies_page             # thread replies with root normalization; conversation_kind routing
+list_accessible_conversations_page   # bot-membership users.conversations (all supported kinds)
+read_conversation_history_page       # root-window bounded history; bot token
+read_thread_replies_page             # thread replies with root normalization; bot token
 read_exact_message                   # bounded exact lookup with reply pagination; no root required on point page
 read_file_info (safe inventory only)
 ```
 
-**Credential routing (same integration, same `AsyncWebClient`):** `INTERGRAX_SLACK_BOT_TOKEN` (`xoxb-`) for conversational runtime and IM/MPIM knowledge reads. Optional `INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN` (`xoxp-`) as per-call token override for public/private channel inventory, history, replies and exact reads. Both credentials must belong to the same workspace (`auth.test` validation). Without the user token, durable source kinds are IM and MPIM only.
+**Credential model (same integration, same `AsyncWebClient`):** one `INTERGRAX_SLACK_BOT_TOKEN` (`xoxb-`) for conversational runtime and all knowledge reads. Inventory uses `users.conversations` with `types=public_channel,private_channel,im,mpim` for conversations where the bot is a member. Public/private channel reads require the bot to be added to the conversation with appropriate `channels:*` / `groups:*` read/history scopes.
 
 **Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. Root `message_ts` and reply `message_ts` must lie inside `[root_oldest, root_latest]`; `thread_broadcast` history records are not separately materialized. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
 

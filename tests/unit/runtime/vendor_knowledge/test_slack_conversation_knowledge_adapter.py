@@ -195,7 +195,6 @@ def _integration(fake: _FakeSlackBackend) -> SlackConversationChannelIntegration
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
-        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     return SlackConversationChannelIntegration.from_backend(fake, enabled=True, config=config)  # type: ignore[arg-type]
 

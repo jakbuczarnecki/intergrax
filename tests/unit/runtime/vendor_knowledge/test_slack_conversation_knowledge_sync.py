@@ -213,7 +213,6 @@ def _build_coordinator(fake: _SlackFakeIntegration | None = None):
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
-        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     integration = SlackConversationChannelIntegration.from_backend(backend, enabled=True, config=config)  # type: ignore[arg-type]
     registry = KnowledgeAdapterRegistry()
@@ -410,7 +409,6 @@ async def test_slack_edit_changes_revision_and_content() -> None:
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
-        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     integration = SlackConversationChannelIntegration.from_backend(fake, enabled=True, config=config)  # type: ignore[arg-type]
     adapter_registry = KnowledgeAdapterRegistry()
@@ -525,15 +523,22 @@ async def test_slack_multi_page_thread_proof_without_lost_or_duplicate_replies()
 async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
     fake = _SlackFakeIntegration()
     reply_two_ts = "1704153604.000001"
-    fake._history_pages = [
-        SlackConversationMessagePage(
-            conversation_id=_CONVERSATION_ID,
-            oldest=_OLDEST,
-            latest=_LATEST,
-            items=(_message(message_ts=_ROOT_TS, text="root one", reply_count=1),),
-        )
-    ]
-    fake._history_backup = list(fake._history_pages)
+    history_page_two_ts = "1704153605.000001"
+    history_page_one = SlackConversationMessagePage(
+        conversation_id=_CONVERSATION_ID,
+        oldest=_OLDEST,
+        latest=_LATEST,
+        items=(_message(message_ts=_ROOT_TS, text="root one", reply_count=1),),
+        next_cursor="history-page-2",
+    )
+    history_page_two = SlackConversationMessagePage(
+        conversation_id=_CONVERSATION_ID,
+        oldest=_OLDEST,
+        latest=_LATEST,
+        items=(_message(message_ts=history_page_two_ts, text="root two"),),
+    )
+    fake._history_pages = [history_page_one, history_page_two]
+    fake._history_backup = [history_page_one, history_page_two]
     fake._reply_pages = [
         SlackConversationMessagePage(
             conversation_id=_CONVERSATION_ID,
@@ -590,6 +595,7 @@ async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
     assert len(fake.history_calls) == 1
     assert len(fake.reply_calls) == 2
     assert fake.reply_calls[1]["cursor"] == "reply-page-2"
+    assert not any(call.get("cursor") == "history-page-2" for call in fake.history_calls)
     retry_result = await coordinator.reconcile_once(
         binding_id="slack-conversation-binding",
         restart=False,
@@ -602,8 +608,27 @@ async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
     assert sink.calls[3].envelopes[0].remote_id == reply_two_remote_id
     assert len(fake.reply_calls) == 3
     assert fake.reply_calls[2]["cursor"] == "reply-page-2"
+    assert len(fake.history_calls) == 1
+    history_result = await coordinator.reconcile_once(
+        binding_id="slack-conversation-binding",
+        restart=False,
+    )
+    assert history_result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert len(fake.history_calls) == 2
+    assert fake.history_calls[1]["cursor"] == "history-page-2"
+    delivered_root_timestamps = []
+    for batch in sink.calls:
+        for envelope in batch.envelopes:
+            record = envelope.content.structured_record if envelope.content else None
+            if record is None:
+                continue
+            message_ts = record["message"]["message_ts"]
+            if record["thread"]["root_thread_ts"] is None:
+                delivered_root_timestamps.append(message_ts)
+    assert delivered_root_timestamps.count(_ROOT_TS) == 1
+    assert history_page_two_ts in delivered_root_timestamps
     assert id(integration) == integration_id
-    assert retry_result.has_more is False
+    assert history_result.has_more is False
     final_checkpoint = checkpoint_repo.get(
         tenant_id="tenant-1",
         binding_id="slack-conversation-binding",

@@ -1220,22 +1220,6 @@ class SlackConversationKnowledgeAdapter:
                 raise ValueError("reply message_ts outside reply window")
         return metadata
 
-    def _validate_descriptor_metadata(
-        self,
-        metadata: dict[str, object],
-        *,
-        message_identity: _SlackConversationMessageIdentity,
-        updated_at: datetime | None,
-    ) -> dict[str, object]:
-        if set(metadata.keys()) != _METADATA_REQUIRED_KEYS:
-            raise ValueError("descriptor metadata keys mismatch")
-        for key in _METADATA_REQUIRED_KEYS:
-            if key not in metadata:
-                raise ValueError("descriptor metadata missing required key")
-        if metadata.get("created_at") is None:
-            raise ValueError("created_at required")
-        return metadata
-
     def _validate_fetched_content_identity(
         self,
         message: SlackConversationMessage,
@@ -1356,6 +1340,7 @@ class SlackConversationKnowledgeAdapter:
                 "not_authed",
                 "account_inactive",
                 "token_expired",
+                "not_allowed_token_type",
             }:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.AUTHENTICATION_FAILED,
@@ -1371,6 +1356,11 @@ class SlackConversationKnowledgeAdapter:
                 "access_denied",
                 "restricted_action",
                 "team_access_not_granted",
+                "accesslimited",
+                "enterprise_is_restricted",
+                "ekm_access_denied",
+                "org_login_required",
+                "two_factor_setup_required",
             }:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.AUTHORIZATION_DENIED,
