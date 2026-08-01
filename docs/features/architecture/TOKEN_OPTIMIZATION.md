@@ -769,7 +769,7 @@ Contracts and helpers live under `intergrax/runtime/token_optimization/` (`Token
 
 #### In-cache compaction (**TOKEN-10E** — architecture defined / ready for review)
 
-In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R1**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R3**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 
@@ -1065,18 +1065,19 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 #### 2. TOKEN-10E responsibility inside UCL
 
-TOKEN-10E owns **only** the durable compaction contribution implemented through Token Optimization **typed artifact executors** under Nexus UCL coordination:
+TOKEN-10E owns **only** the durable compaction contribution implemented through Token Optimization **typed artifact executors** under Nexus UCL coordination. Durable compaction **reuses** existing valid `MessageSequenceArtifact` instances via the Reusable Optimization Artifact Catalog before creating new candidates.
 
 ```text
 policy evaluation for compaction targets
-MessageSequenceArtifact candidate construction
+artifact lookup by ArtifactLookupKey (reuse-before-create)
+MessageSequenceArtifact candidate construction (CREATE_ARTIFACT only on lookup miss)
 candidate schema/structural/protected/quality validation contracts
 receipt and rollback-metadata compilation
 cache-lineage transition calculation
 safe result reporting
 ```
 
-TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization.
+TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization; **artifact catalog persistence or lookup**.
 
 #### 3. MessageSequenceArtifact requirement
 
@@ -1106,9 +1107,15 @@ Within UCL durable compaction:
 ```text
 Nexus resolves ContextOptimizationPolicy
         ↓
-TOKEN-10D timing gate (when applicable)
+construct ArtifactLookupKey
         ↓
-MessageSequenceArtifactExecutor (on RUN)
+Memory/Session catalog lookup
+        ↓
+REUSE_ARTIFACT (no LLM) or CREATE_ARTIFACT
+        ↓
+TOKEN-10D timing gate (when applicable, on CREATE_ARTIFACT)
+        ↓
+MessageSequenceArtifactExecutor (on RUN / CREATE_ARTIFACT only)
         ↓
 validated TOKEN-10E candidate
 ```
@@ -1143,16 +1150,18 @@ Durable activation is **Memory/Session** owned via compare-and-swap on ActiveCon
 ```text
 Nexus UCL coordinator
   → CE ContextPlan
-  → TOKEN-10D timing gate
-  → MessageSequenceArtifactExecutor
+  → ArtifactLookupKey → catalog lookup
+  → REUSE_ARTIFACT or CREATE_ARTIFACT
+  → TOKEN-10D timing gate (on CREATE_ARTIFACT when applicable)
+  → MessageSequenceArtifactExecutor (CREATE_ARTIFACT only)
   → validated TOKEN-10E candidate
-  → SessionContextRevisionActivationRequest
+  → SessionContextRevisionActivationRequest (references artifact_id/hash)
   → Memory/Session CAS activation or conflict
 ```
 
-**Application host** chooses and wires the persistence adapter, authorizes the action, configures retention, and presents review/rollback UX. Application does **not** own revision persistence, CAS activation, or rollback execution.
+**Application host** chooses and wires the persistence adapter, authorizes the action, configures retention, and presents review/rollback UX. Application does **not** own revision persistence, CAS activation, rollback execution, or a summary cache.
 
-Rollback **metadata** is compiled by Token Optimization; rollback **execution** changes ActiveContextRevisionPointer to a prior eligible SessionContextRevision without mutating the ConversationLedger.
+Rollback **metadata** is compiled by Token Optimization; rollback **execution** changes ActiveContextRevisionPointer to a prior eligible SessionContextRevision and **reuses** artifact references already associated with that revision without mutating the ConversationLedger or regenerating artifact content.
 
 #### 7. Cache-lineage boundary
 
@@ -1179,7 +1188,7 @@ Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, doma
 
 **Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
-**Next step:** Review and accept **CTX-UCL-ARCH-1-R1**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
+**Next step:** Review and accept **CTX-UCL-ARCH-1-R3**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
 
 ---
 

@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Review and accept **CTX-UCL-ARCH-1-R1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Current next step:** Review and accept **CTX-UCL-ARCH-1-R3** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 ### LKW proof phase map (post-design)
 
@@ -1697,7 +1697,7 @@ Closeout:
 
 **Dependency:** Accepted **TOKEN-10D** (typed cache evidence → reconciliation → signal normalization → timing gate → router → deterministic pipeline on `RUN` only).
 
-#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R1; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
+#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R3; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
 
 ```text
 1. No compaction without explicit policy opt-in.
@@ -1715,33 +1715,38 @@ Closeout:
 13. No automatic production enablement.
 14. Full-thread lossy rewriting requires review by default.
 15. TOKEN-10E architecture does not mean TOKEN-10E runtime implementation.
+16. Reuse-before-create: durable compaction performs artifact lookup before transformation.
+17. Identical compatible source must not trigger repeated LLM summarization.
+18. No duplicate artifact repository — TOKEN-10E extends UCL artifact and revision contracts.
 ```
 
 #### Planned substeps
 
 ##### TOKEN-10E-1 — Contracts, policy, snapshot, candidate and safe-result models
 
-**Goal:** Freeze provider-neutral dataclass/enum contracts for compaction policy, immutable input snapshot, compaction request/result, target model, and redaction-safe serializers.
+**Goal:** Extend existing UCL artifact and revision contracts with durable compaction policy over UCL — not a competing artifact repository.
 
-**Main contracts:** `InCacheCompactionPolicy` (provisional name), `CompactionInputSnapshot`, `CompactionRequest`, `CompactionCandidate`, `CompactionResult`, `CompactionTarget`, status enum separating candidate/acceptance/activation.
+**Main contracts:** `InCacheCompactionPolicy` (provisional name), `CompactionInputSnapshot`, `CompactionRequest`, `CompactionCandidate`, `CompactionResult`, `CompactionTarget`, status enum separating candidate/acceptance/activation; durable eligibility rules; review and activation requirements aligned with `ArtifactLookupKey` and `ReusableOptimizationArtifact`.
 
-**Invariants:** explicit policy opt-in fields; `raw_content_included=False`; unknown-value semantics preserved; no application storage types.
+**Invariants:** explicit policy opt-in fields; `raw_content_included=False`; unknown-value semantics preserved; no application storage types; no duplicate Optimization Artifact Catalog contract.
 
-**Out of scope:** pipeline execution, protected-region validator implementation, receipt compiler, application wiring.
+**Out of scope:** pipeline execution, protected-region validator implementation, receipt compiler, application wiring, storage backend.
 
 **Acceptance:** contracts importable from package root plan; unit tests for serialization and fail-closed policy validation; no pipeline behavior change.
 
+**Blocked by:** **CTX-UCL-CLOSEOUT-1** accepted/closed.
+
 ##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
 
-**Goal:** Compose TOKEN-10D `RUN` path with `MessageSequenceArtifactExecutor` to produce a compaction candidate without in-place context mutation.
+**Goal:** Durable candidate flow first performs artifact lookup by `ArtifactLookupKey`. Existing valid `MessageSequenceArtifact` is reused (`REUSE_ARTIFACT`). New candidate creation only on lookup miss or incompatibility (`CREATE_ARTIFACT`). New `SessionContextRevision` references the selected artifact ID/hash.
 
-**Main contracts:** candidate builder using `MessageSequenceArtifactExecutor`; integration with Nexus UCL coordinator and router-selected configuration.
+**Main contracts:** candidate builder using `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only; integration with Nexus UCL coordinator and router-selected configuration.
 
-**Invariants:** no second optimization engine; no string flattening of full conversation history; original context unchanged; candidate not active until Memory/Session CAS passes.
+**Invariants:** no second optimization engine; no string flattening of full conversation history; original context unchanged; candidate not active until Memory/Session CAS passes; no LLM invocation on reuse.
 
 **Out of scope:** receipt/rollback compiler, Memory/Session activation implementation, persistence backends.
 
-**Acceptance:** unit tests prove candidate creation on synthetic message-sequence fixtures; protected original context; no public auto-enable.
+**Acceptance:** unit tests prove candidate creation on synthetic message-sequence fixtures; reuse path does not invoke summarizer; protected original context; no public auto-enable.
 
 **Blocked by:** CTX-UCL-4, TOKEN-10E-1.
 
@@ -1751,23 +1756,23 @@ Closeout:
 
 **Main contracts:** compaction receipt builder extending receipt patterns from TOKEN-1C; `CompactionRollbackMetadata`; measurement units explicit (chars vs tokens separate).
 
-**Invariants:** protected-region failure rejects candidate; required rollback metadata missing → fail closed; no raw content in output.
+**Invariants:** protected-region failure rejects candidate; required rollback metadata missing → fail closed; no raw content in output; receipt must indicate: reused existing artifact; created new artifact; invalidated prior artifact; no LLM invocation on reuse.
 
 **Out of scope:** rollback execution, storage, application UX.
 
-**Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it.
+**Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it, reuse vs create attribution.
 
 ##### TOKEN-10E-4 — SessionContextRevision activation request and cache-lineage transition
 
-**Goal:** Emit `SessionContextRevisionActivationRequest` for Memory/Session CAS; stale-write protection; cache-lineage transition calculation.
+**Goal:** Activation operates on `SessionContextRevision` references and must not regenerate artifact content. CAS activation and rollback reuse immutable artifact references.
 
 **Main contracts:** activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
 
-**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; Memory/Session owns activation — not Application or Token Optimization.
+**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation — not Application or Token Optimization.
 
 **Out of scope:** rollback UX, storage backend selection.
 
-**Acceptance:** contract tests for activation request and conflict paths; no direct application activation API.
+**Acceptance:** contract tests for activation request and conflict paths; activation references artifact without content rewrite; no direct application activation API.
 
 **Blocked by:** CTX-UCL-2, TOKEN-10E-3.
 
@@ -1779,16 +1784,17 @@ Closeout:
 
 **Acceptance:** public exports frozen; claim guardrail tests pass; TOKEN-10E marked implemented/ready for review only after closeout — not before.
 
-#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R1; UCL sole lifecycle source)
+#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R3; UCL sole lifecycle source)
 
 - [x] TOKEN_OPTIMIZATION §8.10 is bounded integration profile linked to UCL (not second lifecycle)
-- [x] Memory/Session owns persistence, CAS activation, rollback execution
+- [x] Memory/Session owns persistence, CAS activation, rollback execution, artifact catalog
 - [x] Application owns configuration, authorization, adapter wiring, UX only
+- [x] Reuse-before-create and ArtifactLookupKey defined in UCL
 - [x] MessageSequenceArtifact required for conversation history compaction
 - [x] Candidate validation distinct from final model-facing integrity validation
 - [x] In-cache compaction not described as provider KV-cache mutation
 - [x] Policy opt-in mandatory; targets and risk levels defined
-- [x] ADR-UCL-001 created (Proposed / Ready for Review)
+- [x] ADR-UCL-001 reusable-artifact decision (Proposed / Ready for Review)
 - [x] Receipt and rollback metadata defined
 - [x] Stale-write protection and cache-lineage semantics defined
 - [x] Fail-closed matrix and safe reporting documented

@@ -11,29 +11,51 @@
 
 Platform audit identified multiple independent context-reduction authorities without a shared lifecycle model. **TOKEN-10E-ARCH-1** and early **TOKEN_OPTIMIZATION** section 8.10 text assigned durable persistence and activation to the application host and described a direct Application to Token Optimization runtime path. That conflicts with Memory/Session revision contracts, Context Engineering single-budget authority, and Nexus lifecycle coordination.
 
-**CTX-UCL-ARCH-1-R1** reconciles these domains before runtime implementation (**CTX-UCL-1**) begins.
+**CTX-UCL-ARCH-1-R3** extends prior reconciliation passes (R1/R2) with reusable optimization artifact lifecycle and reuse-before-create before runtime implementation (**CTX-UCL-1**) begins.
 
 ## Decision
 
 Freeze **one canonical Unified Context Lifecycle (UCL)** architecture:
 
-1. **Memory/Session** owns durable conversation ledger, immutable context projections, CAS activation, and rollback execution.
-2. **Context Engineering** owns the single global input budget per model invocation, final compilation, and final model-facing integrity validation orchestration.
-3. **Token Optimization** owns transformation executors, candidate validation contracts, receipts, and cache-lineage calculation — not revision persistence or activation.
-4. **Nexus** coordinates ephemeral assembly and durable compaction without owning storage or algorithms.
-5. **Application host** owns configuration, authorization, adapter wiring, and review/rollback UX — not a parallel revision model or direct activation bypassing Memory/Session.
+1. **Memory/Session** owns durable conversation ledger, immutable context projections, CAS activation, rollback execution, and the Reusable Optimization Artifact Catalog (persistence and lookup contracts).
+2. **Context Engineering** owns the single global input budget per model invocation, source/target requirements, final compilation, and final model-facing integrity validation orchestration.
+3. **Token Optimization** owns transformation executors, candidate validation contracts, receipts, and cache-lineage calculation — not revision persistence, artifact catalog lookup, or activation.
+4. **Nexus** coordinates ephemeral assembly and durable compaction, including lookup-before-create orchestration, without owning storage or algorithms.
+5. **Application host** owns configuration, authorization, adapter wiring, and review/rollback UX — not a parallel revision model, application-local summary cache, or direct activation bypassing Memory/Session.
 
 **TOKEN-10E-1** MUST NOT begin until **CTX-UCL-CLOSEOUT-1** is accepted/closed.
+
+## Reusable optimization artifact lifecycle
+
+UCL uses **reuse-before-create**.
+
+Valid artifacts are content-addressed and looked up before transformation via ArtifactLookupKey (tenant/session scope, source range, source_content_hash, artifact type, strategy/policy/validation versions, compression target, lossiness profile).
+
+Identical compatible source **must not** trigger repeated LLM summarization. A lookup hit produces REUSE_ARTIFACT with llm_transform_invoked = false.
+
+**Decision outcomes:** NO_OP, SELECT_ONLY, REUSE_ARTIFACT, CREATE_ARTIFACT, POLICY_BLOCKED, FAIL_CLOSED — every canonical model call traverses the decision point; Token Optimization execution remains optional.
+
+**Ownership:**
+
+- **Memory/Session** — artifact persistence contract, lookup contract, catalog lifecycle, invalidation persistence; references from SessionContextRevision.
+- **Nexus** — orchestrates lookup-before-create; maps lookup result to REUSE_ARTIFACT or CREATE_ARTIFACT; prevents transform execution on valid reuse hit.
+- **Token Optimization** — creates artifacts only on CREATE_ARTIFACT (or explicit approved refresh) through typed executors.
+- **Context Engineering** — supplies source ranges and target requirements; compiles final prompt using raw groups or reusable artifacts.
+- **Application host** — tenant policy configuration, authorization, review UX, artifact provenance visibility where required; does not implement its own summary cache.
+
+SessionContextRevision references artifacts by ID or content hash without rewriting the raw ConversationLedger. Activating a new revision or rolling back must not regenerate artifact content.
+
+Ephemeral assembly may persist reusable artifacts to the catalog when policy permits without changing ActiveContextRevisionPointer.
 
 ## Domain ownership
 
 | Domain | Owns | Does not own |
 |--------|------|--------------|
-| **Memory/Session** | ConversationLedger; raw messages/events; stable IDs; sequence numbers; tool relationships; attachments/metadata; SessionContextRevision manifests; ActiveContextRevisionPointer; revision persistence; CAS activation; rollback execution; retention/archival; optimistic concurrency | Global prompt budget; optimization algorithms; strategy selection; model-facing composition; application authorization/UX |
-| **Context Engineering** | One global input budget; ContextPlan; segment classification; final ChatMessage[]; final compilation; final model-facing integrity validation orchestration; token-window preflight | Durable persistence; active revision pointer; optimization implementation; application policy persistence |
-| **Token Optimization** | Strategy catalog; policy gates; typed artifact executors; candidate construction; pipeline composition; text protected-region validation; message-sequence structural validation contracts; measurements; receipts; safe reporting; cache attribution; cache-lineage transition calculation | ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global budget; authorization; retention |
-| **Nexus** | Snapshot acquisition; CE ContextPlan orchestration; resolved policy delivery; TOKEN-10D timing; optional TO invocation; validation sequencing; final CE compilation; final integrity check; preflight; adapter invocation; durable activation request dispatch to Memory/Session | Storage implementation; compression algorithms; tenant policy persistence; product UX |
-| **Application host** | Profile selection; tenant configuration; authorization; feature opt-in; human review UX; rollback UX; retention configuration; persistence adapter selection/wiring; product presentation | Private session revision model; private active revision pointer; parallel compression engine; parallel global budget; direct activation bypassing Memory/Session |
+| **Memory/Session** | ConversationLedger; raw messages/events; stable IDs; sequence numbers; tool relationships; attachments/metadata; SessionContextRevision manifests; ActiveContextRevisionPointer; revision persistence; CAS activation; rollback execution; retention/archival; optimistic concurrency; Reusable Optimization Artifact Catalog persistence and lookup | Global prompt budget; optimization algorithms; strategy selection; model-facing composition; application authorization/UX; optimization reuse decision for current model call |
+| **Context Engineering** | One global input budget; ContextPlan; segment classification; source/target requirements; final ChatMessage[]; final compilation; final model-facing integrity validation orchestration; token-window preflight | Durable persistence; active revision pointer; optimization implementation; application policy persistence; artifact catalog lookup |
+| **Token Optimization** | Strategy catalog; policy gates; typed artifact executors; artifact creation on CREATE_ARTIFACT; candidate construction; pipeline composition; text protected-region validation; message-sequence structural validation contracts; measurements; receipts; safe reporting; cache attribution; cache-lineage transition calculation | ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global budget; authorization; retention; reusable artifact repository |
+| **Nexus** | Snapshot acquisition; CE ContextPlan orchestration; resolved policy delivery; canonical optimization decision point; ArtifactLookupKey construction; lookup-before-create orchestration; TOKEN-10D timing; optional TO invocation on CREATE_ARTIFACT only; validation sequencing; final CE compilation; final integrity check; preflight; adapter invocation; durable activation request dispatch to Memory/Session | Storage implementation; compression algorithms; tenant policy persistence; product UX |
+| **Application host** | Profile selection; tenant configuration; authorization; feature opt-in; human review UX; rollback UX; retention configuration; persistence adapter selection/wiring; product presentation | Private session revision model; private active revision pointer; parallel compression engine; parallel global budget; direct activation bypassing Memory/Session; application-local summary cache |
 
 ## ConversationLedger vs SessionContextRevision
 
@@ -42,43 +64,44 @@ Freeze **one canonical Unified Context Lifecycle (UCL)** architecture:
 | **ConversationLedger** | Append-only raw record of conversation messages and events. Never replaced by compaction. Subject only to explicit retention or archival policy. |
 | **SessionContextRevision** | Immutable model-facing context projection manifest. References raw ledger ranges, compacted artifacts, pinned segments, and recent tail. Does not rewrite or delete the raw ConversationLedger. |
 | **ActiveContextRevisionPointer** | Tenant/session-scoped pointer to the currently active model-facing projection. Updated through compare-and-swap. |
-| **Rollback** | Changes ActiveContextRevisionPointer to an eligible prior SessionContextRevision. Does not erase, rewrite, or time-travel the ConversationLedger. |
+| **Rollback** | Changes ActiveContextRevisionPointer to an eligible prior SessionContextRevision. Reuses artifact references from the prior revision. Does not erase, rewrite, or time-travel the ConversationLedger. |
 
 Preferred activation contract name: **SessionContextRevisionActivationRequest** (supersedes provisional SessionRevisionActivationRequest).
 
 ## EPHEMERAL_ASSEMBLY
 
-Single model-call flow coordinated by Nexus:
+Single model-call flow coordinated by Nexus (every canonical model call traverses the optimization decision point):
 
 Memory/Session: resolve ActiveContextRevisionPointer, load ConversationSnapshot
-Nexus: start lifecycle coordination
 CE: collect sources, resolve one global ContextPlan
-Nexus: resolve ContextOptimizationPolicy, TOKEN-10D timing gate when applicable
-TO: execute approved transformations via typed artifact executor
-candidate validation (schema, structural, protected, quality, policy)
+Nexus: determine whether optimization is required
+  → NO_OP / SELECT_ONLY when budget satisfied without transformation
+  → construct ArtifactLookupKey when optimization required
+Memory/Session catalog: lookup compatible artifact
+  → REUSE_ARTIFACT (no LLM summarizer) on hit
+  → CREATE_ARTIFACT → TO typed executor (TOKEN-10D RUN when applicable) on miss
 CE: final compilation into model-facing ChatMessage[]
 FINAL MODEL-FACING INTEGRITY VALIDATION
 verify_context_preflight / token-window validation
 exact-send materialization and hash verification
 LLM Adapter invocation
 
-Rules: never changes ActiveContextRevisionPointer; never creates durable revision by default; no content transformation after final model-facing integrity validation.
+Rules: never changes ActiveContextRevisionPointer; never creates durable revision by default; no content transformation after final model-facing integrity validation; reusable artifact may be persisted to catalog when policy permits.
 
 ## DURABLE_COMPACTION
 
-immutable baseline SessionContextRevision
-to ContextPlan-selected MessageSequenceArtifact target
-to TOKEN-10D timing/policy decision
-to TO candidate construction
-to candidate schema/structural/protected/quality validation
-to new immutable SessionContextRevision manifest
-to receipt + rollback metadata
-to Memory/Session CAS (expected ActiveContextRevisionPointer == baseline)
-to activate candidate or return conflict
-to cache-lineage transition
-to safe audit event
+active SessionContextRevision (immutable baseline)
+→ ContextPlan-selected source range
+→ ArtifactLookupKey
+→ catalog lookup → REUSE_ARTIFACT or CREATE_ARTIFACT
+→ new immutable SessionContextRevision manifest referencing artifact_id/hash
+→ receipt + rollback metadata
+→ Memory/Session CAS (expected ActiveContextRevisionPointer == baseline)
+→ activate candidate or return conflict (no summary regeneration on activation)
+→ cache-lineage transition
+→ safe audit event
 
-Rules: no in-place mutation; no direct Application activation; no hidden retry after CAS conflict; no durable activation through Token Optimization itself.
+Rules: no in-place mutation; no direct Application activation; no hidden retry after CAS conflict; no durable activation through Token Optimization itself; rollback reuses prior artifact references.
 
 ## Single-budget authority
 
@@ -88,7 +111,7 @@ Context Engineering is the **sole** global input budget authority per model invo
 
 Token Optimization executor framework:
 - TextArtifactExecutor: existing string-based pipeline (compatible)
-- MessageSequenceArtifactExecutor: CTX-UCL-4 (conversation history compaction)
+- MessageSequenceArtifactExecutor: CTX-UCL-4 (conversation history compaction; invoked only on CREATE_ARTIFACT)
 - FragmentSetArtifactExecutor
 - ToolCatalogArtifactExecutor
 - StructuredDataArtifactExecutor
@@ -97,10 +120,11 @@ TOKEN-10E conversation history compaction **requires** MessageSequenceArtifactEx
 
 ## Validation ordering
 
-Two distinct levels:
+Three distinct stages:
 
-1. **Candidate validation** (after TO candidate creation): schema, structural, protected-region, quality, policy.
-2. **Final model-facing integrity validation** (after final CE compilation, before token preflight/exact send): message order, roles, stable IDs, tool linkage, citation/evidence groups, protected values, system/developer/platform blocks, current user turn, recent tail, exact-send hash, tool-envelope consistency.
+1. **Creation-time candidate validation** (after TO candidate creation on CREATE_ARTIFACT): schema, structural, protected-region, quality, policy.
+2. **Reuse-time compatibility and integrity validation** (on REUSE_ARTIFACT): lightweight eligibility check without rerunning full transformation.
+3. **Final model-facing integrity validation** (after final CE compilation, before token preflight/exact send): message order, roles, stable IDs, tool linkage, citation/evidence groups, protected values, system/developer/platform blocks, current user turn, recent tail, exact-send hash, tool-envelope consistency.
 
 verify_context_preflight is a budget/window check only; it does not replace structural or protected-content integrity validation.
 
@@ -108,10 +132,11 @@ verify_context_preflight is a budget/window check only; it does not replace stru
 
 - Durable activation: CAS on expected_active_revision_id via Memory/Session.
 - Application host authorizes and presents UX; Memory/Session executes activation and rollback.
+- Activation operates on SessionContextRevision artifact references; must not regenerate artifact content.
 
 ## Cache-lineage separation
 
-Content revision, prompt prefix identity, cache lineage, and provider cache observation remain separate dimensions.
+Content revision, prompt prefix identity, cache lineage, provider cache observation, and Reusable Optimization Artifact Catalog remain separate dimensions. The artifact catalog is platform-owned persisted content, not provider KV cache.
 
 ## Consequences
 
@@ -120,15 +145,20 @@ Content revision, prompt prefix identity, cache lineage, and provider cache obse
 - One lifecycle architecture eliminates competing ownership and duplicate budgets.
 - Distinct ledger vs projection model enables durable compaction without silent history loss.
 - TOKEN-10E integrates as a bounded TO contribution under UCL rather than a parallel lifecycle.
+- Lower latency and model cost through reuse-before-create.
+- Stable summaries and improved determinism.
+- Better prompt-prefix stability and traceable artifact lineage.
 
 ### Negative
 
 - Requires CTX-UCL-1 through CTX-UCL-6 and closeout before TOKEN-10E-1.
 - ADR-MEM-001 Context Compiler semantics are superseded where they conflict with UCL.
+- Requires compatibility identity (ArtifactLookupKey), invalidation rules, artifact lifecycle storage, and version migrations.
+- May retain multiple compression levels per source range.
 
 ## Migration impact
 
-Application-owned persistence/activation wording migrates to Memory/Session ownership with Application adapter wiring and UX.
+Application-owned persistence/activation wording migrates to Memory/Session ownership with Application adapter wiring and UX. Legacy HistoryLayer summarization migrates to UCL lookup-before-create path; HistoryLayer must not keep its own summary cache.
 
 ## Rejected alternatives
 
@@ -137,6 +167,11 @@ Application-owned persistence/activation wording migrates to Memory/Session owne
 3. TOKEN-10E wrapping the existing string pipeline for full conversation history.
 4. Final structural validation before final CE compilation.
 5. TOKEN-10E-1 starting after CTX-UCL-1 only (without closeout).
+6. Regenerate summary on every model call.
+7. Application-local summary cache.
+8. Token Optimization-owned artifact persistence.
+9. Reuse based only on source range without source_content_hash.
+10. Reuse without policy and validation version checks.
 
 ## Relationship to ADR-MEM-001 and ADR-CTX-001
 
@@ -146,9 +181,10 @@ Application-owned persistence/activation wording migrates to Memory/Session owne
 ## Compliance
 
 - Tier boundaries preserved.
-- Linked architecture and plan docs updated in CTX-UCL-ARCH-1-R1.
+- Linked architecture and plan docs updated in CTX-UCL-ARCH-1-R3.
 
 ## Implementation notes
 
-- Documentation and guardrail tests only in CTX-UCL-ARCH-1-R1.
+- Documentation and guardrail tests only in CTX-UCL-ARCH-1-R3.
+- Runtime implementation has not started.
 - Next step after ADR acceptance: **CTX-UCL-1**.

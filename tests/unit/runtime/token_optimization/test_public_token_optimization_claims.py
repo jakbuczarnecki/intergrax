@@ -36,6 +36,27 @@ _OWNERSHIP_FORBIDDEN_PHRASES = (
     "platform owner: intergrax.runtime.token_optimization",
 )
 
+# CTX-UCL-ARCH-1-R3: reuse-before-create and artifact lifecycle guardrails.
+_REUSE_REQUIRED_CONCEPTS = (
+    "reuse-before-create",
+    "REUSE_ARTIFACT",
+    "CREATE_ARTIFACT",
+    "ArtifactLookupKey",
+    "source_content_hash",
+    "validation_contract_version",
+)
+
+_REGENERATION_FORBIDDEN_PHRASES = (
+    "generate a summary before every model call",
+    "always invoke the summarizer",
+    "always invoke summarizer",
+)
+
+_ARTIFACT_OWNERSHIP_FORBIDDEN_PHRASES = (
+    "token optimization owns artifact persistence",
+    "application owns the summary cache",
+)
+
 _UCL_OWNERSHIP_FORBIDDEN_PHRASES = _OWNERSHIP_FORBIDDEN_PHRASES
 
 _BYPASS_FLOW_FORBIDDEN_PATTERNS = (
@@ -228,3 +249,36 @@ def test_token_optimization_section_810_has_valid_safe_reporting_marker() -> Non
 def test_allowed_application_boundary_phrases_remain_valid_in_ucl() -> None:
     content = _read_public_doc(_UCL_ARCH).lower()
     assert any(phrase in content for phrase in _ALLOWED_APPLICATION_BOUNDARY_PHRASES)
+
+
+# --- CTX-UCL-ARCH-1-R3: reuse-before-create guardrails ---
+
+
+@pytest.mark.parametrize("concept", _REUSE_REQUIRED_CONCEPTS)
+def test_ucl_architecture_documents_reuse_before_create_concepts(concept: str) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    assert concept in content, f"Missing required UCL concept: {concept!r}"
+
+
+def test_ucl_architecture_documents_summary_regeneration_prohibition() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "must not" in content and "llm summarizer" in content
+    assert "identical" in content and "artifactlookupkey" in content.replace("_", "")
+
+
+@pytest.mark.parametrize("phrase", _REGENERATION_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_regenerate_every_call_wording(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden regeneration wording in UCL arch: {phrase!r}"
+
+
+@pytest.mark.parametrize("phrase", _ARTIFACT_OWNERSHIP_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_artifact_ownership_regressions(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden artifact ownership phrase in UCL arch: {phrase!r}"
+
+
+def test_ucl_architecture_documents_llm_transform_invariant_on_reuse() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "llm_transform_invoked" in content
+    assert "reuse_artifact" in content

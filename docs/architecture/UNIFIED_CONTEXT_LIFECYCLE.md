@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** Correction delivered / ready for review (**CTX-UCL-ARCH-1-R1**)
+**Status:** Ready for review (**CTX-UCL-ARCH-1-R3**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
-**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture pass:** 2026-08-01 — **CTX-UCL-ARCH-1-R1** ownership and TOKEN-10E reconciliation
+**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
+**Last architecture pass:** 2026-08-01 — **CTX-UCL-ARCH-1-R3** reusable artifact lifecycle and reuse-before-create
 
 ---
 
@@ -13,8 +13,8 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-ARCH-1-R1** — ownership, flow, and TOKEN-10E reconciliation (supersedes CTX-UCL-ARCH-1 delivery gaps) |
-| Prior pass | **CTX-UCL-ARCH-1** — cross-domain architecture freeze (accepted elements preserved) |
+| Task | **CTX-UCL-ARCH-1-R3** — reusable artifact lifecycle, reuse-before-create, decision outcomes, roadmap sync |
+| Prior passes | **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R1** · **CTX-UCL-ARCH-1** |
 | Runtime implementation | **Not started** |
 | TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
@@ -89,37 +89,37 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 
 ### 5.1 Memory / Session — durable source of truth
 
-**Owns:** `ConversationLedger` (append-only raw messages and events); stable message IDs; sequence numbers; tool-call/tool-result relationships; attachments and message metadata; `SessionContextRevision` manifests; `ActiveContextRevisionPointer`; revision persistence contracts; revision activation through compare-and-swap; rollback execution; retention and archival lifecycle; optimistic concurrency.
+**Owns:** `ConversationLedger` (append-only raw messages and events); stable message IDs; sequence numbers; tool-call/tool-result relationships; attachments and message metadata; `SessionContextRevision` manifests; `ActiveContextRevisionPointer`; revision persistence contracts; revision activation through compare-and-swap; rollback execution; retention and archival lifecycle; optimistic concurrency; **Reusable Optimization Artifact Catalog** (persistence contract, lookup contract, content-addressed catalog, artifact availability and lifecycle state, artifact retention, artifact invalidation persistence); artifact references from `SessionContextRevision`; tenant/session scoping for artifacts.
 
-**Does not own:** global prompt budget; optimization algorithms; strategy selection; model-facing context composition; application authorization or UX.
+**Does not own:** global prompt budget; optimization algorithms; strategy selection; model-facing context composition; application authorization or UX; **whether an artifact should be used for the current model call** (Nexus orchestrates lookup-before-create; CE supplies requirements).
 
 **Rule:** Context compression for the model must not be a hidden side effect of `append_message()`. Storage-level retention is not token optimization. Compaction does not rewrite or delete the raw `ConversationLedger`.
 
 ### 5.2 Context Engineering — single budget authority
 
-**Owns:** one global input budget per model invocation; per-source budget allocation; segment classification (`mandatory`, `protected`, `compressible`, `droppable`, `trim_safe`); `ContextPlan`; final model-facing `ChatMessage[]`; final compilation; final model-facing integrity validation orchestration; token-window preflight (`verify_context_preflight`).
+**Owns:** one global input budget per model invocation; per-source budget allocation; segment classification (`mandatory`, `protected`, `compressible`, `droppable`, `trim_safe`); `ContextPlan`; determining required target size; determining whether the currently assembled context fits; classifying source groups; supplying source ranges and target requirements; final model-facing `ChatMessage[]`; final compilation using raw groups or reusable artifacts; final model-facing integrity validation orchestration; token-window preflight (`verify_context_preflight`).
 
-**Does not own:** durable conversation persistence; active revision pointer; optimization strategy implementation; application policy persistence.
+**Does not own:** durable conversation persistence; active revision pointer; optimization strategy implementation; application policy persistence; artifact lookup or persistence (CE supplies deterministic lookup inputs; does not perform catalog lookup itself).
 
 **Rule:** No history provider or optimization layer may hold a second independent global budget.
 
 ### 5.3 Token Optimization — transformation executor
 
-**Owns:** optimization strategy catalog; policy gates used by transformation execution; typed artifact executors; candidate construction; transformation pipeline composition; text protected-region validation; message-sequence structural validation contracts; measurements; receipts; safe reporting; cache attribution; cache-lineage transition calculation.
+**Owns:** optimization strategy catalog; policy gates used by transformation execution; typed artifact executors; artifact creation through the correct typed executor (only after `CREATE_ARTIFACT` decision); strategy compatibility metadata; candidate construction; transformation pipeline composition; text protected-region validation; message-sequence structural validation contracts; candidate validation; artifact measurement; receipts; safe result metadata; safe reporting; cache attribution; cache-lineage transition calculation.
 
-**Does not own:** `ConversationLedger`; `SessionContextRevision` persistence; `ActiveContextRevisionPointer`; revision activation; rollback execution; global prompt budget; application authorization; retention.
+**Does not own:** `ConversationLedger`; `SessionContextRevision` persistence; `ActiveContextRevisionPointer`; revision activation; rollback execution; global prompt budget; application authorization; retention; **reusable artifact repository or lookup persistence**.
 
 ### 5.4 Nexus — lifecycle coordinator
 
-**Owns:** snapshot acquisition; CE `ContextPlan` orchestration; resolved policy delivery; TOKEN-10D timing decision; optional Token Optimization invocation; validation sequencing; final CE compilation; final model-facing integrity check; preflight; adapter invocation; dispatch of durable activation request to Memory/Session.
+**Owns:** snapshot acquisition; CE `ContextPlan` orchestration; resolved policy delivery; **canonical optimization decision point** (every canonical model call traverses it); determining whether optimization is required; constructing `ArtifactLookupKey`; orchestrating lookup-before-create; mapping lookup result to `REUSE_ARTIFACT` or `CREATE_ARTIFACT`; preventing transform execution on a valid reuse hit; TOKEN-10D timing decision; optional Token Optimization invocation (only on `CREATE_ARTIFACT` or explicit approved refresh); validation sequencing; coordinating final validation and compilation; final CE compilation sequencing; final model-facing integrity check; preflight; adapter invocation sequencing; dispatch of durable activation request to Memory/Session.
 
-**Does not own:** storage implementation; compression algorithms; tenant policy persistence; product UX.
+**Does not own:** storage implementation; compression algorithms; tenant policy persistence; product UX; artifact persistence implementation.
 
 ### 5.5 Application host — configuration, authorization, UX
 
 **Owns:** profile selection; tenant configuration; authorization; feature opt-in; human review UX; rollback UX; retention configuration; persistence adapter selection and wiring; product-specific presentation.
 
-**Does not own:** a private session revision model; a private active revision pointer; a parallel compression engine; a parallel global budget; direct activation logic bypassing Memory/Session contracts.
+**Does not own:** a private session revision model; a private active revision pointer; a parallel compression engine; a parallel global budget; direct activation logic bypassing Memory/Session contracts; **its own summary cache** (application does not implement application-local summary caching).
 
 **Normalization path:**
 
@@ -150,6 +150,8 @@ Compatibility shim: `intergrax/applications/_shared/context_runtime_bridge.py`.
 
 ### 6.1 Ephemeral assembly flow (`EPHEMERAL_ASSEMBLY` — canonical model call)
 
+Every canonical model call traverses the UCL optimization decision point. Token Optimization transformation execution is **optional**; artifact lookup may occur without invoking Token Optimization.
+
 ```text
 Memory/Session:
   resolve ActiveContextRevisionPointer
@@ -164,18 +166,30 @@ Context Engineering:
   resolve one global ContextPlan
         ↓
 Nexus:
-  resolve ContextOptimizationPolicy
-  invoke TOKEN-10D timing gate when applicable
+  determine whether optimization is required
         ↓
-Token Optimization:
-  execute only approved transformations
-  using the correct typed artifact executor
+optimization not required
+  → NO_OP or SELECT_ONLY (as applicable)
         ↓
-candidate-level schema validation
-candidate-level structural validation
-candidate-level protected-region validation
-candidate-level quality validation
-candidate-level policy validation
+optimization required
+  → construct ArtifactLookupKey
+        ↓
+Memory/Session Optimization Artifact Catalog:
+  lookup compatible artifact
+        ↓
+compatible artifact found
+  → REUSE_ARTIFACT
+  → validate artifact eligibility (reuse-time compatibility and integrity)
+  → provide artifact to final CE compilation
+  → llm_transform_invoked = false
+        ↓
+no compatible artifact found
+  → CREATE_ARTIFACT
+  → invoke approved Token Optimization executor (TOKEN-10D RUN when applicable)
+  → candidate-level validation
+  → persist reusable artifact when policy permits
+  → provide artifact to final CE compilation
+  → llm_transform_invoked = true when LLM summarizer used
         ↓
 Context Engineering:
   final compilation into exact model-facing ChatMessage[]
@@ -189,22 +203,36 @@ exact-send materialization and hash/integrity verification
 LLM Adapter invocation
 ```
 
-**Rules:** `EPHEMERAL_ASSEMBLY` never changes `ActiveContextRevisionPointer`; never creates a durable revision by default; no content transformation after final model-facing integrity validation.
+**Rules:** `EPHEMERAL_ASSEMBLY` never changes `ActiveContextRevisionPointer`; never creates a durable revision by default; no content transformation after final model-facing integrity validation. `REUSE_ARTIFACT` must not execute an LLM summarizer or transformation executor. `CREATE_ARTIFACT` may execute an LLM summarizer only when policy and strategy allow it.
 
 ### 6.2 Durable compaction flow (`DURABLE_COMPACTION` — TOKEN-10E scope)
 
+Durable compaction **reuses** artifacts rather than regenerating them when a compatible artifact exists.
+
 ```text
-immutable baseline SessionContextRevision
+active SessionContextRevision (immutable baseline)
         ↓
-ContextPlan-selected MessageSequenceArtifact target
+Context Engineering:
+  ContextPlan-selected source range / MessageSequenceArtifact target
         ↓
-TOKEN-10D timing/policy decision
+Nexus:
+  construct ArtifactLookupKey
         ↓
-Token Optimization candidate construction
+Memory/Session Optimization Artifact Catalog:
+  lookup compatible artifact
         ↓
-candidate schema / structural / protected / quality validation
+compatible artifact exists
+  → REUSE_ARTIFACT (no LLM summarizer)
         ↓
-new immutable SessionContextRevision manifest
+no compatible artifact
+  → CREATE_ARTIFACT
+  → TOKEN-10D timing/policy decision
+  → MessageSequenceArtifactExecutor candidate construction
+  → candidate schema / structural / protected / quality validation
+  → persist reusable artifact when policy permits
+        ↓
+build new immutable SessionContextRevision referencing artifact_id / content hash
+  (must not copy full summary payload when stable artifact reference suffices)
         ↓
 receipt + rollback metadata
         ↓
@@ -212,13 +240,142 @@ Memory/Session CAS:
   expected ActiveContextRevisionPointer == baseline revision
         ↓
 activate candidate revision or return conflict
+  (activation must not cause summary regeneration)
         ↓
 cache-lineage transition
         ↓
 safe audit event
 ```
 
-**Rules:** no in-place mutation; no direct Application activation; no hidden retry after CAS conflict; no durable activation through Token Optimization itself.
+**Rules:** no in-place mutation; no direct Application activation; no hidden retry after CAS conflict; no durable activation through Token Optimization itself; rollback changes the active revision pointer and **reuses** artifact references already associated with the prior revision; raw `ConversationLedger` is not rewritten.
+
+### 6.3 Canonical optimization decision point (`reuse-before-create`)
+
+**Normative rule:** UCL **MUST** prefer a valid existing optimization artifact over executing a new transformation.
+
+An LLM-based summary **MUST NOT** be regenerated for an identical source range, source content hash, artifact type, policy version, strategy version, validation-contract version, and compression target.
+
+The rule applies to: `EPHEMERAL_ASSEMBLY`; `DURABLE_COMPACTION`; `MessageSequenceArtifact`; `TextArtifact` where reusable transformation artifacts are supported; future typed artifact executors.
+
+Reuse requires explicit compatibility validation. Not every transformation result is automatically reusable.
+
+#### 6.3.1 Decision outcomes (`ContextOptimizationDecision`)
+
+| Outcome | Definition |
+|---------|------------|
+| **`NO_OP`** | The current selected context fits the resolved budget without any optimization or artifact substitution. |
+| **`SELECT_ONLY`** | CE satisfies the budget through deterministic selection of whole allowed groups (dropping droppable groups, excluding optional groups, keeping mandatory/protected groups, preserving recent tail). **Must not** invoke an LLM. |
+| **`REUSE_ARTIFACT`** | A compatible existing artifact has been found and validated for the current source, policy, strategy, and target requirements. **Must not** invoke the transformation executor or LLM summarizer. |
+| **`CREATE_ARTIFACT`** | Optimization is required and no compatible artifact exists. The approved typed artifact executor may create a new candidate. |
+| **`POLICY_BLOCKED`** | Optimization would be technically possible but the resolved policy does not permit the requested target, strategy, or lossiness. |
+| **`FAIL_CLOSED`** | The required model context cannot be assembled safely and no permitted selection, reusable artifact, or transformation can satisfy the constraints. |
+
+`NO_OP`, `SELECT_ONLY`, and `REUSE_ARTIFACT` are distinct outcomes and must remain observable separately.
+
+#### 6.3.2 Artifact compatibility identity (`ArtifactLookupKey`)
+
+Canonical compatibility contract (exact field names may be finalized in **CTX-UCL-1** and **CTX-UCL-2**; dimensions below are normative):
+
+| Dimension | Required |
+|-----------|----------|
+| `tenant_id` | Yes |
+| `session_id` or scoped conversation identity | Yes |
+| `artifact_type` | Yes |
+| `source_range` or ordered source references | Yes |
+| `source_content_hash` | Yes |
+| `strategy_id` | Yes |
+| `strategy_version` | Yes |
+| `policy_version` | Yes |
+| `validation_contract_version` | Yes |
+| `compression_target` or `target_budget_class` | Yes |
+| `lossiness_profile` | Yes |
+| protected-region policy version | When applicable |
+| model-family constraint | When artifact compatibility depends on it |
+| language or locale constraint | When required |
+
+**Normally excluded** from compatibility identity (must not force regeneration): `request_id`, `run_id`, `trace_id`, current timestamp, provider cache observation, unrelated newer messages outside the artifact source range.
+
+#### 6.3.3 Reusable artifact record (`ReusableOptimizationArtifact`)
+
+Conceptual metadata contract (not implemented in this task):
+
+`artifact_id`, `artifact_type`, `tenant_id`, `session_id` or source scope, `source_refs` or `source_range`, `source_content_hash`, `artifact_content_hash`, `strategy_id`, `strategy_version`, `policy_version`, `validation_contract_version`, `compression_target`, `lossiness_profile`, `created_at`, `created_by_executor`, `validation_result`, `validation_timestamp`, `status`, `invalidation_reason`, `supersedes_artifact_id` (when applicable), `receipt_ref`, `safe_metadata`.
+
+#### 6.3.4 Reuse eligibility
+
+Reuse is allowed only when:
+
+- tenant scope matches
+- conversation/session scope matches
+- source range or source references match
+- `source_content_hash` matches
+- artifact type matches
+- strategy ID and version are compatible
+- policy version is compatible
+- validation-contract version is compatible
+- compression target is sufficient
+- protected-region policy remains satisfied
+- artifact status is valid
+- artifact has not been invalidated
+
+A reuse candidate must pass lightweight eligibility validation. Do not rerun the full transformation to validate reuse.
+
+**Validation stages (distinct):**
+
+1. **Creation-time** — full candidate validation (Token Optimization boundary).
+2. **Reuse-time** — compatibility and integrity validation.
+3. **Final model-facing** — integrity validation after CE compilation.
+
+#### 6.3.5 Invalidation rules
+
+A reusable artifact becomes ineligible when any relevant condition changes:
+
+- source messages, order, or range change
+- `source_content_hash` changes
+- tool-call or tool-result linkage changes inside the source
+- attachment or citation references change
+- strategy implementation version becomes incompatible
+- policy version requires stronger preservation
+- validation-contract version changes incompatibly
+- protected-region policy changes incompatibly
+- required compression target is stricter than the artifact can satisfy
+- artifact validation status is revoked
+- tenant/session scope changes
+- artifact is explicitly retired or invalidated
+
+**Closed-range stability:** new messages appended **after** the source range do **not** automatically invalidate an artifact for an unchanged closed range. Example: summary S1 covers messages 1–50; messages 51–120 are appended; if messages 1–50 and their structural metadata remain unchanged, S1 remains eligible for reuse. A changed message inside 1–50 invalidates S1 through a new source hash.
+
+#### 6.3.6 Summary regeneration prohibition
+
+The platform **MUST NOT** call an LLM summarizer again for an identical compatible `ArtifactLookupKey`. A lookup hit must produce `REUSE_ARTIFACT`.
+
+A new summarization call is allowed only after: lookup miss; explicit incompatibility; invalidation; stronger compression requirement; policy-required regeneration; validation failure; or administrative refresh explicitly allowed by policy.
+
+Administrative or quality refresh must not silently happen on every model call. If refresh is allowed in the future, it must be: policy-controlled; observable; versioned; receipt-backed; non-destructive.
+
+#### 6.3.7 Ephemeral artifact persistence
+
+`EPHEMERAL_ASSEMBLY` does **not** change `ActiveContextRevisionPointer`. A reusable artifact **may** still be stored in the Optimization Artifact Catalog when policy permits. An artifact created during an ephemeral call may be reused later without making it part of the active durable `SessionContextRevision`.
+
+Conceptual persistence policy options: `do_not_persist_ephemeral_artifact`; `persist_reusable_artifact`; `persist_only_after_validation`; `persist_only_after_human_review`.
+
+#### 6.3.8 Multi-level summary support
+
+A source range may have multiple compatible artifacts at different compression levels (e.g. `summary_detail_high`, `summary_detail_medium`, `summary_detail_low`, or target budget classes 2000 / 1000 / 500 tokens). Reuse selection should choose the **least-lossy valid artifact** that satisfies the current target. Do not force reuse of an artifact that is too large for the current budget. Do not automatically compress an existing summary recursively unless the strategy explicitly supports summary-of-summary lineage with traceable source lineage, quality policy permission, and satisfied validation/receipt requirements. Prefer direct source-based regeneration when required by policy.
+
+#### 6.3.9 Cache terminology
+
+Do **not** call the reusable summary catalog a provider prompt cache or KV cache.
+
+| Term | Meaning |
+|------|---------|
+| **Reusable Optimization Artifact Catalog** / **Optimization Artifact Store** | Platform-owned persisted optimization artifacts |
+| `SessionContextRevision` | Immutable durable projection manifest |
+| prompt prefix identity | Stable prefix hash for assembly |
+| provider prefix-cache observation | Reported provider evidence only |
+| provider KV cache | Provider-managed cache state |
+
+A reusable summary artifact is platform-owned persisted content, not provider cache state.
 
 ---
 
@@ -285,6 +442,8 @@ Atomic groups: user+assistant exchange; assistant tool call + tool results; pinn
 
 `resolved_global_budget`, per-source allocation, required/protected/compressible/droppable/trim_safe segment IDs, target sizes, allowed strategy classes, final validation requirements.
 
+**Artifact requirements** (CTX-UCL-3): `optimization_required`, source target ranges/groups, requested artifact type, target token or budget class, allowed strategies, minimum preservation requirements. CE does not perform catalog lookup itself but supplies deterministic lookup inputs.
+
 ### 9.5 `ContextOptimizationPolicy`
 
 Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `DURABLE`), `allow_lossy`, `allowed_targets`, `allowed_strategies`, `require_receipt`, `require_rollback_metadata`, `require_human_review`, recent-tail policy, protected-region policy, quality thresholds, cache policy, retention policy reference.
@@ -309,6 +468,14 @@ Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `D
 
 **Compatibility:** provisional name `SessionRevisionActivationRequest` — superseded before implementation.
 
+### 9.9 `ArtifactLookupKey`
+
+Canonical artifact compatibility identity for catalog lookup (see §6.3.2). Implemented in **CTX-UCL-1**; lookup contract in **CTX-UCL-2**.
+
+### 9.10 `ReusableOptimizationArtifact`
+
+Canonical reusable optimization artifact metadata record (see §6.3.3). Persisted by Memory/Session catalog; created by Token Optimization only on `CREATE_ARTIFACT`.
+
 ---
 
 ## 10. Policy normalization
@@ -319,7 +486,7 @@ Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `D
 |--------|-------------|
 | `OFF` | Optimization policy disabled |
 | `TRUNCATE_OLDEST` | CE selection/degradation on full message groups |
-| `SUMMARIZE_OLDEST` | Structured `MessageSequence` optimization strategy |
+| `SUMMARIZE_OLDEST` | Structured `MessageSequence` optimization strategy — **UCL path:** `ContextPlan` identifies source range → `ArtifactLookupKey` → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → `MessageSequenceArtifactExecutor` **only on create** |
 | `HYBRID` | **Deprecated** — require explicit composed pipeline |
 
 ### 10.2 `semantic_compression_enabled`
@@ -424,9 +591,11 @@ Do not model durable history as one growing JSON blob rewritten on each append.
 
 New revision references existing raw ledger ranges and summary artifacts — does not copy full conversation and does not mutate the `ConversationLedger`.
 
-### 13.3 Content-addressed artifacts
+### 13.3 Reusable Optimization Artifact Catalog
 
-Summary and transformed artifacts carry stable hashes; deduplication enabled.
+Summary and transformed artifacts are content-addressed platform-owned persisted content in the **Reusable Optimization Artifact Catalog** (also: **Optimization Artifact Store**). Artifacts carry stable hashes; deduplication enabled. This is **not** provider prompt cache or KV cache state.
+
+`SessionContextRevision` references artifact IDs or content hashes — must not copy the full summary payload when a stable artifact reference is sufficient.
 
 ### 13.4 Optimistic concurrency
 
@@ -482,12 +651,15 @@ Safe event model — **no raw conversation content** in standard events.
 |-------|----------------|
 | `snapshot_created` | IDs, revision, hashes, counts |
 | `context_plan_resolved` | budget, segment counts, policy version |
+| `optimization_decision` | `decision` (`NO_OP`, `SELECT_ONLY`, `REUSE_ARTIFACT`, `CREATE_ARTIFACT`, `POLICY_BLOCKED`, `FAIL_CLOSED`); `artifact_id` or `artifact_ref` when reusable; `lookup_hit`; `lookup_miss_reason`; `compatibility_result`; `invalidation_reason`; `strategy_id`; `strategy_version`; `policy_version`; `source_hash`; `target_budget_class`; `llm_transform_invoked`; `receipt_ref`; `raw_content_included = false` |
 | `optimization_requested` | operation_id, mode, strategy IDs |
 | `candidate_generated` / `candidate_rejected` | status, reason codes, measurements |
 | `validation_completed` | validation type, pass/fail, reason codes |
 | `activation_succeeded` / `activation_conflict` | revision IDs, operation_id |
 | `rollback_requested` / `rollback_completed` | revision IDs, status |
 | `cache_lineage_changed` | lineage refs, hashes |
+
+**Invariant:** `REUSE_ARTIFACT` → `llm_transform_invoked = false`. `CREATE_ARTIFACT` with LLM summary → `llm_transform_invoked = true`. Do not expose raw source messages or summary content in standard telemetry.
 
 ---
 
@@ -516,7 +688,7 @@ Safe event model — **no raw conversation content** in standard events.
 
 | Mechanism | Decision |
 |-----------|----------|
-| `HistoryLayer` | Legacy; frozen for new code; remove from canonical runtime construction after call-graph confirmation; compatibility path only |
+| `HistoryLayer` | Legacy; frozen for new code; remove from canonical runtime construction after call-graph confirmation; compatibility path only; **must not** keep its own summary cache or independently call the summarizer after UCL migration |
 | `HistoryCompressionStrategy` | Map to `ContextOptimizationPolicy` (§10.1) |
 | `semantic_compression_enabled` | Fail-fast or default-off (separate migration) |
 | Provider `messages[-N:]` slicing | Legacy — canonical provider delivers structural snapshot |
@@ -569,6 +741,11 @@ See §13. Production model: append-only ledger, revision manifests, content-addr
 9. Final hard trim after protected-region validation on non-`trim_safe` segments.
 10. Application-specific parallel compression systems.
 11. Separate UCL runtime independent of Nexus, CE, and TO.
+12. Regenerate summary on every model call.
+13. Application-local summary cache.
+14. Token Optimization-owned artifact persistence.
+15. Reuse based only on source range without `source_content_hash`.
+16. Reuse without policy and validation version checks.
 
 ---
 
@@ -582,17 +759,19 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Correction delivered through CTX-UCL-ARCH-1-R1** |
-| **CTX-UCL-ARCH-1-R1** | Ownership, flow, TOKEN-10E reconciliation, ADR-UCL-001 | **Ready for review** |
-| **CTX-UCL-1** | Canonical policy and typed artifact contracts | Not started |
-| **CTX-UCL-2** | `ConversationLedger`, snapshot, `SessionContextRevision`, activation contracts | Not started |
-| **CTX-UCL-3** | Structured SessionHistoryProvider + single CE budget authority | Not started |
-| **CTX-UCL-4** | `MessageSequenceArtifact` executor + structural validators | Not started |
-| **CTX-UCL-5** | Ephemeral assembly integration on canonical runtime paths | Not started |
-| **CTX-UCL-6** | Legacy HistoryLayer, profile, provider, bridge migration | Not started |
-| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime and documentation closeout | Not started |
+| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Delivered through R1/R2/R3** |
+| **CTX-UCL-ARCH-1-R1** | Ownership, flow, TOKEN-10E reconciliation, ADR-UCL-001 | **Correction delivered** |
+| **CTX-UCL-ARCH-1-R2** | Document integrity and audit accuracy | **Accepted / Closed** |
+| **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Ready for review** |
+| **CTX-UCL-1** | `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, artifact compatibility contracts, policy fields for reuse/persistence/LLM summarization | Not started |
+| **CTX-UCL-2** | Optimization Artifact Catalog contracts, lookup/store/invalidate, revision artifact references | Not started |
+| **CTX-UCL-3** | `ContextPlan` artifact requirements; structured SessionHistoryProvider + single CE budget | Not started |
+| **CTX-UCL-4** | `MessageSequenceArtifactExecutor` — invoked only after `CREATE_ARTIFACT`; no duplicate LLM summarization on identical source | Not started |
+| **CTX-UCL-5** | Canonical Nexus reuse-before-create integration; ephemeral artifact persistence policy | Not started |
+| **CTX-UCL-6** | Legacy migration — remove independent HistoryLayer summarization, application-local caches | Not started |
+| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime and documentation closeout; reuse-before-create proven | Not started |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R1` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R3` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
 
 **After CTX-UCL-CLOSEOUT-1:**
 
