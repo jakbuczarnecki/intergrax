@@ -31,7 +31,7 @@ def _validate_sha256_hex(value: str) -> str:
 
 def _canonicalize_string_tuple(value: Any) -> tuple[str, ...]:
     if value is None:
-        return ()
+        raise ValueError("string_tuple_null_forbidden")
     if isinstance(value, tuple):
         items = list(value)
     elif isinstance(value, list):

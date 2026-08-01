@@ -323,6 +323,46 @@ def test_query_policy_canonicalizes_tuple_values() -> None:
     assert policy.allowed_capability_ids == ("cap.a", "cap.z")
 
 
+def test_query_policy_omitted_tuple_fields_default_to_empty() -> None:
+    policy = _query_policy()
+    assert policy.allowed_connection_refs == ()
+    assert policy.allowed_capability_ids == ()
+
+
+@pytest.mark.parametrize(
+    "connection_refs,capability_ids",
+    [
+        ((), ()),
+        ([], []),
+    ],
+)
+def test_indexed_only_accepts_explicit_empty_tuple_fields(
+    connection_refs: tuple[str, ...] | list[str],
+    capability_ids: tuple[str, ...] | list[str],
+) -> None:
+    policy = _query_policy(
+        allowed_connection_refs=connection_refs,
+        allowed_capability_ids=capability_ids,
+    )
+    assert policy.allowed_connection_refs == ()
+    assert policy.allowed_capability_ids == ()
+
+
+def test_query_policy_rejects_explicit_none_connection_refs() -> None:
+    with pytest.raises(ValidationError):
+        _query_policy(allowed_connection_refs=None)
+
+
+def test_query_policy_rejects_explicit_none_capability_ids() -> None:
+    with pytest.raises(ValidationError):
+        _query_policy(allowed_capability_ids=None)
+
+
+def test_live_access_binding_rejects_explicit_none_capability_ids() -> None:
+    with pytest.raises(ValidationError):
+        _live_access_binding(allowed_capability_ids=None)
+
+
 # --- Configuration head ---
 
 
