@@ -24,11 +24,10 @@ Next implementation:
   LKW-KNOWLEDGE-ACCESS-1 — NEXT
 
 Platform next (vendor knowledge):
-  SLACK-KNOWLEDGE-FOUNDATION-1 — NEXT after SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+  SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
 
-Slack Knowledge user vertical (after platform foundation):
-  SLACK-KNOWLEDGE-FOUNDATION-1
-  → LKW-SLACK-CONNECTED-SOURCE-1
+Slack Knowledge vertical next (after platform foundation):
+  LKW-SLACK-CONNECTED-SOURCE-1 — NEXT in Slack vertical
   → SLACK-LIVE-CAPABILITY-1
   → LKW-SLACK-KNOWLEDGE-PROOF-1
 
@@ -166,8 +165,8 @@ Complete Slack Knowledge user vertical precedes Microsoft Graph Calendar and low
 | Task | Owner | User outcome | Status |
 |---|---|---|---|
 | `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
-| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations for any Intergrax application; no new Slack command or LKW feature implied yet | **NEXT** (platform) |
-| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **PLANNED** |
+| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations for any Intergrax application; no new Slack command or LKW feature implied yet | **DONE** |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **NEXT** (Slack vertical) |
 | `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
 | `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining Slack history, authorized live Slack evidence and other workspace sources with safe citations | **PLANNED** |
 
@@ -418,7 +417,7 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 6. converge at Hybrid Ask.
 ```
 
-The immediate current platform task is `SLACK-KNOWLEDGE-FOUNDATION-1`. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the complete Slack user vertical.
+The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**); next Slack-vertical task is `LKW-SLACK-CONNECTED-SOURCE-1`. Global LKW product next task remains `LKW-KNOWLEDGE-ACCESS-1`. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the complete Slack user vertical.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 

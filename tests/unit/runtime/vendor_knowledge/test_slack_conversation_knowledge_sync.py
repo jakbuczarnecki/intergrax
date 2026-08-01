@@ -315,6 +315,10 @@ async def test_slack_sink_failure_retries_same_page_with_stable_delivery_id() ->
     fake._reply_backup = []
     coordinator, sink, checkpoint_repo, state_repo, _, integration = _build_coordinator(fake)
     integration_id = id(integration)
+    checkpoint_before_attempt = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
     sink.fail_times = 1
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.reconcile_once(
@@ -324,6 +328,22 @@ async def test_slack_sink_failure_retries_same_page_with_stable_delivery_id() ->
     assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
     first_delivery = sink.calls[0].delivery_id
     first_history_calls = len(fake.history_calls)
+    checkpoint_after_failure = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    first_remote_id = sink.calls[0].envelopes[0].remote_id if sink.calls[0].envelopes else None
+    state_after_failure = (
+        state_repo.get(
+            tenant_id="tenant-1",
+            binding_id="slack-conversation-binding",
+            remote_id=first_remote_id,
+        )
+        if first_remote_id is not None
+        else None
+    )
+    assert checkpoint_after_failure == checkpoint_before_attempt
+    assert state_after_failure is None
     retry_result = await coordinator.reconcile_once(
         binding_id="slack-conversation-binding",
         restart=True,
@@ -336,6 +356,22 @@ async def test_slack_sink_failure_retries_same_page_with_stable_delivery_id() ->
     assert len(fake.history_calls) == first_history_calls + 1
     assert fake.history_calls[0] == fake.history_calls[first_history_calls]
     assert id(integration) == integration_id
+    checkpoint_after = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    state_after_retry = (
+        state_repo.get(
+            tenant_id="tenant-1",
+            binding_id="slack-conversation-binding",
+            remote_id=first_remote_id,
+        )
+        if first_remote_id is not None
+        else None
+    )
+    assert checkpoint_after is not None
+    assert checkpoint_after != checkpoint_after_failure
+    assert state_after_retry is not None
 
 
 @pytest.mark.asyncio
@@ -425,3 +461,51 @@ async def test_slack_edit_changes_revision_and_content() -> None:
     content = await facade.fetch_content(source=source, item=descriptor2)
     assert content.structured_record is not None
     assert content.structured_record["text"] == "edited root"
+
+
+@pytest.mark.asyncio
+async def test_slack_multi_page_thread_proof_without_lost_or_duplicate_replies() -> None:
+    fake = _SlackFakeIntegration()
+    reply_two = _message(
+        message_ts="1704153604.000001",
+        text="reply two",
+        root_thread_ts=_ROOT_TS,
+    )
+    fake._reply_pages = [
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(_message(message_ts=_REPLY_TS, text="reply one", root_thread_ts=_ROOT_TS),),
+            next_cursor="reply-page-2",
+        ),
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(reply_two,),
+        ),
+    ]
+    fake._reply_backup = list(fake._reply_pages)
+    coordinator, sink, checkpoint_repo, state_repo, fake, integration = _build_coordinator(fake)
+    results = await _reconcile_until_complete(coordinator)
+    reply_timestamps = []
+    root_count = 0
+    for batch in sink.calls:
+        for envelope in batch.envelopes:
+            record = envelope.content.structured_record if envelope.content else None
+            if record is None:
+                continue
+            message_ts = record["message"]["message_ts"]
+            if message_ts == _ROOT_TS:
+                root_count += 1
+            if record["thread"]["root_thread_ts"] == _ROOT_TS:
+                reply_timestamps.append(message_ts)
+    assert root_count == 1
+    assert reply_timestamps.count(_REPLY_TS) == 1
+    assert reply_timestamps.count("1704153604.000001") == 1
+    assert len(fake.reply_calls) == 2
+    assert fake.reply_calls[0]["cursor"] is None
+    assert fake.reply_calls[1]["cursor"] == "reply-page-2"
+    assert results[-1].has_more is False
+    assert checkpoint_repo.get(tenant_id="tenant-1", binding_id="slack-conversation-binding") is not None

@@ -20,6 +20,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     validate_slack_conversation_id,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.timestamp import (
+    compare_slack_timestamps,
     validate_slack_timestamp,
 )
 
@@ -228,7 +229,7 @@ class SlackConversationMessagePage(BaseModel):
 
     @model_validator(mode="after")
     def _validate_window(self) -> Self:
-        if float(self.oldest) > float(self.latest):
+        if compare_slack_timestamps(self.oldest, self.latest) > 0:
             raise ValueError(_MALFORMED_RESPONSE)
         return self
 
@@ -261,9 +262,33 @@ class SlackConversationSourceWindow(BaseModel):
 
     @model_validator(mode="after")
     def _validate_window(self) -> Self:
-        if float(self.oldest) > float(self.latest):
+        ordering = compare_slack_timestamps(self.oldest, self.latest)
+        if ordering > 0:
+            raise ValueError(_MALFORMED_RESPONSE)
+        if ordering == 0:
             raise ValueError(_MALFORMED_RESPONSE)
         return self
+
+
+class SlackConversationPointWindow(BaseModel):
+    """Inclusive exact timestamp point for provider exact-message reads."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    message_ts: str = Field(repr=False)
+
+    @field_validator("message_ts", mode="before")
+    @classmethod
+    def _validate_message_ts(cls, value: object) -> str:
+        return validate_slack_timestamp(value)
+
+    @property
+    def oldest(self) -> str:
+        return self.message_ts
+
+    @property
+    def latest(self) -> str:
+        return self.message_ts
 
 
 def validate_slack_conversation_message(value: object) -> SlackConversationMessage:
@@ -282,6 +307,7 @@ __all__ = [
     "SlackConversationKind",
     "SlackConversationMessage",
     "SlackConversationMessagePage",
+    "SlackConversationPointWindow",
     "SlackConversationSourceWindow",
     "SlackConversationSummary",
     "validate_slack_conversation_message",

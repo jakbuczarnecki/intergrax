@@ -1156,17 +1156,17 @@ application database/store       LKW Knowledge Intake
 13. Indexed permission and live-access authorization are separate grants.
 14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
 
-**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1`):**
+**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
 
 ```text
-list_accessible_conversations_page
-read_conversation_history_page
-read_thread_replies_page
-read_exact_message
+list_accessible_conversations_page   # users.conversations membership inventory
+read_conversation_history_page       # root-window bounded history
+read_thread_replies_page             # thread replies with root normalization
+read_exact_message                   # bounded exact lookup with reply pagination
 read_file_info (safe inventory only)
 ```
 
-**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, fixed-window reconciliation, structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**.
+**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
 
 **Not implemented:** LKW bridge, live capability, authoritative ACL, durable deletion feed, binary file download.
 

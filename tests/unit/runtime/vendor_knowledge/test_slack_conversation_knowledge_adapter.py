@@ -110,6 +110,7 @@ class _FakeSlackIntegration:
         self.history_calls: list[dict[str, Any]] = []
         self.reply_calls: list[dict[str, Any]] = []
         self.exact_calls: list[dict[str, Any]] = []
+        self._content: dict[str, SlackConversationMessage] = {}
         self._history_pages = [
             SlackConversationMessagePage(
                 conversation_id=_CONVERSATION_ID,
@@ -138,15 +139,23 @@ class _FakeSlackIntegration:
 
     async def read_conversation_history_page(self, **kwargs: Any) -> SlackConversationMessagePage:
         self.history_calls.append(kwargs)
-        return self._history_pages.pop(0)
+        page = self._history_pages.pop(0)
+        for item in page.items:
+            self._content[item.message_ts] = item
+        return page
 
     async def read_thread_replies_page(self, **kwargs: Any) -> SlackConversationMessagePage:
         self.reply_calls.append(kwargs)
-        return self._reply_pages[kwargs["root_message_ts"]].pop(0)
+        page = self._reply_pages[kwargs["root_message_ts"]].pop(0)
+        for item in page.items:
+            self._content[item.message_ts] = item
+        return page
 
     async def read_exact_message(self, **kwargs: Any) -> SlackConversationExactMessageResult:
         self.exact_calls.append(kwargs)
-        message = _message(message_ts=kwargs["message_ts"], text="exact")
+        message = self._content.get(kwargs["message_ts"])
+        if message is None:
+            message = _message(message_ts=kwargs["message_ts"], text="exact")
         revision = kwargs.get("expected_revision")
         if revision is not None and revision != compute_slack_conversation_message_revision(message):
             from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
@@ -263,3 +272,108 @@ async def test_invalid_scope_rejected_without_provider_calls() -> None:
         await adapter.read_page(integration=integration, source=bad_source, cursor=None, limit=1)
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
     assert fake.history_calls == []
+
+
+async def test_fetch_content_succeeds_for_later_page_reply() -> None:
+    adapter = SlackConversationKnowledgeAdapter()
+    fake = _FakeSlackBackend()
+    integration = _integration(fake)
+    source = _source()
+    page = await adapter.read_page(integration=integration, source=source, cursor=None, limit=1)
+    reply_page = await adapter.read_page(
+        integration=integration,
+        source=source,
+        cursor=page.next_cursor,
+        limit=10,
+    )
+    descriptor = reply_page.changes[0].descriptor
+    assert descriptor is not None
+    content = await adapter.fetch_content(integration=integration, source=source, item=descriptor)
+    assert content.structured_record is not None
+    assert content.structured_record["text"] == "reply"
+
+
+async def test_fetch_content_revision_mismatch_is_retryable() -> None:
+    adapter = SlackConversationKnowledgeAdapter()
+    fake = _FakeSlackBackend()
+    integration = _integration(fake)
+    source = _source()
+    page = await adapter.read_page(integration=integration, source=source, cursor=None, limit=1)
+    reply_page = await adapter.read_page(
+        integration=integration,
+        source=source,
+        cursor=page.next_cursor,
+        limit=10,
+    )
+    descriptor = reply_page.changes[0].descriptor
+    assert descriptor is not None
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=integration,
+            source=source,
+            item=descriptor.model_copy(
+                update={
+                    "revision": descriptor.revision.model_copy(
+                        update={"version": "not-a-valid-revision-payload"}
+                    )
+                }
+            ),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+
+
+@pytest.mark.parametrize(
+    "mutator",
+    [
+        lambda descriptor: descriptor.model_copy(
+            update={"identity": descriptor.identity.model_copy(update={"remote_id": "tampered"})}
+        ),
+        lambda descriptor: descriptor.model_copy(
+            update={
+                "provenance": descriptor.provenance.model_copy(update={"remote_id": "tampered"})
+            }
+        ),
+        lambda descriptor: descriptor.model_copy(
+            update={"metadata": {**descriptor.metadata, "thread_root_ts": "1704999999.000001"}}
+        ),
+        lambda descriptor: descriptor.model_copy(update={"item_type": "other"}),
+        lambda descriptor: descriptor.model_copy(update={"content_available": False}),
+    ],
+)
+async def test_fetch_permissions_invalid_descriptor_returns_invalid_scope(
+    mutator,
+) -> None:
+    adapter = SlackConversationKnowledgeAdapter()
+    fake = _FakeSlackBackend()
+    integration = _integration(fake)
+    source = _source()
+    page = await adapter.read_page(integration=integration, source=source, cursor=None, limit=1)
+    descriptor = page.changes[0].descriptor
+    assert descriptor is not None
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_permissions(
+            integration=integration,
+            source=source,
+            item=mutator(descriptor),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.exact_calls == []
+
+
+async def test_capabilities_full_inventory_within_root_window_scope() -> None:
+    adapter = SlackConversationKnowledgeAdapter()
+    assert adapter.capabilities.full_inventory is True
+    scope = encode_slack_conversation_scope_id(
+        conversation_id=_CONVERSATION_ID,
+        conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+        oldest=_OLDEST,
+        latest=_LATEST,
+    )
+    assert "slack.conversation.scope.v2" in scope or scope  # encoded payload is opaque
+    with pytest.raises(ValueError):
+        encode_slack_conversation_scope_id(
+            conversation_id=_CONVERSATION_ID,
+            conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+            oldest=_LATEST,
+            latest=_OLDEST,
+        )

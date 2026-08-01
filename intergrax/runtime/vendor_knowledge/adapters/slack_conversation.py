@@ -66,7 +66,7 @@ from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 SLACK_CONVERSATION_SCOPE_TYPE = "slack_conversation"
 SLACK_CONVERSATION_CURSOR_VERSION = "slack.conversation.cursor.v1"
-_SLACK_CONVERSATION_SCOPE_SCHEMA_VERSION = "slack.conversation.scope.v1"
+_SLACK_CONVERSATION_SCOPE_SCHEMA_VERSION = "slack.conversation.scope.v2"
 _SLACK_CONVERSATION_MESSAGE_ID_SCHEMA_VERSION = "slack.conversation.message-id.v1"
 _SLACK_CONVERSATION_REVISION_SCHEMA_VERSION = "slack.conversation.revision.v1"
 
@@ -110,11 +110,11 @@ def _validate_exact_durable_id(value: object, *, validator: Callable[[object], s
 class _SlackConversationScope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    schema_version: Literal["slack.conversation.scope.v1"]
+    schema_version: Literal["slack.conversation.scope.v2"]
     conversation_id: str = Field(repr=False)
     conversation_kind: SlackConversationKind
-    oldest: str = Field(repr=False)
-    latest: str = Field(repr=False)
+    root_oldest: str = Field(repr=False)
+    root_latest: str = Field(repr=False)
 
     @field_validator("conversation_kind", mode="before")
     @classmethod
@@ -134,14 +134,14 @@ class _SlackConversationScope(BaseModel):
 
         return _validate_exact_durable_id(value, validator=validate_slack_conversation_id)
 
-    @field_validator("oldest", "latest", mode="before")
+    @field_validator("root_oldest", "root_latest", mode="before")
     @classmethod
     def _validate_boundaries(cls, value: object) -> str:
         return _validate_exact_durable_id(value, validator=validate_slack_timestamp)
 
     @model_validator(mode="after")
     def _validate_scope_shape(self) -> _SlackConversationScope:
-        SlackConversationSourceWindow(oldest=self.oldest, latest=self.latest)
+        SlackConversationSourceWindow(oldest=self.root_oldest, latest=self.root_latest)
         return self
 
 
@@ -185,8 +185,8 @@ class _SlackConversationCursor(BaseModel):
     schema_version: Literal["slack.conversation.cursor.v1"]
     conversation_id: str = Field(repr=False)
     conversation_kind: SlackConversationKind
-    oldest: str = Field(repr=False)
-    latest: str = Field(repr=False)
+    root_oldest: str = Field(repr=False)
+    root_latest: str = Field(repr=False)
     phase: Literal["history", "replies", "complete"]
     resume_history_cursor: str | None = Field(default=None, repr=False)
     history_cursor: str | None = Field(default=None, repr=False)
@@ -212,7 +212,7 @@ class _SlackConversationCursor(BaseModel):
 
         return _validate_exact_durable_id(value, validator=validate_slack_conversation_id)
 
-    @field_validator("oldest", "latest", "root_message_ts", mode="before")
+    @field_validator("root_oldest", "root_latest", "root_message_ts", mode="before")
     @classmethod
     def _validate_timestamps(cls, value: object) -> str | None:
         if value is None:
@@ -239,7 +239,7 @@ class _SlackConversationCursor(BaseModel):
 
     @model_validator(mode="after")
     def _validate_phase_shape(self) -> _SlackConversationCursor:
-        SlackConversationSourceWindow(oldest=self.oldest, latest=self.latest)
+        SlackConversationSourceWindow(oldest=self.root_oldest, latest=self.root_latest)
         if self.phase == "history":
             if self.root_message_ts is not None or self.root_message_revision is not None:
                 raise ValueError("history phase has forbidden root fields")
@@ -271,8 +271,8 @@ def encode_slack_conversation_scope_id(
         schema_version=_SLACK_CONVERSATION_SCOPE_SCHEMA_VERSION,
         conversation_id=conversation_id,
         conversation_kind=conversation_kind,
-        oldest=oldest,
-        latest=latest,
+        root_oldest=oldest,
+        root_latest=latest,
     )
     return _encode_canonical_payload(scope.model_dump(mode="json"))
 
@@ -466,8 +466,47 @@ class SlackConversationKnowledgeAdapter:
     ) -> KnowledgePermissions:
         self._require_slack_integration(integration=integration, source=source)
         validated_source = self._validate_source_ref(source)
-        validated_item = self._deep_validate_item_descriptor(item)
-        self._validate_item_provenance(validated_item, source=validated_source)
+        try:
+            conversation_id, _, _window = self._decode_scope(validated_source)
+            validated_item = self._deep_validate_item_descriptor(item)
+            message_identity, revision = self._validate_message_item(
+                validated_item,
+                source=validated_source,
+                conversation_id=conversation_id,
+            )
+            self._validate_descriptor_metadata(
+                validated_item.metadata,
+                message_identity=message_identity,
+                updated_at=validated_item.revision.updated_at,
+            )
+            if validated_item.item_type != "slack_conversation_message":
+                raise ValueError("invalid item type")
+            if validated_item.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD:
+                raise ValueError("invalid content mode")
+            if not validated_item.content_available:
+                raise ValueError("content must be available")
+            if validated_item.identity.parent_remote_id is not None:
+                parent_identity = _decode_message_identity_payload(
+                    validated_item.identity.parent_remote_id
+                )
+                thread_root_ts = validated_item.metadata.get("thread_root_ts")
+                if not isinstance(thread_root_ts, str):
+                    raise ValueError("invalid thread root metadata")
+                if parent_identity.message_ts != thread_root_ts:
+                    raise ValueError("parent/root mismatch")
+            elif validated_item.metadata.get("thread_root_ts") is not None:
+                raise ValueError("reply metadata without parent")
+            _ = revision
+        except VendorKnowledgeError:
+            raise
+        except (ValueError, TypeError, AttributeError, ValidationError):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+                safe_message="Slack conversation message descriptor is invalid",
+                provider_id=self.provider_id,
+                source_kind=self.source_kind,
+                retryable=False,
+            ) from None
         raise VendorKnowledgeError(
             code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
             safe_message="Slack conversation authoritative permission projection is not implemented",
@@ -510,8 +549,8 @@ class SlackConversationKnowledgeAdapter:
                         schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                         conversation_id=conversation_id,
                         conversation_kind=resolved_kind,
-                        oldest=window.oldest,
-                        latest=window.latest,
+                        root_oldest=window.oldest,
+                        root_latest=window.latest,
                         phase="history",
                         history_cursor=validated_page.next_cursor,
                         resume_history_cursor=decoded_cursor.resume_history_cursor
@@ -547,8 +586,8 @@ class SlackConversationKnowledgeAdapter:
                     schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                     conversation_id=conversation_id,
                     conversation_kind=resolved_kind,
-                    oldest=window.oldest,
-                    latest=window.latest,
+                    root_oldest=window.oldest,
+                    root_latest=window.latest,
                     phase="replies",
                     resume_history_cursor=resume_cursor,
                     root_message_ts=message.message_ts,
@@ -567,8 +606,8 @@ class SlackConversationKnowledgeAdapter:
                     schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                     conversation_id=conversation_id,
                     conversation_kind=resolved_kind,
-                    oldest=window.oldest,
-                    latest=window.latest,
+                    root_oldest=window.oldest,
+                    root_latest=window.latest,
                     phase="history",
                     history_cursor=validated_page.next_cursor,
                     resume_history_cursor=resume_cursor,
@@ -628,8 +667,8 @@ class SlackConversationKnowledgeAdapter:
                     schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                     conversation_id=conversation_id,
                     conversation_kind=decoded_cursor.conversation_kind,
-                    oldest=window.oldest,
-                    latest=window.latest,
+                    root_oldest=window.oldest,
+                    root_latest=window.latest,
                     phase="replies",
                     resume_history_cursor=decoded_cursor.resume_history_cursor,
                     root_message_ts=root_message_ts,
@@ -649,8 +688,8 @@ class SlackConversationKnowledgeAdapter:
                     schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                     conversation_id=conversation_id,
                     conversation_kind=decoded_cursor.conversation_kind,
-                    oldest=window.oldest,
-                    latest=window.latest,
+                    root_oldest=window.oldest,
+                    root_latest=window.latest,
                     phase="history",
                     history_cursor=decoded_cursor.resume_history_cursor,
                 )
@@ -739,7 +778,10 @@ class SlackConversationKnowledgeAdapter:
                 provider_id=source.provider_id,
                 source_kind=source.source_kind,
             ) from None
-        window = SlackConversationSourceWindow(oldest=decoded.oldest, latest=decoded.latest)
+        window = SlackConversationSourceWindow(
+            oldest=decoded.root_oldest,
+            latest=decoded.root_latest,
+        )
         return decoded.conversation_id, decoded.conversation_kind, window
 
     def _invalid_source_scope_error(
@@ -807,8 +849,8 @@ class SlackConversationKnowledgeAdapter:
         if (
             decoded.conversation_id != conversation_id
             or decoded.conversation_kind != conversation_kind
-            or decoded.oldest != oldest
-            or decoded.latest != latest
+            or decoded.root_oldest != oldest
+            or decoded.root_latest != latest
         ):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
@@ -947,8 +989,8 @@ class SlackConversationKnowledgeAdapter:
                 schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
                 conversation_id=conversation_id,
                 conversation_kind=conversation_kind,
-                oldest=window.oldest,
-                latest=window.latest,
+                root_oldest=window.oldest,
+                root_latest=window.latest,
                 phase="complete",
             )
         )
@@ -1171,7 +1213,13 @@ class SlackConversationKnowledgeAdapter:
                     source_kind=self.source_kind,
                     retryable=True,
                 ) from None
-            if exc.slack_error in {"invalid_auth", "token_revoked", "not_authed"}:
+            if exc.slack_error in {
+                "invalid_auth",
+                "token_revoked",
+                "not_authed",
+                "account_inactive",
+                "token_expired",
+            }:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.AUTHENTICATION_FAILED,
                     safe_message="Slack conversation knowledge authentication failed",
@@ -1179,15 +1227,14 @@ class SlackConversationKnowledgeAdapter:
                     source_kind=self.source_kind,
                     retryable=False,
                 ) from None
-            if exc.slack_error in {"missing_scope"}:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.AUTHORIZATION_DENIED,
-                    safe_message="Slack conversation knowledge authorization failed",
-                    provider_id=self.provider_id,
-                    source_kind=self.source_kind,
-                    retryable=False,
-                ) from None
-            if exc.slack_error in {"no_permission", "not_in_channel", "access_denied"}:
+            if exc.slack_error in {
+                "missing_scope",
+                "no_permission",
+                "not_in_channel",
+                "access_denied",
+                "restricted_action",
+                "team_access_not_granted",
+            }:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.AUTHORIZATION_DENIED,
                     safe_message="Slack conversation knowledge authorization failed",

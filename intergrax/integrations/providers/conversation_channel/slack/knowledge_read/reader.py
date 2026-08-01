@@ -23,7 +23,6 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     SlackConversationContentTooLarge,
     SlackConversationMessageChanged,
     SlackConversationMessageNotFound,
-    SlackConversationReadConfigurationError,
     SlackConversationReadError,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.models import (
@@ -33,11 +32,13 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     SlackConversationKind,
     SlackConversationMessage,
     SlackConversationMessagePage,
+    SlackConversationPointWindow,
     SlackConversationSourceWindow,
     SlackConversationSummary,
     validate_slack_conversation_message,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.timestamp import (
+    slack_timestamp_in_window,
     validate_slack_timestamp,
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
@@ -45,16 +46,23 @@ from intergrax.utils import attribute_access
 
 _LOG = logging.getLogger(__name__)
 _INVENTORY_TYPES = "public_channel,private_channel,im,mpim"
-_AUTH_ERRORS = frozenset({"invalid_auth", "token_revoked", "not_authed", "account_inactive"})
+_AUTH_ERRORS = frozenset(
+    {"invalid_auth", "token_revoked", "not_authed", "account_inactive", "token_expired"}
+)
 _SCOPE_ERRORS = frozenset({"missing_scope"})
 _NOT_FOUND_ERRORS = frozenset({"channel_not_found", "thread_not_found", "message_not_found"})
 _PERMISSION_ERRORS = frozenset(
-    {"no_permission", "not_in_channel", "access_denied", "restricted_action"}
+    {
+        "no_permission",
+        "not_in_channel",
+        "access_denied",
+        "restricted_action",
+        "team_access_not_granted",
+    }
 )
 _RETRYABLE_ERRORS = frozenset(
     {"ratelimited", "request_timeout", "service_unavailable", "internal_error", "fatal_error"}
 )
-_METADATA_ALLOWLIST = frozenset({"is_starred"})
 
 
 def _response_mapping(response: Any) -> Mapping[str, Any]:
@@ -73,10 +81,27 @@ def _response_mapping(response: Any) -> Mapping[str, Any]:
                 "file": response_get("file"),
                 "error": response_get("error"),
                 "response_metadata": response_get("response_metadata"),
+                "user_id": response_get("user_id"),
             }
         except Exception:
             raise SlackConversationReadError(slack_error="malformed_response") from None
     raise SlackConversationReadError(slack_error="malformed_response")
+
+
+def _extract_slack_error_code(exc: BaseException) -> str:
+    response = attribute_access.optional(exc, "response", None)
+    if response is None:
+        return "unknown_error"
+    if isinstance(response, Mapping):
+        code = response.get("error")
+        if isinstance(code, str) and code.strip():
+            return code.strip()
+    data = attribute_access.optional(response, "data", None)
+    if isinstance(data, Mapping):
+        code = data.get("error")
+        if isinstance(code, str) and code.strip():
+            return code.strip()
+    return "unknown_error"
 
 
 def _extract_retry_after(exc: BaseException) -> float | None:
@@ -103,30 +128,23 @@ def _extract_retry_after(exc: BaseException) -> float | None:
 
 
 def _normalize_slack_api_error(exc: BaseException) -> BaseException:
-    code = ""
-    response = attribute_access.optional(exc, "response", None)
-    if isinstance(response, Mapping):
-        code = str(response.get("error") or "")
-    if not code:
-        code = "unknown_error"
+    code = _extract_slack_error_code(exc)
     retry_after = _extract_retry_after(exc)
     if code in _AUTH_ERRORS:
-        return SlackConversationReadConfigurationError(
-            "Slack conversation knowledge authentication failed",
-        )
-    if code in _SCOPE_ERRORS:
-        return SlackConversationReadConfigurationError(
-            "Slack conversation knowledge scope is missing",
-        )
+        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+    if code in _SCOPE_ERRORS or code in _PERMISSION_ERRORS:
+        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
     if code in _NOT_FOUND_ERRORS:
         return SlackConversationMessageNotFound()
-    if code in _PERMISSION_ERRORS:
-        return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
     if code == "ratelimited":
         return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
     if code in _RETRYABLE_ERRORS:
         return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
     return SlackConversationReadError(slack_error=code, retry_after_seconds=retry_after)
+
+
+def _malformed_provider_response() -> SlackConversationReadError:
+    return SlackConversationReadError(slack_error="malformed_response")
 
 
 def _non_blank_str(value: Any) -> str | None:
@@ -169,10 +187,10 @@ def _safe_conversation_name(channel: Mapping[str, Any], *, kind: SlackConversati
     return name or "Conversation"
 
 
-def _parse_file_reference(raw: Mapping[str, Any]) -> SlackConversationFileReference | None:
+def _parse_file_reference(raw: Mapping[str, Any]) -> SlackConversationFileReference:
     file_id = _non_blank_str(raw.get("id"))
     if file_id is None:
-        return None
+        raise ValueError(_MALFORMED_RESPONSE)
     safe_name = (
         _non_blank_str(raw.get("name"))
         or _non_blank_str(raw.get("title"))
@@ -197,6 +215,14 @@ def _parse_file_reference(raw: Mapping[str, Any]) -> SlackConversationFileRefere
     )
 
 
+def _normalize_root_thread_ts(*, message_ts: str, raw_thread_ts: str | None) -> str | None:
+    if raw_thread_ts is None:
+        return None
+    if raw_thread_ts == message_ts:
+        return None
+    return raw_thread_ts
+
+
 def _parse_message(
     *,
     conversation_id: str,
@@ -207,9 +233,13 @@ def _parse_message(
     if message_ts is None:
         raise ValueError(_MALFORMED_RESPONSE)
     message_ts = validate_slack_timestamp(message_ts)
-    root_thread_ts = _non_blank_str(raw.get("thread_ts"))
-    if root_thread_ts is not None:
-        root_thread_ts = validate_slack_timestamp(root_thread_ts)
+    raw_thread_ts = _non_blank_str(raw.get("thread_ts"))
+    root_thread_ts = None
+    if raw_thread_ts is not None:
+        root_thread_ts = _normalize_root_thread_ts(
+            message_ts=message_ts,
+            raw_thread_ts=validate_slack_timestamp(raw_thread_ts),
+        )
     text = raw.get("text")
     if not isinstance(text, str):
         text = ""
@@ -225,10 +255,11 @@ def _parse_message(
     raw_files = raw.get("files")
     if isinstance(raw_files, list):
         for item in raw_files:
-            if isinstance(item, Mapping):
-                parsed_file = _parse_file_reference(item)
-                if parsed_file is not None:
-                    files.append(parsed_file)
+            if not isinstance(item, Mapping):
+                raise ValueError(_MALFORMED_RESPONSE)
+            files.append(_parse_file_reference(item))
+    elif raw_files is not None:
+        raise ValueError(_MALFORMED_RESPONSE)
     reply_count = raw.get("reply_count")
     resolved_reply_count = reply_count if type(reply_count) is int and reply_count >= 0 else None
     provider_metadata: dict[str, str] = {}
@@ -303,6 +334,23 @@ class SlackConversationKnowledgeReader:
 
     def __init__(self, web_client: Any) -> None:
         self._web_client = web_client
+        self._bot_user_id: str | None = None
+
+    async def _resolve_bot_user_id(self) -> str:
+        if self._bot_user_id is not None:
+            return self._bot_user_id
+        try:
+            response = await self._web_client.auth_test()
+        except Exception as exc:
+            raise _normalize_slack_api_error(exc) from None
+        data = _response_mapping(response)
+        if data.get("ok") is False:
+            raise SlackConversationReadError(slack_error=str(data.get("error") or "unknown_error"))
+        user_id = _non_blank_str(data.get("user_id"))
+        if user_id is None:
+            raise _malformed_provider_response()
+        self._bot_user_id = user_id
+        return user_id
 
     async def list_accessible_conversations_page(
         self,
@@ -312,7 +360,9 @@ class SlackConversationKnowledgeReader:
     ) -> SlackConversationInventoryPage:
         validated_limit = validate_page_limit(limit, maximum=MAX_INVENTORY_PAGE_LIMIT)
         validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        bot_user_id = await self._resolve_bot_user_id()
         params: dict[str, Any] = {
+            "user": bot_user_id,
             "types": _INVENTORY_TYPES,
             "exclude_archived": False,
             "limit": validated_limit,
@@ -320,7 +370,7 @@ class SlackConversationKnowledgeReader:
         if validated_cursor is not None:
             params["cursor"] = validated_cursor
         try:
-            response = await self._web_client.conversations_list(**params)
+            response = await self._web_client.users_conversations(**params)
         except Exception as exc:
             raise _normalize_slack_api_error(exc) from None
         data = _response_mapping(response)
@@ -328,14 +378,14 @@ class SlackConversationKnowledgeReader:
             raise SlackConversationReadError(slack_error=str(data.get("error") or "unknown_error"))
         channels = data.get("channels")
         if not isinstance(channels, list):
-            raise SlackConversationReadError(slack_error="malformed_response")
+            raise _malformed_provider_response()
         items: list[SlackConversationSummary] = []
         for raw_channel in channels:
             if not isinstance(raw_channel, Mapping):
-                continue
+                raise _malformed_provider_response()
             conversation_id = _non_blank_str(raw_channel.get("id"))
             if conversation_id is None:
-                continue
+                raise _malformed_provider_response()
             kind = _conversation_kind_from_channel(raw_channel)
             created_at = None
             created_raw = raw_channel.get("created")
@@ -407,7 +457,8 @@ class SlackConversationKnowledgeReader:
         return self._parse_message_page(
             data=_response_mapping(response),
             conversation_id=validated_conversation_id,
-            window=validated_window,
+            oldest=validated_window.oldest,
+            latest=validated_window.latest,
             max_chars=validated_max_chars,
         )
 
@@ -444,18 +495,14 @@ class SlackConversationKnowledgeReader:
         page = self._parse_message_page(
             data=_response_mapping(response),
             conversation_id=validated_conversation_id,
-            window=validated_window,
+            oldest=validated_window.oldest,
+            latest=validated_window.latest,
             max_chars=validated_max_chars,
         )
-        deduped = tuple(
-            item for item in page.items if item.message_ts != validated_root
-        )
-        return SlackConversationMessagePage(
-            conversation_id=page.conversation_id,
-            oldest=page.oldest,
-            latest=page.latest,
-            items=deduped,
-            next_cursor=page.next_cursor,
+        return self._filter_thread_replies_page(
+            page=page,
+            requested_root=validated_root,
+            require_root=validated_cursor is None,
         )
 
     async def read_exact_message(
@@ -473,41 +520,115 @@ class SlackConversationKnowledgeReader:
         validated_root = (
             validate_slack_timestamp(root_thread_ts) if root_thread_ts is not None else None
         )
-        validated_window = SlackConversationSourceWindow.model_validate(window.model_dump())
+        SlackConversationSourceWindow.model_validate(window.model_dump())
         validated_max_chars = validate_message_max_chars(max_chars_per_message)
+        point_window = SlackConversationPointWindow(message_ts=validated_message_ts)
         if validated_root is not None and validated_root != validated_message_ts:
-            page = await self.read_thread_replies_page(
-                conversation_id=validated_conversation_id,
-                root_message_ts=validated_root,
-                window=validated_window,
-                cursor=None,
-                limit=MAX_HISTORY_REPLY_PAGE_LIMIT,
-                max_chars_per_message=validated_max_chars,
-            )
-            for item in page.items:
-                if item.message_ts == validated_message_ts:
+            cursor: str | None = None
+            while True:
+                page = await self._read_thread_replies_point_page(
+                    conversation_id=validated_conversation_id,
+                    root_message_ts=validated_root,
+                    point_window=point_window,
+                    cursor=cursor,
+                    max_chars_per_message=validated_max_chars,
+                )
+                for item in page.items:
+                    if item.message_ts != validated_message_ts:
+                        continue
+                    if item.root_thread_ts != validated_root:
+                        raise _malformed_provider_response()
                     return self._finalize_exact_read(
                         item,
                         expected_revision=expected_revision,
                     )
+                if page.next_cursor is None:
+                    break
+                cursor = page.next_cursor
             return SlackConversationExactMessageResult(found=False, message=None)
-        page = await self.read_conversation_history_page(
+        page = await self._read_history_point_page(
             conversation_id=validated_conversation_id,
-            window=SlackConversationSourceWindow(
-                oldest=validated_message_ts,
-                latest=validated_message_ts,
-            ),
-            cursor=None,
-            limit=1,
+            point_window=point_window,
             max_chars_per_message=validated_max_chars,
         )
         for item in page.items:
-            if item.message_ts == validated_message_ts:
-                return self._finalize_exact_read(
-                    item,
-                    expected_revision=expected_revision,
-                )
+            if item.message_ts != validated_message_ts:
+                continue
+            if item.root_thread_ts is not None:
+                raise _malformed_provider_response()
+            return self._finalize_exact_read(
+                item,
+                expected_revision=expected_revision,
+            )
         return SlackConversationExactMessageResult(found=False, message=None)
+
+    async def _read_history_point_page(
+        self,
+        *,
+        conversation_id: str,
+        point_window: SlackConversationPointWindow,
+        max_chars_per_message: int,
+    ) -> SlackConversationMessagePage:
+        validated_max_chars = validate_message_max_chars(max_chars_per_message)
+        params: dict[str, Any] = {
+            "channel": conversation_id,
+            "oldest": point_window.oldest,
+            "latest": point_window.latest,
+            "inclusive": True,
+            "limit": 1,
+        }
+        try:
+            response = await self._web_client.conversations_history(**params)
+        except Exception as exc:
+            raise _normalize_slack_api_error(exc) from None
+        return self._parse_message_page(
+            data=_response_mapping(response),
+            conversation_id=conversation_id,
+            oldest=point_window.oldest,
+            latest=point_window.latest,
+            max_chars=validated_max_chars,
+            enforce_window=False,
+        )
+
+    async def _read_thread_replies_point_page(
+        self,
+        *,
+        conversation_id: str,
+        root_message_ts: str,
+        point_window: SlackConversationPointWindow,
+        cursor: str | None,
+        max_chars_per_message: int,
+    ) -> SlackConversationMessagePage:
+        validated_root = validate_slack_timestamp(root_message_ts)
+        validated_max_chars = validate_message_max_chars(max_chars_per_message)
+        validated_cursor = validate_provider_cursor(cursor) if cursor is not None else None
+        params: dict[str, Any] = {
+            "channel": conversation_id,
+            "ts": validated_root,
+            "oldest": point_window.oldest,
+            "latest": point_window.latest,
+            "inclusive": True,
+            "limit": MAX_HISTORY_REPLY_PAGE_LIMIT,
+        }
+        if validated_cursor is not None:
+            params["cursor"] = validated_cursor
+        try:
+            response = await self._web_client.conversations_replies(**params)
+        except Exception as exc:
+            raise _normalize_slack_api_error(exc) from None
+        page = self._parse_message_page(
+            data=_response_mapping(response),
+            conversation_id=conversation_id,
+            oldest=point_window.oldest,
+            latest=point_window.latest,
+            max_chars=validated_max_chars,
+            enforce_window=False,
+        )
+        return self._filter_thread_replies_page(
+            page=page,
+            requested_root=validated_root,
+            require_root=cursor is None,
+        )
 
     async def read_file_info(self, *, file_id: str) -> SlackConversationFileReference:
         validated_file_id = validate_safe_text(file_id, max_length=256)
@@ -520,36 +641,86 @@ class SlackConversationKnowledgeReader:
             raise SlackConversationReadError(slack_error=str(data.get("error") or "unknown_error"))
         file_obj = data.get("file")
         if not isinstance(file_obj, Mapping):
-            raise SlackConversationReadError(slack_error="malformed_response")
+            raise _malformed_provider_response()
         parsed = _parse_file_reference(file_obj)
-        if parsed is None or parsed.file_id != validated_file_id:
-            raise SlackConversationReadError(slack_error="malformed_response")
+        if parsed.file_id != validated_file_id:
+            raise _malformed_provider_response()
         return parsed
+
+    def _filter_thread_replies_page(
+        self,
+        *,
+        page: SlackConversationMessagePage,
+        requested_root: str,
+        require_root: bool,
+    ) -> SlackConversationMessagePage:
+        root_seen = False
+        replies: list[SlackConversationMessage] = []
+        seen_timestamps: set[str] = set()
+        for item in page.items:
+            if item.message_ts in seen_timestamps:
+                raise _malformed_provider_response()
+            seen_timestamps.add(item.message_ts)
+            if item.message_ts == requested_root:
+                if item.root_thread_ts is not None:
+                    raise _malformed_provider_response()
+                root_seen = True
+                continue
+            if item.root_thread_ts != requested_root:
+                raise _malformed_provider_response()
+            replies.append(item)
+        if require_root and page.items and not root_seen:
+            raise _malformed_provider_response()
+        return SlackConversationMessagePage(
+            conversation_id=page.conversation_id,
+            oldest=page.oldest,
+            latest=page.latest,
+            items=tuple(replies),
+            next_cursor=page.next_cursor,
+        )
 
     def _parse_message_page(
         self,
         *,
         data: Mapping[str, Any],
         conversation_id: str,
-        window: SlackConversationSourceWindow,
+        oldest: str,
+        latest: str,
         max_chars: int,
+        enforce_window: bool = True,
     ) -> SlackConversationMessagePage:
         if data.get("ok") is False:
             raise SlackConversationReadError(slack_error=str(data.get("error") or "unknown_error"))
         messages = data.get("messages")
         if not isinstance(messages, list):
-            raise SlackConversationReadError(slack_error="malformed_response")
+            raise _malformed_provider_response()
         items: list[SlackConversationMessage] = []
+        seen_timestamps: set[str] = set()
         for raw_message in messages:
             if not isinstance(raw_message, Mapping):
-                continue
-            items.append(
-                _parse_message(
+                raise _malformed_provider_response()
+            try:
+                parsed = _parse_message(
                     conversation_id=conversation_id,
                     raw=raw_message,
                     max_chars=max_chars,
                 )
-            )
+            except ValueError as exc:
+                raise _malformed_provider_response() from exc
+            except SlackConversationContentTooLarge:
+                raise
+            if parsed.conversation_id != conversation_id:
+                raise _malformed_provider_response()
+            if parsed.message_ts in seen_timestamps:
+                raise _malformed_provider_response()
+            seen_timestamps.add(parsed.message_ts)
+            if enforce_window and not slack_timestamp_in_window(
+                value=parsed.message_ts,
+                oldest=oldest,
+                latest=latest,
+            ):
+                raise _malformed_provider_response()
+            items.append(parsed)
         next_cursor = None
         metadata = data.get("response_metadata")
         if isinstance(metadata, Mapping):
@@ -558,8 +729,8 @@ class SlackConversationKnowledgeReader:
                 next_cursor = validate_provider_cursor(raw_cursor)
         return SlackConversationMessagePage(
             conversation_id=conversation_id,
-            oldest=window.oldest,
-            latest=window.latest,
+            oldest=oldest,
+            latest=latest,
             items=tuple(items),
             next_cursor=next_cursor,
         )

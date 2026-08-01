@@ -174,9 +174,22 @@ files:read             # safe historical file inventory (metadata only)
 
 Current DM conversational runtime scopes (`connections:write`, `chat:write`, `im:history`, `files:read`) remain separate. Enabling the chatbot does **not** authorize knowledge synchronization.
 
-### Fixed-window synchronization
+### Fixed root-window synchronization
 
-One durable source = one approved `conversation_id` + immutable `oldest`/`latest` Slack timestamp window. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
+One durable source = one approved `conversation_id` + immutable `root_oldest`/`root_latest` Slack timestamp window (`slack.conversation.scope.v2`).
+
+**Root-window scope semantics (v1 contract):**
+
+```text
+- ordinary/root messages whose own ts lies within the root window;
+- replies belonging to those discovered roots;
+- reply reads remain bounded by the documented reply window policy;
+- replies whose root is outside the source root window are NOT discovered.
+```
+
+A reply whose own timestamp falls inside a calendar period but whose thread root lies outside the configured root window is excluded. `full_inventory=true` means complete inventory **inside this explicit root-window scope only**.
+
+Inventory uses membership-correct `users.conversations` for the calling bot (not workspace-wide `conversations.list`). History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
 
 ### Structured message schema
 
@@ -210,17 +223,28 @@ binary historical file download
 
 ---
 
-## PLANNED — NOT IMPLEMENTED: further Slack knowledge consumption
+## PLANNED — NOT IMPLEMENTED
 
-**Classification:** `ARCHITECTURALLY FROZEN` direction · `PLANNED` implementation.
+**Classification:** `PLANNED` implementation only.
 
-Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution will be reused for:
+```text
+LKW-SLACK-CONNECTED-SOURCE-1
+Knowledge Intake bridge / LKW connected-source wiring
+Slack Live Capability Adapter
+live/search capability
+durable deletion feed
+authoritative ACL projection
+binary historical file download
+RAG / chunks / embeddings
+```
 
-- conversational runtime (implemented today);
-- shared typed Slack knowledge reads (`PLANNED`);
-- durable materialization (`PLANNED`);
-- indexed RAG (`PLANNED`);
-- bounded live access (`PLANNED`).
+Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution are reused for:
+
+- conversational runtime (**implemented**);
+- shared typed Slack knowledge reads (**implemented**);
+- durable materialization (**implemented**);
+- indexed RAG (**planned**);
+- bounded live access (**planned**).
 
 **Rejected duplicate integrations (do not create):**
 
@@ -233,18 +257,6 @@ LkwSlackClient
 ```
 
 No application-specific or consumption-mode-specific Slack client or public integration may be introduced. LKW must not construct Slack SDK clients or call Slack Web API history endpoints directly.
-
-**Planned provider-specific read primitives (conceptual — not listed under current shared operations):**
-
-```text
-list accessible conversation inventory
-read bounded conversation-history page
-read bounded thread/reply page
-read an exact message or exact revision
-read safe attachment inventory
-read explicit edit/deletion state
-read bounded search result where Slack and policy support it
-```
 
 **Dual role independence:**
 

@@ -95,7 +95,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **implemented**. LKW bridge and live capability remain **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). LKW bridge and live capability remain **not** implemented.
 
 **Execution order (frozen):**
 
