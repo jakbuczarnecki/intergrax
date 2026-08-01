@@ -73,14 +73,15 @@ input
 | Phase | Status |
 | ----- | ------ |
 | TOKEN-1 … TOKEN-9 | Closed |
-| TOKEN-10A | Accepted / Closed (docs canon) |
-| TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 | Implemented / Ready for review |
-| TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Implemented / Ready for review |
-| TOKEN-10D-1 | Accepted / Closed |
-| TOKEN-10D-2 | Accepted / Closed |
-| TOKEN-10D-3 | Accepted / Closed |
+| TOKEN-10A | Accepted / Closed |
+| TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 | Accepted / Closed |
+| TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Accepted / Closed |
+| TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3 | Accepted / Closed |
 | TOKEN-10D | Accepted / Closed |
-| TOKEN-10E … TOKEN-10H | Planned / not yet accepted |
+| TOKEN-10E | Planned / Not Started |
+| TOKEN-10F | Planned |
+| TOKEN-10G | Planned |
+| TOKEN-10H | Planned |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
 TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.

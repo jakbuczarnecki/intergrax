@@ -232,8 +232,7 @@ class _CountingNativeToolsAdapter(LLMAdapter):
     def __init__(self, *, decision: object | None = None) -> None:
         super().__init__()
         self._decision = decision
-        self.route_calls = 0
-        self.pipeline_execution_count = 0
+        self.generate_with_tools_calls = 0
 
     @property
     def context_window_tokens(self) -> int:
@@ -265,8 +264,7 @@ class _CountingNativeToolsAdapter(LLMAdapter):
         tool_choice: str | dict[str, Any] | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
-        self.route_calls += 1
-        self.pipeline_execution_count += 1
+        self.generate_with_tools_calls += 1
         if self._decision is None:
             return build_adapter_response(content="")
         return build_adapter_response(
@@ -291,15 +289,38 @@ def _router_decision() -> token_optimization.TokenOptimizationRouterToolInput:
     )
 
 
-def _runtime_with_counting_adapter() -> tuple[
+class _CountingRouter(token_optimization.TokenOptimizationLLMRouter):
+    def __init__(self, adapter: LLMAdapter) -> None:
+        super().__init__(adapter=adapter)
+        self.route_calls = 0
+        self.execute_routed_calls = 0
+
+    def route(
+        self,
+        router_request: token_optimization.TokenOptimizationLLMRouterRequest,
+    ) -> token_optimization.TokenOptimizationLLMRouterResult:
+        self.route_calls += 1
+        return super().route(router_request)
+
+    def execute_routed(
+        self,
+        router_request: token_optimization.TokenOptimizationLLMRouterRequest,
+        routed_result: token_optimization.TokenOptimizationLLMRouterResult,
+    ) -> token_optimization.TokenOptimizationLLMRouterResult:
+        self.execute_routed_calls += 1
+        return super().execute_routed(router_request, routed_result)
+
+
+def _runtime_with_counting_instrumentation() -> tuple[
     token_optimization.CacheAwareTokenOptimizationRuntime,
+    _CountingRouter,
     _CountingNativeToolsAdapter,
 ]:
     adapter = _CountingNativeToolsAdapter(decision=_router_decision())
-    router = token_optimization.TokenOptimizationLLMRouter(adapter=adapter)
+    router = _CountingRouter(adapter=adapter)
     orchestrator = token_optimization.CacheAwareTokenOptimizationOrchestrator(router=router)
     runtime = token_optimization.CacheAwareTokenOptimizationRuntime(orchestrator=orchestrator)
-    return runtime, adapter
+    return runtime, router, adapter
 
 
 @pytest.mark.parametrize("symbol_name", _FROZEN_TOKEN_10D_SYMBOLS)
@@ -337,7 +358,7 @@ def test_conflict_rejection_fail_closed_without_router_or_pipeline() -> None:
     usage = _usage(cached_input_tokens=800)
     attribution = _attribution(usage)
     response = _vllm_response(cached_input_tokens=500)
-    runtime, adapter = _runtime_with_counting_adapter()
+    runtime, router, adapter = _runtime_with_counting_instrumentation()
 
     result = runtime.run(
         token_optimization.CacheAwareTokenOptimizationRuntimeRequest(
@@ -354,15 +375,16 @@ def test_conflict_rejection_fail_closed_without_router_or_pipeline() -> None:
     )
     assert result.executed is False
     assert result.orchestration_result is None
-    assert adapter.route_calls == 0
-    assert adapter.pipeline_execution_count == 0
+    assert router.route_calls == 0
+    assert router.execute_routed_calls == 0
+    assert adapter.generate_with_tools_calls == 0
 
 
 def test_non_rejected_public_flow_deferred_without_execution() -> None:
     attribution = _attribution(
         _usage(cached_input_tokens=800, uncached_input_tokens=200, cache_hit_ratio=0.8)
     )
-    runtime, adapter = _runtime_with_counting_adapter()
+    runtime, router, adapter = _runtime_with_counting_instrumentation()
 
     result = runtime.run(
         token_optimization.CacheAwareTokenOptimizationRuntimeRequest(
@@ -381,13 +403,16 @@ def test_non_rejected_public_flow_deferred_without_execution() -> None:
     assert result.normalization_result is not None
     assert result.orchestration_result is not None
     assert result.executed is False
+    assert router.route_calls == 1
+    assert router.execute_routed_calls == 0
+    assert adapter.generate_with_tools_calls == 1
 
 
 def test_safe_serializer_exposes_no_raw_content() -> None:
     attribution = _attribution(
         _usage(cached_input_tokens=0, uncached_input_tokens=1000, cache_hit_ratio=0.0)
     )
-    runtime, _adapter = _runtime_with_counting_adapter()
+    runtime, _router, _adapter = _runtime_with_counting_instrumentation()
     result = runtime.run(
         token_optimization.CacheAwareTokenOptimizationRuntimeRequest(
             router_request=_router_request(),
