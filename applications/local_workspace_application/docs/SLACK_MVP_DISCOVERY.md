@@ -170,6 +170,45 @@ Slack remains a **thin client**. It must not own knowledge configuration, provid
 
 **Current implemented slice:** select workspace, Ask over indexed knowledge, inspect sources, managed-file and URL intake via HTTP (planner execution not yet wired for natural language).
 
+**Slack historical knowledge access does not yet exist.** Channel or conversation history ingestion and bounded live Slack reads are future platform-backed capabilities (`SLACK-KNOWLEDGE-FOUNDATION-1`, `LKW-SLACK-CONNECTED-SOURCE-1`, `SLACK-LIVE-CAPABILITY-1`). Do not add Slack Web API history calls to the LKW Slack companion.
+
+### Slack frontend versus Slack knowledge source
+
+**Classification:** `ARCHITECTURALLY FROZEN` · implementation `PLANNED`.
+
+Two independent Slack roles share the same platform foundation (`SlackConversationChannelIntegration`) but have separate authorization lifecycles:
+
+**Role A — Slack as frontend (implemented today):**
+
+```text
+human
+→ Slack DM/event
+→ SlackConversationChannelIntegration
+→ LKW Slack companion
+→ LKW HTTP/capability
+→ answer
+→ Slack reply
+```
+
+**Role B — Slack as knowledge provider (`PLANNED`):**
+
+```text
+Slack Connection
+→ approved Slack Remote Resource
+→ Indexed Source and/or Live Access Binding
+→ Vendor Knowledge or Live Capability path
+```
+
+```text
+Slack frontend enabled  does not imply  Slack knowledge access enabled
+Slack Indexed Source    does not imply  Slack Live Access Binding
+Slack Live Access Binding does not imply durable synchronization or RAG indexing
+```
+
+Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge. The LKW Slack companion must not construct Slack SDK clients, call Slack history APIs directly or implement Slack-specific synchronization.
+
+Binding architecture: [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7 · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
+
 **Who is the first user?**  
 One approved knowledge worker who already uses Slack and needs answers from local company documents.
 

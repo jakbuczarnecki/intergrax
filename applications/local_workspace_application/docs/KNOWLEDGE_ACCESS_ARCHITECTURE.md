@@ -38,8 +38,8 @@ LKW lets a user:
 | Category | Examples |
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
-| **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; live Slack platform proof |
+| **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; Slack connected source and knowledge proof (`LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1`); live Slack platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -52,7 +52,7 @@ Target architecture is **not** evidence of implementation. Public proof claims r
 
 Knowledge already processed into LKW-owned stores.
 
-**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues.
+**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` — not implemented).
 
 **Benefits:** cross-source semantic retrieval; lower provider API usage; consistent chunking and embeddings; offline or temporarily disconnected usage; stable workspace-owned retrieval.
 
@@ -76,7 +76,7 @@ Connection or direct input
 
 Read-only access executed when the user asks a question.
 
-**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state.
+**Examples:** current Outlook messages; current Jira issue state; current Power BI metric; current Databricks job status; approved Databricks SQL result; current Atlan lineage; current Confluence page state; bounded current Slack message or thread reads (`PLANNED` — not implemented).
 
 **Benefits:** current information; no requirement to copy every dataset; appropriate for dynamic or large systems.
 
@@ -165,6 +165,18 @@ one Connection
    └── live capability execution → ephemeral evidence
 ```
 
+**Slack foundation (`PLANNED` — architecture frozen):**
+
+```text
+Slack Connection
+→ SlackConversationChannelIntegration
+→ shared typed Slack read primitives
+   ├── Slack Vendor Knowledge Adapter → durable sync → optional LKW RAG
+   └── Slack Live Capability Adapter → ephemeral evidence
+```
+
+Slack frontend transport uses the same integration foundation but does not grant history ingestion or live access by itself.
+
 Hybrid Ask combines indexed and live evidence at the application level. It does not create a fourth vendor integration.
 
 ---
@@ -175,25 +187,46 @@ Hybrid Ask combines indexed and live evidence at the application level. It does 
 
 A tenant-owned configured relationship with an external system.
 
-**Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved MCP server.
+**Examples:** company Microsoft 365 tenant; engineering Jira instance; internal Confluence instance; analytics Databricks workspace; finance Power BI tenant; data-governance Atlan instance; approved Slack workspace installation (`PLANNED` for knowledge reads); approved MCP server.
 
-A Connection owns or references:
+#### 4.1.1 Durable `TenantConnection` (platform-owned)
 
-- provider identity;
-- integration type;
-- safe display metadata;
-- opaque credential reference;
-- health or availability state;
-- supported capability descriptors;
-- tenant ownership.
+A tenant Connection is a **durable platform entity** — not an LKW workspace record and not an in-memory registry entry. The conceptual model is `TenantConnection` (**to be implemented in `LKW-KNOWLEDGE-ACCESS-1C-1`**; not yet present as a Python model).
 
-A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials.
+**Durable identity:** `(tenant_id, connection_ref)` — `connection_ref` is opaque and unique within one tenant.
+
+**Minimum durable fields:**
+
+```text
+connection_ref
+tenant_id
+provider_id
+integration_kind
+safe_display_name
+administrative_status      # ACTIVE | DISABLED | REVOKED
+credential_ref             # opaque SecretsStore reference only
+validated_secret_free_config
+configuration_version
+created_at
+updated_at
+connected_principal_ref    # optional, when justified
+```
+
+**Administrative status** (`ACTIVE`, `DISABLED`, `REVOKED`) is the durable lifecycle. It must not be conflated with **runtime health** (`available`, `degraded`, `unavailable`), which is recomputed by resolution or health checks and is not the authoritative durable lifecycle.
+
+`validated_secret_free_config` may hold private, non-secret configuration required to construct or validate the provider integration (tenant or organization identifier, provider account reference, approved base endpoint, region, non-secret scopes, provider feature flags). It must not contain credentials and must not automatically be exposed through public LKW APIs.
+
+`credential_ref` points to `SecretsStore`. The Connection record does not contain the secret.
+
+**Current repository gap:** durable `TenantConnection` persistence does not exist yet. Today the repository has only opaque `connection_ref` on bindings, an **instance-local** `KnowledgeConnectionRegistry` (runtime projection / cache — not durable catalog, not administrative source of truth), and application `IntegrationProfile` bootstrap (application-level composition — not a tenant Connection database).
+
+A Connection must **not** expose credentials to the LLM, Slack, another frontend, workspace configuration responses, prompt context or provenance records. A workspace does not own raw credentials. LKW persists only a reference to the tenant Connection plus safe cached presentation data where already approved.
 
 ### 4.2 Remote Resource
 
 A provider-owned resource discoverable through a Connection.
 
-**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection.
+**Examples:** SharePoint site; OneDrive drive; mailbox; Jira project; Confluence space; Databricks catalog; Databricks SQL warehouse; Power BI workspace; Power BI semantic model; Atlan catalog scope; MCP resource or approved tool collection; approved Slack channel or conversation (`PLANNED` — not implemented).
 
 A Remote Resource is **not** automatically an LKW Source.
 
@@ -201,7 +234,7 @@ A Remote Resource is **not** automatically an LKW Source.
 
 A durable workspace-owned Source whose content is ingested or synchronized into LKW knowledge stores.
 
-**Examples:** uploaded PDF; uploaded XLSX; Slack attachment; local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
+**Examples:** uploaded PDF; uploaded XLSX; Slack attachment (managed-file intake — implemented); synchronized Slack channel or conversation (`PLANNED`); local folder; explicit Web URL; SharePoint site synchronized into LKW; Confluence space synchronized into LKW; selected Jira project synchronized into LKW.
 
 Every persisted Document must remain owned by exactly one durable Source.
 
@@ -222,6 +255,20 @@ allowed capabilities:
 - ms365.mail.read
 mode: read-only
 ```
+
+**Slack example (`PLANNED` — not implemented):**
+
+```text
+workspace: Project Orion
+connection: company-slack
+resource: #project-orion channel
+allowed capabilities:
+- slack.conversation.read_bounded
+- slack.thread.read_bounded
+mode: read-only
+```
+
+Indexed permission and live-access authorization are separate grants. A Slack Live Access Binding does not imply durable synchronization or RAG indexing.
 
 A Live Access Binding:
 
@@ -272,7 +319,7 @@ WorkspaceKnowledgeConfiguration
 └── limits and safety controls
 ```
 
-Exact persistence model and API schemas are **not** frozen in this document.
+Exact persistence model, revision-head CAS publication protocol, mutation reservation, semantic no-op idempotency and API schemas are frozen in [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) (`LKW-KNOWLEDGE-ACCESS-1A-C3`).
 
 ### 4.6 Query Policy
 
@@ -300,6 +347,8 @@ retention mode
 freshness requirements
 ```
 
+**V1 implementation subset:** [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) freezes `indexed_only` and `live_only` modes only; `prefer_indexed_evidence` and `allow_live_fallback` are deferred to future hybrid/automatic modes.
+
 ### 4.7 Model Runtime Profile
 
 Product-level runtime selection containing at least:
@@ -315,6 +364,14 @@ timeout
 qualification status
 health status
 ```
+
+**Persistence clarification:**
+
+- Constructed `LLMAdapter` objects and provider clients are **runtime-only**.
+- Deployment-wide default runtime (for example `INTERGRAX_LLM_PROVIDER`) may remain **deployment configuration**.
+- A future user-selectable workspace runtime profile must be represented by a **durable profile or durable profile reference** — not by a constructed adapter object in DocumentStore.
+- `LKW-MODEL-RUNTIME-1` (**ACCEPTED**) proves Ollama/vLLM portability; it does **not** imply that a multi-profile runtime catalog already exists.
+- This architecture task does not implement or schedule runtime-profile administration unless an existing canonical task already owns it. Do not expand `LKW-KNOWLEDGE-ACCESS-1B` with runtime-profile persistence.
 
 LKW receives a ready `LLMAdapter` through application wiring. The LKW domain must **not** contain provider branches such as `if provider == "ollama": … elif provider == "vllm": …`.
 
@@ -346,6 +403,142 @@ excerpt or structured result
 
 Not every field is required for every evidence type. Exact Pydantic models are **not** frozen here.
 
+### 4.9 Configuration persistence boundary
+
+**Canonical principle (frozen):**
+
+```text
+All user-managed product configuration that must survive process or deployment
+restart is durable.
+
+Raw secrets remain in SecretsStore.
+
+Constructed clients, registries and current health observations remain runtime
+state.
+
+Deployment bootstrap and infrastructure topology remain deployment
+configuration unless a separately accepted administration-plane task moves
+them into durable product configuration.
+```
+
+LKW configuration is **not** stored in one monolithic database. Four persistence boundaries apply:
+
+#### 4.9.1 Durable Database / DocumentStore state
+
+Durable database / DocumentStore state is one persistence boundary. It contains two separate ownership categories:
+
+##### 4.9.1.1 Durable platform and tenant configuration
+
+Durable platform and tenant configuration includes:
+
+```text
+Tenant Connections
+KnowledgeSourceBindings
+safe provider and source configuration
+administrative connection lifecycle
+configuration versions
+tenant ownership
+opaque credential references
+```
+
+**Owner:** shared platform integration / connection foundation.
+
+**Not owner:** LKW workspace domain, Slack, `KnowledgeConnectionRegistry`, `IntegrationProfile`.
+
+##### 4.9.1.2 Durable LKW workspace configuration
+
+Durable LKW workspace configuration includes:
+
+```text
+Workspace
+WorkspaceConnectionAttachment
+WorkspaceIndexedSourceBinding
+WorkspaceLiveAccessBinding
+WorkspaceQueryPolicy
+WorkspaceKnowledgeConfigurationHead
+WorkspaceKnowledgeMutationRecord
+WorkspaceSource
+WorkspaceDocumentReference
+KnowledgeInput
+operations
+Ask runs
+configuration revisions
+idempotency and recovery state
+```
+
+The C3 revision, publication, idempotency and recovery contract in [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) remains authoritative.
+
+#### 4.9.2 SecretsStore state
+
+`SecretsStore` owns OAuth access tokens, OAuth refresh tokens, client secrets, API keys, passwords, certificates and private keys, and other credential material.
+
+Database records may contain only an opaque `credential_ref`. No raw secret may appear in `TenantConnection`, `KnowledgeSourceBinding` public projection, LKW workspace records, logs, traces, Slack, public API responses or provenance.
+
+#### 4.9.3 Runtime-only state
+
+Runtime state includes constructed provider clients, constructed integration objects, `KnowledgeConnectionRegistry` entries, adapter registry entries, in-flight requests, leases held in process memory, current health checks, ephemeral Remote Resource discovery results and ephemeral live evidence.
+
+Runtime state is reconstructed from durable configuration and `SecretsStore`. It is not the source of truth.
+
+#### 4.9.4 Deployment configuration
+
+Deployment configuration includes DocumentStore endpoint, VectorStore endpoint, `SecretsStore` implementation, message bus endpoint, object storage endpoint, default application profile, default runtime provider, container topology, ports and bootstrap flags.
+
+These may remain in environment variables, deployment manifests, configuration files and application bootstrap. They are not automatically tenant or workspace product configuration.
+
+### 4.10 Startup and restart reconstruction
+
+**Target restart flow:**
+
+```text
+application starts
+→ load deployment/application bootstrap
+→ open durable Tenant Connection Catalog
+→ list enabled tenant Connections
+→ load safe Connection configuration
+→ resolve credential_ref through SecretsStore
+→ construct exactly one integration instance per active Connection
+→ register integration in KnowledgeConnectionRegistry
+→ expose safe Connection projection through TenantConnectionPort
+→ LKW workspace bindings continue to resolve through connection_ref
+```
+
+**Required properties:**
+
+- Connections survive process restart.
+- Workspace attachments survive process restart.
+- Indexed and Live Access authorization survives process restart.
+- Query Policy survives process restart.
+- No connector must be manually reconstructed after every restart.
+- A missing or invalid secret does not delete the Connection.
+- A failed reconstruction produces a safe unavailable/degraded projection.
+- A disabled Connection is not reconstructed as active.
+- The same `connection_ref` resolves to one runtime integration instance.
+- Workspace configuration remains readable when a Connection is temporarily unavailable.
+
+Do not claim automatic token refresh or provider-specific authentication behavior beyond existing integration contracts.
+
+### 4.11 Remote Resource persistence
+
+`RemoteResourceDescriptorV1` is **ephemeral discovery output by default**. Discovering a resource does not make it durable product configuration.
+
+A resource becomes durable only after an explicit operation creates a `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, `WorkspaceLiveAccessBinding`, or a separately approved `RemoteResourceSnapshot`. Do not add automatic provider inventory mirroring.
+
+### 4.12 Explicitly rejected configuration designs
+
+The following are **rejected**:
+
+- storing raw tokens in the LKW database;
+- storing integration/client Python objects in DocumentStore;
+- treating `KnowledgeConnectionRegistry` as durable state;
+- using `IntegrationProfile` as a multi-tenant Connection database;
+- copying full Connection configuration into each workspace;
+- copying credentials into `WorkspaceConnectionAttachment`;
+- automatically persisting all discovered Remote Resources;
+- recreating Connections manually after every restart;
+- creating separate provider clients for indexed and live use;
+- moving deployment infrastructure topology into workspace state.
+
 Requirements:
 
 - safe provenance;
@@ -372,8 +565,11 @@ provider resource
 | Confluence space | synchronized into RAG | searched live |
 | Power BI semantic model | metadata may optionally be indexed | usually queried live |
 | SharePoint site | documents may be synchronized | current metadata may be read live |
+| Slack channel or conversation (`PLANNED`) | history may be synchronized into RAG | bounded current reads when authorized |
 
 Do not assume every provider resource must be copied into RAG. Do not assume every indexed Source automatically permits live access.
+
+One `SlackConversationChannelIntegration` serves both Slack frontend transport and platform provider reads, but application bindings and authorization lifecycles remain independent.
 
 ---
 
@@ -418,6 +614,7 @@ Evidence Plan
         ├── Microsoft 365 live reads
         ├── Jira live reads
         ├── Confluence live reads
+        ├── Slack live reads (PLANNED)
         ├── Databricks live reads
         ├── Power BI live reads
         └── Atlan live reads
@@ -741,6 +938,7 @@ Existing configuration (not LKW portability proof): `INTERGRAX_LLM_PROVIDER` (`o
 
 | Document | Role |
 |----------|------|
+| [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) | Frozen implementation contract (`LKW-KNOWLEDGE-ACCESS-1A-C3` mutation semantics; `1A-C4` persistence boundary) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Top-level LKW product architecture |
 | [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) | Canonical execution order |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Indexed knowledge intake contract |

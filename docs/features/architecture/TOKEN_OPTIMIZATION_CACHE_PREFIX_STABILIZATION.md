@@ -222,18 +222,37 @@ Implementation rows: `TOKEN-LLM-2`, `TOKEN-LLM-3` in [`docs/plan/LLM_ADAPTERS.md
 
 ---
 
-## 7. Cache-aware execution gate (TOKEN-10D)
+## 7. Cache-aware execution gate (TOKEN-10D — accepted / closed)
 
-`TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D-1** wired the runtime consumer:
+`TOKEN-OPT-5E` delivered helper-level timing policy. **TOKEN-10D-1** wired the runtime consumer. **TOKEN-10D-3** adds evidence reconciliation before routing. **Cache-aware runtime composition contract:** accepted / closed under TOKEN-10D.
 
 ```text
+LLM adapter → typed usage
+  → PromptCacheUsageSnapshot
+  → evidence reconciliation with PromptCacheAttribution
+  → cache signal normalizer (TOKEN-10D-2)
+  → CacheAwareCompactionTimingInput
 TokenOptimizationLLMRouter.route()
   → CacheAwareTokenOptimizationOrchestrator.orchestrate()
   → decide_cache_aware_compaction_timing()   # prompt_cache.py — policy only
   → pipeline execution only on RUN
 ```
 
-Later TOKEN-10D blocks add provider-signal normalization; TOKEN-10E adds in-cache compaction.
+**Source-of-truth rules (TOKEN-10D-2 / TOKEN-10D-3):**
+
+- evidence reconciliation runs before router invocation;
+- provider/model mismatch fails closed (`SIGNALS_REJECTED`);
+- normalization rejection stops before LLM and pipeline;
+- reported zero is not the same as unknown cache state;
+- missing provider cache details must not be coerced into cache miss;
+- TTL remaining is an explicit runtime signal — never inferred from requested/default/max TTL;
+- global provider KV metrics do not prove per-request prefix hotness;
+- the normalizer and runtime perform no provider I/O and no provider polling;
+- no TTL inference;
+- no global-metric-to-request mapping;
+- no automatic in-cache mutation.
+
+TOKEN-10E adds in-cache compaction.
 
 Do not claim mixed character/token estimates as measured savings.
 

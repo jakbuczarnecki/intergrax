@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Token Optimization runtime package (Phase TOKEN-1A/TOKEN-1B/TOKEN-1B-R/TOKEN-1C/TOKEN-6A-lite/TOKEN-6A/TOKEN-2/TOKEN-3/TOKEN-4)."""
+"""Public Token Optimization runtime contracts, policies, execution and safe reporting."""
 
 from __future__ import annotations
 
@@ -102,10 +102,32 @@ from intergrax.runtime.token_optimization.cache_aware_orchestration import (
     CacheAwareTokenOptimizationOrchestrator,
     cache_aware_orchestration_result_to_safe_dict,
 )
+from intergrax.runtime.token_optimization.cache_aware_runtime import (
+    CacheAwareTokenOptimizationRuntime,
+    cache_aware_runtime_result_to_safe_dict,
+)
+from intergrax.runtime.token_optimization.cache_aware_runtime_contracts import (
+    CacheAwareTokenOptimizationEvidenceReconciliationReason,
+    CacheAwareTokenOptimizationRuntimeRequest,
+    CacheAwareTokenOptimizationRuntimeResult,
+    CacheAwareTokenOptimizationRuntimeStatus,
+)
 from intergrax.runtime.token_optimization.cache_aware_orchestration_contracts import (
     CacheAwareTokenOptimizationOrchestrationRequest,
     CacheAwareTokenOptimizationOrchestrationResult,
     CacheAwareTokenOptimizationOrchestrationStatus,
+)
+from intergrax.runtime.token_optimization.cache_signal_normalization import (
+    cache_signal_normalization_result_to_safe_dict,
+    normalize_cache_aware_compaction_signals,
+    prompt_cache_usage_snapshot_from_adapter_response,
+)
+from intergrax.runtime.token_optimization.cache_signal_normalization_contracts import (
+    CacheAwareCompactionSignalNormalizationReason,
+    CacheAwareCompactionSignalNormalizationRequest,
+    CacheAwareCompactionSignalNormalizationResult,
+    CacheAwareCompactionSignalNormalizationStatus,
+    CacheSignalValueSource,
 )
 from intergrax.runtime.token_optimization.llm_router import (
     ROUTER_TOOL_ID,
@@ -282,18 +304,32 @@ __all__ = [
     "CacheAwareCompactionTarget",
     "CacheAwareCompactionTimingDecision",
     "CacheAwareCompactionTimingInput",
+    "CacheAwareCompactionSignalNormalizationReason",
+    "CacheAwareCompactionSignalNormalizationRequest",
+    "CacheAwareCompactionSignalNormalizationResult",
+    "CacheAwareCompactionSignalNormalizationStatus",
     "CacheAwareTokenOptimizationOrchestrationRequest",
     "CacheAwareTokenOptimizationOrchestrationResult",
     "CacheAwareTokenOptimizationOrchestrationStatus",
+    "CacheAwareTokenOptimizationEvidenceReconciliationReason",
     "CacheAwareTokenOptimizationOrchestrator",
+    "CacheAwareTokenOptimizationRuntime",
+    "CacheAwareTokenOptimizationRuntimeRequest",
+    "CacheAwareTokenOptimizationRuntimeResult",
+    "CacheAwareTokenOptimizationRuntimeStatus",
+    "CacheSignalValueSource",
     "CompressionLevel",
     "CompressionReceipt",
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
     "cache_aware_orchestration_result_to_safe_dict",
+    "cache_aware_runtime_result_to_safe_dict",
+    "cache_signal_normalization_result_to_safe_dict",
     "create_builtin_token_optimization_layer_catalog",
     "decide_cache_aware_compaction_timing",
+    "normalize_cache_aware_compaction_signals",
+    "prompt_cache_usage_snapshot_from_adapter_response",
     "MAX_ENV_PROTECTED_TERMS",
     "MAX_PROTECTED_TERM_LENGTH",
     "PROTECTED_TERMS_ENV_VAR",

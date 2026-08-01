@@ -125,17 +125,43 @@ class WorkspaceSource(BaseModel):
     status: WorkspaceSourceStatus = WorkspaceSourceStatus.REGISTERED
     created_at: datetime
     last_sync_at: datetime | None = None
+    knowledge_configuration_creation_mutation_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
+    knowledge_configuration_visibility_revision: int | None = Field(
+        default=None,
+        ge=1,
+    )
 
     @model_validator(mode="after")
     def _validate_source_locator(self) -> Self:
         if self.source_type is WorkspaceSourceType.LOCAL_FOLDER:
             if not self.path.strip():
                 raise ValueError("local_folder_path_required")
-        else:
+        elif self.source_type is not WorkspaceSourceType.CONNECTED_SOURCE:
             if self.path != "":
                 raise ValueError("non_local_path_must_be_empty")
             if self.recursive:
                 raise ValueError("non_local_recursive_must_be_false")
+
+        has_mutation = self.knowledge_configuration_creation_mutation_id is not None
+        has_revision = self.knowledge_configuration_visibility_revision is not None
+
+        if self.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+            if self.path != "":
+                raise ValueError("non_local_path_must_be_empty")
+            if self.recursive:
+                raise ValueError("non_local_recursive_must_be_false")
+            if not has_mutation or not has_revision:
+                raise ValueError("connected_source_requires_knowledge_ownership")
+        elif has_mutation or has_revision:
+            raise ValueError("non_connected_source_forbids_knowledge_ownership")
+
+        if has_mutation != has_revision:
+            raise ValueError("knowledge_ownership_fields_incomplete")
+
         return self
 
 

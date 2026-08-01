@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from enum import StrEnum
+from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote, unquote, urlparse
 
@@ -405,6 +406,24 @@ def parse_msgraph_teams_chat(
     )
 
 
+def _validate_exact_durable_opaque_reference_field(
+    value: object,
+    *,
+    validator: Callable[[object], str],
+    error: str = _MALFORMED_CHATS_RESPONSE,
+) -> str:
+    if not isinstance(value, str):
+        raise ValueError(error)
+    if value == "":
+        raise ValueError(error)
+    if value != value.strip():
+        raise ValueError(error)
+    canonical = validator(value)
+    if canonical != value:
+        raise ValueError(error)
+    return value
+
+
 def validate_msgraph_teams_chat(value: object) -> MsGraphTeamsChat:
     if not isinstance(value, MsGraphTeamsChat):
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
@@ -412,6 +431,67 @@ def validate_msgraph_teams_chat(value: object) -> MsGraphTeamsChat:
         return MsGraphTeamsChat.model_validate(value.model_dump(mode="python"))
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+
+
+class MsGraphTeamsChatReference(BaseModel):
+    """Identity-only Teams chat reference for stateless paging and content reads."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    mailbox_user_id: str = Field(repr=False)
+    chat_remote_id: str = Field(repr=False)
+
+    @field_validator("mailbox_user_id", mode="before")
+    @classmethod
+    def _validate_mailbox_user_id(cls, value: object) -> str:
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_mailbox_user_id,
+        )
+
+    @field_validator("chat_remote_id", mode="before")
+    @classmethod
+    def _validate_chat_remote_id(cls, value: object) -> str:
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_teams_chat_id,
+        )
+
+
+def validate_msgraph_teams_chat_reference(
+    value: object,
+) -> MsGraphTeamsChatReference:
+    if isinstance(value, MsGraphTeamsChatReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        dumped["mailbox_user_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("mailbox_user_id"),
+            validator=validate_msgraph_mailbox_user_id,
+        )
+        dumped["chat_remote_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("chat_remote_id"),
+            validator=validate_msgraph_teams_chat_id,
+        )
+        return MsGraphTeamsChatReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CHATS_RESPONSE) from None
+
+
+def chat_reference_from_chat(chat: MsGraphTeamsChat) -> MsGraphTeamsChatReference:
+    validated_chat = validate_msgraph_teams_chat(chat)
+    return validate_msgraph_teams_chat_reference(
+        {
+            "mailbox_user_id": validated_chat.mailbox_user_id,
+            "chat_remote_id": validated_chat.remote_id,
+        }
+    )
 
 
 def validate_msgraph_teams_chat_page(

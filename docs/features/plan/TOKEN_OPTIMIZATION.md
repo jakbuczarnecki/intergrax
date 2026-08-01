@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next implementation step:** `TOKEN-10D` — Cache-Aware Router and Pipeline Orchestration, after TOKEN-10C review.
+**Current next implementation step:** `TOKEN-10E` — Policy-Governed In-Cache Compaction, after TOKEN-10D closeout.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10D**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10E**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1492,7 +1492,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B implemented/ready for review after R2; TOKEN-10B-R1 implemented/ready for review; TOKEN-10B-R2 implemented/ready for review; TOKEN-10C implemented/ready for review; TOKEN-10D next).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; TOKEN-10E planned/not started).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1514,7 +1514,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B — Cache-Stable Prompt, Thread and Tool-Envelope Runtime
 
-**Status:** **Implemented / Ready for review after R2**.
+**Status:** **Accepted / Closed**.
 
 **Scope delivered:**
 
@@ -1527,7 +1527,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B-R1 — Send-Payload Integrity and Tool-Envelope Transition Corrections
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 **Scope delivered:**
 
@@ -1541,7 +1541,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10B-R2 — Exact Tool-Schema Order Integrity
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 **Scope delivered:**
 
@@ -1553,13 +1553,13 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10C — vLLM Prefix-Cache Provider Integration and Metrics
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 **Owner:** `LLM_ADAPTERS` (`TOKEN-LLM-2`, `TOKEN-LLM-3`). Pin vLLM image/version; enable automatic prefix caching; expose health, readiness, cache metrics, and `cached_input_tokens` through existing adapter usage envelope. Distinguish cold, warm, and changed-prefix controls.
 
 ### TOKEN-10C-R4 — Canonical Proof Default and Shared-Server Pass Semantics
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 **Scope delivered:**
 
@@ -1571,7 +1571,7 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10C-R4-R1 — Proof Test Contract and Managed Cleanup Correction
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 **Closeout:**
 
@@ -1600,13 +1600,13 @@ Do not collapse these into one implementation commit.
 
 ### TOKEN-10D — Cache-Aware Router and Pipeline Orchestration
 
-**Status:** **Active** — TOKEN-10D-1 implemented / ready for review; remainder planned.
+**Status:** **Accepted / Closed**.
 
 Place cache-aware compaction gate in production orchestration path after router selection and before pipeline execution. Orchestrate provider cache signals with deterministic pipeline.
 
 #### TOKEN-10D-1 — Cache-Aware Orchestration Gate and Controlled Pipeline Execution
 
-**Status:** **Implemented / Ready for review**.
+**Status:** **Accepted / Closed**.
 
 - Router configuration selection separated from execution timing.
 - Deterministic timing gate (`decide_cache_aware_compaction_timing`) wired before pipeline execution via `CacheAwareTokenOptimizationOrchestrator`.
@@ -1614,7 +1614,63 @@ Place cache-aware compaction gate in production orchestration path after router 
 - Normalized timing input remains caller-supplied (no provider metric ingestion in this block).
 - Existing router and pipeline behavior preserved; `route_and_execute()` remains compatible.
 - No provider calls beyond router; no in-cache mutation; no live runtime proof.
-- TOKEN-10D remainder (provider-signal normalization, broader wiring) remains open.
+
+#### TOKEN-10D-2 — Provider Cache Signal Normalization and Timing Input Compiler
+
+**Status:** **Accepted / Closed**.
+
+Closeout:
+
+- typed adapter usage mapped to `PromptCacheUsageSnapshot`
+- reported zero distinguished from unknown
+- provider-neutral timing input compiler added
+- contradictory signals rejected fail-closed
+- explicit TTL passed through without inference
+- no char-to-token conversion
+- global provider metrics not treated as per-request cache state
+- existing TOKEN-10D-1 orchestrator unchanged
+- no provider I/O
+- no live execution
+
+#### TOKEN-10D-3 — Runtime Cache Signal Wiring and Controlled Orchestration Entrypoint
+
+**Status:** **Accepted / Closed**.
+
+Closeout:
+
+- normalization and orchestration composed behind one runtime entrypoint
+- adapter evidence reconciled with `PromptCacheAttribution`
+- provider/model conflicts rejected fail-closed
+- rejected signals stop before router and pipeline
+- `NORMALIZED`/`PARTIAL` enter the existing orchestrator
+- no hidden retry or fallback to direct execution
+- existing timing and pipeline semantics unchanged
+- no provider I/O
+- no TTL inference
+- no in-cache compaction
+
+#### TOKEN-10D-CLOSEOUT-1 — Public Runtime Contract Freeze and Phase Acceptance
+
+**Status:** **Implemented / Ready for review**.
+
+Closeout:
+
+- cache-aware timing gate executes before pipeline execution
+- only RUN executes the pipeline
+- typed provider cache evidence is normalized through provider-neutral contracts
+- reported zero remains distinct from unknown
+- conflicting evidence is rejected before router invocation
+- normalization and orchestration are composed behind one public runtime entrypoint
+- public TOKEN-10D package-root contract is frozen and tested
+- lower-level normalizer and orchestrator APIs remain available
+- safe serializers contain no raw content
+- no provider polling
+- no TTL inference
+- no application or LKW wiring
+- no in-cache compaction
+- no live proof execution
+
+**Next step:** TOKEN-10E — Policy-Governed In-Cache Compaction
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1633,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Planned.
+**Status:** Planned / Not Started.
 
 Implement in-cache compaction with explicit opt-in, protected-region preservation, receipts, rollback metadata, and cache attribution separate from content reduction. No automatic production enablement by default.
 
@@ -2126,14 +2182,17 @@ TOKEN-7     adaptive recommendations from telemetry, no auto-apply by default
 TOKEN-8A..8D layer registry, catalog, evals, plugin proof — Done / Closed
 TOKEN-9     LLM router, compiler, engine integration, live E2E — Accepted / Closed
 TOKEN-10A   cache-aware runtime and proof canon (docs) — Accepted / Closed
-TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Implemented / Ready for review after R2
-TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Implemented / Ready for review
-TOKEN-10B-R2 exact tool-schema order integrity — Implemented / Ready for review
-TOKEN-10C   vLLM prefix-cache provider integration and metrics — Implemented / Ready for review
-TOKEN-10C-R4 canonical proof default and shared-server pass semantics — Implemented / Ready for review
-TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Implemented / Ready for review
+TOKEN-10B   cache-stable prompt, thread and tool-envelope runtime — Accepted / Closed
+TOKEN-10B-R1 send-payload integrity and tool-envelope transition corrections — Accepted / Closed
+TOKEN-10B-R2 exact tool-schema order integrity — Accepted / Closed
+TOKEN-10C   vLLM prefix-cache provider integration and metrics — Accepted / Closed
+TOKEN-10C-R4 canonical proof default and shared-server pass semantics — Accepted / Closed
+TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Accepted / Closed
 TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
-TOKEN-10D..10H orchestration, compaction, proof, README — Planned
+TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
+TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
+TOKEN-10E   policy-governed in-cache compaction — Planned / Not Started
+TOKEN-10F..10H universal proof harness, corpus, README promotion — Planned
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

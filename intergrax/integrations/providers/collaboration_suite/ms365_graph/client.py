@@ -69,8 +69,11 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChatMessage,
     MsGraphTeamsChatMessageSnapshotPage,
     MsGraphTeamsChatMessageWindow,
+    MsGraphTeamsChatContentReader,
+    MsGraphTeamsChatMessageReference,
     MsGraphTeamsChatMessagesReader,
     MsGraphTeamsChatPage,
+    MsGraphTeamsChatReference,
     MsGraphTeamsChatsReader,
     DEFAULT_TEAMS_CHANNEL_HOSTED_CONTENT_MAX_BYTES,
     DEFAULT_TEAMS_CHANNEL_MESSAGE_MAX_CHARS,
@@ -228,6 +231,10 @@ class GraphRestClient:
             transport=self._knowledge_transport,
         )
         self._teams_chat_messages_reader = MsGraphTeamsChatMessagesReader(
+            config=config,
+            transport=self._knowledge_transport,
+        )
+        self._teams_chat_content_reader = MsGraphTeamsChatContentReader(
             config=config,
             transport=self._knowledge_transport,
         )
@@ -480,6 +487,34 @@ class GraphRestClient:
             continuation=continuation,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat: MsGraphTeamsChatReference,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        return self._teams_chat_messages_reader.read_teams_chat_messages_snapshot_page_by_reference(
+            chat=chat,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+
+    def read_teams_chat_message_content(
+        self,
+        *,
+        message: MsGraphTeamsChatMessageReference,
+        max_chars: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessage:
+        return self._teams_chat_content_reader.read_message_content(
+            message=message,
+            max_chars=max_chars,
         )
 
     def read_teams_chat_hosted_contents_page(

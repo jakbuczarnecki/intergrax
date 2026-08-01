@@ -70,6 +70,7 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     DEFAULT_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
     DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
     ABSOLUTE_TEAMS_CHAT_HOSTED_CONTENT_MAX_BYTES,
+    ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS,
     MsGraphTeamsChat,
     MsGraphTeamsChatHostedContent,
     MsGraphTeamsChatHostedContentBytes,
@@ -81,6 +82,10 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphTeamsChatMessageSnapshotPage,
     MsGraphTeamsChatMessageWindow,
     MsGraphTeamsChatMessagesReadClient,
+    MsGraphTeamsChatMessageReference,
+    MsGraphTeamsChatReference,
+    MsGraphTeamsChatReferencePagingReadClient,
+    MsGraphTeamsChatContentReadClient,
     MsGraphTeamsChatPage,
     MsGraphTeamsChatsReadClient,
     validate_msgraph_teams_chat,
@@ -89,7 +94,10 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     validate_msgraph_teams_chat_hosted_content_page,
     validate_msgraph_teams_chat_member_page,
     validate_msgraph_teams_chat_message,
+    validate_msgraph_teams_chat_message_content,
+    validate_msgraph_teams_chat_message_reference,
     validate_msgraph_teams_chat_message_snapshot_page,
+    validate_msgraph_teams_chat_reference,
     validate_msgraph_teams_chat_page,
     validate_msgraph_teams_chats_continuation,
     validate_msgraph_teams_chat_members_continuation,
@@ -142,6 +150,7 @@ from intergrax.runtime.integrations.categories._base import CategoryIntegrationC
 MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID = "ms365_graph"
 _INVALID_HOSTED_CONTENT_REQUEST = "invalid Microsoft Graph Teams hosted content request"
 _INVALID_TEAMS_CHANNEL_CONTENT_REQUEST = "invalid Microsoft Graph Teams channel message content request"
+_INVALID_TEAMS_CHAT_CONTENT_REQUEST = "invalid Microsoft Graph Teams chat message content request"
 
 
 class Ms365GraphCollaborationSuiteIntegrationConfig(CategoryIntegrationConfig):
@@ -526,6 +535,99 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
             window=validated_window,
             graph_base_url=graph_base_url,
             max_chars_per_message=max_chars_per_message,
+            limit=limit,
+        )
+
+    def read_teams_chat_messages_snapshot_page_by_reference(
+        self,
+        *,
+        chat: MsGraphTeamsChatReference,
+        window: MsGraphTeamsChatMessageWindow,
+        continuation: MsGraphKnowledgeContinuation | None = None,
+        limit: int = 50,
+        max_chars_per_message: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessageSnapshotPage:
+        try:
+            validated_chat = validate_msgraph_teams_chat_reference(chat)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams chat messages request"
+            ) from None
+        try:
+            validated_window = MsGraphTeamsChatMessageWindow.model_validate(
+                window.model_dump(mode="python")
+            )
+        except (ValueError, TypeError, AttributeError):
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams chat messages request"
+            ) from None
+        if type(limit) is not int or limit < 1 or limit > 50:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams chat messages request"
+            ) from None
+        try:
+            from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+                _validate_message_max_chars,
+            )
+
+            _validate_message_max_chars(max_chars_per_message)
+        except ValueError:
+            raise IntegrationConfigurationError(
+                "invalid Microsoft Graph Teams chat messages request"
+            ) from None
+        graph_base_url: str | None = None
+        validated_continuation: MsGraphKnowledgeContinuation | None = None
+        if continuation is not None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+            validated_continuation = validate_msgraph_teams_chat_messages_continuation(
+                continuation,
+                mailbox_user_id=validated_chat.mailbox_user_id,
+                chat_id=validated_chat.chat_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        result = self._require_teams_chat_reference_paging_client().read_teams_chat_messages_snapshot_page_by_reference(
+            chat=validated_chat,
+            window=validated_window,
+            continuation=validated_continuation,
+            limit=limit,
+            max_chars_per_message=max_chars_per_message,
+        )
+        if graph_base_url is None:
+            graph_base_url = self._graph_base_url_for_teams_chat_validation()
+        from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_messages import (
+            validate_msgraph_teams_chat_message_snapshot_page_by_reference,
+        )
+
+        return validate_msgraph_teams_chat_message_snapshot_page_by_reference(
+            result,
+            chat=validated_chat,
+            window=validated_window,
+            graph_base_url=graph_base_url,
+            max_chars_per_message=max_chars_per_message,
+            limit=limit,
+        )
+
+    def read_teams_chat_message_content(
+        self,
+        *,
+        message: MsGraphTeamsChatMessageReference,
+        max_chars: int = DEFAULT_TEAMS_CHAT_MESSAGE_MAX_CHARS,
+    ) -> MsGraphTeamsChatMessage:
+        validated_reference = validate_msgraph_teams_chat_message_reference(message)
+        if (
+            type(max_chars) is not int
+            or max_chars < 1
+            or max_chars > ABSOLUTE_TEAMS_CHAT_MESSAGE_MAX_CHARS
+        ):
+            raise IntegrationConfigurationError(_INVALID_TEAMS_CHAT_CONTENT_REQUEST) from None
+        result = self._require_teams_chat_content_client().read_teams_chat_message_content(
+            message=validated_reference,
+            max_chars=max_chars,
+        )
+        return validate_msgraph_teams_chat_message_content(
+            result,
+            reference=validated_reference,
+            max_chars=max_chars,
         )
 
     def read_teams_chat_hosted_contents_page(
@@ -1190,6 +1292,24 @@ class Ms365GraphCollaborationSuiteIntegration(CollaborationSuiteIntegrationContr
         if not isinstance(client, MsGraphTeamsChatMessagesReadClient):
             raise IntegrationConfigurationError(
                 "Microsoft Graph integration does not expose Teams chat messages capability",
+            )
+        return client
+
+    def _require_teams_chat_reference_paging_client(
+        self,
+    ) -> MsGraphTeamsChatReferencePagingReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphTeamsChatReferencePagingReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Teams chat reference paging capability",
+            )
+        return client
+
+    def _require_teams_chat_content_client(self) -> MsGraphTeamsChatContentReadClient:
+        client = self._require_client()
+        if not isinstance(client, MsGraphTeamsChatContentReadClient):
+            raise IntegrationConfigurationError(
+                "Microsoft Graph integration does not expose Teams chat message content capability",
             )
         return client
 

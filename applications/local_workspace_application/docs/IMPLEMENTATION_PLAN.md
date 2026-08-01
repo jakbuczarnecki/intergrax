@@ -1,6 +1,6 @@
 # Local Workspace Application — Implementation Plan
 
-**Status:** Product-first MVP roadmap (2026-07-27)  
+**Status:** Product-first MVP roadmap (2026-07-31)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
@@ -14,14 +14,23 @@
 Current product level: Backend Product Alpha
 Current milestone: LKW MVP — Hybrid Knowledge Workspace
 Last accepted implementation:
-  LKW-WORKSPACE-CONTENTS-1B-5-2
-  including C1 and C2 corrections
+  LKW-MODEL-RUNTIME-1
+  including C1–C4 corrections and evidence v2
 
 Architecture:
   LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — ACCEPTED
 
 Next implementation:
-  LKW-MODEL-RUNTIME-1 — NEXT
+  LKW-KNOWLEDGE-ACCESS-1 — NEXT
+
+Platform next (vendor knowledge):
+  SLACK-KNOWLEDGE-FOUNDATION-1 — NEXT after SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+
+Slack Knowledge user vertical (after platform foundation):
+  SLACK-KNOWLEDGE-FOUNDATION-1
+  → LKW-SLACK-CONNECTED-SOURCE-1
+  → SLACK-LIVE-CAPABILITY-1
+  → LKW-SLACK-KNOWLEDGE-PROOF-1
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
@@ -97,10 +106,11 @@ LKW-WORKSPACE-CONTENTS-1B-5-2
 → END-TO-END WEB_URL KNOWLEDGE INTAKE
 → including accepted C1 and C2 corrections
 
-NEXT:
 LKW-MODEL-RUNTIME-1
 → OLLAMA / vLLM END-TO-END PORTABILITY
+→ accepted with full canonical proof and evidence v2
 
+NEXT:
 LKW-KNOWLEDGE-ACCESS-1
 → WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
 
@@ -134,19 +144,45 @@ LKW-LIVE-PLATFORM-PROOF-1
 |---|---|---|
 | `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **ACCEPTED** |
 | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **ACCEPTED** |
+| `LKW-MODEL-RUNTIME-1` | The same LKW workspace, document and vector index pass generation, structured planning, validated tool calling, public HTTP Ask, citations and persisted runs on Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct` without reindexing | **ACCEPTED** |
 
 ### 3.2 Next and planned product blocks
 
 | Block | One-sentence outcome | Status |
 |---|---|---|
-| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **NEXT** |
-| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **PLANNED** |
+| `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **ACCEPTED** |
+| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **NEXT** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts | **PLANNED** |
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
 | `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
 | `LKW-LIVE-PLATFORM-PROOF-1` | A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
+
+### 3.2.1 Slack Knowledge vertical (platform + LKW)
+
+Complete Slack Knowledge user vertical precedes Microsoft Graph Calendar and lower-priority provider expansion. Platform foundation must precede LKW bridge tasks.
+
+| Task | Owner | User outcome | Status |
+|---|---|---|---|
+| `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
+| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations for any Intergrax application; no new Slack command or LKW feature implied yet | **NEXT** (platform) |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **PLANNED** |
+| `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
+| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining Slack history, authorized live Slack evidence and other workspace sources with safe citations | **PLANNED** |
+
+**Required dependency:**
+
+```text
+SLACK-KNOWLEDGE-FOUNDATION-1
+→ LKW-SLACK-CONNECTED-SOURCE-1
+→ SLACK-LIVE-CAPABILITY-1
+→ LKW-SLACK-KNOWLEDGE-PROOF-1
+```
+
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the complete Slack user vertical.
+
+**Available today:** The user can operate LKW through Slack and ask about knowledge already present in the selected workspace. The user cannot yet attach and search Slack channel or conversation history as workspace knowledge.
 
 ### 3.3 Internal implementation slices (historical identity preserved)
 
@@ -269,7 +305,7 @@ Platform prerequisite: [`docs/architecture/WEB_CONTENT_CAPTURE.md`](../../../doc
 
 ---
 
-## 7. Product block definitions (planned)
+## 7. Product block definitions
 
 Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). The sections below summarize one-sentence outcomes. Detailed `1B-6` / `1C`–`1E` material is preserved in §8–§10 as implementation reference mapped into the blocks above.
 
@@ -277,19 +313,59 @@ Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCH
 
 **One-sentence outcome:** The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates.
 
-**Status:** **NEXT**.
+**Status:** **ACCEPTED**.
 
-Proof must cover: basic generation; structured output; Conversation Interaction Plan generation; tool calling; grounded synthesis; health check; configuration switch; same product contracts. Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex.
+Accepted proof pair:
+
+```text
+Ollama qwen2.5:14b
+vLLM Qwen/Qwen2.5-3B-Instruct
+```
+
+The proof covers basic generation, structured Conversation Interaction planning, deterministic plan validation, native tool calling, real `local.workspace.search` execution, public HTTP Ask, verified citations, persisted Ask runs and full shared-index invariance without reindexing. Canonical evidence: [`LKW_MODEL_RUNTIME_PORTABILITY.md`](evidence/LKW_MODEL_RUNTIME_PORTABILITY.md).
+
+Provider switch may require application restart. Conversation LLM and embedding provider remain separate — switching chat runtime must not silently reindex. Runtime hot swapping and universal model compatibility are not claimed.
 
 ### 7.2 `LKW-KNOWLEDGE-ACCESS-1` — Workspace Knowledge Configuration
 
-**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials.
+**One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials. All user-managed product configuration that must survive restart is durable; tenant Connections are stored in a platform-owned durable Connection Catalog with `SecretsStore`-owned credentials and runtime registry rehydration.
 
-**Status:** **PLANNED**.
+**Status:** **NEXT** (`1B` is the next internal slice).
 
-Expected capabilities: connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
+Expected capabilities: durable tenant Connection catalog with restart-safe rehydration; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
-**Acceptance gate:** Must prove that **one Connection** can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+**Internal decomposition:**
+
+| Slice | Title | Status |
+|-------|-------|--------|
+| `1A` | Implementation contract freeze | **ACCEPTED** (including C3 mutation semantics; C4 persistence boundary) |
+| `1B` | Provider-neutral durable workspace authorization foundation | **NEXT** |
+| `1C-1` | Durable tenant Connection catalog and restart rehydration | **PLANNED** |
+| `1C-2` | Safe Connection / Remote Resource discovery and typed capability catalog | **PLANNED** (depends on 1B, 1C-1) |
+| `1D` | HTTP create/disable for bindings with server-derived metadata | **PLANNED** (depends on 1B, 1C-1, 1C-2) |
+| `1E` | Query Policy and complete configuration projection | **PLANNED** |
+| `1F` | One-connection indexed/live reuse proof (with restart reconstruction) | **PLANNED** |
+
+**Acceptance gate:** Must prove that **one durable Connection** reconstructed after restart can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
+
+#### 7.2.1 User-visible roadmap
+
+**Available today:**
+
+- create/select an LKW workspace;
+- add already supported indexed inputs such as files and approved Web URLs;
+- ask questions against indexed knowledge;
+- use the current Slack/HTTP indexed workflow where already implemented.
+
+**After `1B`:** backend-only durable workspace authorization and configuration state; no new connector-management UI yet.
+
+**After `1C-1`:** an administrator can configure a connector once; the connector survives restart; LKW remembers that the Connection exists; secrets remain outside LKW. This may initially be backend/admin capability rather than Slack UI.
+
+**After `1C-2` and `1D`:** users can list available Connections; inspect discoverable resources; select which resources are indexed; separately authorize bounded live access.
+
+**Later frontend work:** natural-language configuration and use through Slack or another frontend.
+
+Do not claim that connector-management actions are already implemented.
 
 ### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
 
@@ -334,14 +410,15 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 **Execution order:**
 
 ```text
-1. complete Teams Chat and Calendar durable adapters;
-2. perform the adapter-family and three-mode capability audit;
-3. use Jira or Confluence for the first bounded live search/read capability proof;
-4. add bounded Microsoft Graph live capabilities separately;
-5. converge at Hybrid Ask.
+1. complete Slack Knowledge vertical (SLACK-KNOWLEDGE-FOUNDATION-1 → LKW-SLACK-CONNECTED-SOURCE-1 → SLACK-LIVE-CAPABILITY-1 → LKW-SLACK-KNOWLEDGE-PROOF-1);
+2. complete Teams Chat and Calendar durable adapters (Calendar after Slack vertical);
+3. perform the adapter-family and three-mode capability audit;
+4. use Jira or Confluence for the first bounded live search/read capability proof;
+5. add bounded Microsoft Graph live capabilities separately;
+6. converge at Hybrid Ask.
 ```
 
-The immediate current task remains `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`.
+The immediate current platform task is `SLACK-KNOWLEDGE-FOUNDATION-1`. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the complete Slack user vertical.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 
@@ -368,7 +445,7 @@ Target scenario: start with Ollama → create/select workspace → upload files 
 **Final platform proof requirement:**
 
 ```text
-one vendor connection
+one durable vendor connection (reconstructed after restart)
 → one durable/indexed use
 → one live use
 → one hybrid answer
@@ -661,16 +738,16 @@ HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
 → ACCEPTED
 
 LAST ACCEPTED IMPLEMENTATION:
-LKW-WORKSPACE-CONTENTS-1B-5-2
-END-TO-END WEB_URL KNOWLEDGE INTAKE
-→ ACCEPTED (including C1 and C2 corrections)
+LKW-MODEL-RUNTIME-1
+OLLAMA / vLLM END-TO-END PORTABILITY
+→ ACCEPTED (including C1–C4 corrections and evidence v2)
 
 NEXT:
-LKW-MODEL-RUNTIME-1 → Ollama / vLLM end-to-end portability
+LKW-KNOWLEDGE-ACCESS-1
+→ Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy
 
 THEN (functional blocks):
-LKW-KNOWLEDGE-ACCESS-1 → Connections, Indexed Sources, Live Access Bindings
-→ LKW-HYBRID-ASK-1 → RAG + live with unified provenance
+LKW-HYBRID-ASK-1 → RAG + live with unified provenance
 → LKW-CONVERSATIONAL-FRONTEND-1 (CONV-1B + CONV-1C internal)
 → LKW-VENDOR-ACCESS-COLLABORATION-1
 → LKW-VENDOR-ACCESS-DATA-1
