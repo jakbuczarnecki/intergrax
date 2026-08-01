@@ -303,8 +303,8 @@ async def test_inventory_duplicate_ids_fail_page() -> None:
             return {
                 "ok": True,
                 "channels": [
-                    {"id": _CONVERSATION_ID, "is_channel": True},
-                    {"id": _CONVERSATION_ID, "is_channel": True},
+                    {"id": _CONVERSATION_ID, "is_channel": True, "is_private": False},
+                    {"id": _CONVERSATION_ID, "is_channel": True, "is_private": False},
                 ],
             }
 
@@ -776,3 +776,391 @@ async def test_absent_ok_field_is_malformed_response() -> None:
             max_chars_per_message=1000,
         )
     assert exc_info.value.slack_error == "malformed_response"
+
+
+@pytest.mark.parametrize(
+    "response_metadata",
+    [
+        [],
+        "invalid",
+        {"next_cursor": 123},
+        {"next_cursor": []},
+        {"next_cursor": " cursor"},
+        {"next_cursor": "   "},
+    ],
+)
+async def test_malformed_inventory_pagination_metadata_fails_page(
+    response_metadata: object,
+) -> None:
+    class _BadMetadataClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            payload: dict[str, Any] = {
+                "ok": True,
+                "channels": [
+                    {
+                        "id": _CONVERSATION_ID,
+                        "is_channel": True,
+                        "is_private": False,
+                        "name": "general",
+                    }
+                ],
+                "response_metadata": response_metadata,
+            }
+            return payload
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadMetadataClient()).list_accessible_conversations_page(
+            cursor=None,
+            limit=10,
+        )
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+async def test_inventory_pagination_metadata_absent_is_terminal() -> None:
+    class _TerminalInventoryClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "channels": [
+                    {
+                        "id": _CONVERSATION_ID,
+                        "is_channel": True,
+                        "is_private": False,
+                        "name": "general",
+                    }
+                ],
+            }
+
+    page = await _reader(_TerminalInventoryClient()).list_accessible_conversations_page(
+        cursor=None,
+        limit=10,
+    )
+    assert page.next_cursor is None
+
+
+async def test_inventory_pagination_metadata_valid_cursor() -> None:
+    class _ValidCursorClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "channels": [
+                    {
+                        "id": _CONVERSATION_ID,
+                        "is_channel": True,
+                        "is_private": False,
+                        "name": "general",
+                    }
+                ],
+                "response_metadata": {"next_cursor": "inventory-page-2"},
+            }
+
+    page = await _reader(_ValidCursorClient()).list_accessible_conversations_page(
+        cursor=None,
+        limit=10,
+    )
+    assert page.next_cursor == "inventory-page-2"
+
+
+@pytest.mark.parametrize(
+    "response_metadata",
+    [
+        [],
+        "invalid",
+        {"next_cursor": 123},
+        {"next_cursor": []},
+        {"next_cursor": " cursor"},
+        {"next_cursor": "   "},
+    ],
+)
+async def test_malformed_history_pagination_metadata_fails_page(
+    response_metadata: object,
+) -> None:
+    class _BadHistoryMetadataClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            payload: dict[str, Any] = {
+                "ok": True,
+                "messages": [{"ts": _ROOT_TS, "user": "U111", "text": "root message"}],
+                "response_metadata": response_metadata,
+            }
+            return payload
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadHistoryMetadataClient()).read_conversation_history_page(
+            conversation_id=_CONVERSATION_ID,
+            conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+            window=_window(),
+            cursor=None,
+            limit=1,
+            max_chars_per_message=1000,
+        )
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+async def test_history_pagination_empty_cursor_is_terminal() -> None:
+    class _TerminalHistoryClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [{"ts": _ROOT_TS, "user": "U111", "text": "root message"}],
+                "response_metadata": {"next_cursor": ""},
+            }
+
+    page = await _reader(_TerminalHistoryClient()).read_conversation_history_page(
+        conversation_id=_CONVERSATION_ID,
+        conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+        window=_window(),
+        cursor=None,
+        limit=1,
+        max_chars_per_message=1000,
+    )
+    assert page.next_cursor is None
+
+
+@pytest.mark.parametrize(
+    "thread_ts",
+    [123, [], "", f" {_ROOT_TS}"],
+)
+async def test_malformed_thread_ts_fails_page(thread_ts: object) -> None:
+    class _BadThreadClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [{"ts": _ROOT_TS, "thread_ts": thread_ts, "user": "U111", "text": "x"}],
+            }
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadThreadClient()).read_conversation_history_page(
+            conversation_id=_CONVERSATION_ID,
+            conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+            window=_window(),
+            cursor=None,
+            limit=1,
+            max_chars_per_message=1000,
+        )
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+async def test_canonical_self_thread_root_normalizes_to_none() -> None:
+    class _SelfThreadClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [
+                    {
+                        "ts": _ROOT_TS,
+                        "thread_ts": _ROOT_TS,
+                        "user": "U111",
+                        "text": "root message",
+                    }
+                ],
+            }
+
+    page = await _reader(_SelfThreadClient()).read_conversation_history_page(
+        conversation_id=_CONVERSATION_ID,
+        conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+        window=_window(),
+        cursor=None,
+        limit=1,
+        max_chars_per_message=1000,
+    )
+    assert page.items[0].root_thread_ts is None
+
+
+async def test_canonical_reply_thread_parses_root_thread_ts() -> None:
+    class _ReplyThreadClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [
+                    {
+                        "ts": _REPLY_TS,
+                        "thread_ts": _ROOT_TS,
+                        "user": "U222",
+                        "text": "reply body",
+                    }
+                ],
+            }
+
+    page = await _reader(_ReplyThreadClient()).read_conversation_history_page(
+        conversation_id=_CONVERSATION_ID,
+        conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+        window=_window(),
+        cursor=None,
+        limit=1,
+        max_chars_per_message=1000,
+    )
+    assert page.items[0].root_thread_ts == _ROOT_TS
+
+
+@pytest.mark.parametrize(
+    "edited",
+    [
+        {},
+        {"ts": None},
+        {"ts": 123},
+        {"ts": ""},
+        {"ts": " invalid "},
+    ],
+)
+async def test_malformed_edited_marker_fails_page(edited: object) -> None:
+    class _BadEditedClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [{"ts": _ROOT_TS, "user": "U111", "text": "ok", "edited": edited}],
+            }
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadEditedClient()).read_conversation_history_page(
+            conversation_id=_CONVERSATION_ID,
+            conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+            window=_window(),
+            cursor=None,
+            limit=1,
+            max_chars_per_message=1000,
+        )
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+async def test_valid_edited_marker_changes_revision() -> None:
+    class _EditedClient(_FakeWebClient):
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [
+                    {
+                        "ts": _ROOT_TS,
+                        "user": "U111",
+                        "text": "edited body",
+                        "edited": {"ts": "1704153700.000001"},
+                    }
+                ],
+            }
+
+    page = await _reader(_EditedClient()).read_conversation_history_page(
+        conversation_id=_CONVERSATION_ID,
+        conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
+        window=_window(),
+        cursor=None,
+        limit=1,
+        max_chars_per_message=1000,
+    )
+    message = page.items[0]
+    assert message.edited_at is not None
+    unedited = message.model_copy(update={"edited_at": None})
+    assert compute_slack_conversation_message_revision(message) != (
+        compute_slack_conversation_message_revision(unedited)
+    )
+
+
+@pytest.mark.parametrize(
+    ("channel", "expected_kind"),
+    [
+        (
+            {
+                "id": _CONVERSATION_ID,
+                "is_channel": True,
+                "is_private": False,
+                "name": "general",
+            },
+            SlackConversationKind.PUBLIC_CHANNEL,
+        ),
+        (
+            {
+                "id": "C76543210",
+                "is_channel": True,
+                "is_private": True,
+                "name": "private-room",
+            },
+            SlackConversationKind.PRIVATE_CHANNEL,
+        ),
+        (
+            {"id": "D01234567", "is_im": True, "user": "U22222222"},
+            SlackConversationKind.IM,
+        ),
+        (
+            {"id": "G01234567", "is_mpim": True, "name": "mpim-room"},
+            SlackConversationKind.MPIM,
+        ),
+    ],
+)
+async def test_inventory_conversation_kind_shapes(
+    channel: dict[str, Any],
+    expected_kind: SlackConversationKind,
+) -> None:
+    class _KindClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {"ok": True, "channels": [channel]}
+
+    page = await _reader(_KindClient()).list_accessible_conversations_page(cursor=None, limit=10)
+    assert page.items[0].kind is expected_kind
+
+
+@pytest.mark.parametrize(
+    "channel",
+    [
+        {"id": _CONVERSATION_ID},
+        {"id": _CONVERSATION_ID, "is_channel": True, "is_im": True, "is_private": False},
+        {"id": _CONVERSATION_ID, "is_channel": True, "is_mpim": True, "is_private": False},
+        {"id": _CONVERSATION_ID, "is_im": True, "is_mpim": True},
+        {"id": _CONVERSATION_ID, "is_channel": True, "is_private": "yes"},
+        {"id": _CONVERSATION_ID, "is_channel": "yes", "is_private": False},
+    ],
+)
+async def test_malformed_inventory_conversation_kind_fails_page(channel: dict[str, Any]) -> None:
+    class _BadKindClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {"ok": True, "channels": [channel]}
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadKindClient()).list_accessible_conversations_page(cursor=None, limit=10)
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+@pytest.mark.parametrize(
+    "channel_patch",
+    [
+        {"name": 123},
+        {"user": 123, "is_im": True},
+        {"topic": "not-a-mapping", "is_channel": True, "is_private": False},
+        {"purpose": [], "is_channel": True, "is_private": False},
+        {"topic": {"value": 123}, "is_channel": True, "is_private": False},
+        {"purpose": {"value": 123}, "is_channel": True, "is_private": False},
+    ],
+)
+async def test_malformed_inventory_summary_fields_fail_page(channel_patch: dict[str, Any]) -> None:
+    base = {"id": _CONVERSATION_ID, "is_channel": True, "is_private": False}
+    base.update(channel_patch)
+
+    class _BadSummaryClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {"ok": True, "channels": [base]}
+
+    with pytest.raises(SlackConversationReadError) as exc_info:
+        await _reader(_BadSummaryClient()).list_accessible_conversations_page(cursor=None, limit=10)
+    assert exc_info.value.slack_error == "malformed_response"
+
+
+async def test_inventory_empty_topic_and_purpose_normalize_to_none() -> None:
+    class _EmptyTopicClient(_FakeWebClient):
+        async def users_conversations(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "channels": [
+                    {
+                        "id": _CONVERSATION_ID,
+                        "is_channel": True,
+                        "is_private": False,
+                        "name": "general",
+                        "topic": {"value": ""},
+                        "purpose": {"value": ""},
+                    }
+                ],
+            }
+
+    page = await _reader(_EmptyTopicClient()).list_accessible_conversations_page(
+        cursor=None,
+        limit=10,
+    )
+    assert page.items[0].safe_topic is None
+    assert page.items[0].safe_purpose is None

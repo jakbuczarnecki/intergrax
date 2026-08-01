@@ -635,3 +635,74 @@ async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
     )
     assert final_checkpoint is not None
     assert final_checkpoint != checkpoint_after_failure
+
+
+@pytest.mark.asyncio
+async def test_malformed_terminal_history_cursor_blocks_checkpoint_acceptance() -> None:
+    from intergrax.integrations.providers.conversation_channel.slack.backend import (
+        SlackConversationChannelBackend,
+    )
+
+    class _MalformedTerminalHistoryClient:
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            if kwargs.get("cursor") == "history-page-2":
+                return {
+                    "ok": True,
+                    "messages": [
+                        {
+                            "ts": _EDITED_TS,
+                            "user": "U111",
+                            "text": "edited body",
+                            "edited": {"ts": "1704153700.000001"},
+                        }
+                    ],
+                    "response_metadata": {"next_cursor": 123},
+                }
+            return {
+                "ok": True,
+                "messages": [
+                    {
+                        "ts": _ROOT_TS,
+                        "user": "U111",
+                        "text": "root message",
+                    }
+                ],
+                "response_metadata": {"next_cursor": "history-page-2"},
+            }
+
+        async def conversations_replies(self, **kwargs: Any) -> dict[str, Any]:
+            raise AssertionError("replies should not be requested")
+
+    config = SlackConversationChannelIntegrationConfig(
+        enabled=True,
+        app_token="xapp-test-token-value",
+        bot_token="xoxb-test-token-value",
+    )
+    backend = SlackConversationChannelBackend(
+        config=config,
+        web_client=_MalformedTerminalHistoryClient(),
+    )
+    coordinator, sink, checkpoint_repo, _, _, _ = _build_coordinator(backend)  # type: ignore[arg-type]
+    first = await coordinator.reconcile_once(
+        binding_id="slack-conversation-binding",
+        restart=True,
+    )
+    assert first.status is KnowledgeSyncRunStatus.COMPLETED
+    assert first.has_more is True
+    checkpoint_before_terminal = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="slack-conversation-binding",
+            restart=False,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    checkpoint_after_failure = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    assert checkpoint_after_failure == checkpoint_before_terminal
+    assert len(sink.calls) == 1

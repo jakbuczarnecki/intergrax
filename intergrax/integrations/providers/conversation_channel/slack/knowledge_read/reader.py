@@ -202,6 +202,75 @@ def _optional_str_field(value: object, *, field: str, raw: Mapping[str, Any]) ->
     return _non_blank_str(value)
 
 
+def _optional_string_field(value: object, *, field: str, raw: Mapping[str, Any]) -> str | None:
+    if field not in raw:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    return value
+
+
+def _optional_topic_purpose_value(
+    obj: object,
+    *,
+    field: str,
+    raw: Mapping[str, Any],
+) -> str | None:
+    if field not in raw:
+        return None
+    if not isinstance(obj, Mapping):
+        raise ValueError(_MALFORMED_RESPONSE)
+    if "value" not in obj:
+        return None
+    value = obj["value"]
+    if not isinstance(value, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    return _non_blank_str(value)
+
+
+def _parse_next_cursor(data: Mapping[str, Any]) -> str | None:
+    if "response_metadata" not in data:
+        return None
+    metadata = data["response_metadata"]
+    if not isinstance(metadata, Mapping):
+        raise ValueError(_MALFORMED_RESPONSE)
+    if "next_cursor" not in metadata:
+        return None
+    raw_cursor = metadata["next_cursor"]
+    if raw_cursor == "":
+        return None
+    if not isinstance(raw_cursor, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    return validate_provider_cursor(raw_cursor)
+
+
+def _parse_present_thread_ts(raw: Mapping[str, Any], *, message_ts: str) -> str | None:
+    if "thread_ts" not in raw:
+        return None
+    thread_ts_value = raw["thread_ts"]
+    if not isinstance(thread_ts_value, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    validated_thread_ts = validate_slack_timestamp(thread_ts_value)
+    return _normalize_root_thread_ts(
+        message_ts=message_ts,
+        raw_thread_ts=validated_thread_ts,
+    )
+
+
+def _parse_edited_at(raw: Mapping[str, Any]) -> datetime | None:
+    if "edited" not in raw:
+        return None
+    edited = raw["edited"]
+    if not isinstance(edited, Mapping):
+        raise ValueError(_MALFORMED_RESPONSE)
+    if "ts" not in edited:
+        raise ValueError(_MALFORMED_RESPONSE)
+    edited_ts_value = edited["ts"]
+    if not isinstance(edited_ts_value, str):
+        raise ValueError(_MALFORMED_RESPONSE)
+    return _parse_created_at(validate_slack_timestamp(edited_ts_value))
+
+
 def _parse_created_at(ts: str) -> datetime:
     parsed = parse_slack_ts(ts)
     if parsed is None:
@@ -210,28 +279,40 @@ def _parse_created_at(ts: str) -> datetime:
 
 
 def _conversation_kind_from_channel(channel: Mapping[str, Any]) -> SlackConversationKind:
+    is_channel = _optional_bool(channel.get("is_channel"), field="is_channel", raw=channel)
     is_im = _optional_bool(channel.get("is_im"), field="is_im", raw=channel)
     is_mpim = _optional_bool(channel.get("is_mpim"), field="is_mpim", raw=channel)
     is_private = _optional_bool(channel.get("is_private"), field="is_private", raw=channel)
+    active_kinds = sum(flag is True for flag in (is_channel, is_im, is_mpim))
+    if active_kinds != 1:
+        raise ValueError(_MALFORMED_RESPONSE)
     if is_im is True:
+        if is_mpim is True:
+            raise ValueError(_MALFORMED_RESPONSE)
         return SlackConversationKind.IM
     if is_mpim is True:
+        if is_im is True:
+            raise ValueError(_MALFORMED_RESPONSE)
         return SlackConversationKind.MPIM
-    if is_private is True:
-        return SlackConversationKind.PRIVATE_CHANNEL
-    return SlackConversationKind.PUBLIC_CHANNEL
+    if is_channel is True:
+        if is_private is True:
+            return SlackConversationKind.PRIVATE_CHANNEL
+        if is_private is False:
+            return SlackConversationKind.PUBLIC_CHANNEL
+        raise ValueError(_MALFORMED_RESPONSE)
+    raise ValueError(_MALFORMED_RESPONSE)
 
 
 def _safe_conversation_name(channel: Mapping[str, Any], *, kind: SlackConversationKind) -> str:
     if kind is SlackConversationKind.IM:
-        user_id = _non_blank_str(channel.get("user"))
+        user_id = _non_blank_str(_optional_string_field(channel.get("user"), field="user", raw=channel))
         if user_id is not None:
             return f"Direct message ({user_id[:8]}…)"
         return "Direct message"
     if kind is SlackConversationKind.MPIM:
-        name = _non_blank_str(channel.get("name"))
+        name = _non_blank_str(_optional_string_field(channel.get("name"), field="name", raw=channel))
         return name or "Group direct message"
-    name = _non_blank_str(channel.get("name"))
+    name = _non_blank_str(_optional_string_field(channel.get("name"), field="name", raw=channel))
     return name or "Conversation"
 
 
@@ -289,13 +370,7 @@ def _parse_message(
     if message_ts is None:
         raise ValueError(_MALFORMED_RESPONSE)
     message_ts = validate_slack_timestamp(message_ts)
-    raw_thread_ts = _non_blank_str(raw.get("thread_ts"))
-    root_thread_ts = None
-    if raw_thread_ts is not None:
-        root_thread_ts = _normalize_root_thread_ts(
-            message_ts=message_ts,
-            raw_thread_ts=validate_slack_timestamp(raw_thread_ts),
-        )
+    root_thread_ts = _parse_present_thread_ts(raw, message_ts=message_ts)
     if "text" in raw:
         text_value = raw.get("text")
         if not isinstance(text_value, str):
@@ -305,14 +380,7 @@ def _parse_message(
         text = ""
     if len(text) > max_chars:
         raise SlackConversationContentTooLarge()
-    edited_at = None
-    if "edited" in raw:
-        edited = raw.get("edited")
-        if not isinstance(edited, Mapping):
-            raise ValueError(_MALFORMED_RESPONSE)
-        edited_ts = _non_blank_str(edited.get("ts"))
-        if edited_ts is not None:
-            edited_at = _parse_created_at(validate_slack_timestamp(edited_ts))
+    edited_at = _parse_edited_at(raw)
     files: list[SlackConversationFileReference] = []
     raw_files = raw.get("files")
     if isinstance(raw_files, list):
@@ -472,16 +540,19 @@ class SlackConversationKnowledgeReader:
                     field="is_private",
                     raw=raw_channel,
                 )
-                topic_obj = raw_channel.get("topic")
-                purpose_obj = raw_channel.get("purpose")
-                safe_topic = (
-                    _non_blank_str(topic_obj.get("value")) if isinstance(topic_obj, Mapping) else None
+                safe_topic = _optional_topic_purpose_value(
+                    raw_channel.get("topic"),
+                    field="topic",
+                    raw=raw_channel,
                 )
-                safe_purpose = (
-                    _non_blank_str(purpose_obj.get("value"))
-                    if isinstance(purpose_obj, Mapping)
-                    else None
+                safe_purpose = _optional_topic_purpose_value(
+                    raw_channel.get("purpose"),
+                    field="purpose",
+                    raw=raw_channel,
                 )
+                _optional_string_field(raw_channel.get("name"), field="name", raw=raw_channel)
+                if kind is SlackConversationKind.IM:
+                    _optional_string_field(raw_channel.get("user"), field="user", raw=raw_channel)
                 items.append(
                     SlackConversationSummary(
                         conversation_id=validate_slack_conversation_id(conversation_id),
@@ -502,12 +573,10 @@ class SlackConversationKnowledgeReader:
                 )
             except ValueError as exc:
                 raise _malformed_provider_response() from exc
-        next_cursor = None
-        metadata = data.get("response_metadata")
-        if isinstance(metadata, Mapping):
-            raw_cursor = _non_blank_str(metadata.get("next_cursor"))
-            if raw_cursor:
-                next_cursor = validate_provider_cursor(raw_cursor)
+        try:
+            next_cursor = _parse_next_cursor(data)
+        except ValueError as exc:
+            raise _malformed_provider_response() from exc
         return SlackConversationInventoryPage(items=tuple(items), next_cursor=next_cursor)
 
     async def read_conversation_history_page(
@@ -863,12 +932,10 @@ class SlackConversationKnowledgeReader:
             ):
                 raise _malformed_provider_response()
             items.append(parsed)
-        next_cursor = None
-        metadata = data.get("response_metadata")
-        if isinstance(metadata, Mapping):
-            raw_cursor = _non_blank_str(metadata.get("next_cursor"))
-            if raw_cursor:
-                next_cursor = validate_provider_cursor(raw_cursor)
+        try:
+            next_cursor = _parse_next_cursor(data)
+        except ValueError as exc:
+            raise _malformed_provider_response() from exc
         return SlackConversationMessagePage(
             conversation_id=conversation_id,
             oldest=oldest,

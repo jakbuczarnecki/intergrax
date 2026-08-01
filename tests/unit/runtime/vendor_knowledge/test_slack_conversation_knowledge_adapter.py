@@ -432,3 +432,45 @@ async def test_capabilities_full_inventory_within_root_window_scope() -> None:
             oldest=_LATEST,
             latest=_OLDEST,
         )
+
+
+async def test_malformed_history_thread_ts_maps_to_invalid_provider_response() -> None:
+    from intergrax.integrations.providers.conversation_channel.slack.backend import (
+        SlackConversationChannelBackend,
+    )
+
+    class _MalformedThreadClient:
+        async def conversations_history(self, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "ok": True,
+                "messages": [
+                    {
+                        "ts": _ROOT_TS,
+                        "thread_ts": 123,
+                        "user": "U111",
+                        "text": "root message",
+                    }
+                ],
+            }
+
+    config = SlackConversationChannelIntegrationConfig(
+        enabled=True,
+        app_token="xapp-test-token-value",
+        bot_token="xoxb-test-token-value",
+    )
+    backend = SlackConversationChannelBackend(config=config, web_client=_MalformedThreadClient())
+    integration = SlackConversationChannelIntegration.from_backend(
+        backend,
+        enabled=True,
+        config=config,
+    )
+    adapter = SlackConversationKnowledgeAdapter()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=integration,
+            source=_source(),
+            cursor=None,
+            limit=1,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
