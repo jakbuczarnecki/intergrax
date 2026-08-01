@@ -79,8 +79,9 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-BASED-PAGING-AND-EXACT-MESSAGE-READ
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-READS-REVIEW-FIX-1
-  NEXT:
+  DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
+  NEXT:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
@@ -99,7 +100,7 @@ global mailbox deletion.
 Item attachments, reference-attachment downloads, MIME, raw internet headers
 and recursive attached-message expansion are intentionally not implemented.
 
-No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail and Teams Channel.
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail, Teams Channel and Teams Chat.
 
 Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
 is implemented.
@@ -109,6 +110,9 @@ is implemented.
 
 Microsoft Graph Teams Channel Vendor Knowledge adapter
 (`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`) is implemented.
+
+Microsoft Graph Teams Chat Vendor Knowledge adapter
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`) is implemented.
 
 Drive capability matrix:
 
@@ -198,6 +202,47 @@ Attachment inventory is included in structured content. Attachment URLs,
 embedded card payloads and hosted-content bytes are excluded. Channel member
 inventory is not an authoritative ACL projection. No Graph delta, webhook,
 subscription or LKW changes are introduced.
+
+Teams Chat capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`):
+
+```text
+source_kind: teams_chat
+scope: one known mailbox-visible chat plus one immutable lastModifiedDateTime window
+full_inventory: yes, inside the fixed source window
+incremental_changes: no
+reconciliation: yes
+content_fetch: yes
+binary_content: no
+rich_text_content: no
+structured_content: yes
+permissions: no
+tombstones: yes, explicit deletedDateTime only
+remote_versions: yes
+```
+
+Structured schema: `msgraph.teams-chat.message.knowledge.v1`
+
+Flat message collection: yes
+
+Delta: not implemented
+
+Absence-based deletion: not permitted
+
+Attachment inventory: included
+
+Attachment URLs: excluded
+
+Embedded attachment payloads: excluded
+
+Hosted-content bytes: excluded
+
+Authoritative ACL: not implemented
+
+LKW connected-source bridge: not implemented
+
+Live capability layer: not implemented
+
+Live search: not implemented
 
 Microsoft Graph Calendar low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -864,7 +909,9 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-READS-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`
+**Next:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`
+
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT` is **DONE**.
 
 **Planned:**
 
@@ -897,7 +944,7 @@ Content mapping:
 - `drive` → `BINARY` for files; metadata-only non-file records for folders and inventory records;
 - `mail` → `STRUCTURED_RECORD`; attachment binary content deferred;
 - `teams_channel` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
-- `teams_chat` → planned / to be frozen by the adapter task (`RICH_TEXT` or `STRUCTURED_RECORD`; attachments may produce separate `BINARY` items);
+- `teams_chat` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
 - `calendar` → planned / to be frozen by the adapter task (`STRUCTURED_RECORD`).
 
 Each adapter:
