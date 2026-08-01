@@ -30,6 +30,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationExactMessageResult,
     SlackConversationFileReference,
     SlackConversationInventoryPage,
+    SlackConversationKind,
     SlackConversationKnowledgeReadClient,
     SlackConversationMessagePage,
     SlackConversationReadConfigurationError,
@@ -86,6 +87,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         self,
         *,
         conversation_id: str,
+        conversation_kind: SlackConversationKind,
         window: SlackConversationSourceWindow,
         cursor: str | None,
         limit: int,
@@ -93,6 +95,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
     ) -> SlackConversationMessagePage:
         return await self._require_knowledge_read_client().read_conversation_history_page(
             conversation_id=conversation_id,
+            conversation_kind=conversation_kind,
             window=window,
             cursor=cursor,
             limit=limit,
@@ -103,6 +106,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         self,
         *,
         conversation_id: str,
+        conversation_kind: SlackConversationKind,
         root_message_ts: str,
         window: SlackConversationSourceWindow,
         cursor: str | None,
@@ -111,6 +115,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
     ) -> SlackConversationMessagePage:
         return await self._require_knowledge_read_client().read_thread_replies_page(
             conversation_id=conversation_id,
+            conversation_kind=conversation_kind,
             root_message_ts=root_message_ts,
             window=window,
             cursor=cursor,
@@ -122,6 +127,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         self,
         *,
         conversation_id: str,
+        conversation_kind: SlackConversationKind,
         message_ts: str,
         root_thread_ts: str | None,
         window: SlackConversationSourceWindow,
@@ -130,6 +136,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
     ) -> SlackConversationExactMessageResult:
         return await self._require_knowledge_read_client().read_exact_message(
             conversation_id=conversation_id,
+            conversation_kind=conversation_kind,
             message_ts=message_ts,
             root_thread_ts=root_thread_ts,
             window=window,
@@ -137,8 +144,16 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
             max_chars_per_message=max_chars_per_message,
         )
 
-    async def read_file_info(self, *, file_id: str) -> SlackConversationFileReference:
-        return await self._require_knowledge_read_client().read_file_info(file_id=file_id)
+    async def read_file_info(
+        self,
+        *,
+        file_id: str,
+        conversation_kind: SlackConversationKind | None = None,
+    ) -> SlackConversationFileReference:
+        return await self._require_knowledge_read_client().read_file_info(
+            file_id=file_id,
+            conversation_kind=conversation_kind,
+        )
 
     def health(self) -> HealthStatus:
         return probe_client_health(

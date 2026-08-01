@@ -1159,14 +1159,16 @@ application database/store       LKW Knowledge Intake
 **Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
 
 ```text
-list_accessible_conversations_page   # users.conversations membership inventory
-read_conversation_history_page       # root-window bounded history
-read_thread_replies_page             # thread replies with root normalization
-read_exact_message                   # bounded exact lookup with reply pagination
+list_accessible_conversations_page   # dual-stream users.conversations (user token + bot token)
+read_conversation_history_page       # root-window bounded history; conversation_kind routing
+read_thread_replies_page             # thread replies with root normalization; conversation_kind routing
+read_exact_message                   # bounded exact lookup with reply pagination; no root required on point page
 read_file_info (safe inventory only)
 ```
 
-**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
+**Credential routing (same integration, same `AsyncWebClient`):** `INTERGRAX_SLACK_BOT_TOKEN` (`xoxb-`) for conversational runtime and IM/MPIM knowledge reads. Optional `INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN` (`xoxp-`) as per-call token override for public/private channel inventory, history, replies and exact reads. Both credentials must belong to the same workspace (`auth.test` validation). Without the user token, durable source kinds are IM and MPIM only.
+
+**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. Root `message_ts` and reply `message_ts` must lie inside `[root_oldest, root_latest]`; `thread_broadcast` history records are not separately materialized. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
 
 **Not implemented:** LKW bridge, live capability, authoritative ACL, durable deletion feed, binary file download.
 
@@ -1177,7 +1179,7 @@ read bounded search result where Slack and policy support it
 read explicit durable deletion feed via Events API
 ```
 
-Required Slack scopes for knowledge reads must be audited per installation against official Slack documentation and preserve least privilege.
+Required Slack scopes for knowledge reads are documented per credential route in [`intergrax/integrations/providers/conversation_channel/slack/USAGE.md`](../../intergrax/integrations/providers/conversation_channel/slack/USAGE.md); audit per installation against official Slack documentation and preserve least privilege.
 
 **Three-mode reuse:**
 

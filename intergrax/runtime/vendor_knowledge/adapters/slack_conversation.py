@@ -41,6 +41,10 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     validate_slack_conversation_message,
     validate_slack_timestamp,
 )
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.timestamp import (
+    slack_timestamp_in_window,
+)
+from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -375,18 +379,13 @@ class SlackConversationKnowledgeAdapter:
     ) -> KnowledgeContent:
         slack_integration = self._require_slack_integration(integration=integration, source=source)
         validated_source = self._validate_source_ref(source)
-        conversation_id, _, window = self._decode_scope(validated_source)
+        conversation_id, conversation_kind, window = self._decode_scope(validated_source)
         try:
-            validated_item = self._deep_validate_item_descriptor(item)
-            message_identity, revision = self._validate_message_item(
-                validated_item,
+            message_identity, revision, metadata = self._validate_descriptor_for_fetch(
+                item,
                 source=validated_source,
                 conversation_id=conversation_id,
-            )
-            metadata = self._validate_descriptor_metadata(
-                validated_item.metadata,
-                message_identity=message_identity,
-                updated_at=validated_item.revision.updated_at,
+                window=window,
             )
         except VendorKnowledgeError:
             raise
@@ -402,6 +401,7 @@ class SlackConversationKnowledgeAdapter:
         result = await self._invoke_integration(
             lambda: slack_integration.read_exact_message(
                 conversation_id=message_identity.conversation_id,
+                conversation_kind=conversation_kind,
                 message_ts=message_identity.message_ts,
                 root_thread_ts=root_thread_ts if isinstance(root_thread_ts, str) else None,
                 window=window,
@@ -424,7 +424,7 @@ class SlackConversationKnowledgeAdapter:
                 message_identity=message_identity,
                 revision=revision,
                 metadata=metadata,
-                updated_at=validated_item.revision.updated_at,
+                updated_at=item.revision.updated_at,
             )
         except SlackConversationMessageChanged:
             raise VendorKnowledgeError(
@@ -466,37 +466,14 @@ class SlackConversationKnowledgeAdapter:
     ) -> KnowledgePermissions:
         self._require_slack_integration(integration=integration, source=source)
         validated_source = self._validate_source_ref(source)
+        conversation_id, _, window = self._decode_scope(validated_source)
         try:
-            conversation_id, _, _window = self._decode_scope(validated_source)
-            validated_item = self._deep_validate_item_descriptor(item)
-            message_identity, revision = self._validate_message_item(
-                validated_item,
+            self._validate_descriptor_for_fetch(
+                item,
                 source=validated_source,
                 conversation_id=conversation_id,
+                window=window,
             )
-            self._validate_descriptor_metadata(
-                validated_item.metadata,
-                message_identity=message_identity,
-                updated_at=validated_item.revision.updated_at,
-            )
-            if validated_item.item_type != "slack_conversation_message":
-                raise ValueError("invalid item type")
-            if validated_item.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD:
-                raise ValueError("invalid content mode")
-            if not validated_item.content_available:
-                raise ValueError("content must be available")
-            if validated_item.identity.parent_remote_id is not None:
-                parent_identity = _decode_message_identity_payload(
-                    validated_item.identity.parent_remote_id
-                )
-                thread_root_ts = validated_item.metadata.get("thread_root_ts")
-                if not isinstance(thread_root_ts, str):
-                    raise ValueError("invalid thread root metadata")
-                if parent_identity.message_ts != thread_root_ts:
-                    raise ValueError("parent/root mismatch")
-            elif validated_item.metadata.get("thread_root_ts") is not None:
-                raise ValueError("reply metadata without parent")
-            _ = revision
         except VendorKnowledgeError:
             raise
         except (ValueError, TypeError, AttributeError, ValidationError):
@@ -531,6 +508,7 @@ class SlackConversationKnowledgeAdapter:
         page = await self._invoke_integration(
             lambda: slack_integration.read_conversation_history_page(
                 conversation_id=conversation_id,
+                conversation_kind=conversation_kind,
                 window=window,
                 cursor=history_cursor,
                 limit=_HISTORY_PROVIDER_PAGE_LIMIT,
@@ -576,6 +554,40 @@ class SlackConversationKnowledgeAdapter:
                 has_more=False,
             )
         message = validated_page.items[0]
+        if message.root_thread_ts is not None:
+            resume_cursor = (
+                decoded_cursor.resume_history_cursor if decoded_cursor is not None else None
+            ) or validated_page.next_cursor
+            if validated_page.next_cursor is not None:
+                next_cursor = self._encode_cursor(
+                    _SlackConversationCursor(
+                        schema_version=SLACK_CONVERSATION_CURSOR_VERSION,
+                        conversation_id=conversation_id,
+                        conversation_kind=resolved_kind,
+                        root_oldest=window.oldest,
+                        root_latest=window.latest,
+                        phase="history",
+                        history_cursor=validated_page.next_cursor,
+                        resume_history_cursor=resume_cursor,
+                    )
+                )
+                return KnowledgePage(
+                    changes=(),
+                    next_cursor=next_cursor,
+                    proposed_checkpoint=next_cursor,
+                    has_more=True,
+                )
+            complete = self._encode_complete_cursor(
+                conversation_id=conversation_id,
+                conversation_kind=resolved_kind,
+                window=window,
+            )
+            return KnowledgePage(
+                changes=(),
+                next_cursor=None,
+                proposed_checkpoint=complete,
+                has_more=False,
+            )
         change = self._message_to_change(message, conversation_id=conversation_id)
         resume_cursor = (
             decoded_cursor.resume_history_cursor if decoded_cursor is not None else None
@@ -645,6 +657,7 @@ class SlackConversationKnowledgeAdapter:
         page = await self._invoke_integration(
             lambda: slack_integration.read_thread_replies_page(
                 conversation_id=conversation_id,
+                conversation_kind=decoded_cursor.conversation_kind,
                 root_message_ts=root_message_ts,
                 window=window,
                 cursor=decoded_cursor.reply_cursor,
@@ -940,6 +953,7 @@ class SlackConversationKnowledgeAdapter:
             identity=KnowledgeItemIdentity(
                 remote_id=opaque_remote_id,
                 parent_remote_id=parent_remote_id,
+                logical_key=None,
             ),
             revision=KnowledgeItemRevision(
                 version=self._encode_revision(revision),
@@ -953,6 +967,8 @@ class SlackConversationKnowledgeAdapter:
                 provider_id=self.provider_id,
                 source_kind=self.source_kind,
                 remote_id=opaque_remote_id,
+                web_url=None,
+                safe_locator=None,
             ),
             metadata=metadata,
         )
@@ -1016,6 +1032,42 @@ class SlackConversationKnowledgeAdapter:
                 retryable=False,
             )
         return decoded_cursor.root_message_ts, decoded_cursor.root_message_revision
+
+    def _validate_descriptor_for_fetch(
+        self,
+        item: KnowledgeItemDescriptor,
+        *,
+        source: KnowledgeSourceRef,
+        conversation_id: str,
+        window: SlackConversationSourceWindow,
+    ) -> tuple[_SlackConversationMessageIdentity, str, dict[str, object]]:
+        validated_item = self._deep_validate_item_descriptor(item)
+        self._validate_item_provenance(validated_item, source=source)
+        if validated_item.item_type != "slack_conversation_message":
+            raise ValueError("invalid item type")
+        if validated_item.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD:
+            raise ValueError("invalid content mode")
+        if not validated_item.content_available:
+            raise ValueError("content unavailable")
+        if validated_item.identity.logical_key is not None:
+            raise ValueError("logical_key must be None")
+        if validated_item.identity.remote_id != validated_item.provenance.remote_id:
+            raise ValueError("identity provenance remote_id mismatch")
+        if validated_item.revision.updated_at is None:
+            raise ValueError("updated_at required")
+        message_identity, revision = self._validate_message_item(
+            validated_item,
+            source=source,
+            conversation_id=conversation_id,
+        )
+        metadata = self._validate_descriptor_metadata_strict(
+            validated_item.metadata,
+            message_identity=message_identity,
+            parent_remote_id=validated_item.identity.parent_remote_id,
+            updated_at=validated_item.revision.updated_at,
+            window=window,
+        )
+        return message_identity, revision, metadata
 
     def _deep_validate_item_descriptor(self, item: KnowledgeItemDescriptor) -> KnowledgeItemDescriptor:
         validated = KnowledgeItemDescriptor.model_validate(item.model_dump(mode="python"))
@@ -1082,6 +1134,91 @@ class SlackConversationKnowledgeAdapter:
                 retryable=False,
             ) from None
         return identity, revision_payload.revision
+
+    def _validate_descriptor_metadata_strict(
+        self,
+        metadata: dict[str, object],
+        *,
+        message_identity: _SlackConversationMessageIdentity,
+        parent_remote_id: str | None,
+        updated_at: datetime,
+        window: SlackConversationSourceWindow,
+    ) -> dict[str, object]:
+        if set(metadata.keys()) != _METADATA_REQUIRED_KEYS:
+            raise ValueError("descriptor metadata keys mismatch")
+        subtype = metadata.get("subtype")
+        if subtype is not None and not isinstance(subtype, str):
+            raise ValueError("invalid subtype")
+        has_files = metadata.get("has_files")
+        if type(has_files) is not bool:
+            raise ValueError("invalid has_files")
+        reply_count = metadata.get("reply_count")
+        if reply_count is not None and (type(reply_count) is not int or reply_count < 0):
+            raise ValueError("invalid reply_count")
+        created_at_raw = metadata.get("created_at")
+        if not isinstance(created_at_raw, str):
+            raise ValueError("invalid created_at")
+        edited_at_raw = metadata.get("edited_at")
+        if edited_at_raw is not None and not isinstance(edited_at_raw, str):
+            raise ValueError("invalid edited_at")
+        thread_root_ts = metadata.get("thread_root_ts")
+        if thread_root_ts is not None and not isinstance(thread_root_ts, str):
+            raise ValueError("invalid thread_root_ts")
+        if thread_root_ts is not None:
+            thread_root_ts = validate_slack_timestamp(thread_root_ts)
+        attachment_flag = metadata.get("attachment_inventory_in_content")
+        if attachment_flag is not True:
+            raise ValueError("attachment_inventory_in_content must be true")
+        created_at = datetime.fromisoformat(created_at_raw)
+        if created_at.tzinfo is None:
+            raise ValueError("created_at must be timezone-aware")
+        edited_at = None
+        if edited_at_raw is not None:
+            edited_at = datetime.fromisoformat(edited_at_raw)
+            if edited_at.tzinfo is None:
+                raise ValueError("edited_at must be timezone-aware")
+            if edited_at < created_at:
+                raise ValueError("edited_at before created_at")
+        expected_created = parse_slack_ts(message_identity.message_ts)
+        if expected_created is None or created_at != expected_created:
+            raise ValueError("created_at does not match message_ts")
+        if edited_at is not None:
+            if updated_at != edited_at:
+                raise ValueError("updated_at must equal edited_at when edited")
+        elif updated_at != created_at:
+            raise ValueError("updated_at must equal created_at when not edited")
+        if parent_remote_id is None:
+            if thread_root_ts is not None:
+                raise ValueError("root metadata has thread_root_ts")
+            if not slack_timestamp_in_window(
+                value=message_identity.message_ts,
+                oldest=window.oldest,
+                latest=window.latest,
+            ):
+                raise ValueError("root message_ts outside root window")
+        else:
+            parent_identity = _decode_message_identity_payload(parent_remote_id)
+            if parent_identity.conversation_id != message_identity.conversation_id:
+                raise ValueError("parent conversation mismatch")
+            if thread_root_ts is None:
+                raise ValueError("reply missing thread_root_ts")
+            if parent_identity.message_ts != thread_root_ts:
+                raise ValueError("parent thread_root_ts mismatch")
+            if parent_identity.message_ts == message_identity.message_ts:
+                raise ValueError("reply message_ts equals root")
+            if not slack_timestamp_in_window(
+                value=thread_root_ts,
+                oldest=window.oldest,
+                latest=window.latest,
+            ):
+                raise ValueError("reply root outside root window")
+            if not slack_timestamp_in_window(
+                value=message_identity.message_ts,
+                oldest=window.oldest,
+                latest=window.latest,
+            ):
+                raise ValueError("reply message_ts outside reply window")
+        return metadata
 
     def _validate_descriptor_metadata(
         self,

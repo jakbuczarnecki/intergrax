@@ -72,6 +72,7 @@ Reconnect: owned by slack_sdk auto_reconnect_enabled
 ```text
 INTERGRAX_SLACK_APP_TOKEN   # xapp-…  (connections:write)
 INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history)
+INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN  # xoxp-… optional; public/private channel knowledge reads
 INTERGRAX_SLACK_API_TIMEOUT_SECONDS   # optional
 INTERGRAX_SLACK_CONVERSATION_ENABLED  # optional; or pass enabled=True
 INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS # optional; live-proof wait budget
@@ -149,27 +150,42 @@ read_file_info(...)   # safe file inventory only; no binary download
 
 `SlackConversationKnowledgeAdapter` (`source_kind: slack_conversation`) maps these reads into Vendor Knowledge records and synchronizes through the shared Facade / Sync runtime into any injected durable sink.
 
-### Supported conversation kinds (inventory)
+### Credential model (one integration, one WebClient)
 
 ```text
-public_channel
-private_channel
-im
-mpim
+bot token (INTERGRAX_SLACK_BOT_TOKEN):
+  conversational Socket Mode + Web API runtime
+  IM/MPIM knowledge inventory, history, thread replies and exact reads
+
+knowledge user token (INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN, optional xoxp-):
+  public/private channel knowledge inventory, history, thread replies and exact reads
+  per-call token override on the same shared AsyncWebClient — not a second integration
 ```
 
-### Required scopes (knowledge reads — audit per installation)
+Both credentials must belong to the same Slack workspace. Workspace identity is validated lazily via `auth.test()` on first knowledge read that needs the user token. Token values never appear in errors, logs, health or public views.
+
+### Supported durable source kinds
 
 ```text
-channels:history      # public channels
-groups:history         # private channels
-im:history             # direct messages
-mpim:history           # group direct messages
-channels:read          # inventory membership
-groups:read            # inventory membership
-im:read                # inventory membership
-mpim:read              # inventory membership
-files:read             # safe historical file inventory (metadata only)
+without knowledge_user_token:
+  IM, MPIM
+
+with validated knowledge_user_token:
+  IM, MPIM, public_channel, private_channel
+```
+
+### Required scopes (knowledge reads)
+
+```text
+channels:history      # public channels (knowledge user token)
+groups:history        # private channels (knowledge user token)
+im:history            # direct messages (bot token)
+mpim:history          # group direct messages (bot token)
+channels:read         # inventory membership (knowledge user token for public channels)
+groups:read           # inventory membership (knowledge user token for private channels)
+im:read               # inventory membership (bot token)
+mpim:read             # inventory membership (bot token)
+files:read            # safe historical file inventory (metadata only)
 ```
 
 Current DM conversational runtime scopes (`connections:write`, `chat:write`, `im:history`, `files:read`) remain separate. Enabling the chatbot does **not** authorize knowledge synchronization.
@@ -178,18 +194,19 @@ Current DM conversational runtime scopes (`connections:write`, `chat:write`, `im
 
 One durable source = one approved `conversation_id` + immutable `root_oldest`/`root_latest` Slack timestamp window (`slack.conversation.scope.v2`).
 
-**Root-window scope semantics (v1 contract):**
+**Root-window and reply interval (implemented):**
 
 ```text
-- ordinary/root messages whose own ts lies within the root window;
-- replies belonging to those discovered roots;
-- reply reads remain bounded by the documented reply window policy;
-- replies whose root is outside the source root window are NOT discovered.
+- root message ts must lie inside [root_oldest, root_latest]
+- reply thread_root_ts must lie inside the same root window
+- reply own message ts must lie inside [root_oldest, root_latest] (same closed interval)
+- thread_broadcast / thread-reply pointers from history are validated but not separately materialized
+- replies are discovered only through traversal of their root thread
 ```
 
-A reply whose own timestamp falls inside a calendar period but whose thread root lies outside the configured root window is excluded. `full_inventory=true` means complete inventory **inside this explicit root-window scope only**.
+A reply whose own timestamp falls inside the window but whose thread root lies outside the configured root window is excluded. `full_inventory=true` means complete inventory **inside this explicit root-window scope only**.
 
-Inventory uses membership-correct `users.conversations` for the calling bot (not workspace-wide `conversations.list`). History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
+Inventory uses membership-correct `users.conversations`: public/private channels through the knowledge user token override; IM/MPIM through the bot token on the same client (no `user=` bot-id workaround). When both credential routes are enabled, a provider-owned composite inventory cursor paginates both streams without duplication. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
 
 ### Structured message schema
 
@@ -267,9 +284,5 @@ Slack Live Access Binding does not imply durable synchronization or RAG indexing
 ```
 
 Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge.
-
-**Scope audit (future implementation task):** Required Slack scopes for knowledge reads must be audited against official Slack documentation and preserve least privilege. Do not invent or freeze future scopes in this document.
-
-Current required scopes above (`connections:write`, `chat:write`, `im:history`, `files:read`) apply to the **implemented** DM conversational runtime only.
 
 Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.

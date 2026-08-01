@@ -19,6 +19,7 @@ _MAX_API_TIMEOUT_SECONDS = 120.0
 
 ENV_APP_TOKEN = "INTERGRAX_SLACK_APP_TOKEN"
 ENV_BOT_TOKEN = "INTERGRAX_SLACK_BOT_TOKEN"
+ENV_KNOWLEDGE_USER_TOKEN = "INTERGRAX_SLACK_KNOWLEDGE_USER_TOKEN"
 ENV_API_TIMEOUT = "INTERGRAX_SLACK_API_TIMEOUT_SECONDS"
 ENV_ENABLED = "INTERGRAX_SLACK_CONVERSATION_ENABLED"
 
@@ -38,12 +39,21 @@ def _secret_or_none(value: str | SecretStr | None) -> SecretStr | None:
     return SecretStr(normalized)
 
 
-def _assert_token_prefixes(*, app_token: SecretStr | None, bot_token: SecretStr | None) -> None:
+def _assert_token_prefixes(
+    *,
+    app_token: SecretStr | None,
+    bot_token: SecretStr | None,
+    knowledge_user_token: SecretStr | None = None,
+) -> None:
     """Validate token prefixes without echoing secret values into exceptions."""
     if app_token is not None and not app_token.get_secret_value().startswith("xapp-"):
         raise IntegrationConfigurationError("app_token must begin with 'xapp-'")
     if bot_token is not None and not bot_token.get_secret_value().startswith("xoxb-"):
         raise IntegrationConfigurationError("bot_token must begin with 'xoxb-'")
+    if knowledge_user_token is not None and not knowledge_user_token.get_secret_value().startswith(
+        "xoxp-"
+    ):
+        raise IntegrationConfigurationError("knowledge_user_token must begin with 'xoxp-'")
 
 
 class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
@@ -51,9 +61,10 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
 
     app_token: SecretStr | None = Field(default=None, repr=False)
     bot_token: SecretStr | None = Field(default=None, repr=False)
+    knowledge_user_token: SecretStr | None = Field(default=None, repr=False)
     api_timeout_seconds: float = Field(default=_DEFAULT_API_TIMEOUT_SECONDS)
 
-    @field_validator("app_token", "bot_token", mode="before")
+    @field_validator("app_token", "bot_token", "knowledge_user_token", mode="before")
     @classmethod
     def _normalize_optional_secret(cls, value: Any) -> SecretStr | None:
         return _secret_or_none(value)
@@ -71,7 +82,11 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
         return float(value)
 
     def model_post_init(self, __context: Any) -> None:
-        _assert_token_prefixes(app_token=self.app_token, bot_token=self.bot_token)
+        _assert_token_prefixes(
+            app_token=self.app_token,
+            bot_token=self.bot_token,
+            knowledge_user_token=self.knowledge_user_token,
+        )
 
     def validate_for_runtime(self) -> None:
         """Validate tokens for real Socket Mode / Web API construction."""
@@ -101,6 +116,7 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
                 enabled=resolved_enabled,
                 app_token=os.environ.get(ENV_APP_TOKEN),
                 bot_token=os.environ.get(ENV_BOT_TOKEN),
+                knowledge_user_token=os.environ.get(ENV_KNOWLEDGE_USER_TOKEN),
                 api_timeout_seconds=timeout,
             )
         except IntegrationConfigurationError:
@@ -127,8 +143,19 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
             raise IntegrationConfigurationError(
                 "Slack conversation runtime requires non-blank app_token and bot_token",
             )
-        _assert_token_prefixes(app_token=self.app_token, bot_token=self.bot_token)
+        _assert_token_prefixes(
+            app_token=self.app_token,
+            bot_token=self.bot_token,
+            knowledge_user_token=self.knowledge_user_token,
+        )
         return app, bot
+
+    def knowledge_user_token_value(self) -> str | None:
+        """Return validated knowledge user token string or None when not configured."""
+        if self.knowledge_user_token is None:
+            return None
+        token = self.knowledge_user_token.get_secret_value().strip()
+        return token or None
 
 
 __all__ = [
@@ -136,5 +163,6 @@ __all__ = [
     "ENV_APP_TOKEN",
     "ENV_BOT_TOKEN",
     "ENV_ENABLED",
+    "ENV_KNOWLEDGE_USER_TOKEN",
     "SlackConversationChannelIntegrationConfig",
 ]

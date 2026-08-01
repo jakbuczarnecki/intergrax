@@ -35,6 +35,7 @@ from intergrax.runtime.vendor_knowledge.adapters.jira_issues import (
 from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_channel import (
     register_msgraph_teams_channel_knowledge_adapter,
 )
+from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_SCOPE_TYPE,
     SlackConversationKnowledgeAdapter,
@@ -90,6 +91,7 @@ def _message(
     reply_count: int = 0,
     root_thread_ts: str | None = None,
 ) -> SlackConversationMessage:
+    created_at = parse_slack_ts(message_ts) or _TS
     return SlackConversationMessage(
         conversation_id=_CONVERSATION_ID,
         message_ts=message_ts,
@@ -97,7 +99,7 @@ def _message(
         actor_provider_id="U111",
         text=text,
         subtype=None,
-        created_at=_TS,
+        created_at=created_at,
         edited_at=None,
         reply_count=reply_count,
         files=(),
@@ -193,6 +195,7 @@ def _integration(fake: _FakeSlackBackend) -> SlackConversationChannelIntegration
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
+        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     return SlackConversationChannelIntegration.from_backend(fake, enabled=True, config=config)  # type: ignore[arg-type]
 
@@ -358,6 +361,59 @@ async def test_fetch_permissions_invalid_descriptor_returns_invalid_scope(
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
     assert fake.exact_calls == []
+
+
+async def test_thread_broadcast_in_history_is_not_emitted() -> None:
+    adapter = SlackConversationKnowledgeAdapter()
+    fake = _FakeSlackBackend()
+    broadcast = _message(message_ts=_REPLY_TS, text="broadcast", root_thread_ts=_ROOT_TS)
+    fake._history_pages = [
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(broadcast,),
+            next_cursor="history-2",
+        ),
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(_message(message_ts=_ROOT_TS, text="root", reply_count=1),),
+        ),
+    ]
+    fake._reply_pages = {
+        _ROOT_TS: [
+            SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(_message(message_ts=_REPLY_TS, text="reply", root_thread_ts=_ROOT_TS),),
+            )
+        ]
+    }
+    integration = _integration(fake)
+    source = _source()
+    first = await adapter.read_page(integration=integration, source=source, cursor=None, limit=1)
+    assert first.changes == ()
+    assert first.next_cursor is not None
+    second = await adapter.read_page(
+        integration=integration,
+        source=source,
+        cursor=first.next_cursor,
+        limit=1,
+    )
+    assert second.changes[0].descriptor is not None
+    assert second.changes[0].descriptor.title == "root"
+    third = await adapter.read_page(
+        integration=integration,
+        source=source,
+        cursor=second.next_cursor,
+        limit=10,
+    )
+    assert third.changes[0].descriptor is not None
+    assert third.changes[0].descriptor.title == "reply"
+    assert len(fake.reply_calls) == 1
 
 
 async def test_capabilities_full_inventory_within_root_window_scope() -> None:

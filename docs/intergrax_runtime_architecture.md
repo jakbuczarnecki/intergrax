@@ -232,7 +232,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_IN
 | Task | Scope | Status |
 |------|-------|--------|
 | **SLACK-KNOWLEDGE-THREE-MODE-ARCH-1** | Freeze Slack three-mode reuse on SlackConversationChannelIntegration | **DONE** |
-| **SLACK-KNOWLEDGE-FOUNDATION-1** | Platform Slack knowledge read surface, Vendor Knowledge adapter, durable sync proof | **DONE** |
+| **SLACK-KNOWLEDGE-FOUNDATION-1** | Platform Slack knowledge read surface (bot + optional knowledge user token on same WebClient), Vendor Knowledge adapter, durable sync proof | **DONE** |
 | **SLACK-LIVE-CAPABILITY-1** | Bounded Slack live reads via same integration | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after complete Slack user vertical) |
 

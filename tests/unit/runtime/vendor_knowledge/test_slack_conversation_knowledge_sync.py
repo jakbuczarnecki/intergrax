@@ -28,6 +28,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationMessagePage,
     compute_slack_conversation_message_revision,
 )
+from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_SCOPE_TYPE,
     encode_slack_conversation_scope_id,
@@ -69,6 +70,7 @@ def _message(
     root_thread_ts: str | None = None,
     edited_at: datetime | None = None,
 ) -> SlackConversationMessage:
+    created_at = parse_slack_ts(message_ts) or _TS
     return SlackConversationMessage(
         conversation_id=_CONVERSATION_ID,
         message_ts=message_ts,
@@ -76,7 +78,7 @@ def _message(
         actor_provider_id="U111",
         text=text,
         subtype=None,
-        created_at=_TS,
+        created_at=created_at,
         edited_at=edited_at,
         reply_count=reply_count,
         files=(),
@@ -137,7 +139,13 @@ class _SlackFakeIntegration:
 
     async def read_thread_replies_page(self, **kwargs: Any) -> SlackConversationMessagePage:
         self.reply_calls.append(kwargs)
-        page = self._reply_pages.pop(0)
+        cursor = kwargs.get("cursor")
+        if cursor == "reply-page-2":
+            page = self._reply_backup[-1]
+        else:
+            if not self._reply_pages:
+                self._reply_pages = list(self._reply_backup)
+            page = self._reply_pages.pop(0)
         for item in page.items:
             self._content[item.message_ts] = item
         return page
@@ -205,6 +213,7 @@ def _build_coordinator(fake: _SlackFakeIntegration | None = None):
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
+        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     integration = SlackConversationChannelIntegration.from_backend(backend, enabled=True, config=config)  # type: ignore[arg-type]
     registry = KnowledgeAdapterRegistry()
@@ -401,6 +410,7 @@ async def test_slack_edit_changes_revision_and_content() -> None:
         enabled=True,
         app_token="xapp-test-token-value",
         bot_token="xoxb-test-token-value",
+        knowledge_user_token="xoxp-test-knowledge-user-token",
     )
     integration = SlackConversationChannelIntegration.from_backend(fake, enabled=True, config=config)  # type: ignore[arg-type]
     adapter_registry = KnowledgeAdapterRegistry()
@@ -509,3 +519,94 @@ async def test_slack_multi_page_thread_proof_without_lost_or_duplicate_replies()
     assert fake.reply_calls[1]["cursor"] == "reply-page-2"
     assert results[-1].has_more is False
     assert checkpoint_repo.get(tenant_id="tenant-1", binding_id="slack-conversation-binding") is not None
+
+
+@pytest.mark.asyncio
+async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
+    fake = _SlackFakeIntegration()
+    reply_two_ts = "1704153604.000001"
+    fake._history_pages = [
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(_message(message_ts=_ROOT_TS, text="root one", reply_count=1),),
+        )
+    ]
+    fake._history_backup = list(fake._history_pages)
+    fake._reply_pages = [
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(_message(message_ts=_REPLY_TS, text="reply one", root_thread_ts=_ROOT_TS),),
+            next_cursor="reply-page-2",
+        ),
+        SlackConversationMessagePage(
+            conversation_id=_CONVERSATION_ID,
+            oldest=_OLDEST,
+            latest=_LATEST,
+            items=(
+                _message(message_ts=reply_two_ts, text="reply two", root_thread_ts=_ROOT_TS),
+            ),
+        ),
+    ]
+    fake._reply_backup = list(fake._reply_pages)
+    coordinator, sink, checkpoint_repo, state_repo, fake, integration = _build_coordinator(fake)
+    integration_id = id(integration)
+    root_result = await coordinator.reconcile_once(
+        binding_id="slack-conversation-binding",
+        restart=True,
+    )
+    assert root_result.status is KnowledgeSyncRunStatus.COMPLETED
+    reply_one_result = await coordinator.reconcile_once(
+        binding_id="slack-conversation-binding",
+        restart=False,
+    )
+    assert reply_one_result.status is KnowledgeSyncRunStatus.COMPLETED
+    checkpoint_after_page_one = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    sink.fail_times = 1
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="slack-conversation-binding",
+            restart=False,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    checkpoint_after_failure = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    assert checkpoint_after_failure == checkpoint_after_page_one
+    failed_delivery_id = sink.calls[2].delivery_id
+    reply_two_remote_id = sink.calls[2].envelopes[0].remote_id
+    assert state_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+        remote_id=reply_two_remote_id,
+    ) is None
+    assert len(fake.history_calls) == 1
+    assert len(fake.reply_calls) == 2
+    assert fake.reply_calls[1]["cursor"] == "reply-page-2"
+    retry_result = await coordinator.reconcile_once(
+        binding_id="slack-conversation-binding",
+        restart=False,
+    )
+    assert retry_result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert retry_result.delivery_id == failed_delivery_id
+    assert len(sink.calls) == 4
+    assert len(sink.durable_delivery_ids) == 3
+    assert sink.calls[1].envelopes[0].remote_id != sink.calls[3].envelopes[0].remote_id
+    assert sink.calls[3].envelopes[0].remote_id == reply_two_remote_id
+    assert len(fake.reply_calls) == 3
+    assert fake.reply_calls[2]["cursor"] == "reply-page-2"
+    assert id(integration) == integration_id
+    assert retry_result.has_more is False
+    final_checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id="slack-conversation-binding",
+    )
+    assert final_checkpoint is not None
+    assert final_checkpoint != checkpoint_after_failure

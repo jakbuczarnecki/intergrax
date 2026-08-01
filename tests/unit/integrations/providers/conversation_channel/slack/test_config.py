@@ -52,6 +52,28 @@ def test_wrong_bot_token_prefix_rejected() -> None:
         SlackConversationChannelIntegrationConfig(bot_token="xapp-wrong-prefix")
 
 
+def test_wrong_knowledge_user_token_prefix_rejected() -> None:
+    with pytest.raises(IntegrationConfigurationError, match="xoxp-"):
+        SlackConversationChannelIntegrationConfig(knowledge_user_token="xoxb-wrong-prefix")
+
+
+def test_blank_knowledge_user_token_normalizes_to_none() -> None:
+    config = SlackConversationChannelIntegrationConfig(knowledge_user_token="   ")
+    assert config.knowledge_user_token is None
+
+
+def test_knowledge_user_token_absent_from_repr() -> None:
+    token = "xoxp-test-knowledge-user-token"
+    config = SlackConversationChannelIntegrationConfig(
+        enabled=True,
+        app_token=_FAKE_APP,
+        bot_token=_FAKE_BOT,
+        knowledge_user_token=token,
+    )
+    rendered = repr(config)
+    assert token not in rendered
+
+
 def test_positive_timeout_accepted() -> None:
     config = SlackConversationChannelIntegrationConfig(api_timeout_seconds=15.0)
     assert config.api_timeout_seconds == 15.0
@@ -89,9 +111,11 @@ def test_public_view_strips_tokens() -> None:
         enabled=True,
         app_token=_FAKE_APP,
         bot_token=_FAKE_BOT,
+        knowledge_user_token="xoxp-test-knowledge-user",
         api_timeout_seconds=12.0,
     )
     public = config.public_view()
     assert "app_token" not in public
     assert "bot_token" not in public
+    assert "knowledge_user_token" not in public
     assert public["api_timeout_seconds"] == 12.0
