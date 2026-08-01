@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** Architecture defined / ready for review (**CTX-UCL-ARCH-1**)  
-**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)  
-**Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)  
-**ADR:** [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler budget semantics — superseded in scope by single-budget UCL authority)  
-**Last architecture pass:** 2026-08-01 — **CTX-UCL-ARCH-1** cross-domain freeze
+**Status:** Correction delivered / ready for review (**CTX-UCL-ARCH-1-R1**)
+**Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
+**Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
+**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
+**Last architecture pass:** 2026-08-01 — **CTX-UCL-ARCH-1-R1** ownership and TOKEN-10E reconciliation
 
 ---
 
@@ -13,9 +13,10 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-ARCH-1** — cross-domain architecture freeze |
+| Task | **CTX-UCL-ARCH-1-R1** — ownership, flow, and TOKEN-10E reconciliation (supersedes CTX-UCL-ARCH-1 delivery gaps) |
+| Prior pass | **CTX-UCL-ARCH-1** — cross-domain architecture freeze (accepted elements preserved) |
 | Runtime implementation | **Not started** |
-| TOKEN-10E implementation | **Blocked** pending accepted UCL architecture and CTX-UCL-1…6 foundation |
+| TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
 
@@ -37,7 +38,7 @@ This is **architecture and documentation only**. No runtime code, storage migrat
 
 ## 3. Current-state audit
 
-Audit performed by tracing call sites and wiring (2026-08-01). **Existence of code or configuration does not imply production hot-path activity.**
+Audit performed by tracing call sites and wiring (2026-08-01). **Existence of code or configuration does not imply production hot-path activity.** **Documented mechanism count: 19** (table rows below; prior delivery report incorrectly cited 17).
 
 | Component / file | Owning domain today | Modifies durable history | Model-facing only | Operates on | Preserves message IDs | Preserves roles | Preserves tool linkage | Protected-region validation | Receipt | Rollback | Concurrency protection | Hot path | Classification | Target decision |
 |------------------|---------------------|--------------------------|-------------------|-------------|----------------------|-----------------|------------------------|----------------------------|---------|----------|------------------------|----------|----------------|-----------------|
@@ -88,37 +89,37 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 
 ### 5.1 Memory / Session — durable source of truth
 
-**Owns:** original messages, stable message IDs, order, tool-call/tool-result relations, attachments/metadata, append-only conversation ledger, immutable session revisions, active revision pointer, retention/archival lifecycle, atomic revision activation, rollback execution, optimistic concurrency.
+**Owns:** `ConversationLedger` (append-only raw messages and events); stable message IDs; sequence numbers; tool-call/tool-result relationships; attachments and message metadata; `SessionContextRevision` manifests; `ActiveContextRevisionPointer`; revision persistence contracts; revision activation through compare-and-swap; rollback execution; retention and archival lifecycle; optimistic concurrency.
 
-**Does not own:** model-facing compression, global prompt budget, optimization strategy selection.
+**Does not own:** global prompt budget; optimization algorithms; strategy selection; model-facing context composition; application authorization or UX.
 
-**Rule:** Context compression for the model must not be a hidden side effect of `append_message()`. Storage-level retention is not token optimization.
+**Rule:** Context compression for the model must not be a hidden side effect of `append_message()`. Storage-level retention is not token optimization. Compaction does not rewrite or delete the raw `ConversationLedger`.
 
 ### 5.2 Context Engineering — single budget authority
 
-**Owns:** global input budget per model call; per-source allocation; segment classification (`mandatory`, `protected`, `compressible`, `droppable`, `trim_safe`); `ContextPlan`; final model-facing `ChatMessage[]`; last token preflight; final validation after all transforms.
+**Owns:** one global input budget per model invocation; per-source budget allocation; segment classification (`mandatory`, `protected`, `compressible`, `droppable`, `trim_safe`); `ContextPlan`; final model-facing `ChatMessage[]`; final compilation; final model-facing integrity validation orchestration; token-window preflight (`verify_context_preflight`).
 
-**Does not own:** optimization algorithm catalog, session persistence, durable revision storage.
+**Does not own:** durable conversation persistence; active revision pointer; optimization strategy implementation; application policy persistence.
 
 **Rule:** No history provider or optimization layer may hold a second independent global budget.
 
 ### 5.3 Token Optimization — transformation executor
 
-**Owns:** strategy catalog, policy gates, pipeline composition, protected-region validation (text), structural validation API (consumed by lifecycle), measurements, receipts, safe reporting, cache attribution, transform candidate generation.
+**Owns:** optimization strategy catalog; policy gates used by transformation execution; typed artifact executors; candidate construction; transformation pipeline composition; text protected-region validation; message-sequence structural validation contracts; measurements; receipts; safe reporting; cache attribution; cache-lineage transition calculation.
 
-**Does not own:** session persistence, global prompt budget, active session revision, authorization, tenant config persistence, retention, rollback UX.
+**Does not own:** `ConversationLedger`; `SessionContextRevision` persistence; `ActiveContextRevisionPointer`; revision activation; rollback execution; global prompt budget; application authorization; retention.
 
 ### 5.4 Nexus — lifecycle coordinator
 
-**Owns:** snapshot retrieval, CE plan orchestration, policy resolution, timing decision (incl. TOKEN-10D gate), optional Token Optimization invocation, validation sequencing, final CE compilation, model invocation, durable activation request dispatch.
+**Owns:** snapshot acquisition; CE `ContextPlan` orchestration; resolved policy delivery; TOKEN-10D timing decision; optional Token Optimization invocation; validation sequencing; final CE compilation; final model-facing integrity check; preflight; adapter invocation; dispatch of durable activation request to Memory/Session.
 
-**Does not own:** compression algorithms, storage implementation.
+**Does not own:** storage implementation; compression algorithms; tenant policy persistence; product UX.
 
 ### 5.5 Application host — configuration, authorization, UX
 
-**Owns:** profile selection, tenant policy, authorization, activation opt-in, review/rollback UX, retention configuration, persistence adapter wiring, product presentation.
+**Owns:** profile selection; tenant configuration; authorization; feature opt-in; human review UX; rollback UX; retention configuration; persistence adapter selection and wiring; product-specific presentation.
 
-**Does not own:** parallel compression engine.
+**Does not own:** a private session revision model; a private active revision pointer; a parallel compression engine; a parallel global budget; direct activation logic bypassing Memory/Session contracts.
 
 **Normalization path:**
 
@@ -128,7 +129,7 @@ ApplicationEnvironmentProfile
   → resolved ContextOptimizationPolicy
 ```
 
-Canonical bridge: `intergrax/runtime/wiring/context_runtime_bridge.py`.  
+Canonical bridge: `intergrax/runtime/wiring/context_runtime_bridge.py`.
 Compatibility shim: `intergrax/applications/_shared/context_runtime_bridge.py`.
 
 ### 5.6 Memory consolidation — separate concern
@@ -147,51 +148,77 @@ Compatibility shim: `intergrax/applications/_shared/context_runtime_bridge.py`.
 
 ## 6. Unified Context Lifecycle
 
-### 6.1 Ephemeral assembly flow (canonical model call)
+### 6.1 Ephemeral assembly flow (`EPHEMERAL_ASSEMBLY` — canonical model call)
 
 ```text
-Session active revision
-    ↓
-immutable ConversationSnapshot
-    ↓
-Context Engineering collection
-    ↓
-single global ContextPlan
-    ↓
-policy resolution
-    ↓
-optional Token Optimization candidate
-    ↓
-schema validation
-    ↓
-structural validation
-    ↓
-protected-region validation
-    ↓
-quality validation
-    ↓
-final Context Engineering compilation
-    ↓
-final token preflight
-    ↓
-LLM Adapter
+Memory/Session:
+  resolve ActiveContextRevisionPointer
+        ↓
+  load immutable ConversationSnapshot / structural references
+        ↓
+Nexus:
+  start lifecycle coordination
+        ↓
+Context Engineering:
+  collect sources
+  resolve one global ContextPlan
+        ↓
+Nexus:
+  resolve ContextOptimizationPolicy
+  invoke TOKEN-10D timing gate when applicable
+        ↓
+Token Optimization:
+  execute only approved transformations
+  using the correct typed artifact executor
+        ↓
+candidate-level schema validation
+candidate-level structural validation
+candidate-level protected-region validation
+candidate-level quality validation
+candidate-level policy validation
+        ↓
+Context Engineering:
+  final compilation into exact model-facing ChatMessage[]
+        ↓
+FINAL MODEL-FACING INTEGRITY VALIDATION
+        ↓
+verify_context_preflight / token-window validation
+        ↓
+exact-send materialization and hash/integrity verification
+        ↓
+LLM Adapter invocation
 ```
 
-### 6.2 Durable compaction flow (TOKEN-10E scope)
+**Rules:** `EPHEMERAL_ASSEMBLY` never changes `ActiveContextRevisionPointer`; never creates a durable revision by default; no content transformation after final model-facing integrity validation.
+
+### 6.2 Durable compaction flow (`DURABLE_COMPACTION` — TOKEN-10E scope)
 
 ```text
-validated candidate
-    ↓
-immutable SessionRevision creation
-    ↓
+immutable baseline SessionContextRevision
+        ↓
+ContextPlan-selected MessageSequenceArtifact target
+        ↓
+TOKEN-10D timing/policy decision
+        ↓
+Token Optimization candidate construction
+        ↓
+candidate schema / structural / protected / quality validation
+        ↓
+new immutable SessionContextRevision manifest
+        ↓
 receipt + rollback metadata
-    ↓
-compare-and-swap active revision pointer
-    ↓
+        ↓
+Memory/Session CAS:
+  expected ActiveContextRevisionPointer == baseline revision
+        ↓
+activate candidate revision or return conflict
+        ↓
 cache-lineage transition
-    ↓
-audit event
+        ↓
+safe audit event
 ```
+
+**Rules:** no in-place mutation; no direct Application activation; no hidden retry after CAS conflict; no durable activation through Token Optimization itself.
 
 ---
 
@@ -226,6 +253,15 @@ audit event
 
 ## 9. Canonical data model (contracts — not implemented)
 
+### 9.0 Core durable concepts
+
+| Concept | Definition |
+|---------|------------|
+| **`ConversationLedger`** | Append-only raw record of conversation messages and events. Never replaced by compaction. Subject only to explicit retention or archival policy. |
+| **`SessionContextRevision`** | Immutable model-facing context projection manifest. References raw ledger ranges, compacted artifacts, pinned segments, and recent tail. Does not rewrite or delete the raw `ConversationLedger`. |
+| **`ActiveContextRevisionPointer`** | Tenant/session-scoped pointer to the currently active model-facing projection. Updated through compare-and-swap. |
+| **Rollback** | Changes `ActiveContextRevisionPointer` to an eligible prior `SessionContextRevision`. Does not erase, rewrite, or time-travel the `ConversationLedger`. |
+
 ### 9.1 `ConversationSnapshot`
 
 | Field | Purpose |
@@ -257,8 +293,8 @@ Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `D
 
 | Variant | Executor |
 |---------|----------|
-| `TextArtifact` | Existing string pipeline (compatible) |
-| `MessageSequenceArtifact` | TOKEN-10E / CTX-UCL-4 target |
+| `TextArtifact` | `TextArtifactExecutor` — existing string pipeline (compatible) |
+| `MessageSequenceArtifact` | `MessageSequenceArtifactExecutor` — TOKEN-10E / CTX-UCL-4 (conversation history; not string flattening) |
 | `FragmentSetArtifact` | CE fragment sets |
 | `ToolCatalogArtifact` | Tool schema optimization |
 | `StructuredDataArtifact` | JSON/tabular payloads |
@@ -267,9 +303,11 @@ Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `D
 
 `operation_id`, `idempotency_key`, `baseline_revision_id`, `baseline_hash`, artifact type, candidate artifact, `policy_version`, strategy trace, validation results, measurement, receipt ref, rollback metadata ref, cache-lineage transition, status.
 
-### 9.8 `SessionRevisionActivationRequest`
+### 9.8 `SessionContextRevisionActivationRequest`
 
-`tenant_id`, `session_id`, `expected_active_revision_id`, `candidate_revision_id`, `operation_id`, `idempotency_key`. Activation succeeds only when active revision matches baseline.
+`tenant_id`, `session_id`, `expected_active_revision_id`, `candidate_revision_id`, `operation_id`, `idempotency_key`. Activation succeeds only when active revision matches baseline. Memory/Session owns activation execution; Application host authorizes and wires the persistence adapter.
+
+**Compatibility:** provisional name `SessionRevisionActivationRequest` — superseded before implementation.
 
 ---
 
@@ -292,6 +330,20 @@ Until real runtime wiring: production preset must not declare an active function
 
 ## 11. Structural and protected validation
 
+### 11.1 Candidate validation (Token Optimization boundary)
+
+Runs immediately after Token Optimization candidate creation:
+
+```text
+schema validation
+structural validation
+protected-region validation
+quality validation
+policy validation
+```
+
+**Purpose:** determine whether the proposed transformed artifact is acceptable before CE final compilation.
+
 Required for `MessageSequenceArtifact` (not satisfied by string substring validator alone):
 
 - Message IDs preserved when element not replaced
@@ -304,11 +356,45 @@ Required for `MessageSequenceArtifact` (not satisfied by string substring valida
 
 Text `protected_regions.py` remains valid for `TextArtifact` only.
 
+### 11.2 Final model-facing integrity validation (Context Engineering boundary)
+
+Runs **after** final CE compilation and **before** token preflight / exact send:
+
+```text
+final message order
+roles
+stable message identity where applicable
+tool-call/tool-result linkage
+required citation/evidence groups
+protected values
+system/developer/platform blocks
+current user turn
+recent tail
+exact-send message hash
+tool-envelope consistency
+no post-validation transformation
+```
+
+**Purpose:** prove that formatting, merging, and compilation did not invalidate candidate-level safety guarantees.
+
 ---
 
 ## 12. Final compilation and preflight
 
-**Final validation rule:** After final CE compilation, no further content transformation is permitted before adapter invocation.
+**Required ordering:**
+
+```text
+candidate validation
+  → final CE compilation
+  → final model-facing integrity validation
+  → token-window preflight (verify_context_preflight)
+  → exact-send materialization
+  → adapter invocation
+```
+
+**Final validation rule:** After final model-facing integrity validation, no further content transformation is permitted before adapter invocation.
+
+`verify_context_preflight` is a budget/window check and must not be described as a replacement for structural or protected-content integrity validation.
 
 `TOKENIZER_HARD_TRIM` (or equivalent):
 
@@ -322,7 +408,7 @@ Text `protected_regions.py` remains valid for `TextArtifact` only.
 
 ## 13. Storage and revision architecture
 
-### 13.1 Append-only conversation ledger (preferred)
+### 13.1 Append-only conversation ledger (`ConversationLedger` — preferred)
 
 ```text
 tenant_id
@@ -334,9 +420,9 @@ message payload/reference
 
 Do not model durable history as one growing JSON blob rewritten on each append.
 
-### 13.2 Revision manifest
+### 13.2 Session context revision manifest (`SessionContextRevision`)
 
-New revision references existing raw ranges and summary artifacts — does not copy full conversation.
+New revision references existing raw ledger ranges and summary artifacts — does not copy full conversation and does not mutate the `ConversationLedger`.
 
 ### 13.3 Content-addressed artifacts
 
@@ -496,16 +582,19 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Architecture defined / ready for review** |
+| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Correction delivered through CTX-UCL-ARCH-1-R1** |
+| **CTX-UCL-ARCH-1-R1** | Ownership, flow, TOKEN-10E reconciliation, ADR-UCL-001 | **Ready for review** |
 | **CTX-UCL-1** | Canonical policy and typed artifact contracts | Not started |
-| **CTX-UCL-2** | Versioned Session Ledger, snapshot, revision activation contracts | Not started |
+| **CTX-UCL-2** | `ConversationLedger`, snapshot, `SessionContextRevision`, activation contracts | Not started |
 | **CTX-UCL-3** | Structured SessionHistoryProvider + single CE budget authority | Not started |
-| **CTX-UCL-4** | MessageSequence TO pipeline + structural validators | Not started |
+| **CTX-UCL-4** | `MessageSequenceArtifact` executor + structural validators | Not started |
 | **CTX-UCL-5** | Ephemeral assembly integration on canonical runtime paths | Not started |
 | **CTX-UCL-6** | Legacy HistoryLayer, profile, provider, bridge migration | Not started |
 | **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime and documentation closeout | Not started |
 
-**After accepted UCL foundation:**
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R1` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
+
+**After CTX-UCL-CLOSEOUT-1:**
 
 | ID | Scope | Status |
 |----|-------|--------|

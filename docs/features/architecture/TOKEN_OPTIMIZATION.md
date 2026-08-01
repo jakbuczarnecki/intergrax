@@ -6,10 +6,10 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**  
-**Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)  
-**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
-**Primary anchor domain:** `CONTEXT_ENGINEERING`  
+**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**
+**Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
+**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
+**Primary anchor domain:** `CONTEXT_ENGINEERING`
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
 **Main engine guide:** [`../token_optimization/README.md`](../token_optimization/README.md)
@@ -769,7 +769,7 @@ Contracts and helpers live under `intergrax/runtime/token_optimization/` (`Token
 
 #### In-cache compaction (**TOKEN-10E** — architecture defined / ready for review)
 
-In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is frozen under **CTX-UCL-ARCH-1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)); **TOKEN-10E-ARCH-1** is superseded by UCL. Runtime implementation has **not** started and is **blocked** pending accepted UCL foundation (CTX-UCL-1…6).
+In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R1**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 
@@ -1052,440 +1052,135 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** Architecture defined / ready for review. **Not implemented.** Cross-domain lifecycle and single-budget authority frozen under **CTX-UCL-ARCH-1** — see [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** pending accepted UCL foundation (CTX-UCL-1…6). No runtime code, public exports, application wiring, or production enablement exist for TOKEN-10E.
+**Status:** Integration profile / ready for review. **Not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, and cross-domain ownership. **ADR-UCL-001** freezes cross-domain decisions (Proposed / Ready for Review). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** until **CTX-UCL-CLOSEOUT-1** is accepted/closed. No runtime code, public exports, or production enablement exist for TOKEN-10E.
 
-#### Meaning of in-cache compaction
+#### 1. Status and dependency
 
-For Intergrax, **in-cache compaction** is **not** direct mutation of vLLM GPU memory, provider KV cache, or provider-owned cache entries.
+| Item | Value |
+|------|-------|
+| Lifecycle canon | [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
+| ADR | [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md) |
+| TOKEN-10E-1 start | **Blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| TOKEN-10D | Accepted / closed — timing gate semantics unchanged |
 
-It means:
+#### 2. TOKEN-10E responsibility inside UCL
 
-```text
-existing logical context version
-  → build shorter compaction candidate
-  → validate candidate
-  → accept or reject candidate
-  → if accepted, create a new context version and a new cache lineage
-```
+TOKEN-10E owns **only** the durable compaction contribution implemented through Token Optimization **typed artifact executors** under Nexus UCL coordination:
 
-A changed stable prefix may invalidate provider cache reuse. That invalidation must be **explicit** and must **not** be confused with content reduction.
-
-Provider cache reuse and content reduction remain **separate attribution dimensions**.
-
-#### Ownership boundary
-
-**Platform owner:** `intergrax.runtime.token_optimization`
-
-Applications such as LKW and frontends such as Slack or Teams may later consume only the public package-root API:
-
-```python
-import intergrax.runtime.token_optimization as token_optimization
-```
-
-**Forbidden dependency direction:**
-
-```text
-Token Optimization → LKW
-Token Optimization → Slack
-Token Optimization → application-specific storage
-```
-
-**Allowed future direction:**
-
-```text
-LKW / application
-  → public Token Optimization contracts
-  → application-owned persistence and context activation
-```
-
-**Platform owns:**
-
-```text
-policy evaluation
-candidate construction contract
-protected-region validation
-receipt construction
-rollback metadata contract
-cache-lineage attribution
+`	ext
+policy evaluation for compaction targets
+MessageSequenceArtifact candidate construction
+candidate schema/structural/protected/quality validation contracts
+receipt and rollback-metadata compilation
+cache-lineage transition calculation
 safe result reporting
-```
+`
 
-**Application owns:**
+TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization.
 
-```text
-where context versions are persisted
-how an accepted context version becomes active
-authorization for a user or tenant
-retention policy
-actual rollback command or UX
-```
+#### 3. MessageSequenceArtifact requirement
 
-The architecture must not create a platform dependency on a specific database, document store, vector store, Slack thread, or LKW workspace.
+Conversation history compaction **requires** MessageSequenceArtifactExecutor (CTX-UCL-4). TOKEN-10E may **not**:
 
-#### Architecture flow
+- flatten the complete conversation to one string for structural history compaction;
+- use line-level deduplication as the structural history engine;
+- wrap the existing string TextArtifact pipeline as the conversation-history executor.
 
-```text
-Application context + explicit policy
-        │
-        ▼
-CacheAwareTokenOptimizationRuntime
-        │
-        ▼
-RUN / DEFER / BYPASS / REVIEW          ← TOKEN-10D timing gate
-        │ RUN
-        ▼
-Existing approved deterministic pipeline   ← router-selected configuration; no second engine
-        │
-        ▼
-Compaction candidate
-        │
-        ├─ snapshot/version validation
-        ├─ protected-region validation
-        ├─ receipt construction
-        ├─ rollback metadata construction
-        └─ cache-lineage transition calculation
-        │
-        ▼
-Accepted candidate or fail-closed result
-        │
-        ▼
-Application-owned persistence and activation   ← separate boundary; not platform-owned
-```
+Executor model:
 
-**Composition with TOKEN-10D:**
+`	ext
+Token Optimization executor framework
+    ├── TextArtifactExecutor → existing string-based pipeline (compatible)
+    ├── MessageSequenceArtifactExecutor → CTX-UCL-4 / TOKEN-10E history compaction
+    ├── FragmentSetArtifactExecutor
+    ├── ToolCatalogArtifactExecutor
+    └── StructuredDataArtifactExecutor
+`
 
-```text
-router → chooses approved deterministic configuration
-TOKEN-10D timing gate → decides RUN / DEFER / BYPASS / REVIEW
-existing pipeline → produces proposed transformed content
-TOKEN-10E transaction boundary → validates snapshot, protected regions, receipt,
-  rollback metadata, cache-lineage transition, and candidate acceptance
-```
+#### 4. TOKEN-10D timing-gate composition
 
-TOKEN-10E **wraps** the existing pipeline result; it does **not** replace the deterministic engine. No LLM may directly produce and activate an arbitrary compacted thread without deterministic validation.
+TOKEN-10D semantics are **unchanged**: router selects approved configuration; timing gate returns RUN / DEFER / BYPASS / REVIEW; only RUN executes the transformation pipeline.
 
-#### Explicit policy opt-in
+Within UCL durable compaction:
 
-Compaction must **never** run solely because context is long. The architecture requires **explicit policy permission**. Missing or contradictory authorization must **fail closed**. No global automatic production enablement.
+`	ext
+Nexus resolves ContextOptimizationPolicy
+        ↓
+TOKEN-10D timing gate (when applicable)
+        ↓
+MessageSequenceArtifactExecutor (on RUN)
+        ↓
+validated TOKEN-10E candidate
+`
 
-Future policy responsibilities (field names provisional; semantics frozen):
+#### 5. Candidate and receipt responsibility
 
-| Responsibility | Semantics |
-| --- | --- |
-| `enabled` | Master switch; disabled → no compaction path |
-| `allow_in_cache_compaction` | Explicit opt-in for compaction operations |
-| `allow_lossy` | Permits lossy transforms where policy and validators allow |
-| `require_receipt` | Candidate rejected if receipt cannot be constructed |
-| `require_rollback_metadata` | Candidate rejected if rollback metadata unavailable |
-| `require_review_for_full_thread` | `FULL_THREAD` default → review, not silent acceptance |
-| `require_review_for_protected_or_semantic_risk` | High-risk protected/semantic content → review |
-| `allowed_targets` | Allowlist of compaction targets |
+Candidate-first transaction model (Token Optimization boundary):
 
-#### Compaction target model
-
-| Target | Safety posture | Eligibility notes |
-| --- | --- | --- |
-| `DYNAMIC_TAIL` | Preferred low-risk | Operate before content joins stable prefix where possible |
-| `COLD_HISTORY` | Medium | Allowed when cache value absent, expired, low, or explicitly accepted as invalidated; must preserve protected and recent context |
-| `SELECTED_HISTORY_RANGE` | Medium-high | Requires immutable range/version identity; reject stale or mismatched ranges |
-| `FULL_THREAD` | High-risk | Manual review by default; must not silently include system/developer-owned instructions in lossy rewriting |
-
-**Categorically protected by default:**
-
-```text
-system instructions — protected
-developer/platform instructions — protected
-stable tool catalog — protected
-active recent turns — protected by policy window
-```
-
-**Potentially eligible:**
-
-```text
-older cold history
-dynamic tool/log output — preferred candidate
-```
-
-#### Immutable input snapshot
-
-Before candidate construction, the platform captures an **immutable logical input snapshot** sufficient to detect stale writes and protect cache lineage:
-
-```text
-context_version
-original_content_hash or structured-content fingerprint
-prefix_hash
-prompt assembly / cache state identity
-protected-region fingerprints
-selected target / range identity
-cache attribution snapshot
-policy identity / version
-```
-
-**Distinction:**
-
-```text
-raw source context — used internally for candidate construction only
-safe snapshot metadata — used in results and receipts; no raw content
-```
-
-Receipts and safe reports must not require or include raw content.
-
-#### Candidate-first transaction model
-
-```text
+`	ext
 CompactionRequest
   → policy validation
   → immutable snapshot validation
-  → candidate construction (no in-place mutation of active context)
-  → protected-region validation
-  → semantic/risk validation required by policy
+  → MessageSequenceArtifact candidate construction (no in-place mutation)
+  → candidate schema / structural / protected / quality validation
   → receipt and rollback-metadata construction
-  → acceptance decision
-  → application-owned activation of new context version (separate step)
-```
+  → acceptance decision (candidate level)
+`
 
 Invariants:
 
 1. Original context is **not** mutated in place during candidate construction.
 2. A candidate is **not** active merely because compaction computation succeeded.
-3. Platform runtime returns a candidate/result; application activation is a **separate explicit boundary**.
-4. Version mismatch at activation must **not** trigger silent regeneration or hidden retry inside the platform transaction boundary.
+3. Required rollback metadata missing → **fail closed**.
+4. Protected-region failure → reject candidate, preserve original context.
 
-#### Protected information
+Receipt and safe-report rules from TOKEN-10A–10D remain in force (
+aw_content_included = false; separate content-reduction vs cache-lineage attribution).
 
-Reuse the existing `ProtectedRegion` / `ProtectedRegionKind` mechanism. Do **not** design a parallel protected-content system.
+#### 6. Memory/Session activation boundary
 
-Relevant categories for conversation/context compaction:
+Durable activation is **Memory/Session** owned via compare-and-swap on ActiveContextRevisionPointer:
 
-```text
-system and developer instructions
-code blocks and inline code
-paths, URLs, hashes
-exact errors, identifiers, tool-call IDs
-evidence references, citations, source identifiers
-explicitly pinned user decisions
-application-marked immutable fragments
-```
+`	ext
+Nexus UCL coordinator
+  → CE ContextPlan
+  → TOKEN-10D timing gate
+  → MessageSequenceArtifactExecutor
+  → validated TOKEN-10E candidate
+  → SessionContextRevisionActivationRequest
+  → Memory/Session CAS activation or conflict
+`
 
-**Preservation modes:**
+**Application host** chooses and wires the persistence adapter, authorizes the action, configures retention, and presents review/rollback UX. Application does **not** own revision persistence, CAS activation, or rollback execution.
 
-```text
-exact-byte preservation
-exact-value preservation
-structural preservation
-semantic-risk review
-```
+Rollback **metadata** is compiled by Token Optimization; rollback **execution** changes ActiveContextRevisionPointer to a prior eligible SessionContextRevision without mutating the ConversationLedger.
 
-If `ProtectedRegionKind` does not cover an application need, extend through the existing contract — not application-specific logic inside TOKEN-10E.
+#### 7. Cache-lineage boundary
 
-Protected-region loss or mutation → **reject candidate**, **preserve original context**.
+Cache-lineage transition calculation is Token Optimization responsibility. Content revision (durable projection), prompt prefix identity, cache lineage, and provider cache observation remain separate dimensions.
 
-#### Receipt contract (future)
+Do **not** claim provider KV cache mutation, deletion, or inferred TTL.
 
-Redaction-safe compaction receipt — conceptual fields (names provisional):
+#### 8. Explicit non-goals
 
-```text
-operation_id, request_id
-policy identifier / version
-previous_context_version, candidate_context_version
-original fingerprint/hash, candidate fingerprint/hash
-target, selected range identity
-pipeline / configuration identity
-applied, bypassed, and failed layer IDs
-lossless / lossy classification
-protected-region validation outcome
-original and candidate size measurements with explicit units
-cache invalidation reason
-previous prefix hash, candidate prefix hash
-rollback eligibility
-activation status, completion status
-raw_content_included = false
-```
+- Not a second lifecycle architecture (no duplicated ownership, flows, or activation sections here).
+- No direct Application context → CacheAwareTokenOptimizationRuntime → application activation path.
+- No Application-owned persistence or activation wording.
+- No TOKEN-10E-1 before CTX-UCL-CLOSEOUT-1.
+- No LKW, Slack, or application-storage dependencies inside Token Optimization.
+- No automatic production enablement.
 
-Rules:
+#### 9. Link to canonical UCL architecture
 
-- Do not call character counts token savings.
-- Do not combine removed characters/tokens with cached provider tokens.
-- Receipt must not contain raw prompt, thread, evidence, tool output, or compacted content.
+Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, domain ownership tables, validation ordering (candidate → CE compilation → final model-facing integrity → preflight → exact send), and ConversationLedger vs SessionContextRevision definitions:
 
-#### Rollback boundary
+→ [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
+→ [plan/UNIFIED_CONTEXT_LIFECYCLE.md](../../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
+→ [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md)
 
-Rollback **metadata** is separate from rollback **execution**.
+**Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
-Rollback metadata must allow the application to identify the previous version:
-
-```text
-previous_context_version
-previous_content_reference or application-owned version reference
-previous_prefix_hash
-candidate_context_version
-rollback_eligible
-rollback_expiry or retention boundary (if supplied by application)
-```
-
-Token Optimization must **not** own application persistence. If policy requires rollback capability and valid rollback metadata cannot be produced → **reject candidate**, **preserve original context**, **fail closed**. Rollback execution remains application-owned and out of scope for TOKEN-10E runtime.
-
-#### Context versioning and stale-write protection
-
-Accepted candidates are tied to the exact input `context_version`. Application activation must reject when:
-
-```text
-active context version != candidate.previous_context_version
-```
-
-Outcome: `STALE_CONTEXT` — no silent regeneration inside the platform boundary.
-
-#### Cache-lineage transition
-
-```text
-previous context version → previous prefix hash → previous cache attribution
-accepted compaction → new context version → new prefix hash
-  → explicit invalidation/transition reason → new cache lineage
-```
-
-Do **not** claim provider cache was mutated or deleted. Do **not** claim a previous cache entry disappears immediately. The system may only declare that the new request no longer assumes compatibility with the previous stable prefix.
-
-Do **not** infer TTL, cache retention, cache hotness, or provider cache deletion.
-
-#### Status model (future)
-
-Distinguish **candidate computation**, **candidate acceptance**, and **application activation**:
-
-| Status | Meaning |
-| --- | --- |
-| `CANDIDATE_CREATED` | Deterministic candidate computed; not yet accepted |
-| `ACCEPTED` | Platform accepted candidate; activation may still be pending |
-| `REJECTED` | Candidate failed validation or policy |
-| `DEFERRED` | Timing gate or policy defers operation |
-| `BYPASSED` | No eligible operation |
-| `REVIEW_REQUIRED` | Manual review required before acceptance |
-| `STALE_CONTEXT` | Context version mismatch |
-| `POLICY_BLOCKED` | Policy missing, disabled, or contradictory |
-| `VALIDATION_FAILED` | Protected-region or structural validation failed |
-| `ROLLBACK_UNAVAILABLE` | Required rollback metadata unavailable |
-
-Separate booleans (not one ambiguous `executed=True`):
-
-```text
-candidate_created, accepted, activated, rollback_eligible,
-review_required, raw_content_included (= false)
-```
-
-Activation may remain outside the platform result when application-owned; the boundary must be explicit.
-
-#### Fail-closed matrix
-
-| Condition | Typical outcome |
-| --- | --- |
-| policy missing or disabled | `POLICY_BLOCKED` / `BYPASSED` |
-| target not allowed | `POLICY_BLOCKED` / `REJECTED` |
-| lossy operation not allowed | `REJECTED` / `POLICY_BLOCKED` |
-| manual review required | `REVIEW_REQUIRED` |
-| protected regions changed or lost | `VALIDATION_FAILED` / `REJECTED` |
-| snapshot / context version mismatch | `STALE_CONTEXT` |
-| selected range mismatch | `VALIDATION_FAILED` / `REJECTED` |
-| receipt construction failure | `REJECTED` |
-| required rollback metadata unavailable | `ROLLBACK_UNAVAILABLE` / `REJECTED` |
-| pipeline result incomplete | `VALIDATION_FAILED` / `REJECTED` |
-| required layer failure | `VALIDATION_FAILED` / `REJECTED` |
-| candidate fingerprint invalid | `VALIDATION_FAILED` / `REJECTED` |
-| cache evidence conflict | `DEFER` / `REVIEW_REQUIRED` |
-| unknown high-risk state | `REVIEW_REQUIRED` / `DEFER` |
-| application activation version conflict | `STALE_CONTEXT` (application boundary) |
-
-No hidden fallback to direct activation. No silent acceptance of partial or malformed metadata.
-
-#### Safe reporting
-
-Allowlist for future results and receipts:
-
-```text
-IDs, statuses, reason codes, hashes/fingerprints, counts,
-explicitly labelled measurement units, layer IDs, version IDs,
-cache-lineage metadata
-```
-
-Forbidden in reports:
-
-```text
-raw messages, raw prompts, raw compacted context,
-tool output, evidence text, source excerpts,
-model output containing user data
-```
-
-Require `raw_content_included = false`.
-
-#### Unknown-value semantics
-
-Preserve existing invariants:
-
-```text
-unknown != false
-unknown != zero
-unknown != cache miss
-reported zero != unknown
-```
-
-Do not infer TTL, cache retention, cache hotness, provider cache deletion, token counts from character counts, or semantic safety from successful pipeline execution.
-
-#### Product and user boundary
-
-**After architecture acceptance — available:**
-
-```text
-documented provider-neutral safety contract
-documented future public API ownership
-documented receipt and rollback boundary
-documented implementation decomposition
-```
-
-**Not available:**
-
-```text
-working context compaction
-automatic conversation shortening
-Slack command, LKW integration, rollback UI
-stored context versions, production enablement
-measured savings, universal proof
-```
-
-Do not claim users can already run in-cache compaction.
-
-#### Architecture invariants (frozen)
-
-```text
-1. No compaction without explicit policy opt-in.
-2. Candidate construction never mutates the active context in place.
-3. Candidate generation and application activation are separate.
-4. Existing ProtectedRegion and deterministic pipeline contracts are reused.
-5. Protected-region failure preserves the original context.
-6. Required rollback metadata missing means fail closed.
-7. Context-version mismatch prevents activation.
-8. Accepted stable-prefix changes create a new cache lineage.
-9. Provider cache reuse and content reduction are attributed separately.
-10. Raw content is excluded from receipts and safe reports.
-11. Unknown values are not coerced to zero, false, miss, or safe.
-12. LKW, Slack, database, and provider-specific dependencies are forbidden.
-13. No automatic production enablement.
-14. Full-thread lossy rewriting requires review by default.
-15. TOKEN-10E architecture does not mean TOKEN-10E runtime implementation.
-```
-
-For vLLM timing decisions, use actual cache-state evidence from TOKEN-10D — not invented Claude-style fixed TTL.
-
-#### Implementation decomposition (planned — not started)
-
-| Task | One-sentence goal |
-| --- | --- |
-| **TOKEN-10E-1** | Contracts for policy, snapshot, candidate, and safe-result models |
-| **TOKEN-10E-2** | Candidate construction boundary over existing deterministic pipeline |
-| **TOKEN-10E-3** | Protected-region validation, receipt and rollback-metadata compiler |
-| **TOKEN-10E-4** | Context-version acceptance and cache-lineage transition boundary |
-| **TOKEN-10E-CLOSEOUT-1** | Public package-root contract freeze and phase acceptance |
-
-Each task requires: main contracts, invariants, out-of-scope boundary, acceptance condition. See [plan](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10E for task detail.
-
-**Next step after architecture acceptance:** begin **TOKEN-10E-1** — not runtime compaction in applications.
+**Next step:** Review and accept **CTX-UCL-ARCH-1-R1**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
 
 ---
 

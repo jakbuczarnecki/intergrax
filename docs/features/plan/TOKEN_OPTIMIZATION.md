@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Review and accept **CTX-UCL-ARCH-1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** is superseded by UCL. **TOKEN-10E** implementation remains blocked until CTX-UCL foundation is accepted.
+**Current next step:** Review and accept **CTX-UCL-ARCH-1-R1** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** review **CTX-UCL-ARCH-1**; then **CTX-UCL-1** contracts. **TOKEN-10E** blocked pending UCL foundation.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** review **CTX-UCL-ARCH-1-R1**; then **CTX-UCL-1** contracts. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Review **CTX-UCL-ARCH-1**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E** blocked pending UCL foundation.
+**Next step:** Review **CTX-UCL-ARCH-1-R1**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Architecture Defined / Ready for Review. Runtime implementation **not started**. Do not mark implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
+**Status:** Architecture integration profile / ready for review. Runtime implementation **not started**. Blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed. Do not mark implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
@@ -1697,12 +1697,12 @@ Closeout:
 
 **Dependency:** Accepted **TOKEN-10D** (typed cache evidence → reconciliation → signal normalization → timing gate → router → deterministic pipeline on `RUN` only).
 
-#### Architecture invariants (frozen at CTX-UCL-ARCH-1; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
+#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R1; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
 
 ```text
 1. No compaction without explicit policy opt-in.
 2. Candidate construction never mutates the active context in place.
-3. Candidate generation and application activation are separate.
+3. Candidate generation and Memory/Session activation are separate (Application authorizes; Memory/Session executes CAS).
 4. Existing ProtectedRegion and deterministic pipeline contracts are reused.
 5. Protected-region failure preserves the original context.
 6. Required rollback metadata missing means fail closed.
@@ -1731,17 +1731,19 @@ Closeout:
 
 **Acceptance:** contracts importable from package root plan; unit tests for serialization and fail-closed policy validation; no pipeline behavior change.
 
-##### TOKEN-10E-2 — Candidate construction boundary over existing deterministic pipeline
+##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
 
-**Goal:** Compose TOKEN-10D `RUN` path with existing `TokenOptimizationPipelineRunner` to produce a compaction candidate without in-place context mutation.
+**Goal:** Compose TOKEN-10D `RUN` path with `MessageSequenceArtifactExecutor` to produce a compaction candidate without in-place context mutation.
 
-**Main contracts:** candidate builder wrapping pipeline result; integration with `CacheAwareTokenOptimizationRuntime` and router-selected configuration.
+**Main contracts:** candidate builder using `MessageSequenceArtifactExecutor`; integration with Nexus UCL coordinator and router-selected configuration.
 
-**Invariants:** no second optimization engine; original context unchanged; candidate not active until acceptance boundary passes.
+**Invariants:** no second optimization engine; no string flattening of full conversation history; original context unchanged; candidate not active until Memory/Session CAS passes.
 
-**Out of scope:** receipt/rollback compiler, application activation, persistence.
+**Out of scope:** receipt/rollback compiler, Memory/Session activation implementation, persistence backends.
 
-**Acceptance:** unit tests prove candidate creation on synthetic fixtures; protected original context; no public auto-enable.
+**Acceptance:** unit tests prove candidate creation on synthetic message-sequence fixtures; protected original context; no public auto-enable.
+
+**Blocked by:** CTX-UCL-4, TOKEN-10E-1.
 
 ##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
 
@@ -1755,17 +1757,19 @@ Closeout:
 
 **Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it.
 
-##### TOKEN-10E-4 — Context-version acceptance and cache-lineage transition boundary
+##### TOKEN-10E-4 — SessionContextRevision activation request and cache-lineage transition
 
-**Goal:** Implement acceptance decision, stale-write protection, and cache-lineage transition calculation (new prefix hash, invalidation reason).
+**Goal:** Emit `SessionContextRevisionActivationRequest` for Memory/Session CAS; stale-write protection; cache-lineage transition calculation.
 
-**Main contracts:** acceptance gate; `STALE_CONTEXT` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
+**Main contracts:** activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
 
-**Invariants:** no silent retry on stale context; no provider cache deletion claims; separate attribution dimensions.
+**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; Memory/Session owns activation — not Application or Token Optimization.
 
-**Out of scope:** application persistence, activation API, LKW/Slack integration.
+**Out of scope:** rollback UX, storage backend selection.
 
-**Acceptance:** unit tests for fail-closed matrix rows (policy, stale version, rollback unavailable, cache conflict).
+**Acceptance:** contract tests for activation request and conflict paths; no direct application activation API.
+
+**Blocked by:** CTX-UCL-2, TOKEN-10E-3.
 
 ##### TOKEN-10E-CLOSEOUT-1 — Public package-root contract freeze and phase acceptance
 
@@ -1775,15 +1779,16 @@ Closeout:
 
 **Acceptance:** public exports frozen; claim guardrail tests pass; TOKEN-10E marked implemented/ready for review only after closeout — not before.
 
-#### Acceptance criteria (architecture — CTX-UCL-ARCH-1; durable compaction detail retained from TOKEN-10E planning)
+#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R1; UCL sole lifecycle source)
 
-- [x] One canonical architecture in `docs/features/architecture/TOKEN_OPTIMIZATION.md` §8.10
-- [x] Platform vs application ownership explicit
+- [x] TOKEN_OPTIMIZATION §8.10 is bounded integration profile linked to UCL (not second lifecycle)
+- [x] Memory/Session owns persistence, CAS activation, rollback execution
+- [x] Application owns configuration, authorization, adapter wiring, UX only
+- [x] MessageSequenceArtifact required for conversation history compaction
+- [x] Candidate validation distinct from final model-facing integrity validation
 - [x] In-cache compaction not described as provider KV-cache mutation
 - [x] Policy opt-in mandatory; targets and risk levels defined
-- [x] Immutable snapshot and context versioning defined
-- [x] Candidate construction and activation separated
-- [x] Existing pipeline and ProtectedRegion reused
+- [x] ADR-UCL-001 created (Proposed / Ready for Review)
 - [x] Receipt and rollback metadata defined
 - [x] Stale-write protection and cache-lineage semantics defined
 - [x] Fail-closed matrix and safe reporting documented
@@ -1805,7 +1810,7 @@ automatic production enablement
 
 #### Next step after architecture acceptance
 
-Begin **TOKEN-10E-1** — contracts and policy models. Do not wire LKW, Slack, or application storage until closeout exports are frozen.
+Complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1** before **TOKEN-10E-1**. Do not wire LKW, Slack, or application storage until closeout exports are frozen.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 

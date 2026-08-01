@@ -15,6 +15,8 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CLAIMS_DOC = _REPO_ROOT / "docs" / "public-adoption" / "TOKEN_OPTIMIZATION_CLAIMS.md"
 _PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+_TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
+_UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
 
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 _FORBIDDEN_CONTEXT_MARKERS = (
@@ -25,6 +27,37 @@ _FORBIDDEN_CONTEXT_MARKERS = (
     "x%",
 )
 
+# CTX-UCL-ARCH-1-R1: ownership regression guardrails (canonical TOKEN-10E / UCL docs).
+_OWNERSHIP_FORBIDDEN_PHRASES = (
+    "application-owned persistence and activation",
+    "application owns where context versions are persisted",
+    "application owns how an accepted context version becomes active",
+    "rollback execution remains application-owned",
+    "platform owner: intergrax.runtime.token_optimization",
+)
+
+_UCL_OWNERSHIP_FORBIDDEN_PHRASES = _OWNERSHIP_FORBIDDEN_PHRASES
+
+_BYPASS_FLOW_FORBIDDEN_PATTERNS = (
+    re.compile(
+        r"application\s+context.*cacheawaretokenoptimizationruntime.*application-owned\s+activation",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"application-owned\s+persistence\s+and\s+activation",
+        re.IGNORECASE,
+    ),
+)
+
+_ALLOWED_APPLICATION_BOUNDARY_PHRASES = (
+    "application-owned authorization",
+    "application-owned review ux",
+    "application-owned rollback ux",
+    "application-selected persistence adapter",
+    "application host authorizes",
+    "persistence adapter selection and wiring",
+)
+
 
 def _read_claims_doc() -> str:
     return _CLAIMS_DOC.read_text(encoding="utf-8")
@@ -32,6 +65,13 @@ def _read_claims_doc() -> str:
 
 def _read_public_doc(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _token_optimization_section_810() -> str:
+    content = _read_public_doc(_TOKEN_OPT_ARCH)
+    start = content.index("### 8.10 Policy-governed in-cache compaction (TOKEN-10E)")
+    end = content.index("## 9. Protected region policy")
+    return content[start:end]
 
 
 def _line_is_forbidden_example_context(line: str) -> bool:
@@ -138,3 +178,46 @@ def test_doc_contains_conditional_wording_section() -> None:
 def test_doc_contains_reviewer_checklist_section() -> None:
     content = _read_claims_doc()
     assert "## Reviewer checklist" in content
+
+
+# --- CTX-UCL-ARCH-1-R1: UCL / TOKEN-10E ownership guardrails ---
+
+
+@pytest.mark.parametrize("phrase", _OWNERSHIP_FORBIDDEN_PHRASES)
+def test_token_optimization_section_810_rejects_old_ownership_phrases(
+    phrase: str,
+) -> None:
+    section = _token_optimization_section_810().lower()
+    assert phrase not in section, f"Forbidden ownership phrase in §8.10: {phrase!r}"
+
+
+@pytest.mark.parametrize("phrase", _UCL_OWNERSHIP_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_old_ownership_phrases(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden ownership phrase in UCL arch: {phrase!r}"
+
+
+def test_token_optimization_section_810_rejects_direct_bypass_activation_flow() -> None:
+    section = _token_optimization_section_810()
+    normalized = re.sub(r"\s+", " ", section.lower())
+    for pattern in _BYPASS_FLOW_FORBIDDEN_PATTERNS:
+        assert not pattern.search(normalized), (
+            f"Forbidden bypass flow pattern: {pattern.pattern!r}"
+        )
+
+
+def test_ucl_architecture_documents_memory_session_activation_boundary() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "activecontextrevisionpointer" in content
+    assert "memory/session cas" in content or "compare-and-swap" in content
+
+
+def test_token_optimization_section_810_links_canonical_ucl() -> None:
+    section = _token_optimization_section_810()
+    assert "UNIFIED_CONTEXT_LIFECYCLE.md" in section
+    assert "sole canonical source" in section.lower()
+
+
+def test_allowed_application_boundary_phrases_remain_valid_in_ucl() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert any(phrase in content for phrase in _ALLOWED_APPLICATION_BOUNDARY_PHRASES)

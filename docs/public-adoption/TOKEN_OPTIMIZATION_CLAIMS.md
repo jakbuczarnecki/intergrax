@@ -40,8 +40,8 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- **CTX-UCL** — unified context lifecycle foundation (architecture defined; implementation not started).
-- **TOKEN-10E** — policy-governed durable compaction (blocked pending accepted UCL; runtime not implemented).
+- **CTX-UCL** — Unified Context Lifecycle architecture draft is defined and ready for review; runtime implementation has not started ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
+- **TOKEN-10E** — policy-governed durable compaction integration profile documented; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed; runtime not implemented.
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
 - **TOKEN-10H** — checked-in public promotion (planned; not completed).
@@ -62,8 +62,8 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
-- Unified Context Lifecycle architecture defines integration boundary for session revision and durable compaction (runtime not yet available).
-- TOKEN-10E in-cache compaction architecture and safety boundary are documented (runtime implementation not yet available; blocked pending UCL foundation).
+- Unified Context Lifecycle architecture draft defines integration boundary for session revision and durable compaction (runtime not yet available; ready for review — **CTX-UCL-ARCH-1-R1**).
+- TOKEN-10E in-cache compaction integration profile and safety boundary are documented (runtime implementation not yet available; blocked until CTX-UCL-CLOSEOUT-1).
 
 ---
 
