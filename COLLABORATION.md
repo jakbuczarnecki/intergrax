@@ -22,7 +22,7 @@ The permissions below are granted by the **Intergrax Evaluation and Collaboratio
 
 **Evaluation Participants** (including employees and contractors) may install, run, test, review, and perform controlled technical pilots in an isolated Evaluation Environment. They may not use Intergrax as an operational business tool without explicit written permission. Calling a real deployment a pilot, sandbox, or proof of concept does not change Production Use if it supports real business processes, production data, or operational users.
 
-Issue comments, suggestions, and other **Feedback** are welcome and are not automatically Code Contributions. Substantial or potentially patent-relevant Code Contributions or Documentation Contributions may require a separate Contributor License Agreement before acceptance.
+Issue comments, suggestions, and other **Feedback** are welcome and are not automatically Code Contributions. Contributors retain copyright in Code Contributions and Documentation Contributions. The contribution license in [LICENSE](LICENSE) applies upon submission; the maintainer may still reject or not use a submission. Substantial or potentially patent-relevant Code Contributions or Documentation Contributions may require a separate Contributor License Agreement before acceptance.
 
 ---
 

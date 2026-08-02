@@ -40,7 +40,11 @@ No. Ordinary issue comments and suggestions are **Feedback**, not automatic Code
 
 ## Who owns external contributions?
 
-Contributors retain copyright in their Code Contributions and Documentation Contributions. The maintainer receives a license to use accepted contributions as described in [LICENSE](LICENSE). The maintainer does not automatically become the copyright owner.
+Contributors retain copyright in their Code Contributions and Documentation Contributions. The maintainer receives a license to use submitted contributions upon submission as described in [LICENSE](LICENSE). The maintainer does not automatically become the copyright owner.
+
+## Can users evaluate external contributions included in Intergrax?
+
+Yes, for Evaluation and other uses expressly permitted in [LICENSE](LICENSE). Contributor-owned Code Contributions and Documentation Contributions that the Licensor is authorized to sublicense under Section 8 are part of **Licensed Materials** and may be used under the same limited grant as Licensor Materials. Third-party components remain governed by their own licenses and are not sublicensed under Intergrax terms beyond those licenses.
 
 ## Do contributions include patent rights?
 

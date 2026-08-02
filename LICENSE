@@ -26,6 +26,15 @@ to which Artur Czarnecki holds sufficient rights to license under this
 license, excluding third-party components and portions whose copyright is
 retained by contributors.
 
+"Licensed Materials" means:
+
+(a) Licensor Materials; and
+
+(b) Code Contributions and Documentation Contributions that the Licensor
+is authorized to sublicense under Section 8,
+
+excluding third-party components to the extent governed by their own licenses.
+
 "Licensor" means Artur Czarnecki.
 
 "Evaluation" means technical analysis, local testing, proof paths, benchmarks,
@@ -88,9 +97,11 @@ Use.
 
 Subject to the terms of this license, the Licensor grants you a limited,
 non-exclusive, worldwide, royalty-free, non-transferable, and non-sublicensable
-license to use Licensor Materials only as expressly permitted herein. This grant
-remains in effect until you breach this license or your rights are terminated
-under Section 10.
+license to use Licensed Materials only as expressly permitted herein. For Code
+Contributions and Documentation Contributions included in the Licensed Materials,
+this grant is a sublicense of the rights granted to the Licensor under Section 8.
+This grant remains in effect until you breach this license or your rights are
+terminated under Section 9.
 
 4. Permitted Evaluation and Collaboration Uses
 
@@ -139,7 +150,7 @@ A contributor may share an Authorized Fork. Other evaluators may clone and test
 an Authorized Fork for permitted Evaluation and collaboration. An Authorized
 Fork does not become an independent distribution. Rights to an Authorized Fork
 do not include Production Use or Commercial Use. The owner of an Authorized
-Fork may not grant broader rights to Licensor Materials than those granted by
+Fork may not grant broader rights to Licensed Materials than those granted by
 this license.
 
 An Authorized Fork may not be marketed as an independent distribution of
@@ -181,7 +192,7 @@ written permission regardless of this clause.
 
 You do not acquire ownership of Licensor Materials. Contributors retain
 copyright in their Code Contributions and Documentation Contributions. The
-Licensor receives the license described in Section 8 for accepted Code
+Licensor receives the license described in Section 8 for submitted Code
 Contributions and Documentation Contributions. Third-party components remain
 owned by their respective rights holders. Private modifications made for
 permitted Evaluation do not change ownership of the underlying Intergrax code.
@@ -203,7 +214,10 @@ irrevocable license to use, reproduce, modify, create derivative works from,
 distribute, publicly display, publicly perform to the extent applicable,
 sublicense, and include your Code Contribution or Documentation Contribution
 in Intergrax, including under current and future licensing models for the
-project. Submission of a Code Contribution or Documentation Contribution does
+project. The license grant in this Section 8 takes effect upon submission and
+applies whether the Code Contribution or Documentation Contribution is later
+accepted, rejected, closed, withdrawn, removed, or not incorporated into
+Intergrax. Submission of a Code Contribution or Documentation Contribution does
 not transfer copyright in that material to the Licensor.
 
 Feedback

@@ -276,6 +276,8 @@ When you submit a **Code Contribution** or **Documentation Contribution** (for e
 - you grant Artur Czarnecki a perpetual, worldwide, non-exclusive, royalty-free, and irrevocable license to use, reproduce, modify, create derivative works from, distribute, publicly display, publicly perform to the extent applicable, sublicense, and include your Code Contribution or Documentation Contribution in Intergrax, including under current and future licensing models for the project;
 - you will not submit material that you do not have the right to contribute or that is subject to an incompatible license.
 
+Submitting material creates the license grant described in [LICENSE](LICENSE). The contribution license takes effect when the material is submitted or clearly offered for inclusion, whether or not the maintainer later accepts or merges it. Acceptance or merge is a separate maintainer decision.
+
 Submitting a Code Contribution or Documentation Contribution does not transfer copyright to the maintainer. The maintainer may accept, reject, or request changes to any submission. Submission does not create support obligations, compensation, partnership terms, production rights, or commercial rights.
 
 ### Feedback
