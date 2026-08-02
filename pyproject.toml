@@ -92,7 +92,7 @@ dependencies = [
   # Data / parsing
   # -----------------
   "numpy==1.26.4",
-  "pandas>=2.1.4,<3.0.0",
+  "pandas>=2.1.4,<4.0.0",
   "beautifulsoup4>=4.12",
   "trafilatura>=1.8",
   "python-docx>=1.1",
