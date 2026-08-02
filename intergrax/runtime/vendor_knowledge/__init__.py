@@ -47,6 +47,16 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeVisibility,
 )
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
+from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
+    RemoteResourceAvailabilityV1,
+    RemoteResourceCandidatePageV1,
+    RemoteResourceCandidateV1,
+    RemoteResourceDescriptorV1,
+    RemoteResourceDiscoveryPageV1,
+    RemoteResourceDiscoveryProvider,
+    RemoteResourceDiscoveryRegistry,
+    TenantRemoteResourceDiscoveryService,
+)
 from intergrax.runtime.vendor_knowledge.resolver import IntegrationProfileVendorResolver
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeRemoteItemStateRepository,
@@ -182,6 +192,13 @@ __all__ = [
     "KnowledgeSyncSink",
     "KnowledgeVisibility",
     "LiveCapabilityDescriptorV1",
+    "RemoteResourceAvailabilityV1",
+    "RemoteResourceCandidatePageV1",
+    "RemoteResourceCandidateV1",
+    "RemoteResourceDescriptorV1",
+    "RemoteResourceDiscoveryPageV1",
+    "RemoteResourceDiscoveryProvider",
+    "RemoteResourceDiscoveryRegistry",
     "RepositoryTenantConnectionPort",
     "SafeTenantConnectionV1",
     "TenantConnection",
@@ -201,6 +218,7 @@ __all__ = [
     "TenantConnectionVersionConflict",
     "TenantLiveCapabilityCatalog",
     "TenantLiveCapabilityCatalogPort",
+    "TenantRemoteResourceDiscoveryService",
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
     "VendorKnowledgeError",
