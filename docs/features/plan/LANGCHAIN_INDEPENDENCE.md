@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **READY_FOR_REVIEW**; LCI-0C **PLANNED**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **READY_FOR_REVIEW**; LCI-1A **PLANNED**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-0B
-**Next task after acceptance:** LCI-0C — LANGCHAIN DEPENDENCY RANGE HARDENING
+**Current task:** LCI-0C
+**Next task after acceptance:** LCI-1A
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -60,7 +60,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Prevent new LangChain leaks into forbidden zones; grandfather existing violations. |
 | **Owning domain plan** | docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-0A accepted |
@@ -76,13 +76,13 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Confirm whether meta-package langchain is used; remove from core if clean-install proof shows no use; add controlled upper version ranges; clean-install smoke. |
 | **Owning domain plan** | docs/plan/PLATFORM_FOUNDATION.md |
 | **Dependencies** | LCI-0B |
 | **Exact scope** | Usage audit for langchain meta-package; pyproject range hardening; clean-install smoke script |
 | **Explicit out of scope** | Full optionalization of all langchain packages; removing packages from lockfile without proof |
-| **Acceptance criteria** | Clean-install proof executed; unused meta-package removed if confirmed; upper ranges documented and applied |
+| **Acceptance criteria** | zero exact root langchain imports; unused direct meta-package removed; five remaining packages bounded; lockfile consistent; isolated clean-install proof passed |
 | **User-visible outcome** | Tighter, evidence-backed core dependency surface |
 
 ---
