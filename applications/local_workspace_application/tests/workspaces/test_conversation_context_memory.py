@@ -18,7 +18,6 @@ from local_workspace_application.workspaces.conversation_context_memory import (
     ConversationThreadMemoryError,
     ConversationThreadMemoryPartitionV1,
     ConversationThreadMemorySnapshotV1,
-    InMemoryThreadMemoryLifecyclePort,
     SessionHistorySnapshotConversationThreadMemoryAdapter,
     ThreadMemoryLifecycleEnvelopeV1,
     ThreadMemoryLifecyclePort,
