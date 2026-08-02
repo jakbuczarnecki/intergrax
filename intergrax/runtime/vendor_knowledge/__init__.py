@@ -97,6 +97,28 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
     make_vendor_knowledge_sync_worker_handler,
     register_vendor_knowledge_sync_worker_handler,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
+    TenantConnectionRehydrator,
+    TenantConnectionRehydrationResult,
+    TenantConnectionRehydrationStatus,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+    TenantConnectionAlreadyExists,
+    TenantConnectionCorruptRecord,
+    TenantConnectionInvalidState,
+    TenantConnectionNotFound,
+    TenantConnectionRepository,
+    TenantConnectionService,
+    TenantConnectionVersionConflict,
+    to_safe_tenant_connection,
+)
 
 __all__ = [
     "ConnectionAwareVendorResolver",
@@ -104,6 +126,7 @@ __all__ = [
     "DocumentStoreKnowledgeSourceBindingRepository",
     "DocumentStoreKnowledgeSourceLeaseRepository",
     "DocumentStoreKnowledgeSyncCheckpointRepository",
+    "DocumentStoreTenantConnectionRepository",
     "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
@@ -142,6 +165,20 @@ __all__ = [
     "KnowledgeSyncRunResult",
     "KnowledgeSyncRunStatus",
     "KnowledgeSyncSink",
+    "SafeTenantConnectionV1",
+    "TenantConnection",
+    "TenantConnectionAdministrativeStatus",
+    "TenantConnectionAlreadyExists",
+    "TenantConnectionCorruptRecord",
+    "TenantConnectionIntegrationFactory",
+    "TenantConnectionInvalidState",
+    "TenantConnectionNotFound",
+    "TenantConnectionRehydrationResult",
+    "TenantConnectionRehydrationStatus",
+    "TenantConnectionRehydrator",
+    "TenantConnectionRepository",
+    "TenantConnectionService",
+    "TenantConnectionVersionConflict",
     "KnowledgeVisibility",
     "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
     "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
@@ -165,6 +202,7 @@ __all__ = [
     "owner_id_for_sync_run",
     "register_vendor_knowledge_sync_handler",
     "register_vendor_knowledge_sync_worker_handler",
+    "to_safe_tenant_connection",
     "to_source_ref",
     "vendor_knowledge_sync_idempotency_key",
 ]
