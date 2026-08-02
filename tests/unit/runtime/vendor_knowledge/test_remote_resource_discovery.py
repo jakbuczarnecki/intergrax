@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -139,7 +140,35 @@ def _default_provider(**overrides: Any) -> _RecordingProvider:
     return _RecordingProvider(**payload)
 
 
-def _stack(provider: _RecordingProvider | None = None) -> tuple[Any, ...]:
+@dataclass
+class _MalformedProvider:
+    provider_id: str = "ms365_graph"
+    integration_kind: IntegrationCategory = IntegrationCategory.COLLABORATION_SUITE
+    source_kind: str = "mailbox"
+    return_value: Any = None
+
+    async def list_remote_resources(
+        self,
+        *,
+        integration: object,
+        connection: SafeTenantConnectionV1,
+        page_token: str | None,
+        limit: int,
+    ) -> RemoteResourceCandidatePageV1:
+        return self.return_value  # type: ignore[return-value]
+
+
+def _assert_invalid_provider_response(exc_info: pytest.ExceptionInfo[VendorKnowledgeError], *, secret: str = "") -> None:
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    if secret:
+        assert secret not in str(exc_info.value)
+
+
+def _clock_runtime_error() -> datetime:
+    raise RuntimeError("internal-clock-secret")
+
+
+def _stack(provider: Any = None, clock: Callable[[], datetime] | None = None) -> tuple[Any, ...]:
     store = ConditionalInMemoryDocumentStore()
     repo = DocumentStoreTenantConnectionRepository(store)
     port = RepositoryTenantConnectionPort(repo)
@@ -154,6 +183,7 @@ def _stack(provider: _RecordingProvider | None = None) -> tuple[Any, ...]:
         capability_catalog=catalog,
         connection_registry=connection_registry,
         discovery_registry=discovery_registry,
+        clock=clock,
     )
     return service, TenantConnectionService(tenant_id="tenant-1", repository=repo), repo, catalog, connection_registry, discovery_registry, recording, store
 
@@ -412,6 +442,23 @@ async def test_provider_failures_and_malformed_output() -> None:
         await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
 
+    for bad_return in (None, object()):
+        service, admin, _, catalog, connection_registry, _, _, _ = _stack(_MalformedProvider(return_value=bad_return))
+        _wire(service, admin, catalog, connection_registry, register_capability=False)
+        with pytest.raises(VendorKnowledgeError) as exc_info:
+            await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
+        _assert_invalid_provider_response(exc_info)
+
+    class _BrokenDump:
+        def model_dump(self) -> dict[str, object]:
+            raise RuntimeError("internal-provider-secret")
+
+    service, admin, _, catalog, connection_registry, _, _, _ = _stack(_MalformedProvider(return_value=_BrokenDump()))
+    _wire(service, admin, catalog, connection_registry, register_capability=False)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
+    _assert_invalid_provider_response(exc_info, secret="internal-provider-secret")
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -438,10 +485,16 @@ async def test_capability_intersection_and_catalog_validation() -> None:
                 return (_descriptor(provider_id="other"),)
             if self._mode == "kind":
                 return (_descriptor(integration_kind=IntegrationCategory.ISSUE_TRACKER),)
+            if self._mode == "malformed_object":
+                return (object(),)  # type: ignore[return-value]
+            if self._mode == "model_construct":
+                return (LiveCapabilityDescriptorV1.model_construct(capability_id="mail.read"),)  # type: ignore[return-value]
+            if self._mode == "catalog_exception":
+                raise RuntimeError("internal-catalog-secret")
             descriptor = _descriptor()
             return (descriptor, descriptor)
 
-    for mode in ("provider", "kind", "duplicate"):
+    for mode in ("provider", "kind", "duplicate", "malformed_object", "model_construct", "catalog_exception"):
         store = ConditionalInMemoryDocumentStore()
         repo = DocumentStoreTenantConnectionRepository(store)
         port = RepositoryTenantConnectionPort(repo)
@@ -461,7 +514,8 @@ async def test_capability_intersection_and_catalog_validation() -> None:
         _wire(bad_service, bad_admin, bad_catalog, connection_registry)
         with pytest.raises(VendorKnowledgeError) as exc_info:
             await bad_service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
-        assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+        secret = "internal-catalog-secret" if mode == "catalog_exception" else ""
+        _assert_invalid_provider_response(exc_info, secret=secret)
 
 
 @pytest.mark.unit
@@ -480,12 +534,13 @@ async def test_deduplication_sorting_and_ephemeral_behavior() -> None:
             )
         }
     )
-    service, admin, repo, catalog, connection_registry, _, _, store = _stack(provider)
+    service, admin, repo, catalog, connection_registry, _, _, store = _stack(provider, clock=lambda: datetime(2020, 1, 1, tzinfo=UTC))
     _wire(service, admin, catalog, connection_registry)
     before = repo.get(tenant_id="tenant-1", connection_ref="conn-1")
     rows_before = len(store._rows)
     page = await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
     assert [item.remote_resource_id for item in page.resources] == ["res-1", "res-a", "res-b"]
+    assert all(resource.discovered_at == datetime(2020, 1, 1, tzinfo=UTC) for resource in page.resources)
     assert repo.get(tenant_id="tenant-1", connection_ref="conn-1") == before
     assert len(store._rows) == rows_before
 
@@ -497,3 +552,39 @@ async def test_deduplication_sorting_and_ephemeral_behavior() -> None:
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("clock_factory", "secret"),
+    [
+        (lambda: "not-a-datetime", ""),
+        (lambda: datetime(2020, 1, 1), ""),
+        (lambda: datetime(2020, 1, 1, tzinfo=timezone(timedelta(hours=1))), ""),
+        pytest.param(_clock_runtime_error, "internal-clock-secret", id="clock_exception"),
+    ],
+)
+@pytest.mark.asyncio
+async def test_clock_boundary_normalized(clock_factory: Callable[[], object], secret: str) -> None:
+    clock_calls = 0
+
+    def _clock() -> object:
+        nonlocal clock_calls
+        clock_calls += 1
+        return clock_factory()
+
+    provider = _default_provider(
+        pages={
+            None: RemoteResourceCandidatePageV1(
+                resources=(_candidate(remote_resource_id="res-a"), _candidate(remote_resource_id="res-b")),
+                snapshot_version="snap-1",
+            )
+        }
+    )
+    service, admin, _, catalog, connection_registry, _, recording, _ = _stack(provider, clock=_clock)
+    _wire(service, admin, catalog, connection_registry)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
+    _assert_invalid_provider_response(exc_info, secret=secret)
+    assert len(recording.calls) == 1
+    assert clock_calls == 1

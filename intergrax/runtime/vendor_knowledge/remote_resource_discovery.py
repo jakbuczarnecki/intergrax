@@ -12,7 +12,7 @@ from enum import StrEnum
 from typing import Protocol, runtime_checkable
 from urllib.parse import parse_qsl, urlparse
 
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
@@ -166,7 +166,7 @@ class _RemoteResourceCoreV1(BaseModel):
 
 
 class RemoteResourceCandidateV1(_RemoteResourceCoreV1):
-    pass
+    ...
 
 
 class _PagedSnapshotV1(BaseModel):
@@ -257,6 +257,12 @@ def _discovery_invalid(
     )
 
 
+def _reraise_discovery_boundary(exc: BaseException, *, provider_id: str, source_kind: str) -> None:
+    if isinstance(exc, VendorKnowledgeError):
+        raise exc
+    raise _discovery_invalid(provider_id=provider_id, source_kind=source_kind) from None
+
+
 class RemoteResourceDiscoveryRegistry:
     def __init__(self) -> None:
         self._providers: dict[_DiscoveryRegistryKey, RemoteResourceDiscoveryProvider] = {}
@@ -303,13 +309,7 @@ class RemoteResourceDiscoveryRegistry:
         cleaned_provider = _require_non_empty(provider_id, field_name="provider_id", max_length=64)
         if not isinstance(integration_kind, IntegrationCategory):
             raise ValueError("integration_kind must be an IntegrationCategory")
-        return tuple(
-            sorted(
-                source_kind
-                for registered_provider, registered_kind, source_kind in self._providers
-                if registered_provider == cleaned_provider and registered_kind is integration_kind
-            )
-        )
+        return tuple(sorted(s for p, k, s in self._providers if p == cleaned_provider and k is integration_kind))
 
 
 def _require_active_connection(
@@ -352,13 +352,18 @@ def _deduplicate_candidates_ordered(
 
 
 def _validate_catalog_capabilities(
-    descriptors: tuple[LiveCapabilityDescriptorV1, ...],
+    descriptors: object,
     *,
     expected_provider_id: str,
     expected_integration_kind: IntegrationCategory,
 ) -> dict[str, LiveCapabilityDescriptorV1]:
+    if not isinstance(descriptors, tuple):
+        raise TypeError("catalog must return a tuple")
     catalog: dict[str, LiveCapabilityDescriptorV1] = {}
-    for descriptor in descriptors:
+    for raw_descriptor in descriptors:
+        if not isinstance(raw_descriptor, BaseModel):
+            raise TypeError("catalog descriptor must be a Pydantic model")
+        descriptor = LiveCapabilityDescriptorV1.model_validate(raw_descriptor.model_dump())
         if descriptor.provider_id != expected_provider_id:
             raise _discovery_invalid(provider_id=expected_provider_id, message="Capability catalog provider does not match the connection")
         if descriptor.integration_kind != expected_integration_kind:
@@ -369,19 +374,8 @@ def _validate_catalog_capabilities(
     return catalog
 
 
-def _intersect_capabilities(
-    *,
-    candidate: RemoteResourceCandidateV1,
-    catalog: dict[str, LiveCapabilityDescriptorV1],
-) -> tuple[str, ...]:
-    return tuple(
-        sorted(
-            capability_id
-            for capability_id in candidate.supported_capability_ids
-            if (descriptor := catalog.get(capability_id)) is not None
-            and is_bindable_read_only_capability(descriptor)
-        )
-    )
+def _intersect_capabilities(*, candidate: RemoteResourceCandidateV1, catalog: dict[str, LiveCapabilityDescriptorV1]) -> tuple[str, ...]:
+    return tuple(sorted(capability_id for capability_id in candidate.supported_capability_ids if (descriptor := catalog.get(capability_id)) is not None and is_bindable_read_only_capability(descriptor)))
 
 
 class TenantRemoteResourceDiscoveryService:
@@ -447,20 +441,21 @@ class TenantRemoteResourceDiscoveryService:
                 page_token=validated_page_token,
                 limit=limit,
             )
-        except VendorKnowledgeError:
-            raise
-        except Exception:
-            raise _discovery_invalid(provider_id=connection.provider_id, source_kind=cleaned_source_kind) from None
+        except Exception as exc:
+            _reraise_discovery_boundary(exc, provider_id=connection.provider_id, source_kind=cleaned_source_kind)
         try:
+            if not isinstance(raw_page, BaseModel):
+                raise TypeError("provider result must be a Pydantic model")
             candidate_page = RemoteResourceCandidatePageV1.model_validate(raw_page.model_dump())
             if len(candidate_page.resources) > limit:
                 raise ValueError("provider returned more resources than requested")
             deduplicated = _deduplicate_candidates_ordered(candidate_page.resources)
-            discovered_at = _assert_utc_aware(self._clock(), field_name="discovered_at")
-        except VendorKnowledgeError:
-            raise
-        except (ValidationError, ValueError, TypeError):
-            raise _discovery_invalid(provider_id=connection.provider_id, source_kind=cleaned_source_kind) from None
+            clock_value = self._clock()
+            if not isinstance(clock_value, datetime):
+                raise TypeError("clock must return datetime")
+            discovered_at = _assert_utc_aware(clock_value, field_name="discovered_at")
+        except Exception as exc:
+            _reraise_discovery_boundary(exc, provider_id=connection.provider_id, source_kind=cleaned_source_kind)
         descriptors: list[RemoteResourceDescriptorV1] = []
         for candidate in deduplicated:
             try:
@@ -490,9 +485,7 @@ class TenantRemoteResourceDiscoveryService:
                         snapshot_version=candidate_page.snapshot_version,
                     )
                 )
-            except VendorKnowledgeError:
-                raise
-            except (ValidationError, ValueError, TypeError):
-                raise _discovery_invalid(provider_id=connection.provider_id, source_kind=cleaned_source_kind) from None
+            except Exception as exc:
+                _reraise_discovery_boundary(exc, provider_id=connection.provider_id, source_kind=cleaned_source_kind)
         descriptors.sort(key=lambda item: (item.connection_ref, item.remote_resource_id, item.source_kind))
         return RemoteResourceDiscoveryPageV1(resources=tuple(descriptors), next_page_token=candidate_page.next_page_token, snapshot_version=candidate_page.snapshot_version)
