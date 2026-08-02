@@ -28,6 +28,7 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
     WorkspaceKnowledgeConfigurationMutationError,
     WorkspaceKnowledgeExistingResult,
     WorkspaceKnowledgeMutationExecutionDispositionV1,
+    WorkspaceKnowledgeMutationExecutionResult,
     WorkspaceKnowledgeMutationRecoveryDispositionV1,
     WorkspaceKnowledgeStageInspection,
     WorkspaceKnowledgeStageStateV1,
@@ -1668,3 +1669,550 @@ def test_exact_committed_row_short_circuits_cleanup() -> None:
     )
     assert loaded is not None
     assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+
+
+# --- R3 durable cleanup fence ---
+
+
+class _StalePublisherDuringCleanupHandler(_FakeHandler):
+    def __init__(self) -> None:
+        super().__init__()
+        self.engine: WorkspaceKnowledgeConfigurationMutationEngine | None = None
+        self.stale_mutation: WorkspaceKnowledgeMutationRecord | None = None
+        self.stale_head: WorkspaceKnowledgeConfigurationHead | None = None
+        self.stale_publisher_error: str | None = None
+
+    def cleanup_staged(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        mutation: WorkspaceKnowledgeMutationRecord,
+        inspection: WorkspaceKnowledgeStageInspection,
+    ) -> bool:
+        assert self.engine is not None
+        assert self.stale_mutation is not None
+        assert self.stale_head is not None
+        try:
+            self.engine._publish_head(
+                head=self.stale_head,
+                mutation=self.stale_mutation,
+                now=_NOW,
+            )
+        except WorkspaceKnowledgeConfigurationMutationError as exc:
+            self.stale_publisher_error = exc.error_code
+        return super().cleanup_staged(
+            repository=repository,
+            mutation=mutation,
+            inspection=inspection,
+        )
+
+
+def _is_cleanup_head_fence_cas(
+    expected: DocumentRecord,
+    replacement: DocumentRecord,
+) -> bool:
+    if "knowledge_configuration_head" not in expected.partition_key:
+        return False
+    if not expected.data.get("pending_mutation_id"):
+        return False
+    if replacement.data.get("pending_mutation_id") != expected.data.get("pending_mutation_id"):
+        return False
+    if replacement.data.get("pending_revision") != expected.data.get("pending_revision"):
+        return False
+    if replacement.data.get("committed_revision") != expected.data.get("committed_revision"):
+        return False
+    return replacement.data.get("updated_at") != expected.data.get("updated_at")
+
+
+def _is_publication_head_cas(
+    expected: DocumentRecord,
+    replacement: DocumentRecord,
+) -> bool:
+    return (
+        "knowledge_configuration_head" in expected.partition_key
+        and expected.data.get("pending_mutation_id")
+        and not replacement.data.get("pending_mutation_id")
+    )
+
+
+class _PublisherWinsHeadFenceRaceStore(InMemoryDocumentStore):
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if _is_cleanup_head_fence_cas(expected, replacement):
+            tenant_id = expected.data["tenant_id"]
+            workspace_id = expected.data["workspace_id"]
+            target_revision = expected.data["pending_revision"]
+            mutation_id = expected.data["pending_mutation_id"]
+            published = expected.model_copy(
+                update={
+                    "data": {
+                        **expected.data,
+                        "committed_revision": target_revision,
+                        "pending_revision": None,
+                        "pending_mutation_id": None,
+                        "last_committed_mutation_id": mutation_id,
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=published)
+            mutation_pk = (
+                f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_mutation"
+            )
+            mutation_row_key = (
+                f"{workspace_id}:{_OPERATION.value}:{_SHA256}"
+            )
+            mutation_doc = self.get(mutation_pk, mutation_row_key)
+            if mutation_doc is not None:
+                committed_doc = mutation_doc.model_copy(
+                    update={
+                        "data": {
+                            **mutation_doc.data,
+                            "status": "committed",
+                            "outcome": "applied",
+                            "committed_revision": target_revision,
+                            "result_entity_type": _RESULT_TYPE,
+                            "result_entity_id": _RESULT_ID,
+                            "committed_at": replacement.data.get("updated_at"),
+                            "error_code": None,
+                        }
+                    }
+                )
+                super().replace_if_match(expected=mutation_doc, replacement=committed_doc)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+class _PublisherRetryRevalidationStore(InMemoryDocumentStore):
+    def __init__(self) -> None:
+        super().__init__()
+        self.publication_cas_attempts = 0
+        self._fence_applied = False
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_mutation" in expected.partition_key
+            and replacement.data.get("status") == "recovery_required"
+            and replacement.data.get("error_code") == "configuration_mutation_cleanup_fenced"
+        ):
+            self._fence_applied = True
+        if _is_publication_head_cas(expected, replacement):
+            self.publication_cas_attempts += 1
+            if self.publication_cas_attempts == 1 and not self._fence_applied:
+                fenced_head = expected.model_copy(
+                    update={
+                        "data": {
+                            **expected.data,
+                            "updated_at": replacement.data.get("updated_at"),
+                        }
+                    }
+                )
+                super().replace_if_match(expected=expected, replacement=fenced_head)
+                tenant_id = expected.data["tenant_id"]
+                workspace_id = expected.data["workspace_id"]
+                mutation_pk = (
+                    f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_mutation"
+                )
+                mutation_row_key = (
+                    f"{workspace_id}:{_OPERATION.value}:{_SHA256}"
+                )
+                mutation_doc = self.get(mutation_pk, mutation_row_key)
+                if mutation_doc is not None and mutation_doc.data.get("status") == "prepared":
+                    fenced_mutation = mutation_doc.model_copy(
+                        update={
+                            "data": {
+                                **mutation_doc.data,
+                                "status": "recovery_required",
+                                "error_code": "configuration_mutation_cleanup_fenced",
+                            }
+                        }
+                    )
+                    super().replace_if_match(
+                        expected=mutation_doc,
+                        replacement=fenced_mutation,
+                    )
+                    self._fence_applied = True
+                return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+def test_cleanup_fence_wins_against_stale_publisher() -> None:
+    handler = _StalePublisherDuringCleanupHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    engine, repo, _handler = _build_engine(handler=handler)
+    prepared = _mutation_record(
+        mutation_id="mutation-stale-pub",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    head = WorkspaceKnowledgeConfigurationHead(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        committed_revision=0,
+        pending_revision=1,
+        pending_mutation_id="mutation-stale-pub",
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_head_if_absent(head)
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    handler.engine = engine
+    handler.stale_mutation = prepared
+    handler.stale_head = head
+    result = engine._handle_pre_publication_failure(
+        mutation=prepared,
+        handler=handler,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_mutation_stage_failed",
+    )
+    assert result is None
+    assert handler.stale_publisher_error == "configuration_recovery_required"
+    assert handler.cleanup_calls == 1
+    assert not handler.staged_rows
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.committed_revision == 0
+    assert loaded_head.pending_mutation_id is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+
+
+def test_publisher_wins_head_fence_cas_race() -> None:
+    store = _PublisherWinsHeadFenceRaceStore()
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    engine, repo, _handler = _build_engine(store=store, handler=handler)
+    prepared = _mutation_record(
+        mutation_id="mutation-pub-wins",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-pub-wins",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    result = engine._handle_pre_publication_failure(
+        mutation=prepared,
+        handler=handler,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_mutation_stage_failed",
+    )
+    assert result is not None
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert handler.cleanup_calls == 0
+    assert len(handler.staged_rows) == 1
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.committed_revision == 1
+    assert loaded_head.pending_mutation_id is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+
+
+def test_publisher_retry_revalidates_mutation() -> None:
+    store = _PublisherRetryRevalidationStore()
+    engine, repo, handler = _build_engine(store=store)
+    prepared = _mutation_record(
+        mutation_id="mutation-retry-reval",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-retry-reval",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert head is not None
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._publish_head(head=head, mutation=prepared, now=_NOW)
+    assert exc.value.error_code == "configuration_recovery_required"
+    assert store.publication_cas_attempts == 1
+
+
+def test_recovery_resumes_abandoned_cleanup_fence() -> None:
+    engine, repo, handler = _build_engine(mutation_ids=["mutation-abandoned-fence"])
+    fenced = _mutation_record(
+        mutation_id="mutation-abandoned-fence",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code="configuration_mutation_cleanup_fenced",
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(fenced)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-abandoned-fence",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=fenced,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    recovery = engine.recover_workspace_knowledge_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.ABORTED
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.committed_revision == 0
+    assert loaded_head.pending_mutation_id is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+    assert not handler.staged_rows
+
+
+def test_fixed_clock_still_invalidates_stale_head() -> None:
+    clock = _ControlledClock(_NOW)
+    engine, repo, _handler = _build_engine(clock=clock)
+    mutation = _mutation_record(
+        mutation_id="mutation-fixed-clock",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    head = WorkspaceKnowledgeConfigurationHead(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        committed_revision=0,
+        pending_revision=1,
+        pending_mutation_id="mutation-fixed-clock",
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_head_if_absent(head)
+    fence_or_replay = engine._acquire_staged_cleanup_fence(
+        staged_mutation=mutation,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        now=clock.now(),
+    )
+    assert not isinstance(fence_or_replay, WorkspaceKnowledgeMutationExecutionResult)
+    assert fence_or_replay.mutation.updated_at > mutation.updated_at
+    assert fence_or_replay.head.updated_at > head.updated_at
+    stale_publish_head = head.model_copy(
+        update={
+            "committed_revision": 1,
+            "pending_revision": None,
+            "pending_mutation_id": None,
+            "last_committed_mutation_id": mutation.mutation_id,
+            "updated_at": _NOW,
+        }
+    )
+    assert not repo.replace_knowledge_configuration_head_if_match(
+        expected=head,
+        replacement=stale_publish_head,
+    )
+
+
+def test_generic_recovery_required_remains_recoverable() -> None:
+    engine, repo, handler = _build_engine(mutation_ids=["mutation-generic-recovery"])
+    recovery_required = _mutation_record(
+        mutation_id="mutation-generic-recovery",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code="configuration_mutation_stage_failed",
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(recovery_required)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-generic-recovery",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=recovery_required,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    recovery = engine.recover_workspace_knowledge_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED
+    assert recovery.mutation is not None
+    assert recovery.mutation.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+
+
+def test_normal_valid_rollback_under_cleanup_fence() -> None:
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    engine, repo, _handler = _build_engine(handler=handler)
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine)
+    assert exc.value.error_code == "configuration_mutation_stage_failed"
+    assert handler.cleanup_calls == 1
+    assert not handler.staged_rows
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.pending_mutation_id is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+
+
+def test_cleanup_failure_after_fence_leaves_fenced_pending_state() -> None:
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    handler.cleanup_returns = False
+    engine, repo, _handler = _build_engine(handler=handler)
+    prepared = _mutation_record(
+        mutation_id="mutation-cleanup-fail-fence",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-cleanup-fail-fence",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._handle_pre_publication_failure(
+            mutation=prepared,
+            handler=handler,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            operation=_OPERATION,
+            idempotency_key_hash=_SHA256,
+            error_code="configuration_mutation_stage_failed",
+        )
+    assert exc.value.error_code == "configuration_mutation_cleanup_failed"
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.pending_mutation_id is not None
+    assert loaded_head.committed_revision == 0
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert loaded.status is not WorkspaceKnowledgeMutationStatusV1.ABORTED
