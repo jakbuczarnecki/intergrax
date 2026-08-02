@@ -1211,7 +1211,7 @@ Required Slack scopes for knowledge reads are documented per credential route in
 
 LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors, implement Slack-specific synchronization or duplicate Slack response validation.
 
-**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **DONE** (HTTP discovery/create/sync, HMAC-signed opaque refs, crash-safe Vendor Knowledge delivery, authoritative sink validation, indexed Search/Ask proof). Next Slack-vertical LKW task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
+**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical LKW implementation task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
 
 ### 13.8 Google Workspace — binding three-mode example (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
@@ -1425,10 +1425,10 @@ Binding rules (same as §2.1): one provider integration is reused by all modes; 
 
 **Foundation task (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` — PLANNED):** typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
 
-**Foundation prerequisites (frozen):**
+**Foundation prerequisites (activation gates — not satisfied):**
 
 ```text
-GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 — ACCEPTED
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
 canonical Tenant Connection / credential-reference boundary available
 SecretsStore-owned credential persistence available
 runtime integration rehydration/resolution boundary available
@@ -1437,7 +1437,7 @@ Vendor Knowledge binding, registry and synchronization contracts available
 
 Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution are owned by `LKW-KNOWLEDGE-ACCESS-1` (and its platform prerequisites) — not by Google Foundation. Google Foundation must not introduce another tenant Connection catalog; must not introduce a Google-only credential database; must not put OAuth tokens into provider config records, `KnowledgeSourceBinding` or LKW state. If a required generic boundary remains unfinished, finish or reuse that boundary before production Google OAuth. Do not duplicate LKW application configuration inside the platform integration.
 
-**Post-Slack implementation gate (exact):** Google runtime work (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) must not start until the complete accepted Slack Knowledge vertical is satisfied — specifically `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **DONE**; remaining Slack-vertical tasks are **PLANNED** — Google implementation is not active.
+**Post-Slack implementation gate (exact):** Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-SLACK-KNOWLEDGE-PROOF-1` and remaining Slack-vertical tasks are **PLANNED** — Google implementation is not active.
 
 Credential routes (conceptually separated): individual-user OAuth; organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. For the first testable proof, individual-user authorization is the preferred product route. Exact OAuth scopes and Google SDK signatures are **not** frozen here — implementation tasks must verify against current official Google documentation. Secrets remain owned by the existing Connection/SecretsStore boundary. No access token, refresh token, client secret or service-account private key may enter `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, Remote Resource response, LKW Source, citation or provider cursor.
 
@@ -1495,7 +1495,7 @@ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1F-MAIL → GOOGLE-WORKSPACE-KNOWLEDGE-A
 GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1G-CHAT → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1G-CHAT
 ```
 
-Global placement: `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED** (complete Slack Knowledge vertical) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
+Global placement: Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (complete Slack Knowledge vertical — currently **PLANNED**) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
 
 **Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
 

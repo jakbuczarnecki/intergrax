@@ -71,9 +71,12 @@ DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 DONE:     VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
 DONE:     SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 DONE:     SLACK-KNOWLEDGE-FOUNDATION-1
-DONE:     LKW-CONVERSATION-CONTEXT-ARCH-1
-DONE:     LKW-SLACK-CONNECTED-SOURCE-1
+ACCEPTED:
+LKW-CONVERSATION-CONTEXT-ARCH-1
+READY_FOR_REVIEW:
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 IN_PROGRESS:
+LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
@@ -92,7 +95,6 @@ LKW-CONVERSATION-CONTEXT-1
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
-GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1
 GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1
@@ -123,7 +125,9 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
 LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
-LKW-SLACK-CONNECTED-SOURCE-1 — DONE
+
+IN_PROGRESS / CHANGES_REQUIRED:
+LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
 
 THEN:
 LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
@@ -1000,14 +1004,14 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `LKW-CONVERSATION-CONTEXT-1` (LKW application — next Slack-vertical task after completed connected-source vertical)
+**Next:** `LKW-CONVERSATION-CONTEXT-1` (LKW application — next Slack-vertical implementation task; `LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED**)
 
 **Planned execution order:**
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
 LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
-LKW-SLACK-CONNECTED-SOURCE-1 — DONE
+LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED
 LKW-CONVERSATION-CONTEXT-1 — NEXT
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
@@ -1270,7 +1274,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `DONE` (LKW application — HTTP discovery/create/sync, HMAC-signed opaque refs, crash-safe delivery, authoritative sink validation, Search/Ask proof)
+**Status:** `IN_PROGRESS / CHANGES_REQUIRED` (LKW application — `LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
 
 Application-only use of the completed platform foundation:
 
@@ -1382,11 +1386,11 @@ One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: googl
 
 **Status:** `PLANNED`
 
-**Prerequisites:**
+**Prerequisites (activation gates — not satisfied):**
 
 ```text
-GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 — ACCEPTED
-LKW-SLACK-KNOWLEDGE-PROOF-1 — ACCEPTED (complete Slack Knowledge vertical)
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
+Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge vertical — currently PLANNED)
 canonical Tenant Connection / credential-reference boundary available
 SecretsStore-owned credential persistence available
 runtime integration rehydration/resolution boundary available

@@ -29,7 +29,7 @@ Platform next (vendor knowledge):
   SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
 
 Slack Knowledge vertical next:
-  LKW-SLACK-CONNECTED-SOURCE-1 — DONE
+  LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED
   → LKW-CONVERSATION-CONTEXT-1
   → LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
   → SLACK-LIVE-CAPABILITY-1
@@ -177,7 +177,7 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `LKW-CONVERSATION-CONTEXT-ARCH-1` | LKW application (docs) | Provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards | **ACCEPTED** |
 | `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
 | `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations (bot token + bot-membership inventory for public/private/IM/MPIM) for any Intergrax application; no new Slack command or LKW feature implied yet | **DONE** |
-| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **DONE** |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **IN_PROGRESS / CHANGES_REQUIRED** (`REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted) |
 | `LKW-CONVERSATION-CONTEXT-1` | LKW application | Durable Conversation Context Bindings, workspace audience policy, memory partitioning and evidence guards | **PLANNED** |
 | `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` | LKW application | Slack channel/private-channel mention handling over the generic LKW context layer | **PLANNED** |
 | `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
@@ -205,7 +205,7 @@ LKW-SLACK-CONNECTED-SOURCE-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 ```
 
-`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace knowledge work (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**) follows `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
+`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace knowledge work (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**). `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
 **Available today:** The user can operate LKW through Slack DM and ask about knowledge already present in the selected personal workspace (temporary in-memory selection). Durable Conversation Context Bindings, observed-audience validation, durable personal selection, shared-channel runtime, shared thread memory, shared capability enforcement, shared source eligibility, mention/thread-continuation runtime, Slack history indexing and live Slack Ask are **not** implemented.
 
@@ -445,7 +445,7 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 8. converge at Hybrid Ask.
 ```
 
-The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **DONE** (HTTP discovery/create/sync, crash-safe delivery, signed opaque refs, Search/Ask proof). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next task remains `LKW-KNOWLEDGE-ACCESS-1`. Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED**. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
+The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next task remains `LKW-KNOWLEDGE-ACCESS-1`. Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 

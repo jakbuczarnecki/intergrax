@@ -242,7 +242,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_IN
 | **LKW-GOOGLE-WORKSPACE-PROOF-1** | First user-oriented Google Doc/Sheet/Calendar/Drive proof | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after first accepted Google LKW proof) |
 
-LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; LKW-CONVERSATION-CONTEXT-ARCH-1 **ACCEPTED**; LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
+LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED**; `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1` **PLANNED**; final proof joins `LKW-HYBRID-ASK-1`; Google Workspace runtime starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.
