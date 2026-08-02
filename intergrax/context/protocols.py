@@ -15,6 +15,7 @@ from intergrax.context.contracts import (
     ContextFragmentSource,
     ContextProviderContext,
 )
+from intergrax.context.session_history import SessionHistorySnapshot
 from intergrax.llm.messages import ChatMessage
 
 
@@ -97,3 +98,14 @@ class ContextEngine(Protocol):
     def engine_id(self) -> str: ...
 
     async def assemble(self, request: ContextAssemblyRequest) -> AssembledContext: ...
+
+
+@runtime_checkable
+class SessionHistoryProvider(Protocol):
+    """Loads structured session history for planning and collection."""
+
+    async def load_snapshot(
+        self,
+        request: ContextAssemblyRequest,
+        ctx: ContextProviderContext,
+    ) -> SessionHistorySnapshot | None: ...

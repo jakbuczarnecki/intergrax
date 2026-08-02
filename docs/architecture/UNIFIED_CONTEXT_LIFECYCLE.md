@@ -1,6 +1,6 @@
 # Unified Context Lifecycle
 
-**Status:** **CTX-UCL-2** ready for review (reference repository delivered); **CTX-UCL-1** accepted/closed through R1/R2
+**Status:** **CTX-UCL-3** ready for review; **CTX-UCL-2** accepted/closed through R1; **CTX-UCL-1** accepted/closed through R1/R2
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
@@ -929,8 +929,10 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight creation, repository delivery ownership | **Accepted / Closed** |
 | **CTX-UCL-ARCH-1-R4-R1** | ADR BOM regression guard | **Accepted / Closed** |
 | **CTX-UCL-1** | Contracts: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no Nexus integration; no LLM calls** | **ACCEPTED / CLOSED** through R1/R2 |
-| **CTX-UCL-2** | `OptimizationArtifactRepository` neutral Protocol; **`InMemoryOptimizationArtifactRepository`** reference adapter (process-local, non-durable, not a production fallback); atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; validated store; reservation release; invalidation and retirement; reference resolution; deterministic concurrency tests — **no Nexus wiring; no durable backend** | **READY_FOR_REVIEW** |
-| **CTX-UCL-3** | `ContextPlan` source/target requirements; internal-call budget classification where CE participates; deterministic `ArtifactLookupKey` inputs; no catalog lookup inside CE | Not started |
+| **CTX-UCL-2** | `OptimizationArtifactRepository` neutral Protocol; **`InMemoryOptimizationArtifactRepository`** reference adapter (process-local, non-durable, not a production fallback); atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; validated store; reservation release; invalidation and retirement; reference resolution; deterministic concurrency tests — **no Nexus wiring; no durable backend** | **ACCEPTED / CLOSED through R1** |
+| **CTX-UCL-2-R1** | Bounded wait correction, deterministic wake proofs, provider lifecycle correction | **ACCEPTED / CLOSED** |
+| **CTX-UCL-3** | `ContextPlan` contracts; structured `SessionHistorySnapshot`; deterministic CE-owned `ArtifactLookupKey` inputs; canonical session provider without pre-plan `[-N:]` slicing; internal-call budget classification; CE sole global budget — **no repository lookup; no artifact executor; no LLM** | **READY_FOR_REVIEW** |
+| **CTX-UCL-4** | Non-recursive `MessageSequenceArtifactExecutor`; `OptimizationExecutionGuard` enforcement | Not started / blocked pending **CTX-UCL-3** acceptance |
 | **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source; no executor on `REUSE_ARTIFACT` or `ALREADY_IN_PROGRESS`; receipt tied to parent operation and lookup key | Not started |
 | **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile; inject `OptimizationArtifactRepository`; use `InMemoryOptimizationArtifactRepository` in reference tests; sequential and concurrent single-flight proofs | Not started |
 | **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Not started |

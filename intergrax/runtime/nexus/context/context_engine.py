@@ -14,6 +14,11 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextProviderContext,
 )
+from intergrax.context.planner import ContextPlanner
+from intergrax.context.session_history import (
+    HandleSessionHistoryProvider,
+    SessionHistorySnapshot,
+)
 from intergrax.context.dedup import dedup_fragments_by_hash
 from intergrax.context.formatter import DefaultContextFormatter, merge_fragment_messages
 from intergrax.context.ranker import DefaultContextRanker
@@ -25,10 +30,9 @@ from intergrax.runtime.policy.context_assembly_policy import run_pre_context_pol
 
 logger = logging.getLogger("intergrax.context.engine")
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
-from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
+from intergrax.runtime.nexus.context.context_compiler import ContextCompiler, classify_candidates
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
 from intergrax.runtime.nexus.context.fragment_bridge import fragment_from_candidate
-from intergrax.runtime.nexus.context.context_compiler import classify_candidates
 
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
@@ -176,6 +180,23 @@ class DefaultNexusContextEngine:
         fragment_messages = formatter.format(ranked_fragments, request)
         messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
+        resolved_budget = self._compiler.resolve_global_input_budget(
+            runtime_config,
+            max_output_tokens=max_output_tokens,
+        )
+        session_history = await _load_session_history_snapshot(request, ctx)
+        optimization_policy = ctx.handles.get("context_optimization_policy")
+        planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
+        context_plan = planner.plan(
+            request,
+            messages_for_compile=messages_for_compile,
+            ranked_fragments=ranked_fragments,
+            session_history=session_history,
+            resolved_global_budget_tokens=resolved_budget,
+            optimization_policy=optimization_policy,
+            model_family=getattr(runtime_config.llm_adapter, "model", None),
+        )
+
         compile_result = compile_chat_messages(
             messages_for_compile,
             runtime_config,
@@ -187,7 +208,7 @@ class DefaultNexusContextEngine:
 
         candidates = classify_candidates(
             list(messages),
-            count_tokens=self._compiler._count_tokens,  # noqa: SLF001
+            count_tokens=self._compiler.count_tokens,
         )
         if ranked_fragments:
             fragments_included = tuple(ranked_fragments)
@@ -214,6 +235,7 @@ class DefaultNexusContextEngine:
             total_tokens=compile_result.total_tokens,
             budget_tokens=compile_result.budget_tokens,
             degradation_steps=compile_result.degradation_steps,
+            context_plan=context_plan,
         )
 
         validation = self._validator.validate(
@@ -244,6 +266,14 @@ class DefaultNexusContextEngine:
             )
 
         return assembled
+
+
+async def _load_session_history_snapshot(
+    request: ContextAssemblyRequest,
+    ctx: ContextProviderContext,
+) -> SessionHistorySnapshot | None:
+    provider = HandleSessionHistoryProvider()
+    return await provider.load_snapshot(request, ctx)
 
 
 def _event_bus_from_handles(ctx: ContextProviderContext) -> RuntimeEventBus | None:

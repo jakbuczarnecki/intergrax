@@ -1,5 +1,4 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
 
 """Tier-0 Context Engineering contracts and plugin catalog (Phase CE-1)."""
 
@@ -22,6 +21,18 @@ from intergrax.context.bootstrap import (
     materialize_context_plugin_registry,
     reset_context_catalog_bootstrap_for_tests,
 )
+from intergrax.context.planning import (
+    ContextArtifactLookupInputs,
+    ContextArtifactRequirement,
+    ContextBudgetClass,
+    ContextMinimumPreservationRequirements,
+    ContextPlan,
+    ContextSourceBudgetAllocation,
+    ContextSourceGroup,
+    artifact_lookup_key_kwargs_from_context_inputs,
+    budget_class_for_execution_scope,
+)
+from intergrax.context.planner import ContextPlanner
 from intergrax.context.plugin import ContextPlugin, register_context_plugin
 from intergrax.context.quality import (
     ContextChunkSignal,
@@ -36,6 +47,7 @@ from intergrax.context.protocols import (
     ContextRanker,
     ContextSourceProvider,
     ContextValidator,
+    SessionHistoryProvider,
 )
 from intergrax.context.registry import (
     ContextPluginRegistry,
@@ -43,6 +55,23 @@ from intergrax.context.registry import (
     get_context_plugin,
     iter_context_plugins,
     list_context_plugin_ids,
+)
+from intergrax.context.serialization import (
+    serialize_context_artifact_lookup_inputs_safe,
+    serialize_context_artifact_requirement_safe,
+    serialize_context_plan_safe,
+    serialize_context_source_group_safe,
+    serialize_session_history_snapshot_safe,
+)
+from intergrax.context.session_history import (
+    SESSION_HISTORY_SNAPSHOT_HANDLE,
+    HandleSessionHistoryProvider,
+    SessionHistoryMessage,
+    SessionHistorySnapshot,
+    build_session_history_snapshot,
+    fragments_from_session_history_snapshot,
+    session_history_message_from_chat_message,
+    session_history_message_to_chat_message,
 )
 
 __all__ = [
@@ -52,30 +81,54 @@ __all__ = [
     "ContextQualityThresholds",
     "AssembledContext",
     "BudgetAllocationResult",
+    "ContextArtifactLookupInputs",
+    "ContextArtifactRequirement",
     "ContextAssemblyProvenance",
     "ContextAssemblyRequest",
     "ContextAssemblyScope",
     "ContextBudgetAllocator",
+    "ContextBudgetClass",
     "ContextBudgetSnapshot",
     "ContextDecisionSnapshot",
     "ContextEngine",
     "ContextFormatter",
     "ContextFragment",
     "ContextFragmentSource",
+    "ContextMinimumPreservationRequirements",
+    "ContextPlan",
+    "ContextPlanner",
     "ContextPlugin",
     "ContextPluginRegistry",
     "ContextProviderContext",
     "ContextRanker",
+    "ContextSourceBudgetAllocation",
+    "ContextSourceGroup",
     "ContextSourceProvider",
     "ContextValidator",
+    "HandleSessionHistoryProvider",
+    "SESSION_HISTORY_SNAPSHOT_HANDLE",
+    "SessionHistoryMessage",
+    "SessionHistoryProvider",
+    "SessionHistorySnapshot",
+    "artifact_lookup_key_kwargs_from_context_inputs",
     "bootstrap_context_catalog",
+    "budget_class_for_execution_scope",
+    "build_session_history_snapshot",
     "clear_context_plugin_catalog",
     "content_hash_for_text",
     "evaluate_context_engineering",
+    "fragments_from_session_history_snapshot",
     "materialize_context_plugin_registry",
     "reset_context_catalog_bootstrap_for_tests",
     "get_context_plugin",
     "iter_context_plugins",
     "list_context_plugin_ids",
     "register_context_plugin",
+    "serialize_context_artifact_lookup_inputs_safe",
+    "serialize_context_artifact_requirement_safe",
+    "serialize_context_plan_safe",
+    "serialize_context_source_group_safe",
+    "serialize_session_history_snapshot_safe",
+    "session_history_message_from_chat_message",
+    "session_history_message_to_chat_message",
 ]

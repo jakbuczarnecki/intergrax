@@ -134,6 +134,27 @@ class ContextCompiler:
       self._count_tokens = count_tokens or _default_count_tokens
       self._margin_tokens = margin_tokens
 
+  def count_tokens(self, text: str) -> int:
+      """Public token estimator for CE planning and compilation."""
+      return self._count_tokens(text)
+
+  def resolve_global_input_budget(
+      self,
+      config: "RuntimeConfig",
+      *,
+      max_output_tokens: Optional[int] = None,
+  ) -> int:
+      """Canonical global model-input budget resolver."""
+      adapter = config.llm_adapter
+      budget_tokens = resolve_input_budget_tokens(
+          adapter,
+          max_output_tokens=max_output_tokens,
+          margin_tokens=self._margin_tokens,
+      )
+      if config.context_budget_policy is not None:
+          budget_tokens = min(budget_tokens, config.context_budget_policy.max_tokens_estimate)
+      return budget_tokens
+
   def compile(
       self,
       messages: List[ChatMessage],
@@ -142,7 +163,6 @@ class ContextCompiler:
       max_output_tokens: Optional[int] = None,
   ) -> ContextCompileResult:
       decision = _resolve_decision_profile(config)
-      adapter = config.llm_adapter
 
       working = list(messages)
       if not decision.include_session_history:
@@ -157,13 +177,10 @@ class ContextCompiler:
                   preserved.append(message)
           working = preserved
 
-      budget_tokens = resolve_input_budget_tokens(
-          adapter,
+      budget_tokens = self.resolve_global_input_budget(
+          config,
           max_output_tokens=max_output_tokens,
-          margin_tokens=self._margin_tokens,
       )
-      if config.context_budget_policy is not None:
-          budget_tokens = min(budget_tokens, config.context_budget_policy.max_tokens_estimate)
 
       candidates = classify_candidates(working, count_tokens=self._count_tokens)
       total_tokens = sum(candidate.token_estimate for candidate in candidates)

@@ -126,3 +126,34 @@ def test_assembled_context_frozen_shapes() -> None:
         ),
         BudgetAllocationResult,
     )
+
+
+def test_context_assembly_request_execution_scope_default_and_validation() -> None:
+    from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
+
+    request = ContextAssemblyRequest(
+        trace_id="trace-1",
+        run_id="run-1",
+        task_id="task-1",
+        tenant_id="tenant-1",
+        assembly_scope="acp_step",
+        objective="objective",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    assert request.execution_scope is ModelCallExecutionScope.PRIMARY_MODEL_CALL
+
+    with pytest.raises(ValueError, match="execution_scope"):
+        ContextAssemblyRequest(
+            trace_id="trace-1",
+            run_id="run-1",
+            task_id="task-1",
+            tenant_id="tenant-1",
+            assembly_scope="acp_step",
+            objective="objective",
+            decision_profile=ContextDecisionSnapshot(),
+            budget_policy=ContextBudgetSnapshot(),
+            assembly_options=TaskContextAssemblyOptions(),
+            execution_scope="primary_model_call",  # type: ignore[arg-type]
+        )

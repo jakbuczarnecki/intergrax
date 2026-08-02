@@ -1,6 +1,6 @@
 # Context Engineering
 
-**Status:** Canonical architecture (domain pair 1:1)  
+**Status:** Canonical architecture (domain pair 1:1); **CTX-UCL-3** ready for review (`ContextPlan`, structured session history, deterministic lookup inputs — no repository lookup or artifact execution)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/CONTEXT_ENGINEERING.md`](../plan/CONTEXT_ENGINEERING.md)  
 **Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §16  

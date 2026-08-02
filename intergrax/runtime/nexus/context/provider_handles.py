@@ -10,6 +10,9 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.task.task import Task
 
+SESSION_HISTORY_SNAPSHOT_METADATA_KEY = "session_history_snapshot"
+SESSION_CONTEXT_REVISION_METADATA_KEY = "session_context_revision_id"
+
 WORKSPACE_FILES_METADATA_KEY = "workspace_files"
 SESSION_HISTORY_MESSAGES_METADATA_KEY = "session_history_messages"
 RAG_CHUNKS_METADATA_KEY = "rag_chunks"
@@ -35,6 +38,68 @@ def session_history_messages_from_task(task: Task) -> list[Any]:
     if not isinstance(raw, list) or not raw:
         return []
     return list(raw)
+
+
+def try_build_session_history_snapshot(
+    task: Task,
+    messages: list[Any],
+) -> object | None:
+    """Build a canonical snapshot when stable scope and revision identifiers exist."""
+    revision_id = str(task.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY) or "").strip()
+    if not revision_id:
+        revision_id = _revision_id_from_messages(messages)
+    return try_build_session_history_snapshot_from_scope(
+        tenant_id=task.tenant_id,
+        context_scope_id=task.session_id,
+        revision_id=revision_id,
+        messages=messages,
+    )
+
+
+def try_build_session_history_snapshot_from_scope(
+    *,
+    tenant_id: str,
+    context_scope_id: str | None,
+    revision_id: str | None,
+    messages: list[Any],
+) -> object | None:
+    from intergrax.context.session_history import build_session_history_snapshot
+    from intergrax.llm.messages import ChatMessage
+
+    if not messages:
+        return None
+    scope = (context_scope_id or "").strip()
+    if not scope:
+        return None
+    resolved_revision = (revision_id or "").strip() or _revision_id_from_messages(messages)
+    typed_messages: list[ChatMessage] = []
+    for item in messages:
+        if isinstance(item, ChatMessage):
+            typed_messages.append(item)
+        else:
+            return None
+    try:
+        return build_session_history_snapshot(
+            tenant_id=tenant_id,
+            context_scope_id=scope,
+            revision_id=resolved_revision,
+            messages=typed_messages,
+        )
+    except ValueError:
+        return None
+
+
+def _revision_id_from_messages(messages: list[Any]) -> str:
+    from intergrax.llm.messages import ChatMessage
+
+    parts: list[str] = []
+    for message in messages:
+        if isinstance(message, ChatMessage):
+            parts.append(message.entry_id)
+    import hashlib
+
+    digest = hashlib.sha256(":".join(parts).encode("utf-8")).hexdigest()
+    return f"rev-{digest[:16]}"
 
 
 def _list_from_task_metadata(task: Task, key: str) -> list[Any]:
@@ -77,6 +142,7 @@ def build_graph_provider_handles(
         TOOL_OUTPUT_BLOCKS_HANDLE,
         WEBSEARCH_BLOCKS_HANDLE,
     )
+    from intergrax.context.session_history import SESSION_HISTORY_SNAPSHOT_HANDLE
 
     handles: dict[str, Any] = {
         "runtime_config": runtime_config,
@@ -100,7 +166,10 @@ def build_graph_provider_handles(
     history_messages = session_history_messages
     if history_messages is None:
         history_messages = session_history_messages_from_task(task)
-    if history_messages:
+    snapshot = try_build_session_history_snapshot(task, list(history_messages or []))
+    if snapshot is not None:
+        handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
+    elif history_messages:
         handles[SESSION_HISTORY_MESSAGES_HANDLE] = list(history_messages)
     rag_chunks = _list_from_task_metadata(task, RAG_CHUNKS_METADATA_KEY)
     if rag_chunks:
