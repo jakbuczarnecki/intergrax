@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from collections.abc import Callable, Mapping
@@ -38,6 +39,18 @@ _MEDIA_TYPE = "application/vnd.intergrax.message-sequence-summary+json"
 _ENCODING = "utf-8"
 _PAYLOAD_SCHEMA_VERSION = "message_sequence_artifact.v1"
 _PROMPT_SCHEMA_VERSION = "message_sequence_prompt.v1"
+_REQUIRED_VALIDATION_METADATA_KEYS = frozenset(
+  {
+    "parent_operation_id",
+    "internal_operation_id",
+    "artifact_lookup_key_hash",
+    "strategy_id",
+    "source_ref_count",
+    "input_tokens",
+    "output_tokens",
+    "target_tokens",
+  }
+)
 
 _SYSTEM_INSTRUCTION = (
     "You are an internal context summarization component. "
@@ -54,6 +67,8 @@ class MessageSequenceArtifactExecutionReason(StrEnum):
     LOOKUP_IDENTITY_MISMATCH = "lookup_identity_mismatch"
     POLICY_DISALLOWED = "message_sequence_policy_disallowed"
     SOURCE_SEQUENCE_MISMATCH = "source_sequence_mismatch"
+    SOURCE_CONTENT_IDENTITY_MISMATCH = "source_content_identity_mismatch"
+    TOKEN_COUNT_FAILED = "message_sequence_token_count_failed"
     INTERNAL_PREFLIGHT_FAILED = "internal_optimization_preflight_failed"
     INTERNAL_MODEL_CALL_FAILED = "internal_optimization_model_call_failed"
     INVALID_MODEL_OUTPUT = "invalid_message_sequence_model_output"
@@ -90,6 +105,14 @@ def _require_timezone_aware(value: datetime, field_name: str) -> datetime:
   return value
 
 
+def _require_strict_int(value: object, field_name: str, *, minimum: int | None = None) -> int:
+  if isinstance(value, bool) or not isinstance(value, int):
+    raise ValueError(f"{field_name} must be int")
+  if minimum is not None and value < minimum:
+    raise ValueError(f"{field_name} must be >= {minimum}")
+  return value
+
+
 def _require_finite_quality_score(score: float) -> float:
   if isinstance(score, bool) or not isinstance(score, (int, float)):
     raise ValueError("quality score must be a finite float")
@@ -101,6 +124,27 @@ def _require_finite_quality_score(score: float) -> float:
 
 
 @dataclass(frozen=True, slots=True)
+class MessageSequenceArtifactSourceGroupProof:
+  source_refs: tuple[str, ...]
+  source_content_hash: str
+
+  def __post_init__(self) -> None:
+    if not isinstance(self.source_refs, tuple) or not self.source_refs:
+      raise ValueError("source_refs must be a non-empty tuple")
+    seen_refs: set[str] = set()
+    for index, source_ref in enumerate(self.source_refs):
+      if not isinstance(source_ref, str):
+        raise TypeError(f"source_refs[{index}] must be str")
+      stripped = source_ref.strip()
+      if not stripped:
+        raise ValueError(f"source_refs[{index}] must be non-empty")
+      if source_ref in seen_refs:
+        raise ValueError("source_refs must not contain duplicates")
+      seen_refs.add(source_ref)
+    _require_non_empty_str(self.source_content_hash, "source_content_hash")
+
+
+@dataclass(frozen=True, slots=True)
 class MessageSequenceArtifactExecutionRequest:
   decision: ContextOptimizationDecision
   coordination: ArtifactCreationCoordinationResult
@@ -108,6 +152,7 @@ class MessageSequenceArtifactExecutionRequest:
   policy: ContextOptimizationPolicy
   parent_guard: OptimizationExecutionGuard
   source_messages: tuple[SessionHistoryMessage, ...] = field(repr=False)
+  source_group_proofs: tuple[MessageSequenceArtifactSourceGroupProof, ...] = field(repr=False)
 
   def __post_init__(self) -> None:
     if not isinstance(self.decision, ContextOptimizationDecision):
@@ -129,6 +174,26 @@ class MessageSequenceArtifactExecutionRequest:
       if message.message_id in seen_ids:
         raise ValueError("source_messages message IDs must not contain duplicates")
       seen_ids.add(message.message_id)
+    if (
+      not isinstance(self.source_group_proofs, tuple)
+      or not self.source_group_proofs
+    ):
+      raise ValueError("source_group_proofs must be a non-empty tuple")
+    seen_proof_refs: set[str] = set()
+    for index, proof in enumerate(self.source_group_proofs):
+      if not isinstance(proof, MessageSequenceArtifactSourceGroupProof):
+        raise TypeError(f"source_group_proofs[{index}] must be MessageSequenceArtifactSourceGroupProof")
+      for source_ref in proof.source_refs:
+        if source_ref in seen_proof_refs:
+          raise ValueError("source ref cannot appear in multiple group proofs")
+        seen_proof_refs.add(source_ref)
+    flattened_source_refs = tuple(
+      source_ref
+      for proof in self.source_group_proofs
+      for source_ref in proof.source_refs
+    )
+    if flattened_source_refs != tuple(message.message_id for message in self.source_messages):
+      raise ValueError("source_group_proofs refs must match source_messages")
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +241,60 @@ class MessageSequenceArtifactExecutionReceipt:
   target_tokens: int
   created_at: datetime
 
+  def __post_init__(self) -> None:
+    object.__setattr__(self, "receipt_id", _require_non_empty_str(self.receipt_id, "receipt_id"))
+    object.__setattr__(
+      self,
+      "parent_operation_id",
+      _require_non_empty_str(self.parent_operation_id, "parent_operation_id"),
+    )
+    object.__setattr__(
+      self,
+      "internal_operation_id",
+      _require_non_empty_str(self.internal_operation_id, "internal_operation_id"),
+    )
+    object.__setattr__(
+      self,
+      "artifact_lookup_key_hash",
+      _require_non_empty_str(self.artifact_lookup_key_hash, "artifact_lookup_key_hash"),
+    )
+    object.__setattr__(self, "strategy_id", _require_non_empty_str(self.strategy_id, "strategy_id"))
+    object.__setattr__(
+      self,
+      "strategy_version",
+      _require_non_empty_str(self.strategy_version, "strategy_version"),
+    )
+    object.__setattr__(
+      self,
+      "source_content_hash",
+      _require_non_empty_str(self.source_content_hash, "source_content_hash"),
+    )
+    if self.internal_operation_id == self.parent_operation_id:
+      raise ValueError("internal_operation_id must differ from parent_operation_id")
+    object.__setattr__(
+      self,
+      "source_ref_count",
+      _require_strict_int(self.source_ref_count, "source_ref_count", minimum=1),
+    )
+    object.__setattr__(
+      self,
+      "input_tokens",
+      _require_strict_int(self.input_tokens, "input_tokens", minimum=0),
+    )
+    object.__setattr__(
+      self,
+      "output_tokens",
+      _require_strict_int(self.output_tokens, "output_tokens", minimum=0),
+    )
+    object.__setattr__(
+      self,
+      "target_tokens",
+      _require_strict_int(self.target_tokens, "target_tokens", minimum=1),
+    )
+    if self.output_tokens > self.target_tokens:
+      raise ValueError("output_tokens must not exceed target_tokens")
+    _require_timezone_aware(self.created_at, "created_at")
+
 
 @dataclass(frozen=True, slots=True)
 class MessageSequenceArtifactExecutionResult:
@@ -213,12 +332,31 @@ class MessageSequenceArtifactExecutionResult:
     if self.internal_guard.operation_id != internal_id:
       raise ValueError("internal_guard.operation_id must match receipt.internal_operation_id")
     metadata = self.validation.safe_metadata
+    if lookup_hash not in self.internal_guard.active_artifact_lookup_key_hashes:
+      raise ValueError("internal_guard must contain receipt artifact_lookup_key_hash")
+    strategy_id = self.receipt.strategy_id
+    if strategy_id not in self.internal_guard.active_strategy_ids:
+      raise ValueError("internal_guard must contain receipt strategy_id")
+    if self.validation.validated_at != self.receipt.created_at:
+      raise ValueError("validation.validated_at must equal receipt.created_at")
+    if set(metadata) != _REQUIRED_VALIDATION_METADATA_KEYS:
+      raise ValueError("validation.safe_metadata keys must match required set exactly")
     if metadata.get("parent_operation_id") != parent_id:
       raise ValueError("validation.safe_metadata parent_operation_id mismatch")
     if metadata.get("internal_operation_id") != internal_id:
       raise ValueError("validation.safe_metadata internal_operation_id mismatch")
     if metadata.get("artifact_lookup_key_hash") != lookup_hash:
       raise ValueError("validation.safe_metadata artifact_lookup_key_hash mismatch")
+    if metadata.get("strategy_id") != strategy_id:
+      raise ValueError("validation.safe_metadata strategy_id mismatch")
+    if metadata.get("source_ref_count") != self.receipt.source_ref_count:
+      raise ValueError("validation.safe_metadata source_ref_count mismatch")
+    if metadata.get("input_tokens") != self.receipt.input_tokens:
+      raise ValueError("validation.safe_metadata input_tokens mismatch")
+    if metadata.get("output_tokens") != self.receipt.output_tokens:
+      raise ValueError("validation.safe_metadata output_tokens mismatch")
+    if metadata.get("target_tokens") != self.receipt.target_tokens:
+      raise ValueError("validation.safe_metadata target_tokens mismatch")
 
 
 def _build_user_envelope(
@@ -303,6 +441,79 @@ def _build_validation_metadata(
     "output_tokens": output_tokens,
     "target_tokens": target_tokens,
   }
+
+
+def _safe_count_tokens(
+  counter: Callable[[str], int],
+  text: str,
+) -> int:
+  try:
+    value = counter(text)
+  except Exception:
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.TOKEN_COUNT_FAILED.value
+    ) from None
+
+  if isinstance(value, bool) or not isinstance(value, int):
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.TOKEN_COUNT_FAILED.value
+    )
+
+  if value < 0:
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.TOKEN_COUNT_FAILED.value
+    )
+
+  return value
+
+
+def _validate_source_content_identity(
+  *,
+  source_messages: tuple[SessionHistoryMessage, ...],
+  lookup_key: ArtifactLookupKey,
+  source_group_proofs: tuple[MessageSequenceArtifactSourceGroupProof, ...],
+) -> None:
+  flattened_source_refs = tuple(
+    source_ref
+    for proof in source_group_proofs
+    for source_ref in proof.source_refs
+  )
+  message_ids = tuple(message.message_id for message in source_messages)
+  if flattened_source_refs != message_ids:
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.SOURCE_SEQUENCE_MISMATCH.value
+    )
+  if flattened_source_refs != lookup_key.source_refs:
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.SOURCE_SEQUENCE_MISMATCH.value
+    )
+
+  index = 0
+  for proof in source_group_proofs:
+    group_size = len(proof.source_refs)
+    group_messages = source_messages[index : index + group_size]
+    if tuple(message.message_id for message in group_messages) != proof.source_refs:
+      raise MessageSequenceArtifactExecutionError(
+        MessageSequenceArtifactExecutionReason.SOURCE_CONTENT_IDENTITY_MISMATCH.value
+      )
+    group_payload = "|".join(
+      f"{message.message_id}:{message.content_hash}"
+      for message in group_messages
+    )
+    expected_group_hash = hashlib.sha256(group_payload.encode("utf-8")).hexdigest()
+    if expected_group_hash != proof.source_content_hash:
+      raise MessageSequenceArtifactExecutionError(
+        MessageSequenceArtifactExecutionReason.SOURCE_CONTENT_IDENTITY_MISMATCH.value
+      )
+    index += group_size
+
+  expected_source_content_hash = hashlib.sha256(
+    "|".join(proof.source_content_hash for proof in source_group_proofs).encode("utf-8")
+  ).hexdigest()
+  if expected_source_content_hash != lookup_key.source_content_hash:
+    raise MessageSequenceArtifactExecutionError(
+      MessageSequenceArtifactExecutionReason.SOURCE_CONTENT_IDENTITY_MISMATCH.value
+    )
 
 
 class MessageSequenceArtifactExecutor:
@@ -454,6 +665,12 @@ class MessageSequenceArtifactExecutor:
         ContextOptimizationReasonCode.OPTIMIZATION_RECURSION_BLOCKED.value
       )
 
+    _validate_source_content_identity(
+      source_messages=source_messages,
+      lookup_key=lookup_key,
+      source_group_proofs=request.source_group_proofs,
+    )
+
     internal_operation_id = _require_non_empty_str(
       self._operation_id_factory(),
       "internal_operation_id",
@@ -493,8 +710,6 @@ class MessageSequenceArtifactExecutor:
 
     try:
       self._preflight(internal_call)
-    except MessageSequenceArtifactExecutionError:
-      raise
     except Exception:
       raise MessageSequenceArtifactExecutionError(
         MessageSequenceArtifactExecutionReason.INTERNAL_PREFLIGHT_FAILED.value
@@ -502,8 +717,6 @@ class MessageSequenceArtifactExecutor:
 
     try:
       adapter_response = self._invoke_model(internal_call)
-    except MessageSequenceArtifactExecutionError:
-      raise
     except Exception:
       raise MessageSequenceArtifactExecutionError(
         MessageSequenceArtifactExecutionReason.INTERNAL_MODEL_CALL_FAILED.value
@@ -531,11 +744,7 @@ class MessageSequenceArtifactExecutor:
         MessageSequenceArtifactExecutionReason.INVALID_MODEL_OUTPUT.value
       )
 
-    output_tokens = self._count_tokens(summary)
-    if not isinstance(output_tokens, int) or output_tokens < 0:
-      raise MessageSequenceArtifactExecutionError(
-        MessageSequenceArtifactExecutionReason.INVALID_MODEL_OUTPUT.value
-      )
+    output_tokens = _safe_count_tokens(self._count_tokens, summary)
     if output_tokens > target_tokens:
       raise MessageSequenceArtifactExecutionError(
         MessageSequenceArtifactExecutionReason.OUTPUT_EXCEEDS_TARGET.value
@@ -550,8 +759,6 @@ class MessageSequenceArtifactExecutor:
       try:
         quality_score = self._quality_evaluator(source_messages, summary)
         quality_score = _require_finite_quality_score(quality_score)
-      except MessageSequenceArtifactExecutionError:
-        raise
       except Exception:
         raise MessageSequenceArtifactExecutionError(
           MessageSequenceArtifactExecutionReason.QUALITY_VALIDATION_FAILED.value
@@ -564,11 +771,10 @@ class MessageSequenceArtifactExecutor:
     payload = _build_payload(lookup_key=lookup_key, summary=summary)
     artifact_content_hash = compute_artifact_content_hash(payload)
 
-    input_tokens = sum(self._count_tokens(message.content or "") for message in internal_messages)
-    if not isinstance(input_tokens, int) or input_tokens < 0:
-      raise MessageSequenceArtifactExecutionError(
-        MessageSequenceArtifactExecutionReason.INVALID_MODEL_OUTPUT.value
-      )
+    input_tokens = sum(
+      _safe_count_tokens(self._count_tokens, message.content or "")
+      for message in internal_messages
+    )
 
     created_at = _require_timezone_aware(self._clock(), "created_at")
     receipt_id = _require_non_empty_str(self._receipt_id_factory(), "receipt_id")
