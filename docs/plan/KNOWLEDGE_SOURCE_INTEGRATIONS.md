@@ -70,6 +70,9 @@ DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
 DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 DONE:     VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
 DONE:     SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+DONE:     SLACK-KNOWLEDGE-FOUNDATION-1
+READY_FOR_REVIEW:
+LKW-CONVERSATION-CONTEXT-ARCH-1
 IN_PROGRESS:
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
@@ -84,9 +87,10 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1
-NEXT:
-LKW-SLACK-CONNECTED-SOURCE-1
 PLANNED:
+LKW-SLACK-CONNECTED-SOURCE-1
+LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -95,7 +99,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). LKW bridge and live capability remain **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` freezes provider-neutral personal/shared Conversation Context Binding and audience isolation in the LKW application domain — prerequisite before shared-channel runtime and connected-source work. LKW bridge, conversation context implementation and live capability remain **not** implemented.
 
 **Execution order (frozen):**
 
@@ -112,8 +116,13 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
 
-NEXT:
+CURRENT ARCHITECTURE PREREQUISITE:
+LKW-CONVERSATION-CONTEXT-ARCH-1
+
+THEN:
 LKW-SLACK-CONNECTED-SOURCE-1
+LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 
@@ -963,13 +972,16 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `LKW-SLACK-CONNECTED-SOURCE-1` (LKW application — depends on completed platform foundation)
+**Next:** `LKW-CONVERSATION-CONTEXT-ARCH-1` architecture review, then `LKW-SLACK-CONNECTED-SOURCE-1` (LKW application — depends on completed platform foundation and accepted conversation context architecture)
 
 **Planned execution order:**
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
-LKW-SLACK-CONNECTED-SOURCE-1 — NEXT
+LKW-CONVERSATION-CONTEXT-ARCH-1 — READY_FOR_REVIEW
+LKW-SLACK-CONNECTED-SOURCE-1
+LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -1022,7 +1034,7 @@ Recommended implementation/proof order inside the Microsoft scope:
 5. calendar   ← after complete Slack Knowledge user vertical
 ```
 
-The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-SLACK-CONNECTED-SOURCE-1` → `SLACK-LIVE-CAPABILITY-1` → `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
+The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → `LKW-SLACK-CONNECTED-SOURCE-1` → `LKW-CONVERSATION-CONTEXT-1` → `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` → `SLACK-LIVE-CAPABILITY-1` → `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
@@ -1230,7 +1242,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `PLANNED` (LKW application — depends on `SLACK-KNOWLEDGE-FOUNDATION-1`)
+**Status:** `PLANNED` (LKW application — depends on `SLACK-KNOWLEDGE-FOUNDATION-1` and accepted `LKW-CONVERSATION-CONTEXT-ARCH-1`)
 
 Application-only use of the completed platform foundation:
 
@@ -1246,6 +1258,20 @@ workspace Connection
 No new Slack client or provider adapter in LKW.
 
 **User-facing meaning after completion:** The user can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history.
+
+Connecting a Slack conversation as an Indexed Source does **not** activate the bot in that channel. Activating the bot in a channel does **not** automatically index channel history.
+
+#### `LKW-CONVERSATION-CONTEXT-1`
+
+**Status:** `PLANNED` (LKW application — LKW-wide, not platform Slack ownership)
+
+Provider-neutral durable Conversation Context Bindings, workspace audience policy, memory partitioning and evidence guards. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+
+#### `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`
+
+**Status:** `PLANNED` (LKW application — first provider adapter over generic context layer)
+
+Slack channel/private-channel mention handling (`MENTION_ONLY` activation) over `LKW-CONVERSATION-CONTEXT-1`. Slack-specific event terms (`app_mention`, `message.channels`, etc.) remain in the adapter — not in the LKW core contract.
 
 #### `SLACK-LIVE-CAPABILITY-1`
 
@@ -1279,7 +1305,7 @@ approved user selects a Slack conversation
 → citations identify safe Slack message/thread provenance
 ```
 
-**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources.
+**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources — with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ---
 

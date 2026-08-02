@@ -1155,6 +1155,17 @@ application database/store       LKW Knowledge Intake
 12. Live Slack results remain ephemeral unless an explicit promotion/materialization workflow is executed.
 13. Indexed permission and live-access authorization are separate grants.
 14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
+15. **Conversation Context Binding** (LKW application domain) controls where and under which audience the assistant may respond. It is independent from Indexed Source Binding and Live Access Binding. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+
+**Independent grants (provider-neutral):**
+
+```text
+Conversation Context Binding  → where and for whom LKW responds
+Indexed Source Binding        → durable knowledge ingestion
+Live Access Binding           → request-time provider reads
+```
+
+None implies another. Enabling a bot in a channel does not index channel history. Indexing channel history does not enable bot responses. Bot responses do not imply live history reads.
 
 **Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
 

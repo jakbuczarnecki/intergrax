@@ -39,7 +39,7 @@ LKW lets a user:
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; Slack connected source and knowledge proof (`LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1`); live Slack platform proof |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **READY_FOR_REVIEW**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack connected source and knowledge proof (`LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-SLACK-KNOWLEDGE-PROOF-1`); live Slack platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -861,6 +861,26 @@ whether we are ready to deploy.
 Slack must **not:** own knowledge configuration; store provider credentials; instantiate vendor clients; call Jira, Microsoft Graph, Power BI or Databricks directly; own RAG; own tool selection; own operation state; become required for LKW operation.
 
 ---
+
+## 10.1 Conversational audience boundaries and evidence scope
+
+Conversation Context Binding, Indexed Source Binding and Live Access Binding are **independent grants**. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
+
+**Primary invariant:**
+
+```text
+The audience of the outbound answer determines the maximum knowledge scope.
+```
+
+For a **SHARED** conversation, indexed and live evidence must satisfy the bound shared workspace and shared-audience approval. Caller private permissions, personal workspace selection, personal memory and private connector grants must **never** expand the evidence boundary.
+
+**Before model invocation (shared conversation):** every evidence item must match `binding.tenant_id`, `binding.workspace_id`, be from an active source approved for `SHARED` consumption, and must not originate from a `PERSONAL` memory partition.
+
+**Before outbound delivery:** validate response conversation/thread, citation workspace membership, and absence of personal-memory or personal-workspace evidence.
+
+Hybrid Ask and the Knowledge Query Orchestrator must reject mixed personal/shared evidence deterministically — not through prompt instructions alone.
+
+Connecting a Slack conversation as an Indexed Source does not activate the bot in that channel. Activating the bot in a channel does not automatically index channel history.
 
 ## 11. Security and governance
 

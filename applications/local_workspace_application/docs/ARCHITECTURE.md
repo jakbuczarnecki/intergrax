@@ -607,7 +607,19 @@ Slack Indexed Source    does not imply  Slack Live Access Binding
 
 LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors or implement Slack-specific synchronization. Application-local Slack clients and synchronization are prohibited.
 
-A Slack command must behave the same regardless of where storage is located. Binding product detail for Slack: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md). Binding intake contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Binding knowledge access: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). This section remains canonical for tenancy/storage and Knowledge Intake boundaries.
+A Slack command must behave the same regardless of where storage is located. Binding product detail for Slack: [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md). Binding intake contract: [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md). Binding knowledge access: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md). Binding conversation context: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md). This section remains canonical for tenancy/storage and Knowledge Intake boundaries.
+
+### Conversation Context Binding and memory partitions (LKW-owned)
+
+**Conversation Context Binding** is an LKW application-domain durable product relationship — not a `slack_companion`, `SlackConversationChannelIntegration`, or `vendor_knowledge` concern.
+
+It binds: one tenant + one conversational frontend connection/installation + one external conversation + one audience mode (`PERSONAL` | `SHARED`) + one LKW workspace + one activation policy + one context/memory policy.
+
+**Persistence owner:** LKW application domain (future `LKW-CONVERSATION-CONTEXT-1`). Provider adapters map external conversation addresses into opaque refs; they do not choose workspaces, merge memory partitions, or authorize evidence.
+
+**Memory partitions** are separate for `PERSONAL` and `SHARED` contexts. `PERSONAL` context cannot be resolved from a `SHARED` conversation. No automatic copying between partitions.
+
+Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 **Domain / application services:**
 
