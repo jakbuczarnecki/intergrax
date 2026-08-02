@@ -77,13 +77,17 @@ def connection_from_document(document: DocumentRecord) -> TenantConnection:
             "connection document row key does not match connection_ref"
         )
 
-    config_raw = data.get("validated_secret_free_config")
-    if isinstance(config_raw, dict):
-        _assert_secret_free_config(config_raw, field_name="validated_secret_free_config")
-
     try:
+        config_raw = data.get("validated_secret_free_config")
+        if isinstance(config_raw, dict):
+            _assert_secret_free_config(
+                config_raw,
+                field_name="validated_secret_free_config",
+            )
         return TenantConnection.model_validate(data)
-    except ValidationError as exc:
+    except TenantConnectionCorruptRecord:
+        raise
+    except (ValidationError, ValueError, TypeError) as exc:
         raise TenantConnectionCorruptRecord(
             "connection document payload is invalid"
         ) from exc

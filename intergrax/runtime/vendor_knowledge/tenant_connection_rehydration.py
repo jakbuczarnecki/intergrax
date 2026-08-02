@@ -148,10 +148,11 @@ class TenantConnectionRehydrator:
             secret = self._secrets_store.get_secret(credential_ref)
         except Exception:
             return None
-        cleaned = secret.strip()
-        if not cleaned:
+        if not isinstance(secret, str):
             return None
-        return cleaned
+        if not secret.strip():
+            return None
+        return secret
 
     def _construct_integration(
         self,

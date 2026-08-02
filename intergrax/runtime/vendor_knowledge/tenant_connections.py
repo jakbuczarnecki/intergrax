@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 from urllib.parse import urlparse
@@ -130,6 +130,8 @@ def _assert_secret_free_config(
 
 def _assert_utc_aware(value: datetime, *, field_name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field_name} must be a timezone-aware UTC datetime")
+    if value.utcoffset() != timedelta(0):
         raise ValueError(f"{field_name} must be a timezone-aware UTC datetime")
     return value
 

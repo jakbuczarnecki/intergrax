@@ -197,20 +197,18 @@ def test_skipped_configuration_version_conflict() -> None:
 
 @pytest.mark.unit
 def test_concurrent_replacement_conflict() -> None:
-    store = ConditionalInMemoryDocumentStore()
+    class _StaleCasStore(ConditionalInMemoryDocumentStore):
+        def replace_if_match(
+            self,
+            *,
+            expected: DocumentRecord,
+            replacement: DocumentRecord,
+        ) -> bool:
+            return False
+
+    store = _StaleCasStore()
     repo = DocumentStoreTenantConnectionRepository(store)
     repo.create(_connection())
-    partition = connection_partition_key("tenant-1")
-    row = connection_row_key("conn-1")
-    tampered = store.get(partition, row)
-    assert tampered is not None
-    store.put(
-        DocumentRecord(
-            partition_key=partition,
-            row_key=row,
-            data={**dict(tampered.data), "safe_display_name": "tampered"},
-        )
-    )
     with pytest.raises(TenantConnectionVersionConflict):
         repo.update(
             _connection(configuration_version=2, updated_offset=5),
@@ -305,6 +303,38 @@ def test_invalid_payload_rejected() -> None:
 def test_secret_bearing_nested_config_rejected() -> None:
     with pytest.raises(ValueError, match="forbidden"):
         _connection(config={"nested": {"api_key": "leak"}})
+
+
+@pytest.mark.unit
+def test_corrupt_durable_secret_config_normalized() -> None:
+    store = ConditionalInMemoryDocumentStore()
+    secret_value = "must-not-escape"
+    store.put(
+        DocumentRecord(
+            partition_key="vendor_knowledge_connections:tenant-1",
+            row_key="connection:conn-1",
+            data={
+                "connection_ref": "conn-1",
+                "tenant_id": "tenant-1",
+                "provider_id": "example",
+                "integration_kind": "issue_tracker",
+                "safe_display_name": "Example connection",
+                "administrative_status": "active",
+                "credential_ref": "cred-1",
+                "validated_secret_free_config": {
+                    "nested": {"api_key": secret_value},
+                },
+                "configuration_version": 1,
+                "created_at": _now(),
+                "updated_at": _now(),
+            },
+        )
+    )
+    repo = DocumentStoreTenantConnectionRepository(store)
+    with pytest.raises(TenantConnectionCorruptRecord) as exc_info:
+        repo.get(tenant_id="tenant-1", connection_ref="conn-1")
+    assert secret_value not in str(exc_info.value)
+    assert exc_info.type is TenantConnectionCorruptRecord
 
 
 @pytest.mark.unit

@@ -120,6 +120,27 @@ def test_naive_timestamps_rejected() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "offset",
+    [
+        timezone(timedelta(hours=2)),
+        timezone(timedelta(hours=-5)),
+    ],
+)
+def test_non_utc_timestamps_rejected(offset: timezone) -> None:
+    aware = datetime(2026, 8, 2, 12, 0, 0, tzinfo=offset)
+    with pytest.raises(ValidationError):
+        _connection(created_at=aware, updated_at=aware)
+
+
+@pytest.mark.unit
+def test_utc_plus_zero_offset_accepted() -> None:
+    utc = datetime(2026, 8, 2, 12, 0, 0, tzinfo=timezone.utc)
+    connection = _connection(created_at=utc, updated_at=utc)
+    assert connection.created_at.utcoffset() == timedelta(0)
+
+
+@pytest.mark.unit
 def test_configuration_version_below_one_rejected() -> None:
     with pytest.raises(ValidationError):
         _connection(configuration_version=0)
@@ -443,6 +464,34 @@ def test_restart_rehydration_proof() -> None:
     )
     assert document is not None
     assert "secret-value" not in str(document.data)
+
+
+@pytest.mark.unit
+def test_rehydration_opaque_credential_preserved() -> None:
+    opaque = "  opaque-secret\n"
+    store = ConditionalInMemoryDocumentStore()
+    repo = DocumentStoreTenantConnectionRepository(store)
+    repo.create(_connection(credential_ref="cred-path"))
+    secrets = _RecordingSecretsStore(secret=opaque)
+    factory = _CountingFactory()
+    rehydrator = TenantConnectionRehydrator(
+        repository=repo,
+        secrets_store=secrets,
+        integration_factory=factory,
+        connection_registry=KnowledgeConnectionRegistry(),
+    )
+    results = rehydrator.rehydrate_tenant(tenant_id="tenant-1")
+    assert results[0].status is TenantConnectionRehydrationStatus.REGISTERED
+    assert len(factory.calls) == 1
+    assert factory.calls[0]["credential"] == opaque
+    dumped = results[0].model_dump()
+    assert opaque not in str(dumped)
+    document = store.get(
+        "vendor_knowledge_connections:tenant-1",
+        "connection:conn-1",
+    )
+    assert document is not None
+    assert opaque not in str(document.data)
 
 
 @pytest.mark.unit
