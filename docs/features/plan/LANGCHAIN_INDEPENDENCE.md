@@ -6,11 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A ready for review; all other tasks **PLANNED** (implementation not started)
+**Status:** LCI-0A **APPROVED**; LCI-0B **READY_FOR_REVIEW**; LCI-0C **PLANNED**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Next task after review:** LCI-0B — LANGCHAIN ARCHITECTURE BOUNDARY GUARD
+**Current task:** LCI-0B
+**Next task after acceptance:** LCI-0C — LANGCHAIN DEPENDENCY RANGE HARDENING
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -43,7 +44,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Establish canonical architecture, evidence-backed inventory, and migration roadmap. |
 | **Owning domain plan** | Feature plan + docs/plan/RAG.md anchor |
 | **Dependencies** | None |
@@ -59,13 +60,13 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Prevent new LangChain leaks into forbidden zones; grandfather existing violations. |
 | **Owning domain plan** | docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-0A accepted |
-| **Exact scope** | check_langchain_boundary.py, CI wiring, grandfather register from inventory |
+| **Exact scope** | `check_langchain_boundary.py`, CI wiring, grandfather register from inventory |
 | **Explicit out of scope** | Fixing existing leaks |
-| **Acceptance criteria** | CI fails on new forbidden imports; grandfather register matches inventory |
+| **Acceptance criteria** | AST detection of `import` / `from` / nested imports / literal `importlib.import_module` / literal `__import__`; exact grandfather fingerprint comparison; `NEW_FORBIDDEN_IMPORT` failure on new violations; `STALE_GRANDFATHER_ENTRY` failure on orphan register rows; inventory consistency (`LCI-INV-####` path/module/symbol match); PR smoke CI + full governance CI wiring; deterministic unit tests in `tests/unit/architecture/test_langchain_boundary.py` |
 | **User-visible outcome** | No new contract leaks without waiver |
 
 ---

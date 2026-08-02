@@ -248,7 +248,8 @@ Only real leaks through public or shared core contracts (LangChain types in Inte
 | `langchain_core.documents.Document` | `BaseEmbeddingManager.embed_documents` | Embedding layer | Indexing | Native embedding contract | LCI-1A | LCI-3A | High |
 | `langchain_core.documents.Document` | `IndexStrategy` | Indexing strategies | Ingest | Native indexing contract | LCI-1A | LCI-3B | High |
 | `langchain_core.documents.Document` | `VectorStore` CRUD/search | Vector providers | Retrieval/tools | Native vector contract | LCI-1A | LCI-3C | High |
-| `langchain_core.documents.Document` | `TenantIsolationContract` / graph isolation | Vector/graph layers | Retrieval | Native tenant-safe records | LCI-1A | LCI-3C | High |
+| `langchain_core.documents.Document` | Vector tenant isolation | Vector layers | Retrieval | Native tenant-safe records | LCI-1A | LCI-3C | High |
+| `langchain_core.documents.Document` | Graph isolation | Graph layers | Retrieval | Native graph document | LCI-1A | LCI-4C | High |
 | `langchain_core.documents.Document` | `RerankerInput` / rerank contracts | Rerankers | Hybrid retrieval | Native rerank candidate | LCI-1A | LCI-4B | Medium |
 | `langchain_core.documents.Document` | `RerankProviderContract` | Integration rerank | RAG rerank | Native integration boundary | LCI-1A | LCI-4B | Medium |
 | `langchain_core.documents.Document` | Graph indexer contracts | Graph indexers | Graph retrieval | Native graph document | LCI-1A | LCI-4C | High |
@@ -286,6 +287,22 @@ Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import h
 | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | LEGACY_OPTIONAL | LCI-8A |
 | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | LEGACY_OPTIONAL | LCI-8A |
 
-## H. Unverified items
+## H. LCI-0B boundary enforcement baseline
+
+| Metric | Value |
+|--------|------:|
+| production imports scanned | 104 |
+| allowed-zone imports | 24 |
+| guarded imports | 80 |
+| grandfather entries | 80 |
+| new forbidden imports | 0 |
+| stale grandfather entries | 0 |
+| register path | `scripts/maintenance/langchain_boundary_grandfather.json` |
+| checker path | `scripts/maintenance/check_langchain_boundary.py` |
+
+Detailed inventory remains the evidence register.
+The JSON file is the executable grandfather subset for protected production zones.
+
+## I. Unverified items
 
 Ollama native parity (`LCI-6C`), embedding numeric parity, vector store live round-trip: **UNVERIFIED** until respective proof tasks execute.

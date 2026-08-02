@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** `LCI-0A` — canonical architecture and dependency inventory (this document)
+**Current active task:** `LCI-0B` — LangChain architecture boundary guard (enforcement)
 
 **Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -115,7 +115,7 @@ applications/
 
 and any other canonical core path where a foreign type would become part of the Intergrax ABI (public re-exports, shared DTOs consumed across domains, Nexus orchestration contracts).
 
-Enforcement begins at **`LCI-0B`** (architecture boundary guard). This task does not implement the guard.
+Enforcement begins at **`LCI-0B`** (architecture boundary guard). See [LCI-0B enforcement boundary](#lci-0b-enforcement-boundary) below.
 
 ### Docelowo dozwolone warunkowo
 
@@ -198,6 +198,27 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 8. LangGraph remains optional; retirement decision recorded under `LCI-8A`.
 9. LKW proof workload passes on LangChain-free core install (LKW as client, not owner).
 10. Domain plan rows updated; inventory satellite shows `unclassified occurrences = 0` and zero core contract leaks.
+
+---
+
+## LCI-0B enforcement boundary
+
+`LCI-0B` adds a deterministic AST-based CI guard that freezes existing LangChain/LangGraph production import violations while blocking new leaks into protected zones.
+
+| Aspect | Policy |
+|--------|--------|
+| **Scan roots** | `intergrax/`, `agents/`, `applications/` production `*.py` files |
+| **Excluded paths** | any path containing `tests`, `__pycache__`, non-`*.py` files, `docker/runtime-context/` copies |
+| **Allowed production zones** | `intergrax/compat/langchain/`, `intergrax/integrations/providers/`, `intergrax/llm_adapters/providers/`, `intergrax/legacy/` |
+| **Protected production zones** | all other scanned production paths (contracts, runtime, RAG, memory, modality, integrations shared bridges, agents, applications, etc.) |
+| **Detected namespaces** | `langchain`, `langchain_*`, `langgraph` |
+| **Import forms** | `import`, `from`, nested function imports, literal `importlib.import_module("…")`, literal `__import__("…")` |
+| **Grandfather model** | `scripts/maintenance/langchain_boundary_grandfather.json` — exact fingerprint entries (`path`, `kind`, `module`, sorted `names`) matched to approved `LCI-INV-####` inventory rows; line numbers are not part of identity |
+| **New vs stale** | `current guarded − grandfathered` → `NEW_FORBIDDEN_IMPORT`; `grandfathered − current` → `STALE_GRANDFATHER_ENTRY` (debt removal requires register cleanup) |
+| **Automatic baseline update** | **none** — no `--update-baseline` / write mode |
+| **CI wiring** | PR smoke (`ci-smoke`) and full governance (`gate-governance-tier`) via `scripts/maintenance/check_langchain_boundary.py` |
+| **LangGraph guard relationship** | `check_langgraph_not_required.py` remains — core packaging/non-optional LangGraph dependency guard; `LCI-0B` covers all LangGraph production imports in protected zones with inventory-backed grandfathering |
+| **Register maintenance** | When a grandfathered import is removed during debt paydown, delete the matching register entry in the same change |
 
 ---
 
