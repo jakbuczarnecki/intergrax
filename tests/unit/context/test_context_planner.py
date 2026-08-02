@@ -798,3 +798,267 @@ def test_complete_canonical_tool_group_remains_atomically_compressible() -> None
     assert tool_groups[0].compressible
     assert not tool_groups[0].required
     assert not tool_groups[0].protected
+
+
+def test_source_groups_preserve_model_input_order() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    snapshot = _snapshot(
+        [
+            ChatMessage(role="user", content="history user", entry_id="u1"),
+            ChatMessage(role="assistant", content="history reply", entry_id="a1"),
+        ]
+    )
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    session_fragments = fragments_from_session_history_snapshot(snapshot)
+    rag = ContextFragment(
+        fragment_id="rag-1",
+        source=ContextFragmentSource.RAG,
+        source_id="rag-1",
+        content="rag context body",
+        token_estimate=10,
+        relevance_score=0.8,
+        freshness_score=0.8,
+        confidence_score=0.8,
+        mandatory=False,
+    )
+    ranked_fragments = [*session_fragments, rag]
+    messages_for_compile, fragment_messages = _model_input(
+        _request(),
+        base_messages=[
+            ChatMessage(role="system", content="system prompt", entry_id="sys"),
+            ChatMessage(role="user", content="final task", entry_id="current"),
+        ],
+        ranked_fragments=ranked_fragments,
+    )
+    plan = planner.plan(
+        _request(),
+        messages_for_compile=messages_for_compile,
+        fragment_messages=fragment_messages,
+        ranked_fragments=ranked_fragments,
+        session_history=snapshot,
+        resolved_global_budget_tokens=5000,
+    )
+    entry_to_group_id: dict[str, str] = {}
+    for group in plan.source_groups:
+        if group.source is ContextFragmentSource.SYSTEM_INSTRUCTIONS:
+            entry_to_group_id["sys"] = group.group_id
+        if group.source is ContextFragmentSource.TASK_MESSAGE:
+            entry_to_group_id["current"] = group.group_id
+    for fragment_message, fragment in zip(fragment_messages, ranked_fragments, strict=True):
+        if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+            message_id = str(fragment.metadata.get("message_id") or "").strip()
+            history_group = next(group for group in plan.source_groups if message_id in group.source_refs)
+            entry_to_group_id[fragment_message.entry_id] = history_group.group_id
+        else:
+            fragment_group = next(
+                group for group in plan.source_groups if fragment.fragment_id in group.source_refs
+            )
+            entry_to_group_id[fragment_message.entry_id] = fragment_group.group_id
+    expected_order: list[str] = []
+    seen: set[str] = set()
+    for message in messages_for_compile:
+        group_id = entry_to_group_id[message.entry_id]
+        if group_id not in seen:
+            expected_order.append(group_id)
+            seen.add(group_id)
+    actual_order = [group.group_id for group in plan.source_groups]
+    assert actual_order == expected_order
+    sources_in_order = [group.source for group in plan.source_groups]
+    assert sources_in_order[0] is ContextFragmentSource.SYSTEM_INSTRUCTIONS
+    assert ContextFragmentSource.SESSION_HISTORY in sources_in_order
+    assert ContextFragmentSource.RAG in sources_in_order
+    assert sources_in_order[-1] is ContextFragmentSource.TASK_MESSAGE
+    session_idx = next(
+        index
+        for index, group in enumerate(plan.source_groups)
+        if group.source_refs == ("u1", "a1")
+    )
+    rag_idx = next(
+        index for index, group in enumerate(plan.source_groups) if group.source is ContextFragmentSource.RAG
+    )
+    task_idx = next(
+        index
+        for index, group in enumerate(plan.source_groups)
+        if group.source is ContextFragmentSource.TASK_MESSAGE
+    )
+    assert session_idx < rag_idx < task_idx
+
+
+def test_complete_snapshot_group_is_emitted_atomically() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    snapshot = _snapshot(
+        [
+            ChatMessage(role="user", content="question", entry_id="u1"),
+            ChatMessage(role="assistant", content="answer", entry_id="a1"),
+        ]
+    )
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    ranked = fragments_from_session_history_snapshot(snapshot)
+    messages_for_compile, fragment_messages = _model_input(
+        _request(),
+        base_messages=[ChatMessage(role="user", content="task", entry_id="current")],
+        ranked_fragments=ranked,
+    )
+    plan = planner.plan(
+        _request(),
+        messages_for_compile=messages_for_compile,
+        fragment_messages=fragment_messages,
+        ranked_fragments=ranked,
+        session_history=snapshot,
+        resolved_global_budget_tokens=5000,
+    )
+    history_groups = [group for group in plan.source_groups if group.source_refs == ("u1", "a1")]
+    assert len(history_groups) == 1
+    expected_tokens = sum(_count_tokens(message.content or "") for message in fragment_messages)
+    assert history_groups[0].token_estimate == expected_tokens
+
+
+def test_partial_snapshot_group_fails_closed() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    snapshot = _snapshot(
+        [
+            ChatMessage(role="user", content="question", entry_id="u1"),
+            ChatMessage(role="assistant", content="answer", entry_id="a1"),
+        ]
+    )
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    ranked = fragments_from_session_history_snapshot(snapshot)
+    user_only = [fragment for fragment in ranked if fragment.metadata.get("message_id") == "u1"]
+    with pytest.raises(ContextPlanningError, match="incomplete_canonical_snapshot_group"):
+        _plan(
+            planner,
+            _request(),
+            base_messages=[ChatMessage(role="user", content="task", entry_id="current")],
+            ranked_fragments=user_only,
+            session_history=snapshot,
+            resolved_global_budget_tokens=5000,
+        )
+
+
+def test_duplicate_snapshot_ref_fails_closed() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    snapshot = _snapshot(
+        [
+            ChatMessage(role="user", content="question", entry_id="u1"),
+            ChatMessage(role="assistant", content="answer", entry_id="a1"),
+        ]
+    )
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    ranked = fragments_from_session_history_snapshot(snapshot)
+    user_fragment = next(fragment for fragment in ranked if fragment.metadata.get("message_id") == "u1")
+    duplicate_ranked = [user_fragment, user_fragment]
+    messages_for_compile, fragment_messages = _model_input(
+        _request(),
+        base_messages=[ChatMessage(role="user", content="task", entry_id="current")],
+        ranked_fragments=duplicate_ranked,
+    )
+    with pytest.raises(ContextPlanningError, match="incomplete_canonical_snapshot_group"):
+        planner.plan(
+            _request(),
+            messages_for_compile=messages_for_compile,
+            fragment_messages=fragment_messages,
+            ranked_fragments=duplicate_ranked,
+            session_history=snapshot,
+            resolved_global_budget_tokens=5000,
+        )
+
+
+def test_droppable_selection_then_history_compression_builds_consistent_plan() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    droppable = ContextFragment(
+        fragment_id="rag-1",
+        source=ContextFragmentSource.RAG,
+        source_id="rag-1",
+        content="x" * 400,
+        token_estimate=100,
+        relevance_score=0.8,
+        freshness_score=0.8,
+        confidence_score=0.8,
+        mandatory=False,
+    )
+    messages = [
+        ChatMessage(role="user", content="old " * 200, entry_id=f"m{index}")
+        for index in range(4)
+    ] + [ChatMessage(role="user", content="recent", entry_id="m-recent")]
+    snapshot = _snapshot(messages)
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    ranked = [droppable, *fragments_from_session_history_snapshot(snapshot)]
+    policy = ContextOptimizationPolicy(
+        policy_version="pol-1",
+        validation_contract_version="val-1",
+        enabled=True,
+        allow_lossy=True,
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        allowed_artifact_types=(OptimizationArtifactType.MESSAGE_SEQUENCE,),
+        recent_tail_min_messages=1,
+    )
+    plan = _plan(
+        planner,
+        _request(),
+        base_messages=[ChatMessage(role="user", content="recent task", entry_id="current")],
+        ranked_fragments=ranked,
+        session_history=snapshot,
+        resolved_global_budget_tokens=40,
+        optimization_policy=policy,
+    )
+    assert plan.optimization_required is True
+    rag_groups = [group for group in plan.source_groups if group.source is ContextFragmentSource.RAG]
+    assert len(rag_groups) == 1
+    rag_group_id = rag_groups[0].group_id
+    assert rag_group_id in plan.excluded_group_ids
+    assert rag_group_id not in plan.selected_group_ids
+    assert set(plan.selected_group_ids).isdisjoint(plan.excluded_group_ids)
+    assert plan.artifact_requirement is not None
+    for group_id in plan.artifact_requirement.source_group_ids:
+        assert group_id in plan.selected_group_ids
+        assert group_id not in plan.excluded_group_ids
+
+
+def test_non_target_content_exhausting_budget_fails_closed() -> None:
+    planner = ContextPlanner(count_tokens=_count_tokens)
+    droppable = ContextFragment(
+        fragment_id="rag-1",
+        source=ContextFragmentSource.RAG,
+        source_id="rag-1",
+        content="x" * 400,
+        token_estimate=100,
+        relevance_score=0.8,
+        freshness_score=0.8,
+        confidence_score=0.8,
+        mandatory=False,
+    )
+    messages = [
+        ChatMessage(role="user", content="old " * 200, entry_id=f"m{index}")
+        for index in range(4)
+    ] + [ChatMessage(role="user", content="x" * 120, entry_id="m-recent")]
+    snapshot = _snapshot(messages)
+    from intergrax.context.session_history import fragments_from_session_history_snapshot
+
+    ranked = [droppable, *fragments_from_session_history_snapshot(snapshot)]
+    policy = ContextOptimizationPolicy(
+        policy_version="pol-1",
+        validation_contract_version="val-1",
+        enabled=True,
+        allow_lossy=True,
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        allowed_artifact_types=(OptimizationArtifactType.MESSAGE_SEQUENCE,),
+        recent_tail_min_messages=1,
+    )
+    with pytest.raises(ContextPlanningError, match=NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET):
+        _plan(
+            planner,
+            _request(),
+            base_messages=[
+                ChatMessage(role="system", content="sys", entry_id="sys"),
+                ChatMessage(role="user", content="x" * 96, entry_id="current"),
+            ],
+            ranked_fragments=ranked,
+            session_history=snapshot,
+            resolved_global_budget_tokens=63,
+            optimization_policy=policy,
+        )

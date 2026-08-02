@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 import pytest
 
 from intergrax.context.planning import (
@@ -27,6 +29,10 @@ from intergrax.runtime.context_lifecycle.contracts import (
 from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+def _lookup_content_hash(*group_hashes: str) -> str:
+    return hashlib.sha256("|".join(group_hashes).encode("utf-8")).hexdigest()
 
 
 def test_budget_class_mapping() -> None:
@@ -131,7 +137,7 @@ def test_context_plan_optimization_invariant() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -191,7 +197,7 @@ def _minimal_plan_kwargs(**overrides: object) -> dict[str, object]:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -244,7 +250,7 @@ def test_strict_bool_group_flags_rejected() -> None:
             group_id="grp-1",
             source=ContextFragmentSource.SESSION_HISTORY,
             source_refs=("m1",),
-            source_content_hash="hash",
+            source_content_hash=_lookup_content_hash("hash"),
             token_estimate=10,
             required=1,  # type: ignore[arg-type]
         )
@@ -310,7 +316,7 @@ def test_empty_strategy_id_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -335,7 +341,7 @@ def test_preservation_ids_match_plan_required_protected() -> None:
         group_id="grp-protected",
         source=ContextFragmentSource.SESSION_HISTORY,
         source_refs=("m1",),
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         token_estimate=10,
         required=True,
         protected=True,
@@ -355,7 +361,7 @@ def test_preservation_ids_match_plan_required_protected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash2",
+        source_content_hash=_lookup_content_hash("hash2"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m2",),
@@ -416,7 +422,7 @@ def test_preservation_ids_disjoint_from_artifact_target() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -487,7 +493,7 @@ def test_message_sequence_preserve_message_order_false_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -513,7 +519,7 @@ def test_message_sequence_preserve_roles_false_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -539,7 +545,7 @@ def test_message_sequence_preserve_message_ids_false_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -565,7 +571,7 @@ def test_message_sequence_preserve_tool_call_links_false_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m1",),
@@ -591,7 +597,7 @@ def test_lookup_source_refs_mismatch_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("wrong",),
@@ -633,7 +639,7 @@ def test_lookup_source_refs_wrong_order_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash-a", "hash-b"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m2", "m1"),
@@ -698,7 +704,7 @@ def test_artifact_source_group_ids_wrong_order_rejected() -> None:
         tenant_id="t1",
         context_scope_id="scope",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
-        source_content_hash="hash",
+        source_content_hash=_lookup_content_hash("hash-a", "hash-b"),
         compression_target=ArtifactCompressionTarget(target_tokens=5),
         lossiness_profile="lossless",
         source_refs=("m2", "m1"),
@@ -740,3 +746,145 @@ def test_artifact_source_group_ids_wrong_order_rejected() -> None:
             artifact_requirement=requirement,
             final_validation_requirements=("preserve_message_order",),
         )
+
+
+def test_unknown_artifact_group_id_rejected_as_value_error() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=_lookup_content_hash("hash"),
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("missing-group",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="unknown group ID referenced: missing-group"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_lookup_source_content_hash_mismatch_rejected() -> None:
+    group = ContextSourceGroup(
+        group_id="grp-1",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m1",),
+        source_content_hash="actual-hash",
+        token_estimate=10,
+        compressible=True,
+    )
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="wrong-hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="lookup source content hash mismatch"):
+        ContextPlan(
+            execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+            budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
+            resolved_global_budget_tokens=100,
+            estimated_total_tokens=10,
+            source_groups=(group,),
+            source_allocations=(
+                ContextSourceBudgetAllocation(
+                    source=ContextFragmentSource.SESSION_HISTORY,
+                    allocated_tokens=10,
+                    selected_group_ids=("grp-1",),
+                ),
+            ),
+            selected_group_ids=("grp-1",),
+            excluded_group_ids=(),
+            required_group_ids=(),
+            protected_group_ids=(),
+            compressible_group_ids=("grp-1",),
+            droppable_group_ids=(),
+            trim_safe_group_ids=(),
+            optimization_required=True,
+            artifact_requirement=requirement,
+            final_validation_requirements=("preserve_message_order",),
+        )
+
+
+def test_matching_lookup_source_content_hash_accepted() -> None:
+    group = ContextSourceGroup(
+        group_id="grp-1",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m1",),
+        source_content_hash="actual-hash",
+        token_estimate=10,
+        compressible=True,
+    )
+    expected_hash = hashlib.sha256("actual-hash".encode("utf-8")).hexdigest()
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=expected_hash,
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    plan = ContextPlan(
+        execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+        budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
+        resolved_global_budget_tokens=100,
+        estimated_total_tokens=10,
+        source_groups=(group,),
+        source_allocations=(
+            ContextSourceBudgetAllocation(
+                source=ContextFragmentSource.SESSION_HISTORY,
+                allocated_tokens=10,
+                selected_group_ids=("grp-1",),
+            ),
+        ),
+        selected_group_ids=("grp-1",),
+        excluded_group_ids=(),
+        required_group_ids=(),
+        protected_group_ids=(),
+        compressible_group_ids=("grp-1",),
+        droppable_group_ids=(),
+        trim_safe_group_ids=(),
+        optimization_required=True,
+        artifact_requirement=requirement,
+        final_validation_requirements=("preserve_message_order",),
+    )
+    assert plan.artifact_requirement is not None
+    assert plan.artifact_requirement.lookup_inputs.source_content_hash == expected_hash

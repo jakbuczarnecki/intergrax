@@ -332,9 +332,10 @@ def _group_base_messages(
     fragment_entry_ids: set[str],
     *,
     count_tokens: Callable[[str], int],
-) -> tuple[list[ContextSourceGroup], set[int]]:
+) -> tuple[list[ContextSourceGroup], set[int], dict[int, str]]:
     groups: list[ContextSourceGroup] = []
     assigned_indices: set[int] = set()
+    base_group_id_by_message_index: dict[int, str] = {}
     last_base_user_index = -1
     for index, message in enumerate(messages_for_compile):
         if message.entry_id in fragment_entry_ids:
@@ -369,9 +370,10 @@ def _group_base_messages(
                 index += 1
             incomplete = not _tool_call_group_complete(message, tool_messages)
             refs_tuple = tuple(refs)
+            group_id = _base_message_group_id(message, start_position)
             groups.append(
                 ContextSourceGroup(
-                    group_id=_base_message_group_id(message, start_position),
+                    group_id=group_id,
                     source=ContextFragmentSource.SESSION_HISTORY,
                     source_refs=refs_tuple,
                     source_content_hash=_group_content_hash(refs_tuple, tuple(hashes)),
@@ -383,14 +385,17 @@ def _group_base_messages(
                     trim_safe=False,
                 )
             )
-            assigned_indices.update(range(start_position, index))
+            for assigned_index in range(start_position, index):
+                assigned_indices.add(assigned_index)
+                base_group_id_by_message_index[assigned_index] = group_id
             continue
 
         if message.role == "tool":
             refs = (message.entry_id,)
+            group_id = _base_message_group_id(message, index)
             groups.append(
                 ContextSourceGroup(
-                    group_id=_base_message_group_id(message, index),
+                    group_id=group_id,
                     source=ContextFragmentSource.SESSION_HISTORY,
                     source_refs=refs,
                     source_content_hash=_group_content_hash(refs, _base_message_content_hashes([message])),
@@ -403,6 +408,7 @@ def _group_base_messages(
                 )
             )
             assigned_indices.add(index)
+            base_group_id_by_message_index[index] = group_id
             index += 1
             continue
 
@@ -421,9 +427,10 @@ def _group_base_messages(
             protected = True
 
         refs = (message.entry_id,)
+        group_id = _base_message_group_id(message, index)
         groups.append(
             ContextSourceGroup(
-                group_id=_base_message_group_id(message, index),
+                group_id=group_id,
                 source=source,
                 source_refs=refs,
                 source_content_hash=_group_content_hash(refs, _base_message_content_hashes([message])),
@@ -436,9 +443,10 @@ def _group_base_messages(
             )
         )
         assigned_indices.add(index)
+        base_group_id_by_message_index[index] = group_id
         index += 1
 
-    return groups, assigned_indices
+    return groups, assigned_indices, base_group_id_by_message_index
 
 
 def _apply_recent_tail_protection(
@@ -565,8 +573,8 @@ class ContextPlanner:
         fragment_entry_ids = {message.entry_id for message in fragment_messages}
         index_by_entry_id = {message.entry_id: index for index, message in enumerate(messages_for_compile)}
 
-        assigned_indices: set[int] = set()
-        all_groups: list[ContextSourceGroup] = []
+        group_id_by_message_index: dict[int, str] = {}
+        groups_by_id: dict[str, ContextSourceGroup] = {}
 
         session_groups_raw: list[ContextSourceGroup] = []
         canonical_snapshot_group_ids: set[str] = set()
@@ -581,112 +589,146 @@ class ContextPlanner:
                     message_id_to_group_id[ref] = group.group_id
 
         session_token_accum = {group.group_id: 0 for group in session_groups_raw}
+        present_snapshot_refs_by_group_id: dict[str, list[str]] = {
+            group.group_id: [] for group in session_groups_raw
+        }
 
         for fragment_message, fragment in zip(fragment_messages, ranked_fragments, strict=True):
             message_index = index_by_entry_id.get(fragment_message.entry_id)
             if message_index is None:
                 raise ContextPlanningError("incomplete_model_input_plan")
-            if message_index in assigned_indices:
+            if message_index in group_id_by_message_index:
                 raise ContextPlanningError("incomplete_model_input_plan")
-            assigned_indices.add(message_index)
             token_estimate = self._count_tokens(fragment_message.content or "")
 
             if fragment.source is ContextFragmentSource.SESSION_HISTORY:
                 message_id = str(fragment.metadata.get("message_id") or "").strip()
                 if not message_id or message_id not in message_id_to_group_id:
                     refs = (fragment.fragment_id,)
-                    all_groups.append(
-                        ContextSourceGroup(
-                            group_id=_deterministic_group_id(refs),
-                            source=fragment.source,
-                            source_refs=refs,
-                            source_content_hash=fragment.content_hash
-                            or content_hash_for_text(fragment.content),
-                            token_estimate=token_estimate,
-                            required=fragment.mandatory,
-                            protected=fragment.mandatory,
-                            droppable=False,
-                            compressible=False,
-                            trim_safe=False,
-                        )
+                    group_id = _deterministic_group_id(refs)
+                    groups_by_id[group_id] = ContextSourceGroup(
+                        group_id=group_id,
+                        source=fragment.source,
+                        source_refs=refs,
+                        source_content_hash=fragment.content_hash
+                        or content_hash_for_text(fragment.content),
+                        token_estimate=token_estimate,
+                        required=fragment.mandatory,
+                        protected=fragment.mandatory,
+                        droppable=False,
+                        compressible=False,
+                        trim_safe=False,
                     )
+                    group_id_by_message_index[message_index] = group_id
                     continue
                 group_id = message_id_to_group_id[message_id]
+                present_refs = present_snapshot_refs_by_group_id[group_id]
+                if message_id in present_refs:
+                    raise ContextPlanningError("incomplete_canonical_snapshot_group")
+                present_refs.append(message_id)
                 session_token_accum[group_id] += token_estimate
+                group_id_by_message_index[message_index] = group_id
                 continue
 
             refs = (fragment.fragment_id,)
-            all_groups.append(
-                ContextSourceGroup(
-                    group_id=_deterministic_group_id(refs),
-                    source=fragment.source,
-                    source_refs=refs,
-                    source_content_hash=fragment.content_hash or content_hash_for_text(fragment.content),
-                    token_estimate=token_estimate,
-                    required=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
-                    protected=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
-                    droppable=(
-                        not fragment.mandatory
-                        and fragment.source in _DROPPABLE_SOURCES
-                    ),
-                    compressible=False,
-                    trim_safe=False,
-                )
+            group_id = _deterministic_group_id(refs)
+            groups_by_id[group_id] = ContextSourceGroup(
+                group_id=group_id,
+                source=fragment.source,
+                source_refs=refs,
+                source_content_hash=fragment.content_hash or content_hash_for_text(fragment.content),
+                token_estimate=token_estimate,
+                required=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
+                protected=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
+                droppable=(
+                    not fragment.mandatory
+                    and fragment.source in _DROPPABLE_SOURCES
+                ),
+                compressible=False,
+                trim_safe=False,
             )
+            group_id_by_message_index[message_index] = group_id
 
         for group in session_groups_raw:
-            token_total = session_token_accum[group.group_id]
-            if token_total <= 0:
+            present_refs = present_snapshot_refs_by_group_id[group.group_id]
+            if not present_refs:
                 continue
-            all_groups.append(
-                ContextSourceGroup(
-                    group_id=group.group_id,
-                    source=group.source,
-                    source_refs=group.source_refs,
-                    source_content_hash=group.source_content_hash,
-                    token_estimate=session_token_accum[group.group_id],
-                    start_sequence=group.start_sequence,
-                    end_sequence=group.end_sequence,
-                    required=group.required,
-                    protected=group.protected,
-                    compressible=group.compressible,
-                    droppable=group.droppable,
-                    trim_safe=group.trim_safe,
-                )
+            if tuple(present_refs) != group.source_refs:
+                raise ContextPlanningError("incomplete_canonical_snapshot_group")
+            groups_by_id[group.group_id] = ContextSourceGroup(
+                group_id=group.group_id,
+                source=group.source,
+                source_refs=group.source_refs,
+                source_content_hash=group.source_content_hash,
+                token_estimate=session_token_accum[group.group_id],
+                start_sequence=group.start_sequence,
+                end_sequence=group.end_sequence,
+                required=group.required,
+                protected=group.protected,
+                compressible=group.compressible,
+                droppable=group.droppable,
+                trim_safe=group.trim_safe,
             )
 
-        base_groups, base_assigned = _group_base_messages(
+        base_groups, base_assigned, base_group_id_by_message_index = _group_base_messages(
             messages_for_compile,
             fragment_entry_ids,
             count_tokens=self._count_tokens,
         )
-        if base_assigned & assigned_indices:
+        if set(base_group_id_by_message_index) & set(group_id_by_message_index):
             raise ContextPlanningError("incomplete_model_input_plan")
-        assigned_indices |= base_assigned
-        all_groups.extend(base_groups)
+        for message_index, group_id in base_group_id_by_message_index.items():
+            group_id_by_message_index[message_index] = group_id
+        for group in base_groups:
+            groups_by_id[group.group_id] = group
 
-        if len(assigned_indices) != len(messages_for_compile):
+        if len(group_id_by_message_index) != len(messages_for_compile):
             raise ContextPlanningError("incomplete_model_input_plan")
+
+        ordered_group_ids: list[str] = []
+        seen_group_ids: set[str] = set()
+        for message_index in range(len(messages_for_compile)):
+            group_id = group_id_by_message_index[message_index]
+            if group_id not in groups_by_id:
+                raise ContextPlanningError("incomplete_model_input_plan")
+            if group_id not in seen_group_ids:
+                ordered_group_ids.append(group_id)
+                seen_group_ids.add(group_id)
+
+        if set(ordered_group_ids) != set(groups_by_id):
+            raise ContextPlanningError("incomplete_model_input_plan")
+        if len(ordered_group_ids) != len(seen_group_ids):
+            raise ContextPlanningError("incomplete_model_input_plan")
+
+        all_groups = [groups_by_id[group_id] for group_id in ordered_group_ids]
 
         group_token_total = sum(group.token_estimate for group in all_groups)
         if group_token_total != estimated_total_tokens:
             raise ContextPlanningError("incomplete_model_input_plan")
 
-        session_groups = [group for group in all_groups if group.source is ContextFragmentSource.SESSION_HISTORY]
-        non_session_groups = [group for group in all_groups if group.source is not ContextFragmentSource.SESSION_HISTORY]
-
+        session_groups_in_order = [
+            group for group in all_groups if group.source is ContextFragmentSource.SESSION_HISTORY
+        ]
         recent_tail = optimization_policy.recent_tail_min_messages if optimization_policy else 0
-        recent_tail_ids = _apply_recent_tail_protection(session_groups, recent_tail_min_messages=recent_tail)
-        session_groups = _mark_session_groups(
-            session_groups,
-            recent_tail_ids=recent_tail_ids,
-            canonical_snapshot_group_ids=canonical_snapshot_group_ids,
+        recent_tail_ids = _apply_recent_tail_protection(
+            session_groups_in_order,
+            recent_tail_min_messages=recent_tail,
         )
-        all_groups = session_groups + non_session_groups
+        marked_session_by_id = {
+            group.group_id: group
+            for group in _mark_session_groups(
+                session_groups_in_order,
+                recent_tail_ids=recent_tail_ids,
+                canonical_snapshot_group_ids=canonical_snapshot_group_ids,
+            )
+        }
+        all_groups = [
+            marked_session_by_id.get(group.group_id, group) for group in all_groups
+        ]
         groups_by_id = {group.group_id: group for group in all_groups}
 
-        selected_ids = tuple(group.group_id for group in all_groups)
-        excluded_ids: tuple[str, ...] = ()
+        selected_set = {group.group_id for group in all_groups}
+        excluded_set: set[str] = set()
         required_ids = tuple(group.group_id for group in all_groups if group.required)
         protected_ids = tuple(group.group_id for group in all_groups if group.protected)
         compressible_ids = tuple(group.group_id for group in all_groups if group.compressible)
@@ -700,8 +742,13 @@ class ContextPlanner:
         if mandatory_tokens > resolved_global_budget_tokens:
             raise ContextPlanningError(MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT)
 
-        selected_set = set(selected_ids)
         if estimated_total_tokens <= resolved_global_budget_tokens:
+            selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
+            excluded_ids = tuple(group.group_id for group in all_groups if group.group_id in excluded_set)
+            if not set(selected_ids).isdisjoint(excluded_ids):
+                raise ContextPlanningError("incomplete_model_input_plan")
+            if set(selected_ids) | set(excluded_ids) != set(groups_by_id):
+                raise ContextPlanningError("incomplete_model_input_plan")
             return self._build_plan(
                 request=request,
                 execution_scope=execution_scope,
@@ -723,10 +770,19 @@ class ContextPlanner:
         droppable_ordered = tuple(group.group_id for group in all_groups if group.droppable)
         for group_id in droppable_ordered:
             selected_set.remove(group_id)
-            excluded_ids = tuple(sorted(set(excluded_ids) | {group_id}))
+            excluded_set.add(group_id)
             post_drop_total = _total_tokens(tuple(selected_set), groups_by_id)
             if post_drop_total <= resolved_global_budget_tokens:
-                selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
+                selected_ids = tuple(
+                    group.group_id for group in all_groups if group.group_id in selected_set
+                )
+                excluded_ids = tuple(
+                    group.group_id for group in all_groups if group.group_id in excluded_set
+                )
+                if not set(selected_ids).isdisjoint(excluded_ids):
+                    raise ContextPlanningError("incomplete_model_input_plan")
+                if set(selected_ids) | set(excluded_ids) != set(groups_by_id):
+                    raise ContextPlanningError("incomplete_model_input_plan")
                 return self._build_plan(
                     request=request,
                     execution_scope=execution_scope,
@@ -747,7 +803,9 @@ class ContextPlanner:
 
         target_groups: list[ContextSourceGroup] = []
         started = False
-        for group in session_groups:
+        for group in all_groups:
+            if group.source is not ContextFragmentSource.SESSION_HISTORY:
+                continue
             if group.compressible and group.group_id in selected_set:
                 started = True
                 target_groups.append(group)
@@ -776,10 +834,10 @@ class ContextPlanner:
             for group_id in selected_set
             if group_id not in set(target_group_ids)
         )
-        target_token_budget = max(
-            1,
-            resolved_global_budget_tokens - non_target_tokens,
-        )
+        available_target_tokens = resolved_global_budget_tokens - non_target_tokens
+        if available_target_tokens <= 0:
+            raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
+        target_token_budget = available_target_tokens
 
         if optimization_policy is None or not optimization_policy.allowed_strategy_ids:
             raise ContextPlanningError(NO_ALLOWED_CONTEXT_OPTIMIZATION_STRATEGY)
@@ -821,6 +879,13 @@ class ContextPlanner:
             allowed_strategy_ids=allowed_strategy_ids,
             minimum_preservation=preservation,
         )
+
+        selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
+        excluded_ids = tuple(group.group_id for group in all_groups if group.group_id in excluded_set)
+        if not set(selected_ids).isdisjoint(excluded_ids):
+            raise ContextPlanningError("incomplete_model_input_plan")
+        if set(selected_ids) | set(excluded_ids) != set(groups_by_id):
+            raise ContextPlanningError("incomplete_model_input_plan")
 
         return self._build_plan(
             request=request,

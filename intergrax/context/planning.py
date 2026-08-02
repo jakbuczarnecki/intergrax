@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -506,6 +507,29 @@ class ContextPlan:
             protected = set(self.protected_group_ids)
             artifact_sources = set(self.artifact_requirement.source_group_ids)
             lookup = self.artifact_requirement.lookup_inputs
+            for group_id in self.artifact_requirement.source_group_ids:
+                if group_id not in groups_by_id:
+                    raise ValueError(f"unknown group ID referenced: {group_id}")
+            plan_artifact_order = tuple(
+                group.group_id for group in groups if group.group_id in artifact_sources  # type: ignore[union-attr]
+            )
+            if plan_artifact_order != tuple(self.artifact_requirement.source_group_ids):
+                raise ValueError("artifact source group IDs wrong order")
+            expected_source_refs = tuple(
+                source_ref
+                for group_id in self.artifact_requirement.source_group_ids
+                for source_ref in groups_by_id[group_id].source_refs  # type: ignore[union-attr]
+            )
+            if lookup.source_refs != expected_source_refs:
+                raise ValueError("lookup source refs mismatch")
+            expected_source_content_hash = hashlib.sha256(
+                "|".join(
+                    groups_by_id[group_id].source_content_hash  # type: ignore[union-attr]
+                    for group_id in self.artifact_requirement.source_group_ids
+                ).encode("utf-8")
+            ).hexdigest()
+            if lookup.source_content_hash != expected_source_content_hash:
+                raise ValueError("lookup source content hash mismatch")
             if lookup.artifact_type is OptimizationArtifactType.MESSAGE_SEQUENCE:
                 preservation_flags = self.artifact_requirement.minimum_preservation
                 if not preservation_flags.preserve_message_order:
@@ -516,21 +540,7 @@ class ContextPlan:
                     raise ValueError("MESSAGE_SEQUENCE requires preserve_message_ids")
                 if not preservation_flags.preserve_tool_call_links:
                     raise ValueError("MESSAGE_SEQUENCE requires preserve_tool_call_links")
-            expected_source_refs = tuple(
-                source_ref
-                for group_id in self.artifact_requirement.source_group_ids
-                for source_ref in groups_by_id[group_id].source_refs  # type: ignore[union-attr]
-            )
-            if lookup.source_refs != expected_source_refs:
-                raise ValueError("lookup source refs mismatch")
-            plan_artifact_order = tuple(
-                group.group_id for group in groups if group.group_id in artifact_sources  # type: ignore[union-attr]
-            )
-            if plan_artifact_order != tuple(self.artifact_requirement.source_group_ids):
-                raise ValueError("artifact source group IDs wrong order")
             for group_id in artifact_sources:
-                if group_id not in group_id_set:
-                    raise ValueError(f"unknown group ID referenced: {group_id}")
                 if group_id not in selected:
                     raise ValueError("artifact source groups must be selected")
                 if group_id not in compressible:
