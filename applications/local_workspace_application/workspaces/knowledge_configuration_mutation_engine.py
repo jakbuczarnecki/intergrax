@@ -10,7 +10,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Literal, Protocol
 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceKnowledgeConfigurationHead,
@@ -116,6 +116,20 @@ class WorkspaceKnowledgeMutationRecoveryDispositionV1(StrEnum):
 class WorkspaceKnowledgeMutationRecoveryResult:
     disposition: WorkspaceKnowledgeMutationRecoveryDispositionV1
     mutation: WorkspaceKnowledgeMutationRecord | None = None
+
+
+class _CommittedReplayDuringPrepare(Exception):
+    def __init__(self, result: WorkspaceKnowledgeMutationExecutionResult) -> None:
+        self.result = result
+        super().__init__("committed_replay_during_prepare")
+
+
+@dataclass(frozen=True, slots=True)
+class _PreStagedCleanupDecision:
+    action: Literal["committed_replay", "authorized"]
+    execution_result: WorkspaceKnowledgeMutationExecutionResult | None = None
+    exact_mutation: WorkspaceKnowledgeMutationRecord | None = None
+    head: WorkspaceKnowledgeConfigurationHead | None = None
 
 
 class WorkspaceKnowledgeMutationWorkspaceLookupPort(Protocol):
@@ -327,31 +341,51 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                     intent=intent,
                     now=now,
                 )
+            except _CommittedReplayDuringPrepare as replay:
+                return replay.result
             except WorkspaceKnowledgeConfigurationMutationError as exc:
-                self._handle_pre_publication_failure(
+                replay = self._handle_pre_publication_failure(
                     mutation=mutation,
                     handler=handler,
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
+                    operation=mutation.operation,
+                    idempotency_key_hash=mutation.idempotency_key_hash,
                     error_code=exc.error_code,
                 )
+                if replay is not None:
+                    return replay
                 raise
             except Exception:
-                self._handle_pre_publication_failure(
+                replay = self._handle_pre_publication_failure(
                     mutation=mutation,
                     handler=handler,
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
+                    operation=mutation.operation,
+                    idempotency_key_hash=mutation.idempotency_key_hash,
                     error_code="configuration_mutation_stage_failed",
                 )
+                if replay is not None:
+                    return replay
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_mutation_stage_failed"
                 )
 
         head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
         if head is None or head.pending_mutation_id != mutation.mutation_id:
+            replay = self._try_resolve_concurrent_publication(
+                staged_mutation=mutation,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation=mutation.operation,
+                idempotency_key_hash=mutation.idempotency_key_hash,
+                now=now,
+            )
+            if replay is not None:
+                return replay
             raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_mutation_state_conflict"
+                "configuration_recovery_required"
             )
 
         try:
@@ -952,10 +986,52 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_mutation_reservation_unstable"
                 )
+            if reloaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+                raise _CommittedReplayDuringPrepare(
+                    self._committed_replay_result(reloaded)
+                )
             if reloaded.status is WorkspaceKnowledgeMutationStatusV1.PREPARED:
                 return reloaded
+            if reloaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if reloaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if reloaded.status is WorkspaceKnowledgeMutationStatusV1.RESERVED:
+                target = reloaded.target_revision
+                if (
+                    reloaded.mutation_id == mutation.mutation_id
+                    and target is not None
+                    and target == mutation.target_revision
+                ):
+                    head = self._reload_head(
+                        tenant_id=mutation.tenant_id,
+                        workspace_id=mutation.workspace_id,
+                    )
+                    if (
+                        head is not None
+                        and head.pending_mutation_id == reloaded.mutation_id
+                        and head.pending_revision == target
+                        and head.committed_revision < target
+                    ):
+                        retry_prepared = reloaded.model_copy(
+                            update={
+                                "status": WorkspaceKnowledgeMutationStatusV1.PREPARED,
+                                "result_entity_type": staged.result_entity_type,
+                                "result_entity_id": staged.result_entity_id,
+                                "updated_at": now,
+                            }
+                        )
+                        if self._repository.replace_knowledge_configuration_mutation_if_match(
+                            expected=reloaded,
+                            replacement=retry_prepared,
+                        ):
+                            return retry_prepared
             raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_mutation_state_conflict"
+                "configuration_recovery_required"
             )
         return prepared
 
@@ -1096,16 +1172,172 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             return reloaded
         return committed
 
-    def _handle_pre_publication_failure(
+    def _try_resolve_concurrent_publication(
+        self,
+        *,
+        staged_mutation: WorkspaceKnowledgeMutationRecord,
+        tenant_id: str,
+        workspace_id: str,
+        operation: WorkspaceKnowledgeMutationOperationV1,
+        idempotency_key_hash: str,
+        now: datetime,
+    ) -> WorkspaceKnowledgeMutationExecutionResult | None:
+        exact = self._reload_mutation(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=operation,
+            idempotency_key_hash=idempotency_key_hash,
+        )
+        if exact is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            exact.tenant_id != tenant_id
+            or exact.workspace_id != workspace_id
+            or exact.operation != operation
+            or exact.idempotency_key_hash != idempotency_key_hash
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if exact.mutation_id != staged_mutation.mutation_id:
+            if exact.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+                return self._committed_replay_result(exact)
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if exact.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+            return self._committed_replay_result(exact)
+
+        target_revision = exact.target_revision
+        head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
+        if (
+            target_revision is not None
+            and head is not None
+            and head.committed_revision >= target_revision
+        ):
+            finalized = self._finalize_published_mutation(
+                mutation=exact,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                head=head,
+                now=now,
+            )
+            return self._committed_replay_result(finalized)
+        return None
+
+    def _classify_before_staged_cleanup(
+        self,
+        *,
+        staged_mutation: WorkspaceKnowledgeMutationRecord,
+        tenant_id: str,
+        workspace_id: str,
+        operation: WorkspaceKnowledgeMutationOperationV1,
+        idempotency_key_hash: str,
+        now: datetime,
+    ) -> _PreStagedCleanupDecision:
+        exact = self._reload_mutation(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=operation,
+            idempotency_key_hash=idempotency_key_hash,
+        )
+        if exact is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            exact.tenant_id != tenant_id
+            or exact.workspace_id != workspace_id
+            or exact.operation != operation
+            or exact.idempotency_key_hash != idempotency_key_hash
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if exact.mutation_id != staged_mutation.mutation_id:
+            if exact.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+                return _PreStagedCleanupDecision(
+                    action="committed_replay",
+                    execution_result=self._committed_replay_result(exact),
+                )
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if exact.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+            return _PreStagedCleanupDecision(
+                action="committed_replay",
+                execution_result=self._committed_replay_result(exact),
+            )
+
+        target_revision = exact.target_revision
+        head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
+        if (
+            target_revision is not None
+            and head is not None
+            and head.committed_revision >= target_revision
+        ):
+            handler = self._require_handler(exact.operation)
+            inspection = handler.inspect_staged(
+                repository=self._repository,
+                mutation=exact,
+            )
+            if inspection.state is not WorkspaceKnowledgeStageStateV1.COMPLETE_VALID:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            finalized = self._finalize_published_mutation(
+                mutation=exact,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                head=head,
+                now=now,
+            )
+            return _PreStagedCleanupDecision(
+                action="committed_replay",
+                execution_result=self._committed_replay_result(finalized),
+            )
+
+        if target_revision is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if head is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if head.pending_mutation_id != exact.mutation_id:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if head.pending_revision != target_revision:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if head.committed_revision >= target_revision:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+
+        return _PreStagedCleanupDecision(
+            action="authorized",
+            exact_mutation=exact,
+            head=head,
+        )
+
+    def _perform_staged_cleanup_rollback(
         self,
         *,
         mutation: WorkspaceKnowledgeMutationRecord,
         handler: WorkspaceKnowledgeMutationHandler,
         tenant_id: str,
         workspace_id: str,
+        operation: WorkspaceKnowledgeMutationOperationV1,
+        idempotency_key_hash: str,
         error_code: str,
+        now: datetime,
     ) -> None:
-        now = self._clock()
         inspection = handler.inspect_staged(
             repository=self._repository,
             mutation=mutation,
@@ -1116,8 +1348,8 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 mutation=mutation,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=operation,
+                idempotency_key_hash=idempotency_key_hash,
                 error_code="configuration_recovery_required",
                 now=now,
             )
@@ -1125,70 +1357,106 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 "configuration_recovery_required"
             )
 
-        if not handler.cleanup_staged(
-            repository=self._repository,
-            mutation=mutation,
-            inspection=inspection,
+        if inspection.state in (
+            WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED,
+            WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
         ):
-            self._mark_recovery_required(
+            if not handler.cleanup_staged(
+                repository=self._repository,
                 mutation=mutation,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
-                error_code="configuration_mutation_cleanup_failed",
-                now=now,
-            )
-            raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_mutation_cleanup_failed"
-            )
-
-        post_cleanup = handler.inspect_staged(
-            repository=self._repository,
-            mutation=mutation,
-        )
-        if post_cleanup.state is not WorkspaceKnowledgeStageStateV1.ABSENT:
-            self._mark_recovery_required(
-                mutation=mutation,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
-                error_code="configuration_mutation_cleanup_failed",
-                now=now,
-            )
-            raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_mutation_cleanup_failed"
-            )
-
-        head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
-        if head is not None and head.pending_mutation_id == mutation.mutation_id:
-            try:
-                self._release_pending_head_for_mutation(
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    mutation=mutation,
-                    now=now,
-                )
-            except WorkspaceKnowledgeConfigurationMutationError:
+                inspection=inspection,
+            ):
                 self._mark_recovery_required(
                     mutation=mutation,
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
-                    operation=mutation.operation,
-                    idempotency_key_hash=mutation.idempotency_key_hash,
+                    operation=operation,
+                    idempotency_key_hash=idempotency_key_hash,
                     error_code="configuration_mutation_cleanup_failed",
                     now=now,
                 )
-                raise
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_mutation_cleanup_failed"
+                )
+            post_cleanup = handler.inspect_staged(
+                repository=self._repository,
+                mutation=mutation,
+            )
+            if post_cleanup.state is not WorkspaceKnowledgeStageStateV1.ABSENT:
+                self._mark_recovery_required(
+                    mutation=mutation,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    operation=operation,
+                    idempotency_key_hash=idempotency_key_hash,
+                    error_code="configuration_mutation_cleanup_failed",
+                    now=now,
+                )
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_mutation_cleanup_failed"
+                )
+
+        reloaded = self._reload_mutation(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=operation,
+            idempotency_key_hash=idempotency_key_hash,
+        )
+        head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
+        target_revision = mutation.target_revision
+        if reloaded is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if reloaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            target_revision is not None
+            and head is not None
+            and head.committed_revision >= target_revision
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            head is None
+            or head.pending_mutation_id != mutation.mutation_id
+            or head.pending_revision != target_revision
+            or target_revision is None
+            or head.committed_revision >= target_revision
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+
+        try:
+            self._release_pending_head_for_mutation(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                mutation=mutation,
+                now=now,
+            )
+        except WorkspaceKnowledgeConfigurationMutationError:
+            self._mark_recovery_required(
+                mutation=mutation,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation=operation,
+                idempotency_key_hash=idempotency_key_hash,
+                error_code="configuration_mutation_cleanup_failed",
+                now=now,
+            )
+            raise
 
         try:
             self._confirm_mutation_aborted(
                 mutation=mutation,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=operation,
+                idempotency_key_hash=idempotency_key_hash,
                 error_code=error_code,
                 now=now,
             )
@@ -1197,14 +1465,51 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 mutation=mutation,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=operation,
+                idempotency_key_hash=idempotency_key_hash,
                 error_code="configuration_mutation_cleanup_failed",
                 now=now,
             )
             raise WorkspaceKnowledgeConfigurationMutationError(
                 "configuration_mutation_cleanup_failed"
             )
+
+    def _handle_pre_publication_failure(
+        self,
+        *,
+        mutation: WorkspaceKnowledgeMutationRecord,
+        handler: WorkspaceKnowledgeMutationHandler,
+        tenant_id: str,
+        workspace_id: str,
+        operation: WorkspaceKnowledgeMutationOperationV1,
+        idempotency_key_hash: str,
+        error_code: str,
+    ) -> WorkspaceKnowledgeMutationExecutionResult | None:
+        now = self._clock()
+        decision = self._classify_before_staged_cleanup(
+            staged_mutation=mutation,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=operation,
+            idempotency_key_hash=idempotency_key_hash,
+            now=now,
+        )
+        if decision.action == "committed_replay":
+            assert decision.execution_result is not None
+            return decision.execution_result
+
+        assert decision.exact_mutation is not None
+        self._perform_staged_cleanup_rollback(
+            mutation=decision.exact_mutation,
+            handler=handler,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=operation,
+            idempotency_key_hash=idempotency_key_hash,
+            error_code=error_code,
+            now=now,
+        )
+        return None
 
     def _recover_pending_head_mutation(
         self,
@@ -1336,18 +1641,50 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         inspection: WorkspaceKnowledgeStageInspection,
     ) -> WorkspaceKnowledgeMutationRecoveryResult:
         now = self._clock()
+        decision = self._classify_before_staged_cleanup(
+            staged_mutation=mutation,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=mutation.operation,
+            idempotency_key_hash=mutation.idempotency_key_hash,
+            now=now,
+        )
+        if decision.action == "committed_replay":
+            assert decision.execution_result is not None
+            return WorkspaceKnowledgeMutationRecoveryResult(
+                disposition=WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED,
+                mutation=decision.execution_result.mutation,
+            )
+
+        assert decision.exact_mutation is not None
+        exact = decision.exact_mutation
+
+        if inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT:
+            self._mark_recovery_required(
+                mutation=exact,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation=exact.operation,
+                idempotency_key_hash=exact.idempotency_key_hash,
+                error_code="configuration_recovery_required",
+                now=now,
+            )
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+
         if inspection.state is not WorkspaceKnowledgeStageStateV1.ABSENT:
             if not handler.cleanup_staged(
                 repository=self._repository,
-                mutation=mutation,
+                mutation=exact,
                 inspection=inspection,
             ):
                 self._mark_recovery_required(
-                    mutation=mutation,
+                    mutation=exact,
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
-                    operation=mutation.operation,
-                    idempotency_key_hash=mutation.idempotency_key_hash,
+                    operation=exact.operation,
+                    idempotency_key_hash=exact.idempotency_key_hash,
                     error_code="configuration_mutation_cleanup_failed",
                     now=now,
                 )
@@ -1356,15 +1693,15 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 )
             post_cleanup = handler.inspect_staged(
                 repository=self._repository,
-                mutation=mutation,
+                mutation=exact,
             )
             if post_cleanup.state is not WorkspaceKnowledgeStageStateV1.ABSENT:
                 self._mark_recovery_required(
-                    mutation=mutation,
+                    mutation=exact,
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
-                    operation=mutation.operation,
-                    idempotency_key_hash=mutation.idempotency_key_hash,
+                    operation=exact.operation,
+                    idempotency_key_hash=exact.idempotency_key_hash,
                     error_code="configuration_mutation_cleanup_failed",
                     now=now,
                 )
@@ -1372,20 +1709,55 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                     "configuration_recovery_required"
                 )
 
+        reloaded = self._reload_mutation(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=exact.operation,
+            idempotency_key_hash=exact.idempotency_key_hash,
+        )
+        current_head = self._reload_head(tenant_id=tenant_id, workspace_id=workspace_id)
+        target_revision = exact.target_revision
+        if reloaded is None:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if reloaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            target_revision is not None
+            and current_head is not None
+            and current_head.committed_revision >= target_revision
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+        if (
+            current_head is None
+            or current_head.pending_mutation_id != exact.mutation_id
+            or current_head.pending_revision != target_revision
+            or target_revision is None
+            or current_head.committed_revision >= target_revision
+        ):
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+
         try:
             self._release_pending_head_for_mutation(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                mutation=mutation,
+                mutation=exact,
                 now=now,
             )
         except WorkspaceKnowledgeConfigurationMutationError as exc:
             self._mark_recovery_required(
-                mutation=mutation,
+                mutation=exact,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=exact.operation,
+                idempotency_key_hash=exact.idempotency_key_hash,
                 error_code=exc.error_code,
                 now=now,
             )
@@ -1393,21 +1765,21 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
 
         try:
             aborted = self._confirm_mutation_aborted(
-                mutation=mutation,
+                mutation=exact,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=exact.operation,
+                idempotency_key_hash=exact.idempotency_key_hash,
                 error_code="configuration_mutation_stage_failed",
                 now=now,
             )
         except WorkspaceKnowledgeConfigurationMutationError:
             self._mark_recovery_required(
-                mutation=mutation,
+                mutation=exact,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                operation=mutation.operation,
-                idempotency_key_hash=mutation.idempotency_key_hash,
+                operation=exact.operation,
+                idempotency_key_hash=exact.idempotency_key_hash,
                 error_code="configuration_mutation_cleanup_failed",
                 now=now,
             )
