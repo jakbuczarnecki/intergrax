@@ -103,6 +103,54 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
 ConnectedSourceDeliveryReceipt = ConnectedSourceDeliveryReceiptV1
 
 
+class ConnectedSourceReadinessStateV1(StrEnum):
+    DISABLED = "disabled"
+    SIGNING_KEY_MISSING = "signing_key_missing"
+    SLACK_INTEGRATION_UNAVAILABLE = "slack_integration_unavailable"
+    MAPPING_INCOMPLETE = "mapping_incomplete"
+    READY = "ready"
+
+
+ConnectedSourceReadinessState = ConnectedSourceReadinessStateV1
+
+
+class ConnectedSourceOperationDeliveryAccountingV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    operation_id: str = Field(..., min_length=1, max_length=128)
+    delivery_id: str = Field(..., min_length=64, max_length=64)
+    documents_indexed: int = Field(..., ge=0)
+    documents_unchanged: int = Field(..., ge=0)
+    items_failed: int = Field(..., ge=0)
+    accounted_at: datetime
+
+    @field_validator("delivery_id")
+    @classmethod
+    def _validate_delivery_id(cls, value: str) -> str:
+        if not _SHA256_HEX_RE.fullmatch(value):
+            raise ValueError("connected_source_delivery_id_invalid")
+        return value
+
+
+ConnectedSourceOperationDeliveryAccounting = ConnectedSourceOperationDeliveryAccountingV1
+
+
+class ConnectedSourceSyncEnqueueIntentV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    source_id: str = Field(..., min_length=1, max_length=128)
+    operation_id: str = Field(..., min_length=1, max_length=128)
+    enqueue_generation: int = Field(..., ge=1)
+    last_enqueued_generation: int = Field(default=0, ge=0)
+    updated_at: datetime
+
+
+ConnectedSourceSyncEnqueueIntent = ConnectedSourceSyncEnqueueIntentV1
+
+
 class ConnectedSourceDiscoveryError(RuntimeError):
     def __init__(self, error_code: str) -> None:
         super().__init__(error_code)

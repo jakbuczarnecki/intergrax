@@ -433,7 +433,7 @@ def test_delivery_identity_without_operation_id_reuses_completed_receipt() -> No
     )
 
     assert reused is not None
-    assert reused.operation_id == _OPERATION_OTHER
+    assert reused.operation_id == _OPERATION
     stored = repo.get_connected_source_delivery_receipt(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -441,7 +441,7 @@ def test_delivery_identity_without_operation_id_reuses_completed_receipt() -> No
         delivery_id=_DELIVERY,
     )
     assert stored is not None
-    assert stored.operation_id == _OPERATION_OTHER
+    assert stored.operation_id == _OPERATION
 
 
 def test_delivery_receipt_conflict_on_binding_version_mismatch() -> None:
@@ -505,7 +505,7 @@ def test_in_progress_delivery_recovery() -> None:
         operation_id=_OPERATION_OTHER,
     )
     assert resumed.status is ConnectedSourceDeliveryStatus.IN_PROGRESS
-    assert resumed.operation_id == _OPERATION_OTHER
+    assert resumed.operation_id == _OPERATION
 
 
 @pytest.mark.asyncio
@@ -672,6 +672,7 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         ),
     )
     env.repo.put_operation(_queued_operation())
+    env.repo.put_connected_source_delivery_receipt(_completed_receipt())
     apply_results = [
         ConnectedSourceDeliveryApplyResult(
             documents_indexed=1,
@@ -779,3 +780,160 @@ def test_connected_source_recovery_service_requeues_running_operations() -> None
     source = repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE)
     assert source is not None
     assert source.status is WorkspaceSourceStatus.SYNCING
+
+
+def test_stale_operation_audit_does_not_regress_completed_receipt() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    begin_delivery_receipt(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id=_DELIVERY,
+        binding_configuration_version=1,
+        operation_id=_OPERATION,
+    )
+    in_progress = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY,
+    )
+    assert in_progress is not None
+    complete_delivery_receipt(
+        repository=repo,
+        receipt=in_progress,
+        documents_indexed=1,
+        documents_unchanged=0,
+        items_processed=1,
+        items_failed=0,
+    )
+
+    stale = begin_delivery_receipt(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id=_DELIVERY,
+        binding_configuration_version=1,
+        operation_id=_OPERATION_OTHER,
+    )
+    assert stale.status is ConnectedSourceDeliveryStatus.COMPLETED
+    assert stale.operation_id == _OPERATION
+
+    stored = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY,
+    )
+    assert stored is not None
+    assert stored.status is ConnectedSourceDeliveryStatus.COMPLETED
+    assert stored.operation_id == _OPERATION
+
+
+class _FailingEnqueueBus(DocumentStoreTaskQueue):
+    def __init__(self, store: InMemoryDocumentStore, *, fail_times: int = 1) -> None:
+        super().__init__(store)
+        self._fail_times = fail_times
+        self.enqueue_calls = 0
+
+    def enqueue(self, request: TaskRequest) -> TaskHandle:
+        self.enqueue_calls += 1
+        if self._fail_times > 0:
+            self._fail_times -= 1
+            raise RuntimeError("enqueue_failed")
+        return super().enqueue(request)
+
+
+def test_requeue_enqueue_failure_repaired_on_recovery() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    failing_bus = _FailingEnqueueBus(store, fail_times=1)
+    wiring_context = ToolWiringContext(message_bus=failing_bus)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        durable_requeue_connected_source_operation,
+    )
+
+    operation = _queued_operation().model_copy(
+        update={"status": WorkspaceOperationStatus.RUNNING}
+    )
+    repo.put_operation(operation)
+    requeued, first_enqueue = durable_requeue_connected_source_operation(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+        error_code="lease_busy",
+    )
+    assert requeued.status is WorkspaceOperationStatus.QUEUED
+    assert first_enqueue is not None
+    assert first_enqueue.enqueued is False
+
+    recovery = ConnectedSourceRecoveryService(repo, wiring_context, tenant_ids=(_TENANT,))
+    result = recovery.recover_running_operations()
+    assert result.operations_requeued >= 1
+    assert failing_bus.enqueue_calls >= 2
+
+
+def test_recovery_skips_terminal_operations() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation().model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+            }
+        )
+    )
+    wiring_context = ToolWiringContext(message_bus=DocumentStoreTaskQueue(store))
+    recovery = ConnectedSourceRecoveryService(repo, wiring_context, tenant_ids=(_TENANT,))
+    result = recovery.recover_running_operations()
+    assert result.operations_seen == 0
+    assert result.operations_requeued == 0
+
+
+@pytest.mark.asyncio
+async def test_receipt_complete_counter_crash_repaired_on_replay() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation())
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    replayed = ConnectedSourceDeliveryApplyResult(
+        documents_indexed=1,
+        documents_unchanged=0,
+        items_processed=1,
+        items_failed=0,
+        replayed=True,
+    )
+    updated, first = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=operation,
+        delivery_id=_DELIVERY,
+        sink_result=replayed,
+    )
+    assert first.applied is True
+    assert updated.documents_indexed == 1
+
+    repaired_again, second = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=updated,
+        delivery_id=_DELIVERY,
+        sink_result=replayed,
+    )
+    assert second.applied is False
+    assert repaired_again.documents_indexed == 1

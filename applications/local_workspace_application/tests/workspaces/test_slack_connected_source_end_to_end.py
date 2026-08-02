@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
 from dataclasses import replace
 from datetime import UTC, datetime, timezone
 from pathlib import Path
@@ -14,13 +15,8 @@ from typing import Any, Optional, Sequence
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
@@ -39,14 +35,25 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     compute_slack_conversation_message_revision,
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
-from intergrax.runtime.task.task import TaskResult, TaskState
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from local_workspace_application.host.environment_profile import (
+    build_local_workspace_environment_profile,
+)
+from local_workspace_application.host.lifecycle import LocalWorkspaceHostLifecycle
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
+from local_workspace_application.host.lkw_task_enricher import build_lkw_combined_task_enricher
+from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
+from local_workspace_application.serving import workspace_routes
 from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
 from local_workspace_application.workspaces.connected_source_wiring import (
     build_connected_source_wiring,
     register_slack_connection_integration,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
 )
@@ -63,10 +70,10 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.models import (
     Workspace,
-    WorkspaceDocumentReference,
     WorkspaceStatus,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.service import ManagedWorkspaceService
 from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 
@@ -114,45 +121,14 @@ class _RecordingFakeLLM(LLMAdapter):
         return build_adapter_response(content=self._fixed_text)
 
 
-def _search_task_result(
+def _assert_slack_rag_citation(
     *,
-    workspace_id: str,
+    citation: dict[str, Any],
     source_id: str,
-    file_name: str,
-    document_id: str,
-    source_path: str,
     marker: str,
-) -> TaskResult:
-    return TaskResult(
-        task_id="search-1",
-        run_id="search-1",
-        state=TaskState.COMPLETED,
-        answer="ok",
-        execution_result=AgentExecutionResult(
-            agent_id="local_search",
-            run_id="search-1",
-            status=AgentExecutionStatus.COMPLETED,
-            summary="ok",
-            structured_data={
-                "search_summary": {
-                    "query": marker,
-                    "workspace_id": workspace_id,
-                    "evidence": [
-                        {
-                            "document_id": document_id,
-                            "source_id": source_id,
-                            "workspace_id": workspace_id,
-                            "source_path": source_path,
-                            "file_name": file_name,
-                            "snippet": marker,
-                            "evidence_id": "E1",
-                            "score": 0.99,
-                        }
-                    ],
-                }
-            },
-        ),
-    )
+) -> None:
+    assert citation["source_id"] == source_id
+    assert marker in citation["excerpt"]
 
 
 def _message(
@@ -241,12 +217,27 @@ class _SlackFakeBackend:
 
     async def read_conversation_history_page(self, **kwargs: Any) -> SlackConversationMessagePage:
         self.history_calls += 1
+        if not self._history_pages:
+            return SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(),
+                next_cursor=None,
+            )
         page = self._history_pages.pop(0)
         for item in page.items:
             self._content[item.message_ts] = item
         return page
 
     async def read_thread_replies_page(self, **kwargs: Any) -> SlackConversationMessagePage:
+        if not self._reply_pages:
+            return SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(),
+            )
         page = self._reply_pages.pop(0)
         for item in page.items:
             self._content[item.message_ts] = item
@@ -270,117 +261,60 @@ class _SlackFakeBackend:
         raise NotImplementedError
 
 
-class _ConnectedSourceIndexingService:
-    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
-        self._repository = repository
-        self._indexed_paths: set[str] = set()
-
-    async def index_one(self, **kwargs: Any) -> WorkspaceDocumentIndexingResult:
-        physical_path = Path(str(kwargs["physical_path"]))
-        content = physical_path.read_text(encoding="utf-8")
-        marker_found = next(
-            (m for m in (_MARKER_ROOT, _MARKER_REPLY, _MARKER_EDIT) if m in content),
-            None,
-        )
-        if marker_found is None:
-            raise RuntimeError("marker_missing")
-        logical_source_path = str(kwargs["logical_source_path"])
-        if marker_found not in logical_source_path:
-            logical_source_path = f"{logical_source_path}#{marker_found}"
-        unchanged = logical_source_path in self._indexed_paths
-        if not unchanged:
-            self._indexed_paths.add(logical_source_path)
-        document_id = f"doc-{len(self._indexed_paths)}"
-        if not unchanged:
-            self._repository.put_document_ref(
-                WorkspaceDocumentReference(
-                    document_id=document_id,
-                    tenant_id=str(kwargs["tenant_id"]),
-                    workspace_id=str(kwargs["workspace_id"]),
-                    source_id=str(kwargs["source_id"]),
-                    source_path=logical_source_path,
-                    file_name=str(kwargs["safe_file_name"]),
-                    content_hash=str(kwargs["content_hash"]),
-                    indexed_at=datetime.now(UTC),
-                )
-            )
-        return WorkspaceDocumentIndexingResult(
-            indexed=not unchanged,
-            unchanged=unchanged,
-            document_id=document_id,
-            documents_indexed=0 if unchanged else 1,
-            num_chunks=1,
-            reason="ingest_complete",
-        )
-
-
-class _SearchExecutor:
-    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
-        self._repository = repository
-
-    async def execute(self, task: object) -> TaskResult:
-        metadata = getattr(task, "metadata", {}) or {}
-        workspace_id = str(metadata.get("workspace_id") or "")
-        tenant_id = str(getattr(task, "tenant_id", "") or metadata.get("tenant_id") or "")
-        query = str(metadata.get("query") or "")
-        refs = self._repository.list_document_refs(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-        )
-        for ref in refs:
-            marker = None
-            if _MARKER_ROOT in ref.source_path or _MARKER_ROOT in ref.file_name:
-                marker = _MARKER_ROOT
-            elif _MARKER_REPLY in ref.source_path or _MARKER_REPLY in ref.file_name:
-                marker = _MARKER_REPLY
-            elif _MARKER_EDIT in ref.source_path or _MARKER_EDIT in ref.file_name:
-                marker = _MARKER_EDIT
-            if marker is None:
-                continue
-            if query and marker not in query and query not in marker:
-                continue
-            return _search_task_result(
-                workspace_id=workspace_id,
-                source_id=ref.source_id,
-                file_name=ref.file_name,
-                document_id=ref.document_id,
-                source_path=ref.source_path,
-                marker=marker,
-            )
-        return TaskResult(
-            task_id="search-empty",
-            run_id="search-empty",
-            state=TaskState.COMPLETED,
-            answer="ok",
-            execution_result=AgentExecutionResult(
-                agent_id="local_search",
-                run_id="search-empty",
-                status=AgentExecutionStatus.COMPLETED,
-                summary="ok",
-                structured_data={
-                    "search_summary": {
-                        "query": query,
-                        "workspace_id": workspace_id,
-                        "evidence": [],
-                    }
-                },
-            ),
-        )
-
-
 @pytest.fixture
-def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     store = InMemoryDocumentStore()
-    repo = ManagedWorkspaceRepository(store)
-    data_home = tmp_path / "data"
-    data_home.mkdir()
-    monkeypatch.setenv("DATA_HOME", str(data_home))
+    data_home = tmp_path / "lkw-data"
+    sqlite_dir = tmp_path / "sqlite"
+    shadow_dir = tmp_path / "shadow"
+    user_docs = tmp_path / "docs"
+    for path in (data_home, sqlite_dir, shadow_dir, user_docs):
+        path.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG", "true")
+    monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", "true")
+    monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(user_docs.resolve()))
+    monkeypatch.setenv("LKW_DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(sqlite_dir))
+    monkeypatch.setenv("INTERGRAX_SHADOW_ROOT", str(shadow_dir))
     monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", _SIGNING_KEY)
+    monkeypatch.delenv("INTERGRAX_MONGODB_URI", raising=False)
+    monkeypatch.setattr(
+        workspace_routes,
+        "resolve_managed_workspace_document_store",
+        lambda document_store=None: store,
+    )
+
     settings = replace(
         LocalWorkspaceBackendSettings.from_env(),
         data_home=str(data_home),
         connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+        slack_tenant_id=_TENANT,
+        connected_source_slack_connection_ref=_CONNECTION,
     )
+    env = build_local_workspace_environment_profile(settings)
+    harness_runtime = build_harness_host_runtime(
+        LOCAL_WORKSPACE_APPLICATION_MANIFEST,
+        env,
+        settings=settings,
+    )
+    lifecycle = LocalWorkspaceHostLifecycle()
+    lifecycle.transition_to_ready()
+    lifecycle.set_executor_available(True)
+    task_enricher = build_lkw_combined_task_enricher(
+        env,
+        default_capability="local.workspace.search",
+        agent_checkpoint_store=harness_runtime.agent_checkpoint_store,
+        compensation_queue_store=harness_runtime.compensation_queue_store,
+        idempotency_store=harness_runtime.reliability.idempotency_store,
+    )
+    task_executor = LocalWorkspaceTaskExecutor(
+        harness_runtime.nexus_loop,
+        task_enricher=task_enricher,
+        readiness=lifecycle,
+    )
+    repo = ManagedWorkspaceRepository(store)
     workspace = Workspace(
         workspace_id=_WORKSPACE,
         tenant_id=_TENANT,
@@ -416,8 +350,6 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             updated_at=_NOW,
         )
     )
-    from local_workspace_application.workspaces.service import ManagedWorkspaceService
-
     service = ManagedWorkspaceService(repo)
     config = WorkspaceKnowledgeConfigurationService(repo, service)
     mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
@@ -426,13 +358,13 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         config,
         {WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler()},
     )
-    indexing = _ConnectedSourceIndexingService(repo)
+    indexing = WorkspaceDocumentIndexingService(repo, task_executor)
     wiring = build_connected_source_wiring(
         repository=repo,
         workspace_service=service,
         configuration_service=config,
         mutation_engine=mutation_engine,
-        indexing_service=indexing,  # type: ignore[arg-type]
+        indexing_service=indexing,
         settings=settings,
     )
     backend = _SlackFakeBackend()
@@ -451,7 +383,25 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         connection_ref=_CONNECTION,
         integration=integration,
     )
-    executor = _SearchExecutor(repo)
+    sync = ManagedWorkspaceSyncService(
+        repo,
+        task_executor,
+        indexing_service=indexing,
+        connected_source_sync=wiring.connected_source_sync_service,
+    )
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+        connected_source_recovery_tenant_ids=(_TENANT,),
+    )
+    wiring.connected_source_sync_service.attach_continuation(
+        __import__(
+            "local_workspace_application.workspaces.connected_source_wiring",
+            fromlist=["_SyncRuntimeContinuation"],
+        )._SyncRuntimeContinuation(runtime)
+    )
+    wiring.connected_source_sync_service.attach_sync_enqueue_context(runtime.wiring_context)
     llm = _RecordingFakeLLM(
         fixed_text=json.dumps(
             {
@@ -461,36 +411,29 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             }
         )
     )
-    sync = ManagedWorkspaceSyncService(
-        repo,
-        executor,  # type: ignore[arg-type]
-        indexing_service=indexing,  # type: ignore[arg-type]
-        connected_source_sync=wiring.connected_source_sync_service,
-    )
-    runtime = build_managed_workspace_sync_runtime(
-        document_store=store,
-        sync_service=sync,
-        repository=repo,
-    )
-    wiring.connected_source_sync_service.attach_continuation(
-        __import__(
-            "local_workspace_application.workspaces.connected_source_wiring",
-            fromlist=["_SyncRuntimeContinuation"],
-        )._SyncRuntimeContinuation(runtime)
-    )
     app = FastAPI()
     mount_managed_workspace_routes(
         app,
-        task_executor=executor,  # type: ignore[arg-type]
+        task_executor=task_executor,
         settings=settings,
         repository=repo,
         sync_runtime=runtime,
         connected_source_wiring=wiring,
-        indexing_service=indexing,  # type: ignore[arg-type]
+        indexing_service=indexing,
         llm_adapter=llm,
+        vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
     )
     with TestClient(app) as client:
-        yield client, backend, wiring, repo, integration, runtime
+        yield {
+            "client": client,
+            "backend": backend,
+            "wiring": wiring,
+            "repo": repo,
+            "integration": integration,
+            "runtime": runtime,
+            "harness_runtime": harness_runtime,
+            "settings": settings,
+        }
 
 
 def _wait_operation(client: TestClient, operation_id: str) -> dict[str, object]:
@@ -508,8 +451,15 @@ def _wait_operation(client: TestClient, operation_id: str) -> dict[str, object]:
     raise AssertionError("operation_timeout")
 
 
-def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
-    client, backend, wiring, repo, integration, runtime = e2e_env
+def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
+    client = rag_e2e_env["client"]
+    backend: _SlackFakeBackend = rag_e2e_env["backend"]
+    wiring = rag_e2e_env["wiring"]
+    repo: ManagedWorkspaceRepository = rag_e2e_env["repo"]
+    integration = rag_e2e_env["integration"]
+    runtime = rag_e2e_env["runtime"]
+    harness_runtime = rag_e2e_env["harness_runtime"]
+
     discovery = client.get(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
         headers={"X-Tenant-Id": _TENANT},
@@ -539,16 +489,28 @@ def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
     )
     assert sync_accepted.status_code == 202, sync_accepted.text
     operation_id = sync_accepted.json()["operation_id"]
-    for _ in range(24):
-        if runtime.worker.drain_once() == 0:
-            operation = repo.get_operation(tenant_id=_TENANT, operation_id=operation_id)
-            if operation is not None and operation.status.value in {"completed", "failed"}:
-                break
+    worker = runtime.worker
+    for _ in range(96):
+        worker.drain_once()
+        operation = repo.get_operation(tenant_id=_TENANT, operation_id=operation_id)
+        if operation is not None and operation.status.value in {"completed", "failed"}:
+            break
         time.sleep(0.05)
     completed = _wait_operation(client, operation_id)
     assert completed["status"] == "completed", completed
     assert backend.history_calls >= 1
     assert completed["documents_indexed"] >= 1
+
+    wiring_ctx = harness_runtime.env_wiring.tool_wiring.wiring_context
+    tenant_stores = wiring_ctx.extras.get("tenant_vectorstore_managers", {})
+    scoped_manager = tenant_stores.get(_TENANT)
+    assert scoped_manager is not None
+    assert scoped_manager.count() >= 1
+
+    refs = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert len(refs) >= 3
+    document_ids = {ref.document_id for ref in refs}
+    assert len(document_ids) == len(refs)
 
     for marker in (_MARKER_ROOT, _MARKER_REPLY, _MARKER_EDIT):
         search = client.post(
@@ -572,6 +534,7 @@ def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
         for hit in missing.json()["results"]
     )
 
+    history_before_ask = backend.history_calls
     ask = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/ask",
         headers={"X-Tenant-Id": _TENANT, "Idempotency-Key": "e2e-ask"},
@@ -580,7 +543,12 @@ def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
     assert ask.status_code == 200, ask.text
     body = ask.json()
     assert body["citations"]
-    assert body["citations"][0]["source_id"] == source_id
+    _assert_slack_rag_citation(
+        citation=body["citations"][0],
+        source_id=source_id,
+        marker=_MARKER_ROOT,
+    )
+    assert backend.history_calls == history_before_ask
     resolved = wiring.connection_registry.resolve(
         tenant_id=_TENANT,
         connection_ref=_CONNECTION,
@@ -588,3 +556,20 @@ def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
     )
     assert resolved is integration
+
+    retry_sync = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{created.json()['indexed_source_binding_id']}/sync",
+        headers={"X-Tenant-Id": _TENANT, "Idempotency-Key": f"retry-{uuid.uuid4().hex}"},
+    )
+    assert retry_sync.status_code == 202, retry_sync.text
+    retry_operation_id = retry_sync.json()["operation_id"]
+    for _ in range(48):
+        runtime.worker.drain_once()
+        operation = repo.get_operation(tenant_id=_TENANT, operation_id=retry_operation_id)
+        if operation is not None and operation.status.value in {"completed", "failed"}:
+            break
+        time.sleep(0.05)
+    retry_completed = _wait_operation(client, retry_operation_id)
+    assert retry_completed["status"] == "completed", retry_completed
+    refs_after_retry = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert len(refs_after_retry) == len(refs)

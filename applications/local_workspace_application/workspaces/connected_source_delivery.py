@@ -73,19 +73,6 @@ def _receipt_identity_conflict(
     )
 
 
-def _touch_receipt_operation_id(
-    *,
-    repository: ManagedWorkspaceRepository,
-    receipt: ConnectedSourceDeliveryReceipt,
-    operation_id: str,
-) -> ConnectedSourceDeliveryReceipt:
-    if receipt.operation_id == operation_id:
-        return receipt
-    updated = receipt.model_copy(update={"operation_id": operation_id})
-    repository.put_connected_source_delivery_receipt(updated)
-    return updated
-
-
 def delivery_receipt_completed(
     *,
     repository: ManagedWorkspaceRepository,
@@ -120,11 +107,8 @@ def delivery_receipt_completed(
     if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
         if existing.completed_at is None or existing.items_failed != 0:
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_invalid")
-        return _touch_receipt_operation_id(
-            repository=repository,
-            receipt=existing,
-            operation_id=operation_id,
-        )
+        _ = operation_id
+        return existing
     if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
         return None
     raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
@@ -161,17 +145,11 @@ def begin_delivery_receipt(
         ):
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
         if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
-            return _touch_receipt_operation_id(
-                repository=repository,
-                receipt=existing,
-                operation_id=operation_id,
-            )
+            _ = operation_id
+            return existing
         if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
-            return _touch_receipt_operation_id(
-                repository=repository,
-                receipt=existing,
-                operation_id=operation_id,
-            )
+            _ = operation_id
+            return existing
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
 
     now = _utc_now()

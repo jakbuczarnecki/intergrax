@@ -143,8 +143,10 @@ def build_connected_source_wiring(
         )
 
     continuation = None
+    sync_enqueue_context = None
     if sync_runtime is not None:
         continuation = _SyncRuntimeContinuation(sync_runtime)
+        sync_enqueue_context = sync_runtime.wiring_context
 
     connected_sync = ManagedWorkspaceConnectedSourceSyncService(
         repository=repository,
@@ -153,6 +155,7 @@ def build_connected_source_wiring(
         tenant_binding_port=tenant_binding_port,
         dependencies_factory=dependencies_factory,
         continuation=continuation,
+        sync_enqueue_context=sync_enqueue_context,
     )
     knowledge_access = WorkspaceKnowledgeAccessService(
         discovery_service=discovery,

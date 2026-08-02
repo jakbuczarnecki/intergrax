@@ -46,5 +46,12 @@ def managed_workspace_sync_payload_base64(job: ManagedWorkspaceSyncJob) -> str:
     return base64.b64encode(encode_managed_workspace_sync_job(job)).decode("ascii")
 
 
-def managed_workspace_sync_idempotency_key(job: ManagedWorkspaceSyncJob) -> str:
-    return f"{LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME}:{job.operation_id}"
+def managed_workspace_sync_idempotency_key(
+    job: ManagedWorkspaceSyncJob,
+    *,
+    enqueue_generation: int | None = None,
+) -> str:
+    base = f"{LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME}:{job.operation_id}"
+    if enqueue_generation is None:
+        return base
+    return f"{base}:g{enqueue_generation}"

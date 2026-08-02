@@ -27,11 +27,9 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import (
     LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
     decode_managed_workspace_sync_job,
-    ManagedWorkspaceSyncJob,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 from local_workspace_application.workspaces.sync_worker import (
@@ -154,25 +152,16 @@ def build_managed_workspace_sync_runtime(
             source_id=job.source_id,
         )
         if source is not None and source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
-            repository.put_operation(
-                operation.model_copy(
-                    update={
-                        "status": WorkspaceOperationStatus.QUEUED,
-                        "error": None,
-                    }
-                )
+            from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+                durable_requeue_connected_source_operation,
             )
+
             context = wiring_holder.get("context")
-            if context is not None:
-                enqueue_managed_workspace_sync(
-                    context,
-                    ManagedWorkspaceSyncJob(
-                        tenant_id=job.tenant_id,
-                        workspace_id=job.workspace_id,
-                        source_id=job.source_id,
-                        operation_id=job.operation_id,
-                    ),
-                )
+            durable_requeue_connected_source_operation(
+                repository=repository,
+                wiring_context=context,
+                operation=operation,
+            )
             return
         repository.put_operation(
             operation.model_copy(

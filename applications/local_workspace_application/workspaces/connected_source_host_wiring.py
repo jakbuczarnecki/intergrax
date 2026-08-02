@@ -14,6 +14,9 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
 )
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceReadinessState,
+)
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
     build_connected_source_wiring,
@@ -33,6 +36,7 @@ from local_workspace_application.workspaces.sync_runtime import ManagedWorkspace
 
 @dataclass(frozen=True, slots=True)
 class ConnectedSourceHostReadiness:
+    state: ConnectedSourceReadinessState
     signing_key_configured: bool
     slack_integration_available: bool
     mapping_complete: bool
@@ -46,6 +50,13 @@ class ConnectedSourceHostBundle:
     wiring: ConnectedSourceWiring | None
     slack_integration: SlackConversationChannelIntegration | None
     readiness: ConnectedSourceHostReadiness
+
+
+def connected_source_considered_for_host(settings: LocalWorkspaceBackendSettings) -> bool:
+    return bool(
+        settings.connected_source_opaque_ref_signing_key.strip()
+        or settings.slack_companion_enabled
+    )
 
 
 def resolve_connected_source_host_mapping(
@@ -76,12 +87,28 @@ def build_connected_source_host_bundle(
     slack_integration: SlackConversationChannelIntegration | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
 ) -> ConnectedSourceHostBundle:
+    if not connected_source_considered_for_host(settings):
+        return ConnectedSourceHostBundle(
+            wiring=None,
+            slack_integration=None,
+            readiness=ConnectedSourceHostReadiness(
+                state=ConnectedSourceReadinessState.DISABLED,
+                signing_key_configured=False,
+                slack_integration_available=False,
+                mapping_complete=False,
+                tenant_id=None,
+                connection_ref=None,
+                reason="connected_source_disabled",
+            ),
+        )
+
     signing_key_configured = bool(settings.connected_source_opaque_ref_signing_key.strip())
     if not signing_key_configured:
         return ConnectedSourceHostBundle(
             wiring=None,
             slack_integration=None,
             readiness=ConnectedSourceHostReadiness(
+                state=ConnectedSourceReadinessState.SIGNING_KEY_MISSING,
                 signing_key_configured=False,
                 slack_integration_available=False,
                 mapping_complete=False,
@@ -98,6 +125,7 @@ def build_connected_source_host_bundle(
             wiring=None,
             slack_integration=None,
             readiness=ConnectedSourceHostReadiness(
+                state=ConnectedSourceReadinessState.SLACK_INTEGRATION_UNAVAILABLE,
                 signing_key_configured=True,
                 slack_integration_available=False,
                 mapping_complete=False,
@@ -113,6 +141,7 @@ def build_connected_source_host_bundle(
             wiring=None,
             slack_integration=integration,
             readiness=ConnectedSourceHostReadiness(
+                state=ConnectedSourceReadinessState.MAPPING_INCOMPLETE,
                 signing_key_configured=True,
                 slack_integration_available=True,
                 mapping_complete=False,
@@ -143,6 +172,7 @@ def build_connected_source_host_bundle(
         wiring=wiring,
         slack_integration=integration,
         readiness=ConnectedSourceHostReadiness(
+            state=ConnectedSourceReadinessState.READY,
             signing_key_configured=True,
             slack_integration_available=True,
             mapping_complete=True,

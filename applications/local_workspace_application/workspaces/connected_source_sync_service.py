@@ -22,12 +22,22 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeSyncCheckpointRepository,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
+from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
 )
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
+)
+from local_workspace_application.workspaces.connected_source_operation_accounting import (
+    apply_completed_delivery_accounting,
+)
+from local_workspace_application.workspaces.connected_source_reconciliation import (
+    resolve_connected_source_restart,
+)
+from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+    durable_requeue_connected_source_operation,
 )
 from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
@@ -98,6 +108,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         max_pages_per_operation: int = 8,
         max_duration_seconds: float = 120.0,
         continuation: ConnectedSourceSyncContinuationPort | None = None,
+        sync_enqueue_context: ToolWiringContext | None = None,
         lease_ttl_seconds: int = 60,
     ) -> None:
         self._repository = repository
@@ -109,10 +120,14 @@ class ManagedWorkspaceConnectedSourceSyncService:
         self._max_pages_per_operation = max_pages_per_operation
         self._max_duration_seconds = max_duration_seconds
         self._continuation = continuation
+        self._sync_enqueue_context = sync_enqueue_context
         self._lease_ttl_seconds = lease_ttl_seconds
 
     def attach_continuation(self, continuation: ConnectedSourceSyncContinuationPort) -> None:
         self._continuation = continuation
+
+    def attach_sync_enqueue_context(self, context: ToolWiringContext) -> None:
+        self._sync_enqueue_context = context
 
     async def run_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation:
         operation = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
@@ -140,19 +155,35 @@ class ManagedWorkspaceConnectedSourceSyncService:
         if source.source_type is not WorkspaceSourceType.CONNECTED_SOURCE:
             return self._fail(operation, "source_sync_unsupported_for_source_type")
 
-        binding_ref, indexed_binding_id = self._resolve_indexed_source_binding(
-            tenant_id=tenant_id,
-            workspace_id=operation.workspace_id,
-            source_id=source.source_id,
+        binding_ref, indexed_binding_id, binding_configuration_version = (
+            self._resolve_indexed_source_binding(
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source_id=source.source_id,
+            )
         )
         if binding_ref is None:
             return self._fail(operation, "indexed_source_binding_not_found")
 
-        reconciliation_state = operation.connected_source_reconciliation_state
-        if reconciliation_state is None:
-            reconciliation_state = ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
+        document_store = self._repository.document_store
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise RuntimeError("connected_source_sync_requires_conditional_document_store")
+        checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
+        restart_decision = resolve_connected_source_restart(
+            repository=self._repository,
+            checkpoint_repository=checkpoint_repository,
+            tenant_id=tenant_id,
+            binding_ref=binding_ref,
+            binding_configuration_version=binding_configuration_version,
+            operation=operation,
+        )
+        operation = restart_decision.operation
+        restart = restart_decision.restart
+        reconciliation_state = (
+            operation.connected_source_reconciliation_state
+            or ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
+        )
 
-        restart = reconciliation_state is ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
         claimed = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.RUNNING,
@@ -193,18 +224,14 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 context=sink_context,
             )
 
-            def _record_delivery(_delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
+            def _record_delivery(delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
                 nonlocal operation
-                if result.replayed:
-                    return
-                operation = operation.model_copy(
-                    update={
-                        "documents_indexed": operation.documents_indexed + result.documents_indexed,
-                        "documents_unchanged": operation.documents_unchanged + result.documents_unchanged,
-                        "files_failed": operation.files_failed + result.items_failed,
-                    }
+                operation, _accounting = apply_completed_delivery_accounting(
+                    repository=self._repository,
+                    operation=operation,
+                    delivery_id=delivery_id,
+                    sink_result=result,
                 )
-                self._repository.put_operation(operation)
 
             sink = _DeliveryCountingSink(inner_sink, on_apply=_record_delivery)
             coordinator = self._build_coordinator(
@@ -339,20 +366,31 @@ class ManagedWorkspaceConnectedSourceSyncService:
         tenant_id: str,
         workspace_id: str,
         source_id: str,
-    ) -> tuple[str | None, str]:
+    ) -> tuple[str | None, str, int]:
         configuration = self._configuration_reader.get_configuration(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
         if configuration is None:
-            return None, ""
+            return None, "", 0
         for binding in configuration.indexed_sources:
             if binding.source_id != source_id:
                 continue
             if binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
-                return None, binding.indexed_source_binding_id
-            return binding.knowledge_source_binding_ref, binding.indexed_source_binding_id
-        return None, ""
+                return None, binding.indexed_source_binding_id, 0
+            tenant_binding = self._tenant_binding_port.get_binding(
+                tenant_id=tenant_id,
+                binding_id=binding.knowledge_source_binding_ref,
+            )
+            configuration_version = (
+                tenant_binding.configuration_version if tenant_binding is not None else 0
+            )
+            return (
+                binding.knowledge_source_binding_ref,
+                binding.indexed_source_binding_id,
+                configuration_version,
+            )
+        return None, "", 0
 
     def _requeue_lease_busy(
         self,
@@ -375,17 +413,14 @@ class ManagedWorkspaceConnectedSourceSyncService:
         *,
         error_code: str | None = None,
     ) -> WorkspaceOperation:
-        requeued = operation.model_copy(
-            update={
-                "status": WorkspaceOperationStatus.QUEUED,
-                "error": error_code,
-            }
+        requeued, _enqueue_result = durable_requeue_connected_source_operation(
+            repository=self._repository,
+            wiring_context=self._sync_enqueue_context,
+            operation=operation,
+            source_status=WorkspaceSourceStatus.SYNCING,
+            error_code=error_code,
         )
-        self._repository.put_operation(requeued)
-        self._repository.put_source(
-            source.model_copy(update={"status": WorkspaceSourceStatus.SYNCING})
-        )
-        if self._continuation is not None:
+        if self._continuation is not None and self._sync_enqueue_context is None:
             self._continuation.requeue(
                 ManagedWorkspaceSyncJob(
                     tenant_id=operation.tenant_id,

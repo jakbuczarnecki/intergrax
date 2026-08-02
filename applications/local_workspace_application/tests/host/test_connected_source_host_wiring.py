@@ -31,6 +31,7 @@ from local_workspace_application.host.factory import create_local_workspace_back
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.slack_companion.companion import COMPONENT_NAME
 from local_workspace_application.workspaces.connected_source_host_wiring import (
+    ConnectedSourceReadinessState,
     build_connected_source_host_bundle,
 )
 from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
@@ -166,6 +167,7 @@ def test_missing_signing_key_returns_no_wiring() -> None:
         connected_source_opaque_ref_signing_key="",
         slack_tenant_id=_TENANT,
         connected_source_slack_connection_ref=_CONNECTION,
+        slack_companion_enabled=True,
     )
     repo, service, config, mutation_engine, indexing, settings = _host_services(store, settings)
 
@@ -184,6 +186,7 @@ def test_missing_signing_key_returns_no_wiring() -> None:
 
     assert bundle.wiring is None
     assert bundle.slack_integration is None
+    assert bundle.readiness.state.value == "signing_key_missing"
     assert bundle.readiness.signing_key_configured is False
     assert bundle.readiness.reason == "connected_source_signing_key_missing"
 
@@ -260,3 +263,52 @@ def test_create_local_workspace_backend_app_wires_connected_source(
         lifecycle = app.state.lkw_host_lifecycle
         slack = next(item for item in lifecycle.component_health() if item.name == COMPONENT_NAME)
         assert slack.enabled is True
+
+
+@pytest.mark.parametrize(
+    ("signing_key", "companion", "slack_integration", "tenant", "connection", "expected_state"),
+    [
+        ("", False, None, "", "", ConnectedSourceReadinessState.DISABLED),
+        ("", True, object(), _TENANT, _CONNECTION, ConnectedSourceReadinessState.SIGNING_KEY_MISSING),
+        (_SIGNING_KEY, False, None, _TENANT, _CONNECTION, ConnectedSourceReadinessState.SLACK_INTEGRATION_UNAVAILABLE),
+        (_SIGNING_KEY, False, object(), _TENANT, "", ConnectedSourceReadinessState.MAPPING_INCOMPLETE),
+        (_SIGNING_KEY, False, object(), _TENANT, _CONNECTION, ConnectedSourceReadinessState.READY),
+    ],
+)
+def test_connected_source_readiness_state_matrix(
+    signing_key: str,
+    companion: bool,
+    slack_integration: object | None,
+    tenant: str,
+    connection: str,
+    expected_state: ConnectedSourceReadinessState,
+) -> None:
+    store = InMemoryDocumentStore()
+    settings = LocalWorkspaceBackendSettings(
+        data_home="/tmp/lkw-host-readiness",
+        connected_source_opaque_ref_signing_key=signing_key,
+        slack_tenant_id=tenant,
+        connected_source_slack_connection_ref=connection,
+        slack_companion_enabled=companion,
+    )
+    repo, service, config, mutation_engine, indexing, settings = _host_services(store, settings)
+    integration = None
+    if slack_integration is not None:
+        integration = SlackConversationChannelIntegration.from_backend(
+            _FakeBackend(),  # type: ignore[arg-type]
+            enabled=True,
+        )
+    bundle = build_connected_source_host_bundle(
+        settings=settings,
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,
+        slack_integration=integration,
+    )
+    assert bundle.readiness.state is expected_state
+    if expected_state is ConnectedSourceReadinessState.READY:
+        assert bundle.wiring is not None
+    else:
+        assert bundle.wiring is None

@@ -18,6 +18,8 @@ from intergrax.integrations.contracts.document_store import (
 )
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceOperationDeliveryAccounting,
+    ConnectedSourceSyncEnqueueIntent,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
@@ -61,6 +63,7 @@ _ENTITY_KNOWLEDGE_CONFIGURATION_INDEXED_SOURCE = "knowledge_configuration_indexe
 _ENTITY_KNOWLEDGE_CONFIGURATION_LIVE_ACCESS = "knowledge_configuration_live_access"
 _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY = "knowledge_configuration_query_policy"
 _ENTITY_CONNECTED_SOURCE_DELIVERY = "connected_source_delivery"
+_ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE = "connected_source_sync_enqueue"
 
 
 class WorkspaceKnowledgeConfigurationRepositoryError(RuntimeError):
@@ -368,6 +371,108 @@ class ManagedWorkspaceRepository:
         self._store.delete(
             _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
             f"{workspace_id}:{source_id}:{delivery_id}",
+        )
+
+    # --- Connected source delivery accounting ---
+
+    def put_connected_source_delivery_accounting_if_absent(
+        self,
+        accounting: ConnectedSourceOperationDeliveryAccounting,
+    ) -> bool:
+        partition_key = _partition(accounting.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY)
+        row_key = f"{accounting.operation_id}:{accounting.delivery_id}"
+        return self._put_if_absent(
+            accounting,
+            partition_key=partition_key,
+            row_key=row_key,
+        )
+
+    def get_connected_source_delivery_accounting(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        delivery_id: str,
+    ) -> ConnectedSourceOperationDeliveryAccounting | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY),
+            f"{operation_id}:{delivery_id}",
+            ConnectedSourceOperationDeliveryAccounting,
+        )
+
+    def delete_connected_source_delivery_accounting(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        delivery_id: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY),
+            f"{operation_id}:{delivery_id}",
+        )
+
+    # --- Connected source sync enqueue intent ---
+
+    def put_connected_source_sync_enqueue_intent(
+        self,
+        intent: ConnectedSourceSyncEnqueueIntent,
+    ) -> ConnectedSourceSyncEnqueueIntent:
+        partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
+        self._put(partition_key, intent.operation_id, intent)
+        return intent
+
+    def get_connected_source_sync_enqueue_intent(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+    ) -> ConnectedSourceSyncEnqueueIntent | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE),
+            operation_id,
+            ConnectedSourceSyncEnqueueIntent,
+        )
+
+    def mark_connected_source_sync_enqueued(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+        expected_generation: int,
+    ) -> bool:
+        intent = self.get_connected_source_sync_enqueue_intent(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+        )
+        if intent is None or intent.enqueue_generation != expected_generation:
+            return False
+        if intent.last_enqueued_generation >= expected_generation:
+            return True
+        from datetime import UTC, datetime
+
+        updated = intent.model_copy(
+            update={
+                "last_enqueued_generation": expected_generation,
+                "updated_at": datetime.now(UTC),
+            }
+        )
+        return self._replace_if_match(
+            expected=intent,
+            replacement=updated,
+            partition_key=_partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE),
+            row_key=operation_id,
+        )
+
+    def delete_connected_source_sync_enqueue_intent(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE),
+            operation_id,
         )
 
     # --- Operation ---

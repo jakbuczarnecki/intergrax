@@ -376,7 +376,11 @@ def mount_managed_workspace_routes(
         },
     )
     connected_wiring = connected_source_wiring
-    if connected_wiring is None and shared_slack_integration is not None:
+    if connected_wiring is None and (
+        shared_slack_integration is not None
+        or settings.connected_source_opaque_ref_signing_key.strip()
+        or settings.slack_companion_enabled
+    ):
         from local_workspace_application.workspaces.connected_source_host_wiring import (
             build_connected_source_host_bundle,
         )
@@ -389,6 +393,7 @@ def mount_managed_workspace_routes(
             mutation_engine=mutation_engine,
             indexing_service=indexing_service,
             slack_integration=shared_slack_integration,
+            sync_runtime=sync_runtime,
         )
         connected_wiring = host_bundle.wiring
         app.state.lkw_connected_source_readiness = host_bundle.readiness
@@ -421,6 +426,9 @@ def mount_managed_workspace_routes(
                 "local_workspace_application.workspaces.connected_source_wiring",
                 fromlist=["_SyncRuntimeContinuation"],
             )._SyncRuntimeContinuation(sync_runtime)
+        )
+        connected_wiring.connected_source_sync_service.attach_sync_enqueue_context(
+            sync_runtime.wiring_context
         )
         app.state.lkw_connected_source_wiring = connected_wiring
         mount_connected_source_knowledge_routes(

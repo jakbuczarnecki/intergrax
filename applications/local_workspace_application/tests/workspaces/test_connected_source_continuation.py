@@ -437,3 +437,63 @@ async def test_first_page_read_once_after_checkpoint(
         operation_id=continuation_env.operation_id,
     )
     assert continuation_env.backend.history_calls == 3
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_commit_before_operation_state_uses_checkpoint_not_first_page(
+    continuation_env: _ContinuationEnv,
+) -> None:
+    await continuation_env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert continuation_env.backend.history_calls == 1
+    operation = continuation_env.repo.get_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert operation is not None
+    operation = operation.model_copy(
+        update={
+            "connected_source_reconciliation_state": None,
+            "status": WorkspaceOperationStatus.QUEUED,
+        }
+    )
+    continuation_env.repo.put_operation(operation)
+
+    await continuation_env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert continuation_env.backend.history_calls == 2
+    assert continuation_env.restart_calls[-1] is False
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_commit_before_operation_state_uses_checkpoint_not_first_page(
+    continuation_env: _ContinuationEnv,
+) -> None:
+    await continuation_env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert continuation_env.backend.history_calls == 1
+    operation = continuation_env.repo.get_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert operation is not None
+    operation = operation.model_copy(
+        update={
+            "connected_source_reconciliation_state": None,
+            "status": WorkspaceOperationStatus.QUEUED,
+        }
+    )
+    continuation_env.repo.put_operation(operation)
+
+    await continuation_env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=continuation_env.operation_id,
+    )
+    assert continuation_env.backend.history_calls == 2
+    assert continuation_env.restart_calls[-1] is False
