@@ -74,7 +74,7 @@ Facts verified against repository state at inventory time.
 | 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
 | 7 | Default packaging still installs LangChain packages as core dependencies | `pyproject.toml` `[project].dependencies` — `langchain`, `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters` |
 
-**Import audit scale:** 102 direct production import statements · 69 direct test import statements (see inventory satellite §B).
+**Import audit scale:** 104 direct production/runtime import statements · 69 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports (see inventory satellite §B).
 
 ---
 
@@ -145,13 +145,13 @@ Provider paths are allowed only when:
 | Domain | Ownership in LCI |
 |--------|------------------|
 | **RAG** | Native knowledge document type; ingest, chunking, embedding, indexing, vector store, retrieval, rerank, graph pipelines |
-| **LLM_ADAPTERS** | Provider boundaries; native Ollama adapter (`LCI-6C`); remove LangChain message mapping from public helper surface (`LCI-6D`) |
-| **INTEGRATIONS** | Optional provider loading; document-parser and vector-store bridges; community loader isolation |
-| **MEMORY** | Remove `Document` from session/profile indexing (`session_turn_index_service`, `user_profile_manager`) |
-| **MODALITY** | Multimedia smart loaders — native document output at modality boundary |
-| **ORCHESTRATION** | LangGraph legacy boundary; Nexus ingestion service migration off `Document` |
-| **PLATFORM_FOUNDATION** | Packaging, minimal install, lockfile policy, optional extras (`LCI-7A`) |
-| **EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE** | CI guards (`LCI-0B`, `LCI-7B`), conformance tests, audit scripts |
+| **LLM_ADAPTERS** | Provider boundaries; native Ollama sequence `LCI-6A`–`LCI-6E`; LangChain Ollama shim optionalized in `LCI-6E` |
+| **INTEGRATIONS** | Optional provider loading; document-parser and vector-store bridges (`LCI-3D`, `LCI-5C`); community loader isolation (`LCI-5A`, `LCI-5C`) |
+| **MEMORY** | Remove `Document` from session/profile indexing (`LCI-4D`) |
+| **MODALITY** | Multimedia smart loaders — native document output at modality boundary (`LCI-4D`) |
+| **ORCHESTRATION** | LangGraph legacy boundary (`LCI-8A`); Nexus ingestion native document path (`LCI-2F`) |
+| **PLATFORM_FOUNDATION** | Packaging optional extras (`LCI-7A`); lockfile regeneration; documentation closeout (`LCI-7D`) |
+| **EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE** | Boundary guard (`LCI-0B`); conformance gate (`LCI-1D`); install gates (`LCI-7B`, `LCI-7C`) |
 
 ---
 
@@ -179,8 +179,8 @@ Provider paths are allowed only when:
 | **Version range risk** | Broad `>=0.3` ranges on multiple LangChain packages increase resolver drift and breaking-change exposure. |
 | **Transitive dependency risk** | LangChain meta-packages pull large transitive trees (community, text-splitters, OpenAI shims). |
 | **Migration regression risk** | Dual-model transition (LangChain `Document` vs native document) can silently drop metadata or tenant fields. |
-| **Dual-model transition risk** | Parallel types during migration require strict conversion tests (`LCI-1D`, `LCI-7D`). |
-| **LKW/Ollama parity risk** | LKW proof paths depend on `LangChainOllamaAdapter` today; native Ollama (`LCI-6C`) must prove tool/structured-output parity before swap. |
+| **Dual-model transition risk** | Parallel types during migration require strict conversion tests (`LCI-1D`, conformance gate). |
+| **LKW/Ollama parity risk** | LKW proof paths depend on `LangChainOllamaAdapter` today; native Ollama live proof (`LCI-6C`) and cutover (`LCI-6D`) must precede default resolver switch. |
 
 ---
 
@@ -193,7 +193,7 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 3. RAG ingest → index → retrieve → rerank runs on **native document types** with parity proof.
 4. Memory and modality paths use native documents at indexing boundaries.
 5. Ollama LLM and embedding paths have **native adapters** with parity proof; LangChain Ollama shims are optional extras only.
-6. `check_langchain_boundary` (or successor) passes in CI for forbidden zones (`LCI-0B`, `LCI-7B`).
+6. `check_langchain_boundary` (or successor) passes in CI for forbidden zones (`LCI-0B`); LangChain-free core install gate passes (`LCI-7B`).
 7. LangChain compatibility is isolated under `compat/` and/or provider modules with optional extras.
 8. LangGraph remains optional; retirement decision recorded under `LCI-8A`.
 9. LKW proof workload passes on LangChain-free core install (LKW as client, not owner).
