@@ -1,4 +1,4 @@
-﻿# ADR-UCL-001 — Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
+# ADR-UCL-001 — Unified Context Lifecycle Ownership, Single-Budget Authority and Versioned Context Projections
 
 | Field | Value |
 |-------|-------|
