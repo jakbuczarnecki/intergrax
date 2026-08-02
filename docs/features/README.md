@@ -58,12 +58,14 @@ Do **not** create `docs/features/satellites/` at the features root. Satellites b
 | Feature | Guide | Architecture | Plan | Status |
 |---------|-------|--------------|------|--------|
 | `TOKEN_OPTIMIZATION` | [`token_optimization/README.md`](token_optimization/README.md) | [`architecture/TOKEN_OPTIMIZATION.md`](architecture/TOKEN_OPTIMIZATION.md) | [`plan/TOKEN_OPTIMIZATION.md`](plan/TOKEN_OPTIMIZATION.md) | Implemented foundation; TOKEN-10 cache-aware runtime and proof planned |
+| `LANGCHAIN_INDEPENDENCE` | — | [`architecture/LANGCHAIN_INDEPENDENCE.md`](architecture/LANGCHAIN_INDEPENDENCE.md) | [`plan/LANGCHAIN_INDEPENDENCE.md`](plan/LANGCHAIN_INDEPENDENCE.md) | Architecture and migration roadmap awaiting review; implementation not started |
 
 **Satellites (on demand):**
 
 | Feature | Architecture satellite | Plan satellite |
 |---------|------------------------|----------------|
 | `TOKEN_OPTIMIZATION` | [`architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md) | [`plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md) |
+| `LANGCHAIN_INDEPENDENCE` | [`architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) | [`plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md`](plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md) |
 
 ---
 
