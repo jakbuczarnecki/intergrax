@@ -15,6 +15,8 @@ from local_workspace_application.workspaces.connected_source_ids import (
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
     IndexedSourceSyncModeV1,
+    WorkspaceConnectionAttachment,
+    WorkspaceConnectionAttachmentStatusV1,
     WorkspaceIndexedSourceBinding,
     WorkspaceIndexedSourceBindingStatusV1,
     WorkspaceKnowledgeConfigurationV1,
@@ -35,6 +37,182 @@ from local_workspace_application.workspaces.models import (
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 _RESULT_ENTITY_TYPE = "indexed_source_binding"
+_CONNECTION_ATTACHMENT_RESULT_TYPE = "connection_attachment"
+
+
+@dataclass(frozen=True, slots=True)
+class AttachConnectionMutationIntent:
+    attachment_id: str
+    connection_ref: str
+    safe_display_label: str
+
+
+class AttachConnectionMutationHandler:
+    operation = WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION
+
+    def find_existing_result(
+        self,
+        *,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        intent: object,
+    ) -> WorkspaceKnowledgeExistingResult | None:
+        if not isinstance(intent, AttachConnectionMutationIntent):
+            raise ValueError("attach_connection_intent_required")
+        connection_ref = intent.connection_ref.strip()
+        for attachment in configuration.connection_attachments:
+            if attachment.connection_ref != connection_ref:
+                continue
+            if attachment.status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED:
+                continue
+            return WorkspaceKnowledgeExistingResult(
+                result_entity_type=_CONNECTION_ATTACHMENT_RESULT_TYPE,
+                result_entity_id=attachment.attachment_id,
+            )
+        return None
+
+    def stage(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        mutation: WorkspaceKnowledgeMutationRecord,
+        target_revision: int,
+        intent: object,
+        now: datetime,
+    ) -> WorkspaceKnowledgeStagedResult:
+        if not isinstance(intent, AttachConnectionMutationIntent):
+            raise ValueError("attach_connection_intent_required")
+        connection_ref = intent.connection_ref.strip()
+        existing_versions = repository.list_knowledge_connection_attachment_versions(
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+        )
+        earliest_created_at = now
+        for version in existing_versions:
+            if version.attachment_id != intent.attachment_id:
+                continue
+            if version.tenant_id != mutation.tenant_id:
+                raise RuntimeError("connection_attachment_identity_conflict")
+            if version.workspace_id != mutation.workspace_id:
+                raise RuntimeError("connection_attachment_identity_conflict")
+            if version.connection_ref != connection_ref:
+                raise RuntimeError("connection_attachment_identity_conflict")
+            if version.created_at < earliest_created_at:
+                earliest_created_at = version.created_at
+
+        attachment = WorkspaceConnectionAttachment(
+            attachment_id=intent.attachment_id,
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+            connection_ref=connection_ref,
+            safe_display_label=intent.safe_display_label,
+            status=WorkspaceConnectionAttachmentStatusV1.ATTACHED,
+            mutation_id=mutation.mutation_id,
+            effective_revision=target_revision,
+            created_at=earliest_created_at,
+            updated_at=now,
+        )
+        if not repository.put_knowledge_connection_attachment_version_if_absent(attachment):
+            existing = repository.get_knowledge_connection_attachment_version(
+                tenant_id=mutation.tenant_id,
+                workspace_id=mutation.workspace_id,
+                attachment_id=attachment.attachment_id,
+                effective_revision=target_revision,
+            )
+            if existing is None or not _is_equivalent_connection_attachment(
+                existing,
+                expected=attachment,
+            ):
+                raise RuntimeError("connection_attachment_stage_conflict")
+        return WorkspaceKnowledgeStagedResult(
+            result_entity_type=_CONNECTION_ATTACHMENT_RESULT_TYPE,
+            result_entity_id=intent.attachment_id,
+        )
+
+    def inspect_staged(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        mutation: WorkspaceKnowledgeMutationRecord,
+    ) -> WorkspaceKnowledgeStageInspection:
+        versions = repository.list_knowledge_connection_attachment_versions(
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+        )
+        owned = [version for version in versions if version.mutation_id == mutation.mutation_id]
+        if not owned:
+            return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.ABSENT)
+        if len(owned) != 1:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        staged = owned[0]
+        if mutation.target_revision is None:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        if staged.effective_revision != mutation.target_revision:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        if staged.tenant_id != mutation.tenant_id:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        if staged.workspace_id != mutation.workspace_id:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        if staged.status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED:
+            return WorkspaceKnowledgeStageInspection(
+                state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT,
+            )
+        return WorkspaceKnowledgeStageInspection(
+            state=WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
+            result_entity_type=_CONNECTION_ATTACHMENT_RESULT_TYPE,
+            result_entity_id=staged.attachment_id,
+        )
+
+    def cleanup_staged(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        mutation: WorkspaceKnowledgeMutationRecord,
+        inspection: WorkspaceKnowledgeStageInspection,
+    ) -> bool:
+        versions = repository.list_knowledge_connection_attachment_versions(
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+        )
+        for version in versions:
+            if version.mutation_id != mutation.mutation_id:
+                continue
+            if not repository.delete_knowledge_connection_attachment_version_if_match(version):
+                return False
+        remaining = repository.list_knowledge_connection_attachment_versions(
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+        )
+        for version in remaining:
+            if version.mutation_id == mutation.mutation_id:
+                return False
+        return True
+
+
+def _is_equivalent_connection_attachment(
+    actual: WorkspaceConnectionAttachment,
+    *,
+    expected: WorkspaceConnectionAttachment,
+) -> bool:
+    return (
+        actual.attachment_id == expected.attachment_id
+        and actual.tenant_id == expected.tenant_id
+        and actual.workspace_id == expected.workspace_id
+        and actual.connection_ref == expected.connection_ref
+        and actual.safe_display_label == expected.safe_display_label
+        and actual.status == expected.status
+        and actual.mutation_id == expected.mutation_id
+        and actual.effective_revision == expected.effective_revision
+    )
 
 
 @dataclass(frozen=True, slots=True)

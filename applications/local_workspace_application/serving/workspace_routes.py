@@ -134,6 +134,7 @@ from local_workspace_application.workspaces.web_url_ingestion import (
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    AttachConnectionMutationHandler,
     CreateIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
@@ -148,8 +149,15 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import TenantConnectionPort
+from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
+    WorkspaceConnectionAttachmentService,
+)
 from local_workspace_application.serving.knowledge_connected_source_routes import (
     mount_connected_source_knowledge_routes,
+)
+from local_workspace_application.serving.knowledge_connection_attachment_routes import (
+    mount_knowledge_connection_attachment_routes,
 )
 from local_workspace_application.workspaces.vector_cleanup import (
     VectorstoreManagerWorkspaceCleanup,
@@ -326,6 +334,7 @@ def mount_managed_workspace_routes(
     indexing_service: WorkspaceDocumentIndexingService | None = None,
     connected_source_wiring: ConnectedSourceWiring | None = None,
     shared_slack_integration: Any | None = None,
+    tenant_connection_port: TenantConnectionPort | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -372,6 +381,9 @@ def mount_managed_workspace_routes(
         {
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: (
+                AttachConnectionMutationHandler()
             ),
         },
     )
@@ -432,6 +444,19 @@ def mount_managed_workspace_routes(
             wiring=connected_wiring,
             workspace_service=service,
             sync_runtime=sync_runtime,
+            prefix=prefix,
+        )
+
+    if tenant_connection_port is not None:
+        connection_attachment_service = WorkspaceConnectionAttachmentService(
+            connection_port=tenant_connection_port,
+            configuration_service=configuration_service,
+            mutation_engine=mutation_engine,
+        )
+        app.state.lkw_connection_attachment_service = connection_attachment_service
+        mount_knowledge_connection_attachment_routes(
+            app,
+            attachment_service=connection_attachment_service,
             prefix=prefix,
         )
 
