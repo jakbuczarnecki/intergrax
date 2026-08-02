@@ -103,7 +103,7 @@ lkw.ask_run:{tenant_id}:ask_run
 
 | Concern | Verified behavior |
 |---------|-------------------|
-| `WorkspaceSource` | Durable per-workspace Source; types include `CONNECTED_SOURCE` enum value but **not implemented** |
+| `WorkspaceSource` | Durable per-workspace Source; types include `CONNECTED_SOURCE` (**implemented** for Slack via `LKW-SLACK-CONNECTED-SOURCE-1`) |
 | `WorkspaceSourceStatus` | `registered`, `syncing`, `processing`, `ready`, `error` - indexing/processing health only; **no** `disabled` or `unavailable` |
 | Source ID generation | `uuid.uuid4()` for local folder; deterministic `src:knowledge_input_source:{input_id}` for intake-derived sources |
 | Tenant/workspace validation | `KnowledgeIntakeService.accept()` and resolvers check `repository.get_workspace()` |
@@ -159,6 +159,7 @@ LKW configuration stores only `connection_ref`. It never constructs vendor clien
 | Jira | `jira` | `issue_tracker` | `jira.issues` | `jira_project` | inventory, content, reconciliation |
 | Confluence | `confluence` | `wiki_knowledge` | `confluence.pages` | `confluence_space` | inventory, rich_text content |
 | MS365 Graph | `ms365_graph` | `collaboration_suite` | `msgraph.drive`, `msgraph.mail`, `msgraph.teams_channel` | `msgraph_drive`, etc. | delta/incremental reads |
+| Google Workspace | `google_workspace` | `collaboration_suite` | `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat` | per-surface scope types | **PLANNED** — `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW** |
 
 Capabilities are declared per adapter via `KnowledgeAdapterCapabilities`. Live capability IDs are **planned** in architecture docs, **not implemented** as a registry.
 

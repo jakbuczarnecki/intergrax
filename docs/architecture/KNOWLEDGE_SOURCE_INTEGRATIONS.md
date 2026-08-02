@@ -38,6 +38,7 @@ ConfluenceWikiKnowledgeIntegration
 Ms365GraphCollaborationSuiteIntegration
 DatabricksRelationalStoreIntegration
 SlackConversationChannelIntegration
+GoogleWorkspaceCollaborationSuiteIntegration
 ```
 
 These integrations must remain the single public provider/category entrypoints. They own vendor communication and implement the appropriate existing category contract. They must not be duplicated merely because an application wants to use their data as knowledge.
@@ -64,9 +65,11 @@ One-sentence result:
 |---|---|---|
 | Existing integration categories remain authoritative | `FROZEN` | Jira remains an issue-tracker integration, Confluence remains a wiki-knowledge integration, Microsoft Graph remains a collaboration-suite integration, and Databricks remains a relational-store integration unless a separately justified domain category is introduced. |
 | No generic `knowledge_source` integration category | `REJECTED` | Knowledge ingestion is a cross-category application use case, not the primary domain identity of every vendor integration. |
-| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, `SlackKnowledgeIntegration`, `SlackRagIntegration`, `SlackDatabaseIntegration`, `SlackLiveIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
+| No duplicate public integration for knowledge use | `REJECTED` | Do not create `JiraKnowledgeSourceIntegration`, `ConfluenceKnowledgeSourceIntegration`, `SlackKnowledgeIntegration`, `SlackRagIntegration`, `SlackDatabaseIntegration`, `SlackLiveIntegration`, `GoogleDriveIntegration`, `GoogleDocsIntegration`, `GoogleSheetsIntegration`, `GoogleCalendarIntegration`, `GoogleSlidesIntegration`, `GmailKnowledgeIntegration`, `GoogleChatKnowledgeIntegration`, `GoogleWorkspaceKnowledgeIntegration`, or equivalent parallel public integrations beside existing provider/category integrations. |
 | Slack remains one `conversation_channel` integration | `FROZEN` | `SlackConversationChannelIntegration` is the only public Slack integration for conversational runtime, shared typed Slack knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse the existing client, transport and credential resolution. Do not create an LKW-owned Slack vendor client. |
 | Slack dual role is independent | `FROZEN` | Slack-as-frontend (LKW companion transport) and Slack-as-knowledge-source (Connection → Remote Resource → bindings) are separate roles. Enabling the Slack chatbot does not authorize indexing or live Slack history access. Conversation transport events do not automatically become durable knowledge. |
+| Google Workspace remains one `collaboration_suite` integration | `FROZEN` | `GoogleWorkspaceCollaborationSuiteIntegration` is the only public Google Workspace integration for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. Reuse one credential-resolution boundary and one provider client/transport family. Do not create parallel public integrations per Drive, Docs, Sheets, Calendar, Slides, Mail or Chat surface. |
+| Google provider integration ≠ Vendor Knowledge Adapter ≠ Live Capability ≠ LKW Connected Source | `FROZEN` | Google Workspace knowledge use follows the same separation as other vendors: provider integration owns transport; thin Vendor Knowledge adapters map canonical contracts; Live Capability adapters own ephemeral reads; LKW Connected Source owns workspace binding and indexing — without duplicating Google clients or credentials. |
 | Vendor integration remains low-level | `FROZEN` | It owns provider transport, auth handoff, vendor request/response mapping, provider errors and category operations. It does not know LKW, workspaces, RAG or product workflows. |
 | Unified knowledge behavior is exposed by platform boundaries | `FROZEN DIRECTION` | Durable knowledge behavior uses Vendor Knowledge Facade; live knowledge behavior uses the validated live capability boundary. Both resolve the same existing integration through separate adapter paths. |
 | Facade is not an integration category | `FROZEN` | It is a platform service/facade and may use a registry of source adapters. It is not registered as another vendor integration. |
@@ -1155,18 +1158,31 @@ application database/store       LKW Knowledge Intake
 12. Live Slack results remain ephemeral unless an explicit promotion/materialization workflow is executed.
 13. Indexed permission and live-access authorization are separate grants.
 14. Slack-as-frontend and Slack-as-knowledge-source are independent roles even when they resolve the same provider integration foundation.
+15. **Conversation Context Binding** (LKW application domain) controls where and under which audience the assistant may respond. Provider adapters supply `ConversationIngressContext` with `observed_audience`; `binding.audience_mode` must match before workspace resolution or Ask. At most one `ACTIVE` binding per semantic identity. Independent from Indexed Source Binding and Live Access Binding. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
-**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1`):**
+**Independent grants (provider-neutral):**
 
 ```text
-list_accessible_conversations_page
-read_conversation_history_page
-read_thread_replies_page
-read_exact_message
+Conversation Context Binding  → where and for whom LKW responds
+Indexed Source Binding        → durable knowledge ingestion
+Live Access Binding           → request-time provider reads
+```
+
+None implies another. Enabling a bot in a channel does not index channel history. Indexing channel history does not enable bot responses. Bot responses do not imply live history reads.
+
+**Implemented provider-specific read primitives (`SLACK-KNOWLEDGE-FOUNDATION-1` — DONE):**
+
+```text
+list_accessible_conversations_page   # bot-membership users.conversations (all supported kinds)
+read_conversation_history_page       # root-window bounded history; bot token
+read_thread_replies_page             # thread replies with root normalization; bot token
+read_exact_message                   # bounded exact lookup with reply pagination; no root required on point page
 read_file_info (safe inventory only)
 ```
 
-**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, fixed-window reconciliation, structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**.
+**Credential model (same integration, same `AsyncWebClient`):** one `INTERGRAX_SLACK_BOT_TOKEN` (`xoxb-`) for conversational runtime and all knowledge reads. Inventory uses `users.conversations` with `types=public_channel,private_channel,im,mpim` for conversations where the bot is a member. Public/private channel reads require the bot to be added to the conversation with appropriate `channels:*` / `groups:*` read/history scopes.
+
+**Slack Vendor Knowledge adapter (`slack_conversation`):** `IMPLEMENTED` — `tombstones=false`, `permissions=false`, `slack.conversation.scope.v2` root-window reconciliation (`root_oldest`/`root_latest`, strict ordering), structured schema `slack.conversation.message.knowledge.v1`, history/reply page maximum **15**. Root `message_ts` and reply `message_ts` must lie inside `[root_oldest, root_latest]`; `thread_broadcast` history records are not separately materialized. `full_inventory=true` is complete inventory inside the explicit root-window scope only; replies whose root lies outside the root window are not discovered.
 
 **Not implemented:** LKW bridge, live capability, authoritative ACL, durable deletion feed, binary file download.
 
@@ -1177,7 +1193,7 @@ read bounded search result where Slack and policy support it
 read explicit durable deletion feed via Events API
 ```
 
-Required Slack scopes for knowledge reads must be audited per installation against official Slack documentation and preserve least privilege.
+Required Slack scopes for knowledge reads are documented per credential route in [`intergrax/integrations/providers/conversation_channel/slack/USAGE.md`](../../intergrax/integrations/providers/conversation_channel/slack/USAGE.md); audit per installation against official Slack documentation and preserve least privilege.
 
 **Three-mode reuse:**
 
@@ -1194,6 +1210,304 @@ Required Slack scopes for knowledge reads must be audited per installation again
 | `SlackConversationChannelIntegration`; Slack client/SDK and transport; credential references and token isolation; typed provider references; provider inventory/history/thread/exact-read primitives; provider response validation; provider error normalization; Slack Vendor Knowledge Adapter; Vendor Knowledge Facade integration; Sync / Materialization support; Slack Live Capability Adapter; validated live execution support; provider-neutral durable and live results | Workspace Knowledge Configuration; Slack Connection attachment to workspace; Remote Resource selection; Indexed Source; Live Access Binding; workspace and principal authorization; Knowledge Intake; Source / Document / Chunk / Vector ownership; RAG retrieval; Hybrid Ask; evidence provenance; Slack conversational commands and rendering; user-facing operation status |
 
 LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors, implement Slack-specific synchronization or duplicate Slack response validation.
+
+**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical LKW implementation task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
+
+### 13.8 Google Workspace — binding three-mode example (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
+
+**Classification:** `READY_FOR_REVIEW` — architecture frozen; no Google knowledge runtime implemented.
+
+Google Workspace remains one category-correct public `collaboration_suite` integration. The existing `GoogleWorkspaceCollaborationSuiteIntegration`, its client, transport and credential resolution are the single foundation for collaboration operations, shared typed Google knowledge reads, durable materialization, indexed RAG and bounded live access. No application-specific or consumption-mode-specific Google client or public integration may be introduced.
+
+**Current implementation honesty (repository HEAD):**
+
+```text
+GoogleWorkspaceCollaborationSuiteIntegration public shell
+google_workspace collaboration-suite manifest (BETA)
+legacy CollaborationSuite client delegation
+basic mail/calendar/directory-shaped public contract methods
+provider registration/catalog structure
+```
+
+Not present today: production Google OAuth, Google API client construction, Drive inventory, Docs/Sheets/Slides content reads, Calendar knowledge synchronization, Gmail knowledge synchronization, Google Chat knowledge reads, Google Vendor Knowledge adapters, Google live capabilities, LKW Google Connected Sources, Google Search/Ask proof. Manifest status or shell existence is not proof of operational knowledge surfaces.
+
+**Rejected duplicate names (do not create):**
+
+```text
+GoogleDriveIntegration
+GoogleDocsIntegration
+GoogleSheetsIntegration
+GoogleCalendarIntegration
+GoogleSlidesIntegration
+GmailKnowledgeIntegration
+GoogleChatKnowledgeIntegration
+GoogleWorkspaceKnowledgeIntegration
+```
+
+**Canonical foundation:**
+
+```text
+Connection / credential reference
+        |
+        v
+GoogleWorkspaceCollaborationSuiteIntegration
+        |
+        v
+shared typed Google provider read primitives
+(per source_kind: drive, docs, sheets, calendar, slides, mail, chat)
+        |
+        +---------------------------+
+        |                           |
+        v                           v
+durable knowledge path          live capability path
+        |                           |
+        v                           v
+Google Workspace Vendor         Google Workspace Live
+Knowledge Adapter(s)            Capability Adapter(s)
+        |                           |
+        v                           v
+Vendor Knowledge Facade         Validated Executor
+```
+
+**Provider identity (frozen):**
+
+```text
+provider_id: google_workspace
+integration category: collaboration_suite
+single public integration: GoogleWorkspaceCollaborationSuiteIntegration
+```
+
+**Approved source kinds (independent scope/cursor semantics each):**
+
+```text
+(google_workspace, collaboration_suite, drive)
+(google_workspace, collaboration_suite, docs)
+(google_workspace, collaboration_suite, sheets)
+(google_workspace, collaboration_suite, calendar)
+(google_workspace, collaboration_suite, slides)
+(google_workspace, collaboration_suite, mail)
+(google_workspace, collaboration_suite, chat)
+```
+
+Do not collapse every Google Workspace resource into one untyped generic file source. Do not create separate public integrations for these source kinds.
+
+**Canonical durable resource ownership (frozen):**
+
+Discovery surface does **not** determine durable `source_kind`. Drive may inventory any Drive-hosted resource; the platform derives the canonical binding kind from the authoritative Google resource type server-side. The frontend must not choose or override `source_kind`.
+
+| Google resource class | MIME / resource class | Canonical durable `source_kind` |
+|---|---|---|
+| Google-native document | Google Docs | `docs` |
+| Google-native spreadsheet | Google Sheets | `sheets` |
+| Google-native presentation | Google Slides | `slides` |
+| Ordinary uploaded/stored file | non-native binary or generic file | `drive` |
+| Drive folder / My Drive / Shared Drive scope | folder or drive scope | `drive` |
+| Google Calendar / calendar-event scope | calendar resource or event set | `calendar` |
+| Gmail scope | mailbox / folder / message scope | `mail` |
+| Google Chat space / conversation scope | chat space or conversation | `chat` |
+
+**Drive discovery → canonical binding flow (frozen):**
+
+```text
+Drive inventory / discovery
+→ inspect authoritative Google resource type
+→ derive canonical target source_kind server-side
+→ issue provider-neutral Remote Resource candidate
+→ create only the canonical KnowledgeSourceBinding
+```
+
+**Stable Google Workspace resource identity (frozen):**
+
+Conceptual identity namespace — independent from discovery surface:
+
+```text
+provider_id = google_workspace
+connection_ref
+canonical Google resource type
+stable Google resource ID
+```
+
+Rules:
+
+1. A rename does not change identity.
+2. A move does not change identity where Google preserves the resource ID.
+3. Drive discovery and Docs/Sheets/Slides exact reads must refer to the same underlying Google resource identity.
+4. Export/download URL is never identity.
+5. Revision, ETag, modified time and content hash are change state — not identity.
+6. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
+
+Do not freeze an implementation-specific Python type in this architecture document.
+
+**Overlapping-binding policy (frozen):**
+
+Example overlap:
+
+```text
+selected native Google Doc
++
+selected Drive folder containing that Google Doc
+```
+
+**First proof (narrow policy):**
+
+```text
+explicit selected resources only
+broad Drive/folder synchronization deferred unless overlap semantics are proved
+```
+
+Selecting both a native Google Doc and a containing Drive folder in the first proof is out of scope unless overlap semantics are explicitly implemented. Broad folder scopes remain deferred.
+
+**Future broad Drive scopes (required direction — not yet chosen):**
+
+When broad Drive/folder synchronization is implemented, one of:
+
+```text
+Option A: reject an overlapping source binding in the same workspace
+
+Option B: one canonical provider item ownership record deduplicates the resource
+          across bindings while preserving provenance of every covering binding
+```
+
+Option B is **not** chosen unless the existing Vendor Knowledge and LKW ownership models can support it safely. Until that contract exists, broad overlapping scopes must fail closed or remain deferred. Do not claim duplicate prevention without an enforceable rule.
+
+**Drive read surface versus Docs/Sheets/Slides content surfaces (frozen):**
+
+| Surface | Owns |
+|---|---|
+| **Drive** | inventory; hierarchy; resource classification; folder/drive traversal; ordinary binary content; stable Drive-hosted resource metadata; change-feed/reconciliation primitives |
+| **Docs** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
+| **Sheets** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
+| **Slides** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
+
+A Drive adapter may call a shared typed native-content primitive internally only when the durable source binding remains canonical and duplication is prevented. Do not create two independent durable copies merely because two provider APIs can read the same file.
+
+Additional rules:
+
+1. Drive may discover a native Docs, Sheets or Slides item; native content is read through the appropriate typed provider surface.
+2. The same Google resource identity must not become unrelated duplicate provider objects.
+3. Stable provider identity remains separate from content revision; a file rename must not change remote identity.
+4. Provider-generated download URLs must not become durable identity.
+5. Google-native resources must not be treated as ordinary binary files when a typed native content contract is required.
+6. Uploaded PDF, DOCX, XLSX, PPTX and other binary files may follow the shared binary-content path when supported.
+7. Exact API calls and export formats remain implementation-task decisions after an official API audit.
+
+**Thin Vendor Knowledge adapters (planned — not implemented):**
+
+```text
+GoogleWorkspaceDriveKnowledgeAdapter
+GoogleWorkspaceDocsKnowledgeAdapter
+GoogleWorkspaceSheetsKnowledgeAdapter
+GoogleWorkspaceCalendarKnowledgeAdapter
+GoogleWorkspaceSlidesKnowledgeAdapter
+GoogleWorkspaceMailKnowledgeAdapter
+GoogleWorkspaceChatKnowledgeAdapter
+```
+
+Each adapter:
+
+- receives the already resolved `GoogleWorkspaceCollaborationSuiteIntegration`;
+- owns no Google credentials, constructs no independent Google client, owns no checkpoint repository, owns no application database, owns no LKW Source;
+- declares only its own capabilities;
+- maps provider records into canonical Vendor Knowledge contracts;
+- uses the shared Vendor Knowledge synchronization coordinator;
+- keeps independent source scope, cursor and deletion semantics;
+- remains reusable by applications other than LKW.
+
+**Three-mode support (per source kind — planned independently):**
+
+| Mode | Google direction |
+|---|---|
+| Indexed RAG | durable Google synchronization → optional LKW Knowledge Intake → Documents → Chunks → Embeddings → RAG |
+| Durable materialization without RAG | durable Google synchronization → DocumentStore / DB / object storage / application repository — no LKW, embeddings or vector store required |
+| Live access | authorized request → validated Google live capability → bounded provider read → normalized ephemeral evidence — no automatic Source, Document, Chunk, Embedding, vector record, database replica or sync checkpoint |
+
+Binding rules (same as §2.1): one provider integration is reused by all modes; durable and live access have separate adapters; live results are ephemeral by default; durable synchronization does not imply RAG; adding an Indexed Source does not create Live Access; adding Live Access does not index the resource; no second credential/client path for live access.
+
+**Foundation task (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` — PLANNED):** typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
+
+**Foundation prerequisites (activation gates — not satisfied):**
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
+canonical Tenant Connection / credential-reference boundary available
+SecretsStore-owned credential persistence available
+runtime integration rehydration/resolution boundary available
+Vendor Knowledge binding, registry and synchronization contracts available
+```
+
+Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution are owned by `LKW-KNOWLEDGE-ACCESS-1` (and its platform prerequisites) — not by Google Foundation. Google Foundation must not introduce another tenant Connection catalog; must not introduce a Google-only credential database; must not put OAuth tokens into provider config records, `KnowledgeSourceBinding` or LKW state. If a required generic boundary remains unfinished, finish or reuse that boundary before production Google OAuth. Do not duplicate LKW application configuration inside the platform integration.
+
+**Post-Slack implementation gate (exact):** Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED**; `LKW-SLACK-KNOWLEDGE-PROOF-1` and remaining Slack-vertical tasks are **PLANNED** — Google implementation is not active.
+
+Credential routes (conceptually separated): individual-user OAuth; organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. For the first testable proof, individual-user authorization is the preferred product route. Exact OAuth scopes and Google SDK signatures are **not** frozen here — implementation tasks must verify against current official Google documentation. Secrets remain owned by the existing Connection/SecretsStore boundary. No access token, refresh token, client secret or service-account private key may enter `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, Remote Resource response, LKW Source, citation or provider cursor.
+
+**LKW vertical (planned):**
+
+```text
+workspace Connection
+→ Google Workspace Remote Resource discovery
+→ selected Drive / Docs / Sheets / Calendar resource
+→ tenant KnowledgeSourceBinding
+→ WorkspaceIndexedSourceBinding
+→ Vendor Knowledge synchronization
+→ existing LKW materialization/indexing pipeline
+→ Search → Ask → citations
+```
+
+`LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` reuses the generic Connected Source implementation proved by Slack. Do not plan Google-specific LKW configuration aggregates, mutation engines, indexing pipelines, vector database access or Source tables. First Google LKW sources default to `PERSONAL_ONLY`; future `SHARED_ALLOWED` use remains governed by the accepted Conversation Context architecture.
+
+**First proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` — PLANNED):** user connects one Google account → selects approved Google resources → one Google Doc synchronized → one Google Sheet synchronized → one Google Calendar resource/event set synchronized → optionally one ordinary Drive file synchronized → LKW indexes selected resources → Search retrieves provider-derived evidence → Ask produces one grounded answer → citations identify the correct Google source and resource → no Google API call is made by Ask after durable synchronization. Proof demonstrates mixed source shapes: narrative document, structured spreadsheet, calendar/event data, ordinary stored file. User-oriented proof, not merely adapter unit tests.
+
+**Proof-first execution gate (binding — vertically incremental):**
+
+Each read surface and its adapter form one independently reviewable vertical step before the next surface begins. Proof-critical phase:
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE
+→ Drive contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1B-DOCS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1B-DOCS
+→ Docs contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1C-SHEETS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1C-SHEETS
+→ Sheets contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1D-CALENDAR
+→ Calendar contract/integration proof
+
+→ LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+→ LKW-GOOGLE-WORKSPACE-PROOF-1
+```
+
+The final Google LKW proof may still combine Docs, Sheets, Calendar and an optional ordinary Drive file.
+
+Family expansion after the proof:
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1E-SLIDES → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1E-SLIDES
+GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1F-MAIL → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1F-MAIL
+GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1G-CHAT → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1G-CHAT
+```
+
+Global placement: Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (complete Slack Knowledge vertical — currently **PLANNED**) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
+
+**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
+
+**Platform versus LKW ownership:**
+
+| Platform owns | LKW owns |
+|---|---|
+| `GoogleWorkspaceCollaborationSuiteIntegration`; Google client/transport family; credential references and token isolation; typed provider references; per-source-kind provider read primitives; provider response validation; provider error normalization; Google Vendor Knowledge adapters; Vendor Knowledge Facade integration; Sync / Materialization support; Google Live Capability adapters; validated live execution support; provider-neutral durable and live results | Workspace Knowledge Configuration; Google Connection attachment to workspace; Remote Resource selection; Indexed Source; Live Access Binding; workspace and principal authorization; Knowledge Intake; Source / Document / Chunk / Vector ownership; RAG retrieval; Hybrid Ask; evidence provenance; user-facing operation status |
+
+LKW must not construct independent Google API clients, read Google APIs directly, store raw Google tokens, implement provider paging, own provider cursors, implement Google-specific synchronization or duplicate Google response validation.
+
+**LKW application status:** `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` and `LKW-GOOGLE-WORKSPACE-PROOF-1` are **PLANNED**. No Google knowledge capability is implemented in LKW today.
 
 ---
 

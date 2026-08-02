@@ -12,9 +12,11 @@ from intergrax.runtime.nexus.context.provider_handles import (
     LTM_ENTRIES_METADATA_KEY,
     RAG_CHUNKS_METADATA_KEY,
     SESSION_HISTORY_MESSAGES_METADATA_KEY,
+    SESSION_CONTEXT_REVISION_METADATA_KEY,
     SYSTEM_INSTRUCTIONS_METADATA_KEY,
     TOOL_OUTPUT_BLOCKS_METADATA_KEY,
     WEBSEARCH_BLOCKS_METADATA_KEY,
+    try_build_session_history_snapshot_from_scope,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
@@ -36,7 +38,22 @@ def extract_provider_metadata_from_runtime_state(state: RuntimeState) -> dict[st
             metadata[LTM_ENTRIES_METADATA_KEY] = [ltm_entry_row(entry) for entry in hits]
 
     if state.base_history:
-        metadata[SESSION_HISTORY_MESSAGES_METADATA_KEY] = list(state.base_history)
+        snapshot = try_build_session_history_snapshot_from_scope(
+            tenant_id=state.tenant_id,
+            context_scope_id=state.request.session_id,
+            revision_id=str(state.request.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY) or "")
+            or None,
+            messages=list(state.base_history),
+        )
+        if snapshot is not None:
+            from intergrax.context.session_history import SESSION_HISTORY_SNAPSHOT_HANDLE
+
+            metadata[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
+        else:
+            metadata[SESSION_HISTORY_MESSAGES_METADATA_KEY] = list(state.base_history)
+        revision_id = state.request.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY)
+        if revision_id:
+            metadata[SESSION_CONTEXT_REVISION_METADATA_KEY] = revision_id
 
     vector_hits = state.request.metadata.get("session_vector_hits")
     if isinstance(vector_hits, list) and vector_hits:

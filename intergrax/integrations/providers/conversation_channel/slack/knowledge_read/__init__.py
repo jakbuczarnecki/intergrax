@@ -22,6 +22,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     SlackConversationKind,
     SlackConversationMessage,
     SlackConversationMessagePage,
+    SlackConversationPointWindow,
     SlackConversationSourceWindow,
     SlackConversationSummary,
     validate_slack_conversation_message,
@@ -32,6 +33,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
     compute_slack_conversation_message_revision,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.timestamp import (
+    compare_slack_timestamps,
     validate_slack_timestamp,
 )
 
@@ -52,10 +54,12 @@ __all__ = [
     "SlackConversationMessageChanged",
     "SlackConversationMessageNotFound",
     "SlackConversationMessagePage",
+    "SlackConversationPointWindow",
     "SlackConversationReadConfigurationError",
     "SlackConversationReadError",
     "SlackConversationSourceWindow",
     "SlackConversationSummary",
+    "compare_slack_timestamps",
     "compute_slack_conversation_message_revision",
     "validate_slack_conversation_message",
     "validate_slack_timestamp",

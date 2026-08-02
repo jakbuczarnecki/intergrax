@@ -6,10 +6,10 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**  
-**Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)  
-**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
-**Primary anchor domain:** `CONTEXT_ENGINEERING`  
+**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**
+**Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
+**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
+**Primary anchor domain:** `CONTEXT_ENGINEERING`
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
 **Main engine guide:** [`../token_optimization/README.md`](../token_optimization/README.md)
@@ -767,38 +767,11 @@ no observability/HOS emission
 
 Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
 
-#### In-cache compaction (**TOKEN-10E** — planned)
+#### In-cache compaction (**TOKEN-10E** — architecture defined / ready for review)
 
-In-cache compaction is an explicitly planned implementation phase — not undefined future work.
+In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R4**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
-Canonical concept:
-
-```text
-existing byte-stable cached conversation
-  + appended compaction instruction
-  → model reuses cached prefix
-  → model produces a compact summary
-  → summary is validated
-  → a new thread generation starts from the approved compacted state
-```
-
-This is lossy/semantic behavior and requires:
-
-```text
-explicit policy opt-in
-explicit target identification
-protected-region preservation
-deterministic structural checks
-quality/regression evaluation
-receipt with old and new hashes
-cache attribution separate from content reduction
-operator-visible failure and fallback
-no destructive overwrite before validation
-rollback metadata where state becomes persistent
-no automatic production enablement by default
-```
-
-For vLLM, do not model compaction timing around an invented Claude-style fixed TTL. Use actual cache-state evidence and provider/runtime signals available from vLLM.
+Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 
 **Historical scope note:** `TOKEN-OPT-5A` intentionally excluded in-cache compaction. That boundary is superseded by **TOKEN-10E** planning — implementation remains future work.
 
@@ -1076,6 +1049,150 @@ raw private content in safe report:       0
 Routing suitability remains a measured quality threshold, not a safety substitute.
 
 **README promotion** is deferred to **TOKEN-10H** only.
+
+### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
+
+**Status:** Integration profile / ready for review. **Not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **ADR-UCL-001** freezes cross-domain decisions (Proposed / Ready for Review). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** until **CTX-UCL-CLOSEOUT-1** is accepted/closed. No runtime code, public exports, or production enablement exist for TOKEN-10E.
+
+#### 1. Status and dependency
+
+| Item | Value |
+|------|-------|
+| Lifecycle canon | [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
+| ADR | [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md) |
+| TOKEN-10E-1 start | **Blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| TOKEN-10D | Accepted / closed — timing gate semantics unchanged |
+
+#### 2. TOKEN-10E responsibility inside UCL
+
+TOKEN-10E owns **only** the durable compaction contribution implemented through Token Optimization **typed artifact executors** under Nexus UCL coordination. Durable compaction **reuses** existing valid `MessageSequenceArtifact` instances via the Reusable Optimization Artifact Catalog before creating new candidates.
+
+```text
+policy evaluation for compaction targets
+artifact lookup by ArtifactLookupKey (reuse-before-create)
+creation reservation coordination on lookup miss (single-flight)
+MessageSequenceArtifact candidate construction (CREATE_ARTIFACT only on reservation ACQUIRED)
+INTERNAL_OPTIMIZATION_CALL for LLM summarizer (non-recursive bounded path)
+candidate schema/structural/protected/quality validation contracts
+receipt and rollback-metadata compilation
+cache-lineage transition calculation
+safe result reporting
+```
+
+TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization; **artifact catalog persistence, lookup, or reservation coordination** (reuses UCL `OptimizationArtifactRepository` contracts).
+
+#### 3. MessageSequenceArtifact requirement
+
+Conversation history compaction **requires** MessageSequenceArtifactExecutor (CTX-UCL-4). TOKEN-10E may **not**:
+
+- flatten the complete conversation to one string for structural history compaction;
+- use line-level deduplication as the structural history engine;
+- wrap the existing string TextArtifact pipeline as the conversation-history executor.
+
+Executor model:
+
+```text
+Token Optimization executor framework
+    ├── TextArtifactExecutor → existing string-based pipeline (compatible)
+    ├── MessageSequenceArtifactExecutor → CTX-UCL-4 / TOKEN-10E history compaction
+    ├── FragmentSetArtifactExecutor
+    ├── ToolCatalogArtifactExecutor
+    └── StructuredDataArtifactExecutor
+```
+
+#### 4. TOKEN-10D timing-gate composition
+
+TOKEN-10D semantics are **unchanged**: router selects approved configuration; timing gate returns RUN / DEFER / BYPASS / REVIEW; only RUN executes the transformation pipeline.
+
+Within UCL durable compaction:
+
+```text
+Nexus resolves ContextOptimizationPolicy
+        ↓
+construct ArtifactLookupKey
+        ↓
+OptimizationArtifactRepository lookup
+        ↓
+REUSE_ARTIFACT (no LLM) or try_acquire_creation_reservation on miss
+        ↓
+CREATE_ARTIFACT on ACQUIRED only (no TO execution on ALREADY_IN_PROGRESS)
+        ↓
+TOKEN-10D timing gate (when applicable, on CREATE_ARTIFACT)
+        ↓
+MessageSequenceArtifactExecutor (on RUN / CREATE_ARTIFACT only; INTERNAL_OPTIMIZATION_CALL)
+        ↓
+validated TOKEN-10E candidate
+```
+
+#### 5. Candidate and receipt responsibility
+
+Candidate-first transaction model (Token Optimization boundary):
+
+```text
+CompactionRequest
+  → policy validation
+  → immutable snapshot validation
+  → MessageSequenceArtifact candidate construction (no in-place mutation)
+  → candidate schema / structural / protected / quality validation
+  → receipt and rollback-metadata construction
+  → acceptance decision (candidate level)
+```
+
+Invariants:
+
+1. Original context is **not** mutated in place during candidate construction.
+2. A candidate is **not** active merely because compaction computation succeeded.
+3. Required rollback metadata missing → **fail closed**.
+4. Protected-region failure → reject candidate, preserve original context.
+
+Receipt and safe-report rules from TOKEN-10A–10D remain in force (safe reports and receipts exclude raw content: `raw_content_included = false`; separate content-reduction vs cache-lineage attribution).
+
+#### 6. Memory/Session activation boundary
+
+Durable activation is **Memory/Session** owned via compare-and-swap on ActiveContextRevisionPointer:
+
+```text
+Nexus UCL coordinator
+  → CE ContextPlan
+  → ArtifactLookupKey → catalog lookup
+  → REUSE_ARTIFACT or CREATE_ARTIFACT
+  → TOKEN-10D timing gate (on CREATE_ARTIFACT when applicable)
+  → MessageSequenceArtifactExecutor (CREATE_ARTIFACT only)
+  → validated TOKEN-10E candidate
+  → SessionContextRevisionActivationRequest (references artifact_id/hash)
+  → Memory/Session CAS activation or conflict
+```
+
+**Application host** chooses and wires the persistence adapter, authorizes the action, configures retention, and presents review/rollback UX. Application does **not** own revision persistence, CAS activation, rollback execution, or a summary cache.
+
+Rollback **metadata** is compiled by Token Optimization; rollback **execution** changes ActiveContextRevisionPointer to a prior eligible SessionContextRevision and **reuses** artifact references already associated with that revision without mutating the ConversationLedger or regenerating artifact content.
+
+#### 7. Cache-lineage boundary
+
+Cache-lineage transition calculation is Token Optimization responsibility. Content revision (durable projection), prompt prefix identity, cache lineage, and provider cache observation remain separate dimensions.
+
+Do **not** claim provider KV cache mutation, deletion, or inferred TTL.
+
+#### 8. Explicit non-goals
+
+- Not a second lifecycle architecture (no duplicated ownership, flows, or activation sections here).
+- No direct Application context → CacheAwareTokenOptimizationRuntime → application activation path.
+- No Application-owned persistence or activation wording.
+- No TOKEN-10E-1 before CTX-UCL-CLOSEOUT-1.
+- No LKW, Slack, or application-storage dependencies inside Token Optimization.
+- No automatic production enablement.
+
+#### 9. Link to canonical UCL architecture
+
+Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, domain ownership tables, validation ordering (candidate → CE compilation → final model-facing integrity → preflight → exact send), and ConversationLedger vs SessionContextRevision definitions:
+
+→ [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
+→ [plan/UNIFIED_CONTEXT_LIFECYCLE.md](../../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
+→ [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md)
+
+**Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
+
+**Next step:** Review and accept **CTX-UCL-ARCH-1-R4**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
 
 ---
 

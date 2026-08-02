@@ -71,7 +71,7 @@ Reconnect: owned by slack_sdk auto_reconnect_enabled
 
 ```text
 INTERGRAX_SLACK_APP_TOKEN   # xapp-…  (connections:write)
-INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history)
+INTERGRAX_SLACK_BOT_TOKEN   # xoxb-…  (chat:write, im:history, knowledge reads)
 INTERGRAX_SLACK_API_TIMEOUT_SECONDS   # optional
 INTERGRAX_SLACK_CONVERSATION_ENABLED  # optional; or pass enabled=True
 INTERGRAX_SLACK_PROOF_TIMEOUT_SECONDS # optional; live-proof wait budget
@@ -149,7 +149,18 @@ read_file_info(...)   # safe file inventory only; no binary download
 
 `SlackConversationKnowledgeAdapter` (`source_kind: slack_conversation`) maps these reads into Vendor Knowledge records and synchronizes through the shared Facade / Sync runtime into any injected durable sink.
 
-### Supported conversation kinds (inventory)
+### Credential model (one integration, one WebClient, one bot token)
+
+```text
+bot token (INTERGRAX_SLACK_BOT_TOKEN):
+  conversational Socket Mode + Web API runtime
+  bot-membership inventory via users.conversations
+  public/private/IM/MPIM knowledge reads for conversations the bot can access
+```
+
+The bot must be a member of each conversation to inventory and read it. Token values never appear in errors, logs, health or public views.
+
+### Supported durable source kinds
 
 ```text
 public_channel
@@ -158,25 +169,39 @@ im
 mpim
 ```
 
-### Required scopes (knowledge reads — audit per installation)
+### Required scopes (knowledge reads)
 
 ```text
-channels:history      # public channels
-groups:history         # private channels
-im:history             # direct messages
-mpim:history           # group direct messages
-channels:read          # inventory membership
-groups:read            # inventory membership
-im:read                # inventory membership
-mpim:read              # inventory membership
-files:read             # safe historical file inventory (metadata only)
+channels:read
+groups:read
+im:read
+mpim:read
+channels:history
+groups:history
+im:history
+mpim:history
+files:read            # safe historical file inventory (metadata only)
 ```
 
 Current DM conversational runtime scopes (`connections:write`, `chat:write`, `im:history`, `files:read`) remain separate. Enabling the chatbot does **not** authorize knowledge synchronization.
 
-### Fixed-window synchronization
+### Fixed root-window synchronization
 
-One durable source = one approved `conversation_id` + immutable `oldest`/`latest` Slack timestamp window. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
+One durable source = one approved `conversation_id` + immutable `root_oldest`/`root_latest` Slack timestamp window (`slack.conversation.scope.v2`).
+
+**Root-window and reply interval (implemented):**
+
+```text
+- root message ts must lie inside [root_oldest, root_latest]
+- reply thread_root_ts must lie inside the same root window
+- reply own message ts must lie inside [root_oldest, root_latest] (same closed interval)
+- thread_broadcast / thread-reply pointers from history are validated but not separately materialized
+- replies are discovered only through traversal of their root thread
+```
+
+A reply whose own timestamp falls inside the window but whose thread root lies outside the configured root window is excluded. `full_inventory=true` means complete inventory **inside this explicit root-window scope only**.
+
+Inventory uses bot-membership `users.conversations` with `types=public_channel,private_channel,im,mpim` on the shared bot-token `AsyncWebClient` (no `user=` or per-call token override). Provider-owned cursors paginate the single inventory stream. History and thread reads are cursor-paginated with a maximum page size of **15** messages per `conversations.history` / `conversations.replies` call.
 
 ### Structured message schema
 
@@ -210,17 +235,28 @@ binary historical file download
 
 ---
 
-## PLANNED — NOT IMPLEMENTED: further Slack knowledge consumption
+## PLANNED — NOT IMPLEMENTED
 
-**Classification:** `ARCHITECTURALLY FROZEN` direction · `PLANNED` implementation.
+**Classification:** `PLANNED` implementation only.
 
-Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution will be reused for:
+```text
+LKW-SLACK-CONNECTED-SOURCE-1
+Knowledge Intake bridge / LKW connected-source wiring
+Slack Live Capability Adapter
+live/search capability
+durable deletion feed
+authoritative ACL projection
+binary historical file download
+RAG / chunks / embeddings
+```
 
-- conversational runtime (implemented today);
-- shared typed Slack knowledge reads (`PLANNED`);
-- durable materialization (`PLANNED`);
-- indexed RAG (`PLANNED`);
-- bounded live access (`PLANNED`).
+Slack remains one category-correct public `conversation_channel` integration. The existing `SlackConversationChannelIntegration`, its client, transport and credential resolution are reused for:
+
+- conversational runtime (**implemented**);
+- shared typed Slack knowledge reads (**implemented**);
+- durable materialization (**implemented**);
+- indexed RAG (**planned**);
+- bounded live access (**planned**).
 
 **Rejected duplicate integrations (do not create):**
 
@@ -234,18 +270,6 @@ LkwSlackClient
 
 No application-specific or consumption-mode-specific Slack client or public integration may be introduced. LKW must not construct Slack SDK clients or call Slack Web API history endpoints directly.
 
-**Planned provider-specific read primitives (conceptual — not listed under current shared operations):**
-
-```text
-list accessible conversation inventory
-read bounded conversation-history page
-read bounded thread/reply page
-read an exact message or exact revision
-read safe attachment inventory
-read explicit edit/deletion state
-read bounded search result where Slack and policy support it
-```
-
 **Dual role independence:**
 
 ```text
@@ -255,9 +279,5 @@ Slack Live Access Binding does not imply durable synchronization or RAG indexing
 ```
 
 Enabling the Slack chatbot does not authorize indexing or querying Slack history. Conversation transport events do not automatically become durable knowledge.
-
-**Scope audit (future implementation task):** Required Slack scopes for knowledge reads must be audited against official Slack documentation and preserve least privilege. Do not invent or freeze future scopes in this document.
-
-Current required scopes above (`connections:write`, `chat:write`, `im:history`, `files:read`) apply to the **implemented** DM conversational runtime only.
 
 Binding architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.7.

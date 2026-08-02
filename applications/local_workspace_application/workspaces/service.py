@@ -25,6 +25,9 @@ from local_workspace_application.workspaces.path_policy import (
     SourcePathPolicyError,
     validate_local_folder_source_path,
 )
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    is_workspace_source_product_visible,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.vector_cleanup import WorkspaceVectorCleanupPort
 
@@ -182,10 +185,34 @@ class ManagedWorkspaceService:
         )
         return self._repository.put_source(source)
 
+    def _committed_knowledge_configuration_revision(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> int:
+        head = self._repository.get_knowledge_configuration_head(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        return 0 if head is None else head.committed_revision
+
     def list_sources(self, *, tenant_id: str, workspace_id: str) -> list[WorkspaceSource] | None:
         if self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             return None
-        return self._repository.list_sources(tenant_id=tenant_id, workspace_id=workspace_id)
+        sources = self._repository.list_sources(tenant_id=tenant_id, workspace_id=workspace_id)
+        committed_revision = self._committed_knowledge_configuration_revision(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        return [
+            source
+            for source in sources
+            if is_workspace_source_product_visible(
+                source,
+                committed_configuration_revision=committed_revision,
+            )
+        ]
 
     def get_source(
         self,
@@ -196,11 +223,23 @@ class ManagedWorkspaceService:
     ) -> WorkspaceSource | None:
         if self.require_workspace(tenant_id=tenant_id, workspace_id=workspace_id) is None:
             return None
-        return self._repository.get_source(
+        source = self._repository.get_source(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
         )
+        if source is None:
+            return None
+        committed_revision = self._committed_knowledge_configuration_revision(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if not is_workspace_source_product_visible(
+            source,
+            committed_configuration_revision=committed_revision,
+        ):
+            return None
+        return source
 
     def create_sync_operation(
         self,
@@ -220,7 +259,11 @@ class ManagedWorkspaceService:
         )
         if source is None:
             raise LookupError("source_not_found")
-        if source.source_type is not WorkspaceSourceType.LOCAL_FOLDER:
+        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER:
+            pass
+        elif source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+            pass
+        else:
             raise ValueError("source_sync_unsupported_for_source_type")
 
         if not allow_concurrent:

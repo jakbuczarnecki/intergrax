@@ -27,6 +27,8 @@ _MAX_PROVIDER_CURSOR_LEN = 4096
 _MALFORMED_RESPONSE = "unexpected Slack conversation knowledge response"
 _INVALID_REQUEST = "invalid Slack conversation knowledge request"
 
+_INVENTORY_TYPES = "public_channel,private_channel,im,mpim"
+
 _METADATA_ALLOWLIST = frozenset(
     {
         "subtype",
@@ -113,6 +115,7 @@ __all__ = [
     "MAX_HISTORY_REPLY_PAGE_LIMIT",
     "MAX_INVENTORY_PAGE_LIMIT",
     "SLACK_CONVERSATION_SOURCE_KIND",
+    "_INVENTORY_TYPES",
     "_METADATA_ALLOWLIST",
     "validate_message_max_chars",
     "validate_optional_safe_text",

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
@@ -190,8 +191,25 @@ def test_conversation_provider_registration_metadata(
     assert registration.factory.__name__ == factory_name
     assert issubclass(registration.integration_class, ConversationChannelIntegrationContract)
 
-    with pytest.raises(IntegrationConfigurationError):
-        registration.factory(enabled=True)
+    if slug == "slack":
+        previous = {
+            key: os.environ.pop(key, None)
+            for key in (
+                "INTERGRAX_SLACK_APP_TOKEN",
+                "INTERGRAX_SLACK_BOT_TOKEN",
+                "INTERGRAX_SLACK_CONVERSATION_ENABLED",
+            )
+        }
+        try:
+            with pytest.raises(IntegrationConfigurationError):
+                registration.factory(enabled=True)
+        finally:
+            for key, value in previous.items():
+                if value is not None:
+                    os.environ[key] = value
+    else:
+        with pytest.raises(IntegrationConfigurationError):
+            registration.factory(enabled=True)
 
     disabled = registration.factory(enabled=False)
     assert isinstance(disabled, integration_cls)

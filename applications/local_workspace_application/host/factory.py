@@ -223,6 +223,16 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
     )
+    from local_workspace_application.workspaces.connected_source_host_wiring import (
+        build_shared_slack_integration_for_host,
+    )
+
+    shared_slack_integration = None
+    if (
+        resolved_settings.connected_source_opaque_ref_signing_key.strip()
+        or resolved_settings.slack_companion_enabled
+    ):
+        shared_slack_integration = build_shared_slack_integration_for_host()
     mount_managed_workspace_routes(
         app,
         task_executor=lkw_task_executor,
@@ -230,6 +240,7 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
+        shared_slack_integration=shared_slack_integration,
     )
     mount_local_workspace_readiness_routes(
         app,
@@ -317,6 +328,9 @@ def create_local_workspace_backend_app(
             app,
             settings=resolved_settings,
             host_lifecycle=host_lifecycle,
+            integration_factory=(
+                (lambda: shared_slack_integration) if shared_slack_integration is not None else None
+            ),
         )
     app.state.lkw_host_readiness = resolved_readiness
     app.state.lkw_task_executor = lkw_task_executor

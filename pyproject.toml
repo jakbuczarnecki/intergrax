@@ -10,7 +10,7 @@ name = "Intergrax-ai"
 version = "0.1.0"
 description = "Source-available Harness AI / Agent OS for teams building governed agent applications - with Nexus orchestration, policy-controlled tools, RAG, memory, trace/evidence, HITL, and runtime boundaries."
 readme = "README.md"
-license = { text = "Proprietary" }
+license = { text = "Intergrax Evaluation and Collaboration License 1.0" }
 requires-python = ">=3.12,<3.13"
 keywords = [
   "harness-ai",
@@ -76,12 +76,11 @@ dependencies = [
   # -----------------
   # Orchestration
   # -----------------
-  "langchain>=0.3",
-  "langchain-core>=0.3",
-  "langchain-community>=0.3",
-  "langchain-openai>=0.3",
-  "langchain-ollama>=0.2",
-  "langchain-text-splitters>=0.3",
+  "langchain-core>=0.3,<2.0",
+  "langchain-community>=0.3,<0.5",
+  "langchain-openai>=0.3,<2.0",
+  "langchain-ollama>=0.2,<2.0",
+  "langchain-text-splitters>=0.3,<2.0",
   # -----------------
   # RAG / Vector DBs
   # -----------------
@@ -189,7 +188,7 @@ langgraph-legacy = ["langgraph>=0.0.40"]
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
 llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]
 llm-mistral = ["mistralai>=0.4", "tiktoken>=0.7"]
-llm-ollama = ["ollama>=0.1", "langchain-ollama>=0.2", "langchain-core>=0.3", "tiktoken>=0.7"]
+llm-ollama = ["ollama>=0.1", "langchain-ollama>=0.2,<2.0", "langchain-core>=0.3,<2.0", "tiktoken>=0.7"]
 llm-gemini = ["google-genai>=0.3", "tiktoken>=0.7"]
 llm-bedrock = ["boto3>=1.34", "botocore>=1.34", "mypy-boto3-bedrock-runtime>=1.34", "tiktoken>=0.7"]
 llm-groq = ["openai>=1.0", "tiktoken>=0.7"]
@@ -206,7 +205,7 @@ llm-all = [
   "boto3>=1.34",
   "botocore>=1.34",
   "mypy-boto3-bedrock-runtime>=1.34",
-  "langchain-ollama>=0.2",
+  "langchain-ollama>=0.2,<2.0",
   "tiktoken>=0.7",
 ]
 dev = [

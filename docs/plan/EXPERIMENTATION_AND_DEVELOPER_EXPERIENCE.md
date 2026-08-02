@@ -95,6 +95,17 @@ Load **only** the satellite matching your task or cited gap ID.
 8. **Security/cost controls** — hardening changes include policy-enforced tests for deny/degrade paths
 9. **No product scope creep** — harness phases MUST NOT implicitly include K.1/K.2 or new product hosts
 
+### LCI-0B — LangChain architecture boundary guard
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 |
+| **Status** | READY_FOR_REVIEW |
+| **Owner** | Experimentation and Developer Experience |
+| **Checker** | `scripts/maintenance/check_langchain_boundary.py` |
+| **CI** | PR smoke + full governance |
+| **Baseline** | `scripts/maintenance/langchain_boundary_grandfather.json` |
+
 
 
 ---

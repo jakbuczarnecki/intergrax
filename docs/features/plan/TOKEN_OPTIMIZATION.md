@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next implementation step:** `TOKEN-10E` — Policy-Governed In-Cache Compaction, after TOKEN-10D closeout.
+**Current next step:** Review and accept **CTX-UCL-ARCH-1-R4** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next implementation task:** **TOKEN-10E**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** review **CTX-UCL-ARCH-1-R1**; then **CTX-UCL-1** contracts. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1492,7 +1492,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; TOKEN-10E planned/not started).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; **TOKEN-10E architecture defined / ready for review**; TOKEN-10E runtime not started).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** TOKEN-10E — Policy-Governed In-Cache Compaction
+**Next step:** Review **CTX-UCL-ARCH-1-R4**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,9 +1689,138 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Planned / Not Started.
+**Status:** Architecture integration profile / ready for review. Runtime implementation **not started**. Blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed. Do not mark implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
 
-Implement in-cache compaction with explicit opt-in, protected-region preservation, receipts, rollback metadata, and cache attribution separate from content reduction. No automatic production enablement by default.
+**Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
+
+**Purpose:** Define and implement provider-neutral, policy-governed in-cache compaction: replace an existing logical context version with a shorter validated version through candidate-first transaction semantics, explicit cache-lineage transition, receipts, and rollback metadata — without mutating provider KV cache or active context in place.
+
+**Dependency:** Accepted **TOKEN-10D** (typed cache evidence → reconciliation → signal normalization → timing gate → router → deterministic pipeline on `RUN` only).
+
+#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R4; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
+
+```text
+1. No compaction without explicit policy opt-in.
+2. Candidate construction never mutates the active context in place.
+3. Candidate generation and Memory/Session activation are separate (Application authorizes; Memory/Session executes CAS).
+4. Existing ProtectedRegion and deterministic pipeline contracts are reused.
+5. Protected-region failure preserves the original context.
+6. Required rollback metadata missing means fail closed.
+7. Context-version mismatch prevents activation.
+8. Accepted stable-prefix changes create a new cache lineage.
+9. Provider cache reuse and content reduction are attributed separately.
+10. Raw content is excluded from receipts and safe reports.
+11. Unknown values are not coerced to zero, false, miss, or safe.
+12. LKW, Slack, database, and provider-specific dependencies are forbidden.
+13. No automatic production enablement.
+14. Full-thread lossy rewriting requires review by default.
+15. TOKEN-10E architecture does not mean TOKEN-10E runtime implementation.
+16. Reuse-before-create: durable compaction performs artifact lookup before transformation.
+17. Identical compatible source must not trigger repeated LLM summarization.
+18. No duplicate artifact repository — TOKEN-10E extends UCL artifact, reservation, and revision contracts.
+19. Internal summarizer uses INTERNAL_OPTIMIZATION_CALL; does not re-enter full UCL for same target.
+20. Same-key concurrent misses produce at most one transformation execution via ArtifactCreationReservation.
+```
+
+#### Planned substeps
+
+##### TOKEN-10E-1 — Contracts, policy, snapshot, candidate and safe-result models
+
+**Goal:** Extend existing UCL artifact and revision contracts with durable compaction policy over UCL — not a competing artifact repository.
+
+**Main contracts:** `InCacheCompactionPolicy` (provisional name), `CompactionInputSnapshot`, `CompactionRequest`, `CompactionCandidate`, `CompactionResult`, `CompactionTarget`, status enum separating candidate/acceptance/activation; durable eligibility rules; review and activation requirements aligned with `ArtifactLookupKey` and `ReusableOptimizationArtifact`.
+
+**Invariants:** explicit policy opt-in fields; `raw_content_included=False`; unknown-value semantics preserved; no application storage types; no duplicate Optimization Artifact Catalog contract.
+
+**Out of scope:** pipeline execution, protected-region validator implementation, receipt compiler, application wiring, storage backend.
+
+**Acceptance:** contracts importable from package root plan; unit tests for serialization and fail-closed policy validation; no pipeline behavior change.
+
+**Blocked by:** **CTX-UCL-CLOSEOUT-1** accepted/closed.
+
+##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
+
+**Goal:** Durable candidate flow first performs artifact lookup by `ArtifactLookupKey`. Existing valid `MessageSequenceArtifact` is reused (`REUSE_ARTIFACT`). New candidate creation only on lookup miss or incompatibility (`CREATE_ARTIFACT`). New `SessionContextRevision` references the selected artifact ID/hash.
+
+**Main contracts:** candidate builder using `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only; integration with Nexus UCL coordinator and router-selected configuration.
+
+**Invariants:** no second optimization engine; no string flattening of full conversation history; original context unchanged; candidate not active until Memory/Session CAS passes; no LLM invocation on reuse.
+
+**Out of scope:** receipt/rollback compiler, Memory/Session activation implementation, persistence backends.
+
+**Acceptance:** unit tests prove candidate creation on synthetic message-sequence fixtures; reuse path does not invoke summarizer; protected original context; no public auto-enable.
+
+**Blocked by:** CTX-UCL-4, TOKEN-10E-1.
+
+##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
+
+**Goal:** Validate candidates against existing `ProtectedRegion` contracts; compile redaction-safe compaction receipt and rollback metadata.
+
+**Main contracts:** compaction receipt builder extending receipt patterns from TOKEN-1C; `CompactionRollbackMetadata`; measurement units explicit (chars vs tokens separate).
+
+**Invariants:** protected-region failure rejects candidate; required rollback metadata missing → fail closed; no raw content in output; receipt must indicate: reused existing artifact; created new artifact; invalidated prior artifact; no LLM invocation on reuse.
+
+**Out of scope:** rollback execution, storage, application UX.
+
+**Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it, reuse vs create attribution.
+
+##### TOKEN-10E-4 — Durable production repository adapter and SessionContextRevision activation
+
+**Goal:** Deliver the first durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration. Implementation may physically live in Memory/Session packages; delivery is coordinated by TOKEN-10E-4. Activation operates on `SessionContextRevision` references and must not regenerate artifact content.
+
+**Main contracts:** durable repository adapter; activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
+
+**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation — not Application or Token Optimization; TOKEN-10E must not create a second repository or reservation mechanism.
+
+**Out of scope:** rollback UX; reference in-memory repository (owned by CTX-UCL-2).
+
+**Acceptance:** contract tests for activation request and conflict paths; activation references artifact without content rewrite; durable repository adapter passes UCL reservation semantics; no direct application activation API.
+
+**Blocked by:** CTX-UCL-2, TOKEN-10E-3.
+
+##### TOKEN-10E-CLOSEOUT-1 — Public package-root contract freeze and phase acceptance
+
+**Goal:** Export stable public contracts at `intergrax.runtime.token_optimization` package root; document phase acceptance; synchronize claims guardrails.
+
+**Invariants:** no production enablement; architecture invariants unchanged; claim doc forbids implementation wording.
+
+**Acceptance:** public exports frozen; claim guardrail tests pass; TOKEN-10E marked implemented/ready for review only after closeout — not before.
+
+#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R4; UCL sole lifecycle source)
+
+- [x] TOKEN_OPTIMIZATION §8.10 is bounded integration profile linked to UCL (not second lifecycle)
+- [x] Memory/Session owns persistence, CAS activation, rollback execution, artifact catalog
+- [x] Application owns configuration, authorization, adapter wiring, UX only
+- [x] Reuse-before-create and ArtifactLookupKey defined in UCL
+- [x] MessageSequenceArtifact required for conversation history compaction
+- [x] Candidate validation distinct from final model-facing integrity validation
+- [x] In-cache compaction not described as provider KV-cache mutation
+- [x] Policy opt-in mandatory; targets and risk levels defined
+- [x] ADR-UCL-001 reusable-artifact decision (Proposed / Ready for Review)
+- [x] Receipt and rollback metadata defined
+- [x] Stale-write protection and cache-lineage semantics defined
+- [x] Fail-closed matrix and safe reporting documented
+- [x] Internal-call boundary and single-flight creation defined in UCL
+- [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
+- [x] TOKEN-10E-4 owns first durable production repository adapter delivery
+- [ ] Runtime implementation (TOKEN-10E-1..4) — **not started**
+- [ ] Phase closeout — **not started**
+
+#### Explicit out of scope (TOKEN-10E overall)
+
+```text
+Python runtime implementation in this architecture task
+provider adapters, vLLM/Ollama HTTP, Prometheus ingestion
+database schemas, DocumentStore, LKW/Slack/Teams wiring
+application endpoints, context persistence, rollback execution
+Docker configuration, live proof, benchmarks, numeric savings claims
+TOKEN-10F, TOKEN-10G, TOKEN-10H implementation
+automatic production enablement
+```
+
+#### Next step after architecture acceptance
+
+Complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1** before **TOKEN-10E-1**. Do not wire LKW, Slack, or application storage until closeout exports are frozen.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
@@ -2191,7 +2320,7 @@ TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Accepted 
 TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
 TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
 TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
-TOKEN-10E   policy-governed in-cache compaction — Planned / Not Started
+TOKEN-10E   policy-governed in-cache compaction — Architecture Defined / Ready for Review (runtime not started)
 TOKEN-10F..10H universal proof harness, corpus, README promotion — Planned
 ```
 

@@ -6,8 +6,9 @@ Handle key contract (``ContextProviderContext.handles``):
 
 | Key | Type | Used by |
 |-----|------|---------|
+| ``session_history_snapshot`` | ``SessionHistorySnapshot`` | ``builtin.session_history`` (canonical) |
 | ``prior_output_records`` | ``list[PriorOutputRecord]`` or dict rows | ``builtin.graph_prior`` |
-| ``session_history_messages`` | ``list[ChatMessage]`` | ``builtin.session_history`` |
+| ``session_history_messages`` | ``list[ChatMessage]`` | legacy compatibility only |
 | ``messages`` | ``list[ChatMessage]`` | fallback for ``builtin.task_message`` |
 | ``rag_chunks`` | list of chunk rows | ``builtin.rag`` |
 | ``ltm_entries`` | list of LTM entry rows | ``builtin.longterm_memory`` |
@@ -180,7 +181,11 @@ def fragments_from_session_history(
     max_entries: int = 8,
     include_session_history: bool = True,
 ) -> list[ContextFragment]:
-    """Emit SESSION_HISTORY fragments from chronological chat turns."""
+    """Emit SESSION_HISTORY fragments from chronological chat turns.
+
+    Compatibility helper — canonical ``builtin.session_history`` uses
+    ``SessionHistorySnapshot`` via ``fragments_from_session_history_snapshot``.
+    """
     if not include_session_history or not messages:
         return []
     fragments: list[ContextFragment] = []

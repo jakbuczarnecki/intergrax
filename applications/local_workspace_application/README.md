@@ -2,7 +2,7 @@
 
 Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace**: indexed knowledge, controlled live provider access (planned), semantic search, grounded Ask, and synthesis.
 
-**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **NEXT**); final live Slack platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
+**Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](docs/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
 
 **“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](docs/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
@@ -276,7 +276,7 @@ All four platform/application keys plus `lkw_proof_summary.v1` are present in a 
 
 ## Running the LKW Slack Ask companion
 
-Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack DM → configured tenant/workspace → Ask HTTP → threaded answer. Dynamic workspace selection arrives in **1B**.
+Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED**): HTTP discovery/create/sync scaffold for approved Slack conversations as `PERSONAL_ONLY` indexed sources; `REVIEW-FIX-2` **CHANGES_REQUIRED**, `REVIEW-FIX-3` not accepted — final crash-safe recovery and real indexed Search/Ask proof remain under correction. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ### Configuration architecture
 

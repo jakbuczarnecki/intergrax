@@ -15,14 +15,91 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CLAIMS_DOC = _REPO_ROOT / "docs" / "public-adoption" / "TOKEN_OPTIMIZATION_CLAIMS.md"
 _PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+_TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
+_UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
+_UCL_ADR = _REPO_ROOT / "docs" / "adr" / "entries" / "2026-08-01" / "ADR-UCL-001.md"
 
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 _FORBIDDEN_CONTEXT_MARKERS = (
     "do not say",
+    "do not claim",
     "forbidden",
     "unless a future",
     "by x%",
     "x%",
+)
+
+# CTX-UCL-ARCH-1-R1: ownership regression guardrails (canonical TOKEN-10E / UCL docs).
+_OWNERSHIP_FORBIDDEN_PHRASES = (
+    "application-owned persistence and activation",
+    "application owns where context versions are persisted",
+    "application owns how an accepted context version becomes active",
+    "rollback execution remains application-owned",
+    "platform owner: intergrax.runtime.token_optimization",
+)
+
+# CTX-UCL-ARCH-1-R3: reuse-before-create and artifact lifecycle guardrails.
+_REUSE_REQUIRED_CONCEPTS = (
+    "reuse-before-create",
+    "REUSE_ARTIFACT",
+    "CREATE_ARTIFACT",
+    "ArtifactLookupKey",
+    "source_content_hash",
+    "validation_contract_version",
+)
+
+_REGENERATION_FORBIDDEN_PHRASES = (
+    "generate a summary before every model call",
+    "always invoke the summarizer",
+    "always invoke summarizer",
+)
+
+# CTX-UCL-ARCH-1-R4: internal-call boundary, single-flight creation, repository delivery guardrails.
+_R4_REQUIRED_CONCEPTS = (
+    "PRIMARY_MODEL_CALL",
+    "INTERNAL_OPTIMIZATION_CALL",
+    "OptimizationExecutionGuard",
+    "ArtifactCreationReservation",
+    "single-flight",
+    "InMemoryOptimizationArtifactRepository",
+    "OPTIMIZATION_RECURSION_BLOCKED",
+    "ARTIFACT_CREATION_IN_PROGRESS",
+)
+
+_R4_FORBIDDEN_PHRASES = (
+    "internal summarizer traverses the full ucl lifecycle",
+    "allow duplicate summarization and deduplicate afterward",
+    "content addressing alone prevents duplicate llm calls",
+    "token optimization owns the artifact repository",
+    "application-local mutex coordinates summary creation",
+)
+
+_ARTIFACT_OWNERSHIP_FORBIDDEN_PHRASES = (
+    "token optimization owns artifact persistence",
+    "token optimization owns the artifact repository",
+    "application owns the summary cache",
+)
+
+_UCL_OWNERSHIP_FORBIDDEN_PHRASES = _OWNERSHIP_FORBIDDEN_PHRASES
+
+_BYPASS_FLOW_FORBIDDEN_PATTERNS = (
+    re.compile(
+        r"application\s+context.*cacheawaretokenoptimizationruntime.*application-owned\s+activation",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"application-owned\s+persistence\s+and\s+activation",
+        re.IGNORECASE,
+    ),
+)
+
+_ALLOWED_APPLICATION_BOUNDARY_PHRASES = (
+    "application-owned authorization",
+    "application-owned review ux",
+    "application-owned rollback ux",
+    "application-selected persistence adapter",
+    "application host authorizes",
+    "persistence adapter selection and wiring",
 )
 
 
@@ -32,6 +109,13 @@ def _read_claims_doc() -> str:
 
 def _read_public_doc(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _token_optimization_section_810() -> str:
+    content = _read_public_doc(_TOKEN_OPT_ARCH)
+    start = content.index("### 8.10 Policy-governed in-cache compaction (TOKEN-10E)")
+    end = content.index("## 9. Protected region policy")
+    return content[start:end]
 
 
 def _line_is_forbidden_example_context(line: str) -> bool:
@@ -44,6 +128,13 @@ def _line_is_forbidden_example_context(line: str) -> bool:
 
 def test_claim_guardrail_doc_exists() -> None:
     assert _CLAIMS_DOC.is_file()
+
+
+def test_ucl_adr_has_no_utf8_bom() -> None:
+    raw = _UCL_ADR.read_bytes()
+    assert not raw.startswith(b"\xef\xbb\xbf")
+    text = raw.decode("utf-8")
+    assert text.startswith("# ADR-UCL-001")
 
 
 def test_doc_contains_approved_public_wording_section() -> None:
@@ -138,3 +229,118 @@ def test_doc_contains_conditional_wording_section() -> None:
 def test_doc_contains_reviewer_checklist_section() -> None:
     content = _read_claims_doc()
     assert "## Reviewer checklist" in content
+
+
+# --- CTX-UCL-ARCH-1-R1: UCL / TOKEN-10E ownership guardrails ---
+
+
+@pytest.mark.parametrize("phrase", _OWNERSHIP_FORBIDDEN_PHRASES)
+def test_token_optimization_section_810_rejects_old_ownership_phrases(
+    phrase: str,
+) -> None:
+    section = _token_optimization_section_810().lower()
+    assert phrase not in section, f"Forbidden ownership phrase in §8.10: {phrase!r}"
+
+
+@pytest.mark.parametrize("phrase", _UCL_OWNERSHIP_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_old_ownership_phrases(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden ownership phrase in UCL arch: {phrase!r}"
+
+
+def test_token_optimization_section_810_rejects_direct_bypass_activation_flow() -> None:
+    section = _token_optimization_section_810()
+    normalized = re.sub(r"\s+", " ", section.lower())
+    for pattern in _BYPASS_FLOW_FORBIDDEN_PATTERNS:
+        assert not pattern.search(normalized), (
+            f"Forbidden bypass flow pattern: {pattern.pattern!r}"
+        )
+
+
+def test_ucl_architecture_documents_memory_session_activation_boundary() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "activecontextrevisionpointer" in content
+    assert "memory/session cas" in content or "compare-and-swap" in content
+
+
+def test_token_optimization_section_810_links_canonical_ucl() -> None:
+    section = _token_optimization_section_810()
+    assert "UNIFIED_CONTEXT_LIFECYCLE.md" in section
+    assert "sole canonical source" in section.lower()
+
+
+def test_token_optimization_section_810_has_valid_safe_reporting_marker() -> None:
+    section = _token_optimization_section_810()
+    assert "raw_content_included = false" in section
+    assert not re.search(r"(?<!r)aw_content_included\s*=\s*false", section)
+    assert "`\\text" not in section
+
+
+def test_allowed_application_boundary_phrases_remain_valid_in_ucl() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert any(phrase in content for phrase in _ALLOWED_APPLICATION_BOUNDARY_PHRASES)
+
+
+# --- CTX-UCL-ARCH-1-R3: reuse-before-create guardrails ---
+
+
+@pytest.mark.parametrize("concept", _REUSE_REQUIRED_CONCEPTS)
+def test_ucl_architecture_documents_reuse_before_create_concepts(concept: str) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    assert concept in content, f"Missing required UCL concept: {concept!r}"
+
+
+def test_ucl_architecture_documents_summary_regeneration_prohibition() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "must not" in content and "llm summarizer" in content
+    assert "identical" in content and "artifactlookupkey" in content.replace("_", "")
+
+
+@pytest.mark.parametrize("phrase", _REGENERATION_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_regenerate_every_call_wording(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden regeneration wording in UCL arch: {phrase!r}"
+
+
+@pytest.mark.parametrize("phrase", _ARTIFACT_OWNERSHIP_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_artifact_ownership_regressions(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden artifact ownership phrase in UCL arch: {phrase!r}"
+
+
+def test_ucl_architecture_documents_llm_transform_invariant_on_reuse() -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert "llm_transform_invoked" in content
+    assert "reuse_artifact" in content
+
+
+# --- CTX-UCL-ARCH-1-R4: internal-call and single-flight guardrails ---
+
+
+@pytest.mark.parametrize("concept", _R4_REQUIRED_CONCEPTS)
+def test_ucl_architecture_documents_r4_required_concepts(concept: str) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    assert concept in content, f"Missing required UCL R4 concept: {concept!r}"
+
+
+@pytest.mark.parametrize("phrase", _R4_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_r4_regression_phrases(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden R4 regression phrase in UCL arch: {phrase!r}"
+
+
+def test_claims_doc_does_not_claim_runtime_single_flight_or_recursion_protection() -> None:
+    content = _read_claims_doc()
+    forbidden_runtime_claims = (
+        "single-flight is implemented",
+        "artifact reservations are operational",
+        "inmemoryoptimizationartifactrepository exists",
+        "internal summarizer recursion is prevented in runtime",
+    )
+    for claim in forbidden_runtime_claims:
+        offenders = [
+            line.strip()
+            for line in content.splitlines()
+            if claim in line.lower() and not _line_is_forbidden_example_context(line)
+        ]
+        assert offenders == [], f"Forbidden runtime claim in claims doc: {claim!r} -> {offenders}"

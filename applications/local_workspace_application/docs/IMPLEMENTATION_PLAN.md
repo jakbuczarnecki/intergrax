@@ -5,6 +5,7 @@
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)  
+**Conversation context architecture:** [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md)
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
 **Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)  
@@ -19,21 +20,28 @@ Last accepted implementation:
 
 Architecture:
   LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — ACCEPTED
+  LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 
 Next implementation:
   LKW-KNOWLEDGE-ACCESS-1 — NEXT
 
 Platform next (vendor knowledge):
-  SLACK-KNOWLEDGE-FOUNDATION-1 — NEXT after SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+  SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
 
-Slack Knowledge user vertical (after platform foundation):
-  SLACK-KNOWLEDGE-FOUNDATION-1
-  → LKW-SLACK-CONNECTED-SOURCE-1
+Slack Knowledge vertical next:
+  LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED
+  → LKW-CONVERSATION-CONTEXT-1
+  → LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
   → SLACK-LIVE-CAPABILITY-1
+  (join: above + LKW-HYBRID-ASK-1)
   → LKW-SLACK-KNOWLEDGE-PROOF-1
+  → GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+  → Google proof-critical vertical slices (Drive+adapter → Docs+adapter → Sheets+adapter → Calendar+adapter)
+  → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+  → LKW-GOOGLE-WORKSPACE-PROOF-1
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
-Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable Slack platform proof
+Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable platform proof
 ```
 
 ---
@@ -145,6 +153,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `1B-5-2` | A trusted client can attach an allowed public HTTPS URL to a workspace, after which LKW durably registers, securely captures, indexes and exposes the resulting knowledge through grounded Ask using the existing Knowledge Intake lifecycle | **ACCEPTED** |
 | `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1` | Hybrid Knowledge Workspace vocabulary, indexed/live/hybrid modes, security model and product roadmap frozen for review | **ACCEPTED** |
 | `LKW-MODEL-RUNTIME-1` | The same LKW workspace, document and vector index pass generation, structured planning, validated tool calling, public HTTP Ask, citations and persisted runs on Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct` without reindexing | **ACCEPTED** |
+| `LKW-CONVERSATION-CONTEXT-ARCH-1` | Provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards | **ACCEPTED** |
 
 ### 3.2 Next and planned product blocks
 
@@ -154,35 +163,60 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **NEXT** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
-| `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts | **PLANNED** |
+| `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts | **PLANNED** |
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
 | `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
-| `LKW-LIVE-PLATFORM-PROOF-1` | A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
+| `LKW-LIVE-PLATFORM-PROOF-1` | A live demonstration shows Slack conversations, Google Docs/Sheets/Calendar (when implemented), Microsoft 365 sources, local files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace | **PLANNED** |
 
-### 3.2.1 Slack Knowledge vertical (platform + LKW)
+### 3.2.1 Conversation context and Slack vertical (platform + LKW)
 
-Complete Slack Knowledge user vertical precedes Microsoft Graph Calendar and lower-priority provider expansion. Platform foundation must precede LKW bridge tasks.
+Provider-neutral personal/shared conversation context architecture precedes shared-channel runtime and Slack connected-source work. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 | Task | Owner | User outcome | Status |
 |---|---|---|---|
+| `LKW-CONVERSATION-CONTEXT-ARCH-1` | LKW application (docs) | Provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards | **ACCEPTED** |
 | `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` | Platform (docs) | Architecture frozen: one Slack integration reused across indexed RAG, durable materialization and live access; frontend and knowledge-source roles separated | **DONE** |
-| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations for any Intergrax application; no new Slack command or LKW feature implied yet | **NEXT** (platform) |
-| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **PLANNED** |
+| `SLACK-KNOWLEDGE-FOUNDATION-1` | Platform | Platform can safely read and durably synchronize selected Slack conversations (bot token + bot-membership inventory for public/private/IM/MPIM) for any Intergrax application; no new Slack command or LKW feature implied yet | **DONE** |
+| `LKW-SLACK-CONNECTED-SOURCE-1` | LKW application | User can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history | **IN_PROGRESS / CHANGES_REQUIRED** (`REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted) |
+| `LKW-CONVERSATION-CONTEXT-1` | LKW application | Durable Conversation Context Bindings, workspace audience policy, memory partitioning and evidence guards | **PLANNED** |
+| `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` | LKW application | Slack channel/private-channel mention handling over the generic LKW context layer | **PLANNED** |
 | `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
-| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining Slack history, authorized live Slack evidence and other workspace sources with safe citations | **PLANNED** |
+| `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining indexed Slack history, authorized live Slack evidence and other workspace sources with strict audience isolation — requires Hybrid Ask | **PLANNED** |
 
-**Required dependency:**
+**`LKW-CONVERSATION-CONTEXT-1` implementation slices:**
+
+| Slice | Status |
+|---|---|
+| `LKW-CONVERSATION-CONTEXT-1A` | **ACCEPTED** |
+| `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
+| `LKW-CONVERSATION-CONTEXT-1B2` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1C` | **PLANNED** / next after acceptance |
+
+**Required dependency (implementation tracks):**
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1
-→ LKW-SLACK-CONNECTED-SOURCE-1
+→ LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
+→ LKW-SLACK-CONNECTED-SOURCE-1          # independent from conversational activation
+→ LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
+→ LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 → SLACK-LIVE-CAPABILITY-1
+```
+
+**Final proof join (all prerequisites):**
+
+```text
+LKW-SLACK-CONNECTED-SOURCE-1
++ LKW-CONVERSATION-CONTEXT-1
++ LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
++ SLACK-LIVE-CAPABILITY-1
++ LKW-HYBRID-ASK-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 ```
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the complete Slack user vertical.
+`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace runtime implementation (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` remains **READY_FOR_REVIEW**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
-**Available today:** The user can operate LKW through Slack and ask about knowledge already present in the selected workspace. The user cannot yet attach and search Slack channel or conversation history as workspace knowledge.
+**Available today:** The user can operate LKW through Slack DM and ask about knowledge already present in the selected personal workspace (temporary in-memory selection). Durable Conversation Context Bindings, observed-audience validation, durable personal selection, shared-channel runtime, shared thread memory, shared capability enforcement, shared source eligibility, mention/thread-continuation runtime, Slack history indexing and live Slack Ask are **not** implemented.
 
 ### 3.3 Internal implementation slices (historical identity preserved)
 
@@ -391,9 +425,9 @@ Initial live access is read-only.
 
 ### 7.5 `LKW-VENDOR-ACCESS-COLLABORATION-1`
 
-**One-sentence outcome:** LKW supports indexed and controlled live knowledge access across Microsoft 365, Jira and Confluence through provider-neutral contracts.
+**One-sentence outcome:** LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts.
 
-**Status:** **PLANNED**. Scope: OneDrive/SharePoint files; mail; Teams-hosted organizational knowledge; Jira issue discovery/search/state and selected project sync; Confluence space/page discovery, search/read and selected space sync.
+**Status:** **PLANNED**. Scope: OneDrive/SharePoint files; Microsoft mail and Teams-hosted organizational knowledge; Google Drive, Docs, Sheets, Calendar and remaining Google surfaces when implemented; Jira issue discovery/search/state and selected project sync; Confluence space/page discovery, search/read and selected space sync.
 
 **Acceptance gate:** Must prove at least one provider vertical slice in both paths:
 
@@ -410,15 +444,17 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 **Execution order:**
 
 ```text
-1. complete Slack Knowledge vertical (SLACK-KNOWLEDGE-FOUNDATION-1 → LKW-SLACK-CONNECTED-SOURCE-1 → SLACK-LIVE-CAPABILITY-1 → LKW-SLACK-KNOWLEDGE-PROOF-1);
-2. complete Teams Chat and Calendar durable adapters (Calendar after Slack vertical);
-3. perform the adapter-family and three-mode capability audit;
-4. use Jira or Confluence for the first bounded live search/read capability proof;
-5. add bounded Microsoft Graph live capabilities separately;
-6. converge at Hybrid Ask.
+1. conversation context architecture accepted (`LKW-CONVERSATION-CONTEXT-ARCH-1` — **ACCEPTED**);
+2. complete Slack Knowledge vertical (implementation tracks through SLACK-LIVE-CAPABILITY-1; final proof joins LKW-HYBRID-ASK-1 at LKW-SLACK-KNOWLEDGE-PROOF-1);
+3. complete Google Workspace proof-critical path (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` → vertically incremental Drive/Docs/Sheets/Calendar read surfaces and adapters → `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` → `LKW-GOOGLE-WORKSPACE-PROOF-1`);
+4. complete Teams Chat and Calendar durable adapters (Calendar after first accepted Google LKW proof);
+5. perform the adapter-family and three-mode capability audit;
+6. use Jira or Confluence for the first bounded live search/read capability proof;
+7. add bounded Microsoft Graph live capabilities separately;
+8. converge at Hybrid Ask.
 ```
 
-The immediate current platform task is `SLACK-KNOWLEDGE-FOUNDATION-1`. Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the complete Slack user vertical.
+The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next task remains `LKW-KNOWLEDGE-ACCESS-1`. Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
 
 ### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
 
@@ -436,11 +472,11 @@ The immediate current platform task is `SLACK-KNOWLEDGE-FOUNDATION-1`. Microsoft
 
 ### 7.8 `LKW-LIVE-PLATFORM-PROOF-1` — Complete demonstrable platform proof
 
-**One-sentence outcome:** A live Slack demonstration shows files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace.
+**One-sentence outcome:** A live demonstration shows Slack conversations, Google Docs/Sheets/Calendar (when implemented), Microsoft 365 sources, local files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace.
 
 **Status:** **PLANNED**.
 
-Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365, Jira, Confluence, Databricks, Power BI, Atlan → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
+Target scenario: start with Ollama → create/select workspace → upload files → add Web URL → configure MS365 and Google Workspace (when implemented), Jira, Confluence, Databricks, Power BI, Atlan → Hybrid Ask with indexed + live evidence → restart with vLLM → repeat without changing LKW domain behavior. Public claims must distinguish real provider proof, controlled integration proof and deterministic fixture proof.
 
 **Final platform proof requirement:**
 

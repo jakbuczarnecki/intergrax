@@ -19,7 +19,6 @@ from intergrax.context.providers.legacy_bridge import (
     POLICY_OVERLAY_FRAGMENTS_HANDLE,
     PRIOR_OUTPUT_RECORDS_HANDLE,
     RAG_CHUNKS_HANDLE,
-    SESSION_HISTORY_MESSAGES_HANDLE,
     SHARED_CONTEXT_READS_HANDLE,
     SYSTEM_INSTRUCTIONS_HANDLE,
     TOOL_OUTPUT_BLOCKS_HANDLE,
@@ -29,12 +28,15 @@ from intergrax.context.providers.legacy_bridge import (
     fragments_from_policy_overlay_fragments,
     fragments_from_prior_output_records,
     fragments_from_rag_chunks,
-    fragments_from_session_history,
     fragments_from_shared_context_reads,
     fragments_from_system_instructions,
     fragments_from_task_message,
     fragments_from_tool_output_blocks,
     fragments_from_websearch_blocks,
+)
+from intergrax.context.session_history import (
+    HandleSessionHistoryProvider,
+    fragments_from_session_history_snapshot,
 )
 from intergrax.context.registry import ContextPluginRegistry
 
@@ -86,15 +88,21 @@ async def _collect_session_history(
 ) -> list[ContextFragment]:
     if not request.decision_profile.include_session_history:
         return []
+    provider = HandleSessionHistoryProvider()
+    snapshot = await provider.load_snapshot(request, ctx)
+    if snapshot is not None:
+        return fragments_from_session_history_snapshot(snapshot)
+
+    from intergrax.context.providers.legacy_bridge import (
+        SESSION_HISTORY_MESSAGES_HANDLE,
+        fragments_from_session_history,
+    )
+
     raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
     if not isinstance(raw, list) or not raw:
         return []
     max_entries = request.decision_profile.max_memory_entries_in_context
-    return fragments_from_session_history(
-        raw,
-        max_entries=max_entries,
-        include_session_history=True,
-    )
+    return fragments_from_session_history(raw, max_entries=max_entries)
 
 
 async def _collect_rag(

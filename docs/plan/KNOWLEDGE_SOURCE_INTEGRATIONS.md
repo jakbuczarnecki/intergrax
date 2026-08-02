@@ -70,7 +70,13 @@ DONE:     CONFLUENCE-KNOWLEDGE-ADAPTER-1
 DONE:     MSGRAPH-KNOWLEDGE-READ-SURFACE-1
 DONE:     VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1
 DONE:     SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
+DONE:     SLACK-KNOWLEDGE-FOUNDATION-1
+ACCEPTED:
+LKW-CONVERSATION-CONTEXT-ARCH-1
+READY_FOR_REVIEW:
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 IN_PROGRESS:
+LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
@@ -84,18 +90,25 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   DONE:
   MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1
-NEXT:
-LKW-SLACK-CONNECTED-SOURCE-1
 PLANNED:
+LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
+GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1
+GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1
+LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+LKW-GOOGLE-WORKSPACE-PROOF-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
+`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` freezes the complete Google Workspace knowledge architecture and proof-first roadmap so one existing `GoogleWorkspaceCollaborationSuiteIntegration` can support Drive, Docs, Sheets, Calendar, Slides, Mail and Chat through shared provider primitives, separate Vendor Knowledge adapters and provider-neutral LKW consumption immediately after the complete Slack Knowledge vertical. Status: **READY_FOR_REVIEW**. Runtime tasks below remain **PLANNED** — no Google knowledge capability is implemented.
+
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **implemented**. LKW bridge and live capability remain **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation, shared-channel runtime and live capability remain **not** implemented.
 
 **Execution order (frozen):**
 
@@ -111,14 +124,42 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 
 DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
+LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 
-NEXT:
-LKW-SLACK-CONNECTED-SOURCE-1
+IN_PROGRESS / CHANGES_REQUIRED:
+LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
+
+THEN:
+LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
-LKW-SLACK-KNOWLEDGE-PROOF-1
 
-AFTER COMPLETE SLACK USER VERTICAL:
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+JOIN (final Slack proof):
+LKW-SLACK-CONNECTED-SOURCE-1
++ LKW-CONVERSATION-CONTEXT-1
++ LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
++ SLACK-LIVE-CAPABILITY-1
++ LKW-HYBRID-ASK-1
+→ LKW-SLACK-KNOWLEDGE-PROOF-1
+
+AFTER LKW-SLACK-KNOWLEDGE-PROOF-1 ACCEPTED (complete Slack Knowledge vertical):
+GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE
+→ Drive contract/integration proof
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1B-DOCS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1B-DOCS
+→ Docs contract/integration proof
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1C-SHEETS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1C-SHEETS
+→ Sheets contract/integration proof
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1D-CALENDAR
+→ Calendar contract/integration proof
+→ LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+→ LKW-GOOGLE-WORKSPACE-PROOF-1
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1E–1G + matching adapters
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 Microsoft Graph family audit
 remaining Hybrid Ask and provider packs
 ```
@@ -963,16 +1004,19 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `LKW-SLACK-CONNECTED-SOURCE-1` (LKW application — depends on completed platform foundation)
+**Next:** `LKW-CONVERSATION-CONTEXT-1` (LKW application — next Slack-vertical implementation task; `LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED**)
 
 **Planned execution order:**
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
-LKW-SLACK-CONNECTED-SOURCE-1 — NEXT
+LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
+LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED
+LKW-CONVERSATION-CONTEXT-1 — NEXT
+LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR   ← after LKW-GOOGLE-WORKSPACE-PROOF-1
 ```
 
 Add separate thin adapters over the same resolved Microsoft Graph integration:
@@ -1019,10 +1063,10 @@ Recommended implementation/proof order inside the Microsoft scope:
 2. mail
 3. teams_channel
 4. teams_chat
-5. calendar   ← after complete Slack Knowledge user vertical
+5. calendar   ← after first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`)
 ```
 
-The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-SLACK-CONNECTED-SOURCE-1` → `SLACK-LIVE-CAPABILITY-1` → `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
+The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes the Google Workspace proof-critical path. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof unless a newer accepted implementation on HEAD makes that placement obsolete.
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
@@ -1189,6 +1233,8 @@ One existing `SlackConversationChannelIntegration` is reused across indexed RAG,
 
 **Classification:** `IMPLEMENTED` — platform foundation; not LKW bridge or live capability.
 
+Delivered scope includes same-integration bot-token credential model on one `AsyncWebClient`, bot-membership inventory via single `users.conversations` stream, `conversation_kind`-explicit history/reply/exact reads, strict descriptor validation, `thread_broadcast` exclusion from history materialization, and durable sync retry proof for multi-page reply traversal followed by history resumption.
+
 Target scope:
 
 ```text
@@ -1228,7 +1274,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `PLANNED` (LKW application — depends on `SLACK-KNOWLEDGE-FOUNDATION-1`)
+**Status:** `IN_PROGRESS / CHANGES_REQUIRED` (LKW application — `LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
 
 Application-only use of the completed platform foundation:
 
@@ -1244,6 +1290,20 @@ workspace Connection
 No new Slack client or provider adapter in LKW.
 
 **User-facing meaning after completion:** The user can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history.
+
+Connecting a Slack conversation as an Indexed Source does **not** activate the bot in that channel. Activating the bot in a channel does **not** automatically index channel history.
+
+#### `LKW-CONVERSATION-CONTEXT-1`
+
+**Status:** `PLANNED` (LKW application — LKW-wide, not platform Slack ownership)
+
+Provider-neutral durable Conversation Context Bindings, observed-audience validation, workspace audience policy, conversation-level state versus thread-level memory, evidence guards and shared `READ_ONLY_ASK` capability boundary. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+
+#### `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`
+
+**Status:** `PLANNED` (LKW application — first provider adapter over generic context layer)
+
+Slack channel/private-channel mention handling (`MENTION_ONLY` activation) over `LKW-CONVERSATION-CONTEXT-1`. Slack-specific event terms (`app_mention`, `message.channels`, etc.) remain in the adapter — not in the LKW core contract.
 
 #### `SLACK-LIVE-CAPABILITY-1`
 
@@ -1265,6 +1325,8 @@ No automatic durable persistence.
 
 **Status:** `PLANNED` (LKW application)
 
+**Prerequisites (join):** `LKW-SLACK-CONNECTED-SOURCE-1` + `LKW-CONVERSATION-CONTEXT-1` + `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` + `SLACK-LIVE-CAPABILITY-1` + `LKW-HYBRID-ASK-1`. Cannot claim indexed + live combined evidence before Hybrid Ask exists.
+
 Required user proof:
 
 ```text
@@ -1277,7 +1339,7 @@ approved user selects a Slack conversation
 → citations identify safe Slack message/thread provenance
 ```
 
-**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources.
+**User-facing meaning after completion:** A user asking through Slack can receive one grounded answer combining Slack history, current authorized Slack evidence and other workspace sources — with strict personal/shared audience isolation per [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ---
 
@@ -1288,3 +1350,189 @@ approved user selects a Slack conversation
 **Status:** `DEFERRED`
 
 Add safe source discovery, selection, sync request and status through Slack. Slack remains a replaceable frontend and never receives credentials or unsafe provider locators.
+
+---
+
+### Phase 10 — Google Workspace Knowledge vertical (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
+
+**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. **Provider usage:** [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md).
+
+`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` is **READY_FOR_REVIEW**. All runtime tasks below are **PLANNED** — no Google knowledge read surface, Vendor Knowledge adapter, live capability or LKW Connected Source is implemented.
+
+One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: google_workspace`, category: `collaboration_suite`) is reused across indexed RAG, durable materialization without RAG and bounded live access. Seven independently scoped source kinds: `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail`, `chat`. Drive may discover all Drive-hosted resources; discovery does not determine durable `source_kind` — the platform derives canonical binding kind server-side. The frontend must not choose or override `source_kind`.
+
+**Canonical durable resource ownership:**
+
+| Google resource class | Canonical durable `source_kind` |
+|---|---|
+| Google-native document (Docs) | `docs` |
+| Google-native spreadsheet (Sheets) | `sheets` |
+| Google-native presentation (Slides) | `slides` |
+| Ordinary uploaded/stored file | `drive` |
+| Drive folder / My Drive / Shared Drive scope | `drive` |
+| Google Calendar / calendar-event scope | `calendar` |
+| Gmail scope | `mail` |
+| Google Chat space / conversation scope | `chat` |
+
+**Drive discovery flow:** Drive inventory → inspect authoritative Google resource type → derive canonical `source_kind` server-side → issue provider-neutral Remote Resource candidate → create only the canonical `KnowledgeSourceBinding`.
+
+**Stable resource identity:** `provider_id = google_workspace` + `connection_ref` + canonical Google resource type + stable Google resource ID. Rename/move (where ID preserved) do not change identity. Export/download URL is never identity. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
+
+**Overlapping-binding policy (first proof):** explicit selected resources only; broad Drive/folder synchronization deferred. Future broad scopes require Option A (reject overlapping binding) or Option B (canonical deduplication record) — Option B not chosen until Vendor Knowledge and LKW ownership models support it safely; until then broad overlapping scopes fail closed or remain deferred.
+
+**Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
+
+#### `GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1`
+
+**Status:** `PLANNED`
+
+**Prerequisites (activation gates — not satisfied):**
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
+Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge vertical — currently PLANNED)
+canonical Tenant Connection / credential-reference boundary available
+SecretsStore-owned credential persistence available
+runtime integration rehydration/resolution boundary available
+Vendor Knowledge binding, registry and synchronization contracts available
+```
+
+Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution — `LKW-KNOWLEDGE-ACCESS-1`. Google Foundation must not introduce another tenant Connection catalog, a Google-only credential database, or OAuth tokens in provider config / bindings / LKW state.
+
+Typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
+
+Credential routes (conceptually separated): individual-user OAuth (preferred for first proof); organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. Exact OAuth scopes and Google SDK signatures are verified in implementation against current official Google documentation — not frozen here. Secrets remain in Connection/SecretsStore; never in bindings, Remote Resources, LKW Sources, citations or cursors.
+
+#### `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1`
+
+**Status:** `PLANNED`
+
+Extend the single existing `GoogleWorkspaceCollaborationSuiteIntegration` client boundary with typed read behavior per source kind. Substeps:
+
+| Substep | Source kind | Status |
+|---|---|---|
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE` | `drive` | `PLANNED` |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1B-DOCS` | `docs` | `PLANNED` |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1C-SHEETS` | `sheets` | `PLANNED` |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1D-CALENDAR` | `calendar` | `PLANNED` |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1E-SLIDES` | `slides` | `PLANNED` (post-proof) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1F-MAIL` | `mail` | `PLANNED` (post-proof) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1G-CHAT` | `chat` | `PLANNED` (post-proof) |
+
+Every read-surface task must define: resource scope; stable identity; revision/change identity; full inventory support; incremental/change-feed support; reconciliation support; exact read support; content mode; attachment behavior; permission capability; tombstone/deletion semantics; pagination/cursor behavior; bounded limits; safe provider errors. Do not claim a capability merely because Google exposes some related API method.
+
+#### `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1`
+
+**Status:** `PLANNED`
+
+Each adapter substep pairs with its read surface and must be independently reviewed before the next surface begins:
+
+| Substep | Source kind | Status |
+|---|---|---|
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE` | `drive` | `PLANNED` (proof-critical) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1B-DOCS` | `docs` | `PLANNED` (proof-critical) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1C-SHEETS` | `sheets` | `PLANNED` (proof-critical) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1D-CALENDAR` | `calendar` | `PLANNED` (proof-critical) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1E-SLIDES` | `slides` | `PLANNED` (post-proof) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1F-MAIL` | `mail` | `PLANNED` (post-proof) |
+| `GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1G-CHAT` | `chat` | `PLANNED` (post-proof) |
+
+Thin adapters over the same resolved `GoogleWorkspaceCollaborationSuiteIntegration`:
+
+```text
+GoogleWorkspaceDriveKnowledgeAdapter      (1A — proof-critical)
+GoogleWorkspaceDocsKnowledgeAdapter       (1B — proof-critical)
+GoogleWorkspaceSheetsKnowledgeAdapter     (1C — proof-critical)
+GoogleWorkspaceCalendarKnowledgeAdapter   (1D — proof-critical)
+GoogleWorkspaceSlidesKnowledgeAdapter     (1E — post-proof)
+GoogleWorkspaceMailKnowledgeAdapter       (1F — post-proof)
+GoogleWorkspaceChatKnowledgeAdapter       (1G — post-proof)
+```
+
+Registry keys:
+
+```text
+(google_workspace, collaboration_suite, drive)
+(google_workspace, collaboration_suite, docs)
+(google_workspace, collaboration_suite, sheets)
+(google_workspace, collaboration_suite, calendar)
+(google_workspace, collaboration_suite, slides)
+(google_workspace, collaboration_suite, mail)
+(google_workspace, collaboration_suite, chat)
+```
+
+Each adapter receives the resolved integration; owns no client, credentials, persistence, checkpoint or retry runtime; uses the shared synchronization coordinator; remains independent from LKW.
+
+#### `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1`
+
+**Status:** `PLANNED`
+
+**Prerequisites:** proof-critical Google read surfaces and adapters (Drive, Docs, Sheets, Calendar).
+
+Target flow:
+
+```text
+workspace Connection
+→ Google Workspace Remote Resource discovery
+→ selected Drive / Docs / Sheets / Calendar resource
+→ tenant KnowledgeSourceBinding
+→ WorkspaceIndexedSourceBinding
+→ Vendor Knowledge synchronization
+→ existing LKW materialization/indexing pipeline
+→ Search → Ask → citations
+```
+
+Reuses the generic Connected Source implementation proved by Slack. No Google-specific LKW configuration aggregate, mutation engine, indexing pipeline, vector database access or Source table. First Google LKW sources default to `PERSONAL_ONLY`.
+
+#### `LKW-GOOGLE-WORKSPACE-PROOF-1`
+
+**Status:** `PLANNED`
+
+**Prerequisites:** `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` + proof-critical adapters + LKW indexed Search/Ask path.
+
+Required first proof:
+
+```text
+user connects one Google account
+→ selects approved Google resources
+→ one Google Doc synchronized
+→ one Google Sheet synchronized
+→ one Google Calendar resource/event set synchronized
+→ optionally one ordinary Drive file synchronized
+→ LKW indexes the selected resources
+→ Search retrieves provider-derived evidence
+→ Ask produces one grounded answer
+→ citations identify the correct Google source and resource
+→ no Google API call is made by Ask after durable synchronization
+```
+
+User-oriented proof demonstrating narrative document, structured spreadsheet, calendar/event data and ordinary stored file — not merely adapter unit tests.
+
+**Proof-first gate (binding — vertically incremental):**
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE
+→ Drive contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1B-DOCS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1B-DOCS
+→ Docs contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1C-SHEETS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1C-SHEETS
+→ Sheets contract/integration proof
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1D-CALENDAR
+→ Calendar contract/integration proof
+
+→ LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+→ LKW-GOOGLE-WORKSPACE-PROOF-1
+→ read surfaces 1E–1G + adapters 1E–1G
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+```
+
+Each read surface and its adapter must be independently reviewable before proceeding. The final Google LKW proof may combine Docs, Sheets, Calendar and an optional ordinary Drive file.

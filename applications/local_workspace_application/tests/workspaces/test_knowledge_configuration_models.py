@@ -11,7 +11,9 @@ from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    IndexedSourceAudienceEligibilityV1,
     IndexedSourceSyncModeV1,
+    KnowledgeAudienceEligibilityV1,
     LiveResultRetentionV1,
     QueryPolicyModeV1,
     WorkspaceConnectionAttachment,
@@ -422,6 +424,18 @@ def test_configuration_head_rejects_blank_pending_mutation_id() -> None:
 # --- Mutation record ---
 
 
+def test_mutation_record_reserved_without_target_revision_accepted() -> None:
+    record = _mutation_record()
+    assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert record.target_revision is None
+
+
+def test_mutation_record_reserved_with_target_revision_accepted() -> None:
+    record = _mutation_record(target_revision=1)
+    assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert record.target_revision == 1
+
+
 def test_mutation_record_reserved_state_accepted() -> None:
     record = _mutation_record()
     assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
@@ -480,11 +494,6 @@ def test_mutation_record_recovery_required_partial_state_accepted() -> None:
         error_code="writer_slot_stale",
     )
     assert record.error_code == "writer_slot_stale"
-
-
-def test_mutation_record_reserved_with_target_revision_rejected() -> None:
-    with pytest.raises(ValidationError):
-        _mutation_record(target_revision=1)
 
 
 def test_mutation_record_reserved_with_outcome_rejected() -> None:
@@ -583,6 +592,62 @@ def test_mutation_record_non_committed_with_committed_at_rejected() -> None:
             target_revision=1,
             committed_at=_NOW,
         )
+
+
+_CLAIM = "claim-1"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "error_match"),
+    [
+        ({}, None),
+        ({"stage_claim_id": _CLAIM, "target_revision": 1}, None),
+        ({"stage_claim_id": ""}, "stage_claim"),
+        ({"stage_claim_id": _CLAIM}, "stage_claim_requires_target_revision"),
+        (
+            {"stage_claim_id": _CLAIM, "target_revision": 1, "status": WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED},
+            None,
+        ),
+    ],
+)
+def test_mutation_record_stage_claim_rules(overrides: dict[str, object], error_match: str | None) -> None:
+    if error_match is None:
+        assert _mutation_record(**overrides).stage_claim_id == overrides.get("stage_claim_id")
+        return
+    with pytest.raises(ValidationError, match=error_match):
+        _mutation_record(**overrides)
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        WorkspaceKnowledgeMutationStatusV1.COMMITTED,
+        WorkspaceKnowledgeMutationStatusV1.ABORTED,
+    ],
+)
+def test_mutation_record_stage_claim_rejected_on_terminal_status(
+    status: WorkspaceKnowledgeMutationStatusV1,
+) -> None:
+    overrides: dict[str, object] = {
+        "stage_claim_id": _CLAIM,
+        "target_revision": 1,
+        "status": status,
+    }
+    if status is WorkspaceKnowledgeMutationStatusV1.PREPARED:
+        overrides.update({"result_entity_type": "x", "result_entity_id": "y"})
+    elif status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+        overrides.update(
+            {
+                "outcome": WorkspaceKnowledgeMutationOutcomeV1.APPLIED,
+                "committed_revision": 1,
+                "result_entity_type": "x",
+                "result_entity_id": "y",
+                "committed_at": _NOW,
+            }
+        )
+    with pytest.raises(ValidationError, match="stage_claim_invalid_for_status"):
+        _mutation_record(**overrides)
 
 
 # --- Configuration projection ---
@@ -783,3 +848,56 @@ def test_workspace_source_status_enum_unchanged() -> None:
         "ready",
         "error",
     }
+
+
+def test_knowledge_audience_eligibility_compatibility_alias() -> None:
+    assert IndexedSourceAudienceEligibilityV1 is KnowledgeAudienceEligibilityV1
+
+
+def test_indexed_binding_defaults_to_personal_only() -> None:
+    binding = _indexed_source_binding()
+    assert binding.audience_eligibility is KnowledgeAudienceEligibilityV1.PERSONAL_ONLY
+
+
+def test_indexed_binding_accepts_explicit_shared_allowed() -> None:
+    binding = _indexed_source_binding(
+        audience_eligibility=KnowledgeAudienceEligibilityV1.SHARED_ALLOWED,
+    )
+    assert binding.audience_eligibility is KnowledgeAudienceEligibilityV1.SHARED_ALLOWED
+
+
+def test_live_binding_defaults_to_personal_only() -> None:
+    binding = _live_access_binding()
+    assert binding.audience_eligibility is KnowledgeAudienceEligibilityV1.PERSONAL_ONLY
+
+
+def test_live_binding_accepts_explicit_shared_allowed() -> None:
+    binding = _live_access_binding(
+        audience_eligibility=KnowledgeAudienceEligibilityV1.SHARED_ALLOWED,
+    )
+    assert binding.audience_eligibility is KnowledgeAudienceEligibilityV1.SHARED_ALLOWED
+
+
+def test_audience_eligibility_serialized_values_unchanged() -> None:
+    assert KnowledgeAudienceEligibilityV1.PERSONAL_ONLY.value == "personal_only"
+    assert KnowledgeAudienceEligibilityV1.SHARED_ALLOWED.value == "shared_allowed"
+
+
+def test_live_binding_missing_eligibility_field_defaults_to_personal_only() -> None:
+    payload = {
+        "live_access_binding_id": "live-1",
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "connection_ref": "conn.live",
+        "allowed_capability_ids": ("cap.read",),
+        "derived_provider_id": "provider-1",
+        "derived_integration_kind": IntegrationCategory.WIKI_KNOWLEDGE,
+        "derived_safe_display_label": "Wiki",
+        "mutation_id": _MUTATION,
+        "effective_revision": 1,
+        "semantic_identity_hash": _SHA256,
+        "created_at": _NOW,
+        "updated_at": _NOW,
+    }
+    binding = WorkspaceLiveAccessBinding.model_validate(payload)
+    assert binding.audience_eligibility is KnowledgeAudienceEligibilityV1.PERSONAL_ONLY

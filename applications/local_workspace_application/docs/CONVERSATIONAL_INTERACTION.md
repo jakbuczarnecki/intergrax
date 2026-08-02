@@ -244,3 +244,35 @@ W zadaniu **1A** wykonanie **nie jest podłączone**. Planner rozpoznaje intencj
 | `conversation/interaction_planner.py` | `ConversationInteractionPlanner`, błędy, walidacja względem requestu |
 
 Powiązana roadmapa: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md).
+
+---
+
+## 14. Deterministic context resolution before planner use
+
+Future planner, resolver and executor requests receive a pre-resolved **ConversationExecutionContext** — not discretionary model choices about audience or workspace.
+
+**Conceptual envelope:**
+
+```text
+ConversationExecutionContext
+├── tenant_id
+├── audience_mode
+├── workspace_id
+├── principal_ref
+├── conversation_context_binding_id
+├── activation_policy
+├── canonical_thread_ref
+└── allowed_product_capabilities
+```
+
+The LLM planner must **not** choose: audience mode; shared versus personal memory; conversation workspace binding; source visibility; private-to-shared data elevation; allowed product capabilities.
+
+**Ingress validation (before planner):** `binding.audience_mode` must match `ingress.observed_audience`; `UNKNOWN` fails closed. At most one `ACTIVE` binding per semantic identity (`tenant_id` + `conversation_connection_ref` + `opaque_conversation_ref`).
+
+**PERSONAL** conversation: observed `PERSONAL` + principal match → workspace via `FIXED_WORKSPACE` or durable `PERSONAL_SELECTION` → thread memory partition → permitted evidence.
+
+**SHARED** conversation: observed `SHARED` → fixed shared workspace (`FIXED_WORKSPACE` only) → `READ_ONLY_ASK` capability boundary → `SHARED_ALLOWED` evidence only. Caller's private active workspace, DM workspace selection, personal memory and private sources are ignored. Missing shared binding fails closed.
+
+A natural-language workspace reference may target an operation but must not silently replace the workspace bound to a shared conversation.
+
+Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).

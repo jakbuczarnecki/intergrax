@@ -47,6 +47,16 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeVisibility,
 )
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
+from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
+    RemoteResourceAvailabilityV1,
+    RemoteResourceCandidatePageV1,
+    RemoteResourceCandidateV1,
+    RemoteResourceDescriptorV1,
+    RemoteResourceDiscoveryPageV1,
+    RemoteResourceDiscoveryProvider,
+    RemoteResourceDiscoveryRegistry,
+    TenantRemoteResourceDiscoveryService,
+)
 from intergrax.runtime.vendor_knowledge.resolver import IntegrationProfileVendorResolver
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeRemoteItemStateRepository,
@@ -56,7 +66,9 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncCorruptState,
     KnowledgeSyncSink,
 )
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -97,13 +109,49 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
     make_vendor_knowledge_sync_worker_handler,
     register_vendor_knowledge_sync_worker_handler,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    CapabilityEffectV1,
+    LiveCapabilityDescriptorV1,
+    RepositoryTenantConnectionPort,
+    TenantConnectionCapabilityReadService,
+    TenantConnectionPort,
+    TenantLiveCapabilityCatalog,
+    TenantLiveCapabilityCatalogPort,
+    is_bindable_read_only_capability,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
+    TenantConnectionRehydrationResult,
+    TenantConnectionRehydrationStatus,
+    TenantConnectionRehydrator,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+    TenantConnectionAlreadyExists,
+    TenantConnectionCorruptRecord,
+    TenantConnectionInvalidState,
+    TenantConnectionNotFound,
+    TenantConnectionRepository,
+    TenantConnectionService,
+    TenantConnectionVersionConflict,
+    to_safe_tenant_connection,
+)
 
 __all__ = [
+    "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
+    "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
+    "CapabilityEffectV1",
     "ConnectionAwareVendorResolver",
     "DocumentStoreKnowledgeRemoteItemStateRepository",
     "DocumentStoreKnowledgeSourceBindingRepository",
     "DocumentStoreKnowledgeSourceLeaseRepository",
     "DocumentStoreKnowledgeSyncCheckpointRepository",
+    "DocumentStoreTenantConnectionRepository",
     "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
@@ -143,8 +191,34 @@ __all__ = [
     "KnowledgeSyncRunStatus",
     "KnowledgeSyncSink",
     "KnowledgeVisibility",
-    "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
-    "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
+    "LiveCapabilityDescriptorV1",
+    "RemoteResourceAvailabilityV1",
+    "RemoteResourceCandidatePageV1",
+    "RemoteResourceCandidateV1",
+    "RemoteResourceDescriptorV1",
+    "RemoteResourceDiscoveryPageV1",
+    "RemoteResourceDiscoveryProvider",
+    "RemoteResourceDiscoveryRegistry",
+    "RepositoryTenantConnectionPort",
+    "SafeTenantConnectionV1",
+    "TenantConnection",
+    "TenantConnectionAdministrativeStatus",
+    "TenantConnectionAlreadyExists",
+    "TenantConnectionCapabilityReadService",
+    "TenantConnectionCorruptRecord",
+    "TenantConnectionIntegrationFactory",
+    "TenantConnectionInvalidState",
+    "TenantConnectionNotFound",
+    "TenantConnectionPort",
+    "TenantConnectionRehydrationResult",
+    "TenantConnectionRehydrationStatus",
+    "TenantConnectionRehydrator",
+    "TenantConnectionRepository",
+    "TenantConnectionService",
+    "TenantConnectionVersionConflict",
+    "TenantLiveCapabilityCatalog",
+    "TenantLiveCapabilityCatalogPort",
+    "TenantRemoteResourceDiscoveryService",
     "VendorIntegrationResolver",
     "VendorKnowledgeAdapter",
     "VendorKnowledgeError",
@@ -160,11 +234,13 @@ __all__ = [
     "build_vendor_knowledge_sync_runtime",
     "decode_vendor_knowledge_sync_job",
     "encode_vendor_knowledge_sync_job",
+    "is_bindable_read_only_capability",
     "make_vendor_knowledge_sync_handler",
     "make_vendor_knowledge_sync_worker_handler",
     "owner_id_for_sync_run",
     "register_vendor_knowledge_sync_handler",
     "register_vendor_knowledge_sync_worker_handler",
+    "to_safe_tenant_connection",
     "to_source_ref",
     "vendor_knowledge_sync_idempotency_key",
 ]

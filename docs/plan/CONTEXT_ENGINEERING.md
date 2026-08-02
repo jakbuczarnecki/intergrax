@@ -20,6 +20,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
 
+> **CTX-UCL-3 (2026-08-02):** `ContextPlan` contracts, `SessionHistorySnapshot`, deterministic `ContextArtifactLookupInputs`, canonical session provider without pre-plan last-N slicing — **READY_FOR_REVIEW**; no repository lookup, artifact executor, or LLM wiring yet.
+
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). CE owns `ContextPackOptimizer`, source-aware context compression, post-compression token recalculation, receipt references in provenance/metadata, and fallback to original fragments on validation failure.
 
 ---

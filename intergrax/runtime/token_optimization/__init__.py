@@ -271,6 +271,15 @@ from intergrax.runtime.token_optimization.signals import (
     emit_token_optimization_signal,
     sanitize_signal_metadata,
 )
+from intergrax.runtime.token_optimization.message_sequence_artifact import (
+    InternalMessageSequenceModelCall,
+    MessageSequenceArtifactExecutionError,
+    MessageSequenceArtifactExecutionReason,
+    MessageSequenceArtifactExecutionReceipt,
+    MessageSequenceArtifactExecutionRequest,
+    MessageSequenceArtifactExecutionResult,
+    MessageSequenceArtifactExecutor,
+)
 from intergrax.runtime.token_optimization.protected_regions import (
     BUILT_IN_PROTECTED_TERMS,
     MAX_ENV_PROTECTED_TERMS,
@@ -335,6 +344,13 @@ __all__ = [
     "PROTECTED_TERMS_ENV_VAR",
     "detect_protected_regions",
     "hash_content",
+    "InternalMessageSequenceModelCall",
+    "MessageSequenceArtifactExecutionError",
+    "MessageSequenceArtifactExecutionReason",
+    "MessageSequenceArtifactExecutionReceipt",
+    "MessageSequenceArtifactExecutionRequest",
+    "MessageSequenceArtifactExecutionResult",
+    "MessageSequenceArtifactExecutor",
     "get_env_protected_terms",
     "make_compression_receipt_ref",
     "parse_protected_terms",

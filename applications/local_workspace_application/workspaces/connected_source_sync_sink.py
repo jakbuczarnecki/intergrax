@@ -1,0 +1,322 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Durable sink that materializes vendor knowledge batches into LKW documents."""
+
+from __future__ import annotations
+
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol
+
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+    to_source_ref,
+)
+from intergrax.runtime.vendor_knowledge.models import KnowledgeChangeKind, KnowledgeContentMode
+from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncBatch
+from local_workspace_application.workspaces.connected_source_delivery import (
+    ConnectedSourceDeliveryApplyResult,
+    begin_delivery_receipt,
+    complete_delivery_receipt,
+    delivery_receipt_completed,
+)
+from local_workspace_application.workspaces.connected_source_materializer import (
+    ConnectedSourceContentMaterializerRegistry,
+    default_connected_source_materializer_registry,
+)
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryStatus,
+    ConnectedSourceSyncSinkError,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingError,
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    IndexedSourceAudienceEligibilityV1,
+    WorkspaceIndexedSourceBindingStatusV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+    is_workspace_source_product_visible,
+)
+from local_workspace_application.workspaces.models import (
+    WorkspaceOperationStatus,
+    WorkspaceOperationType,
+    WorkspaceSourceType,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+
+_ALLOWED_CHANGE_KINDS = frozenset(
+    {
+        KnowledgeChangeKind.UPSERT,
+        KnowledgeChangeKind.METADATA_CHANGED,
+    }
+)
+
+
+class TenantKnowledgeSourceBindingPort(Protocol):
+    def get_binding(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSourceBinding | None:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ConnectedSourceSyncSinkContext:
+    tenant_id: str
+    workspace_id: str
+    source_id: str
+    indexed_source_binding_id: str
+    knowledge_source_binding_ref: str
+    operation_id: str
+
+
+class WorkspaceConnectedSourceKnowledgeSyncSink:
+    def __init__(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        indexing_service: WorkspaceDocumentIndexingService,
+        configuration_reader: WorkspaceKnowledgeConfigurationService,
+        tenant_binding_port: TenantKnowledgeSourceBindingPort,
+        context: ConnectedSourceSyncSinkContext,
+        materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
+    ) -> None:
+        self._repository = repository
+        self._indexing_service = indexing_service
+        self._configuration_reader = configuration_reader
+        self._tenant_binding_port = tenant_binding_port
+        self._context = context
+        self._materializers = materializer_registry or default_connected_source_materializer_registry()
+
+    async def apply_batch(self, *, batch: KnowledgeSyncBatch) -> ConnectedSourceDeliveryApplyResult:
+        try:
+            return await self._apply_batch(batch=batch)
+        except ConnectedSourceSyncSinkError:
+            raise
+        except Exception as exc:
+            raise ConnectedSourceSyncSinkError(
+                f"connected_source_sink_internal_error:{exc.__class__.__name__}"
+            ) from exc
+
+    async def _apply_batch(self, *, batch: KnowledgeSyncBatch) -> ConnectedSourceDeliveryApplyResult:
+        self._validate_authoritative_state(batch)
+        completed = delivery_receipt_completed(
+            repository=self._repository,
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+            source_id=self._context.source_id,
+            delivery_id=batch.delivery_id,
+            indexed_source_binding_id=self._context.indexed_source_binding_id,
+            knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+            binding_configuration_version=batch.binding_configuration_version,
+            operation_id=self._context.operation_id,
+        )
+        if completed is not None:
+            return ConnectedSourceDeliveryApplyResult(
+                documents_indexed=completed.documents_indexed,
+                documents_unchanged=completed.documents_unchanged,
+                items_processed=completed.documents_indexed + completed.documents_unchanged,
+                items_failed=completed.items_failed,
+                replayed=True,
+            )
+
+        receipt = begin_delivery_receipt(
+            repository=self._repository,
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+            source_id=self._context.source_id,
+            indexed_source_binding_id=self._context.indexed_source_binding_id,
+            knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+            delivery_id=batch.delivery_id,
+            binding_configuration_version=batch.binding_configuration_version,
+            operation_id=self._context.operation_id,
+        )
+        if (
+            receipt.status is ConnectedSourceDeliveryStatus.COMPLETED
+            and receipt.completed_at is not None
+            and receipt.items_failed == 0
+        ):
+            return ConnectedSourceDeliveryApplyResult(
+                documents_indexed=receipt.documents_indexed,
+                documents_unchanged=receipt.documents_unchanged,
+                items_processed=receipt.documents_indexed + receipt.documents_unchanged,
+                items_failed=receipt.items_failed,
+                replayed=True,
+            )
+
+        documents_indexed = 0
+        documents_unchanged = 0
+        items_processed = 0
+
+        for envelope in batch.envelopes:
+            if envelope.change_kind not in _ALLOWED_CHANGE_KINDS:
+                raise ConnectedSourceSyncSinkError("connected_source_change_kind_rejected")
+            if envelope.content is None:
+                raise ConnectedSourceSyncSinkError("connected_source_content_missing")
+            if envelope.content.mode is not KnowledgeContentMode.STRUCTURED_RECORD:
+                raise ConnectedSourceSyncSinkError("connected_source_content_mode_invalid")
+            record = envelope.content.structured_record
+            if not isinstance(record, dict):
+                raise ConnectedSourceSyncSinkError("connected_source_structured_record_invalid")
+            schema_name = record.get("schema")
+            if not isinstance(schema_name, str) or not schema_name:
+                raise ConnectedSourceSyncSinkError("connected_source_schema_unsupported")
+            materializer = self._materializers.resolve(schema_name)
+            materialized = materializer.materialize(
+                source_id=self._context.source_id,
+                remote_id=envelope.remote_id,
+                content=envelope.content,
+            )
+            result = await self._index_materialized_document(materialized)
+            items_processed += 1
+            if result.indexed:
+                documents_indexed += 1
+            elif result.unchanged:
+                documents_unchanged += 1
+            else:
+                raise ConnectedSourceSyncSinkError("connected_source_indexing_failed")
+
+        completed_receipt = complete_delivery_receipt(
+            repository=self._repository,
+            receipt=receipt,
+            documents_indexed=documents_indexed,
+            documents_unchanged=documents_unchanged,
+            items_processed=items_processed,
+            items_failed=0,
+        )
+        return ConnectedSourceDeliveryApplyResult(
+            documents_indexed=completed_receipt.documents_indexed,
+            documents_unchanged=completed_receipt.documents_unchanged,
+            items_processed=items_processed,
+            items_failed=0,
+            replayed=False,
+        )
+
+    def _validate_authoritative_state(self, batch: KnowledgeSyncBatch) -> None:
+        if batch.tenant_id != self._context.tenant_id:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_tenant_mismatch")
+        if batch.binding_id != self._context.knowledge_source_binding_ref:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_binding_mismatch")
+
+        tenant_binding = self._tenant_binding_port.get_binding(
+            tenant_id=self._context.tenant_id,
+            binding_id=self._context.knowledge_source_binding_ref,
+        )
+        if tenant_binding is None:
+            raise ConnectedSourceSyncSinkError("connected_source_tenant_binding_not_found")
+        if tenant_binding.status is not KnowledgeSourceBindingStatus.ACTIVE:
+            raise ConnectedSourceSyncSinkError("connected_source_tenant_binding_inactive")
+        if batch.source.tenant_id != tenant_binding.tenant_id:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        ref = to_source_ref(tenant_binding)
+        if batch.source.provider_id != ref.provider_id:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.integration_kind != ref.integration_kind:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.source_kind != ref.source_kind:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.connection_ref != ref.connection_ref:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.scope.remote_scope_id != ref.scope.remote_scope_id:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.scope.remote_scope_type != ref.scope.remote_scope_type:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.source.scope.parameters != ref.scope.parameters:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_source_mismatch")
+        if batch.binding_configuration_version != tenant_binding.configuration_version:
+            raise ConnectedSourceSyncSinkError("connected_source_batch_version_mismatch")
+
+        configuration = self._configuration_reader.get_configuration(
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+        )
+        if configuration is None:
+            raise ConnectedSourceSyncSinkError("connected_source_configuration_not_found")
+        indexed_binding = None
+        for item in configuration.indexed_sources:
+            if item.indexed_source_binding_id == self._context.indexed_source_binding_id:
+                indexed_binding = item
+                break
+        if indexed_binding is None:
+            raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_not_found")
+        if indexed_binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
+            raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_inactive")
+        if indexed_binding.knowledge_source_binding_ref != self._context.knowledge_source_binding_ref:
+            raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_ref_mismatch")
+        if indexed_binding.source_id != self._context.source_id:
+            raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_source_mismatch")
+        if indexed_binding.audience_eligibility is not IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY:
+            raise ConnectedSourceSyncSinkError("connected_source_audience_eligibility_rejected")
+
+        source = self._repository.get_source(
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+            source_id=self._context.source_id,
+        )
+        if source is None:
+            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_not_found")
+        if source.source_type is not WorkspaceSourceType.CONNECTED_SOURCE:
+            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_type_mismatch")
+        if not is_workspace_source_product_visible(
+            source,
+            committed_configuration_revision=configuration.configuration_revision,
+        ):
+            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
+        if (
+            source.knowledge_configuration_creation_mutation_id is None
+            or source.knowledge_configuration_visibility_revision is None
+        ):
+            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
+        if source.knowledge_configuration_creation_mutation_id != indexed_binding.mutation_id:
+            raise ConnectedSourceSyncSinkError("connected_source_source_binding_mutation_mismatch")
+        if source.knowledge_configuration_visibility_revision != indexed_binding.effective_revision:
+            raise ConnectedSourceSyncSinkError("connected_source_source_binding_revision_mismatch")
+        if source.knowledge_configuration_visibility_revision > configuration.configuration_revision:
+            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
+
+        operation = self._repository.get_operation(
+            tenant_id=self._context.tenant_id,
+            operation_id=self._context.operation_id,
+        )
+        if operation is None:
+            raise ConnectedSourceSyncSinkError("connected_source_operation_not_found")
+        if operation.workspace_id != self._context.workspace_id:
+            raise ConnectedSourceSyncSinkError("connected_source_operation_workspace_mismatch")
+        if operation.source_id != self._context.source_id:
+            raise ConnectedSourceSyncSinkError("connected_source_operation_source_mismatch")
+        if operation.operation_type is not WorkspaceOperationType.SOURCE_SYNC:
+            raise ConnectedSourceSyncSinkError("connected_source_operation_type_mismatch")
+        if operation.status is not WorkspaceOperationStatus.RUNNING:
+            raise ConnectedSourceSyncSinkError("connected_source_operation_not_running")
+
+    async def _index_materialized_document(self, materialized):
+        fd, temp_name = tempfile.mkstemp(
+            prefix="lkw-connected-source-",
+            suffix=".md",
+        )
+        temp_path = Path(temp_name)
+        try:
+            with open(fd, "w", encoding="utf-8") as handle:
+                handle.write(materialized.markdown)
+            return await self._indexing_service.index_one(
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                source_id=self._context.source_id,
+                operation_id=self._context.operation_id,
+                physical_path=temp_path,
+                logical_source_path=materialized.logical_source_path,
+                safe_file_name=materialized.safe_file_name,
+                content_hash=materialized.content_hash,
+            )
+        except WorkspaceDocumentIndexingError as exc:
+            raise ConnectedSourceSyncSinkError("connected_source_indexing_failed") from exc
+        finally:
+            if temp_path.exists():
+                temp_path.unlink(missing_ok=True)

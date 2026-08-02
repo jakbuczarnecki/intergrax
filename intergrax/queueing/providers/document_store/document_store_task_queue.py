@@ -112,6 +112,12 @@ class DocumentStoreTaskQueue(TaskQueue):
             return TaskStatus.PENDING
         return TaskStatus(str(record["status"]))
 
+    def get_status_if_present(self, handle: TaskHandle) -> TaskStatus | None:
+        record = self._load(handle)
+        if record is None:
+            return None
+        return TaskStatus(str(record["status"]))
+
     def get_result(self, handle: TaskHandle) -> Optional[TaskResult]:
         record = self._load(handle)
         if record is None:

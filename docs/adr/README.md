@@ -57,6 +57,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 
 | ADR | Title | Status |
 |-----|-------|--------|
+| [ADR-UCL-001](entries/2026-08-01/ADR-UCL-001.md) | Unified Context Lifecycle ownership, single-budget authority, versioned context projections | Proposed / Ready for Review |
 | [ADR-ADAPT-001](entries/2026-06-05/ADR-ADAPT-001.md) | Adaptive Harness Intelligence over classical RL | Accepted |
 | [ADR-ADAPT-002](entries/2026-06-22/ADR-ADAPT-002.md) | ADAS (Agent Design Search) inside AHI — not a separate layer | Accepted |
 | [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |

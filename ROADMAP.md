@@ -86,7 +86,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | **Model runtime portability** | `LKW-MODEL-RUNTIME-1` — **ACCEPTED** — full canonical LKW proof for Ollama `qwen2.5:14b` and vLLM `Qwen/Qwen2.5-3B-Instruct`; [evidence](applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.md) |
 | **Workspace Knowledge Configuration** | `LKW-KNOWLEDGE-ACCESS-1` — **NEXT** — durable tenant Connection Catalog, restart-safe Connection configuration, SecretsStore-owned credentials, runtime registry rehydration; Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies |
 | Trusted Ask Workspace available | Surface-neutral HTTP Ask Workspace over **indexed** knowledge; grounded answers, citations and persisted runs are implemented and live-verified |
-| Slack conversational MVP in active development | User can operate LKW through Slack and ask about knowledge already in the workspace; Slack channel/conversation history as searchable workspace knowledge is **not** yet available |
+| Slack conversational MVP in active development | User can operate LKW through Slack **DM** and ask about knowledge already in the workspace (temporary in-memory personal selection); provider-neutral conversation context architecture with observed-audience validation **ACCEPTED** (`LKW-CONVERSATION-CONTEXT-ARCH-1`); durable bindings, shared-channel runtime, shared source eligibility and Slack channel/conversation history as searchable workspace knowledge are **not** yet available |
 | Knowledge Intake architecture being frozen | Channel-neutral intake and asynchronous ingestion contract documented; managed-file upload, Source Candidate intake and end-to-end `WEB_URL` indexed intake are **ACCEPTED** — see [Knowledge Intake discovery](applications/local_workspace_application/docs/KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | Preserve application-first platform development | Concrete LKW blockers may produce reusable Intergrax improvements; unrelated platform expansion does not override the LKW MVP path |
 | Source-available collaboration model clarified | See [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
@@ -106,14 +106,16 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | Item | Notes |
 |------|-------|
 | **LKW-KNOWLEDGE-ACCESS-1** | **NEXT** — durable tenant Connection Catalog, restart-safe Connection configuration, SecretsStore-owned credentials, runtime registry rehydration; Remote Resources, Indexed Sources, Live Access Bindings and Query Policy |
-| **Slack Knowledge vertical (application-first priority)** | Platform `SLACK-KNOWLEDGE-FOUNDATION-1` **DONE** → LKW `LKW-SLACK-CONNECTED-SOURCE-1` **NEXT** → platform `SLACK-LIVE-CAPABILITY-1` → LKW `LKW-SLACK-KNOWLEDGE-PROOF-1`; complete vertical precedes Microsoft Graph Calendar |
-| **Vendor knowledge durable + live branches** | Microsoft Graph Calendar adapter after Slack vertical; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
+| **LKW-CONVERSATION-CONTEXT-ARCH-1** | **ACCEPTED** — provider-neutral conversational context with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared `READ_ONLY_ASK` boundary and deterministic guards; proved first through Slack |
+| **Slack Knowledge vertical (application-first priority)** | Platform `SLACK-KNOWLEDGE-FOUNDATION-1` **DONE** → architecture `LKW-CONVERSATION-CONTEXT-ARCH-1` **ACCEPTED** → LKW `LKW-SLACK-CONNECTED-SOURCE-1` **IN_PROGRESS / CHANGES_REQUIRED** → LKW `LKW-CONVERSATION-CONTEXT-1` **NEXT** → LKW `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` → platform `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1` (**PLANNED**); Google Workspace runtime implementation starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** |
+| **Google Workspace Knowledge vertical** | Architecture `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW** → `GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` → vertically incremental proof-critical path (Drive+adapter → Docs+adapter → Sheets+adapter → Calendar+adapter, each independently reviewed) → `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` → `LKW-GOOGLE-WORKSPACE-PROOF-1` → remaining surfaces (Slides, Mail, Chat); **PLANNED** — not implemented |
+| **Vendor knowledge durable + live branches** | Microsoft Graph Calendar adapter after first accepted Google Workspace LKW proof; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language planner execution and Slack cutover (`CONV-1B`, `CONV-1C`) |
-| **LKW-VENDOR-ACCESS-COLLABORATION-1** | Microsoft 365, Jira, Confluence indexed and live access |
+| **LKW-VENDOR-ACCESS-COLLABORATION-1** | Microsoft 365, Google Workspace, Jira, Confluence indexed and live access |
 | **LKW-VENDOR-ACCESS-DATA-1** | Databricks, Power BI, Atlan read-only live access |
 | **LKW-KNOWLEDGE-LIFECYCLE-1** | Shared synchronization, freshness, permissions, safe removal |
-| **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof |
+| **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable platform proof (Slack conversations, Google Docs/Sheets/Calendar when implemented, Microsoft 365, local files, Web URLs) |
 | Complete the end-to-end LKW Slack workflow | Natural-language Hybrid Ask with citations — final proof target |
 | Provide a repeatable design-partner setup | A real user must be able to start and try the controlled LKW environment without ad hoc developer reconstruction |
 | Run first real-user LKW validation | Measure usefulness, citation correctness, time saved, trust and blockers to repeated use |
@@ -180,7 +182,8 @@ Prior discussion is recommended before substantial work on any track. Maintainer
 - [USE_CASES.md](USE_CASES.md) — use-case map for validation and partner-fit discussions
 - [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
 - [COLLABORATION.md](COLLABORATION.md) — collaboration model, permitted use and contact
-- [Token Optimization feature plan](docs/features/plan/TOKEN_OPTIMIZATION.md) — **TOKEN-10** active roadmap; **TOKEN-10A** accepted/closed; **TOKEN-10B** next; LKW-PF6 product proof follows universal platform proof
+- [Token Optimization feature plan](docs/features/plan/TOKEN_OPTIMIZATION.md) — **TOKEN-10A–10D** accepted/closed; **CTX-UCL-3** ready for review; **TOKEN-10E** blocked until CTX-UCL-CLOSEOUT-1
+- [LangChain Independence](docs/features/architecture/LANGCHAIN_INDEPENDENCE.md) — cross-layer migration roadmap; active stage **LCI-0A** (inventory); target **LangChain-free core + optional compatibility**; does not change LKW status; next after review: **LCI-0B** boundary guard — [feature plan](docs/features/plan/LANGCHAIN_INDEPENDENCE.md)
 - [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook and automation source
 - [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issue map and recommended evaluation paths
 - [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation and deep technical discussion issue waves

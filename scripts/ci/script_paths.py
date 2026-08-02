@@ -168,6 +168,7 @@ SCRIPT_PATHS: dict[str, str] = {
     "check_integration_vendor_imports.py": "maintenance/check_integration_vendor_imports.py",
     "check_intergrax_no_applications_imports.py": "maintenance/check_intergrax_no_applications_imports.py",
     "check_l4_runtime_evidence.py": "maintenance/check_l4_runtime_evidence.py",
+    "check_langchain_boundary.py": "maintenance/check_langchain_boundary.py",
     "check_langgraph_not_required.py": "maintenance/check_langgraph_not_required.py",
     "check_langgraph_skill_pack_import.py": "maintenance/check_langgraph_skill_pack_import.py",
     "check_legacy_modules_removed.py": "maintenance/check_legacy_modules_removed.py",

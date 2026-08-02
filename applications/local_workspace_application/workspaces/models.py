@@ -11,6 +11,10 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceReconciliationStateV1,
+)
+
 _SUBMISSION_METADATA_MAX_ENTRIES = 16
 _SUBMISSION_METADATA_MAX_KEY_LEN = 64
 _SUBMISSION_METADATA_MAX_VALUE_LEN = 256
@@ -187,6 +191,7 @@ class WorkspaceOperation(BaseModel):
     queue_provider: str | None = None
     error_code: str | None = None
     created_at: datetime | None = None
+    connected_source_reconciliation_state: ConnectedSourceReconciliationStateV1 | None = None
 
 
 class KnowledgeInput(BaseModel):

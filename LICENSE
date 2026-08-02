@@ -1,46 +1,291 @@
-SPDX-License-Identifier: LicenseRef-Intergrax-Proprietary
+SPDX-License-Identifier: LicenseRef-Intergrax-Evaluation-Collaboration-1.0
 
-Intergrax — Proprietary License
+Intergrax Evaluation and Collaboration License 1.0
 
 Copyright © 2024–2026 Artur Czarnecki. All rights reserved.
 
-NOTICE: This software and associated documentation files (the "Software") are
-proprietary and confidential property of Artur Czarnecki.
+1. Project Status and Purpose
 
-PERMITTED USE
+Intergrax is a source-available proprietary software project. The public
+availability of the source code does not constitute an open-source license
+grant. All rights in Licensor Materials not expressly granted in this license are
+reserved by the Licensor. All other rights remain reserved by their applicable
+rights holders. This license does not transfer ownership of Licensor Materials.
+Copyright in Licensor Materials remains owned by the Licensor. Code
+Contributions, Documentation Contributions, and third-party components remain
+owned by their respective copyright holders, subject to the licenses applicable
+to them.
 
-  Viewing the source code on GitHub for evaluation and reference purposes
-  is permitted. No other rights are granted unless explicitly agreed in
-  writing by the copyright holder.
+2. Definitions
 
-RESTRICTIONS
+"Software" means the Intergrax source code, documentation, configuration,
+examples, and other materials made available in the Official Repository.
 
-  Without prior written permission from Artur Czarnecki, you may NOT:
+"Licensor Materials" means portions of the Software created by Artur
+Czarnecki, portions effectively transferred to Artur Czarnecki, and materials
+to which Artur Czarnecki holds sufficient rights to license under this
+license, excluding third-party components and portions whose copyright is
+retained by contributors.
 
-  - Use, copy, modify, merge, publish, distribute, sublicense, or sell
-    copies of the Software
-  - Create derivative works based on the Software
-  - Use the Software in production environments
-  - Incorporate the Software into other products or services
-  - Reverse engineer, decompile, or disassemble the Software except as
-    permitted by applicable law
+"Licensed Materials" means:
 
-COMMERCIAL LICENSING
+(a) Licensor Materials; and
 
-  Commercial licensing and partnership opportunities are available upon
-  request. Contact: jakbu.czarnecki.83@gmail.com
+(b) Code Contributions and Documentation Contributions that the Licensor
+is authorized to sublicense under Section 8,
 
-NO WARRANTY
+excluding third-party components to the extent governed by their own licenses.
 
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-  DEALINGS IN THE SOFTWARE.
+"Licensor" means Artur Czarnecki.
 
-THIRD-PARTY COMPONENTS
+"Evaluation" means technical analysis, local testing, proof paths, benchmarks,
+experiments, integration assessment, partnership-fit assessment, and
+preparation of a Code Contribution or Documentation Contribution, each in a
+non-production Evaluation Environment.
 
-  The Software may include third-party open-source components governed by
-  their respective licenses. See pyproject.toml for dependency declarations.
+"Evaluation Participant" means an individual, employee, contractor, adviser,
+or technical reviewer acting solely for Evaluation in a controlled
+non-production Evaluation Environment.
+
+"Evaluation Environment" means a local or otherwise isolated non-production
+environment used solely for Evaluation. Evaluation Participants may install,
+run, test, review code, conduct integration proofs, and perform controlled
+technical pilots in an Evaluation Environment. An Evaluation Environment may
+not provide an operational service, support an ongoing business process, serve
+real customers, process production data except appropriately anonymized or
+synthetic test data, replace a production tool, or generate customer-facing
+output.
+
+"Production Use" means use of the Software to support real users, customers,
+organizations, business processes, production data, or operational services.
+Providing the Software as an operational or business service to employees is
+Production Use. Employees, contractors, or advisers acting solely as Evaluation
+Participants in a controlled non-production Evaluation Environment are not
+treated as production users. Running local tests, benchmarks, or documented
+evaluation workloads in an Evaluation Environment is not Production Use.
+
+"Commercial Use" means use of the Software directly or indirectly in connection
+with revenue generation, paid services, product sales, hosting, consulting
+based on a running Intergrax deployment, offering Intergrax to customers, or
+incorporating the Software into a commercial product or service. Internal,
+non-production Evaluation by a commercial organization is not Commercial Use
+solely because the organization is commercial.
+
+"Code Contribution" means code, a patch, pull request, test, configuration,
+file, or other technical material that a contributor clearly submits or offers
+for inclusion in Intergrax.
+
+"Documentation Contribution" means documentation, a diagram, example,
+tutorial, technical description, or other textual or visual material that a
+contributor clearly offers for inclusion in Intergrax.
+
+"Feedback" means issue comments, suggestions, opinions, bug reports, feature
+proposals, observations, architecture comments, and other feedback that is not
+clearly offered for direct inclusion as a project file or material.
+
+"Official Repository" means the public Intergrax repository maintained by the
+Licensor at https://github.com/jakbuczarnecki/intergrax and successor
+locations designated by the Licensor.
+
+"Authorized Fork" means a public or private fork of the Official Repository
+created for Evaluation, code review, discussion, or preparation of a Code
+Contribution or Documentation Contribution that retains this LICENSE, retains
+copyright notices, is not presented as an official release, is not an
+independent distribution, and is not used for Production Use or Commercial
+Use.
+
+3. Limited License Grant
+
+Subject to the terms of this license, the Licensor grants you a limited,
+non-exclusive, worldwide, royalty-free, non-transferable, and non-sublicensable
+license to use Licensed Materials only as expressly permitted herein. For Code
+Contributions and Documentation Contributions included in the Licensed Materials,
+this grant is a sublicense of the rights granted to the Licensor under Section 8.
+This grant remains in effect until you breach this license or your rights are
+terminated under Section 9.
+
+4. Permitted Evaluation and Collaboration Uses
+
+You may:
+
+1. View and analyze the source code.
+2. Download and clone the Official Repository.
+3. Download, clone, run, test, and modify an Authorized Fork.
+4. Keep local copies for Evaluation.
+5. Install dependencies required for Evaluation.
+6. Run the Software in a local or isolated non-production Evaluation
+   Environment.
+7. Run Quick Start flows, tests, benchmarks, examples, demos, proof paths, and
+   documented evaluation workloads.
+8. Make private modifications solely for analysis, testing, debugging,
+   integration assessment, or preparation of a Code Contribution or
+   Documentation Contribution.
+9. Create test integrations, tools, skills, agents, application hosts,
+   plugins, and adapters solely for Evaluation and collaboration.
+10. Compare branches, review a proposed patch, and collaborate on a pull
+    request.
+11. Publish technical observations, test reports, and descriptions of system
+    behavior arising from permitted Evaluation.
+12. Open issues, discussions, and pull requests.
+
+The rights in this Section 4 apply only for Evaluation, code review,
+technical collaboration, and preparation or review of a Code Contribution or
+Documentation Contribution.
+
+Labeling a real deployment as a "pilot", "test", "sandbox", or "proof of
+concept" does not change its character if the system supports real business
+processes, uses production data, serves customers or operational users, or
+replaces a production tool. Labeling production data, customer-facing
+services, or operational deployments as a "test" does not convert Production
+Use or Commercial Use into Evaluation.
+
+5. Forks, Patches, and Contributions
+
+You may create an Authorized Fork, maintain that fork for Evaluation,
+discussion, and preparation of a Code Contribution or Documentation
+Contribution, publish patches and diffs, submit a pull request to the
+Official Repository, and share code excerpts reasonably necessary to discuss a
+bug, Code Contribution, or Documentation Contribution.
+
+A contributor may share an Authorized Fork. Other evaluators may clone and test
+an Authorized Fork for permitted Evaluation and collaboration. An Authorized
+Fork does not become an independent distribution. Rights to an Authorized Fork
+do not include Production Use or Commercial Use. The owner of an Authorized
+Fork may not grant broader rights to Licensed Materials than those granted by
+this license.
+
+An Authorized Fork may not be marketed as an independent distribution of
+Intergrax, sold, sublicensed, offered as a hosted service, or used for
+Production Use or Commercial Use without separate explicit written permission
+from the Licensor.
+
+6. Restrictions
+
+Except where such restriction is prohibited by applicable law, and except as
+expressly permitted above, without separate explicit written permission from
+the Licensor you may not:
+
+- Use the Software for Production Use or Commercial Use.
+- Offer a paid or free service operated with or on top of Intergrax.
+- Provide SaaS, hosting, or service-bureau use of the Software.
+- Sell, sublicense, or commercially distribute the Software.
+- Incorporate the Software into another product or service.
+- Publish an independent modified distribution of the Software.
+- Offer, market, distribute, or provide to third parties a standalone or
+  hosted platform based substantially on the Software that is presented as a
+  substitute for the Intergrax Harness AI / Agent OS platform.
+- Remove copyright notices or license information.
+- Represent the project as your own.
+- Use the Intergrax name or marks in a way that suggests official partnership
+  or endorsement.
+- Circumvent these restrictions by providing access to the Software to third
+  parties outside permitted Evaluation and collaboration.
+
+Nothing in this Section 6 limits your right to study, analyze, and understand
+the publicly available source code for permitted Evaluation, to build original
+code that does not contain Intergrax, or to conduct private evaluation,
+prototyping, comparison benchmarks, or independent research and development on
+similar problems. All Production Use, Commercial Use, hosting, and
+incorporation into products or services still require separate explicit
+written permission regardless of this clause.
+
+7. Ownership and Reservation of Rights
+
+You do not acquire ownership of Licensor Materials. Contributors retain
+copyright in their Code Contributions and Documentation Contributions. The
+Licensor receives the license described in Section 8 for submitted Code
+Contributions and Documentation Contributions. Third-party components remain
+owned by their respective rights holders. Private modifications made for
+permitted Evaluation do not change ownership of the underlying Intergrax code.
+You retain ownership of your own original code that does not contain or copy
+Intergrax code. All rights not expressly granted remain reserved by the
+applicable rights holders. This license does not grant rights to use the
+Licensor's trademarks, name, or branding except descriptive references to
+compatibility or Evaluation.
+
+8. Contribution License
+
+Code and Documentation Contributions
+
+By submitting a Code Contribution or Documentation Contribution, you represent
+that you authored it or otherwise have the right to submit it. You retain
+copyright in your Code Contribution or Documentation Contribution. You grant
+Artur Czarnecki a perpetual, worldwide, non-exclusive, royalty-free, and
+irrevocable license to use, reproduce, modify, create derivative works from,
+distribute, publicly display, publicly perform to the extent applicable,
+sublicense, and include your Code Contribution or Documentation Contribution
+in Intergrax, including under current and future licensing models for the
+project. The license grant in this Section 8 takes effect upon submission and
+applies whether the Code Contribution or Documentation Contribution is later
+accepted, rejected, closed, withdrawn, removed, or not incorporated into
+Intergrax. Submission of a Code Contribution or Documentation Contribution does
+not transfer copyright in that material to the Licensor.
+
+Feedback
+
+By providing Feedback, you grant Artur Czarnecki a perpetual, worldwide,
+non-exclusive, royalty-free, and irrevocable license to use, evaluate,
+develop, modify, and incorporate ideas, suggestions, and information from
+that Feedback into Intergrax and to create products or services based on that
+Feedback. Posting Feedback does not transfer copyright in the literal text of
+that Feedback. Ordinary Feedback is not automatically a Code Contribution or
+Documentation Contribution. This license does not require you to keep Feedback
+confidential. Do not submit confidential information or trade secrets as
+Feedback.
+
+Patent Rights
+
+The licenses in this Section 8 for Code Contributions and Documentation
+Contributions do not grant any patent license except as may be expressly
+agreed in a separate written document. Submission of a Code Contribution or
+Documentation Contribution must not be interpreted as a patent grant. The
+maintainer may require a separate Contributor License Agreement before
+accepting a Code Contribution or Documentation Contribution that contains a
+substantial technical mechanism or potentially patentable material.
+
+9. Termination
+
+Your rights under this license terminate automatically if you breach its terms.
+If you materially breach this license unintentionally, your rights may be
+restored if you cure the breach within thirty (30) days after receiving notice
+from the Licensor. Rights are not automatically restored for intentional,
+repeated, or uncured breaches.
+
+10. Commercial and Production Licensing
+
+Separate explicit written permission or agreement is required for Production
+Use, Commercial Use, redistribution, incorporation into products or services,
+managed hosting, substantial commercial implementation, and partnership
+arrangements.
+
+Contact: jakbu.czarnecki.83@gmail.com
+
+11. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+12. Limitation of Liability
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+13. Third-Party Components
+
+The Software may include third-party components governed by their own
+licenses. Not every file or dependency in the Software is owned by the
+Licensor. Third-party components remain subject to their applicable licenses.
+If there is a conflict between this license and an applicable third-party
+license for a specific component, the third-party license governs that
+component. This license does not limit rights granted directly by a third-party
+license and does not grant additional rights to third-party components.
+Dependency declarations in pyproject.toml may help identify some third-party
+components but are not a complete statement of third-party licensing.
+
+14. Contact
+
+Artur Czarnecki
+jakbu.czarnecki.83@gmail.com

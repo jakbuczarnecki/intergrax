@@ -14,7 +14,7 @@ This file does **not** duplicate canon content; it routes to the authoritative s
 | Project overview and quick start | [README.md](../README.md) |
 | **This map** (roles and workflows) | `docs/DOCUMENTATION_MAP.md` |
 | Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) |
-| Multi-layer feature docs (cross-layer capabilities) | [features/README.md](features/README.md) |
+| Multi-layer feature docs (cross-layer capabilities) | [features/README.md](features/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/plan/<DOMAIN>.md` |
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |

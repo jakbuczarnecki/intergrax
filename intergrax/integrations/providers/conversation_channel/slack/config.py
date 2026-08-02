@@ -38,7 +38,11 @@ def _secret_or_none(value: str | SecretStr | None) -> SecretStr | None:
     return SecretStr(normalized)
 
 
-def _assert_token_prefixes(*, app_token: SecretStr | None, bot_token: SecretStr | None) -> None:
+def _assert_token_prefixes(
+    *,
+    app_token: SecretStr | None,
+    bot_token: SecretStr | None,
+) -> None:
     """Validate token prefixes without echoing secret values into exceptions."""
     if app_token is not None and not app_token.get_secret_value().startswith("xapp-"):
         raise IntegrationConfigurationError("app_token must begin with 'xapp-'")
@@ -71,7 +75,10 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
         return float(value)
 
     def model_post_init(self, __context: Any) -> None:
-        _assert_token_prefixes(app_token=self.app_token, bot_token=self.bot_token)
+        _assert_token_prefixes(
+            app_token=self.app_token,
+            bot_token=self.bot_token,
+        )
 
     def validate_for_runtime(self) -> None:
         """Validate tokens for real Socket Mode / Web API construction."""
@@ -127,7 +134,10 @@ class SlackConversationChannelIntegrationConfig(CategoryIntegrationConfig):
             raise IntegrationConfigurationError(
                 "Slack conversation runtime requires non-blank app_token and bot_token",
             )
-        _assert_token_prefixes(app_token=self.app_token, bot_token=self.bot_token)
+        _assert_token_prefixes(
+            app_token=self.app_token,
+            bot_token=self.bot_token,
+        )
         return app, bot
 
 

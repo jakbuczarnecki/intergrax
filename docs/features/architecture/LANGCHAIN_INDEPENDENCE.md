@@ -1,0 +1,232 @@
+<!--
+© Artur Czarnecki. All rights reserved.
+Intergrax framework – proprietary and confidential.
+Use, modification, or distribution without written permission is prohibited.
+-->
+
+# LangChain Independence — Multi-layer Feature Architecture
+
+**Status:** Architecture and migration roadmap awaiting review; implementation not started.
+**Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
+**Primary anchor domain:** `RAG`
+**Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
+**Current active task:** `LCI-0B` — LangChain architecture boundary guard (enforcement)
+
+**Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
+
+---
+
+## Cursor read scope (token budget)
+
+**Do not read this entire file in one session.**
+
+- **Default:** §Purpose, §Strategic decision, §As-built baseline, §Target architecture, §Import zones.
+- **Inventory work:** load **only** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) — not both hub sections and full inventory.
+- **Plan / task selection:** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md) read-scope block + active `LCI-*` section only.
+- **Satellites:** at most **one** `architecture/satellites/` or `plan/satellites/` file per session unless `RESUME:` cites more.
+
+---
+
+## Purpose
+
+LangChain Independence is a cross-layer platform initiative to **own Intergrax public contracts and core runtime types**, not to ideologically remove every LangChain package from the ecosystem.
+
+Intergrax already defines native LLM message envelopes, adapter contracts, and provider boundaries. The remaining work is to **stop LangChain types from defining the platform ABI** — especially `langchain_core.documents.Document` across the RAG, memory, modality, and integration surfaces — while preserving optional compatibility for provider bridges and legacy paths.
+
+**LKW** (Local Knowledge Workspace) is a **client and proof workload** for platform capabilities, including future LangChain-free RAG paths. LKW does **not** own the migration mechanics; domain plans and this feature plan do.
+
+---
+
+## Strategic decision
+
+```text
+LangChain-free core + optional LangChain compatibility/providers.
+```
+
+| Rule | Meaning |
+|------|---------|
+| **Core rule** | No LangChain/LangGraph type may appear in Intergrax public or shared core contracts after migration. |
+| **Compatibility rule** | LangChain may remain behind explicit provider or `compat` boundaries, optional extras, and legacy loaders. |
+| **LangGraph position** | Not a core dependency today; optional `langgraph-legacy` extra only; retirement reviewed under `LCI-8A`. |
+| **LKW position** | Proof client only; migration ownership stays in Tier-0/Tier-1 domain and feature plans. |
+
+Forbidden documentation claims (targets only, not current state):
+
+- LangChain has been fully removed.
+- Default Intergrax install is LangChain-free.
+- RAG is already LangChain-independent.
+- Native Ollama adapter already exists.
+- All integrations are already optional.
+
+---
+
+## As-built baseline (evidence-backed)
+
+Facts verified against repository state at inventory time.
+
+| # | Fact | Evidence |
+|---|------|----------|
+| 1 | Intergrax defines native LLM messages independent of LangChain | `intergrax/llm/messages.py` — `ChatMessage`, `MessageRole`, `AttachmentRef` |
+| 2 | LLM adapter public contract is native; providers map at boundary | `intergrax/llm_adapters/contracts/llm_adapter.py` — `LLMAdapter` uses `ChatMessage`, not LangChain messages |
+| 3 | Most non-Ollama LLM providers use native SDKs behind `LLMAdapter` | Provider modules under `intergrax/llm_adapters/providers/` (OpenAI, Anthropic, Gemini, etc.) — no `langchain_*` imports except Ollama |
+| 4 | Ollama LLM path is provider-bound LangChain today | `intergrax/llm_adapters/providers/ollama_adapter.py` — `LangChainOllamaAdapter`, `ChatOllama`, lazy `langchain_core.messages` |
+| 5 | `langchain_core.documents.Document` leaks through core RAG contracts | e.g. `intergrax/rag/document_loaders/contracts/base_document_parser.py`, `intergrax/rag/vectorstore/contracts/vector_store.py`, `intergrax/rag/embedding/contracts/base_embedding_manager.py` — **16 contract files** (see inventory satellite §D) |
+| 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
+| 7 | Default packaging still installs LangChain packages as core dependencies | `pyproject.toml` `[project].dependencies` — `langchain`, `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters` |
+
+**Import audit scale:** 104 direct production/runtime import statements · 69 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports (see inventory satellite §B).
+
+---
+
+## Target architecture
+
+```text
+native Intergrax contracts
+    ↓
+native runtime/domain implementations
+    ↓
+optional compatibility/provider boundary
+    ↓
+LangChain packages (optional extras)
+```
+
+**Forbidden direction after migration:**
+
+```text
+LangChain type → Intergrax public/core contract
+```
+
+Native document, message, and tool-call types are defined and versioned by Intergrax first. Provider adapters translate at the outer boundary only.
+
+---
+
+## Import zones
+
+### Docelowo zabronione
+
+LangChain/LangGraph imports must not appear in:
+
+```text
+intergrax/**/contracts/
+intergrax/runtime/
+agents/
+applications/
+```
+
+and any other canonical core path where a foreign type would become part of the Intergrax ABI (public re-exports, shared DTOs consumed across domains, Nexus orchestration contracts).
+
+Enforcement begins at **`LCI-0B`** (architecture boundary guard). See [LCI-0B enforcement boundary](#lci-0b-enforcement-boundary) below.
+
+### Docelowo dozwolone warunkowo
+
+Only behind explicit, reviewable boundaries:
+
+```text
+intergrax/compat/langchain/          (planned — LCI-1C)
+intergrax/integrations/providers/.../
+intergrax/llm_adapters/providers/.../
+intergrax/legacy/
+tests/
+```
+
+Provider paths are allowed only when:
+
+1. LangChain types do not leak into public contracts.
+2. The dependency can be optional (missing package does not break core import).
+3. Provider maps outward/inward to native Intergrax types at the boundary.
+4. No provider object escapes the provider module.
+
+**Note:** `intergrax/compat/langchain/` does not exist yet — planned in `LCI-1C`.
+
+---
+
+## Domain ownership matrix
+
+| Domain | Ownership in LCI |
+|--------|------------------|
+| **RAG** | Native knowledge document type; ingest, chunking, embedding, indexing, vector store, retrieval, rerank, graph pipelines |
+| **LLM_ADAPTERS** | Provider boundaries; native Ollama sequence `LCI-6A`–`LCI-6E`; LangChain Ollama shim optionalized in `LCI-6E` |
+| **INTEGRATIONS** | Optional provider loading; document-parser and vector-store bridges (`LCI-3D`, `LCI-5C`); community loader isolation (`LCI-5A`, `LCI-5C`) |
+| **MEMORY** | Remove `Document` from session/profile indexing (`LCI-4D`) |
+| **MODALITY** | Multimedia smart loaders — native document output at modality boundary (`LCI-4D`) |
+| **ORCHESTRATION** | LangGraph legacy boundary (`LCI-8A`); Nexus ingestion native document path (`LCI-2F`) |
+| **PLATFORM_FOUNDATION** | Packaging optional extras (`LCI-7A`); lockfile regeneration; documentation closeout (`LCI-7D`) |
+| **EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE** | Boundary guard (`LCI-0B`); conformance gate (`LCI-1D`); install gates (`LCI-7B`, `LCI-7C`) |
+
+---
+
+## Migration invariants
+
+1. **No big-bang rewrite** — incremental tasks with acceptance gates.
+2. **One migration task active at a time** per stream unless explicitly parallelized in plan.
+3. **Contract first, consumer second** — native type before downstream refactors.
+4. **No removal before parity proof** — keep LangChain path until native path is proven equivalent.
+5. **LKW is client/proof workload** — not owner of document or adapter mechanics.
+6. **No application exceptions in platform core** — `applications/` cannot justify contract leaks in `intergrax/`.
+7. **Compatibility bridge ≠ second canonical model** — `compat/langchain` maps; it does not replace native contracts.
+8. **Preserve content, metadata, identity, provenance, tenant scope** across migrations.
+9. **Provider-specific objects stay inside provider boundary.**
+10. **Each stage has its own acceptance gate** (see feature plan).
+
+---
+
+## Current risk assessment
+
+| Risk | Description |
+|------|-------------|
+| **Contract lock-in** | `Document` in 16 public contracts couples most of RAG, memory, modality, and integrations to LangChain Core. |
+| **Packaging risk** | Six LangChain packages in default `[project].dependencies` force install surface and security exposure for all users. |
+| **Version range risk** | Broad `>=0.3` ranges on multiple LangChain packages increase resolver drift and breaking-change exposure. |
+| **Transitive dependency risk** | LangChain meta-packages pull large transitive trees (community, text-splitters, OpenAI shims). |
+| **Migration regression risk** | Dual-model transition (LangChain `Document` vs native document) can silently drop metadata or tenant fields. |
+| **Dual-model transition risk** | Parallel types during migration require strict conversion tests (`LCI-1D`, conformance gate). |
+| **LKW/Ollama parity risk** | LKW proof paths depend on `LangChainOllamaAdapter` today; native Ollama live proof (`LCI-6C`) and cutover (`LCI-6D`) must precede default resolver switch. |
+
+---
+
+## Final acceptance definition (full LCI program)
+
+The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when all of the following are true (none are true today):
+
+1. Public Intergrax contracts expose **no** LangChain types.
+2. Default `pip install` / `uv sync` **does not** require any `langchain*` package for core import of `intergrax`.
+3. RAG ingest → index → retrieve → rerank runs on **native document types** with parity proof.
+4. Memory and modality paths use native documents at indexing boundaries.
+5. Ollama LLM and embedding paths have **native adapters** with parity proof; LangChain Ollama shims are optional extras only.
+6. `check_langchain_boundary` (or successor) passes in CI for forbidden zones (`LCI-0B`); LangChain-free core install gate passes (`LCI-7B`).
+7. LangChain compatibility is isolated under `compat/` and/or provider modules with optional extras.
+8. LangGraph remains optional; retirement decision recorded under `LCI-8A`.
+9. LKW proof workload passes on LangChain-free core install (LKW as client, not owner).
+10. Domain plan rows updated; inventory satellite shows `unclassified occurrences = 0` and zero core contract leaks.
+
+---
+
+## LCI-0B enforcement boundary
+
+`LCI-0B` adds a deterministic AST-based CI guard that freezes existing LangChain/LangGraph production import violations while blocking new leaks into protected zones.
+
+| Aspect | Policy |
+|--------|--------|
+| **Scan roots** | `intergrax/`, `agents/`, `applications/` production `*.py` files |
+| **Excluded paths** | any path containing `tests`, `__pycache__`, non-`*.py` files, `docker/runtime-context/` copies |
+| **Allowed production zones** | `intergrax/compat/langchain/`, `intergrax/integrations/providers/`, `intergrax/llm_adapters/providers/`, `intergrax/legacy/` |
+| **Protected production zones** | all other scanned production paths (contracts, runtime, RAG, memory, modality, integrations shared bridges, agents, applications, etc.) |
+| **Detected namespaces** | `langchain`, `langchain_*`, `langgraph` |
+| **Import forms** | `import`, `from`, nested function imports, literal `importlib.import_module("…")`, literal `__import__("…")` |
+| **Grandfather model** | `scripts/maintenance/langchain_boundary_grandfather.json` — exact fingerprint entries (`path`, `kind`, `module`, sorted `names`) matched to approved `LCI-INV-####` inventory rows; line numbers are not part of identity |
+| **New vs stale** | `current guarded − grandfathered` → `NEW_FORBIDDEN_IMPORT`; `grandfathered − current` → `STALE_GRANDFATHER_ENTRY` (debt removal requires register cleanup) |
+| **Automatic baseline update** | **none** — no `--update-baseline` / write mode |
+| **CI wiring** | PR smoke (`ci-smoke`) and full governance (`gate-governance-tier`) via `scripts/maintenance/check_langchain_boundary.py` |
+| **LangGraph guard relationship** | `check_langgraph_not_required.py` remains — core packaging/non-optional LangGraph dependency guard; `LCI-0B` covers all LangGraph production imports in protected zones with inventory-backed grandfathering |
+| **Register maintenance** | When a grandfathered import is removed during debt paydown, delete the matching register entry in the same change |
+
+---
+
+## Related documents
+
+| Document | Role |
+|----------|------|
+| [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md) | Task roadmap `LCI-0A`–`LCI-8A` |
+| [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) | Evidence-backed import and package inventory |
+| [`../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md`](../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md) | Domain plan routing for future rows |
+| [`../../architecture/RAG.md`](../../architecture/RAG.md) | Primary anchor domain architecture |

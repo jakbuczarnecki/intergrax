@@ -8,10 +8,14 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
+
+if TYPE_CHECKING:
+    from intergrax.context.planning import ContextPlan
 
 CONTEXT_CONTRACTS_SCHEMA = "context_contracts.v1"
 ASSEMBLED_CONTEXT_SCHEMA = "assembled_context.v1"
@@ -121,7 +125,12 @@ class ContextAssemblyRequest:
     step_kind: str | None = None
     required_sources: frozenset[ContextFragmentSource] = frozenset()
     excluded_sources: frozenset[ContextFragmentSource] = frozenset()
+    execution_scope: ModelCallExecutionScope = ModelCallExecutionScope.PRIMARY_MODEL_CALL
     schema_version: str = CONTEXT_CONTRACTS_SCHEMA
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.execution_scope, ModelCallExecutionScope):
+            raise ValueError("execution_scope must be ModelCallExecutionScope")
 
     def __repr__(self) -> str:
         return (
@@ -164,4 +173,5 @@ class AssembledContext:
     total_tokens: int
     budget_tokens: int
     degradation_steps: tuple[str, ...] = ()
+    context_plan: ContextPlan | None = None
     schema_version: str = ASSEMBLED_CONTEXT_SCHEMA
