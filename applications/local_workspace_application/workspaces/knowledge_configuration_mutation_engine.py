@@ -1862,6 +1862,28 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             mutation=mutation,
         )
 
+        if self._is_cleanup_fenced_mutation(mutation):
+            if inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if inspection.state in (
+                WorkspaceKnowledgeStageStateV1.ABSENT,
+                WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED,
+                WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
+            ):
+                return self._abort_incomplete_pending_mutation(
+                    mutation=mutation,
+                    handler=handler,
+                    head=head,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    inspection=inspection,
+                )
+            raise WorkspaceKnowledgeConfigurationMutationError(
+                "configuration_recovery_required"
+            )
+
         if inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT:
             self._mark_recovery_required(
                 mutation=mutation,
@@ -1877,16 +1899,6 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             )
 
         if inspection.state is WorkspaceKnowledgeStageStateV1.COMPLETE_VALID:
-            if self._is_cleanup_fenced_mutation(mutation):
-                return self._abort_incomplete_pending_mutation(
-                    mutation=mutation,
-                    handler=handler,
-                    head=head,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    inspection=inspection,
-                )
-
             now = self._clock()
             working = mutation
             if working.status is WorkspaceKnowledgeMutationStatusV1.RESERVED:
@@ -1973,7 +1985,6 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         if inspection.state in (
             WorkspaceKnowledgeStageStateV1.ABSENT,
             WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED,
-            WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
         ):
             return self._abort_incomplete_pending_mutation(
                 mutation=mutation,
@@ -2388,6 +2399,8 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             WorkspaceKnowledgeMutationStatusV1.COMMITTED,
             WorkspaceKnowledgeMutationStatusV1.ABORTED,
         ):
+            return
+        if self._is_cleanup_fenced_mutation(current):
             return
         required = current.model_copy(
             update={
