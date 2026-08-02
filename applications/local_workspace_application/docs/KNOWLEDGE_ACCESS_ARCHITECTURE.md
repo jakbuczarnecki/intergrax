@@ -25,7 +25,7 @@ LKW lets a user:
 1. upload files and folder snapshots;
 2. connect local folders;
 3. attach explicit Web URLs;
-4. connect external systems (Microsoft 365, OneDrive, SharePoint, Outlook, Teams-hosted knowledge, Jira, Confluence, Databricks, Power BI, Atlan, future native API providers, future curated MCP providers);
+4. connect external systems (Microsoft 365, OneDrive, SharePoint, Outlook, Teams-hosted knowledge, Google Workspace — Drive, Docs, Sheets, Calendar and related surfaces when implemented, Jira, Confluence, Databricks, Power BI, Atlan, future native API providers, future curated MCP providers);
 5. decide which connected resources are **indexed into RAG**;
 6. decide which resources may be **queried live**;
 7. ask one natural-language question through Slack or another frontend;
@@ -39,7 +39,7 @@ LKW lets a user:
 |----------|----------|
 | **Implemented today** | Managed-file upload; Source Candidate intake; end-to-end `WEB_URL` Knowledge Intake (**ACCEPTED**); HTTP Ask Workspace with indexed RAG; Slack thin client for Ask, workspace ops and source inspection; Conversation Interaction Planner contract (`CONV-1A`); Slack connected source discovery/create/sync with indexed Search/Ask proof (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**) |
 | **Architecturally available in Intergrax** | `vendor_knowledge` connection resolution; integration/tool execution; RAG ingest/retrieve; `LLMAdapter` provider neutrality; embedding providers separate from conversation LLM; policy and trace; Slack three-mode knowledge architecture frozen (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`) |
-| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs; Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **READY_FOR_REVIEW**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1`); live Slack platform proof |
+| **Planned for LKW** | Workspace Knowledge Configuration; Live Access Bindings; Hybrid Ask; Knowledge Query Orchestrator; model-runtime portability proof; vendor collaboration and data connector packs (including Google Workspace after Slack vertical — `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**, runtime **PLANNED**); Conversation Context Bindings and audience isolation (`LKW-CONVERSATION-CONTEXT-ARCH-1` **READY_FOR_REVIEW**, `LKW-CONVERSATION-CONTEXT-1` **PLANNED**); Slack knowledge proof (`LKW-SLACK-KNOWLEDGE-PROOF-1`); Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` **PLANNED**); live platform proof |
 | **Future / not committed** | Write-capable provider actions; unrestricted SQL/DAX/JQL; runtime hot swapping; automatic persistence of live results; MCP as domain model |
 
 Target architecture is **not** evidence of implementation. Public proof claims require checked-in evidence.
@@ -52,7 +52,7 @@ Target architecture is **not** evidence of implementation. Public proof claims r
 
 Knowledge already processed into LKW-owned stores.
 
-**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` — not implemented).
+**Examples:** uploaded files; folder snapshots; local folders; Web URLs; synchronized SharePoint files; synchronized Confluence pages; synchronized Jira issues; synchronized Slack channel or conversation history (`PLANNED` — not implemented); synchronized Google Docs, Sheets, Calendar and Drive files (`PLANNED` — `LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
 **Benefits:** cross-source semantic retrieval; lower provider API usage; consistent chunking and embeddings; offline or temporarily disconnected usage; stable workspace-owned retrieval.
 

@@ -223,10 +223,10 @@ Canonical execution order: [applications/local_workspace_application/docs/IMPLEM
 | **LKW-CONVERSATION-CONTEXT-ARCH-1** | Provider-neutral conversation context with observed-audience validation, binding identity, thread memory isolation and deterministic guards | **READY_FOR_REVIEW** |
 | **LKW-HYBRID-ASK-1** | RAG + live with unified provenance | **PLANNED** |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language execution + Slack cutover | **PLANNED** |
-| **LKW-VENDOR-ACCESS-COLLABORATION-1** | MS365, Jira, Confluence | **PLANNED** |
+| **LKW-VENDOR-ACCESS-COLLABORATION-1** | MS365, Google Workspace, Jira, Confluence | **PLANNED** |
 | **LKW-VENDOR-ACCESS-DATA-1** | Databricks, Power BI, Atlan | **PLANNED** |
 | **LKW-KNOWLEDGE-LIFECYCLE-1** | Sync, freshness, permissions, removal | **PLANNED** |
-| **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable Slack platform proof | **PLANNED** |
+| **LKW-LIVE-PLATFORM-PROOF-1** | Complete demonstrable platform proof (Slack, Google when implemented, MS365, local files, Web URLs) | **PLANNED** |
 ### Vendor Knowledge platform backlog
 
 Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md). Architecture: [architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md](architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md).
@@ -236,7 +236,11 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_IN
 | **SLACK-KNOWLEDGE-THREE-MODE-ARCH-1** | Freeze Slack three-mode reuse on SlackConversationChannelIntegration | **DONE** |
 | **SLACK-KNOWLEDGE-FOUNDATION-1** | Platform Slack knowledge read surface (bot token + bot-membership inventory on same WebClient), Vendor Knowledge adapter, durable sync proof | **DONE** |
 | **SLACK-LIVE-CAPABILITY-1** | Bounded Slack live reads via same integration | **PLANNED** |
-| **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after complete Slack user vertical) |
+| **GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1** | Freeze Google Workspace knowledge architecture on GoogleWorkspaceCollaborationSuiteIntegration | **READY_FOR_REVIEW** |
+| **GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1** | Shared Google client, credentials, error mapping (after complete Slack vertical) | **PLANNED** |
+| **LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1** | LKW Connected Source for Google Workspace | **PLANNED** |
+| **LKW-GOOGLE-WORKSPACE-PROOF-1** | First user-oriented Google Doc/Sheet/Calendar/Drive proof | **PLANNED** |
+| **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after first accepted Google LKW proof) |
 
 LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; LKW-CONVERSATION-CONTEXT-ARCH-1, LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 

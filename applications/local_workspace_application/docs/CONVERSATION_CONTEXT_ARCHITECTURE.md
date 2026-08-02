@@ -989,7 +989,12 @@ LKW-SLACK-CONNECTED-SOURCE-1
    (cannot claim indexed + live combined evidence before Hybrid Ask exists)
 
 AFTER COMPLETE SLACK USER VERTICAL:
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+→ Google proof-critical read surfaces and adapters
+→ LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
+→ LKW-GOOGLE-WORKSPACE-PROOF-1
+→ remaining Google surfaces (Slides, Mail, Chat)
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
 ```
 
 `LKW-CONVERSATION-CONTEXT-ARCH-1` and `LKW-CONVERSATION-CONTEXT-1` are LKW-wide tasks — not platform Slack provider ownership. `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` is only the first provider adapter.

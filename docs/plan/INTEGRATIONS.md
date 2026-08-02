@@ -8,7 +8,7 @@
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
-**Last updated:** 2026-06-29 — **INTEGRATIONS-2E** runtime cutover **Done** (185 slugs); 9 `llm_guardrail` slugs deferred.
+**Last updated:** 2026-08-02 — **GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1** architecture frozen (`READY_FOR_REVIEW`); Google knowledge runtime **PLANNED** after complete Slack vertical — see [`plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 10.
 
 ---
 
