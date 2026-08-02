@@ -20,6 +20,12 @@ from intergrax.runtime.context_lifecycle.contracts import (
     OptimizationExecutionGuard,
     ReusableOptimizationArtifact,
 )
+from intergrax.runtime.context_lifecycle.repository import (
+    ArtifactCreationCoordinationResult,
+    OptimizationArtifactReference,
+    OptimizationArtifactRepositoryCapabilities,
+    StoredOptimizationArtifact,
+)
 
 _RAW_CONTENT_INCLUDED = False
 
@@ -201,3 +207,66 @@ def artifact_compatibility_result_to_safe_dict(
         "requested_lookup_key_hash": result.requested_lookup_key_hash,
         "status": result.status.value,
     }
+
+
+def optimization_artifact_repository_capabilities_to_safe_dict(
+    capabilities: OptimizationArtifactRepositoryCapabilities,
+) -> dict[str, Any]:
+    """Return telemetry-safe repository capability serialization."""
+    return {
+        "backend_id": capabilities.backend_id,
+        "durable": capabilities.durable,
+        "raw_content_included": _RAW_CONTENT_INCLUDED,
+        "reference_only": capabilities.reference_only,
+        "shared_across_processes": capabilities.shared_across_processes,
+        "supports_bounded_wait": capabilities.supports_bounded_wait,
+        "supports_single_flight": capabilities.supports_single_flight,
+    }
+
+
+def optimization_artifact_reference_to_safe_dict(
+    reference: OptimizationArtifactReference,
+) -> dict[str, Any]:
+    """Return telemetry-safe artifact reference serialization."""
+    return {
+        "artifact_content_hash": reference.artifact_content_hash,
+        "artifact_id": reference.artifact_id,
+        "artifact_lookup_key_hash": reference.artifact_lookup_key_hash,
+        "artifact_type": reference.artifact_type.value,
+        "raw_content_included": _RAW_CONTENT_INCLUDED,
+    }
+
+
+def stored_optimization_artifact_to_safe_dict(
+    artifact: StoredOptimizationArtifact,
+) -> dict[str, Any]:
+    """Return telemetry-safe stored artifact serialization without payload."""
+    metadata_safe = reusable_optimization_artifact_to_safe_dict(artifact.metadata)
+    return {
+        **metadata_safe,
+        "encoding": artifact.encoding,
+        "media_type": artifact.media_type,
+        "payload_size_bytes": len(artifact.payload),
+        "raw_content_included": _RAW_CONTENT_INCLUDED,
+    }
+
+
+def artifact_creation_coordination_result_to_safe_dict(
+    result: ArtifactCreationCoordinationResult,
+) -> dict[str, Any]:
+    """Return telemetry-safe coordination result serialization."""
+    payload: dict[str, Any] = {
+        "artifact_lookup_key_hash": result.artifact_lookup_key_hash,
+        "raw_content_included": _RAW_CONTENT_INCLUDED,
+        "state_version": result.state_version,
+        "status": result.status.value,
+    }
+    if result.reservation is not None:
+        payload["reservation"] = artifact_creation_reservation_to_safe_dict(result.reservation)
+    if result.artifact_reference is not None:
+        payload["artifact_reference"] = optimization_artifact_reference_to_safe_dict(
+            result.artifact_reference
+        )
+    if result.reason_code is not None:
+        payload["reason_code"] = result.reason_code.value
+    return payload

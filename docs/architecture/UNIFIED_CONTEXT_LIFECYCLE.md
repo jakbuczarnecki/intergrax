@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** **CTX-UCL-1** ready for review (contracts delivered)
+**Status:** **CTX-UCL-2** ready for review (reference repository delivered); **CTX-UCL-1** accepted/closed through R1/R2
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — **Accepted**) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture pass:** 2026-08-02 — **CTX-UCL-1** canonical contracts delivered (`intergrax/runtime/context_lifecycle/`)
+**Last architecture pass:** 2026-08-02 — **CTX-UCL-2** reference `OptimizationArtifactRepository` + `InMemoryOptimizationArtifactRepository` delivered (`intergrax/runtime/context_lifecycle/`)
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-1** — canonical contracts delivered; repository and runtime integration not started |
-| Prior passes | **CTX-UCL-ARCH-1** (**ACCEPTED / CLOSED** through **R4-R1**) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R3** (closed through R4) · **CTX-UCL-ARCH-1-R4** (accepted/closed) · **CTX-UCL-ARCH-1-R4-R1** (accepted/closed) |
-| Runtime implementation | **CTX-UCL-1 contracts delivered** — repository (**CTX-UCL-2**) and runtime integration (**CTX-UCL-4/5**) not started |
+| Task | **CTX-UCL-2** — reference repository delivered; Nexus runtime integration (**CTX-UCL-5**) not started |
+| Prior passes | **CTX-UCL-ARCH-1** (**ACCEPTED / CLOSED** through **R4-R1**) · **CTX-UCL-1** (**ACCEPTED / CLOSED** through **R1/R2**) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R3** (closed through R4) · **CTX-UCL-ARCH-1-R4** (accepted/closed) · **CTX-UCL-ARCH-1-R4-R1** (accepted/closed) |
+| Runtime implementation | **CTX-UCL-1 contracts** and **CTX-UCL-2 reference repository** delivered — runtime Nexus integration (**CTX-UCL-4/5**) not started |
 | TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
@@ -928,8 +928,8 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Closed through R4** |
 | **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight creation, repository delivery ownership | **Accepted / Closed** |
 | **CTX-UCL-ARCH-1-R4-R1** | ADR BOM regression guard | **Accepted / Closed** |
-| **CTX-UCL-1** | Contracts: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no repository implementation; no LLM calls** | **Ready for review** |
-| **CTX-UCL-2** | `OptimizationArtifactRepository` neutral interface; **`InMemoryOptimizationArtifactRepository`** reference implementation; atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; atomic or observably ordered validated store; reservation release/failure handling; artifact invalidation and retirement; artifact reference resolution; `SessionContextRevision` artifact references; deterministic concurrency tests | Not started |
+| **CTX-UCL-1** | Contracts: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no Nexus integration; no LLM calls** | **ACCEPTED / CLOSED** through R1/R2 |
+| **CTX-UCL-2** | `OptimizationArtifactRepository` neutral Protocol; **`InMemoryOptimizationArtifactRepository`** reference adapter (process-local, non-durable, not a production fallback); atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; validated store; reservation release; invalidation and retirement; reference resolution; deterministic concurrency tests — **no Nexus wiring; no durable backend** | **READY_FOR_REVIEW** |
 | **CTX-UCL-3** | `ContextPlan` source/target requirements; internal-call budget classification where CE participates; deterministic `ArtifactLookupKey` inputs; no catalog lookup inside CE | Not started |
 | **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source; no executor on `REUSE_ARTIFACT` or `ALREADY_IN_PROGRESS`; receipt tied to parent operation and lookup key | Not started |
 | **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile; inject `OptimizationArtifactRepository`; use `InMemoryOptimizationArtifactRepository` in reference tests; sequential and concurrent single-flight proofs | Not started |

@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-1** correction delivered through **CTX-UCL-1-R1** — ready for review
+**Status:** **CTX-UCL-2** ready for review (reference repository delivered); **CTX-UCL-1** accepted/closed through R1/R2
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -18,9 +18,11 @@
 | **CTX-UCL-ARCH-1-R3** | **Closed through R4** |
 | **CTX-UCL-ARCH-1-R4** | **Accepted / Closed** |
 | **CTX-UCL-ARCH-1-R4-R1** | **Accepted / Closed** |
-| **CTX-UCL-1** | **Correction delivered through CTX-UCL-1-R1** — ready for review |
-| **CTX-UCL-1-R1** | **Ready for review** |
-| **CTX-UCL-2 … CTX-UCL-6** | Not started / **CTX-UCL-2 blocked** pending CTX-UCL-1 acceptance |
+| **CTX-UCL-1** | **ACCEPTED / CLOSED** through **CTX-UCL-1-R1** and **CTX-UCL-1-R2** |
+| **CTX-UCL-1-R1** | **ACCEPTED / CLOSED** |
+| **CTX-UCL-1-R2** | **ACCEPTED / CLOSED** |
+| **CTX-UCL-2** | **READY_FOR_REVIEW** — `OptimizationArtifactRepository` port + `InMemoryOptimizationArtifactRepository` reference adapter |
+| **CTX-UCL-3 … CTX-UCL-6** | Not started |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
@@ -190,4 +192,6 @@ TOKEN-10E-1 → may begin
 
 ## Next step
 
-**Independent review of CTX-UCL-1** (canonical contracts). After acceptance: **CTX-UCL-2** — `OptimizationArtifactRepository` and `InMemoryOptimizationArtifactRepository`.
+**Independent review of CTX-UCL-2** (configurable `OptimizationArtifactRepository` port and `InMemoryOptimizationArtifactRepository` reference adapter). After acceptance: **CTX-UCL-3** — ContextPlan artifact requirements and deterministic lookup inputs.
+
+**Repository boundary (CTX-UCL-2):** `OptimizationArtifactRepository` is the configurable port. Application host selects and injects an adapter. `InMemoryOptimizationArtifactRepository` is reference-only, process-local, and non-durable. There is no implicit in-memory production fallback. **CTX-UCL-5** will inject the repository into Nexus/UCL. **TOKEN-10E-4** will deliver the first durable production adapter.

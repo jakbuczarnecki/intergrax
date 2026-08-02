@@ -26,14 +26,30 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
 )
+from intergrax.runtime.context_lifecycle.in_memory_repository import (
+    InMemoryOptimizationArtifactRepository,
+)
+from intergrax.runtime.context_lifecycle.repository import (
+    ArtifactCreationCoordinationResult,
+    OptimizationArtifactReference,
+    OptimizationArtifactRepository,
+    OptimizationArtifactRepositoryCapabilities,
+    StoredOptimizationArtifact,
+    build_optimization_artifact_reference,
+    compute_artifact_content_hash,
+)
 from intergrax.runtime.context_lifecycle.serialization import (
     artifact_compatibility_result_to_safe_dict,
+    artifact_creation_coordination_result_to_safe_dict,
     artifact_creation_reservation_to_safe_dict,
     artifact_lookup_key_to_canonical_dict,
     compute_artifact_lookup_key_hash,
     context_optimization_policy_to_safe_dict,
+    optimization_artifact_reference_to_safe_dict,
+    optimization_artifact_repository_capabilities_to_safe_dict,
     optimization_execution_guard_to_safe_dict,
     reusable_optimization_artifact_to_safe_dict,
+    stored_optimization_artifact_to_safe_dict,
 )
 
 __all__ = [
@@ -41,6 +57,7 @@ __all__ = [
     "ArtifactCompatibilityResult",
     "ArtifactCompatibilityStatus",
     "ArtifactCompressionTarget",
+    "ArtifactCreationCoordinationResult",
     "ArtifactCreationCoordinationStatus",
     "ArtifactCreationReservation",
     "ArtifactLookupKey",
@@ -52,16 +69,27 @@ __all__ = [
     "ContextOptimizationPolicy",
     "ContextOptimizationReasonCode",
     "EphemeralArtifactPersistencePolicy",
+    "InMemoryOptimizationArtifactRepository",
     "ModelCallExecutionScope",
+    "OptimizationArtifactReference",
+    "OptimizationArtifactRepository",
+    "OptimizationArtifactRepositoryCapabilities",
     "OptimizationArtifactType",
     "OptimizationExecutionGuard",
     "ReusableArtifactStatus",
     "ReusableOptimizationArtifact",
+    "StoredOptimizationArtifact",
     "artifact_compatibility_result_to_safe_dict",
+    "artifact_creation_coordination_result_to_safe_dict",
     "artifact_creation_reservation_to_safe_dict",
     "artifact_lookup_key_to_canonical_dict",
+    "build_optimization_artifact_reference",
+    "compute_artifact_content_hash",
     "compute_artifact_lookup_key_hash",
     "context_optimization_policy_to_safe_dict",
+    "optimization_artifact_reference_to_safe_dict",
+    "optimization_artifact_repository_capabilities_to_safe_dict",
     "optimization_execution_guard_to_safe_dict",
     "reusable_optimization_artifact_to_safe_dict",
+    "stored_optimization_artifact_to_safe_dict",
 ]
