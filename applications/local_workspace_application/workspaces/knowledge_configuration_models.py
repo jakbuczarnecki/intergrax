@@ -369,8 +369,6 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
 
         status = self.status
         if status is WorkspaceKnowledgeMutationStatusV1.RESERVED:
-            if self.target_revision is not None:
-                raise ValueError("reserved_forbids_target_revision")
             if self.committed_revision is not None:
                 raise ValueError("reserved_forbids_committed_revision")
             if self.outcome is not None:

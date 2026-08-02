@@ -422,6 +422,18 @@ def test_configuration_head_rejects_blank_pending_mutation_id() -> None:
 # --- Mutation record ---
 
 
+def test_mutation_record_reserved_without_target_revision_accepted() -> None:
+    record = _mutation_record()
+    assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert record.target_revision is None
+
+
+def test_mutation_record_reserved_with_target_revision_accepted() -> None:
+    record = _mutation_record(target_revision=1)
+    assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert record.target_revision == 1
+
+
 def test_mutation_record_reserved_state_accepted() -> None:
     record = _mutation_record()
     assert record.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
@@ -480,11 +492,6 @@ def test_mutation_record_recovery_required_partial_state_accepted() -> None:
         error_code="writer_slot_stale",
     )
     assert record.error_code == "writer_slot_stale"
-
-
-def test_mutation_record_reserved_with_target_revision_rejected() -> None:
-    with pytest.raises(ValidationError):
-        _mutation_record(target_revision=1)
 
 
 def test_mutation_record_reserved_with_outcome_rejected() -> None:

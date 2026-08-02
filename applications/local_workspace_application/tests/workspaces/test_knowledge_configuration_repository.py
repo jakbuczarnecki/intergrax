@@ -1150,6 +1150,137 @@ def test_malformed_child_row_not_silently_skipped_in_list() -> None:
         )
 
 
+# --- Workspace mutation discovery ---
+
+
+def test_list_mutations_only_for_selected_tenant_workspace() -> None:
+    repo = _repo()
+    repo.put_knowledge_configuration_mutation_if_absent(
+        _mutation(workspace_id=_WORKSPACE, idempotency_key_hash=_SHA256)
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(
+        _mutation(
+            tenant_id=_TENANT_B,
+            workspace_id=_WORKSPACE_B,
+            idempotency_key_hash=_SHA256_B,
+        )
+    )
+    listed = repo.list_knowledge_configuration_mutations(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert len(listed) == 1
+    assert listed[0].workspace_id == _WORKSPACE
+
+
+def test_list_mutations_validates_operation_and_hash_identity() -> None:
+    repo = _repo()
+    mutation = _mutation()
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    listed = repo.list_knowledge_configuration_mutations(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert listed[0].operation is WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE
+    assert listed[0].idempotency_key_hash == _SHA256
+
+
+def test_list_mutations_orders_deterministically() -> None:
+    repo = _repo()
+    early = _mutation(
+        mutation_id="mutation-early",
+        idempotency_key_hash="a" * 64,
+        created_at=datetime(2024, 1, 1, tzinfo=UTC),
+    )
+    late = _mutation(
+        mutation_id="mutation-late",
+        idempotency_key_hash="b" * 64,
+        created_at=datetime(2024, 2, 1, tzinfo=UTC),
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(late)
+    repo.put_knowledge_configuration_mutation_if_absent(early)
+    listed = repo.list_knowledge_configuration_mutations(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert [item.mutation_id for item in listed] == ["mutation-early", "mutation-late"]
+
+
+def test_list_mutations_accepts_exactly_2000() -> None:
+    repo = _repo()
+    for index in range(2000):
+        hash_value = f"{index:064d}"
+        repo.put_knowledge_configuration_mutation_if_absent(
+            _mutation(
+                mutation_id=f"mutation-{index}",
+                idempotency_key_hash=hash_value,
+            )
+        )
+    listed = repo.list_knowledge_configuration_mutations(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert len(listed) == 2000
+
+
+def test_list_mutations_raises_when_more_than_2000() -> None:
+    repo = _repo()
+    for index in range(2001):
+        hash_value = f"{index:064d}"
+        repo.put_knowledge_configuration_mutation_if_absent(
+            _mutation(
+                mutation_id=f"mutation-{index}",
+                idempotency_key_hash=hash_value,
+            )
+        )
+    with pytest.raises(WorkspaceKnowledgeConfigurationRepositoryError) as exc:
+        repo.list_knowledge_configuration_mutations(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    assert exc.value.error_code == "knowledge_configuration_mutation_scan_limit_exceeded"
+
+
+def test_find_mutation_by_id_returns_one() -> None:
+    repo = _repo()
+    mutation = _mutation(mutation_id="mutation-find")
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    found = repo.find_knowledge_configuration_mutation_by_id(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        mutation_id="mutation-find",
+    )
+    assert found is not None
+    assert found.mutation_id == "mutation-find"
+
+
+def test_find_mutation_by_id_returns_none_when_missing() -> None:
+    repo = _repo()
+    assert repo.find_knowledge_configuration_mutation_by_id(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        mutation_id="missing",
+    ) is None
+
+
+def test_find_mutation_by_id_raises_when_not_unique() -> None:
+    repo = _repo()
+    shared_id = "mutation-dup"
+    repo.put_knowledge_configuration_mutation_if_absent(
+        _mutation(mutation_id=shared_id, idempotency_key_hash="a" * 64)
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(
+        _mutation(mutation_id=shared_id, idempotency_key_hash="b" * 64)
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationRepositoryError) as exc:
+        repo.find_knowledge_configuration_mutation_by_id(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            mutation_id=shared_id,
+        )
+    assert exc.value.error_code == "knowledge_configuration_mutation_id_not_unique"
+
+
 # --- Immutability API ---
 
 

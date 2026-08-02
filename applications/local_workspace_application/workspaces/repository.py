@@ -46,6 +46,8 @@ _QUERY_POLICY_ENTITY_ID = "query-policy"
 _REVISION_ROW_KEY_MARKER = ":rev:"
 _KNOWLEDGE_CONFIGURATION_MAX_REVISION = 10**20 - 1
 _KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT = 2000
+_KNOWLEDGE_CONFIGURATION_MUTATION_SCAN_LIMIT = 2000
+_KNOWLEDGE_CONFIGURATION_MUTATION_SCAN_PROBE_LIMIT = 2001
 
 _ENTITY_KNOWLEDGE_CONFIGURATION_HEAD = "knowledge_configuration_head"
 _ENTITY_KNOWLEDGE_CONFIGURATION_MUTATION = "knowledge_configuration_mutation"
@@ -102,6 +104,20 @@ def _mutation_row_key(
     idempotency_key_hash: str,
 ) -> str:
     return f"{workspace_id}:{operation}:{idempotency_key_hash}"
+
+
+def _parse_mutation_row_key(row_key: str) -> tuple[str, str, str]:
+    hash_sep = row_key.rfind(":")
+    if hash_sep < 0:
+        raise ValueError("knowledge_configuration_record_identity_mismatch")
+    idempotency_key_hash = row_key[hash_sep + 1 :]
+    prefix = row_key[:hash_sep]
+    colon_idx = prefix.find(":")
+    if colon_idx < 0:
+        raise ValueError("knowledge_configuration_record_identity_mismatch")
+    workspace_id = prefix[:colon_idx]
+    operation = prefix[colon_idx + 1 :]
+    return workspace_id, operation, idempotency_key_hash
 
 
 def _parse_revision_row_key(row_key: str) -> tuple[str, str, int]:
@@ -966,6 +982,72 @@ class ManagedWorkspaceRepository:
             partition_key=partition_key,
             row_key=row_key,
         )
+
+    def list_knowledge_configuration_mutations(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> list[WorkspaceKnowledgeMutationRecord]:
+        partition_key = _partition(tenant_id, _ENTITY_KNOWLEDGE_CONFIGURATION_MUTATION)
+        result = self._store.query(
+            partition_key,
+            limit=_KNOWLEDGE_CONFIGURATION_MUTATION_SCAN_PROBE_LIMIT,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        if len(result.documents) > _KNOWLEDGE_CONFIGURATION_MUTATION_SCAN_LIMIT:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "knowledge_configuration_mutation_scan_limit_exceeded"
+            )
+        items: list[WorkspaceKnowledgeMutationRecord] = []
+        for doc in result.documents:
+            row_workspace_id, row_operation, row_hash = _parse_mutation_row_key(doc.row_key)
+            if row_workspace_id != workspace_id:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            mutation = WorkspaceKnowledgeMutationRecord.model_validate(dict(doc.data))
+            _assert_record_identity(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                model_tenant_id=mutation.tenant_id,
+                model_workspace_id=mutation.workspace_id,
+                entity_id=row_operation,
+                model_entity_id=mutation.operation.value,
+            )
+            if mutation.idempotency_key_hash != row_hash:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            items.append(mutation)
+        return sorted(
+            items,
+            key=lambda item: (
+                item.created_at,
+                item.operation.value,
+                item.idempotency_key_hash,
+                item.mutation_id,
+            ),
+        )
+
+    def find_knowledge_configuration_mutation_by_id(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        mutation_id: str,
+    ) -> WorkspaceKnowledgeMutationRecord | None:
+        matches = [
+            mutation
+            for mutation in self.list_knowledge_configuration_mutations(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+            if mutation.mutation_id == mutation_id
+        ]
+        if not matches:
+            return None
+        if len(matches) > 1:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "knowledge_configuration_mutation_id_not_unique"
+            )
+        return matches[0]
 
     def put_knowledge_connection_attachment_version_if_absent(
         self,
