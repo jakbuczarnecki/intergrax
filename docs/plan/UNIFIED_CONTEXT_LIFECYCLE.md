@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-3** ready for review; **CTX-UCL-2** accepted/closed through R1; **CTX-UCL-1** accepted/closed through R1/R2
+**Status:** **CTX-UCL-3** correction delivered through CTX-UCL-3-R1; **CTX-UCL-2** accepted/closed through R1; **CTX-UCL-1** accepted/closed through R1/R2
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -23,7 +23,7 @@
 | **CTX-UCL-1-R2** | **ACCEPTED / CLOSED** |
 | **CTX-UCL-2** | **ACCEPTED / CLOSED through R1** — `OptimizationArtifactRepository` port + `InMemoryOptimizationArtifactRepository` reference adapter |
 | **CTX-UCL-2-R1** | **ACCEPTED / CLOSED** — monotonic bounded wait, deterministic wake proofs, provider lifecycle correction |
-| **CTX-UCL-3** | **READY_FOR_REVIEW** — `ContextPlan`, `SessionHistorySnapshot`, deterministic lookup inputs, canonical session provider (no last-N slicing), CE global budget |
+| **CTX-UCL-3** | **Correction delivered through CTX-UCL-3-R1** — **READY_FOR_REVIEW** — `ContextPlan`, `SessionHistorySnapshot`, deterministic lookup inputs, canonical session provider (no last-N slicing), CE global budget |
 | **CTX-UCL-4 … CTX-UCL-6** | Not started / blocked pending **CTX-UCL-3** acceptance |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |

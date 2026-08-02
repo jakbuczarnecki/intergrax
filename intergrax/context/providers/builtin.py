@@ -88,9 +88,19 @@ async def _collect_session_history(
 ) -> list[ContextFragment]:
     provider = HandleSessionHistoryProvider()
     snapshot = await provider.load_snapshot(request, ctx)
-    if snapshot is None:
+    if snapshot is not None:
+        return fragments_from_session_history_snapshot(snapshot)
+
+    from intergrax.context.providers.legacy_bridge import (
+        SESSION_HISTORY_MESSAGES_HANDLE,
+        fragments_from_session_history,
+    )
+
+    raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
+    if not isinstance(raw, list) or not raw:
         return []
-    return fragments_from_session_history_snapshot(snapshot)
+    max_entries = request.decision_profile.max_memory_entries_in_context
+    return fragments_from_session_history(raw, max_entries=max_entries)
 
 
 async def _collect_rag(

@@ -16,6 +16,7 @@ from intergrax.context.contracts import (
     ContextProviderContext,
 )
 from intergrax.context.providers.legacy_bridge import (
+    SESSION_HISTORY_MESSAGES_HANDLE,
     fragments_from_attachment_summaries,
     fragments_from_ltm_entries,
     fragments_from_policy_overlay_fragments,
@@ -301,3 +302,53 @@ async def test_builtin_collectors_read_extended_handles() -> None:
     assert shared_frags and shared_frags[0].source == ContextFragmentSource.SHARED_CONTEXT
     assert policy_frags and policy_frags[0].source == ContextFragmentSource.POLICY_OVERLAY
     assert attach_frags and attach_frags[0].source == ContextFragmentSource.ATTACHMENT
+
+
+@pytest.mark.asyncio
+async def test_missing_stable_revision_preserves_raw_legacy_history_through_builtin_session_history() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    providers = {provider.provider_id: provider for provider in registry.list_providers()}
+    request = _assembly_request(objective="legacy task")
+    ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            SESSION_HISTORY_MESSAGES_HANDLE: [
+                ChatMessage(role="user", content="legacy turn", entry_id="legacy-u1"),
+                ChatMessage(role="assistant", content="legacy answer", entry_id="legacy-a1"),
+            ],
+        },
+    )
+    fragments = await providers["builtin.session_history"].collect(request, ctx)
+    assert len(fragments) == 2
+    assert fragments[0].source == ContextFragmentSource.SESSION_HISTORY
+    assert "legacy turn" in fragments[0].content
+
+
+@pytest.mark.asyncio
+async def test_legacy_fallback_still_applies_max_memory_entries_in_context() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    providers = {provider.provider_id: provider for provider in registry.list_providers()}
+    request = ContextAssemblyRequest(
+        trace_id="trace-1",
+        run_id="run-1",
+        task_id="task-1",
+        tenant_id="tenant-1",
+        assembly_scope="graph_node",
+        objective="legacy task",
+        decision_profile=ContextDecisionSnapshot(max_memory_entries_in_context=2),
+        budget_policy=ContextBudgetSnapshot(max_chars=8000),
+        assembly_options=TaskContextAssemblyOptions(),
+        graph_node_id="n1",
+        step_kind="cap.test",
+    )
+    messages = [
+        ChatMessage(role="user", content=f"turn-{index}", entry_id=f"m{index}")
+        for index in range(6)
+    ]
+    ctx = ContextProviderContext(
+        engine_id="default",
+        handles={SESSION_HISTORY_MESSAGES_HANDLE: messages},
+    )
+    fragments = await providers["builtin.session_history"].collect(request, ctx)
+    assert len(fragments) == 2
+    assert fragments_from_session_history(messages, max_entries=2) == fragments

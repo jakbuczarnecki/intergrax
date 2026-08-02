@@ -6,8 +6,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 
 from intergrax.context.contracts import (
@@ -15,7 +17,6 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
-    content_hash_for_text,
 )
 from intergrax.llm.messages import ChatMessage, MessageRole
 
@@ -34,6 +35,43 @@ def _require_int(value: object, field_name: str) -> int:
     return value
 
 
+def _freeze_json_value(value: object) -> object:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        if math.isnan(value) or math.isinf(value):
+            raise ValueError("non-finite float not allowed")
+        return value
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Mapping):
+        frozen: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError("mapping keys must be strings")
+            frozen[key] = _freeze_json_value(item)
+        return MappingProxyType(frozen)
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json_value(item) for item in value)
+    raise ValueError(f"non-JSON-safe value: {type(value).__name__}")
+
+
+def _thaw_json_value(value: object) -> object:
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, MappingProxyType) or isinstance(value, Mapping):
+        return {str(key): _thaw_json_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw_json_value(item) for item in value]
+    if isinstance(value, list):
+        return [_thaw_json_value(item) for item in value]
+    raise ValueError(f"cannot thaw value: {type(value).__name__}")
+
+
 def _normalize_tool_calls(
     tool_calls: Sequence[Mapping[str, Any]] | None,
 ) -> tuple[Mapping[str, Any], ...]:
@@ -43,7 +81,7 @@ def _normalize_tool_calls(
     for item in tool_calls:
         if not isinstance(item, Mapping):
             raise ValueError("tool_calls items must be mappings")
-        normalized.append(dict(item))
+        normalized.append(_freeze_json_value(dict(item)))  # type: ignore[arg-type]
     return tuple(normalized)
 
 
@@ -64,12 +102,13 @@ def _message_content_hash(
     tool_call_id: str | None,
     tool_calls: tuple[Mapping[str, Any], ...],
 ) -> str:
+    thawed_calls = [_thaw_json_value(call) for call in tool_calls]
     payload: dict[str, Any] = {
         "content": content,
         "name": name,
         "role": role,
         "tool_call_id": tool_call_id,
-        "tool_calls": [dict(call) for call in tool_calls],
+        "tool_calls": thawed_calls,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -106,24 +145,20 @@ class SessionHistoryMessage:
             )
         normalized_calls = _normalize_tool_calls(self.tool_calls)
         object.__setattr__(self, "tool_calls", normalized_calls)
+        expected_hash = _message_content_hash(
+            role=self.role,
+            content=self.content,
+            name=self.name,
+            tool_call_id=self.tool_call_id,
+            tool_calls=normalized_calls,
+        )
         if self.content_hash:
-            object.__setattr__(
-                self,
-                "content_hash",
-                _require_non_empty(self.content_hash, "content_hash"),
-            )
+            stored_hash = _require_non_empty(self.content_hash, "content_hash")
+            if stored_hash != expected_hash:
+                raise ValueError("content_hash does not match canonical message content")
+            object.__setattr__(self, "content_hash", stored_hash)
         else:
-            object.__setattr__(
-                self,
-                "content_hash",
-                _message_content_hash(
-                    role=self.role,
-                    content=self.content,
-                    name=self.name,
-                    tool_call_id=self.tool_call_id,
-                    tool_calls=normalized_calls,
-                ),
-            )
+            object.__setattr__(self, "content_hash", expected_hash)
 
     @property
     def ordered_tool_call_ids(self) -> tuple[str, ...]:
@@ -151,13 +186,16 @@ def session_history_message_from_chat_message(
 
 
 def session_history_message_to_chat_message(message: SessionHistoryMessage) -> ChatMessage:
+    thawed_calls = None
+    if message.tool_calls:
+        thawed_calls = [_thaw_json_value(call) for call in message.tool_calls]
     return ChatMessage(
         role=message.role,
         content=message.content,
         entry_id=message.message_id,
         name=message.name,
         tool_call_id=message.tool_call_id,
-        tool_calls=[dict(call) for call in message.tool_calls] if message.tool_calls else None,
+        tool_calls=thawed_calls,
     )
 
 
@@ -195,6 +233,9 @@ class SessionHistorySnapshot:
         )
         object.__setattr__(self, "revision_id", _require_non_empty(self.revision_id, "revision_id"))
         messages = tuple(self.messages)
+        for message in messages:
+            if not isinstance(message, SessionHistoryMessage):
+                raise ValueError("messages must contain SessionHistoryMessage instances")
         object.__setattr__(self, "messages", messages)
 
         seen_ids: set[str] = set()
@@ -211,14 +252,14 @@ class SessionHistorySnapshot:
                 raise ValueError("sequences must be strictly increasing")
             previous_sequence = message.sequence
 
+        expected_hash = _snapshot_source_content_hash(messages)
         if self.source_content_hash:
-            object.__setattr__(
-                self,
-                "source_content_hash",
-                _require_non_empty(self.source_content_hash, "source_content_hash"),
-            )
+            stored_hash = _require_non_empty(self.source_content_hash, "source_content_hash")
+            if stored_hash != expected_hash:
+                raise ValueError("source_content_hash does not match snapshot messages")
+            object.__setattr__(self, "source_content_hash", stored_hash)
         else:
-            object.__setattr__(self, "source_content_hash", _snapshot_source_content_hash(messages))
+            object.__setattr__(self, "source_content_hash", expected_hash)
 
     @property
     def source_refs(self) -> tuple[str, ...]:

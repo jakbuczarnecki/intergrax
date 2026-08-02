@@ -5,12 +5,13 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextFragment,
     ContextFragmentSource,
+    content_hash_for_text,
 )
 from intergrax.context.planning import (
     MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT,
@@ -24,7 +25,7 @@ from intergrax.context.planning import (
     ContextSourceGroup,
     budget_class_for_execution_scope,
 )
-from intergrax.context.session_history import SessionHistorySnapshot
+from intergrax.context.session_history import SessionHistorySnapshot, session_history_message_to_chat_message
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactCompressionTarget,
@@ -71,18 +72,52 @@ def _deterministic_group_id(source_refs: tuple[str, ...]) -> str:
 
 
 def _group_content_hash(source_refs: tuple[str, ...], content_hashes: Sequence[str]) -> str:
-  payload = "|".join(f"{ref}:{content_hash}" for ref, content_hash in zip(source_refs, content_hashes, strict=True))
-  return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    payload = "|".join(f"{ref}:{content_hash}" for ref, content_hash in zip(source_refs, content_hashes, strict=True))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _extract_tool_call_ids(tool_calls: tuple[object, ...]) -> tuple[str, ...]:
+def _extract_tool_call_ids(tool_calls: tuple[object, ...] | list[object] | None) -> tuple[str, ...]:
     ids: list[str] = []
+    if not tool_calls:
+        return ()
     for call in tool_calls:
-        if isinstance(call, dict):
+        if isinstance(call, (dict, Mapping)):
             call_id = call.get("id")
             if call_id is not None and str(call_id).strip():
                 ids.append(str(call_id).strip())
     return tuple(ids)
+
+
+def _tool_call_group_incomplete(
+    assistant: ChatMessage,
+    tool_messages: Sequence[ChatMessage],
+) -> bool:
+    call_ids = _extract_tool_call_ids(assistant.tool_calls)
+    if not call_ids:
+        return True
+    if len(call_ids) != len(set(call_ids)):
+        return True
+    received: dict[str, int] = {}
+    for tool_message in tool_messages:
+        if tool_message.role != "tool":
+            return True
+        call_id = (tool_message.tool_call_id or "").strip()
+        if not call_id or call_id not in set(call_ids):
+            return True
+        if call_id in received:
+            return True
+        received[call_id] = 1
+    return set(call_ids) != set(received.keys())
+
+
+def _base_message_group_id(message: ChatMessage, position: int) -> str:
+    content_hash = content_hash_for_text(message.content or "")
+    identity = f"{message.entry_id}:{position}:{message.role}:{content_hash}"
+    return _deterministic_group_id((identity,))
+
+
+def _base_message_content_hashes(messages: Sequence[ChatMessage]) -> tuple[str, ...]:
+    return tuple(content_hash_for_text(message.content or "") for message in messages)
 
 
 def group_session_history_snapshot(
@@ -125,6 +160,7 @@ def group_session_history_snapshot(
                     start_sequence=message.sequence,
                     end_sequence=message.sequence,
                     protected=True,
+                    required=True,
                 )
             )
             index += 1
@@ -162,20 +198,21 @@ def group_session_history_snapshot(
                     tool_tokens = count_tokens(current.content)
                     tool_start = current.sequence
                     tool_end = current.sequence
-                    expected_tool_ids = set(_extract_tool_call_ids(current.tool_calls))
+                    expected_tool_ids = _extract_tool_call_ids(current.tool_calls)
                     index += 1
-                    received_tool_ids: set[str] = set()
+                    tool_messages: list = []
                     while index < len(messages) and messages[index].role == "tool":
                         tool_message = messages[index]
                         if tool_message.tool_call_id not in expected_tool_ids:
                             break
+                        tool_messages.append(tool_message)
                         tool_refs.append(tool_message.message_id)
                         tool_hashes.append(tool_message.content_hash)
                         tool_tokens += count_tokens(tool_message.content)
                         tool_end = tool_message.sequence
-                        received_tool_ids.add(tool_message.tool_call_id)
                         index += 1
-                    incomplete = expected_tool_ids != received_tool_ids
+                    assistant_msg = session_history_message_to_chat_message(current)
+                    incomplete = _tool_call_group_incomplete(assistant_msg, tool_messages)
                     refs_tuple = tuple(tool_refs)
                     groups.append(
                         ContextSourceGroup(
@@ -186,7 +223,7 @@ def group_session_history_snapshot(
                             token_estimate=tool_tokens,
                             start_sequence=tool_start,
                             end_sequence=tool_end,
-                            protected=True,
+                            protected=incomplete,
                             required=incomplete,
                         )
                     )
@@ -223,20 +260,21 @@ def group_session_history_snapshot(
                 tool_tokens = count_tokens(message.content)
                 tool_start = message.sequence
                 tool_end = message.sequence
-                expected_tool_ids = set(_extract_tool_call_ids(message.tool_calls))
+                expected_tool_ids = _extract_tool_call_ids(message.tool_calls)
                 index += 1
-                received_tool_ids: set[str] = set()
+                tool_messages = []
                 while index < len(messages) and messages[index].role == "tool":
                     tool_message = messages[index]
                     if tool_message.tool_call_id not in expected_tool_ids:
                         break
+                    tool_messages.append(tool_message)
                     tool_refs.append(tool_message.message_id)
                     tool_hashes.append(tool_message.content_hash)
                     tool_tokens += count_tokens(tool_message.content)
                     tool_end = tool_message.sequence
-                    received_tool_ids.add(tool_message.tool_call_id)
                     index += 1
-                incomplete = expected_tool_ids != received_tool_ids
+                assistant_msg = session_history_message_to_chat_message(message)
+                incomplete = _tool_call_group_incomplete(assistant_msg, tool_messages)
                 refs_tuple = tuple(tool_refs)
                 groups.append(
                     ContextSourceGroup(
@@ -247,7 +285,7 @@ def group_session_history_snapshot(
                         token_estimate=tool_tokens,
                         start_sequence=tool_start,
                         end_sequence=tool_end,
-                        protected=True,
+                        protected=incomplete,
                         required=incomplete,
                     )
                 )
@@ -274,32 +312,118 @@ def group_session_history_snapshot(
     return tuple(groups)
 
 
-def _fragment_groups(
-    fragments: Sequence[ContextFragment],
+def _group_base_messages(
+    messages_for_compile: Sequence[ChatMessage],
+    fragment_entry_ids: set[str],
     *,
     count_tokens: Callable[[str], int],
-) -> tuple[ContextSourceGroup, ...]:
+) -> tuple[list[ContextSourceGroup], set[int]]:
     groups: list[ContextSourceGroup] = []
-    for fragment in fragments:
-        if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+    assigned_indices: set[int] = set()
+    last_base_user_index = -1
+    for index, message in enumerate(messages_for_compile):
+        if message.entry_id in fragment_entry_ids:
             continue
-        refs = (fragment.fragment_id,)
+        if message.role == "user":
+            last_base_user_index = index
+
+    index = 0
+    while index < len(messages_for_compile):
+        message = messages_for_compile[index]
+        if message.entry_id in fragment_entry_ids:
+            index += 1
+            continue
+
+        if message.role == "assistant" and message.tool_calls:
+            refs = [message.entry_id]
+            hashes = [content_hash_for_text(message.content or "")]
+            token_total = count_tokens(message.content or "")
+            start_position = index
+            index += 1
+            tool_messages: list[ChatMessage] = []
+            while index < len(messages_for_compile):
+                current = messages_for_compile[index]
+                if current.entry_id in fragment_entry_ids:
+                    break
+                if current.role != "tool":
+                    break
+                tool_messages.append(current)
+                refs.append(current.entry_id)
+                hashes.append(content_hash_for_text(current.content or ""))
+                token_total += count_tokens(current.content or "")
+                index += 1
+            incomplete = _tool_call_group_incomplete(message, tool_messages)
+            refs_tuple = tuple(refs)
+            groups.append(
+                ContextSourceGroup(
+                    group_id=_base_message_group_id(message, start_position),
+                    source=ContextFragmentSource.SESSION_HISTORY,
+                    source_refs=refs_tuple,
+                    source_content_hash=_group_content_hash(refs_tuple, tuple(hashes)),
+                    token_estimate=token_total,
+                    required=incomplete,
+                    protected=incomplete,
+                    compressible=not incomplete,
+                    droppable=False,
+                    trim_safe=False,
+                )
+            )
+            assigned_indices.update(range(start_position, index))
+            continue
+
+        if message.role == "tool":
+            refs = (message.entry_id,)
+            groups.append(
+                ContextSourceGroup(
+                    group_id=_base_message_group_id(message, index),
+                    source=ContextFragmentSource.SESSION_HISTORY,
+                    source_refs=refs,
+                    source_content_hash=_group_content_hash(refs, _base_message_content_hashes([message])),
+                    token_estimate=count_tokens(message.content or ""),
+                    required=True,
+                    protected=True,
+                    compressible=False,
+                    droppable=False,
+                    trim_safe=False,
+                )
+            )
+            assigned_indices.add(index)
+            index += 1
+            continue
+
+        source = ContextFragmentSource.SESSION_HISTORY
+        required = False
+        protected = False
+        compressible = False
+        droppable = False
+        if message.role == "system":
+            source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+            required = True
+            protected = True
+        elif message.role == "user" and index == last_base_user_index:
+            source = ContextFragmentSource.TASK_MESSAGE
+            required = True
+            protected = True
+
+        refs = (message.entry_id,)
         groups.append(
             ContextSourceGroup(
-                group_id=_deterministic_group_id(refs),
-                source=fragment.source,
+                group_id=_base_message_group_id(message, index),
+                source=source,
                 source_refs=refs,
-                source_content_hash=fragment.content_hash or hashlib.sha256(fragment.content.encode()).hexdigest(),
-                token_estimate=fragment.token_estimate or count_tokens(fragment.content),
-                required=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
-                protected=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
-                droppable=(
-                    not fragment.mandatory
-                    and fragment.source in _DROPPABLE_SOURCES
-                ),
+                source_content_hash=_group_content_hash(refs, _base_message_content_hashes([message])),
+                token_estimate=count_tokens(message.content or ""),
+                required=required,
+                protected=protected,
+                compressible=compressible,
+                droppable=droppable,
+                trim_safe=False,
             )
         )
-    return tuple(groups)
+        assigned_indices.add(index)
+        index += 1
+
+    return groups, assigned_indices
 
 
 def _apply_recent_tail_protection(
@@ -361,19 +485,21 @@ def _source_allocations(
     excluded_ids: tuple[str, ...],
     groups_by_id: dict[str, ContextSourceGroup],
 ) -> tuple[ContextSourceBudgetAllocation, ...]:
-    by_source: dict[ContextFragmentSource, list[str]] = {}
+    by_source: dict[ContextFragmentSource, dict[str, list[str]]] = {}
     for group_id in selected_ids:
         source = groups_by_id[group_id].source
-        by_source.setdefault(source, []).append(group_id)
+        bucket = by_source.setdefault(source, {"selected": [], "excluded": []})
+        bucket["selected"].append(group_id)
+    for group_id in excluded_ids:
+        source = groups_by_id[group_id].source
+        bucket = by_source.setdefault(source, {"selected": [], "excluded": []})
+        bucket["excluded"].append(group_id)
 
     allocations: list[ContextSourceBudgetAllocation] = []
     for source in sorted(by_source, key=lambda item: item.value):
-        selected = tuple(by_source[source])
-        excluded_for_source = tuple(
-            group_id
-            for group_id in excluded_ids
-            if groups_by_id[group_id].source is source
-        )
+        bucket = by_source[source]
+        selected = tuple(bucket["selected"])
+        excluded_for_source = tuple(bucket["excluded"])
         allocated = sum(groups_by_id[group_id].token_estimate for group_id in selected)
         allocations.append(
             ContextSourceBudgetAllocation(
@@ -401,6 +527,7 @@ class ContextPlanner:
         request: ContextAssemblyRequest,
         *,
         messages_for_compile: Sequence[ChatMessage],
+        fragment_messages: Sequence[ChatMessage],
         ranked_fragments: Sequence[ContextFragment],
         session_history: SessionHistorySnapshot | None,
         resolved_global_budget_tokens: int,
@@ -408,27 +535,132 @@ class ContextPlanner:
         model_family: str | None = None,
         locale: str | None = None,
     ) -> ContextPlan:
-        _ = messages_for_compile
+        if len(fragment_messages) != len(ranked_fragments):
+            raise ContextPlanningError("fragment_message_mapping_mismatch")
+
         execution_scope = request.execution_scope
         if not isinstance(execution_scope, ModelCallExecutionScope):
             raise ValueError("execution_scope must be ModelCallExecutionScope")
 
-        session_groups: list[ContextSourceGroup] = []
+        estimated_total_tokens = sum(
+            self._count_tokens(message.content or "") for message in messages_for_compile
+        )
+
+        fragment_entry_ids = {message.entry_id for message in fragment_messages}
+        index_by_entry_id = {message.entry_id: index for index, message in enumerate(messages_for_compile)}
+
+        assigned_indices: set[int] = set()
+        all_groups: list[ContextSourceGroup] = []
+
+        session_groups_raw: list[ContextSourceGroup] = []
+        message_id_to_group_id: dict[str, str] = {}
         if session_history is not None:
-            session_groups = list(
+            session_groups_raw = list(
                 group_session_history_snapshot(session_history, count_tokens=self._count_tokens)
             )
+            for group in session_groups_raw:
+                for ref in group.source_refs:
+                    message_id_to_group_id[ref] = group.group_id
 
-        fragment_groups = list(
-            _fragment_groups(ranked_fragments, count_tokens=self._count_tokens)
+        session_token_accum = {group.group_id: 0 for group in session_groups_raw}
+
+        for fragment_message, fragment in zip(fragment_messages, ranked_fragments, strict=True):
+            message_index = index_by_entry_id.get(fragment_message.entry_id)
+            if message_index is None:
+                raise ContextPlanningError("incomplete_model_input_plan")
+            if message_index in assigned_indices:
+                raise ContextPlanningError("incomplete_model_input_plan")
+            assigned_indices.add(message_index)
+            token_estimate = self._count_tokens(fragment_message.content or "")
+
+            if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+                message_id = str(fragment.metadata.get("message_id") or "").strip()
+                if not message_id or message_id not in message_id_to_group_id:
+                    refs = (fragment.fragment_id,)
+                    all_groups.append(
+                        ContextSourceGroup(
+                            group_id=_deterministic_group_id(refs),
+                            source=fragment.source,
+                            source_refs=refs,
+                            source_content_hash=fragment.content_hash
+                            or content_hash_for_text(fragment.content),
+                            token_estimate=token_estimate,
+                            required=fragment.mandatory,
+                            protected=fragment.mandatory,
+                            droppable=False,
+                            compressible=False,
+                            trim_safe=False,
+                        )
+                    )
+                    continue
+                group_id = message_id_to_group_id[message_id]
+                session_token_accum[group_id] += token_estimate
+                continue
+
+            refs = (fragment.fragment_id,)
+            all_groups.append(
+                ContextSourceGroup(
+                    group_id=_deterministic_group_id(refs),
+                    source=fragment.source,
+                    source_refs=refs,
+                    source_content_hash=fragment.content_hash or content_hash_for_text(fragment.content),
+                    token_estimate=token_estimate,
+                    required=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
+                    protected=fragment.mandatory or fragment.source in _REQUIRED_SOURCES,
+                    droppable=(
+                        not fragment.mandatory
+                        and fragment.source in _DROPPABLE_SOURCES
+                    ),
+                    compressible=False,
+                    trim_safe=False,
+                )
+            )
+
+        for group in session_groups_raw:
+            token_total = session_token_accum[group.group_id]
+            if token_total <= 0:
+                continue
+            all_groups.append(
+                ContextSourceGroup(
+                    group_id=group.group_id,
+                    source=group.source,
+                    source_refs=group.source_refs,
+                    source_content_hash=group.source_content_hash,
+                    token_estimate=session_token_accum[group.group_id],
+                    start_sequence=group.start_sequence,
+                    end_sequence=group.end_sequence,
+                    required=group.required,
+                    protected=group.protected,
+                    compressible=group.compressible,
+                    droppable=group.droppable,
+                    trim_safe=group.trim_safe,
+                )
+            )
+
+        base_groups, base_assigned = _group_base_messages(
+            messages_for_compile,
+            fragment_entry_ids,
+            count_tokens=self._count_tokens,
         )
-        all_groups = session_groups + fragment_groups
-        groups_by_id = {group.group_id: group for group in all_groups}
+        if base_assigned & assigned_indices:
+            raise ContextPlanningError("incomplete_model_input_plan")
+        assigned_indices |= base_assigned
+        all_groups.extend(base_groups)
+
+        if len(assigned_indices) != len(messages_for_compile):
+            raise ContextPlanningError("incomplete_model_input_plan")
+
+        group_token_total = sum(group.token_estimate for group in all_groups)
+        if group_token_total != estimated_total_tokens:
+            raise ContextPlanningError("incomplete_model_input_plan")
+
+        session_groups = [group for group in all_groups if group.source is ContextFragmentSource.SESSION_HISTORY]
+        non_session_groups = [group for group in all_groups if group.source is not ContextFragmentSource.SESSION_HISTORY]
 
         recent_tail = optimization_policy.recent_tail_min_messages if optimization_policy else 0
         recent_tail_ids = _apply_recent_tail_protection(session_groups, recent_tail_min_messages=recent_tail)
         session_groups = _mark_session_groups(session_groups, recent_tail_ids=recent_tail_ids)
-        all_groups = session_groups + fragment_groups
+        all_groups = session_groups + non_session_groups
         groups_by_id = {group.group_id: group for group in all_groups}
 
         selected_ids = tuple(group.group_id for group in all_groups)
@@ -446,13 +678,13 @@ class ContextPlanner:
         if mandatory_tokens > resolved_global_budget_tokens:
             raise ContextPlanningError(MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT)
 
-        estimated_total = _total_tokens(selected_ids, groups_by_id)
-        if estimated_total <= resolved_global_budget_tokens:
+        selected_set = set(selected_ids)
+        if estimated_total_tokens <= resolved_global_budget_tokens:
             return self._build_plan(
                 request=request,
                 execution_scope=execution_scope,
                 resolved_global_budget_tokens=resolved_global_budget_tokens,
-                estimated_total_tokens=estimated_total,
+                estimated_total_tokens=estimated_total_tokens,
                 all_groups=all_groups,
                 selected_ids=selected_ids,
                 excluded_ids=excluded_ids,
@@ -466,21 +698,18 @@ class ContextPlanner:
                 groups_by_id=groups_by_id,
             )
 
-        droppable_ordered = tuple(
-            group.group_id for group in all_groups if group.droppable
-        )
-        selected_set = set(selected_ids)
+        droppable_ordered = tuple(group.group_id for group in all_groups if group.droppable)
         for group_id in droppable_ordered:
             selected_set.remove(group_id)
             excluded_ids = tuple(sorted(set(excluded_ids) | {group_id}))
-            estimated_total = _total_tokens(tuple(selected_set), groups_by_id)
-            if estimated_total <= resolved_global_budget_tokens:
+            post_drop_total = _total_tokens(tuple(selected_set), groups_by_id)
+            if post_drop_total <= resolved_global_budget_tokens:
                 selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
                 return self._build_plan(
                     request=request,
                     execution_scope=execution_scope,
                     resolved_global_budget_tokens=resolved_global_budget_tokens,
-                    estimated_total_tokens=estimated_total,
+                    estimated_total_tokens=estimated_total_tokens,
                     all_groups=all_groups,
                     selected_ids=selected_ids,
                     excluded_ids=excluded_ids,
@@ -564,7 +793,7 @@ class ContextPlanner:
         artifact_requirement = ContextArtifactRequirement(
             lookup_inputs=lookup_inputs,
             source_group_ids=target_group_ids,
-            allowed_strategy_ids=allowed_strategy_ids,
+            allowed_strategy_ids=allowed_strategy_ids or ("message_sequence.summary.v1",),
             minimum_preservation=preservation,
         )
 
@@ -572,7 +801,7 @@ class ContextPlanner:
             request=request,
             execution_scope=execution_scope,
             resolved_global_budget_tokens=resolved_global_budget_tokens,
-            estimated_total_tokens=estimated_total,
+            estimated_total_tokens=estimated_total_tokens,
             all_groups=all_groups,
             selected_ids=selected_ids,
             excluded_ids=excluded_ids,

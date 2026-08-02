@@ -8,6 +8,8 @@ import pytest
 
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
+    SessionHistoryMessage,
+    SessionHistorySnapshot,
     build_session_history_snapshot,
     session_history_message_from_chat_message,
     session_history_message_to_chat_message,
@@ -133,3 +135,115 @@ async def test_provider_rejects_wrong_handle_type() -> None:
     ctx = ContextProviderContext(handles={"session_history_snapshot": ["not-a-snapshot"]})
     with pytest.raises(ValueError, match="SessionHistorySnapshot"):
         await provider.load_snapshot(_request(), ctx)
+
+
+def test_supplied_correct_content_hash_accepted() -> None:
+    message = ChatMessage(role="user", content="hello", entry_id="m1")
+    converted = session_history_message_from_chat_message(message, sequence=0)
+    restored = SessionHistoryMessage(
+        message_id=converted.message_id,
+        sequence=converted.sequence,
+        role=converted.role,
+        content=converted.content,
+        content_hash=converted.content_hash,
+    )
+    assert restored.content_hash == converted.content_hash
+
+
+def test_supplied_wrong_content_hash_rejected() -> None:
+    with pytest.raises(ValueError, match="content_hash does not match canonical message content"):
+        SessionHistoryMessage(
+            message_id="m1",
+            sequence=0,
+            role="user",
+            content="hello",
+            content_hash="deadbeef",
+        )
+
+
+def test_supplied_wrong_snapshot_hash_rejected() -> None:
+    message = ChatMessage(role="user", content="hello", entry_id="m1")
+    history_message = session_history_message_from_chat_message(message, sequence=0)
+    with pytest.raises(ValueError, match="source_content_hash does not match snapshot messages"):
+        SessionHistorySnapshot(
+            tenant_id="tenant",
+            context_scope_id="scope",
+            revision_id="rev-1",
+            messages=(history_message,),
+            source_content_hash="deadbeef",
+        )
+
+
+def test_nested_tool_call_input_mutation_does_not_modify_snapshot() -> None:
+    nested = {"args": {"query": "weather"}}
+    assistant = ChatMessage(
+        role="assistant",
+        content="",
+        entry_id="a1",
+        tool_calls=[{"id": "call-1", "type": "function", "function": {"name": "search", "arguments": nested}}],
+    )
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev-1",
+        messages=[assistant],
+    )
+    nested["args"]["query"] = "changed"
+    assert snapshot.messages[0].tool_calls[0]["function"]["arguments"]["args"]["query"] == "weather"  # type: ignore[index]
+
+
+def test_nested_snapshot_tool_calls_are_immutable() -> None:
+    assistant = ChatMessage(
+        role="assistant",
+        content="",
+        entry_id="a1",
+        tool_calls=[{"id": "call-1", "type": "function", "function": {"name": "search"}}],
+    )
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev-1",
+        messages=[assistant],
+    )
+    with pytest.raises(TypeError):
+        snapshot.messages[0].tool_calls[0]["id"] = "changed"  # type: ignore[index]
+
+
+def test_roundtrip_restores_plain_dict_list() -> None:
+    original = ChatMessage(
+        role="assistant",
+        content="hi",
+        entry_id="m1",
+        tool_calls=[{"id": "c1", "type": "function", "function": {"name": "x", "args": [1, 2]}}],
+    )
+    converted = session_history_message_from_chat_message(original, sequence=0)
+    restored = session_history_message_to_chat_message(converted)
+    assert isinstance(restored.tool_calls[0], dict)
+    assert isinstance(restored.tool_calls[0]["function"]["args"], list)
+
+
+def test_non_json_safe_nested_value_rejected() -> None:
+    with pytest.raises(ValueError, match="non-JSON-safe"):
+        session_history_message_from_chat_message(
+            ChatMessage(
+                role="assistant",
+                content="",
+                entry_id="a1",
+                tool_calls=[{"id": "c1", "payload": {1, 2, 3}}],  # type: ignore[list-item]
+            ),
+            sequence=0,
+        )
+
+
+def test_messages_item_wrong_type_rejected() -> None:
+    message = session_history_message_from_chat_message(
+        ChatMessage(role="user", content="hello", entry_id="m1"),
+        sequence=0,
+    )
+    with pytest.raises(ValueError, match="SessionHistoryMessage instances"):
+        SessionHistorySnapshot(
+            tenant_id="tenant",
+            context_scope_id="scope",
+            revision_id="rev-1",
+            messages=(message, {"not": "a message"}),  # type: ignore[arg-type]
+        )

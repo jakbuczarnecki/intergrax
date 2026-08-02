@@ -11,14 +11,46 @@ from intergrax.context.contracts import ContextFragmentSource
 from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactCompressionTarget,
     ArtifactSourceRange,
+    ModelCallExecutionScope,
     OptimizationArtifactType,
 )
 
 
-def _require_non_empty(value: str, field_name: str) -> str:
-    if not value:
-        raise ValueError(f"{field_name} must be non-empty")
+def _require_str(value: object, field_name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field_name} must be a non-empty string")
     return value
+
+
+def _require_bool(value: object, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a bool")
+    return value
+
+
+def _require_instance(value: object, expected_type: type, field_name: str) -> object:
+    if not isinstance(value, expected_type):
+        raise ValueError(f"{field_name} must be {expected_type.__name__}")
+    return value
+
+
+def _require_tuple_items(
+    values: object,
+    field_name: str,
+    *,
+    item_type: type | None = None,
+) -> tuple[object, ...]:
+    if not isinstance(values, tuple):
+        raise ValueError(f"{field_name} must be a tuple")
+    if item_type is not None:
+        for index, item in enumerate(values):
+            if not isinstance(item, item_type):
+                raise ValueError(f"{field_name}[{index}] must be {item_type.__name__}")
+    return values
+
+
+def _require_non_empty(value: str, field_name: str) -> str:
+    return _require_str(value, field_name)
 
 
 def _require_int(value: object, field_name: str) -> int:
@@ -80,20 +112,27 @@ class ContextSourceGroup:
     trim_safe: bool = False
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "group_id", _require_non_empty(self.group_id, "group_id"))
-        if not isinstance(self.source, ContextFragmentSource):
-            raise ValueError("source must be ContextFragmentSource")
-        refs = tuple(self.source_refs)
-        if not refs or any(not ref for ref in refs):
-            raise ValueError("source_refs must be non-empty with no empty values")
-        object.__setattr__(self, "source_refs", _reject_duplicates(refs, "source_refs"))
+        object.__setattr__(self, "group_id", _require_str(self.group_id, "group_id"))
+        _require_instance(self.source, ContextFragmentSource, "source")
+        refs = _require_tuple_items(self.source_refs, "source_refs", item_type=str)
+        if not refs:
+            raise ValueError("source_refs must be non-empty")
+        for ref in refs:
+            _require_str(ref, "source_refs item")
+        object.__setattr__(self, "source_refs", _reject_duplicates(refs, "source_refs"))  # type: ignore[arg-type]
         object.__setattr__(
             self,
             "source_content_hash",
-            _require_non_empty(self.source_content_hash, "source_content_hash"),
+            _require_str(self.source_content_hash, "source_content_hash"),
         )
         token_estimate = _require_non_negative(self.token_estimate, "token_estimate")
         object.__setattr__(self, "token_estimate", token_estimate)
+
+        object.__setattr__(self, "required", _require_bool(self.required, "required"))
+        object.__setattr__(self, "protected", _require_bool(self.protected, "protected"))
+        object.__setattr__(self, "compressible", _require_bool(self.compressible, "compressible"))
+        object.__setattr__(self, "droppable", _require_bool(self.droppable, "droppable"))
+        object.__setattr__(self, "trim_safe", _require_bool(self.trim_safe, "trim_safe"))
 
         has_start = self.start_sequence is not None
         has_end = self.end_sequence is not None
@@ -124,15 +163,26 @@ class ContextMinimumPreservationRequirements:
     protected_group_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        for name in (
+        object.__setattr__(
+            self,
             "preserve_message_order",
+            _require_bool(self.preserve_message_order, "preserve_message_order"),
+        )
+        object.__setattr__(
+            self,
             "preserve_roles",
+            _require_bool(self.preserve_roles, "preserve_roles"),
+        )
+        object.__setattr__(
+            self,
             "preserve_message_ids",
+            _require_bool(self.preserve_message_ids, "preserve_message_ids"),
+        )
+        object.__setattr__(
+            self,
             "preserve_tool_call_links",
-        ):
-            value = object.__getattribute__(self, name)
-            if not isinstance(value, bool):
-                raise ValueError(f"{name} must be a bool")
+            _require_bool(self.preserve_tool_call_links, "preserve_tool_call_links"),
+        )
 
         tail = _require_non_negative(
             self.preserve_recent_tail_messages,
@@ -140,17 +190,17 @@ class ContextMinimumPreservationRequirements:
         )
         object.__setattr__(self, "preserve_recent_tail_messages", tail)
 
-        required_ids = tuple(self.required_group_ids)
-        protected_ids = tuple(self.protected_group_ids)
-        if any(not group_id for group_id in required_ids):
-            raise ValueError("required_group_ids must not contain empty values")
-        if any(not group_id for group_id in protected_ids):
-            raise ValueError("protected_group_ids must not contain empty values")
-        object.__setattr__(self, "required_group_ids", _reject_duplicates(required_ids, "required_group_ids"))
+        required_ids = _require_tuple_items(self.required_group_ids, "required_group_ids", item_type=str)
+        protected_ids = _require_tuple_items(self.protected_group_ids, "protected_group_ids", item_type=str)
+        for group_id in required_ids:
+            _require_str(group_id, "required_group_ids item")
+        for group_id in protected_ids:
+            _require_str(group_id, "protected_group_ids item")
+        object.__setattr__(self, "required_group_ids", _reject_duplicates(required_ids, "required_group_ids"))  # type: ignore[arg-type]
         object.__setattr__(
             self,
             "protected_group_ids",
-            _reject_duplicates(protected_ids, "protected_group_ids"),
+            _reject_duplicates(protected_ids, "protected_group_ids"),  # type: ignore[arg-type]
         )
 
 
@@ -169,55 +219,38 @@ class ContextArtifactLookupInputs:
     locale: str | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
-        object.__setattr__(
-            self,
-            "context_scope_id",
-            _require_non_empty(self.context_scope_id, "context_scope_id"),
-        )
-        if not isinstance(self.artifact_type, OptimizationArtifactType):
-            raise ValueError("artifact_type must be OptimizationArtifactType")
+        object.__setattr__(self, "tenant_id", _require_str(self.tenant_id, "tenant_id"))
+        object.__setattr__(self, "context_scope_id", _require_str(self.context_scope_id, "context_scope_id"))
+        _require_instance(self.artifact_type, OptimizationArtifactType, "artifact_type")
         object.__setattr__(
             self,
             "source_content_hash",
-            _require_non_empty(self.source_content_hash, "source_content_hash"),
+            _require_str(self.source_content_hash, "source_content_hash"),
         )
-        if not isinstance(self.compression_target, ArtifactCompressionTarget):
-            raise ValueError("compression_target must be ArtifactCompressionTarget")
-        object.__setattr__(
-            self,
-            "lossiness_profile",
-            _require_non_empty(self.lossiness_profile, "lossiness_profile"),
-        )
+        _require_instance(self.compression_target, ArtifactCompressionTarget, "compression_target")
+        object.__setattr__(self, "lossiness_profile", _require_str(self.lossiness_profile, "lossiness_profile"))
 
         has_refs = bool(self.source_refs)
         has_range = self.source_range is not None
         if has_refs == has_range:
             raise ValueError("exactly one of source_refs or source_range must be provided")
         if has_refs:
-            refs = tuple(self.source_refs)
-            if any(not ref for ref in refs):
-                raise ValueError("source_refs must not contain empty values")
-            object.__setattr__(self, "source_refs", _reject_duplicates(refs, "source_refs"))
-        if self.source_range is not None and not isinstance(self.source_range, ArtifactSourceRange):
-            raise ValueError("source_range must be ArtifactSourceRange")
+            refs = _require_tuple_items(self.source_refs, "source_refs", item_type=str)
+            for ref in refs:
+                _require_str(ref, "source_refs item")
+            object.__setattr__(self, "source_refs", _reject_duplicates(refs, "source_refs"))  # type: ignore[arg-type]
+        if self.source_range is not None:
+            _require_instance(self.source_range, ArtifactSourceRange, "source_range")
         if self.protected_region_policy_version is not None:
             object.__setattr__(
                 self,
                 "protected_region_policy_version",
-                _require_non_empty(
-                    self.protected_region_policy_version,
-                    "protected_region_policy_version",
-                ),
+                _require_str(self.protected_region_policy_version, "protected_region_policy_version"),
             )
         if self.model_family is not None:
-            object.__setattr__(
-                self,
-                "model_family",
-                _require_non_empty(self.model_family, "model_family"),
-            )
+            object.__setattr__(self, "model_family", _require_str(self.model_family, "model_family"))
         if self.locale is not None:
-            object.__setattr__(self, "locale", _require_non_empty(self.locale, "locale"))
+            object.__setattr__(self, "locale", _require_str(self.locale, "locale"))
 
 
 def artifact_lookup_key_kwargs_from_context_inputs(
@@ -253,19 +286,31 @@ class ContextArtifactRequirement:
     minimum_preservation: ContextMinimumPreservationRequirements
 
     def __post_init__(self) -> None:
-        if not isinstance(self.lookup_inputs, ContextArtifactLookupInputs):
-            raise ValueError("lookup_inputs must be ContextArtifactLookupInputs")
-        if not isinstance(self.minimum_preservation, ContextMinimumPreservationRequirements):
-            raise ValueError("minimum_preservation must be ContextMinimumPreservationRequirements")
-        group_ids = tuple(self.source_group_ids)
+        _require_instance(self.lookup_inputs, ContextArtifactLookupInputs, "lookup_inputs")
+        _require_instance(
+            self.minimum_preservation,
+            ContextMinimumPreservationRequirements,
+            "minimum_preservation",
+        )
+        group_ids = _require_tuple_items(self.source_group_ids, "source_group_ids", item_type=str)
         if not group_ids:
             raise ValueError("source_group_ids must be non-empty")
-        object.__setattr__(self, "source_group_ids", _reject_duplicates(group_ids, "source_group_ids"))
-        strategy_ids = tuple(self.allowed_strategy_ids)
+        for group_id in group_ids:
+            _require_str(group_id, "source_group_ids item")
+        object.__setattr__(self, "source_group_ids", _reject_duplicates(group_ids, "source_group_ids"))  # type: ignore[arg-type]
+        strategy_ids = _require_tuple_items(
+            self.allowed_strategy_ids,
+            "allowed_strategy_ids",
+            item_type=str,
+        )
+        if not strategy_ids:
+            raise ValueError("allowed_strategy_ids must be non-empty")
+        for strategy_id in strategy_ids:
+            _require_str(strategy_id, "allowed_strategy_ids item")
         object.__setattr__(
             self,
             "allowed_strategy_ids",
-            _reject_duplicates(strategy_ids, "allowed_strategy_ids"),
+            _reject_duplicates(strategy_ids, "allowed_strategy_ids"),  # type: ignore[arg-type]
         )
 
 
@@ -277,28 +322,27 @@ class ContextSourceBudgetAllocation:
     excluded_group_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if not isinstance(self.source, ContextFragmentSource):
-            raise ValueError("source must be ContextFragmentSource")
+        _require_instance(self.source, ContextFragmentSource, "source")
         object.__setattr__(
             self,
             "allocated_tokens",
             _require_non_negative(self.allocated_tokens, "allocated_tokens"),
         )
-        selected = tuple(self.selected_group_ids)
-        excluded = tuple(self.excluded_group_ids)
-        if any(not group_id for group_id in selected):
-            raise ValueError("selected_group_ids must not contain empty values")
-        if any(not group_id for group_id in excluded):
-            raise ValueError("excluded_group_ids must not contain empty values")
-        object.__setattr__(self, "selected_group_ids", _reject_duplicates(selected, "selected_group_ids"))
-        object.__setattr__(self, "excluded_group_ids", _reject_duplicates(excluded, "excluded_group_ids"))
+        selected = _require_tuple_items(self.selected_group_ids, "selected_group_ids", item_type=str)
+        excluded = _require_tuple_items(self.excluded_group_ids, "excluded_group_ids", item_type=str)
+        for group_id in selected:
+            _require_str(group_id, "selected_group_ids item")
+        for group_id in excluded:
+            _require_str(group_id, "excluded_group_ids item")
+        object.__setattr__(self, "selected_group_ids", _reject_duplicates(selected, "selected_group_ids"))  # type: ignore[arg-type]
+        object.__setattr__(self, "excluded_group_ids", _reject_duplicates(excluded, "excluded_group_ids"))  # type: ignore[arg-type]
         if set(selected) & set(excluded):
             raise ValueError("selected and excluded group IDs must be disjoint")
 
 
 @dataclass(frozen=True, slots=True)
 class ContextPlan:
-    execution_scope: object
+    execution_scope: ModelCallExecutionScope
     budget_class: ContextBudgetClass
     resolved_global_budget_tokens: int
     estimated_total_tokens: int
@@ -316,12 +360,9 @@ class ContextPlan:
     final_validation_requirements: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
-
-        scope = _require_enum(self.execution_scope, ModelCallExecutionScope, "execution_scope")
+        scope = _require_instance(self.execution_scope, ModelCallExecutionScope, "execution_scope")
         object.__setattr__(self, "execution_scope", scope)
-        if not isinstance(self.budget_class, ContextBudgetClass):
-            raise ValueError("budget_class must be ContextBudgetClass")
+        _require_instance(self.budget_class, ContextBudgetClass, "budget_class")
         expected = budget_class_for_execution_scope(scope)
         if self.budget_class is not expected:
             raise ValueError("budget_class must match execution_scope")
@@ -336,13 +377,26 @@ class ContextPlan:
             "estimated_total_tokens",
             _require_non_negative(self.estimated_total_tokens, "estimated_total_tokens"),
         )
+        object.__setattr__(
+            self,
+            "optimization_required",
+            _require_bool(self.optimization_required, "optimization_required"),
+        )
 
-        groups = tuple(self.source_groups)
-        group_ids = [group.group_id for group in groups]
+        groups = _require_tuple_items(self.source_groups, "source_groups", item_type=ContextSourceGroup)
+        group_ids = [group.group_id for group in groups]  # type: ignore[union-attr]
         if len(group_ids) != len(set(group_ids)):
             raise ValueError("source group IDs must be unique")
         object.__setattr__(self, "source_groups", groups)
+        groups_by_id = {group.group_id: group for group in groups}  # type: ignore[union-attr]
         group_id_set = set(group_ids)
+
+        allocations = _require_tuple_items(
+            self.source_allocations,
+            "source_allocations",
+            item_type=ContextSourceBudgetAllocation,
+        )
+        object.__setattr__(self, "source_allocations", allocations)
 
         for field_name in (
             "selected_group_ids",
@@ -354,20 +408,44 @@ class ContextPlan:
             "trim_safe_group_ids",
             "final_validation_requirements",
         ):
-            values = tuple(object.__getattribute__(self, field_name))
+            values = _require_tuple_items(object.__getattribute__(self, field_name), field_name)
             if field_name == "final_validation_requirements":
-                if any(not value for value in values):
-                    raise ValueError("final_validation_requirements must not contain empty values")
+                for value in values:
+                    _require_str(value, "final_validation_requirements item")
             else:
-                if any(not value for value in values):
-                    raise ValueError(f"{field_name} must not contain empty values")
-            object.__setattr__(self, field_name, _reject_duplicates(values, field_name))
+                for value in values:
+                    _require_str(value, f"{field_name} item")
+            object.__setattr__(self, field_name, _reject_duplicates(values, field_name))  # type: ignore[arg-type]
 
         selected = set(self.selected_group_ids)
         excluded = set(self.excluded_group_ids)
         if selected & excluded:
             raise ValueError("selected and excluded group IDs must be disjoint")
-        for group_id in selected | excluded | set(self.required_group_ids) | set(self.protected_group_ids):
+        if selected | excluded != group_id_set:
+            raise ValueError("selected and excluded group IDs must cover all source groups")
+
+        classification_fields = (
+            ("required_group_ids", "required"),
+            ("protected_group_ids", "protected"),
+            ("compressible_group_ids", "compressible"),
+            ("droppable_group_ids", "droppable"),
+            ("trim_safe_group_ids", "trim_safe"),
+        )
+        for field_name, flag_name in classification_fields:
+            expected_ids = tuple(
+                group.group_id for group in groups if getattr(group, flag_name)  # type: ignore[union-attr]
+            )
+            actual_ids = tuple(object.__getattribute__(self, field_name))
+            if actual_ids != expected_ids:
+                raise ValueError(f"{field_name} must match group {flag_name} flags")
+
+        for group_id in (
+            set(self.required_group_ids)
+            | set(self.protected_group_ids)
+            | set(self.compressible_group_ids)
+            | set(self.droppable_group_ids)
+            | set(self.trim_safe_group_ids)
+        ):
             if group_id not in group_id_set:
                 raise ValueError(f"unknown group ID referenced: {group_id}")
         for group_id in self.required_group_ids:
@@ -379,6 +457,30 @@ class ContextPlan:
             if group_id in excluded:
                 raise ValueError("protected groups must not be excluded")
 
+        allocated_selected: set[str] = set()
+        allocated_excluded: set[str] = set()
+        for allocation in allocations:
+            for group_id in allocation.selected_group_ids:  # type: ignore[union-attr]
+                if group_id not in group_id_set:
+                    raise ValueError(f"unknown group ID referenced: {group_id}")
+                if groups_by_id[group_id].source is not allocation.source:  # type: ignore[union-attr]
+                    raise ValueError("allocation source mismatch")
+                if group_id in allocated_selected:
+                    raise ValueError("duplicate allocation for group")
+                allocated_selected.add(group_id)
+            for group_id in allocation.excluded_group_ids:  # type: ignore[union-attr]
+                if group_id not in group_id_set:
+                    raise ValueError(f"unknown group ID referenced: {group_id}")
+                if groups_by_id[group_id].source is not allocation.source:  # type: ignore[union-attr]
+                    raise ValueError("allocation source mismatch")
+                if group_id in allocated_excluded:
+                    raise ValueError("duplicate allocation for group")
+                allocated_excluded.add(group_id)
+        if allocated_selected != selected:
+            raise ValueError("allocation missing group")
+        if allocated_excluded != excluded:
+            raise ValueError("allocation missing group")
+
         if self.optimization_required:
             if self.artifact_requirement is None:
                 raise ValueError("optimization_required requires artifact_requirement")
@@ -386,21 +488,34 @@ class ContextPlan:
             raise ValueError("artifact_requirement must be None when optimization_required is false")
 
         if self.artifact_requirement is not None:
+            if not isinstance(self.artifact_requirement, ContextArtifactRequirement):
+                raise ValueError("artifact_requirement must be ContextArtifactRequirement")
             compressible = set(self.compressible_group_ids)
             protected = set(self.protected_group_ids)
-            for group_id in self.artifact_requirement.source_group_ids:
+            artifact_sources = set(self.artifact_requirement.source_group_ids)
+            for group_id in artifact_sources:
+                if group_id not in group_id_set:
+                    raise ValueError(f"unknown group ID referenced: {group_id}")
                 if group_id not in selected:
                     raise ValueError("artifact source groups must be selected")
                 if group_id not in compressible:
                     raise ValueError("artifact source groups must be compressible")
                 if group_id in protected:
                     raise ValueError("artifact source groups must not be protected")
-
-
-def _require_enum(value: object, enum_type: type, field_name: str) -> object:
-    if not isinstance(value, enum_type):
-        raise ValueError(f"{field_name} must be {enum_type.__name__}")
-    return value
+            preservation = self.artifact_requirement.minimum_preservation
+            if tuple(preservation.required_group_ids) != tuple(self.required_group_ids):
+                raise ValueError("preservation required_group_ids must match plan required_group_ids")
+            if tuple(preservation.protected_group_ids) != tuple(self.protected_group_ids):
+                raise ValueError("preservation protected_group_ids must match plan protected_group_ids")
+            for group_id in preservation.required_group_ids:
+                if group_id not in selected:
+                    raise ValueError("preservation required groups must be selected")
+            for group_id in preservation.protected_group_ids:
+                if group_id not in selected:
+                    raise ValueError("preservation protected groups must be selected")
+            for group_id in preservation.required_group_ids + preservation.protected_group_ids:
+                if group_id in artifact_sources:
+                    raise ValueError("preservation IDs must be disjoint from artifact source_group_ids")
 
 
 MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT = "mandatory_context_exceeds_model_limit"

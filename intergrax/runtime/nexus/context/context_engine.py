@@ -190,6 +190,7 @@ class DefaultNexusContextEngine:
         context_plan = planner.plan(
             request,
             messages_for_compile=messages_for_compile,
+            fragment_messages=fragment_messages,
             ranked_fragments=ranked_fragments,
             session_history=session_history,
             resolved_global_budget_tokens=resolved_budget,

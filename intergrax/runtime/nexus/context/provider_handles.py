@@ -47,7 +47,7 @@ def try_build_session_history_snapshot(
     """Build a canonical snapshot when stable scope and revision identifiers exist."""
     revision_id = str(task.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY) or "").strip()
     if not revision_id:
-        revision_id = _revision_id_from_messages(messages)
+        return None
     return try_build_session_history_snapshot_from_scope(
         tenant_id=task.tenant_id,
         context_scope_id=task.session_id,
@@ -71,35 +71,24 @@ def try_build_session_history_snapshot_from_scope(
     scope = (context_scope_id or "").strip()
     if not scope:
         return None
-    resolved_revision = (revision_id or "").strip() or _revision_id_from_messages(messages)
+    resolved_revision = (revision_id or "").strip()
+    if not resolved_revision:
+        return None
+    tenant = (tenant_id or "").strip()
+    if not tenant:
+        return None
     typed_messages: list[ChatMessage] = []
     for item in messages:
         if isinstance(item, ChatMessage):
             typed_messages.append(item)
         else:
-            return None
-    try:
-        return build_session_history_snapshot(
-            tenant_id=tenant_id,
-            context_scope_id=scope,
-            revision_id=resolved_revision,
-            messages=typed_messages,
-        )
-    except ValueError:
-        return None
-
-
-def _revision_id_from_messages(messages: list[Any]) -> str:
-    from intergrax.llm.messages import ChatMessage
-
-    parts: list[str] = []
-    for message in messages:
-        if isinstance(message, ChatMessage):
-            parts.append(message.entry_id)
-    import hashlib
-
-    digest = hashlib.sha256(":".join(parts).encode("utf-8")).hexdigest()
-    return f"rev-{digest[:16]}"
+            raise ValueError("messages must be ChatMessage instances")
+    return build_session_history_snapshot(
+        tenant_id=tenant,
+        context_scope_id=scope,
+        revision_id=resolved_revision,
+        messages=typed_messages,
+    )
 
 
 def _list_from_task_metadata(task: Task, key: str) -> list[Any]:
