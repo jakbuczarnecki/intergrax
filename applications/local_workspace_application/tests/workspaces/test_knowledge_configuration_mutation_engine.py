@@ -106,6 +106,10 @@ class _FakeHandler:
         self.staged_rows: list[WorkspaceConnectionAttachment] = []
         self.projection_revision_sequence: list[int] | None = None
         self._projection_reads = 0
+        self.stage_entered = threading.Event()
+        self.stage_release = threading.Event()
+        self.stage_release.set()
+        self._stage_lock = threading.Lock()
 
     def find_existing_result(
         self,
@@ -129,8 +133,12 @@ class _FakeHandler:
         intent: object,
         now: datetime,
     ) -> WorkspaceKnowledgeStagedResult:
-        self.stage_calls += 1
+        with self._stage_lock:
+            self.stage_calls += 1
         self.stage_target_revision_at_call = mutation.target_revision
+        self.stage_entered.set()
+        if not self.stage_release.is_set():
+            self.stage_release.wait(timeout=5)
         attachment = WorkspaceConnectionAttachment(
             attachment_id=_RESULT_ID,
             tenant_id=mutation.tenant_id,
@@ -489,6 +497,7 @@ def _build_engine(
     handler: _FakeHandler | None = None,
     workspaces: dict[tuple[str, str], Workspace] | None = None,
     mutation_ids: list[str] | None = None,
+    claim_ids: list[str] | None = None,
     clock: _ControlledClock | None = None,
     handlers: dict[WorkspaceKnowledgeMutationOperationV1, _FakeHandler] | None = None,
 ) -> tuple[WorkspaceKnowledgeConfigurationMutationEngine, ManagedWorkspaceRepository, _FakeHandler]:
@@ -504,6 +513,9 @@ def _build_engine(
     id_factory = _ControlledMutationIds(
         mutation_ids or ["mutation-1", "mutation-2", "mutation-3", "mutation-4", "mutation-5"]
     )
+    claim_factory = _ControlledMutationIds(
+        claim_ids or ["claim-1", "claim-2", "claim-3", "claim-4", "claim-5", "claim-6"]
+    )
     engine = WorkspaceKnowledgeConfigurationMutationEngine(
         repo,
         lookup,
@@ -511,6 +523,7 @@ def _build_engine(
         handler_map,
         clock=controlled_clock.now,
         mutation_id_factory=id_factory.next_id,
+        stage_claim_id_factory=claim_factory.next_id,
     )
     return engine, repo, fake_handler
 
@@ -3881,6 +3894,7 @@ class _DifferentAttemptPreparedCASStore(InMemoryDocumentStore):
                         **expected.data,
                         "mutation_id": "mutation-r6-stage-2",
                         "status": "prepared",
+                        "stage_claim_id": None,
                         "target_revision": expected.data.get("target_revision"),
                         "result_entity_type": _RESULT_TYPE,
                         "result_entity_id": _RESULT_ID,
@@ -3917,6 +3931,8 @@ def test_failed_prepared_cas_does_not_adopt_newer_attempt() -> None:
             handler=handler,
             target_revision=1,
             intent=object(),
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
             now=_NOW,
         )
     assert exc.value.error_code == "configuration_recovery_required"
@@ -4505,3 +4521,200 @@ def test_cleanup_abort_returns_exact_mutation_not_unrelated_aborted_attempt() ->
     assert loaded is not None
     assert loaded.mutation_id == "mutation-r7-cleanup-2"
     assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+
+
+def _load_mutation(repo: ManagedWorkspaceRepository) -> WorkspaceKnowledgeMutationRecord:
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    return loaded
+
+
+def _seed_pending_head(
+    repo: ManagedWorkspaceRepository,
+    *,
+    mutation_id: str,
+    target_revision: int = 1,
+    stage_claim_id: str | None = None,
+) -> WorkspaceKnowledgeMutationRecord:
+    mutation = _mutation_record(
+        mutation_id=mutation_id,
+        target_revision=target_revision,
+        stage_claim_id=stage_claim_id,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=target_revision,
+            pending_mutation_id=mutation_id,
+            updated_at=_NOW,
+        )
+    )
+    return mutation
+
+
+# --- R2 durable stage claim ---
+
+
+def test_one_stage_writer_per_mutation() -> None:
+    store = InMemoryDocumentStore()
+    handler_a = _FakeHandler()
+    handler_b = _FakeHandler()
+    handler_a.stage_release.clear()
+    engine_a, repo, _ = _build_engine(
+        store=store, handler=handler_a, mutation_ids=["mutation-a", "mutation-b"], claim_ids=["claim-a", "claim-b"],
+    )
+    engine_b, _, _ = _build_engine(
+        store=store, handler=handler_b, mutation_ids=["mutation-b", "mutation-c"], claim_ids=["claim-b", "claim-c"],
+    )
+    errors: list[BaseException] = []
+    thread_a = threading.Thread(target=lambda: _execute(engine_a))
+
+    def run_b() -> None:
+        try:
+            _execute(engine_b)
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    thread_b = threading.Thread(target=run_b)
+    thread_a.start()
+    assert handler_a.stage_entered.wait(timeout=5)
+    thread_b.start()
+    thread_b.join(timeout=5)
+    handler_a.stage_release.set()
+    thread_a.join(timeout=5)
+    assert len(errors) == 1
+    assert isinstance(errors[0], WorkspaceKnowledgeConfigurationMutationError)
+    assert errors[0].error_code == "configuration_recovery_required"
+    assert handler_a.stage_calls == 1 and handler_b.stage_calls == 0
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED and loaded.stage_claim_id is None
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.committed_revision == 1
+
+
+def test_recovery_during_in_flight_claimed_stage() -> None:
+    handler = _FakeHandler()
+    handler.stage_release.clear()
+    engine, repo, _handler = _build_engine(
+        handler=handler, mutation_ids=["mutation-stage"], claim_ids=["claim-stage"],
+    )
+    writer_error: list[BaseException] = []
+
+    def writer() -> None:
+        try:
+            _execute(engine)
+        except BaseException as exc:  # noqa: BLE001
+            writer_error.append(exc)
+
+    thread = threading.Thread(target=writer)
+    thread.start()
+    assert handler.stage_entered.wait(timeout=5)
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert loaded.stage_claim_id == "claim-stage"
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id == "mutation-stage"
+    handler.stage_release.set()
+    thread.join(timeout=5)
+    assert len(writer_error) == 1
+    assert isinstance(writer_error[0], WorkspaceKnowledgeConfigurationMutationError)
+    assert writer_error[0].error_code == "configuration_recovery_required"
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED and loaded.stage_claim_id is None
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id is None and head.committed_revision == 0
+    assert not repo.list_knowledge_connection_attachment_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    config = WorkspaceKnowledgeConfigurationService(
+        repo, _FakeWorkspaceLookup({(_TENANT, _WORKSPACE): _workspace()}),
+    ).get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert config is not None and config.connection_attachments == ()
+
+
+def test_claimed_stage_absent_recovery_preserves_fence() -> None:
+    engine, repo, _handler = _build_engine(
+        mutation_ids=["mutation-absent"], claim_ids=["claim-absent"],
+    )
+    _seed_pending_head(repo, mutation_id="mutation-absent", stage_claim_id="claim-absent")
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert loaded.stage_claim_id == "claim-absent"
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id == "mutation-absent"
+
+
+def test_recovery_after_complete_claimed_staging() -> None:
+    engine, repo, handler = _build_engine(
+        mutation_ids=["mutation-complete"], claim_ids=["claim-complete"],
+    )
+    mutation = _seed_pending_head(repo, mutation_id="mutation-complete", stage_claim_id="claim-complete")
+    handler.stage(repository=repo, mutation=mutation, target_revision=1, intent=object(), now=_NOW)
+    recovery = engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED
+    assert recovery.mutation is not None
+    assert recovery.mutation.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert recovery.mutation.stage_claim_id is None
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.committed_revision == 1 and handler.cleanup_calls == 0
+
+
+def test_stage_claim_cas_race() -> None:
+    store = InMemoryDocumentStore()
+    handler_a = _FakeHandler()
+    handler_b = _FakeHandler()
+    engine_a, repo, _ = _build_engine(
+        store=store, handler=handler_a, mutation_ids=["mutation-race"], claim_ids=["claim-winner", "claim-loser"],
+    )
+    engine_b, _, _ = _build_engine(
+        store=store, handler=handler_b, mutation_ids=["mutation-race", "mutation-other"],
+        claim_ids=["claim-loser", "claim-other"],
+    )
+    _seed_pending_head(repo, mutation_id="mutation-race")
+    results: list[Any] = []
+    errors: list[BaseException] = []
+
+    def run(engine: WorkspaceKnowledgeConfigurationMutationEngine) -> None:
+        try:
+            results.append(_execute(engine))
+        except BaseException as exc:  # noqa: BLE001
+            errors.append(exc)
+
+    thread_a = threading.Thread(target=run, args=(engine_a,))
+    thread_b = threading.Thread(target=run, args=(engine_b,))
+    thread_a.start()
+    thread_b.start()
+    thread_a.join()
+    thread_b.join()
+    assert handler_a.stage_calls + handler_b.stage_calls == 1 and len(results) == 1
+    loaded = _load_mutation(repo)
+    assert loaded.stage_claim_id in (None, "claim-winner")
+
+
+def test_claim_owner_cleanup_failure_preserves_fence() -> None:
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    handler.cleanup_returns = False
+    engine, repo, _handler = _build_engine(
+        handler=handler, mutation_ids=["mutation-cleanup-fail"], claim_ids=["claim-cleanup-fail"],
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine)
+    assert exc.value.error_code == "configuration_mutation_cleanup_failed"
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert loaded.stage_claim_id == "claim-cleanup-fail"
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id is not None

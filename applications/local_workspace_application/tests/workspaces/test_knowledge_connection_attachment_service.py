@@ -54,6 +54,9 @@ _CONNECTION, _CONNECTION_OTHER = "conn.primary", "conn.other"
 _SHA256, _SHA256_B = "a" * 64, "b" * 64
 _LABEL = "Primary Connection"
 _HANDLER = AttachConnectionMutationHandler()
+_ATTACHMENT_ID = connection_attachment_id(
+    tenant_id=_TENANT, workspace_id=_WORKSPACE, connection_ref=_CONNECTION
+)
 
 
 def _workspace(**overrides: object) -> Workspace:
@@ -110,16 +113,8 @@ def _safe_connection(**overrides: object) -> SafeTenantConnectionV1:
 
 def _build_stack(**kwargs: object):
     store = kwargs.get("store") or InMemoryDocumentStore()
-    workspaces = (
-        kwargs["workspaces"]
-        if "workspaces" in kwargs
-        else {(_TENANT, _WORKSPACE): _workspace()}
-    )
-    connections = (
-        kwargs["connections"]
-        if "connections" in kwargs
-        else {(_TENANT, _CONNECTION): _safe_connection()}
-    )
+    workspaces = kwargs["workspaces"] if "workspaces" in kwargs else {(_TENANT, _WORKSPACE): _workspace()}
+    connections = kwargs["connections"] if "connections" in kwargs else {(_TENANT, _CONNECTION): _safe_connection()}
     repo = ManagedWorkspaceRepository(store)
     lookup = _FakeWorkspaceLookup(workspaces)
     config_service = WorkspaceKnowledgeConfigurationService(repo, lookup)
@@ -185,9 +180,7 @@ def _mutation(**overrides: object) -> WorkspaceKnowledgeMutationRecord:
 
 def _attachment_row(**overrides: object) -> WorkspaceConnectionAttachment:
     payload = {
-        "attachment_id": connection_attachment_id(
-            tenant_id=_TENANT, workspace_id=_WORKSPACE, connection_ref=_CONNECTION
-        ),
+        "attachment_id": _ATTACHMENT_ID,
         "tenant_id": _TENANT,
         "workspace_id": _WORKSPACE,
         "connection_ref": _CONNECTION,
@@ -202,7 +195,7 @@ def _attachment_row(**overrides: object) -> WorkspaceConnectionAttachment:
     return WorkspaceConnectionAttachment(**payload)
 
 
-def _stage_conflicting_row(repo: ManagedWorkspaceRepository, **overrides: object) -> WorkspaceConnectionAttachment:
+def _stage_row(repo: ManagedWorkspaceRepository, **overrides: object) -> WorkspaceConnectionAttachment:
     row = _attachment_row(**overrides)
     repo.put_knowledge_connection_attachment_version_if_absent(row)
     return row
@@ -214,6 +207,24 @@ def _assert_no_attach_side_effects(repo: ManagedWorkspaceRepository) -> None:
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
     )
+
+
+def _assert_ownership_conflict(
+    repo: ManagedWorkspaceRepository,
+    mutation: WorkspaceKnowledgeMutationRecord,
+    *,
+    preserve_row: WorkspaceConnectionAttachment | None = None,
+) -> None:
+    inspection = _HANDLER.inspect_staged(repository=repo, mutation=mutation)
+    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    assert not _HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
+    if preserve_row is not None:
+        assert repo.get_knowledge_connection_attachment_version(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            attachment_id=preserve_row.attachment_id,
+            effective_revision=preserve_row.effective_revision,
+        )
 
 
 def test_successful_attach_applied() -> None:
@@ -236,12 +247,9 @@ def test_semantic_no_op_and_committed_replay() -> None:
     assert applied.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
     assert replay.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
     assert noop.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.EXISTING_RESULT
-    assert len(
-        repo.list_knowledge_connection_attachment_versions(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-        )
-    ) == 1
+    assert len(repo.list_knowledge_connection_attachment_versions(
+        tenant_id=_TENANT, workspace_id=_WORKSPACE,
+    )) == 1
 
 
 def test_idempotency_conflict_before_revision_conflict() -> None:
@@ -257,26 +265,13 @@ def test_idempotency_conflict_before_revision_conflict() -> None:
     [
         ({}, "connection_not_found"),
         ({(_TENANT_B, _CONNECTION): _safe_connection(tenant_id=_TENANT_B)}, "connection_not_found"),
-        (
-            {
-                (_TENANT, _CONNECTION): _safe_connection(
-                    connection_ref=_CONNECTION_OTHER,
-                )
-            },
-            "connection_not_found",
-        ),
-        (
-            {(_TENANT, _CONNECTION): _safe_connection(
-                administrative_status=TenantConnectionAdministrativeStatus.DISABLED
-            )},
-            "connection_unavailable",
-        ),
-        (
-            {(_TENANT, _CONNECTION): _safe_connection(
-                administrative_status=TenantConnectionAdministrativeStatus.REVOKED
-            )},
-            "connection_unavailable",
-        ),
+        ({(_TENANT, _CONNECTION): _safe_connection(connection_ref=_CONNECTION_OTHER)}, "connection_not_found"),
+        ({(_TENANT, _CONNECTION): _safe_connection(
+            administrative_status=TenantConnectionAdministrativeStatus.DISABLED
+        )}, "connection_unavailable"),
+        ({(_TENANT, _CONNECTION): _safe_connection(
+            administrative_status=TenantConnectionAdministrativeStatus.REVOKED
+        )}, "connection_unavailable"),
     ],
 )
 def test_connection_boundary(connections, error_code) -> None:
@@ -320,11 +315,9 @@ def test_safe_display_label(requested: str | None, error: str | None) -> None:
 
 def test_unsafe_server_derived_default_label() -> None:
     service, repo, _ = _build_stack(
-        connections={
-            (_TENANT, _CONNECTION): _safe_connection(
-                safe_display_name="Support: https://user:pass@example.com"
-            )
-        }
+        connections={(_TENANT, _CONNECTION): _safe_connection(
+            safe_display_name="Support: https://user:pass@example.com"
+        )}
     )
     with pytest.raises(WorkspaceConnectionAttachmentError) as exc:
         service.attach_connection(_cmd())
@@ -336,7 +329,7 @@ def test_handler_stage_inspect_cleanup_and_foreign_ownership() -> None:
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
     mutation = _mutation()
     intent = AttachConnectionMutationIntent(
-        attachment_id=_attachment_row().attachment_id,
+        attachment_id=_ATTACHMENT_ID,
         connection_ref=_CONNECTION,
         safe_display_label=_LABEL,
     )
@@ -347,7 +340,9 @@ def test_handler_stage_inspect_cleanup_and_foreign_ownership() -> None:
     repo.put_knowledge_connection_attachment_version_if_absent(
         _attachment_row(mutation_id="foreign-mutation")
     )
-    assert _HANDLER.inspect_staged(repository=repo, mutation=mutation).state is WorkspaceKnowledgeStageStateV1.ABSENT
+    assert _HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.ABSENT
+    )
 
 
 def test_handler_cleanup_failure_and_preserves_committed() -> None:
@@ -378,7 +373,7 @@ def test_handler_cleanup_failure_and_preserves_committed() -> None:
 
 def test_handler_cleanup_ownership_conflict_is_false() -> None:
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
-    row = _stage_conflicting_row(repo)
+    row = _stage_row(repo)
     mutation = _mutation()
     conflict = WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT)
     assert not _HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=conflict)
@@ -390,67 +385,27 @@ def test_handler_cleanup_ownership_conflict_is_false() -> None:
     )
 
 
-def test_handler_staged_semantic_identity_mismatch() -> None:
+@pytest.mark.parametrize(
+    ("row_overrides",),
+    [
+        ({"connection_ref": _CONNECTION_OTHER, "attachment_id": connection_attachment_id(
+            tenant_id=_TENANT, workspace_id=_WORKSPACE, connection_ref=_CONNECTION_OTHER
+        )},),
+        ({"attachment_id": "wca:wrongattachmentidentity00000000"},),
+        ({"safe_display_label": "Different Label"},),
+    ],
+)
+def test_handler_staged_identity_conflicts(row_overrides: dict[str, object]) -> None:
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
-    mutation = _mutation()
-    _stage_conflicting_row(
-        repo,
-        connection_ref=_CONNECTION_OTHER,
-        attachment_id=connection_attachment_id(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-            connection_ref=_CONNECTION_OTHER,
-        ),
-    )
-    inspection = _HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
-    assert not _HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
-    assert repo.list_knowledge_connection_attachment_versions(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-    )
-
-
-def test_handler_staged_attachment_id_mismatch() -> None:
-    repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
-    mutation = _mutation()
-    row = _stage_conflicting_row(repo, attachment_id="wca:wrongattachmentidentity00000000")
-    inspection = _HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
-    assert not _HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
-    assert repo.get_knowledge_connection_attachment_version(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        attachment_id=row.attachment_id,
-        effective_revision=row.effective_revision,
-    )
-
-
-def test_handler_staged_request_hash_label_mismatch() -> None:
-    repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
-    mutation = _mutation()
-    row = _stage_conflicting_row(repo, safe_display_label="Different Label")
-    inspection = _HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
-    assert not _HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
-    assert repo.get_knowledge_connection_attachment_version(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        attachment_id=row.attachment_id,
-        effective_revision=row.effective_revision,
-    )
+    row = _stage_row(repo, **row_overrides)
+    _assert_ownership_conflict(repo, _mutation(), preserve_row=row)
 
 
 @pytest.mark.parametrize(
     ("result_entity_type", "result_entity_id"),
     [
-        ("indexed_source_binding", connection_attachment_id(
-            tenant_id=_TENANT, workspace_id=_WORKSPACE, connection_ref=_CONNECTION
-        )),
-        (
-            "connection_attachment",
-            "wca:wrongattachmentidentity00000000",
-        ),
+        ("indexed_source_binding", _ATTACHMENT_ID),
+        ("connection_attachment", "wca:wrongattachmentidentity00000000"),
     ],
 )
 def test_handler_prepared_result_reference_mismatch(
@@ -458,7 +413,7 @@ def test_handler_prepared_result_reference_mismatch(
     result_entity_id: str,
 ) -> None:
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
-    _stage_conflicting_row(repo)
+    _stage_row(repo)
     mutation = _mutation(
         status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
         result_entity_type=result_entity_type,

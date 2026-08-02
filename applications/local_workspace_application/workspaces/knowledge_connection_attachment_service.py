@@ -48,12 +48,10 @@ _SECRET_QUERY_KEYS = frozenset(
     }
 )
 
-
 class WorkspaceConnectionAttachmentError(RuntimeError):
     def __init__(self, error_code: str) -> None:
         super().__init__(error_code)
         self.error_code = error_code
-
 
 @dataclass(frozen=True, slots=True)
 class AttachWorkspaceConnectionCommand:
@@ -64,13 +62,11 @@ class AttachWorkspaceConnectionCommand:
     idempotency_key_hash: str
     requested_safe_display_label: str | None = None
 
-
 @dataclass(frozen=True, slots=True)
 class AttachWorkspaceConnectionResult:
     attachment: WorkspaceConnectionAttachment
     configuration_revision: int
     disposition: WorkspaceKnowledgeMutationExecutionDispositionV1
-
 
 def _trim_url_suffix(url: str) -> str:
     return url.rstrip(".,;:!?)]}")
@@ -92,10 +88,7 @@ def _label_contains_credential_material(value: str) -> bool:
         return True
     if _API_KEY_RE.search(value) is not None:
         return True
-    for url in _URL_RE.findall(value):
-        if _url_has_credential_material(url):
-            return True
-    return False
+    return any(_url_has_credential_material(url) for url in _URL_RE.findall(value))
 
 
 def _validate_safe_display_label(value: str) -> str:
@@ -107,11 +100,7 @@ def _validate_safe_display_label(value: str) -> str:
     return resolved
 
 
-def _resolve_safe_display_label(
-    *,
-    requested: str | None,
-    default_label: str,
-) -> str:
+def _resolve_safe_display_label(*, requested: str | None, default_label: str) -> str:
     if requested is None:
         return _validate_safe_display_label(default_label)
     return _validate_safe_display_label(requested)
@@ -122,6 +111,10 @@ def _connection_unavailable(status: TenantConnectionAdministrativeStatus) -> boo
         TenantConnectionAdministrativeStatus.DISABLED,
         TenantConnectionAdministrativeStatus.REVOKED,
     }
+
+
+def _projection_incomplete() -> WorkspaceConnectionAttachmentError:
+    return WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
 
 
 class WorkspaceConnectionAttachmentService:
@@ -150,20 +143,22 @@ class WorkspaceConnectionAttachmentService:
             tenant_id=tenant_id,
             connection_ref=normalized_ref,
         )
-        if connection is None or connection.tenant_id != tenant_id:
+        if (
+            connection is None
+            or connection.tenant_id != tenant_id
+            or connection.connection_ref.strip() != normalized_ref
+        ):
             raise WorkspaceConnectionAttachmentError("connection_not_found")
-        if connection.connection_ref.strip() != normalized_ref:
-            raise WorkspaceConnectionAttachmentError("connection_not_found")
-        if _connection_unavailable(connection.administrative_status):
-            raise WorkspaceConnectionAttachmentError("connection_unavailable")
-        if connection.administrative_status is not TenantConnectionAdministrativeStatus.ACTIVE:
+        if (
+            _connection_unavailable(connection.administrative_status)
+            or connection.administrative_status is not TenantConnectionAdministrativeStatus.ACTIVE
+        ):
             raise WorkspaceConnectionAttachmentError("connection_unavailable")
 
         safe_label = _resolve_safe_display_label(
             requested=command.requested_safe_display_label,
             default_label=connection.safe_display_name,
         )
-
         configuration = self._configuration_service.get_configuration(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -198,7 +193,6 @@ class WorkspaceConnectionAttachmentService:
             ),
             intent=intent,
         )
-
         resolved_configuration = self._configuration_service.get_configuration(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -220,7 +214,6 @@ class WorkspaceConnectionAttachmentService:
             disposition=mutation_result.disposition,
         )
 
-
 def _resolve_committed_attachment(
     *,
     configuration: WorkspaceKnowledgeConfigurationV1,
@@ -233,16 +226,13 @@ def _resolve_committed_attachment(
     for item in configuration.connection_attachments:
         if item.attachment_id != result_entity_id:
             continue
-        if item.tenant_id != tenant_id:
-            raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-        if item.workspace_id != workspace_id:
-            raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-        if item.connection_ref != connection_ref:
-            raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-        if item.status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED:
-            raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-        if item.effective_revision > configuration_revision:
-            raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
+        if (
+            item.tenant_id != tenant_id
+            or item.workspace_id != workspace_id
+            or item.connection_ref != connection_ref
+            or item.status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED
+            or item.effective_revision > configuration_revision
+        ):
+            raise _projection_incomplete()
         return item
-
-    raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
+    raise _projection_incomplete()
