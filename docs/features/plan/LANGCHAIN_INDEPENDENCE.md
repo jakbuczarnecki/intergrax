@@ -25,14 +25,14 @@ Use, modification, or distribution without written permission is prohibited.
 
 ## Roadmap sequence
 
-`	ext
+```text
 inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 → native document architecture/implementation/compat/conformance (LCI-1A–1D)
 → ingestion/chunking/ingest (LCI-2A–2F) → embedding/indexing/vector store (LCI-3A–3D)
 → retrieval/reranking/graph/memory/modality leaks (LCI-4A–4D)
 → thin replacements + optionalization (LCI-5A–5C)
 → native Ollama (LCI-6A–6E) → packaging/install gates/closeout (LCI-7A–7D) → LangGraph review (LCI-8A)
-`
+```
 
 **LKW note:** LKW is a proof client, not owner of LCI migration mechanics.
 
@@ -140,13 +140,15 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 |-------|-------|
 | **Priority** | P0 |
 | **Status** | PLANNED |
-| **Purpose** | Executable tests for contract, round trip, serialization, metadata, identity, and native-core import without LangChain. |
+| **Purpose** | LCI-1D proves that the native knowledge-document module, its serializers, compatibility-independent conformance tests, and native document public exports can be imported and exercised without langchain* installed. |
 | **Owning domain plan** | docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-1B |
-| **Exact scope** | Conformance test suite; AST/signature checks wired in CI |
-| **Explicit out of scope** | Full pipeline migration |
-| **Acceptance criteria** | CI runs conformance suite and passes; core import test passes without langchain* installed |
-| **User-visible outcome** | Enforced contract hygiene with executed gates |
+| **Exact scope** | Conformance test suite for contract, serialization, identity, and metadata; native document module import gate without langchain*; AST/signature checks wired in CI for scope delivered to this point |
+| **Explicit out of scope** | Full pipeline migration; full Intergrax core installation without langchain* (remains LCI-7B) |
+| **Acceptance criteria** | Contract tests pass; serialization round-trip tests pass; identity and metadata conformance tests pass; native document module imports without langchain* installed; AST/signature checks pass for implemented native document surface |
+| **User-visible outcome** | Enforced native document contract hygiene with executed gates |
+
+Full Intergrax core installation without langchain* remains out of scope until LCI-7B.
 
 ---
 

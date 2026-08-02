@@ -1,10 +1,10 @@
-﻿<!--
-Â© Artur Czarnecki. All rights reserved.
-Intergrax framework â€“ proprietary and confidential.
+<!--
+© Artur Czarnecki. All rights reserved.
+Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LANGCHAIN_INDEPENDENCE â€” domain plan cross-references
+# LANGCHAIN_INDEPENDENCE — domain plan cross-references
 
 **Parent plan:** [../LANGCHAIN_INDEPENDENCE.md](../LANGCHAIN_INDEPENDENCE.md)
 **Feature architecture:** [../../architecture/LANGCHAIN_INDEPENDENCE.md](../../architecture/LANGCHAIN_INDEPENDENCE.md)
