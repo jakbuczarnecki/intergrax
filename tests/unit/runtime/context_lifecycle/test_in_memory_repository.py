@@ -23,7 +23,6 @@ from intergrax.runtime.context_lifecycle import (
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
     StoredOptimizationArtifact,
-    build_optimization_artifact_reference,
     compute_artifact_content_hash,
     compute_artifact_lookup_key_hash,
 )
@@ -106,8 +105,39 @@ class FakeClock:
             self._current = self._current + timedelta(seconds=seconds)
 
 
+class FakeMonotonicClock:
+    def __init__(self, start: float = 0.0) -> None:
+        self._current = start
+        self._lock = threading.Lock()
+
+    def now(self) -> float:
+        with self._lock:
+            return self._current
+
+    def advance(self, seconds: float) -> None:
+        with self._lock:
+            self._current += seconds
+
+
+class WaitObservableRepository(InMemoryOptimizationArtifactRepository):
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self.wait_entered = threading.Event()
+
+    def _condition_wait(self, timeout_seconds: float) -> None:
+        self.wait_entered.set()
+        super()._condition_wait(timeout_seconds)
+
+
+class NotifyableRepository(WaitObservableRepository):
+    def wake_waiters(self) -> None:
+        with self._lock:
+            self._condition.notify_all()
+
+
 def _repository(
     clock: FakeClock | None = None,
+    monotonic: FakeMonotonicClock | None = None,
     reservation_ids: list[str] | None = None,
 ) -> InMemoryOptimizationArtifactRepository:
     fake_clock = clock or FakeClock()
@@ -125,6 +155,7 @@ def _repository(
 
     return InMemoryOptimizationArtifactRepository(
         clock=fake_clock.now,
+        monotonic_clock=monotonic.now if monotonic is not None else None,
         reservation_id_factory=reservation_id_factory,
     )
 
@@ -579,7 +610,7 @@ def test_store_removes_reservation() -> None:
 
 
 def test_store_wakes_waiter() -> None:
-    repository = _repository()
+    repository = WaitObservableRepository()
     key = _lookup_key()
     reservation = _acquire(repository, key, owner="owner-1")
     observed = repository.try_acquire_creation_reservation(
@@ -600,9 +631,11 @@ def test_store_wakes_waiter() -> None:
 
     thread = threading.Thread(target=waiter)
     thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
     _publish(repository, reservation, key)
     thread.join(timeout=5.0)
     assert waiter_result == [True]
+    assert repository.lookup(key) is not None
     repository.close()
 
 
@@ -730,14 +763,16 @@ def test_store_conflicting_publication_rejected() -> None:
     repository.close()
 
 
-def test_store_idempotent_replay() -> None:
+def test_store_replay_with_consumed_reservation_is_rejected() -> None:
     repository = _repository()
     key = _lookup_key()
     reservation = _acquire(repository, key)
     stored = _stored_artifact(lookup_key=key)
-    first = repository.store_validated_artifact(reservation=reservation, artifact=stored)
-    second = build_optimization_artifact_reference(stored)
-    assert first == second
+    reference = repository.store_validated_artifact(reservation=reservation, artifact=stored)
+    with pytest.raises(RuntimeError, match="artifact_creation_reservation_conflict"):
+        repository.store_validated_artifact(reservation=reservation, artifact=stored)
+    assert repository.lookup(key) is not None
+    assert repository.resolve(reference) is not None
     repository.close()
 
 
@@ -865,7 +900,7 @@ def test_wait_already_changed_returns_immediately() -> None:
 
 
 def test_wait_wakes_after_release() -> None:
-    repository = _repository()
+    repository = WaitObservableRepository()
     key = _lookup_key()
     acquire_result = repository.try_acquire_creation_reservation(
         key,
@@ -888,6 +923,7 @@ def test_wait_wakes_after_release() -> None:
 
     thread = threading.Thread(target=waiter)
     thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
     repository.release_creation_reservation(reservation=reservation)
     thread.join(timeout=5.0)
     assert waiter_result == [True]
@@ -895,11 +931,17 @@ def test_wait_wakes_after_release() -> None:
 
 
 def test_wait_wakes_after_invalidation() -> None:
-    repository = _repository()
+    repository = WaitObservableRepository()
     key = _lookup_key()
     reservation = _acquire(repository, key)
     reference = _publish(repository, reservation, key)
-    observed = 0
+    available = repository.try_acquire_creation_reservation(
+        key,
+        owner_operation_id="owner-2",
+        lease_seconds=60,
+    )
+    assert available.status is ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE
+    observed = available.state_version
     waiter_result: list[bool] = []
 
     def waiter() -> None:
@@ -913,25 +955,45 @@ def test_wait_wakes_after_invalidation() -> None:
 
     thread = threading.Thread(target=waiter)
     thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
     repository.invalidate_artifact(reference, reason="stale")
     thread.join(timeout=5.0)
     assert waiter_result == [True]
+    assert repository.lookup(key) is None
+    resolved = repository.resolve(reference)
+    assert resolved is not None
+    assert resolved.metadata.status is ReusableArtifactStatus.INVALIDATED
     repository.close()
 
 
 def test_wait_observes_lease_expiry_without_background_thread() -> None:
-    repository = InMemoryOptimizationArtifactRepository()
+    clock = FakeClock()
+    repository = NotifyableRepository(clock=clock.now)
     key = _lookup_key()
     acquired = repository.try_acquire_creation_reservation(
         key,
         owner_operation_id="owner-1",
-        lease_seconds=1,
+        lease_seconds=10,
     )
-    assert repository.wait_for_artifact_or_reservation_change(
-        key,
-        observed_state_version=acquired.state_version,
-        timeout_seconds=5.0,
-    )
+    observed = acquired.state_version
+    waiter_result: list[bool] = []
+
+    def waiter() -> None:
+        waiter_result.append(
+            repository.wait_for_artifact_or_reservation_change(
+                key,
+                observed_state_version=observed,
+                timeout_seconds=60.0,
+            )
+        )
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    clock.advance(11)
+    repository.wake_waiters()
+    thread.join(timeout=5.0)
+    assert waiter_result == [True]
     result = repository.try_acquire_creation_reservation(
         key,
         owner_operation_id="owner-2",
@@ -942,7 +1004,7 @@ def test_wait_observes_lease_expiry_without_background_thread() -> None:
 
 
 def test_close_wakes_waiters() -> None:
-    repository = _repository()
+    repository = WaitObservableRepository()
     key = _lookup_key()
     acquired_result = repository.try_acquire_creation_reservation(
         key,
@@ -964,9 +1026,195 @@ def test_close_wakes_waiters() -> None:
 
     thread = threading.Thread(target=waiter)
     thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
     repository.close()
     thread.join(timeout=5.0)
     assert any(isinstance(exc, RuntimeError) for exc in waiter_errors)
+
+
+def test_constructor_does_not_consume_providers() -> None:
+    calls = {"clock": 0, "monotonic": 0, "id": 0}
+
+    def clock() -> datetime:
+        calls["clock"] += 1
+        return _BASE_TIME
+
+    def monotonic() -> float:
+        calls["monotonic"] += 1
+        return 1.0
+
+    def reservation_id() -> str:
+        calls["id"] += 1
+        return "reservation-first"
+
+    InMemoryOptimizationArtifactRepository(
+        clock=clock,
+        monotonic_clock=monotonic,
+        reservation_id_factory=reservation_id,
+    ).close()
+    assert calls == {"clock": 0, "monotonic": 0, "id": 0}
+
+
+def test_first_provider_outputs_used_on_first_acquisition() -> None:
+    calls = {"clock": 0, "id": 0}
+    first_time = datetime(2026, 8, 2, 13, 0, tzinfo=UTC)
+
+    def clock() -> datetime:
+        calls["clock"] += 1
+        return first_time
+
+    def reservation_id() -> str:
+        calls["id"] += 1
+        return "reservation-first"
+
+    repository = InMemoryOptimizationArtifactRepository(
+        clock=clock,
+        reservation_id_factory=reservation_id,
+    )
+    key = _lookup_key()
+    result = repository.try_acquire_creation_reservation(
+        key,
+        owner_operation_id="owner-1",
+        lease_seconds=60,
+    )
+    assert result.reservation is not None
+    assert result.reservation.reservation_id == "reservation-first"
+    assert result.reservation.acquired_at == first_time
+    assert result.reservation.lease_deadline == first_time + timedelta(seconds=60)
+    assert calls == {"clock": 1, "id": 1}
+    repository.close()
+
+
+def test_clock_rejects_naive_datetime_on_use() -> None:
+    def naive_clock() -> datetime:
+        return datetime(2026, 8, 2, 12, 0, 0)
+
+    repository = InMemoryOptimizationArtifactRepository(clock=naive_clock)
+    with pytest.raises(ValueError, match="timezone-aware"):
+        repository.try_acquire_creation_reservation(
+            _lookup_key(),
+            owner_operation_id="owner-1",
+            lease_seconds=60,
+        )
+    repository.close()
+
+
+def test_clock_rejects_non_datetime_on_use() -> None:
+    def bad_clock() -> object:
+        return "not-a-datetime"
+
+    repository = InMemoryOptimizationArtifactRepository(clock=bad_clock)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="datetime"):
+        repository.try_acquire_creation_reservation(
+            _lookup_key(),
+            owner_operation_id="owner-1",
+            lease_seconds=60,
+        )
+    repository.close()
+
+
+def test_reservation_id_rejects_empty_on_use() -> None:
+    repository = InMemoryOptimizationArtifactRepository(reservation_id_factory=lambda: "")
+    with pytest.raises(ValueError, match="non-empty"):
+        repository.try_acquire_creation_reservation(
+            _lookup_key(),
+            owner_operation_id="owner-1",
+            lease_seconds=60,
+        )
+    repository.close()
+
+
+def test_reservation_id_rejects_non_string_on_use() -> None:
+    repository = InMemoryOptimizationArtifactRepository(reservation_id_factory=lambda: 42)  # type: ignore[return-value]
+    with pytest.raises(ValueError, match="str"):
+        repository.try_acquire_creation_reservation(
+            _lookup_key(),
+            owner_operation_id="owner-1",
+            lease_seconds=60,
+        )
+    repository.close()
+
+
+def test_monotonic_rejects_non_finite_on_wait() -> None:
+    repository = InMemoryOptimizationArtifactRepository(monotonic_clock=lambda: float("nan"))
+    with pytest.raises(ValueError, match="finite"):
+        repository.wait_for_artifact_or_reservation_change(
+            _lookup_key(),
+            observed_state_version=0,
+            timeout_seconds=1.0,
+        )
+    repository.close()
+
+
+def test_unrelated_key_notify_does_not_finish_waiter() -> None:
+    repository = WaitObservableRepository()
+    key_a = _lookup_key(source_refs=("msg-a",))
+    key_b = _lookup_key(source_refs=("msg-b",))
+    acquire_a = repository.try_acquire_creation_reservation(
+        key_a,
+        owner_operation_id="owner-a",
+        lease_seconds=60,
+    )
+    assert acquire_a.reservation is not None
+    observed = acquire_a.state_version
+    waiter_done = threading.Event()
+    waiter_result: list[bool | None] = [None]
+
+    def waiter() -> None:
+        waiter_result[0] = repository.wait_for_artifact_or_reservation_change(
+            key_a,
+            observed_state_version=observed,
+            timeout_seconds=30.0,
+        )
+        waiter_done.set()
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    repository.try_acquire_creation_reservation(
+        key_b,
+        owner_operation_id="owner-b",
+        lease_seconds=60,
+    )
+    assert not waiter_done.wait(timeout=0.1)
+    assert waiter_result[0] is None
+    repository.release_creation_reservation(reservation=acquire_a.reservation)
+    assert waiter_done.wait(timeout=5.0)
+    assert waiter_result[0] is True
+    repository.close()
+
+
+def test_spurious_notify_does_not_finish_waiter() -> None:
+    repository = NotifyableRepository()
+    key = _lookup_key()
+    acquire = repository.try_acquire_creation_reservation(
+        key,
+        owner_operation_id="owner-1",
+        lease_seconds=60,
+    )
+    assert acquire.reservation is not None
+    observed = acquire.state_version
+    waiter_done = threading.Event()
+    waiter_result: list[bool | None] = [None]
+
+    def waiter() -> None:
+        waiter_result[0] = repository.wait_for_artifact_or_reservation_change(
+            key,
+            observed_state_version=observed,
+            timeout_seconds=30.0,
+        )
+        waiter_done.set()
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    repository.wake_waiters()
+    assert not waiter_done.wait(timeout=0.1)
+    assert waiter_result[0] is None
+    repository.release_creation_reservation(reservation=acquire.reservation)
+    assert waiter_done.wait(timeout=5.0)
+    assert waiter_result[0] is True
+    repository.close()
 
 
 def test_no_implicit_singleton_in_module() -> None:

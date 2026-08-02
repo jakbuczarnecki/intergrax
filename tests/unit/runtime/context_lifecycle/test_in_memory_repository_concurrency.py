@@ -16,12 +16,14 @@ from intergrax.runtime.context_lifecycle import (
     ArtifactLookupKey,
     ArtifactValidationStatus,
     ArtifactValidationSummary,
-    InMemoryOptimizationArtifactRepository,
     ReusableOptimizationArtifact,
     StoredOptimizationArtifact,
     compute_artifact_content_hash,
 )
 from tests.unit.runtime.context_lifecycle.test_in_memory_repository import (
+    FakeClock,
+    NotifyableRepository,
+    WaitObservableRepository,
     _lookup_key,
     _publish,
     _repository,
@@ -213,22 +215,108 @@ def test_tenant_isolation_race_both_acquire() -> None:
 
 
 def test_wait_lease_expiry_without_background_thread() -> None:
-    repository = InMemoryOptimizationArtifactRepository()
+    clock = FakeClock()
+    repository = NotifyableRepository(clock=clock.now)
     key = _lookup_key()
     acquired = repository.try_acquire_creation_reservation(
         key,
         owner_operation_id="owner-1",
-        lease_seconds=1,
+        lease_seconds=10,
     )
-    assert repository.wait_for_artifact_or_reservation_change(
-        key,
-        observed_state_version=acquired.state_version,
-        timeout_seconds=5.0,
-    )
+    observed = acquired.state_version
+    waiter_result: list[bool] = []
+
+    def waiter() -> None:
+        waiter_result.append(
+            repository.wait_for_artifact_or_reservation_change(
+                key,
+                observed_state_version=observed,
+                timeout_seconds=60.0,
+            )
+        )
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    clock.advance(11)
+    repository.wake_waiters()
+    thread.join(timeout=5.0)
+    assert waiter_result == [True]
     result = repository.try_acquire_creation_reservation(
         key,
         owner_operation_id="owner-2",
         lease_seconds=60,
     )
     assert result.status is ArtifactCreationCoordinationStatus.ACQUIRED
+    repository.close()
+
+
+def test_unrelated_key_notify_does_not_finish_waiter() -> None:
+    repository = WaitObservableRepository()
+    key_a = _lookup_key(source_refs=("msg-a",))
+    key_b = _lookup_key(source_refs=("msg-b",))
+    acquire_a = repository.try_acquire_creation_reservation(
+        key_a,
+        owner_operation_id="owner-a",
+        lease_seconds=60,
+    )
+    assert acquire_a.reservation is not None
+    observed = acquire_a.state_version
+    waiter_done = threading.Event()
+    waiter_result: list[bool | None] = [None]
+
+    def waiter() -> None:
+        waiter_result[0] = repository.wait_for_artifact_or_reservation_change(
+            key_a,
+            observed_state_version=observed,
+            timeout_seconds=30.0,
+        )
+        waiter_done.set()
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    repository.try_acquire_creation_reservation(
+        key_b,
+        owner_operation_id="owner-b",
+        lease_seconds=60,
+    )
+    assert not waiter_done.wait(timeout=0.1)
+    assert waiter_result[0] is None
+    repository.release_creation_reservation(reservation=acquire_a.reservation)
+    assert waiter_done.wait(timeout=5.0)
+    assert waiter_result[0] is True
+    repository.close()
+
+
+def test_spurious_notify_does_not_finish_waiter() -> None:
+    repository = NotifyableRepository()
+    key = _lookup_key()
+    acquire = repository.try_acquire_creation_reservation(
+        key,
+        owner_operation_id="owner-1",
+        lease_seconds=60,
+    )
+    assert acquire.reservation is not None
+    observed = acquire.state_version
+    waiter_done = threading.Event()
+    waiter_result: list[bool | None] = [None]
+
+    def waiter() -> None:
+        waiter_result[0] = repository.wait_for_artifact_or_reservation_change(
+            key,
+            observed_state_version=observed,
+            timeout_seconds=30.0,
+        )
+        waiter_done.set()
+
+    thread = threading.Thread(target=waiter)
+    thread.start()
+    assert repository.wait_entered.wait(timeout=5.0)
+    repository.wake_waiters()
+    assert not waiter_done.wait(timeout=0.1)
+    assert waiter_result[0] is None
+    repository.release_creation_reservation(reservation=acquire.reservation)
+    assert waiter_done.wait(timeout=5.0)
+    assert waiter_result[0] is True
     repository.close()

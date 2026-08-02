@@ -21,8 +21,9 @@
 | **CTX-UCL-1** | **ACCEPTED / CLOSED** through **CTX-UCL-1-R1** and **CTX-UCL-1-R2** |
 | **CTX-UCL-1-R1** | **ACCEPTED / CLOSED** |
 | **CTX-UCL-1-R2** | **ACCEPTED / CLOSED** |
-| **CTX-UCL-2** | **READY_FOR_REVIEW** — `OptimizationArtifactRepository` port + `InMemoryOptimizationArtifactRepository` reference adapter |
-| **CTX-UCL-3 … CTX-UCL-6** | Not started |
+| **CTX-UCL-2** | **READY_FOR_REVIEW** — correction delivered through **CTX-UCL-2-R1** (`OptimizationArtifactRepository` port + `InMemoryOptimizationArtifactRepository` reference adapter) |
+| **CTX-UCL-2-R1** | **READY_FOR_REVIEW** — monotonic bounded wait, deterministic wake proofs, provider lifecycle correction |
+| **CTX-UCL-3 … CTX-UCL-6** | Not started / blocked pending **CTX-UCL-2** acceptance |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |

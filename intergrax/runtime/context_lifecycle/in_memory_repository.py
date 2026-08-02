@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 import threading
+import time
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -105,9 +106,18 @@ class InMemoryOptimizationArtifactRepository:
         self,
         *,
         clock: Callable[[], datetime] | None = None,
+        monotonic_clock: Callable[[], float] | None = None,
         reservation_id_factory: Callable[[], str] | None = None,
     ) -> None:
+        if clock is not None and not callable(clock):
+            raise ValueError("clock must be callable when provided")
+        if monotonic_clock is not None and not callable(monotonic_clock):
+            raise ValueError("monotonic_clock must be callable when provided")
+        if reservation_id_factory is not None and not callable(reservation_id_factory):
+            raise ValueError("reservation_id_factory must be callable when provided")
+
         self._clock = clock or _default_clock
+        self._monotonic_clock = monotonic_clock or time.monotonic
         self._reservation_id_factory = reservation_id_factory or _default_reservation_id_factory
         self._lock = threading.RLock()
         self._condition = threading.Condition(self._lock)
@@ -118,9 +128,6 @@ class InMemoryOptimizationArtifactRepository:
         self._canonical_keys: dict[TenantKeyHash, ArtifactLookupKey] = {}
         self._reservations: dict[TenantKeyHash, ArtifactCreationReservation] = {}
         self._state_versions: dict[TenantKeyHash, int] = {}
-
-        self._validate_clock()
-        self._validate_reservation_id_factory()
 
     @property
     def capabilities(self) -> OptimizationArtifactRepositoryCapabilities:
@@ -174,7 +181,7 @@ class InMemoryOptimizationArtifactRepository:
 
             reservation = self._reservations.get(state_key)
             if reservation is not None:
-                now = self._clock()
+                now = self._now()
                 if reservation.lease_deadline <= now:
                     expired = reservation
                     self._remove_reservation_locked(state_key)
@@ -204,18 +211,15 @@ class InMemoryOptimizationArtifactRepository:
                     reason_code=ContextOptimizationReasonCode.ARTIFACT_CREATION_IN_PROGRESS,
                 )
 
-            acquired_at = self._clock()
-            lease_deadline = acquired_at + timedelta(seconds=lease)
-            reservation_id = self._reservation_id_factory()
-            if not reservation_id:
-                raise ValueError("reservation_id_factory must return non-empty value")
-
+            now = self._now()
+            lease_deadline = now + timedelta(seconds=lease)
+            reservation_id = self._new_reservation_id()
             new_reservation = ArtifactCreationReservation(
                 reservation_id=reservation_id,
                 artifact_lookup_key_hash=key_hash,
                 tenant_id=lookup_key.tenant_id,
                 owner_operation_id=owner,
-                acquired_at=acquired_at,
+                acquired_at=now,
                 lease_deadline=lease_deadline,
             )
             self._reservations[state_key] = new_reservation
@@ -264,25 +268,14 @@ class InMemoryOptimizationArtifactRepository:
             if current_reservation.owner_operation_id != active_reservation.owner_operation_id:
                 raise ValueError("owner_operation_id does not match active reservation")
 
-            now = self._clock()
+            now = self._now()
             if current_reservation.lease_deadline <= now:
                 self._remove_reservation_locked(state_key)
                 self._increment_state_version_locked(state_key)
                 self._condition.notify_all()
                 raise RuntimeError(ContextOptimizationReasonCode.ARTIFACT_CREATION_LEASE_EXPIRED.value)
 
-            existing_active = self._active_by_key.get(state_key)
-            if existing_active is not None:
-                existing_metadata = existing_active.metadata
-                if (
-                    existing_metadata.artifact_id == metadata.artifact_id
-                    and existing_metadata.artifact_content_hash == metadata.artifact_content_hash
-                    and existing_active.payload == stored_artifact.payload
-                ):
-                    self._remove_reservation_locked(state_key)
-                    self._increment_state_version_locked(state_key)
-                    self._condition.notify_all()
-                    return build_optimization_artifact_reference(existing_active)
+            if self._active_by_key.get(state_key) is not None:
                 raise RuntimeError(
                     ContextOptimizationReasonCode.ARTIFACT_CREATION_RESERVATION_CONFLICT.value
                 )
@@ -485,53 +478,76 @@ class InMemoryOptimizationArtifactRepository:
         observed_state_version: int,
         timeout_seconds: float,
     ) -> bool:
-        remaining = timeout_seconds
+        started_at = self._monotonic_now()
+        deadline = started_at + timeout_seconds
 
         while True:
-            current_version = self._state_version_locked(state_key)
-            if current_version > observed_state_version:
+            if self._state_version_locked(state_key) > observed_state_version:
                 return True
 
             reservation = self._reservations.get(state_key)
-            wait_timeout = remaining
             if reservation is not None:
-                now = self._clock()
-                lease_remaining = (reservation.lease_deadline - now).total_seconds()
+                now = self._now()
+                if reservation.lease_deadline <= now:
+                    self._remove_reservation_locked(state_key)
+                    self._increment_state_version_locked(state_key)
+                    self._condition.notify_all()
+                    return True
+
+            remaining_timeout = deadline - self._monotonic_now()
+            if remaining_timeout <= 0:
+                reservation = self._reservations.get(state_key)
+                if reservation is not None:
+                    now = self._now()
+                    if reservation.lease_deadline <= now:
+                        self._remove_reservation_locked(state_key)
+                        self._increment_state_version_locked(state_key)
+                        self._condition.notify_all()
+                        return True
+                if self._state_version_locked(state_key) > observed_state_version:
+                    return True
+                return False
+
+            wait_timeout = remaining_timeout
+            if reservation is not None:
+                lease_remaining = (reservation.lease_deadline - self._now()).total_seconds()
                 if lease_remaining <= 0:
                     self._remove_reservation_locked(state_key)
                     self._increment_state_version_locked(state_key)
                     self._condition.notify_all()
                     return True
-                wait_timeout = min(wait_timeout, lease_remaining)
+                wait_timeout = min(remaining_timeout, lease_remaining)
 
-            if wait_timeout <= 0:
-                reservation = self._reservations.get(state_key)
-                if reservation is not None:
-                    now = self._clock()
-                    if reservation.lease_deadline <= now:
-                        self._remove_reservation_locked(state_key)
-                        self._increment_state_version_locked(state_key)
-                        self._condition.notify_all()
-                        return True
-                if self._state_version_locked(state_key) > observed_state_version:
-                    return True
-                return False
-
-            self._condition.wait(timeout=wait_timeout)
+            self._condition_wait(wait_timeout)
             self._ensure_open()
-            remaining -= wait_timeout
-            if remaining <= 0:
-                reservation = self._reservations.get(state_key)
-                if reservation is not None:
-                    now = self._clock()
-                    if reservation.lease_deadline <= now:
-                        self._remove_reservation_locked(state_key)
-                        self._increment_state_version_locked(state_key)
-                        self._condition.notify_all()
-                        return True
-                if self._state_version_locked(state_key) > observed_state_version:
-                    return True
-                return False
+
+    def _condition_wait(self, timeout_seconds: float) -> None:
+        self._condition.wait(timeout=timeout_seconds)
+
+    def _now(self) -> datetime:
+        value = self._clock()
+        if not isinstance(value, datetime):
+            raise ValueError("clock must return datetime")
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("clock must return timezone-aware datetime")
+        return value
+
+    def _new_reservation_id(self) -> str:
+        value = self._reservation_id_factory()
+        if type(value) is not str:
+            raise ValueError("reservation_id_factory must return str")
+        if not value:
+            raise ValueError("reservation_id_factory must return non-empty value")
+        return value
+
+    def _monotonic_now(self) -> float:
+        value = self._monotonic_clock()
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("monotonic_clock must return a number")
+        result = float(value)
+        if not math.isfinite(result):
+            raise ValueError("monotonic_clock must return a finite number")
+        return result
 
     def _state_version_locked(self, state_key: TenantKeyHash) -> int:
         return self._state_versions.get(state_key, 0)
@@ -547,13 +563,3 @@ class InMemoryOptimizationArtifactRepository:
     def _ensure_open(self) -> None:
         if self._closed:
             raise RuntimeError(_CLOSED_ERROR)
-
-    def _validate_clock(self) -> None:
-        sample = self._clock()
-        if sample.tzinfo is None or sample.utcoffset() is None:
-            raise ValueError("clock must return timezone-aware datetime")
-
-    def _validate_reservation_id_factory(self) -> None:
-        reservation_id = self._reservation_id_factory()
-        if not reservation_id:
-            raise ValueError("reservation_id_factory must return non-empty value")
