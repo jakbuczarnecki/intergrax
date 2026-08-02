@@ -1,16 +1,22 @@
 # Intergrax Collaboration Model
 
-Intergrax is a **source-available proprietary project**. The repository is **public for evaluation, review, and technical partner discovery**. It is **not** distributed under an open-source license grant.
+Intergrax is a **source-available proprietary** project. The repository is **public for evaluation, review, and technical partner discovery**. It is **not** distributed under an open-source license grant.
+
+The permissions below are granted by the **Intergrax Evaluation and Collaboration License 1.0** and are not an open-source license grant.
 
 ---
 
 ## What you may do
 
-- View and evaluate the repository
-- Run local proof paths for evaluation, if consistent with the [LICENSE](LICENSE)
-- Open issues with feedback, friction reports, and technical questions
-- Propose integrations or design-partner work
-- Contact the maintainer for commercial or production use
+- Clone and download the Official Repository
+- Perform local non-production installation
+- Run documented evaluation and proof paths, including Quick Start, tests, benchmarks, examples, demos, and documented evaluation workloads
+- Create private evaluation modifications for analysis, testing, debugging, integration assessment, or preparation of a contribution
+- Create a GitHub fork for evaluation or contribution
+- Open issues and participate in technical discussions
+- Submit patches and pull requests
+- Create evaluation-only plugins, integrations, tools, skills, agents, application hosts, and adapters
+- Publish technical evaluation findings, test reports, and descriptions of system behavior
 
 ---
 
@@ -19,11 +25,12 @@ Intergrax is a **source-available proprietary project**. The repository is **pub
 The following require **explicit written permission** from the copyright holder. See [LICENSE](LICENSE) for the full terms.
 
 - Production use
-- Redistribution
-- Derivative works
-- Incorporation into products or services
 - Commercial use
-- Substantial implementation work based on Intergrax
+- Hosted services, SaaS, and service-bureau use
+- Redistribution as an independent product
+- Incorporation into products or services
+- Commercial derivative works
+- Customer-facing deployment
 
 ---
 
@@ -85,6 +92,6 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation, and deep technical discussion issue waves
 - [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active public issue automation
 - [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue rationale for structured feedback and design-partner discovery
-- [LICENSE](LICENSE) — proprietary terms and permitted use
+- [LICENSE](LICENSE) — Intergrax Evaluation and Collaboration License 1.0
 - [README.md](README.md) — project overview and documentation index
 - [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and requirements

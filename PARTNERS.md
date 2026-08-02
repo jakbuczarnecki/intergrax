@@ -1,7 +1,7 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
-Use, modification, or distribution without written permission is prohibited.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
 # Intergrax Partner and Design-Partner Brief
@@ -12,7 +12,7 @@ This brief explains who may be a good fit for technical review, design-partner d
 
 It does not create partnership terms, license grants, support obligations, production permission, certification, or compliance claims.
 
-Production, commercial, redistribution, derivative-work, or incorporation into products/services requires explicit written permission. See [LICENSE](LICENSE) and [COLLABORATION.md](COLLABORATION.md).
+Production use, commercial deployment, redistribution, incorporation into products or services, hosted services, and commercial derivative works require explicit written permission. Non-production evaluation, private evaluation modifications, forks for contribution, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). See [COLLABORATION.md](COLLABORATION.md).
 
 ---
 
@@ -73,7 +73,7 @@ Intergrax is not currently presented as:
 - An open-source license grant.
 - Production support or SLA.
 - Certification, compliance, legal attestation, or security approval.
-- Permission for production, commercial, redistribution, or derivative use without explicit written approval.
+- Permission for production use, commercial deployment, redistribution, incorporation into products, hosted services, or commercial derivative works without explicit written approval.
 - A guarantee that every proposed integration or partnership will be accepted.
 - A broad feature-request backlog.
 

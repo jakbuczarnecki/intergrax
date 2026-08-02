@@ -10,11 +10,15 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
-Contributions are welcome only under the **source-available / proprietary collaboration model**. Read [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [COLLABORATION.md](COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
+
+Contributions are welcome under the evaluation and collaboration model. Read [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
 
 ---
 
 ## Before contributing
+
+You may clone the Official Repository, install dependencies, run evaluation paths, make private evaluation modifications, create a GitHub fork, and prepare patches or pull requests under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). Production use, commercial use, hosted services, redistribution, and incorporation into products or services require separate explicit written permission.
 
 ### Required reading
 
@@ -126,7 +130,9 @@ Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not
 
 ## Pull request process
 
-### 1. Branch
+### 1. Fork or branch
+
+You may create a public or private GitHub fork for evaluation and contribution, or branch from the Official Repository:
 
 ```bash
 git checkout -b feature/short-description
@@ -213,7 +219,8 @@ uv run pytest agents/my_agent/tests/ -q
 
 ```text
 © Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
 ```
 
 ---
@@ -254,7 +261,18 @@ Keep [`pyproject.toml`](pyproject.toml) `description` and `keywords` aligned wit
 
 ## License
 
-Intergrax is proprietary software. See [LICENSE](LICENSE). Contribution does not grant additional rights beyond what the maintainer agrees to in writing.
+Intergrax is source-available proprietary software under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). It is not open source. Production use and commercial use require explicit written permission.
+
+## Contribution License
+
+By submitting a Contribution (including a pull request, patch, or other material offered for inclusion), you confirm that:
+
+- you authored the Contribution or otherwise have the right to submit it;
+- you retain copyright in your Contribution;
+- you grant Artur Czarnecki a perpetual, worldwide, non-exclusive, royalty-free, and irrevocable license to use, copy, modify, create derivative works from, distribute, sublicense, and otherwise exploit your Contribution as part of Intergrax, including under current and future licensing models for the project;
+- you will not submit code that you do not have the right to contribute or that is subject to an incompatible license.
+
+Submitting a Contribution does not transfer copyright in your Contribution to the maintainer. The maintainer may accept, reject, or request changes to any Contribution. Submission does not create support obligations, compensation, partnership terms, production rights, or commercial rights.
 
 ---
 

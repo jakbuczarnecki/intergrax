@@ -1,18 +1,18 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
-Use, modification, or distribution without written permission is prohibited.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
 # Intergrax Evaluation Guide
 
 Intergrax is a source-available Harness AI / Agent OS for building governed agent applications.
 
-This guide helps technical reviewers, design partners, and integration builders evaluate Intergrax in a focused 5, 15, 30, or 60 minute pass.
+This guide helps technical reviewers, design partners, and integration builders evaluate Intergrax in a focused 5, 15, 30, or 60 minute pass. All evaluation steps described here — including clone, local install, Quick Start, tests, benchmarks, proof paths, private evaluation modifications, and evaluation-only integrations — are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE).
 
 It is not a product brochure, SaaS offer, open-source license grant, production-readiness claim, certification, compliance statement, support commitment, or partnership term.
 
-Production, commercial, redistribution, derivative-work, or incorporation into products/services requires explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
+Production use, commercial use, hosted services, redistribution as an independent product, incorporation into products or services, and commercial derivative works require explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
 
 ---
 

@@ -1,7 +1,7 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
-Use, modification, or distribution without written permission is prohibited.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
 # Intergrax Visibility, Adoption, and Partner Strategy
@@ -10,7 +10,7 @@ This document defines a practical, step-by-step public-adoption strategy for Int
 
 It is intentionally a **public-safe visibility and partner strategy**, not a confidential fundraising plan, valuation memo, acquisition strategy, investor data room, sales forecast, or binding commercial offer.
 
-Intergrax remains **source-available/proprietary**. Production, commercial, redistribution, derivative-work, or incorporation into products or services requires explicit written permission. See [`LICENSE`](../../LICENSE), [`COLLABORATION.md`](../../COLLABORATION.md), and [`PARTNERS.md`](../../PARTNERS.md).
+Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../LICENSE). Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../LICENSE), [`COLLABORATION.md`](../../COLLABORATION.md), and [`PARTNERS.md`](../../PARTNERS.md).
 
 ---
 

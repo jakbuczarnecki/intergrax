@@ -4,11 +4,35 @@ This FAQ answers common questions for external readers evaluating Intergrax as a
 
 ## Is Intergrax open source?
 
-No. Intergrax is public and source-available for evaluation and technical partner discovery. Use, modification, redistribution, derivative works, production use, and commercial use require permission under [LICENSE](LICENSE) and [COLLABORATION.md](COLLABORATION.md).
+No. Intergrax is public and **source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). Public availability of the repository does not grant open-source rights. Production use, commercial use, hosted services, redistribution as an independent product, and incorporation into products or services require **explicit written permission**.
+
+## Can I clone the repository?
+
+Yes. You may clone and download the Official Repository for evaluation under the [LICENSE](LICENSE).
+
+## Can I run Intergrax locally?
+
+Yes. You may install dependencies and run Quick Start, tests, benchmarks, examples, demos, proof paths, and documented evaluation workloads in a local or isolated non-production environment.
+
+## Can I modify the code?
+
+Yes, for permitted evaluation. You may make private modifications for analysis, testing, debugging, integration assessment, or preparation of a contribution. Production deployment or commercial use of modified code still requires explicit written permission.
+
+## Can I create a fork?
+
+Yes. You may create a public or private GitHub fork for evaluation, discussion, and preparation of a contribution. A fork may not be marketed as an independent distribution, competing product, hosted service, or commercial offering without separate permission.
+
+## Can I submit a pull request?
+
+Yes. You may submit patches and pull requests under the contribution terms in [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md). Submission does not guarantee acceptance and does not grant production or commercial rights.
 
 ## Can I use Intergrax in production?
 
-Not without explicit permission. The public repository is for evaluation, review, proof-path feedback, and selected design-partner discussions. See [COLLABORATION.md](COLLABORATION.md).
+Not without explicit written permission. The public repository supports non-production evaluation, review, proof-path feedback, and selected design-partner discussions. See [COLLABORATION.md](COLLABORATION.md).
+
+## Can I build a commercial product on Intergrax?
+
+Not without explicit written permission. Internal, non-production evaluation by a commercial organization is permitted. Production use, commercial use, hosted services, redistribution, and incorporation into products or services require separate permission. See [LICENSE](LICENSE) and [COLLABORATION.md](COLLABORATION.md).
 
 ## What is Intergrax in one sentence?
 
@@ -55,11 +79,11 @@ Local Knowledge Workspace is an alpha/product-validation direction exploring loc
 
 ## Can I contribute?
 
-Feedback, proof-path reports, documentation fixes, integration proposals, and design-partner discussions are welcome under the collaboration model. Substantial work requires prior discussion. Contributions do not grant extra rights. See [CONTRIBUTING.md](CONTRIBUTING.md) and [COLLABORATION.md](COLLABORATION.md).
+Yes. Feedback, proof-path reports, documentation fixes, evaluation-only integrations, patches, pull requests, integration proposals, and design-partner discussions are welcome under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). Substantial work requires prior discussion. See [CONTRIBUTING.md](CONTRIBUTING.md) and [COLLABORATION.md](COLLABORATION.md).
 
 ## Can I build an application or agent on Intergrax?
 
-For evaluation and design discussion, yes, within the permitted source-available evaluation model. Production and commercial use require permission. See [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md), [COLLABORATION.md](COLLABORATION.md), and [LICENSE](LICENSE).
+For non-production evaluation and design discussion, yes, within the permitted evaluation model. You may create test agents, application hosts, plugins, and integrations for evaluation. Production and commercial use require explicit written permission. See [AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md), [COLLABORATION.md](COLLABORATION.md), and [LICENSE](LICENSE).
 
 ## How should I report security issues?
 
@@ -74,7 +98,7 @@ Do not open public issues for vulnerabilities. Follow [SECURITY.md](SECURITY.md)
 | [USE_CASES.md](USE_CASES.md) | Use-case map for validation and partner-fit discussions |
 | [PARTNERS.md](PARTNERS.md) | Partner and design-partner brief |
 | [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model |
-| [LICENSE](LICENSE) | Proprietary license terms |
+| [LICENSE](LICENSE) | Intergrax Evaluation and Collaboration License 1.0 |
 | [ROADMAP.md](ROADMAP.md) | Public adoption roadmap |
 | [SECURITY.md](SECURITY.md) | Security reporting |
 | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) | Harness narrative |

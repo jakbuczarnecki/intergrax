@@ -106,9 +106,9 @@ Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summ
 
 ## License and collaboration model
 
-Intergrax is **public and source-available** for evaluation and technical partner discovery. It is **not** distributed under an open-source license. Production, commercial, and redistribution use require **explicit permission** from the copyright holder.
+Intergrax is public and source-available under the **Intergrax Evaluation and Collaboration License 1.0**.
 
-External feedback, proof-path testing, integration proposals, and design-partner discussions are welcome under the collaboration model described in [COLLABORATION.md](COLLABORATION.md). Full terms: [LICENSE](LICENSE).
+You may clone, install, run, test, and modify the repository locally for non-production evaluation; create GitHub forks and pull requests; and participate in technical collaboration as described in [COLLABORATION.md](COLLABORATION.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Intergrax is **not** open source. Production use and commercial use require **explicit written permission** from the copyright holder. Full terms: [LICENSE](LICENSE).
 
 Active public feedback paths are listed in the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Use it to choose the right curated issue for proof-path feedback, documentation clarity, integration feedback, or design-partner interest.
 
@@ -748,9 +748,7 @@ cd infra && ./manage.sh up redis qdrant postgresql
 
 ## License
 
-All rights reserved © Artur Czarnecki. See [LICENSE](LICENSE).
-
-This repository is in active proprietary R&D and source-available evaluation stage. Commercial licensing, production use, and partnership opportunities require explicit maintainer permission.
+© Artur Czarnecki. All rights reserved. Intergrax is source-available under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). See [COLLABORATION.md](COLLABORATION.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for permitted evaluation, collaboration, and contribution use. Production use, commercial use, and partnership arrangements require explicit written permission.
 
 ---
 

@@ -10,7 +10,7 @@ name = "Intergrax-ai"
 version = "0.1.0"
 description = "Source-available Harness AI / Agent OS for teams building governed agent applications - with Nexus orchestration, policy-controlled tools, RAG, memory, trace/evidence, HITL, and runtime boundaries."
 readme = "README.md"
-license = { text = "Proprietary" }
+license = { text = "Intergrax Evaluation and Collaboration License 1.0" }
 requires-python = ">=3.12,<3.13"
 keywords = [
   "harness-ai",
