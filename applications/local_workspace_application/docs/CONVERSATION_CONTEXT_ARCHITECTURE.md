@@ -3,7 +3,7 @@
 ```text
 Task: LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 Classification: docs-only architecture and roadmap contract
-Status: READY_FOR_REVIEW
+Status: ACCEPTED
 ```
 
 **Canonical source for:** provider-observed conversation audience; conversation-to-workspace resolution; personal versus shared conversation isolation; binding semantic identity; activation policies; conversation-level state versus thread-level memory; evidence audience restrictions; shared capability boundaries; binding administration; shared source eligibility; deterministic guards; relationship between conversational frontend events and knowledge sources; provider-neutral frontend adapter requirements.
@@ -959,8 +959,7 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 SLACK-KNOWLEDGE-FOUNDATION-1
 
 CURRENT ARCHITECTURE PREREQUISITE:
-LKW-CONVERSATION-CONTEXT-ARCH-1
-→ provider-neutral personal/shared context and audience-isolation contract
+LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 
 THEN (independent implementation tracks):
 LKW-SLACK-CONNECTED-SOURCE-1 — DONE

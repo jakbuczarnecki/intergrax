@@ -1291,16 +1291,97 @@ single public integration: GoogleWorkspaceCollaborationSuiteIntegration
 
 Do not collapse every Google Workspace resource into one untyped generic file source. Do not create separate public integrations for these source kinds.
 
-**Drive inventory versus native content surfaces (frozen):**
+**Canonical durable resource ownership (frozen):**
+
+Discovery surface does **not** determine durable `source_kind`. Drive may inventory any Drive-hosted resource; the platform derives the canonical binding kind from the authoritative Google resource type server-side. The frontend must not choose or override `source_kind`.
+
+| Google resource class | MIME / resource class | Canonical durable `source_kind` |
+|---|---|---|
+| Google-native document | Google Docs | `docs` |
+| Google-native spreadsheet | Google Sheets | `sheets` |
+| Google-native presentation | Google Slides | `slides` |
+| Ordinary uploaded/stored file | non-native binary or generic file | `drive` |
+| Drive folder / My Drive / Shared Drive scope | folder or drive scope | `drive` |
+| Google Calendar / calendar-event scope | calendar resource or event set | `calendar` |
+| Gmail scope | mailbox / folder / message scope | `mail` |
+| Google Chat space / conversation scope | chat space or conversation | `chat` |
+
+**Drive discovery → canonical binding flow (frozen):**
+
+```text
+Drive inventory / discovery
+→ inspect authoritative Google resource type
+→ derive canonical target source_kind server-side
+→ issue provider-neutral Remote Resource candidate
+→ create only the canonical KnowledgeSourceBinding
+```
+
+**Stable Google Workspace resource identity (frozen):**
+
+Conceptual identity namespace — independent from discovery surface:
+
+```text
+provider_id = google_workspace
+connection_ref
+canonical Google resource type
+stable Google resource ID
+```
+
+Rules:
+
+1. A rename does not change identity.
+2. A move does not change identity where Google preserves the resource ID.
+3. Drive discovery and Docs/Sheets/Slides exact reads must refer to the same underlying Google resource identity.
+4. Export/download URL is never identity.
+5. Revision, ETag, modified time and content hash are change state — not identity.
+6. The same native Google file must not become unrelated `drive` and `docs`/`sheets`/`slides` durable objects.
+
+Do not freeze an implementation-specific Python type in this architecture document.
+
+**Overlapping-binding policy (frozen):**
+
+Example overlap:
+
+```text
+selected native Google Doc
++
+selected Drive folder containing that Google Doc
+```
+
+**First proof (narrow policy):**
+
+```text
+explicit selected resources only
+broad Drive/folder synchronization deferred unless overlap semantics are proved
+```
+
+Selecting both a native Google Doc and a containing Drive folder in the first proof is out of scope unless overlap semantics are explicitly implemented. Broad folder scopes remain deferred.
+
+**Future broad Drive scopes (required direction — not yet chosen):**
+
+When broad Drive/folder synchronization is implemented, one of:
+
+```text
+Option A: reject an overlapping source binding in the same workspace
+
+Option B: one canonical provider item ownership record deduplicates the resource
+          across bindings while preserving provenance of every covering binding
+```
+
+Option B is **not** chosen unless the existing Vendor Knowledge and LKW ownership models can support it safely. Until that contract exists, broad overlapping scopes must fail closed or remain deferred. Do not claim duplicate prevention without an enforceable rule.
+
+**Drive read surface versus Docs/Sheets/Slides content surfaces (frozen):**
 
 | Surface | Owns |
 |---|---|
-| **Drive** | My Drive, Shared Drives, folders, files, shortcuts, native Google Workspace resource inventory, uploaded binary files, stable provider file identity, revision/version metadata, permissions/visibility when authoritative, change-feed or reconciliation primitives when supported |
-| **Docs** | Typed extraction of native Google document structure and readable content |
-| **Sheets** | Workbook, sheet/tab, range and cell-oriented structured content |
-| **Slides** | Presentation, slide and text/content structure |
+| **Drive** | inventory; hierarchy; resource classification; folder/drive traversal; ordinary binary content; stable Drive-hosted resource metadata; change-feed/reconciliation primitives |
+| **Docs** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
+| **Sheets** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
+| **Slides** | typed native content extraction; native structure; exact native content reads; native revision interpretation |
 
-Rules:
+A Drive adapter may call a shared typed native-content primitive internally only when the durable source binding remains canonical and duplication is prevented. Do not create two independent durable copies merely because two provider APIs can read the same file.
+
+Additional rules:
 
 1. Drive may discover a native Docs, Sheets or Slides item; native content is read through the appropriate typed provider surface.
 2. The same Google resource identity must not become unrelated duplicate provider objects.
@@ -1344,6 +1425,20 @@ Binding rules (same as §2.1): one provider integration is reused by all modes; 
 
 **Foundation task (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` — PLANNED):** typed Google Workspace integration configuration; credential-reference resolution; least-privilege credential modes; one shared provider client family; provider request execution boundary; pagination token normalization; provider error normalization; rate-limit and retry classification; stable provider resource references; safe timestamps and revisions; safe display labels; bounded request limits; capability declaration; no LKW imports; no RAG imports; no application workspace concepts.
 
+**Foundation prerequisites (frozen):**
+
+```text
+GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 — ACCEPTED
+canonical Tenant Connection / credential-reference boundary available
+SecretsStore-owned credential persistence available
+runtime integration rehydration/resolution boundary available
+Vendor Knowledge binding, registry and synchronization contracts available
+```
+
+Canonical owners: durable tenant Connection Catalog and runtime integration rehydration/resolution are owned by `LKW-KNOWLEDGE-ACCESS-1` (and its platform prerequisites) — not by Google Foundation. Google Foundation must not introduce another tenant Connection catalog; must not introduce a Google-only credential database; must not put OAuth tokens into provider config records, `KnowledgeSourceBinding` or LKW state. If a required generic boundary remains unfinished, finish or reuse that boundary before production Google OAuth. Do not duplicate LKW application configuration inside the platform integration.
+
+**Post-Slack implementation gate (exact):** Google runtime work (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) must not start until the complete accepted Slack Knowledge vertical is satisfied — specifically `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED** (join of `LKW-SLACK-CONNECTED-SOURCE-1`, `LKW-CONVERSATION-CONTEXT-1`, `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, `SLACK-LIVE-CAPABILITY-1` and `LKW-HYBRID-ASK-1`). As of current HEAD: `LKW-SLACK-CONNECTED-SOURCE-1` is **DONE**; remaining Slack-vertical tasks are **PLANNED** — Google implementation is not active.
+
 Credential routes (conceptually separated): individual-user OAuth; organization/admin-approved Google Workspace access; service-account or delegated organizational access when justified. For the first testable proof, individual-user authorization is the preferred product route. Exact OAuth scopes and Google SDK signatures are **not** frozen here — implementation tasks must verify against current official Google documentation. Secrets remain owned by the existing Connection/SecretsStore boundary. No access token, refresh token, client secret or service-account private key may enter `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, Remote Resource response, LKW Source, citation or provider cursor.
 
 **LKW vertical (planned):**
@@ -1363,20 +1458,34 @@ workspace Connection
 
 **First proof (`LKW-GOOGLE-WORKSPACE-PROOF-1` — PLANNED):** user connects one Google account → selects approved Google resources → one Google Doc synchronized → one Google Sheet synchronized → one Google Calendar resource/event set synchronized → optionally one ordinary Drive file synchronized → LKW indexes selected resources → Search retrieves provider-derived evidence → Ask produces one grounded answer → citations identify the correct Google source and resource → no Google API call is made by Ask after durable synchronization. Proof demonstrates mixed source shapes: narrative document, structured spreadsheet, calendar/event data, ordinary stored file. User-oriented proof, not merely adapter unit tests.
 
-**Proof-first execution gate (binding):**
+**Proof-first execution gate (binding — vertically incremental):**
 
-Proof-critical phase:
+Each read surface and its adapter form one independently reviewable vertical step before the next surface begins. Proof-critical phase:
 
 ```text
 GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
+
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE
+→ Drive contract/integration proof
+
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1B-DOCS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1B-DOCS
+→ Docs contract/integration proof
+
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1C-SHEETS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1C-SHEETS
+→ Sheets contract/integration proof
+
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1D-CALENDAR
-→ matching GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A–1D
+→ GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1D-CALENDAR
+→ Calendar contract/integration proof
+
 → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
 → LKW-GOOGLE-WORKSPACE-PROOF-1
 ```
+
+The final Google LKW proof may still combine Docs, Sheets, Calendar and an optional ordinary Drive file.
 
 Family expansion after the proof:
 
@@ -1386,7 +1495,7 @@ GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1F-MAIL → GOOGLE-WORKSPACE-KNOWLEDGE-A
 GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1G-CHAT → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1G-CHAT
 ```
 
-Global placement: complete accepted Slack Knowledge vertical → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
+Global placement: `LKW-SLACK-KNOWLEDGE-PROOF-1` **ACCEPTED** (complete Slack Knowledge vertical) → Google proof-critical path above → remaining Google family surfaces → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` and other lower-priority provider expansion.
 
 **Product rationale:** Microsoft 365 proves enterprise-oriented collaboration and document access. Google Workspace lowers the entry barrier for individual testers, small teams and design partners who can authorize their own account. Supporting both proves that the LKW Connected Source architecture is provider-neutral rather than Microsoft-specific. The goal is not connector count — it is one convincing proof over different real-world source shapes and provider ecosystems. Google Workspace is the second strategic collaboration/document ecosystem, not an open-ended commitment to add every available SaaS provider.
 

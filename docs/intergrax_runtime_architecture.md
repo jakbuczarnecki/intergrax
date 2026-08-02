@@ -220,7 +220,7 @@ Canonical execution order: [applications/local_workspace_application/docs/IMPLEM
 | **LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1** | Hybrid knowledge access vocabulary and roadmap | **ACCEPTED** |
 | **LKW-MODEL-RUNTIME-1** | Ollama / vLLM end-to-end portability | **ACCEPTED** |
 | **LKW-KNOWLEDGE-ACCESS-1** | Connections, Indexed Sources, Live Access Bindings | **NEXT** |
-| **LKW-CONVERSATION-CONTEXT-ARCH-1** | Provider-neutral conversation context with observed-audience validation, binding identity, thread memory isolation and deterministic guards | **READY_FOR_REVIEW** |
+| **LKW-CONVERSATION-CONTEXT-ARCH-1** | Provider-neutral conversation context with observed-audience validation, binding identity, thread memory isolation and deterministic guards | **ACCEPTED** |
 | **LKW-HYBRID-ASK-1** | RAG + live with unified provenance | **PLANNED** |
 | **LKW-CONVERSATIONAL-FRONTEND-1** | Natural-language execution + Slack cutover | **PLANNED** |
 | **LKW-VENDOR-ACCESS-COLLABORATION-1** | MS365, Google Workspace, Jira, Confluence | **PLANNED** |
@@ -242,7 +242,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_IN
 | **LKW-GOOGLE-WORKSPACE-PROOF-1** | First user-oriented Google Doc/Sheet/Calendar/Drive proof | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after first accepted Google LKW proof) |
 
-LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; LKW-CONVERSATION-CONTEXT-ARCH-1, LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
+LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; LKW-CONVERSATION-CONTEXT-ARCH-1 **ACCEPTED**; LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.
