@@ -8,6 +8,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Protocol
 from uuid import uuid4
 
 from intergrax.context.session_history import (
@@ -86,6 +87,71 @@ class ConversationThreadMemorySnapshotV1:
     workspace_id: str
     snapshot: SessionHistorySnapshot
     message_created_at: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ThreadMemoryLifecycleEnvelopeV1:
+    memory_snapshot: ConversationThreadMemorySnapshotV1
+
+    @property
+    def revision_id(self) -> str:
+        return self.memory_snapshot.snapshot.revision_id
+
+
+class ThreadMemoryLifecyclePort(Protocol):
+    def load_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
+        ...
+
+    def save_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+        expected_revision_id: str | None,
+    ) -> bool:
+        ...
+
+
+class InMemoryThreadMemoryLifecyclePort:
+    """Application-owned in-memory lifecycle port for tests and local wiring."""
+
+    def __init__(self) -> None:
+        self._store: dict[str, ThreadMemoryLifecycleEnvelopeV1] = {}
+
+    def _partition_key(self, partition: ConversationThreadMemoryPartitionV1) -> str:
+        return derive_conversation_thread_session_key(
+            tenant_id=partition.tenant_id,
+            conversation_context_binding_id=partition.conversation_context_binding_id,
+            canonical_thread_ref=partition.canonical_thread_ref,
+        )
+
+    def load_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
+        return self._store.get(self._partition_key(partition))
+
+    def save_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+        expected_revision_id: str | None,
+    ) -> bool:
+        key = self._partition_key(partition)
+        current = self._store.get(key)
+        if expected_revision_id is None:
+            if current is not None:
+                return False
+        elif current is None or current.revision_id != expected_revision_id:
+            return False
+        self._store[key] = envelope
+        return True
 
 
 def _role_to_platform(role: ConversationThreadMemoryMessageRole) -> str:
@@ -288,8 +354,52 @@ def _build_snapshot_envelope(
     )
 
 
+def _next_sequence(existing_messages: tuple[SessionHistoryMessage, ...]) -> int:
+    if not existing_messages:
+        return 0
+    return existing_messages[-1].sequence + 1
+
+
+def _build_appended_snapshot(
+    *,
+    partition: ConversationThreadMemoryPartitionV1,
+    memory_snapshot: ConversationThreadMemorySnapshotV1 | None,
+    messages: tuple[ConversationThreadMemoryMessageV1, ...],
+) -> ConversationThreadMemorySnapshotV1:
+    context_scope_id = derive_conversation_thread_session_key(
+        tenant_id=partition.tenant_id,
+        conversation_context_binding_id=partition.conversation_context_binding_id,
+        canonical_thread_ref=partition.canonical_thread_ref,
+    )
+    if memory_snapshot is not None:
+        _validate_snapshot_partition(memory_snapshot=memory_snapshot, partition=partition)
+        _validate_snapshot_timestamps(memory_snapshot)
+        existing_messages = memory_snapshot.snapshot.messages
+        created_at_entries = list(memory_snapshot.message_created_at)
+    else:
+        existing_messages = ()
+        created_at_entries = []
+
+    next_sequence = _next_sequence(existing_messages)
+    platform_messages: list[SessionHistoryMessage] = []
+    for offset, message in enumerate(messages):
+        platform_message = _to_platform_message(message, sequence=next_sequence + offset)
+        platform_messages.append(platform_message)
+        created_at_entries.append((platform_message.message_id, message.created_at.isoformat()))
+
+    return _build_snapshot_envelope(
+        partition=partition,
+        context_scope_id=context_scope_id,
+        messages=existing_messages + tuple(platform_messages),
+        created_at_entries=tuple(created_at_entries),
+    )
+
+
 class SessionHistorySnapshotConversationThreadMemoryAdapter:
-    """Pure immutable adapter over SessionHistorySnapshot for bounded thread memory."""
+    """Bounded thread memory adapter with conflict-safe lifecycle-port appends."""
+
+    def __init__(self, *, port: ThreadMemoryLifecyclePort) -> None:
+        self._port = port
 
     @staticmethod
     def load_bounded_history(
@@ -314,46 +424,43 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
             )
         return _apply_bounds(tuple(converted), limits=limits, now=now)
 
-    @staticmethod
-    def append_message(
+    def _append_messages(
+        self,
         *,
         context: ConversationExecutionContextV1,
-        memory_snapshot: ConversationThreadMemorySnapshotV1 | None,
-        message: ConversationThreadMemoryMessageV1,
+        messages: tuple[ConversationThreadMemoryMessageV1, ...],
     ) -> ConversationThreadMemorySnapshotV1:
         partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)
         _validate_partition_against_context(partition=partition, context=context)
-        context_scope_id = derive_conversation_thread_session_key(
-            tenant_id=partition.tenant_id,
-            conversation_context_binding_id=partition.conversation_context_binding_id,
-            canonical_thread_ref=partition.canonical_thread_ref,
-        )
-        if memory_snapshot is not None:
-            _validate_snapshot_partition(memory_snapshot=memory_snapshot, partition=partition)
-            _validate_snapshot_timestamps(memory_snapshot)
-            next_sequence = memory_snapshot.snapshot.messages[-1].sequence + 1
-            existing_messages = memory_snapshot.snapshot.messages
-            created_at_entries = list(memory_snapshot.message_created_at)
-        else:
-            next_sequence = 0
-            existing_messages = ()
-            created_at_entries = []
-
-        platform_message = _to_platform_message(message, sequence=next_sequence)
-        created_at_entries.append((platform_message.message_id, message.created_at.isoformat()))
-        messages = existing_messages + (platform_message,)
-        return _build_snapshot_envelope(
+        loaded = self._port.load_envelope(partition=partition)
+        memory_snapshot = loaded.memory_snapshot if loaded is not None else None
+        expected_revision_id = loaded.revision_id if loaded is not None else None
+        new_snapshot = _build_appended_snapshot(
             partition=partition,
-            context_scope_id=context_scope_id,
+            memory_snapshot=memory_snapshot,
             messages=messages,
-            created_at_entries=tuple(created_at_entries),
         )
+        new_envelope = ThreadMemoryLifecycleEnvelopeV1(memory_snapshot=new_snapshot)
+        if not self._port.save_envelope(
+            partition=partition,
+            envelope=new_envelope,
+            expected_revision_id=expected_revision_id,
+        ):
+            raise ConversationThreadMemoryError("THREAD_MEMORY_REVISION_CONFLICT")
+        return new_snapshot
 
-    @staticmethod
-    def append_exchange(
+    def append_message(
+        self,
         *,
         context: ConversationExecutionContextV1,
-        memory_snapshot: ConversationThreadMemorySnapshotV1 | None,
+        message: ConversationThreadMemoryMessageV1,
+    ) -> ConversationThreadMemorySnapshotV1:
+        return self._append_messages(context=context, messages=(message,))
+
+    def append_exchange(
+        self,
+        *,
+        context: ConversationExecutionContextV1,
         user_message: ConversationThreadMemoryMessageV1,
         assistant_message: ConversationThreadMemoryMessageV1,
     ) -> ConversationThreadMemorySnapshotV1:
@@ -361,38 +468,7 @@ class SessionHistorySnapshotConversationThreadMemoryAdapter:
             raise ConversationThreadMemoryError("THREAD_MEMORY_EXCHANGE_USER_ROLE_REQUIRED")
         if assistant_message.role is not ConversationThreadMemoryMessageRole.ASSISTANT:
             raise ConversationThreadMemoryError("THREAD_MEMORY_EXCHANGE_ASSISTANT_ROLE_REQUIRED")
-
-        partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)
-        _validate_partition_against_context(partition=partition, context=context)
-        context_scope_id = derive_conversation_thread_session_key(
-            tenant_id=partition.tenant_id,
-            conversation_context_binding_id=partition.conversation_context_binding_id,
-            canonical_thread_ref=partition.canonical_thread_ref,
-        )
-        if memory_snapshot is not None:
-            _validate_snapshot_partition(memory_snapshot=memory_snapshot, partition=partition)
-            _validate_snapshot_timestamps(memory_snapshot)
-            next_sequence = memory_snapshot.snapshot.messages[-1].sequence + 1
-            existing_messages = memory_snapshot.snapshot.messages
-            created_at_entries = list(memory_snapshot.message_created_at)
-        else:
-            next_sequence = 0
-            existing_messages = ()
-            created_at_entries = []
-
-        user_platform = _to_platform_message(user_message, sequence=next_sequence)
-        assistant_platform = _to_platform_message(
-            assistant_message,
-            sequence=next_sequence + 1,
-        )
-        created_at_entries.append((user_platform.message_id, user_message.created_at.isoformat()))
-        created_at_entries.append(
-            (assistant_platform.message_id, assistant_message.created_at.isoformat())
-        )
-        messages = existing_messages + (user_platform, assistant_platform)
-        return _build_snapshot_envelope(
-            partition=partition,
-            context_scope_id=context_scope_id,
-            messages=messages,
-            created_at_entries=tuple(created_at_entries),
+        return self._append_messages(
+            context=context,
+            messages=(user_message, assistant_message),
         )
