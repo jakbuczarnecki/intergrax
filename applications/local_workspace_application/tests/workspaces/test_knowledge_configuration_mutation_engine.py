@@ -1832,10 +1832,14 @@ class _TransitionRecordingStore(InMemoryDocumentStore):
         self.mutation_transitions: list[
             tuple[str | None, str | None, str | None, str | None]
         ] = []
+        self.mutation_cas_attempts: list[
+            tuple[str | None, str | None, str | None, str | None]
+        ] = []
         self.cleanup_fenced_to_prepared_attempts = 0
         self.cleanup_fenced_to_generic_recovery_attempts = 0
         self.cleanup_fenced_to_committed_attempts = 0
         self.publication_head_cas_attempts = 0
+        self.head_fence_cas_attempts = 0
         self.head_release_cas_attempts = 0
 
     def replace_if_match(
@@ -1849,6 +1853,14 @@ class _TransitionRecordingStore(InMemoryDocumentStore):
             src_error = expected.data.get("error_code")
             dst_status = replacement.data.get("status")
             dst_error = replacement.data.get("error_code")
+            self.mutation_cas_attempts.append(
+                (
+                    expected.data.get("mutation_id"),
+                    replacement.data.get("mutation_id"),
+                    src_status,
+                    dst_status,
+                )
+            )
             if _is_cleanup_fenced_mutation_doc(expected):
                 self.mutation_transitions.append(
                     (src_status, src_error, dst_status, dst_error)
@@ -1862,6 +1874,8 @@ class _TransitionRecordingStore(InMemoryDocumentStore):
                     self.cleanup_fenced_to_generic_recovery_attempts += 1
                 if dst_status == "committed":
                     self.cleanup_fenced_to_committed_attempts += 1
+        if _is_cleanup_head_fence_cas(expected, replacement):
+            self.head_fence_cas_attempts += 1
         if _is_strict_publication_head_cas(expected, replacement):
             self.publication_head_cas_attempts += 1
         elif _is_head_release_cas(expected, replacement):
@@ -2975,6 +2989,7 @@ def test_cleanup_fenced_ownership_conflict_preserves_marker() -> None:
     assert loaded_head.committed_revision == 0
     assert loaded_head.pending_revision == 1
     assert loaded_head.pending_mutation_id == fenced.mutation_id
+    assert loaded_head.updated_at > _NOW
     assert handler.cleanup_calls == 0
     assert store.cleanup_fenced_to_prepared_attempts == 0
     assert store.cleanup_fenced_to_generic_recovery_attempts == 0
@@ -3374,3 +3389,650 @@ def test_cleanup_fence_transitions_are_monotonic() -> None:
         _run_orphaned_absent_finalization,
     ):
         runner()
+
+
+# --- R6 head-fence reacquisition and exact mutation identity ---
+
+
+def _stale_publish_head_from_pending(
+    head: WorkspaceKnowledgeConfigurationHead,
+    *,
+    mutation_id: str,
+) -> WorkspaceKnowledgeConfigurationHead:
+    target_revision = head.pending_revision
+    assert target_revision is not None
+    return head.model_copy(
+        update={
+            "committed_revision": target_revision,
+            "pending_revision": None,
+            "pending_mutation_id": None,
+            "last_committed_mutation_id": mutation_id,
+            "updated_at": head.updated_at,
+        }
+    )
+
+
+def test_abandoned_cleanup_fence_reacquires_head_before_ownership_conflict() -> None:
+    store = _TransitionRecordingStore()
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    engine, repo, _handler = _build_engine(store=store, handler=handler)
+    fenced = _seed_cleanup_fenced_pending(
+        repo=repo,
+        mutation_id="mutation-r6-abandoned",
+    )
+    stale_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert stale_head is not None
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine.recover_workspace_knowledge_mutation(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert loaded.error_code == _CLEANUP_FENCE_ERROR
+    assert loaded.mutation_id == fenced.mutation_id
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.committed_revision == 0
+    assert loaded_head.pending_revision == 1
+    assert loaded_head.pending_mutation_id == fenced.mutation_id
+    assert loaded_head.updated_at > stale_head.updated_at
+    assert _handler.cleanup_calls == 0
+    assert store.head_release_cas_attempts == 0
+    assert store.publication_head_cas_attempts == 0
+    assert store.head_fence_cas_attempts >= 1
+    stale_publish = _stale_publish_head_from_pending(
+        stale_head,
+        mutation_id=fenced.mutation_id,
+    )
+    assert not repo.replace_knowledge_configuration_head_if_match(
+        expected=stale_head,
+        replacement=stale_publish,
+    )
+    _assert_cleanup_fence_transitions_monotonic(store)
+
+
+def test_abandoned_cleanup_fence_fixed_clock_refreshes_head_before_conflict() -> None:
+    clock = _ControlledClock(_NOW)
+    store = _TransitionRecordingStore()
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    engine, repo, _handler = _build_engine(
+        store=store,
+        handler=handler,
+        clock=clock,
+    )
+    fenced = _mutation_record(
+        mutation_id="mutation-r6-fixed-clock",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code=_CLEANUP_FENCE_ERROR,
+        target_revision=1,
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(fenced)
+    stale_head = WorkspaceKnowledgeConfigurationHead(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        committed_revision=0,
+        pending_revision=1,
+        pending_mutation_id="mutation-r6-fixed-clock",
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_head_if_absent(stale_head)
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError):
+        engine.recover_workspace_knowledge_mutation(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.updated_at > fenced.updated_at
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.updated_at > stale_head.updated_at
+    stale_publish = _stale_publish_head_from_pending(
+        stale_head,
+        mutation_id=fenced.mutation_id,
+    )
+    assert not repo.replace_knowledge_configuration_head_if_match(
+        expected=stale_head,
+        replacement=stale_publish,
+    )
+
+
+class _RecoveryPublisherWinsHeadFenceRaceStore(_PublisherWinsHeadFenceRaceStore):
+    pass
+
+
+def test_recovery_publisher_wins_head_fence_race() -> None:
+    store = _RecoveryPublisherWinsHeadFenceRaceStore()
+    handler = _FakeHandler()
+    engine, repo, _handler = _build_engine(store=store, handler=handler)
+    fenced = _seed_cleanup_fenced_pending(
+        repo=repo,
+        mutation_id="mutation-r6-pub-win",
+    )
+    handler.stage(
+        repository=repo,
+        mutation=fenced,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    recovery = engine.recover_workspace_knowledge_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED
+    assert _handler.cleanup_calls == 0
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.committed_revision == 1
+    assert loaded_head.pending_mutation_id is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert loaded.mutation_id == fenced.mutation_id
+
+
+@pytest.mark.parametrize(
+    "m2_status",
+    [
+        WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        WorkspaceKnowledgeMutationStatusV1.PREPARED,
+    ],
+)
+def test_stale_mark_recovery_required_cannot_modify_newer_attempt(
+    m2_status: WorkspaceKnowledgeMutationStatusV1,
+) -> None:
+    store = _TransitionRecordingStore()
+    engine, repo, _handler = _build_engine(store=store)
+    stale_m1 = _mutation_record(
+        mutation_id="mutation-r6-stale-mark-1",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    m2_kwargs: dict[str, object] = {
+        "mutation_id": "mutation-r6-stale-mark-2",
+        "status": m2_status,
+        "target_revision": None,
+    }
+    if m2_status is WorkspaceKnowledgeMutationStatusV1.PREPARED:
+        m2_kwargs.update(
+            {
+                "target_revision": 2,
+                "result_entity_type": _RESULT_TYPE,
+                "result_entity_id": _RESULT_ID,
+            }
+        )
+    m2 = _mutation_record(**m2_kwargs)
+    repo.put_knowledge_configuration_mutation_if_absent(m2)
+    before = m2.model_copy()
+    engine._mark_recovery_required(
+        mutation=stale_m1,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_recovery_required",
+        now=_NOW,
+    )
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded == before
+    assert loaded is not None
+    assert loaded.status == m2_status
+    assert loaded.mutation_id == "mutation-r6-stale-mark-2"
+    assert not any(
+        dst_id == "mutation-r6-stale-mark-2"
+        for _src_id, dst_id, _src_status, _dst_status in store.mutation_cas_attempts
+    )
+
+
+def test_full_stale_mark_recovery_required_race_preserves_newer_attempt() -> None:
+    store = _TransitionRecordingStore()
+    engine, repo, handler = _build_engine(store=store)
+    prepared = _mutation_record(
+        mutation_id="mutation-r6-full-1",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-r6-full-1",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    stale_m1 = prepared.model_copy()
+    engine._handle_pre_publication_failure(
+        mutation=prepared,
+        handler=handler,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_mutation_stage_failed",
+    )
+    aborted = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert aborted is not None
+    assert aborted.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+    m2 = _mutation_record(
+        mutation_id="mutation-r6-full-2",
+        status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        target_revision=None,
+    )
+    assert repo.replace_knowledge_configuration_mutation_if_match(
+        expected=aborted,
+        replacement=m2,
+    )
+    before = m2.model_copy()
+    engine._mark_recovery_required(
+        mutation=stale_m1,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_recovery_required",
+        now=_NOW,
+    )
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded == before
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert loaded.mutation_id == "mutation-r6-full-2"
+
+
+@pytest.mark.parametrize(
+    "m2_status",
+    [
+        WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        WorkspaceKnowledgeMutationStatusV1.ABORTED,
+    ],
+)
+def test_stale_confirm_mutation_aborted_cannot_abort_newer_attempt(
+    m2_status: WorkspaceKnowledgeMutationStatusV1,
+) -> None:
+    store = _TransitionRecordingStore()
+    engine, repo, _handler = _build_engine(store=store)
+    stale_m1 = _mutation_record(
+        mutation_id="mutation-r6-stale-abort-1",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code=_CLEANUP_FENCE_ERROR,
+        target_revision=1,
+    )
+    m2_kwargs: dict[str, object] = {
+        "mutation_id": "mutation-r6-stale-abort-2",
+        "status": m2_status,
+        "target_revision": None,
+    }
+    if m2_status is WorkspaceKnowledgeMutationStatusV1.PREPARED:
+        m2_kwargs.update(
+            {
+                "target_revision": 2,
+                "result_entity_type": _RESULT_TYPE,
+                "result_entity_id": _RESULT_ID,
+            }
+        )
+    if m2_status is WorkspaceKnowledgeMutationStatusV1.ABORTED:
+        m2_kwargs["error_code"] = "configuration_mutation_stage_failed"
+    if m2_status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
+        m2_kwargs.update(
+            {
+                "target_revision": 2,
+                "error_code": "configuration_recovery_required",
+            }
+        )
+    m2 = _mutation_record(**m2_kwargs)
+    repo.put_knowledge_configuration_mutation_if_absent(m2)
+    before = m2.model_copy()
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._confirm_mutation_aborted(
+            mutation=stale_m1,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            operation=_OPERATION,
+            idempotency_key_hash=_SHA256,
+            error_code="configuration_mutation_stage_failed",
+            now=_NOW,
+        )
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded == before
+    assert loaded is not None
+    assert loaded.status == m2_status
+    assert loaded.mutation_id == "mutation-r6-stale-abort-2"
+    assert not any(
+        dst_status == "aborted"
+        for _src_id, _dst_id, _src_status, dst_status in store.mutation_cas_attempts
+        if _dst_id == "mutation-r6-stale-abort-2"
+    )
+
+
+def test_full_stale_confirm_mutation_aborted_race_preserves_newer_attempt() -> None:
+    store = _TransitionRecordingStore()
+    engine, repo, _handler = _build_engine(store=store)
+    fenced = _mutation_record(
+        mutation_id="mutation-r6-delay-1",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code=_CLEANUP_FENCE_ERROR,
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(fenced)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            updated_at=_NOW,
+        )
+    )
+    stale_m1 = fenced.model_copy()
+    aborted_m1 = fenced.model_copy(
+        update={
+            "status": WorkspaceKnowledgeMutationStatusV1.ABORTED,
+            "error_code": "configuration_mutation_stage_failed",
+            "updated_at": _NOW,
+        }
+    )
+    assert repo.replace_knowledge_configuration_mutation_if_match(
+        expected=fenced,
+        replacement=aborted_m1,
+    )
+    m2 = _mutation_record(
+        mutation_id="mutation-r6-delay-2",
+        status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        target_revision=None,
+    )
+    assert repo.replace_knowledge_configuration_mutation_if_match(
+        expected=aborted_m1,
+        replacement=m2,
+    )
+    before = m2.model_copy()
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._confirm_mutation_aborted(
+            mutation=stale_m1,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            operation=_OPERATION,
+            idempotency_key_hash=_SHA256,
+            error_code="configuration_mutation_stage_failed",
+            now=_NOW,
+        )
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded == before
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RESERVED
+    assert loaded.mutation_id == "mutation-r6-delay-2"
+
+
+def test_same_attempt_abort_finalization_still_works() -> None:
+    engine, repo, _handler = _build_engine()
+    fenced = _mutation_record(
+        mutation_id="mutation-r6-same-abort",
+        status=WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+        error_code=_CLEANUP_FENCE_ERROR,
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(fenced)
+    aborted = engine._confirm_mutation_aborted(
+        mutation=fenced,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+        error_code="configuration_mutation_stage_failed",
+        now=_NOW,
+    )
+    assert aborted.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+    assert aborted.mutation_id == fenced.mutation_id
+    assert aborted.target_revision == 1
+    assert aborted.error_code == "configuration_mutation_stage_failed"
+
+
+class _DifferentAttemptPreparedCASStore(InMemoryDocumentStore):
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_mutation" in expected.partition_key
+            and expected.data.get("status") == "reserved"
+            and replacement.data.get("status") == "prepared"
+            and expected.data.get("mutation_id") == "mutation-r6-stage-1"
+        ):
+            m2 = expected.model_copy(
+                update={
+                    "data": {
+                        **expected.data,
+                        "mutation_id": "mutation-r6-stage-2",
+                        "status": "prepared",
+                        "target_revision": expected.data.get("target_revision"),
+                        "result_entity_type": _RESULT_TYPE,
+                        "result_entity_id": _RESULT_ID,
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=m2)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+def test_failed_prepared_cas_does_not_adopt_newer_attempt() -> None:
+    store = _DifferentAttemptPreparedCASStore()
+    engine, repo, handler = _build_engine(store=store)
+    reserved = _mutation_record(
+        mutation_id="mutation-r6-stage-1",
+        status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(reserved)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-r6-stage-1",
+            updated_at=_NOW,
+        )
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._stage_and_prepare(
+            mutation=reserved,
+            handler=handler,
+            target_revision=1,
+            intent=object(),
+            now=_NOW,
+        )
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.mutation_id == "mutation-r6-stage-2"
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.PREPARED
+
+
+class _DifferentAttemptCommittedFinalizeStore(InMemoryDocumentStore):
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_mutation" in expected.partition_key
+            and expected.data.get("status") == "prepared"
+            and replacement.data.get("status") == "committed"
+            and expected.data.get("mutation_id") == "mutation-r6-finalize-1"
+        ):
+            m2 = expected.model_copy(
+                update={
+                    "data": {
+                        **expected.data,
+                        "mutation_id": "mutation-r6-finalize-2",
+                        "status": "committed",
+                        "outcome": "applied",
+                        "committed_revision": expected.data.get("target_revision"),
+                        "committed_at": replacement.data.get("committed_at"),
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=m2)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+def test_failed_finalize_does_not_accept_committed_newer_attempt() -> None:
+    store = _DifferentAttemptCommittedFinalizeStore()
+    engine, repo, handler = _build_engine(store=store)
+    prepared = _mutation_record(
+        mutation_id="mutation-r6-finalize-1",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(prepared)
+    head = WorkspaceKnowledgeConfigurationHead(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        committed_revision=1,
+        pending_revision=None,
+        pending_mutation_id=None,
+        last_committed_mutation_id="mutation-r6-finalize-2",
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_head_if_absent(head)
+    handler.stage(
+        repository=repo,
+        mutation=prepared,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine._finalize_published_mutation(
+            mutation=prepared,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            head=head,
+            now=_NOW,
+        )
+    assert exc.value.error_code == "configuration_recovery_required"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.mutation_id == "mutation-r6-finalize-2"
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+
+
+def test_cleanup_fenced_ownership_conflict_refreshes_head_on_first_recovery() -> None:
+    store = _TransitionRecordingStore()
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    engine, repo, _handler = _build_engine(store=store, handler=handler)
+    _seed_cleanup_fenced_pending(
+        repo=repo,
+        mutation_id="mutation-r6-conflict-head",
+    )
+    stale_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert stale_head is not None
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError):
+        engine.recover_workspace_knowledge_mutation(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    loaded_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert loaded_head is not None
+    assert loaded_head.updated_at > stale_head.updated_at
+    assert store.head_fence_cas_attempts >= 1
+    assert _handler.cleanup_calls == 0

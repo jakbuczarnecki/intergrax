@@ -44,6 +44,31 @@ def _strictly_later_timestamp(
     return current + timedelta(microseconds=1)
 
 
+def _is_same_mutation_attempt(
+    expected: WorkspaceKnowledgeMutationRecord,
+    current: WorkspaceKnowledgeMutationRecord,
+    *,
+    require_target_revision_match: bool,
+) -> bool:
+    if expected.mutation_id != current.mutation_id:
+        return False
+    if expected.tenant_id != current.tenant_id:
+        return False
+    if expected.workspace_id != current.workspace_id:
+        return False
+    if expected.operation != current.operation:
+        return False
+    if expected.idempotency_key_hash != current.idempotency_key_hash:
+        return False
+    if expected.normalized_request_hash != current.normalized_request_hash:
+        return False
+    if expected.semantic_identity_hash != current.semantic_identity_hash:
+        return False
+    if require_target_revision_match and expected.target_revision != current.target_revision:
+        return False
+    return True
+
+
 def _new_mutation_id() -> str:
     return str(uuid.uuid4())
 
@@ -1009,6 +1034,32 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                     self._committed_replay_result(reloaded)
                 )
             if reloaded.status is WorkspaceKnowledgeMutationStatusV1.PREPARED:
+                if not _is_same_mutation_attempt(
+                    mutation,
+                    reloaded,
+                    require_target_revision_match=True,
+                ):
+                    raise WorkspaceKnowledgeConfigurationMutationError(
+                        "configuration_recovery_required"
+                    )
+                target = reloaded.target_revision
+                if target is None:
+                    raise WorkspaceKnowledgeConfigurationMutationError(
+                        "configuration_recovery_required"
+                    )
+                head = self._reload_head(
+                    tenant_id=mutation.tenant_id,
+                    workspace_id=mutation.workspace_id,
+                )
+                if (
+                    head is None
+                    or head.pending_mutation_id != reloaded.mutation_id
+                    or head.pending_revision != target
+                    or head.committed_revision >= target
+                ):
+                    raise WorkspaceKnowledgeConfigurationMutationError(
+                        "configuration_recovery_required"
+                    )
                 return reloaded
             if reloaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
                 raise WorkspaceKnowledgeConfigurationMutationError(
@@ -1363,6 +1414,30 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 idempotency_key_hash=mutation.idempotency_key_hash,
             )
             if reloaded is None or reloaded.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if not _is_same_mutation_attempt(
+                mutation,
+                reloaded,
+                require_target_revision_match=True,
+            ):
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if reloaded.committed_revision != target_revision:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if head.committed_revision < target_revision:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            last_committed_mutation_id = head.last_committed_mutation_id
+            if (
+                last_committed_mutation_id is not None
+                and last_committed_mutation_id != mutation.mutation_id
+            ):
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_recovery_required"
                 )
@@ -1857,32 +1932,20 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             )
 
         handler = self._require_handler(mutation.operation)
+
+        if self._is_cleanup_fenced_mutation(mutation):
+            return self._abort_incomplete_pending_mutation(
+                mutation=mutation,
+                handler=handler,
+                head=head,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+
         inspection = handler.inspect_staged(
             repository=self._repository,
             mutation=mutation,
         )
-
-        if self._is_cleanup_fenced_mutation(mutation):
-            if inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT:
-                raise WorkspaceKnowledgeConfigurationMutationError(
-                    "configuration_recovery_required"
-                )
-            if inspection.state in (
-                WorkspaceKnowledgeStageStateV1.ABSENT,
-                WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED,
-                WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
-            ):
-                return self._abort_incomplete_pending_mutation(
-                    mutation=mutation,
-                    handler=handler,
-                    head=head,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    inspection=inspection,
-                )
-            raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_recovery_required"
-            )
 
         if inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT:
             self._mark_recovery_required(
@@ -1924,6 +1987,14 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                         raise WorkspaceKnowledgeConfigurationMutationError(
                             "configuration_recovery_required"
                         )
+                    if not _is_same_mutation_attempt(
+                        working,
+                        reloaded,
+                        require_target_revision_match=True,
+                    ):
+                        raise WorkspaceKnowledgeConfigurationMutationError(
+                            "configuration_recovery_required"
+                        )
                     working = reloaded
                 else:
                     working = prepared
@@ -1947,6 +2018,14 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                         idempotency_key_hash=mutation.idempotency_key_hash,
                     )
                     if reloaded is None or reloaded.status is not WorkspaceKnowledgeMutationStatusV1.PREPARED:
+                        raise WorkspaceKnowledgeConfigurationMutationError(
+                            "configuration_recovery_required"
+                        )
+                    if not _is_same_mutation_attempt(
+                        working,
+                        reloaded,
+                        require_target_revision_match=True,
+                    ):
                         raise WorkspaceKnowledgeConfigurationMutationError(
                             "configuration_recovery_required"
                         )
@@ -1992,7 +2071,6 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 head=head,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                inspection=inspection,
             )
 
         raise WorkspaceKnowledgeConfigurationMutationError(
@@ -2007,7 +2085,6 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         head: WorkspaceKnowledgeConfigurationHead,
         tenant_id: str,
         workspace_id: str,
-        inspection: WorkspaceKnowledgeStageInspection,
     ) -> WorkspaceKnowledgeMutationRecoveryResult:
         now = self._clock()
         fence_or_replay = self._acquire_staged_cleanup_fence(
@@ -2335,9 +2412,21 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_recovery_required"
                 )
+            if not _is_same_mutation_attempt(
+                mutation,
+                current,
+                require_target_revision_match=True,
+            ):
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
             if current.status is WorkspaceKnowledgeMutationStatusV1.ABORTED:
                 return current
             if current.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if not self._is_cleanup_fenced_mutation(current):
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_recovery_required"
                 )
@@ -2362,6 +2451,14 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 idempotency_key_hash=idempotency_key_hash,
             )
             if reloaded is None:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "configuration_recovery_required"
+                )
+            if not _is_same_mutation_attempt(
+                mutation,
+                reloaded,
+                require_target_revision_match=True,
+            ):
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "configuration_recovery_required"
                 )
@@ -2394,6 +2491,12 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             idempotency_key_hash=idempotency_key_hash,
         )
         if current is None:
+            return
+        if not _is_same_mutation_attempt(
+            mutation,
+            current,
+            require_target_revision_match=True,
+        ):
             return
         if current.status in (
             WorkspaceKnowledgeMutationStatusV1.COMMITTED,
