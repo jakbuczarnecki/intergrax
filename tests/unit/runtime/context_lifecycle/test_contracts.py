@@ -977,3 +977,45 @@ def test_safe_metadata_nested_mappings_and_sequences_are_immutable() -> None:
     assert isinstance(policy.safe_metadata["outer"]["flags"], tuple)
     with pytest.raises(TypeError):
         policy.safe_metadata["outer"]["value"] = "mutated"  # type: ignore[index]
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {
+            "scope": ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+        },
+        {
+            "nested": {
+                "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
+            },
+        },
+        {
+            "mode": ContextOptimizationMode.DURABLE_COMPACTION,
+        },
+    ],
+)
+def test_safe_metadata_rejects_str_enum_values(
+    metadata: dict[str, object],
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match="safe_metadata must not contain enum values",
+    ):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            safe_metadata=metadata,
+        )
+
+
+def test_safe_metadata_accepts_explicit_enum_string_value() -> None:
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        safe_metadata={
+            "scope": ModelCallExecutionScope.PRIMARY_MODEL_CALL.value,
+        },
+    )
+
+    assert policy.safe_metadata["scope"] == "primary_model_call"

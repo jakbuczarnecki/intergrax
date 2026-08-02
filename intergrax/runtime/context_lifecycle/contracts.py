@@ -109,6 +109,9 @@ def _normalize_safe_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str,
         return MappingProxyType({})
 
     def _normalize_value(value: Any) -> Any:
+        if isinstance(value, Enum):
+            raise ValueError("safe_metadata must not contain enum values")
+
         if value is None or isinstance(value, bool):
             return value
         if isinstance(value, str):
@@ -125,8 +128,6 @@ def _normalize_safe_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str,
             raise ValueError("safe_metadata must not contain sets")
         if isinstance(value, datetime):
             raise ValueError("safe_metadata must not contain datetime values")
-        if isinstance(value, Enum):
-            raise ValueError("safe_metadata must not contain enum values")
         if isinstance(value, Mapping):
             return _normalize_mapping(value)
         if isinstance(value, (list, tuple)):
