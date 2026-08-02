@@ -962,7 +962,7 @@ CURRENT ARCHITECTURE PREREQUISITE:
 LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 
 THEN (independent implementation tracks):
-LKW-SLACK-CONNECTED-SOURCE-1 — DONE
+LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED (REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted)
 → an approved Slack conversation becomes an Indexed Source of a workspace
   (independent from conversational activation)
 
@@ -1033,4 +1033,4 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 - Slack history indexing
 - live Slack Ask
 
-Do not mark this architecture `ACCEPTED` until review correction is audited.
+This architecture is ACCEPTED. Runtime implementation remains deferred to `LKW-CONVERSATION-CONTEXT-1`.

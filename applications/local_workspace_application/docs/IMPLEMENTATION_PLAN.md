@@ -205,7 +205,7 @@ LKW-SLACK-CONNECTED-SOURCE-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 ```
 
-`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace knowledge work (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**). `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
+`LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace runtime implementation (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` remains **READY_FOR_REVIEW**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
 **Available today:** The user can operate LKW through Slack DM and ask about knowledge already present in the selected personal workspace (temporary in-memory selection). Durable Conversation Context Bindings, observed-audience validation, durable personal selection, shared-channel runtime, shared thread memory, shared capability enforcement, shared source eligibility, mention/thread-continuation runtime, Slack history indexing and live Slack Ask are **not** implemented.
 
