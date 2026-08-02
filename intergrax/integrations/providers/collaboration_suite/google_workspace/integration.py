@@ -10,6 +10,7 @@ from pydantic import PrivateAttr
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
+    GoogleWorkspaceCollaborationSuiteCompositionMode,
     GoogleWorkspaceCollaborationSuiteIntegrationConfig,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
@@ -66,6 +67,16 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         """Fail closed when enabled integration lacks required injected dependencies."""
         if not self.config.enabled:
             return
+        if (
+            self.config.composition_mode
+            == GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT
+        ):
+            if self._client is None:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} requires an injected client when enabled=True "
+                    "in injected_client composition mode",
+                )
+            return
         if self._credential_resolver is None:
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires an injected credential resolver when enabled=True",
@@ -118,7 +129,10 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         integration = cls.for_provider(
             provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
             display_name="Google Workspace",
-            config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(enabled=enabled),
+            config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+                enabled=enabled,
+                composition_mode=GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT,
+            ),
         )
         integration._client = client
         return integration

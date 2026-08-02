@@ -9,10 +9,15 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers import collaboration_suite
 from intergrax.integrations.providers.collaboration_suite import google_workspace
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
+    GoogleWorkspaceCollaborationSuiteCompositionMode,
     GoogleWorkspaceCollaborationSuiteIntegrationConfig,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.bundle import (
+    create_google_workspace_collaboration_suite_integration,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
@@ -182,6 +187,87 @@ def test_compose_retains_injected_shared_dependencies() -> None:
     assert integration.credential_resolver is resolver
     assert integration.client_factory is factory
     integration.validate_runtime()
+
+
+class _MinimalCollaborationSuiteClient(CollaborationSuite):
+    pass
+
+
+def _assert_injected_client_compatibility(
+    integration: GoogleWorkspaceCollaborationSuiteIntegration,
+    *,
+    client: CollaborationSuite,
+) -> None:
+    assert isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration)
+    assert integration.config.enabled is True
+    assert integration.config.composition_mode is GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT
+    assert integration.client is client
+    assert integration.credential_resolver is None
+    assert integration.client_factory is None
+    integration.validate_runtime()
+    health = integration.check_health()
+    assert health.status is not PlatformIntegrationStatus.UNAVAILABLE
+
+
+def test_bundle_factory_injected_client_composition() -> None:
+    client = _MinimalCollaborationSuiteClient()
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = create_google_workspace_collaboration_suite_integration(
+        client=client,
+        enabled=True,
+    )
+    _assert_injected_client_compatibility(integration, client=client)
+    assert resolver.calls == []
+    assert factory.calls == []
+
+
+def test_from_client_injected_client_composition() -> None:
+    client = _MinimalCollaborationSuiteClient()
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.from_client(
+        client,
+        enabled=True,
+    )
+    _assert_injected_client_compatibility(integration, client=client)
+    assert resolver.calls == []
+    assert factory.calls == []
+
+
+def test_enabled_credential_ref_mode_missing_factory_fails_closed() -> None:
+    resolver = _SpyCredentialResolver()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.for_provider(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        display_name="Google Workspace",
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+    )
+    integration._credential_resolver = resolver
+    with pytest.raises(IntegrationConfigurationError, match="client factory"):
+        integration.validate_runtime()
+
+
+def test_enabled_uncomposed_credential_ref_mode_fails_closed() -> None:
+    with pytest.raises(ValidationError):
+        GoogleWorkspaceCollaborationSuiteIntegrationConfig(enabled=True, credential_ref="")
+
+
+def test_enabled_uncomposed_injected_client_mode_fails_closed() -> None:
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.for_provider(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        display_name="Google Workspace",
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            composition_mode=GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT,
+        ),
+    )
+    with pytest.raises(IntegrationConfigurationError, match="injected client"):
+        integration.validate_runtime()
+    health = integration.check_health()
+    assert health.status is PlatformIntegrationStatus.UNAVAILABLE
 
 
 def test_lazy_package_imports_foundation_symbols() -> None:
