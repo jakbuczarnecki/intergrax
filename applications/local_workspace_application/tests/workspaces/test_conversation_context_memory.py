@@ -164,6 +164,40 @@ class _AtomicInMemoryThreadMemoryLifecyclePort:
             return True
 
 
+class _SaveBarrierLifecyclePort:
+    """Test-only port that synchronizes concurrent save attempts before CAS."""
+
+    def __init__(
+        self,
+        *,
+        inner: _AtomicInMemoryThreadMemoryLifecyclePort,
+        barrier: threading.Barrier,
+    ) -> None:
+        self._inner = inner
+        self._barrier = barrier
+
+    def load_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
+        return self._inner.load_envelope(partition=partition)
+
+    def save_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+        expected_revision_id: str | None,
+    ) -> bool:
+        self._barrier.wait()
+        return self._inner.save_envelope(
+            partition=partition,
+            envelope=envelope,
+            expected_revision_id=expected_revision_id,
+        )
+
+
 def _adapter(
     port: _AtomicInMemoryThreadMemoryLifecyclePort | None = None,
 ) -> SessionHistorySnapshotConversationThreadMemoryAdapter:
@@ -312,6 +346,49 @@ class _ConflictOnSavePort:
         return False
 
 
+@dataclass
+class _ConcurrentWriterResult:
+    snapshot: ConversationThreadMemorySnapshotV1 | None = None
+    error_code: str | None = None
+    unexpected: BaseException | None = None
+
+
+def _append_message_worker(
+    adapter: SessionHistorySnapshotConversationThreadMemoryAdapter,
+    *,
+    context: object,
+    content: str,
+    created_at: datetime,
+    result: _ConcurrentWriterResult,
+) -> None:
+    try:
+        result.snapshot = adapter.append_message(
+            context=context,  # type: ignore[arg-type]
+            message=_message(content=content, created_at=created_at),
+        )
+    except ConversationThreadMemoryError as exc:
+        result.error_code = exc.error_code
+    except BaseException as exc:
+        result.unexpected = exc
+
+
+def _assert_concurrent_writer_outcomes(
+    *,
+    results: tuple[_ConcurrentWriterResult, _ConcurrentWriterResult],
+    threads: tuple[threading.Thread, threading.Thread],
+) -> None:
+    for thread in threads:
+        thread.join()
+    for thread in threads:
+        assert not thread.is_alive()
+    unexpected = [
+        result.unexpected
+        for result in results
+        if result.unexpected is not None
+    ]
+    assert unexpected == []
+
+
 def test_non_contiguous_sequences_load_and_append() -> None:
     context = _context()
     port, seeded = _seed_non_contiguous_snapshot(context)
@@ -437,6 +514,126 @@ def test_mismatching_revision_raises_conflict() -> None:
     assert stored.revision_id != stale_revision
     assert len(stored.memory_snapshot.snapshot.messages) == 1
     assert stored.memory_snapshot.snapshot.messages[0].content == "first"
+
+
+def test_concurrent_replace_from_same_expected_revision_allows_one_winner() -> None:
+    context = _context()
+    inner = _AtomicInMemoryThreadMemoryLifecyclePort()
+    seed_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(port=inner)
+    seeded = seed_adapter.append_message(
+        context=context,  # type: ignore[arg-type]
+        message=_message(content="seed"),
+    )
+    seed_revision = seeded.snapshot.revision_id
+    barrier = threading.Barrier(2, timeout=5)
+    barrier_port = _SaveBarrierLifecyclePort(inner=inner, barrier=barrier)
+    adapter_a = SessionHistorySnapshotConversationThreadMemoryAdapter(port=barrier_port)
+    adapter_b = SessionHistorySnapshotConversationThreadMemoryAdapter(port=barrier_port)
+    result_a = _ConcurrentWriterResult()
+    result_b = _ConcurrentWriterResult()
+    thread_a = threading.Thread(
+        target=_append_message_worker,
+        kwargs={
+            "adapter": adapter_a,
+            "context": context,
+            "content": "writer-a",
+            "created_at": _NOW + timedelta(seconds=1),
+            "result": result_a,
+        },
+    )
+    thread_b = threading.Thread(
+        target=_append_message_worker,
+        kwargs={
+            "adapter": adapter_b,
+            "context": context,
+            "content": "writer-b",
+            "created_at": _NOW + timedelta(seconds=2),
+            "result": result_b,
+        },
+    )
+    thread_a.start()
+    thread_b.start()
+    _assert_concurrent_writer_outcomes(
+        results=(result_a, result_b),
+        threads=(thread_a, thread_b),
+    )
+
+    results = (result_a, result_b)
+    successful = [result for result in results if result.snapshot is not None]
+    conflicts = [
+        result.error_code
+        for result in results
+        if result.error_code == "THREAD_MEMORY_REVISION_CONFLICT"
+    ]
+    assert len(successful) == 1
+    assert len(conflicts) == 1
+
+    partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
+    stored = inner.load_envelope(partition=partition)
+    assert stored is not None
+    messages = stored.memory_snapshot.snapshot.messages
+    assert len(messages) == 2
+    assert messages[0].content == "seed"
+    writer_contents = {messages[1].content}
+    assert writer_contents <= {"writer-a", "writer-b"}
+    assert len(writer_contents) == 1
+    assert stored.revision_id != seed_revision
+
+
+def test_concurrent_create_if_absent_from_empty_port_allows_one_winner() -> None:
+    context = _context()
+    inner = _AtomicInMemoryThreadMemoryLifecyclePort()
+    barrier = threading.Barrier(2, timeout=5)
+    barrier_port = _SaveBarrierLifecyclePort(inner=inner, barrier=barrier)
+    adapter_a = SessionHistorySnapshotConversationThreadMemoryAdapter(port=barrier_port)
+    adapter_b = SessionHistorySnapshotConversationThreadMemoryAdapter(port=barrier_port)
+    result_a = _ConcurrentWriterResult()
+    result_b = _ConcurrentWriterResult()
+    thread_a = threading.Thread(
+        target=_append_message_worker,
+        kwargs={
+            "adapter": adapter_a,
+            "context": context,
+            "content": "writer-a",
+            "created_at": _NOW,
+            "result": result_a,
+        },
+    )
+    thread_b = threading.Thread(
+        target=_append_message_worker,
+        kwargs={
+            "adapter": adapter_b,
+            "context": context,
+            "content": "writer-b",
+            "created_at": _NOW + timedelta(seconds=1),
+            "result": result_b,
+        },
+    )
+    thread_a.start()
+    thread_b.start()
+    _assert_concurrent_writer_outcomes(
+        results=(result_a, result_b),
+        threads=(thread_a, thread_b),
+    )
+
+    results = (result_a, result_b)
+    successful = [result for result in results if result.snapshot is not None]
+    conflicts = [
+        result.error_code
+        for result in results
+        if result.error_code == "THREAD_MEMORY_REVISION_CONFLICT"
+    ]
+    assert len(successful) == 1
+    assert len(conflicts) == 1
+
+    partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
+    stored = inner.load_envelope(partition=partition)
+    assert stored is not None
+    messages = stored.memory_snapshot.snapshot.messages
+    assert len(messages) == 1
+    writer_contents = {messages[0].content}
+    assert writer_contents <= {"writer-a", "writer-b"}
+    assert len(writer_contents) == 1
 
 
 def test_append_exchange_performs_one_load_and_one_save() -> None:
