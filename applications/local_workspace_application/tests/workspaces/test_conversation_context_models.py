@@ -14,9 +14,14 @@ from local_workspace_application.workspaces.conversation_context_models import (
     ConversationAudienceMode,
     ConversationContextBindingStatus,
     ConversationContextBindingV1,
+    ConversationExecutionContextV1,
     ConversationIngressContextV1,
     ConversationObservedAudience,
+    ConversationProductCapability,
     ConversationThreadContextPolicy,
+    ConversationThreadMemoryLimitsV1,
+    ConversationThreadMemoryMessageRole,
+    ConversationThreadMemoryMessageV1,
     ConversationWorkspaceResolutionPolicy,
     PersonalConversationStateV1,
     WorkspaceConversationAudience,
@@ -130,6 +135,9 @@ def test_models_contain_no_credential_or_provider_payload_fields() -> None:
         ConversationContextBindingV1,
         WorkspaceConversationAudiencePolicyV1,
         PersonalConversationStateV1,
+        ConversationExecutionContextV1,
+        ConversationThreadMemoryLimitsV1,
+        ConversationThreadMemoryMessageV1,
     ):
         assert forbidden.isdisjoint(set(model.model_fields))
 
@@ -187,3 +195,98 @@ def test_personal_state_round_trip() -> None:
         updated_at=_NOW,
     )
     assert state.selected_workspace_id == _WORKSPACE
+
+
+def _execution_context(**overrides: object) -> ConversationExecutionContextV1:
+    payload = {
+        "tenant_id": _TENANT,
+        "conversation_context_binding_id": _BINDING_ID,
+        "audience_mode": ConversationAudienceMode.PERSONAL,
+        "workspace_id": _WORKSPACE,
+        "principal_ref": _PRINCIPAL,
+        "canonical_thread_ref": "thread-1",
+        "activation_policy": ConversationActivationPolicy.ALWAYS,
+        "thread_context_policy": ConversationThreadContextPolicy.CURRENT_THREAD_BOUNDED,
+        "allowed_product_capabilities": frozenset({ConversationProductCapability.READ_ONLY_ASK}),
+    }
+    payload.update(overrides)
+    return ConversationExecutionContextV1(**payload)  # type: ignore[arg-type]
+
+
+def test_shared_execution_context_accepts_read_only_ask_only() -> None:
+    context = _execution_context(
+        audience_mode=ConversationAudienceMode.SHARED,
+        allowed_product_capabilities=frozenset({ConversationProductCapability.READ_ONLY_ASK}),
+    )
+    assert context.allowed_product_capabilities == frozenset({ConversationProductCapability.READ_ONLY_ASK})
+
+
+def test_shared_execution_context_rejects_mutation_capability() -> None:
+    with pytest.raises(ValidationError, match="shared_context_requires_read_only_ask_only"):
+        _execution_context(
+            audience_mode=ConversationAudienceMode.SHARED,
+            allowed_product_capabilities=frozenset(
+                {
+                    ConversationProductCapability.READ_ONLY_ASK,
+                    ConversationProductCapability.WORKSPACE_DISCOVERY,
+                }
+            ),
+        )
+
+
+def test_personal_execution_context_accepts_explicit_capabilities() -> None:
+    capabilities = frozenset(
+        {
+            ConversationProductCapability.READ_ONLY_ASK,
+            ConversationProductCapability.SOURCE_DISCOVERY,
+        }
+    )
+    context = _execution_context(allowed_product_capabilities=capabilities)
+    assert context.allowed_product_capabilities == capabilities
+
+
+def test_execution_context_rejects_empty_capability_set() -> None:
+    with pytest.raises(ValidationError, match="allowed_product_capabilities_must_be_non_empty"):
+        _execution_context(allowed_product_capabilities=frozenset())
+
+
+def test_memory_limits_reject_zero() -> None:
+    with pytest.raises(ValidationError, match="limit_must_be_positive"):
+        ConversationThreadMemoryLimitsV1(max_messages=0, max_bytes=100, max_age_seconds=100)
+
+
+def test_memory_limits_reject_negative_values() -> None:
+    with pytest.raises(ValidationError, match="limit_must_be_positive"):
+        ConversationThreadMemoryLimitsV1(max_messages=10, max_bytes=-1, max_age_seconds=100)
+
+
+def test_memory_limits_reject_booleans() -> None:
+    with pytest.raises(ValidationError, match="limit_must_be_positive_integer"):
+        ConversationThreadMemoryLimitsV1(max_messages=True, max_bytes=100, max_age_seconds=100)  # type: ignore[arg-type]
+
+
+def test_memory_limits_enforce_upper_bounds() -> None:
+    with pytest.raises(ValidationError, match="max_messages_exceeds_upper_bound"):
+        ConversationThreadMemoryLimitsV1(max_messages=201, max_bytes=100, max_age_seconds=100)
+    with pytest.raises(ValidationError, match="max_bytes_exceeds_upper_bound"):
+        ConversationThreadMemoryLimitsV1(max_messages=10, max_bytes=1_000_001, max_age_seconds=100)
+    with pytest.raises(ValidationError, match="max_age_seconds_exceeds_upper_bound"):
+        ConversationThreadMemoryLimitsV1(max_messages=10, max_bytes=100, max_age_seconds=2_592_001)
+
+
+def test_memory_message_rejects_blank_content() -> None:
+    with pytest.raises(ValidationError, match="content_must_be_non_blank"):
+        ConversationThreadMemoryMessageV1(
+            role=ConversationThreadMemoryMessageRole.USER,
+            content="   ",
+            created_at=_NOW,
+        )
+
+
+def test_memory_message_rejects_naive_datetime() -> None:
+    with pytest.raises(ValidationError, match="datetime_must_be_timezone_aware"):
+        ConversationThreadMemoryMessageV1(
+            role=ConversationThreadMemoryMessageRole.USER,
+            content="hello",
+            created_at=datetime(2024, 6, 1, 12, 0),
+        )

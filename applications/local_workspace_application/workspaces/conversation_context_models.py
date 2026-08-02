@@ -289,6 +289,157 @@ class PersonalConversationStateV1(BaseModel):
         return _validate_utc_datetime(value)
 
 
+class ConversationProductCapability(StrEnum):
+    READ_ONLY_ASK = "read_only_ask"
+    WORKSPACE_DISCOVERY = "workspace_discovery"
+    WORKSPACE_SELECTION = "workspace_selection"
+    WORKSPACE_ADMINISTRATION = "workspace_administration"
+    SOURCE_DISCOVERY = "source_discovery"
+    SOURCE_INTAKE = "source_intake"
+    ATTACHMENT_INTAKE = "attachment_intake"
+
+
+_SHARED_ONLY_CAPABILITIES = frozenset({ConversationProductCapability.READ_ONLY_ASK})
+
+_MUTATION_PRODUCT_CAPABILITIES = frozenset(
+    {
+        ConversationProductCapability.WORKSPACE_DISCOVERY,
+        ConversationProductCapability.WORKSPACE_SELECTION,
+        ConversationProductCapability.WORKSPACE_ADMINISTRATION,
+        ConversationProductCapability.SOURCE_DISCOVERY,
+        ConversationProductCapability.SOURCE_INTAKE,
+        ConversationProductCapability.ATTACHMENT_INTAKE,
+    }
+)
+
+_MAX_THREAD_MEMORY_MESSAGES = 200
+_MAX_THREAD_MEMORY_BYTES = 1_000_000
+_MAX_THREAD_MEMORY_AGE_SECONDS = 2_592_000
+_MAX_THREAD_MEMORY_MESSAGE_CHARS = 100_000
+
+
+class ConversationThreadMemoryMessageRole(StrEnum):
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+    TOOL = "tool"
+
+
+class ConversationThreadMemoryLimitsV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    max_messages: int
+    max_bytes: int
+    max_age_seconds: int
+
+    @field_validator("max_messages", "max_bytes", "max_age_seconds", mode="before")
+    @classmethod
+    def _reject_boolean_limits(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError("limit_must_be_positive_integer")
+        return value
+
+    @field_validator("max_messages", "max_bytes", "max_age_seconds")
+    @classmethod
+    def _validate_positive_int(cls, value: int) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError("limit_must_be_positive_integer")
+        if value <= 0:
+            raise ValueError("limit_must_be_positive")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_upper_bounds(self) -> Self:
+        if self.max_messages > _MAX_THREAD_MEMORY_MESSAGES:
+            raise ValueError("max_messages_exceeds_upper_bound")
+        if self.max_bytes > _MAX_THREAD_MEMORY_BYTES:
+            raise ValueError("max_bytes_exceeds_upper_bound")
+        if self.max_age_seconds > _MAX_THREAD_MEMORY_AGE_SECONDS:
+            raise ValueError("max_age_seconds_exceeds_upper_bound")
+        return self
+
+
+class ConversationThreadMemoryMessageV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    role: ConversationThreadMemoryMessageRole
+    content: str
+    created_at: datetime
+
+    @field_validator("content")
+    @classmethod
+    def _validate_content(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("content_must_be_non_blank")
+        if len(normalized) > _MAX_THREAD_MEMORY_MESSAGE_CHARS:
+            raise ValueError("content_exceeds_max_length")
+        return normalized
+
+    @field_validator("created_at")
+    @classmethod
+    def _validate_created_at(cls, value: datetime) -> datetime:
+        return _validate_utc_datetime(value)
+
+
+class ConversationExecutionContextV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    conversation_context_binding_id: str
+    audience_mode: ConversationAudienceMode
+    workspace_id: str
+    principal_ref: str
+    canonical_thread_ref: str
+    activation_policy: ConversationActivationPolicy
+    thread_context_policy: ConversationThreadContextPolicy
+    allowed_product_capabilities: frozenset[ConversationProductCapability]
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _validate_tenant_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="tenant_id")
+
+    @field_validator("conversation_context_binding_id")
+    @classmethod
+    def _validate_binding_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="conversation_context_binding_id")
+
+    @field_validator("workspace_id")
+    @classmethod
+    def _validate_workspace_id(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="workspace_id")
+
+    @field_validator("principal_ref")
+    @classmethod
+    def _validate_principal_ref(cls, value: str) -> str:
+        return _validate_bounded_ref(value, field_name="principal_ref")
+
+    @field_validator("canonical_thread_ref")
+    @classmethod
+    def _validate_canonical_thread_ref(cls, value: str) -> str:
+        return _validate_opaque_ref(value, field_name="canonical_thread_ref")
+
+    @field_validator("allowed_product_capabilities")
+    @classmethod
+    def _validate_capabilities(
+        cls,
+        value: frozenset[ConversationProductCapability],
+    ) -> frozenset[ConversationProductCapability]:
+        if not value:
+            raise ValueError("allowed_product_capabilities_must_be_non_empty")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_capability_policy(self) -> Self:
+        if self.audience_mode is ConversationAudienceMode.SHARED:
+            if self.allowed_product_capabilities != _SHARED_ONLY_CAPABILITIES:
+                raise ValueError("shared_context_requires_read_only_ask_only")
+            if self.allowed_product_capabilities & _MUTATION_PRODUCT_CAPABILITIES:
+                raise ValueError("shared_context_rejects_mutation_capabilities")
+        return self
+
+
 class ResolvedConversationWorkspaceContextV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
