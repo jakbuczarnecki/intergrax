@@ -30,9 +30,17 @@ from intergrax.runtime.policy.context_assembly_policy import run_pre_context_pol
 
 logger = logging.getLogger("intergrax.context.engine")
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
-from intergrax.runtime.nexus.context.context_compiler import ContextCompiler, classify_candidates
+from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
+from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
-from intergrax.runtime.nexus.context.fragment_bridge import fragment_from_candidate
+from intergrax.runtime.nexus.context.ucl_orchestration import (
+    NEXUS_UCL_RUNTIME_HANDLE,
+    NexusUCLExecutionError,
+    NexusUCLExecutionReason,
+    NexusUCLRuntimeDependencies,
+    compute_model_facing_messages_hash,
+    resolve_ucl_context_plan,
+)
 
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
@@ -198,27 +206,45 @@ class DefaultNexusContextEngine:
             model_family=getattr(runtime_config.llm_adapter, "model", None),
         )
 
+        ucl_runtime = ctx.handles.get(NEXUS_UCL_RUNTIME_HANDLE)
+        if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
+            raise ValueError("nexus_ucl_runtime handle must be NexusUCLRuntimeDependencies")
+
+        try:
+            ucl_resolution = await resolve_ucl_context_plan(
+                request=request,
+                context_plan=context_plan,
+                optimization_policy=optimization_policy,
+                session_history=session_history,
+                messages_for_compile=messages_for_compile,
+                fragment_messages=fragment_messages,
+                ranked_fragments=ranked_fragments,
+                runtime=ucl_runtime,
+                count_tokens=self._compiler.count_tokens,
+            )
+        except NexusUCLExecutionError as exc:
+            _record_validation_failed(event_bus, event_ctx, (str(exc),), stage="ucl_resolution")
+            raise ValueError(str(exc)) from exc
+
+        planned_hash = compute_model_facing_messages_hash(ucl_resolution.messages)
         compile_result = compile_chat_messages(
-            messages_for_compile,
+            list(ucl_resolution.messages),
             runtime_config,
             compiler=self._compiler,
             max_output_tokens=max_output_tokens,
             run_preflight=False,
         )
-        messages = tuple(compile_result.messages)
+        compiled_hash = compute_model_facing_messages_hash(compile_result.messages)
+        if (
+            compile_result.degradation_steps != ()
+            or planned_hash != compiled_hash
+            or compile_result.budget_tokens != context_plan.resolved_global_budget_tokens
+        ):
+            raise ValueError(NexusUCLExecutionReason.FINAL_COMPILE_MUTATED_PLAN.value)
 
-        candidates = classify_candidates(
-            list(messages),
-            count_tokens=self._compiler.count_tokens,
-        )
-        if ranked_fragments:
-            fragments_included = tuple(ranked_fragments)
-        else:
-            fragments_included = tuple(
-                fragment_from_candidate(candidate, messages[candidate.message_index])
-                for candidate in candidates
-                if candidate.message_index < len(messages)
-            )
+        messages = tuple(compile_result.messages)
+        fragments_included = ucl_resolution.fragments_included
+        fragments_excluded = tuple(fragments_excluded) + ucl_resolution.fragments_excluded
         provenance = tuple(
             ContextAssemblyProvenance(
                 source_type=fragment.source.value,
@@ -231,7 +257,7 @@ class DefaultNexusContextEngine:
         assembled = AssembledContext(
             messages=messages,
             fragments_included=fragments_included,
-            fragments_excluded=tuple(fragments_excluded),
+            fragments_excluded=fragments_excluded,
             provenance=provenance,
             total_tokens=compile_result.total_tokens,
             budget_tokens=compile_result.budget_tokens,
@@ -249,6 +275,13 @@ class DefaultNexusContextEngine:
             get_context_counters().validation_failed_total += 1
             _record_validation_failed(event_bus, event_ctx, validation.errors, stage="assembled_validation")
             raise ValueError("; ".join(validation.errors))
+
+        verify_context_preflight(
+            list(messages),
+            runtime_config.llm_adapter,
+            max_output_tokens=max_output_tokens,
+            count_tokens=self._compiler.count_tokens,
+        )
 
         if event_bus is not None:
             from intergrax.runtime.events.context_skill_recording import (

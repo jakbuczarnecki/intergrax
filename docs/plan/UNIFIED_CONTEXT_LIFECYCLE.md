@@ -24,8 +24,9 @@
 | **CTX-UCL-2** | **ACCEPTED / CLOSED through R1** — `OptimizationArtifactRepository` port + `InMemoryOptimizationArtifactRepository` reference adapter |
 | **CTX-UCL-2-R1** | **ACCEPTED / CLOSED** — monotonic bounded wait, deterministic wake proofs, provider lifecycle correction |
 | **CTX-UCL-3** | **ACCEPTED / CLOSED** through R1/R2/R3 — `ContextPlan`, `SessionHistorySnapshot`, deterministic lookup inputs, canonical session provider (no last-N slicing), CE global budget |
-| **CTX-UCL-4** | **READY_FOR_REVIEW** — non-recursive `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` + `ACQUIRED` only |
-| **CTX-UCL-5 … CTX-UCL-6** | Not started / blocked pending **CTX-UCL-4** acceptance |
+| **CTX-UCL-4** | **ACCEPTED / CLOSED through R1** — non-recursive `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` + `ACQUIRED` only |
+| **CTX-UCL-5** | **READY_FOR_REVIEW** — canonical Nexus UCL flow with injected repository and single-flight proof |
+| **CTX-UCL-6** | Not started / blocked pending **CTX-UCL-5** acceptance |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
@@ -195,6 +196,4 @@ TOKEN-10E-1 → may begin
 
 ## Next step
 
-**Independent review of CTX-UCL-4.** After acceptance: **CTX-UCL-5** canonical Nexus UCL flow.
-
-**Repository boundary (CTX-UCL-2):** `OptimizationArtifactRepository` is the configurable port. Application host selects and injects an adapter. `InMemoryOptimizationArtifactRepository` is reference-only, process-local, and non-durable. There is no implicit in-memory production fallback. **CTX-UCL-5** will inject the repository into Nexus/UCL. **TOKEN-10E-4** will deliver the first durable production adapter.
+**Independent review of CTX-UCL-5.** After acceptance: **CTX-UCL-6** legacy migration.
