@@ -183,6 +183,15 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `SLACK-LIVE-CAPABILITY-1` | Platform | Authorized applications can read bounded current Slack information at request time without waiting for complete durable synchronization | **PLANNED** |
 | `LKW-SLACK-KNOWLEDGE-PROOF-1` | LKW application | User asking through Slack receives one grounded answer combining indexed Slack history, authorized live Slack evidence and other workspace sources with strict audience isolation — requires Hybrid Ask | **PLANNED** |
 
+**`LKW-CONVERSATION-CONTEXT-1` implementation slices:**
+
+| Slice | Status |
+|---|---|
+| `LKW-CONVERSATION-CONTEXT-1A` | **ACCEPTED** |
+| `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
+| `LKW-CONVERSATION-CONTEXT-1B2` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1C` | **PLANNED** / next after acceptance |
+
 **Required dependency (implementation tracks):**
 
 ```text

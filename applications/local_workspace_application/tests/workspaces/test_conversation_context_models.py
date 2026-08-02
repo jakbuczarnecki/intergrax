@@ -12,12 +12,18 @@ from pydantic import ValidationError
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationActivationPolicy,
     ConversationAudienceMode,
+    ConversationApprovedModelInputV1,
     ConversationContextBindingStatus,
     ConversationContextBindingV1,
     ConversationExecutionContextV1,
+    ConversationExecutionGuardReceiptV1,
     ConversationIngressContextV1,
+    ConversationModelInputKindV1,
     ConversationObservedAudience,
+    ConversationOutboundGuardReceiptV1,
+    ConversationOutboundTargetV1,
     ConversationProductCapability,
+    ConversationScopedModelInputV1,
     ConversationThreadContextPolicy,
     ConversationThreadMemoryLimitsV1,
     ConversationThreadMemoryMessageRole,
@@ -26,6 +32,9 @@ from local_workspace_application.workspaces.conversation_context_models import (
     PersonalConversationStateV1,
     WorkspaceConversationAudience,
     WorkspaceConversationAudiencePolicyV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    KnowledgeAudienceEligibilityV1,
 )
 
 pytestmark = pytest.mark.unit
@@ -290,3 +299,95 @@ def test_memory_message_rejects_naive_datetime() -> None:
             content="hello",
             created_at=datetime(2024, 6, 1, 12, 0),
         )
+
+
+def test_indexed_eligibility_compatibility_alias_is_usable() -> None:
+    from local_workspace_application.workspaces.knowledge_configuration_models import (
+        IndexedSourceAudienceEligibilityV1 as AliasEnum,
+    )
+
+    assert AliasEnum is KnowledgeAudienceEligibilityV1
+    assert AliasEnum.PERSONAL_ONLY.value == "personal_only"
+    assert AliasEnum.SHARED_ALLOWED.value == "shared_allowed"
+
+
+def _scoped_model_input(**overrides: object) -> ConversationScopedModelInputV1:
+    payload = {
+        "input_id": "input-1",
+        "input_kind": ConversationModelInputKindV1.INDEXED_EVIDENCE,
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "audience_eligibility": KnowledgeAudienceEligibilityV1.PERSONAL_ONLY,
+        "source_active": True,
+        "source_ref": "source.ref",
+    }
+    payload.update(overrides)
+    return ConversationScopedModelInputV1(**payload)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "model_cls",
+    [
+        ConversationScopedModelInputV1,
+        ConversationOutboundTargetV1,
+        ConversationExecutionGuardReceiptV1,
+        ConversationOutboundGuardReceiptV1,
+        ConversationApprovedModelInputV1,
+    ],
+)
+def test_guard_models_are_frozen(model_cls: type[object]) -> None:
+    assert model_cls.model_config.get("frozen") is True  # type: ignore[attr-defined]
+
+
+def test_guard_models_reject_extra_fields() -> None:
+    with pytest.raises(ValidationError):
+        _scoped_model_input(extra_field="value")  # type: ignore[arg-type]
+
+
+def test_guard_models_reject_blank_ids() -> None:
+    with pytest.raises(ValidationError, match="input_id_must_be_non_blank"):
+        _scoped_model_input(input_id="   ")
+
+
+def test_guard_models_reject_non_strict_boolean_source_active() -> None:
+    with pytest.raises(ValidationError, match="source_active_must_be_strict_boolean"):
+        _scoped_model_input(source_active=1)  # type: ignore[arg-type]
+
+
+def test_thread_memory_input_requires_binding_thread_and_origin_audience() -> None:
+    with pytest.raises(ValidationError, match="thread_memory_requires_origin_audience_mode"):
+        _scoped_model_input(
+            input_kind=ConversationModelInputKindV1.THREAD_MEMORY,
+            conversation_context_binding_id=_BINDING_ID,
+            canonical_thread_ref="thread-1",
+        )
+    with pytest.raises(ValidationError, match="thread_memory_requires_conversation_context_binding_id"):
+        _scoped_model_input(
+            input_kind=ConversationModelInputKindV1.THREAD_MEMORY,
+            origin_audience_mode=ConversationAudienceMode.PERSONAL,
+            canonical_thread_ref="thread-1",
+        )
+    with pytest.raises(ValidationError, match="thread_memory_requires_canonical_thread_ref"):
+        _scoped_model_input(
+            input_kind=ConversationModelInputKindV1.THREAD_MEMORY,
+            origin_audience_mode=ConversationAudienceMode.PERSONAL,
+            conversation_context_binding_id=_BINDING_ID,
+        )
+
+
+def test_receipt_models_contain_no_raw_content_fields() -> None:
+    forbidden = {
+        "content",
+        "snippet",
+        "message",
+        "answer",
+        "credential",
+        "token",
+        "provider_payload",
+    }
+    for model in (
+        ConversationExecutionGuardReceiptV1,
+        ConversationOutboundGuardReceiptV1,
+        ConversationApprovedModelInputV1,
+    ):
+        assert forbidden.isdisjoint(set(model.model_fields))

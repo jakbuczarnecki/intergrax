@@ -58,9 +58,12 @@ class IndexedSourceSyncModeV1(StrEnum):
     INCREMENTAL = "incremental"
 
 
-class IndexedSourceAudienceEligibilityV1(StrEnum):
+class KnowledgeAudienceEligibilityV1(StrEnum):
     PERSONAL_ONLY = "personal_only"
     SHARED_ALLOWED = "shared_allowed"
+
+
+IndexedSourceAudienceEligibilityV1 = KnowledgeAudienceEligibilityV1
 
 
 class WorkspaceIndexedSourceBindingStatusV1(StrEnum):
@@ -153,8 +156,8 @@ class WorkspaceIndexedSourceBinding(BaseModel):
     status: WorkspaceIndexedSourceBindingStatusV1 = (
         WorkspaceIndexedSourceBindingStatusV1.ACTIVE
     )
-    audience_eligibility: IndexedSourceAudienceEligibilityV1 = (
-        IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY
+    audience_eligibility: KnowledgeAudienceEligibilityV1 = (
+        KnowledgeAudienceEligibilityV1.PERSONAL_ONLY
     )
 
     mutation_id: str = Field(..., min_length=1, max_length=128)
@@ -190,6 +193,9 @@ class WorkspaceLiveAccessBinding(BaseModel):
     derived_safe_display_label: str = Field(..., min_length=1, max_length=256)
 
     status: LiveAccessBindingStatusV1 = LiveAccessBindingStatusV1.ACTIVE
+    audience_eligibility: KnowledgeAudienceEligibilityV1 = (
+        KnowledgeAudienceEligibilityV1.PERSONAL_ONLY
+    )
 
     mutation_id: str = Field(..., min_length=1, max_length=128)
     effective_revision: int = Field(..., ge=1)
@@ -343,6 +349,11 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
     )
 
     target_revision: int | None = Field(default=None, ge=1)
+    stage_claim_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+    )
     committed_revision: int | None = Field(default=None, ge=0)
 
     status: WorkspaceKnowledgeMutationStatusV1
@@ -416,8 +427,17 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
                 raise ValueError("aborted_forbids_outcome")
             if self.committed_at is not None:
                 raise ValueError("aborted_forbids_committed_at")
-        elif status is not WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
+        elif status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
             pass
+
+        if self.stage_claim_id is not None:
+            if self.target_revision is None:
+                raise ValueError("stage_claim_requires_target_revision")
+            if status not in (
+                WorkspaceKnowledgeMutationStatusV1.RESERVED,
+                WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED,
+            ):
+                raise ValueError("stage_claim_invalid_for_status")
 
         if status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED:
             if self.committed_at is not None:
