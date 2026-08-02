@@ -17,6 +17,7 @@ _PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
 _TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
 _UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
+_UCL_ADR = _REPO_ROOT / "docs" / "adr" / "entries" / "2026-08-01" / "ADR-UCL-001.md"
 
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 _FORBIDDEN_CONTEXT_MARKERS = (
@@ -127,6 +128,13 @@ def _line_is_forbidden_example_context(line: str) -> bool:
 
 def test_claim_guardrail_doc_exists() -> None:
     assert _CLAIMS_DOC.is_file()
+
+
+def test_ucl_adr_has_no_utf8_bom() -> None:
+    raw = _UCL_ADR.read_bytes()
+    assert not raw.startswith(b"\xef\xbb\xbf")
+    text = raw.decode("utf-8")
+    assert text.startswith("# ADR-UCL-001")
 
 
 def test_doc_contains_approved_public_wording_section() -> None:
