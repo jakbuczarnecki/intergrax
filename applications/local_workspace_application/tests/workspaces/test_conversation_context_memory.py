@@ -1,21 +1,23 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Unit tests for Conversation thread memory adapter."""
+"""Unit tests for Conversation thread memory snapshot adapter."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 
+from intergrax.context.session_history import SessionHistorySnapshot
 from local_workspace_application.workspaces.conversation_context_execution import (
     build_conversation_execution_context,
 )
 from local_workspace_application.workspaces.conversation_context_memory import (
-    ContextLifecycleConversationThreadMemoryAdapter,
     ConversationThreadMemoryError,
     ConversationThreadMemoryPartitionV1,
-    ThreadMemoryLifecycleEnvelopeV1,
+    ConversationThreadMemorySnapshotV1,
+    SessionHistorySnapshotConversationThreadMemoryAdapter,
+    _build_snapshot_envelope,
     derive_conversation_thread_session_key,
 )
 from local_workspace_application.workspaces.conversation_context_models import (
@@ -40,26 +42,7 @@ _WORKSPACE_B = "workspace-2"
 _PRINCIPAL = "principal.alice"
 _THREAD = "thread-1"
 _THREAD_B = "thread-2"
-
-
-class FakeContextLifecycleThreadMemoryPort:
-    def __init__(self) -> None:
-        self._store: dict[str, ThreadMemoryLifecycleEnvelopeV1] = {}
-        self.load_calls = 0
-        self.save_calls = 0
-
-    def load_envelope(
-        self,
-        *,
-        tenant_id: str,
-        context_scope_id: str,
-    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
-        self.load_calls += 1
-        return self._store.get(context_scope_id)
-
-    def save_envelope(self, *, envelope: ThreadMemoryLifecycleEnvelopeV1) -> None:
-        self.save_calls += 1
-        self._store[envelope.snapshot.context_scope_id] = envelope
+_ADAPTER = SessionHistorySnapshotConversationThreadMemoryAdapter
 
 
 def _resolved(
@@ -124,6 +107,599 @@ def _limits(**overrides: int) -> ConversationThreadMemoryLimitsV1:
     return ConversationThreadMemoryLimitsV1(**payload)  # type: ignore[arg-type]
 
 
+def _scope(
+    *,
+    tenant: str = _TENANT,
+    binding: str = _BINDING,
+    thread: str = _THREAD,
+) -> str:
+    return derive_conversation_thread_session_key(
+        tenant_id=tenant,
+        conversation_context_binding_id=binding,
+        canonical_thread_ref=thread,
+    )
+
+
+def _tamper_envelope(
+    envelope: ConversationThreadMemorySnapshotV1,
+    **overrides: object,
+) -> ConversationThreadMemorySnapshotV1:
+    fields = {
+        "schema_version": envelope.schema_version,
+        "tenant_id": envelope.tenant_id,
+        "conversation_context_binding_id": envelope.conversation_context_binding_id,
+        "canonical_thread_ref": envelope.canonical_thread_ref,
+        "audience_mode": envelope.audience_mode,
+        "workspace_id": envelope.workspace_id,
+        "snapshot": envelope.snapshot,
+        "message_created_at": envelope.message_created_at,
+    }
+    fields.update(overrides)
+    return ConversationThreadMemorySnapshotV1(**fields)  # type: ignore[arg-type]
+
+
+def test_none_snapshot_loads_as_empty_history() -> None:
+    context = _context()
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        limits=_limits(),
+        now=_NOW,
+    )
+    assert history == ()
+
+
+def test_append_to_empty_returns_new_snapshot() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="first"),
+    )
+    assert snapshot is not None
+    assert len(snapshot.snapshot.messages) == 1
+    assert snapshot.snapshot.revision_id.startswith("lkw-thread-revision:v1:")
+
+
+def test_original_snapshot_unchanged_after_append() -> None:
+    context = _context()
+    first = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="first"),
+    )
+    original_revision = first.snapshot.revision_id
+    original_message_count = len(first.snapshot.messages)
+    _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=first,
+        message=_message(content="second", created_at=_NOW + timedelta(seconds=1)),
+    )
+    assert first.snapshot.revision_id == original_revision
+    assert len(first.snapshot.messages) == original_message_count
+
+
+def test_append_uses_last_sequence_plus_one() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="one"),
+    )
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        message=_message(content="two", created_at=_NOW + timedelta(seconds=1)),
+    )
+    sequences = [message.sequence for message in snapshot.snapshot.messages]
+    assert sequences == [0, 1]
+
+
+def test_append_exchange_creates_one_result_with_user_then_assistant() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_exchange(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        user_message=_message(
+            role=ConversationThreadMemoryMessageRole.USER,
+            content="question",
+        ),
+        assistant_message=_message(
+            role=ConversationThreadMemoryMessageRole.ASSISTANT,
+            content="answer",
+            created_at=_NOW + timedelta(seconds=1),
+        ),
+    )
+    assert len(snapshot.snapshot.messages) == 2
+    assert snapshot.snapshot.messages[0].role == "user"
+    assert snapshot.snapshot.messages[1].role == "assistant"
+    assert snapshot.snapshot.messages[0].sequence == 0
+    assert snapshot.snapshot.messages[1].sequence == 1
+
+
+def test_invalid_assistant_role_fails_before_result() -> None:
+    context = _context()
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.append_exchange(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=None,
+            user_message=_message(role=ConversationThreadMemoryMessageRole.USER, content="q"),
+            assistant_message=_message(role=ConversationThreadMemoryMessageRole.USER, content="bad"),
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_EXCHANGE_ASSISTANT_ROLE_REQUIRED"
+
+
+def test_invalid_user_role_fails_before_result() -> None:
+    context = _context()
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.append_exchange(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=None,
+            user_message=_message(role=ConversationThreadMemoryMessageRole.ASSISTANT, content="bad"),
+            assistant_message=_message(
+                role=ConversationThreadMemoryMessageRole.ASSISTANT,
+                content="answer",
+            ),
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_EXCHANGE_USER_ROLE_REQUIRED"
+
+
+def test_same_resulting_history_gives_same_revision_id() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="stable"),
+    )
+    partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
+    rebuilt = _build_snapshot_envelope(
+        partition=partition,
+        context_scope_id=_scope(),
+        messages=snapshot.snapshot.messages,
+        created_at_entries=snapshot.message_created_at,
+    )
+    assert snapshot.snapshot.revision_id == rebuilt.snapshot.revision_id
+
+
+def test_different_content_gives_different_revision_id() -> None:
+    context = _context()
+    first = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="alpha"),
+    )
+    second = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="beta"),
+    )
+    assert first.snapshot.revision_id != second.snapshot.revision_id
+
+
+def test_tenant_mismatch_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    tampered = _tamper_envelope(snapshot, tenant_id="tenant-b")
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_TENANT_MISMATCH"
+
+
+def test_binding_mismatch_fails_closed() -> None:
+    context = _context(binding=_BINDING)
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    tampered = _tamper_envelope(snapshot, conversation_context_binding_id=_BINDING_B)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_BINDING_MISMATCH"
+
+
+def test_thread_mismatch_fails_closed() -> None:
+    context = _context(thread=_THREAD)
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    tampered = _tamper_envelope(snapshot, canonical_thread_ref="tampered-thread")
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_THREAD_MISMATCH"
+
+
+def test_audience_mismatch_fails_closed() -> None:
+    personal = _context(audience=ConversationAudienceMode.PERSONAL)
+    snapshot = _ADAPTER.append_message(
+        context=personal,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="personal"),
+    )
+    shared = _context(audience=ConversationAudienceMode.SHARED, binding=_BINDING)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=shared,  # type: ignore[arg-type]
+            memory_snapshot=snapshot,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_AUDIENCE_MISMATCH"
+
+
+def test_workspace_mismatch_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    mismatched = _context(workspace=_WORKSPACE_B)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=mismatched,  # type: ignore[arg-type]
+            memory_snapshot=snapshot,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_WORKSPACE_MISMATCH"
+
+
+def test_snapshot_scope_mismatch_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    wrong_scope = _scope(thread="other-thread")
+    tampered_snapshot = SessionHistorySnapshot(
+        tenant_id=snapshot.snapshot.tenant_id,
+        context_scope_id=wrong_scope,
+        revision_id=snapshot.snapshot.revision_id,
+        messages=snapshot.snapshot.messages,
+        source_content_hash=snapshot.snapshot.source_content_hash,
+    )
+    tampered = _tamper_envelope(snapshot, snapshot=tampered_snapshot)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_SNAPSHOT_IDENTITY_MISMATCH"
+
+
+def test_snapshot_tenant_mismatch_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    tampered_snapshot = SessionHistorySnapshot(
+        tenant_id="tenant-b",
+        context_scope_id=snapshot.snapshot.context_scope_id,
+        revision_id=snapshot.snapshot.revision_id,
+        messages=snapshot.snapshot.messages,
+        source_content_hash=snapshot.snapshot.source_content_hash,
+    )
+    tampered = _tamper_envelope(snapshot, snapshot=tampered_snapshot)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_SNAPSHOT_IDENTITY_MISMATCH"
+
+
+def test_missing_timestamp_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    tampered = _tamper_envelope(snapshot, message_created_at=())
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_MISSING"
+
+
+def test_duplicate_timestamp_id_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    message_id = snapshot.snapshot.messages[0].message_id
+    duplicate_entries = (
+        (message_id, _NOW.isoformat()),
+        (message_id, _NOW.isoformat()),
+    )
+    tampered = _tamper_envelope(snapshot, message_created_at=duplicate_entries)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_DUPLICATE"
+
+
+def test_unknown_timestamp_id_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    message_id = snapshot.snapshot.messages[0].message_id
+    unknown_entries = (
+        (message_id, _NOW.isoformat()),
+        ("unknown-message-id", _NOW.isoformat()),
+    )
+    tampered = _tamper_envelope(snapshot, message_created_at=unknown_entries)
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_UNKNOWN"
+
+
+def test_non_utc_timestamp_fails_closed() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    message_id = snapshot.snapshot.messages[0].message_id
+    warsaw = datetime(2024, 6, 1, 12, 0, tzinfo=timezone(timedelta(hours=2)))
+    tampered = _tamper_envelope(
+        snapshot,
+        message_created_at=((message_id, warsaw.isoformat()),),
+    )
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        _ADAPTER.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_INVALID"
+
+
+def test_two_threads_remain_isolated() -> None:
+    first_context = _context(thread=_THREAD)
+    second_context = _context(thread=_THREAD_B)
+    first_snapshot = _ADAPTER.append_message(
+        context=first_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="first"),
+    )
+    second_snapshot = _ADAPTER.append_message(
+        context=second_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="second"),
+    )
+    first_history = _ADAPTER.load_bounded_history(
+        context=first_context,  # type: ignore[arg-type]
+        memory_snapshot=first_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    second_history = _ADAPTER.load_bounded_history(
+        context=second_context,  # type: ignore[arg-type]
+        memory_snapshot=second_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    assert first_history[0].content == "first"
+    assert second_history[0].content == "second"
+
+
+def test_two_bindings_remain_isolated() -> None:
+    first_context = _context(binding=_BINDING)
+    second_context = _context(binding=_BINDING_B)
+    first_snapshot = _ADAPTER.append_message(
+        context=first_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="binding-a"),
+    )
+    second_snapshot = _ADAPTER.append_message(
+        context=second_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="binding-b"),
+    )
+    first_history = _ADAPTER.load_bounded_history(
+        context=first_context,  # type: ignore[arg-type]
+        memory_snapshot=first_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    second_history = _ADAPTER.load_bounded_history(
+        context=second_context,  # type: ignore[arg-type]
+        memory_snapshot=second_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    assert first_history[0].content == "binding-a"
+    assert second_history[0].content == "binding-b"
+
+
+def test_personal_and_shared_partitions_remain_isolated() -> None:
+    personal_context = _context(audience=ConversationAudienceMode.PERSONAL)
+    shared_context = _context(audience=ConversationAudienceMode.SHARED, binding=_BINDING_B)
+    personal_snapshot = _ADAPTER.append_message(
+        context=personal_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="personal"),
+    )
+    shared_snapshot = _ADAPTER.append_message(
+        context=shared_context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="shared"),
+    )
+    personal_history = _ADAPTER.load_bounded_history(
+        context=personal_context,  # type: ignore[arg-type]
+        memory_snapshot=personal_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    shared_history = _ADAPTER.load_bounded_history(
+        context=shared_context,  # type: ignore[arg-type]
+        memory_snapshot=shared_snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    assert personal_history[0].content == "personal"
+    assert shared_history[0].content == "shared"
+
+
+def test_max_age_keeps_only_non_expired_messages() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="old", created_at=_NOW - timedelta(seconds=120)),
+    )
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        message=_message(content="fresh", created_at=_NOW - timedelta(seconds=10)),
+    )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(max_age_seconds=60),
+        now=_NOW,
+    )
+    assert [item.content for item in history] == ["fresh"]
+
+
+def test_max_messages_retains_newest_suffix() -> None:
+    context = _context()
+    snapshot = None
+    for index in range(4):
+        snapshot = _ADAPTER.append_message(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=snapshot,
+            message=_message(content=f"m{index}", created_at=_NOW + timedelta(seconds=index)),
+        )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(max_messages=2),
+        now=_NOW + timedelta(seconds=10),
+    )
+    assert [item.content for item in history] == ["m2", "m3"]
+
+
+def test_max_bytes_retains_newest_suffix() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="aaaa", created_at=_NOW),
+    )
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        message=_message(content="bbbb", created_at=_NOW + timedelta(seconds=1)),
+    )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(max_bytes=5),
+        now=_NOW + timedelta(seconds=2),
+    )
+    assert [item.content for item in history] == ["bbbb"]
+
+
+def test_oversized_newest_message_returns_empty_tuple() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="x" * 20, created_at=_NOW),
+    )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(max_bytes=10),
+        now=_NOW,
+    )
+    assert history == ()
+
+
+def test_returned_history_is_immutable() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(),
+    )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    with pytest.raises((TypeError, ValueError)):
+        history[0].content = "mutated"  # type: ignore[misc]
+
+
+def test_no_persistence_network_or_provider_calls() -> None:
+    context = _context()
+    snapshot = _ADAPTER.append_message(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=None,
+        message=_message(content="pure"),
+    )
+    history = _ADAPTER.load_bounded_history(
+        context=context,  # type: ignore[arg-type]
+        memory_snapshot=snapshot,
+        limits=_limits(),
+        now=_NOW,
+    )
+    assert history[0].content == "pure"
+
+
 def test_same_identity_produces_same_session_key() -> None:
     first = derive_conversation_thread_session_key(
         tenant_id=_TENANT,
@@ -137,330 +713,6 @@ def test_same_identity_produces_same_session_key() -> None:
     )
     assert first == second
     assert first.startswith("lkw-conversation-thread:v1:")
-
-
-def test_changing_tenant_changes_session_key() -> None:
-    base = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    changed = derive_conversation_thread_session_key(
-        tenant_id="tenant-b",
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    assert base != changed
-
-
-def test_changing_binding_changes_session_key() -> None:
-    base = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    changed = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING_B,
-        canonical_thread_ref=_THREAD,
-    )
-    assert base != changed
-
-
-def test_changing_thread_changes_session_key() -> None:
-    base = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    changed = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD_B,
-    )
-    assert base != changed
-
-
-def test_personal_and_shared_histories_do_not_mix() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    personal = _context(audience=ConversationAudienceMode.PERSONAL, binding=_BINDING)
-    shared = _context(audience=ConversationAudienceMode.SHARED, binding=_BINDING_B)
-    adapter.append_message(context=personal, message=_message(content="personal"))
-    adapter.append_message(context=shared, message=_message(content="shared"))
-    personal_history = adapter.load_bounded_history(context=personal, limits=_limits(), now=_NOW)
-    shared_history = adapter.load_bounded_history(context=shared, limits=_limits(), now=_NOW)
-    assert len(personal_history) == 1
-    assert personal_history[0].content == "personal"
-    assert len(shared_history) == 1
-    assert shared_history[0].content == "shared"
-
-
-def test_two_thread_refs_do_not_mix() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    first = _context(thread=_THREAD)
-    second = _context(thread=_THREAD_B)
-    adapter.append_message(context=first, message=_message(content="first"))
-    adapter.append_message(context=second, message=_message(content="second"))
-    assert adapter.load_bounded_history(context=first, limits=_limits(), now=_NOW)[0].content == "first"
-    assert adapter.load_bounded_history(context=second, limits=_limits(), now=_NOW)[0].content == "second"
-
-
-def test_two_bindings_do_not_mix() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    first = _context(binding=_BINDING)
-    second = _context(binding=_BINDING_B)
-    adapter.append_message(context=first, message=_message(content="binding-a"))
-    adapter.append_message(context=second, message=_message(content="binding-b"))
-    assert adapter.load_bounded_history(context=first, limits=_limits(), now=_NOW)[0].content == "binding-a"
-    assert adapter.load_bounded_history(context=second, limits=_limits(), now=_NOW)[0].content == "binding-b"
-
-
-def test_workspace_mismatch_fails_closed() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(context=context, message=_message())
-    mismatched = _context(workspace=_WORKSPACE_B)
-    with pytest.raises(ConversationThreadMemoryError) as exc_info:
-        adapter.load_bounded_history(context=mismatched, limits=_limits(), now=_NOW)
-    assert exc_info.value.error_code == "THREAD_MEMORY_WORKSPACE_MISMATCH"
-
-
-def test_audience_mismatch_fails_closed() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    personal = _context(audience=ConversationAudienceMode.PERSONAL)
-    adapter.append_message(context=personal, message=_message(content="personal"))
-    shared = _context(audience=ConversationAudienceMode.SHARED)
-    with pytest.raises(ConversationThreadMemoryError) as exc_info:
-        adapter.load_bounded_history(context=shared, limits=_limits(), now=_NOW)
-    assert exc_info.value.error_code == "THREAD_MEMORY_AUDIENCE_MISMATCH"
-
-
-def test_tenant_mismatch_fails_closed() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(context=context, message=_message())
-    scope = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    stored = port.load_envelope(tenant_id=_TENANT, context_scope_id=scope)
-    assert stored is not None
-    tampered = ThreadMemoryLifecycleEnvelopeV1(
-        schema_version=stored.schema_version,
-        tenant_id="tenant-b",
-        conversation_context_binding_id=stored.conversation_context_binding_id,
-        canonical_thread_ref=stored.canonical_thread_ref,
-        audience_mode=stored.audience_mode,
-        workspace_id=stored.workspace_id,
-        snapshot=stored.snapshot,
-        message_created_at=stored.message_created_at,
-    )
-    port.save_envelope(envelope=tampered)
-    with pytest.raises(ConversationThreadMemoryError) as exc_info:
-        adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW)
-    assert exc_info.value.error_code == "THREAD_MEMORY_TENANT_MISMATCH"
-
-
-def test_binding_mismatch_fails_closed() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context(binding=_BINDING)
-    adapter.append_message(context=context, message=_message())
-    scope = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    stored = port.load_envelope(tenant_id=_TENANT, context_scope_id=scope)
-    assert stored is not None
-    tampered = ThreadMemoryLifecycleEnvelopeV1(
-        schema_version=stored.schema_version,
-        tenant_id=stored.tenant_id,
-        conversation_context_binding_id=_BINDING_B,
-        canonical_thread_ref=stored.canonical_thread_ref,
-        audience_mode=stored.audience_mode,
-        workspace_id=stored.workspace_id,
-        snapshot=stored.snapshot,
-        message_created_at=stored.message_created_at,
-    )
-    port.save_envelope(envelope=tampered)
-    with pytest.raises(ConversationThreadMemoryError) as exc_info:
-        adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW)
-    assert exc_info.value.error_code == "THREAD_MEMORY_BINDING_MISMATCH"
-
-
-def test_thread_mismatch_fails_closed() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context(thread=_THREAD)
-    adapter.append_message(context=context, message=_message())
-    scope = derive_conversation_thread_session_key(
-        tenant_id=_TENANT,
-        conversation_context_binding_id=_BINDING,
-        canonical_thread_ref=_THREAD,
-    )
-    stored = port.load_envelope(tenant_id=_TENANT, context_scope_id=scope)
-    assert stored is not None
-    tampered = ThreadMemoryLifecycleEnvelopeV1(
-        schema_version=stored.schema_version,
-        tenant_id=stored.tenant_id,
-        conversation_context_binding_id=stored.conversation_context_binding_id,
-        canonical_thread_ref="tampered-thread",
-        audience_mode=stored.audience_mode,
-        workspace_id=stored.workspace_id,
-        snapshot=stored.snapshot,
-        message_created_at=stored.message_created_at,
-    )
-    port.save_envelope(envelope=tampered)
-    with pytest.raises(ConversationThreadMemoryError) as exc_info:
-        adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW)
-    assert exc_info.value.error_code == "THREAD_MEMORY_THREAD_MISMATCH"
-
-
-def test_chronological_order_preserved() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(
-        context=context,
-        message=_message(content="one", created_at=_NOW - timedelta(minutes=2)),
-    )
-    adapter.append_message(
-        context=context,
-        message=_message(content="two", created_at=_NOW - timedelta(minutes=1)),
-    )
-    history = adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW)
-    assert [item.content for item in history] == ["one", "two"]
-
-
-def test_max_age_seconds_removes_expired_entries() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(
-        context=context,
-        message=_message(content="old", created_at=_NOW - timedelta(seconds=120)),
-    )
-    adapter.append_message(
-        context=context,
-        message=_message(content="fresh", created_at=_NOW - timedelta(seconds=10)),
-    )
-    history = adapter.load_bounded_history(
-        context=context,
-        limits=_limits(max_age_seconds=60),
-        now=_NOW,
-    )
-    assert [item.content for item in history] == ["fresh"]
-
-
-def test_max_messages_keeps_newest_suffix() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    for index in range(4):
-        adapter.append_message(
-            context=context,
-            message=_message(content=f"m{index}", created_at=_NOW + timedelta(seconds=index)),
-        )
-    history = adapter.load_bounded_history(
-        context=context,
-        limits=_limits(max_messages=2),
-        now=_NOW + timedelta(seconds=10),
-    )
-    assert [item.content for item in history] == ["m2", "m3"]
-
-
-def test_max_bytes_keeps_newest_suffix() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(
-        context=context,
-        message=_message(content="aaaa", created_at=_NOW),
-    )
-    adapter.append_message(
-        context=context,
-        message=_message(content="bbbb", created_at=_NOW + timedelta(seconds=1)),
-    )
-    history = adapter.load_bounded_history(
-        context=context,
-        limits=_limits(max_bytes=5),
-        now=_NOW + timedelta(seconds=2),
-    )
-    assert [item.content for item in history] == ["bbbb"]
-
-
-def test_oversized_newest_message_returns_empty_tuple() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(
-        context=context,
-        message=_message(content="x" * 20, created_at=_NOW),
-    )
-    history = adapter.load_bounded_history(
-        context=context,
-        limits=_limits(max_bytes=10),
-        now=_NOW,
-    )
-    assert history == ()
-
-
-def test_append_uses_platform_lifecycle_port() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(context=context, message=_message(content="stored"))
-    assert port.save_calls == 1
-    assert port.load_calls >= 1
-
-
-def test_append_exchange_preserves_user_then_assistant_order() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_exchange(
-        context=context,
-        user_message=_message(
-            role=ConversationThreadMemoryMessageRole.USER,
-            content="question",
-            created_at=_NOW,
-        ),
-        assistant_message=_message(
-            role=ConversationThreadMemoryMessageRole.ASSISTANT,
-            content="answer",
-            created_at=_NOW + timedelta(seconds=1),
-        ),
-    )
-    history = adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW + timedelta(seconds=2))
-    assert [item.role for item in history] == [
-        ConversationThreadMemoryMessageRole.USER,
-        ConversationThreadMemoryMessageRole.ASSISTANT,
-    ]
-
-
-def test_history_returned_from_adapter_is_immutable() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    adapter = ContextLifecycleConversationThreadMemoryAdapter(port)
-    context = _context()
-    adapter.append_message(context=context, message=_message())
-    history = adapter.load_bounded_history(context=context, limits=_limits(), now=_NOW)
-    with pytest.raises((TypeError, ValueError)):
-        history[0].content = "mutated"  # type: ignore[misc]
-
-
-def test_adapter_construction_performs_no_persistence_or_network_work() -> None:
-    port = FakeContextLifecycleThreadMemoryPort()
-    ContextLifecycleConversationThreadMemoryAdapter(port)
-    assert port.load_calls == 0
-    assert port.save_calls == 0
 
 
 def test_partition_descriptor_fields() -> None:
