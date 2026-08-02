@@ -1,8 +1,8 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** Ready for review (**CTX-UCL-ARCH-1-R4**)
+**Status:** **CTX-UCL-1** ready for review
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
-**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (Proposed / Ready for Review)
+**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Related plans:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md)
 
@@ -12,12 +12,14 @@
 
 | Item | Status |
 |------|--------|
-| **CTX-UCL-ARCH-1** | **Architecture delivered through R1/R2/R3/R4** |
+| **CTX-UCL-ARCH-1** | **ACCEPTED / CLOSED** through R4-R1 |
 | **CTX-UCL-ARCH-1-R1** | **Correction delivered** |
 | **CTX-UCL-ARCH-1-R2** | **Accepted / Closed** |
-| **CTX-UCL-ARCH-1-R3** | **Correction delivered through R4** |
-| **CTX-UCL-ARCH-1-R4** | **Ready for review** |
-| **CTX-UCL-1 … CTX-UCL-6** | Not started |
+| **CTX-UCL-ARCH-1-R3** | **Closed through R4** |
+| **CTX-UCL-ARCH-1-R4** | **Accepted / Closed** |
+| **CTX-UCL-ARCH-1-R4-R1** | **Accepted / Closed** |
+| **CTX-UCL-1** | **Ready for review** |
+| **CTX-UCL-2 … CTX-UCL-6** | Not started |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
@@ -34,7 +36,7 @@
 | Dependency | Role |
 |------------|------|
 | **TOKEN-10A–10D** | Closed — pipeline, cache-stable assembly, cache-aware orchestration provide executor and timing gate |
-| **ADR-UCL-001** | Cross-domain ownership, flows, validation ordering, reusable artifact lifecycle, internal-call boundary, single-flight creation — Proposed / Ready for Review |
+| **ADR-UCL-001** | Cross-domain ownership, flows, validation ordering, reusable artifact lifecycle, internal-call boundary, single-flight creation — **Accepted** |
 | **ADR-MEM-001** | Context Compiler budget semantics — superseded where UCL conflicts |
 | **MEMORY** domain | `ConversationLedger`, `SessionContextRevision`, `OptimizationArtifactRepository`, `InMemoryOptimizationArtifactRepository` (CTX-UCL-2), retention |
 | **CONTEXT_ENGINEERING** domain | `ContextPlan`, collection, compilation, final integrity validation, preflight, internal-call budget classification (CTX-UCL-3) |
@@ -47,8 +49,8 @@
 **Canonical sequence:**
 
 ```text
-CTX-UCL-ARCH-1-R4 → accepted
-CTX-UCL-1 → scope/guard/reservation contracts
+CTX-UCL-ARCH-1 → accepted/closed
+CTX-UCL-1 → scope/guard/reservation contracts (ready for review)
 CTX-UCL-2 → OptimizationArtifactRepository + InMemoryOptimizationArtifactRepository
 CTX-UCL-3 → ContextPlan artifact requirements
 CTX-UCL-4 → non-recursive internal executor behavior
@@ -70,7 +72,8 @@ TOKEN-10E-1 → may begin
 | **CTX-UCL-ARCH-1-R1** | Ownership reconciliation, canonical flows, validation order, ADR-UCL-001, guardrails | **Correction delivered** |
 | **CTX-UCL-ARCH-1-R2** | Document integrity and audit accuracy | **Accepted / Closed** |
 | **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, decision outcomes, roadmap sync | **Correction delivered through R4** |
-| **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight artifact creation, repository delivery ownership | **Ready for review** |
+| **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight artifact creation, repository delivery ownership | **Accepted / Closed** |
+| **CTX-UCL-ARCH-1-R4-R1** | ADR BOM regression guard | **Accepted / Closed** |
 
 ### Phase 1 — Contracts
 
@@ -186,4 +189,4 @@ TOKEN-10E-1 → may begin
 
 ## Next step
 
-**Review and accept CTX-UCL-ARCH-1-R4**, then begin **CTX-UCL-1** (scope/guard/reservation contracts).
+**Independent review of CTX-UCL-1** (canonical contracts). After acceptance: **CTX-UCL-2** — `OptimizationArtifactRepository` and `InMemoryOptimizationArtifactRepository`.

@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** Ready for review (**CTX-UCL-ARCH-1-R4**)
+**Status:** **CTX-UCL-1** ready for review (contracts delivered)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
-**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture pass:** 2026-08-02 — **CTX-UCL-ARCH-1-R4** internal model-call boundary, single-flight artifact creation, repository delivery ownership
+**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — **Accepted**) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
+**Last architecture pass:** 2026-08-02 — **CTX-UCL-1** canonical contracts delivered (`intergrax/runtime/context_lifecycle/`)
 
 ---
 
@@ -13,9 +13,9 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-ARCH-1-R4** — internal model-call boundary, single-flight artifact creation, repository delivery ownership |
-| Prior passes | **CTX-UCL-ARCH-1-R3** (correction delivered through R4) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R1** · **CTX-UCL-ARCH-1** |
-| Runtime implementation | **Not started** |
+| Task | **CTX-UCL-1** — canonical contracts delivered; repository and runtime integration not started |
+| Prior passes | **CTX-UCL-ARCH-1** (**ACCEPTED / CLOSED** through **R4-R1**) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R3** (closed through R4) · **CTX-UCL-ARCH-1-R4** (accepted/closed) · **CTX-UCL-ARCH-1-R4-R1** (accepted/closed) |
+| Runtime implementation | **CTX-UCL-1 contracts delivered** — repository (**CTX-UCL-2**) and runtime integration (**CTX-UCL-4/5**) not started |
 | TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
@@ -537,7 +537,9 @@ Do not change TOKEN-10D router/timing result semantics in this architecture pass
 
 ---
 
-## 9. Canonical data model (contracts — not implemented)
+## 9. Canonical data model (CTX-UCL-1 contracts)
+
+Implemented in `intergrax/runtime/context_lifecycle/` — contracts only; no repository or runtime integration.
 
 ### 9.0 Core durable concepts
 
@@ -575,7 +577,7 @@ Atomic groups: user+assistant exchange; assistant tool call + tool results; pinn
 
 ### 9.5 `ContextOptimizationPolicy`
 
-Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `DURABLE`), `allow_lossy`, `allowed_targets`, `allowed_strategies`, `require_receipt`, `require_rollback_metadata`, `require_human_review`, recent-tail policy, protected-region policy, quality thresholds, cache policy, retention policy reference.
+Normalized contract: `policy_version`, `validation_contract_version`, `enabled`, `mode` (`EPHEMERAL_ASSEMBLY` | `DURABLE_COMPACTION`), `allow_lossy`, `allow_llm_summarization`, `allow_artifact_reuse`, `allow_administrative_refresh`, `allowed_artifact_types`, `allowed_strategy_ids`, `require_receipt`, `require_rollback_metadata`, `require_human_review`, `ephemeral_artifact_persistence`, `recent_tail_min_messages`, `protected_region_policy_version`, `minimum_quality_score`, `reservation_lease_seconds`, `cache_policy_ref`, `retention_policy_ref`, `safe_metadata`.
 
 ### 9.6 `OptimizationArtifact` (typed union)
 
@@ -599,27 +601,27 @@ Normalized contract (not independent flags): `enabled`, `mode` (`EPHEMERAL` | `D
 
 ### 9.9 `ArtifactLookupKey`
 
-Canonical artifact compatibility identity for catalog lookup (see §6.3.2). Implemented in **CTX-UCL-1**; lookup contract in **CTX-UCL-2**.
+Canonical artifact compatibility identity: `tenant_id`, `context_scope_id`, `artifact_type`, `source_content_hash`, `strategy_id`, `strategy_version`, `policy_version`, `validation_contract_version`, `compression_target` (`target_tokens` | `budget_class`), `lossiness_profile`, exactly one of `source_refs` or `source_range`, optional `protected_region_policy_version`, `model_family`, `locale`. Deterministic SHA-256 identity via `compute_artifact_lookup_key_hash`. Lookup contract in **CTX-UCL-2**.
 
 ### 9.10 `ReusableOptimizationArtifact`
 
-Canonical reusable optimization artifact metadata record (see §6.3.3). Persisted by Memory/Session catalog; created by Token Optimization only on `CREATE_ARTIFACT`.
+Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_content_hash`, `created_at`, `created_by_executor`, `validation` (`ArtifactValidationSummary`), `status`, `invalidation_reason`, `supersedes_artifact_id`, `receipt_ref`, `safe_metadata`. No raw payload. Persisted by Memory/Session catalog (**CTX-UCL-2**); created by Token Optimization only on `CREATE_ARTIFACT`.
 
 ### 9.11 `ModelCallExecutionScope`
 
-Typed execution scope for model invocations (see §6.4). Minimum values: `PRIMARY_MODEL_CALL`, `INTERNAL_OPTIMIZATION_CALL`. Implemented in **CTX-UCL-1**.
+`PRIMARY_MODEL_CALL`, `INTERNAL_OPTIMIZATION_CALL`. Implemented in **CTX-UCL-1**.
 
 ### 9.12 `OptimizationExecutionGuard`
 
-Recursion guard contract (see §6.5). Implemented in **CTX-UCL-1**.
+`execution_scope`, `operation_id`, `parent_operation_id`, `optimization_depth`, `active_artifact_lookup_key_hashes`, `active_strategy_ids`. Implemented in **CTX-UCL-1**.
 
 ### 9.13 `ArtifactCreationCoordinationStatus`
 
-Reservation/concurrency coordination status separate from `ContextOptimizationDecision` (see §6.6). Implemented in **CTX-UCL-1**.
+`ARTIFACT_AVAILABLE`, `ACQUIRED`, `ALREADY_IN_PROGRESS`, `RESERVATION_EXPIRED`, `RESERVATION_CONFLICT`. Implemented in **CTX-UCL-1**.
 
 ### 9.14 `ArtifactCreationReservation`
 
-Single-flight creation reservation/lease contract (see §6.6). Repository operations implemented in **CTX-UCL-2** (`OptimizationArtifactRepository` + `InMemoryOptimizationArtifactRepository` reference implementation).
+`reservation_id`, `artifact_lookup_key_hash`, `tenant_id`, `owner_operation_id`, `acquired_at`, `lease_deadline`. Contract in **CTX-UCL-1**; repository operations in **CTX-UCL-2**.
 
 ---
 
@@ -920,12 +922,13 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Delivered through R1/R2/R3/R4** |
+| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **ACCEPTED / CLOSED** through R4-R1 |
 | **CTX-UCL-ARCH-1-R1** | Ownership, flow, TOKEN-10E reconciliation, ADR-UCL-001 | **Correction delivered** |
 | **CTX-UCL-ARCH-1-R2** | Document integrity and audit accuracy | **Accepted / Closed** |
-| **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Correction delivered through R4** |
-| **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight creation, repository delivery ownership | **Ready for review** |
-| **CTX-UCL-1** | Contracts only: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no repository implementation; no LLM calls** | Not started |
+| **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Closed through R4** |
+| **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight creation, repository delivery ownership | **Accepted / Closed** |
+| **CTX-UCL-ARCH-1-R4-R1** | ADR BOM regression guard | **Accepted / Closed** |
+| **CTX-UCL-1** | Contracts: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no repository implementation; no LLM calls** | **Ready for review** |
 | **CTX-UCL-2** | `OptimizationArtifactRepository` neutral interface; **`InMemoryOptimizationArtifactRepository`** reference implementation; atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; atomic or observably ordered validated store; reservation release/failure handling; artifact invalidation and retirement; artifact reference resolution; `SessionContextRevision` artifact references; deterministic concurrency tests | Not started |
 | **CTX-UCL-3** | `ContextPlan` source/target requirements; internal-call budget classification where CE participates; deterministic `ArtifactLookupKey` inputs; no catalog lookup inside CE | Not started |
 | **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source; no executor on `REUSE_ARTIFACT` or `ALREADY_IN_PROGRESS`; receipt tied to parent operation and lookup key | Not started |
@@ -933,7 +936,7 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Not started |
 | **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no ambiguous delivery item; no competing summary caches | Not started |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R4` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` ready for review → `CTX-UCL-2` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
 
 **After CTX-UCL-CLOSEOUT-1:**
 
