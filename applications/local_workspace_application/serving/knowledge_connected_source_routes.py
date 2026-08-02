@@ -7,7 +7,7 @@ from __future__ import annotations
 import hashlib
 import re
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request, status
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request, Response, status
 
 from local_workspace_application.serving.knowledge_connected_source_schemas import (
     ConnectedIndexedSourceSyncAcceptedV1,
@@ -24,11 +24,22 @@ from local_workspace_application.workspaces.connected_source_models import (
 from local_workspace_application.workspaces.connected_source_wiring import ConnectedSourceWiring
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationError,
+    WorkspaceKnowledgeMutationExecutionDispositionV1,
 )
 from local_workspace_application.workspaces.knowledge_access_service import (
     CreateConnectedIndexedSourceRequest,
 )
-from local_workspace_application.workspaces.models import WorkspaceOperationStatus
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceIndexedSourceBindingStatusV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    is_workspace_source_product_visible,
+)
+from local_workspace_application.workspaces.models import (
+    WorkspaceOperationStatus,
+    WorkspaceSourceStatus,
+    WorkspaceSourceType,
+)
 from local_workspace_application.workspaces.service import ConcurrentSyncError, ManagedWorkspaceService
 from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
@@ -97,6 +108,36 @@ def _map_discovery_error(exc: ConnectedSourceDiscoveryError) -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
 
 
+def _resolve_committed_indexed_binding(
+    workspace_service: ManagedWorkspaceService,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    indexed_source_binding_id: str,
+) -> object:
+    configuration = workspace_service.repository.get_knowledge_configuration_head(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+    )
+    committed = configuration.committed_revision if configuration is not None else 0
+    binding = None
+    for version in workspace_service.repository.list_knowledge_indexed_source_versions(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+    ):
+        if version.indexed_source_binding_id != indexed_source_binding_id:
+            continue
+        if version.effective_revision <= committed:
+            if binding is None or version.effective_revision > binding.effective_revision:
+                binding = version
+    if binding is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="indexed_source_not_found",
+        )
+    return binding
+
+
 def mount_connected_source_knowledge_routes(
     app: FastAPI,
     *,
@@ -162,7 +203,6 @@ def mount_connected_source_knowledge_routes(
     @router.post(
         "/workspaces/{workspace_id}/knowledge/indexed-sources",
         response_model=CreateConnectedIndexedSourceResponseV1,
-        status_code=status.HTTP_201_CREATED,
     )
     async def create_indexed_source(
         request: Request,
@@ -171,7 +211,7 @@ def mount_connected_source_knowledge_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
         if_match: str | None = Header(default=None, alias="If-Match"),
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
-    ) -> CreateConnectedIndexedSourceResponseV1:
+    ) -> Response:
         tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
         expected_revision = _parse_if_match(if_match)
         idem_hash = _idempotency_hash(_require_idempotency_key(idempotency_key))
@@ -214,24 +254,45 @@ def mount_connected_source_knowledge_routes(
                 detail=exc.error_code,
             ) from exc
 
-        binding = workspace_service.repository.get_knowledge_indexed_source_version(
+        binding = _resolve_committed_indexed_binding(
+            workspace_service,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             indexed_source_binding_id=result.binding_id,
-            effective_revision=result.configuration_revision,
         )
-        safe_label = binding.cached_safe_display_label if binding is not None else ""
-        status_value = binding.status.value if binding is not None else "active"
-        return CreateConnectedIndexedSourceResponseV1(
+        if binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="indexed_source_inactive",
+            )
+        safe_label = binding.cached_safe_display_label
+        if not safe_label or not safe_label.strip():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="indexed_source_projection_incomplete",
+            )
+        disposition = result.mutation_result.disposition
+        status_code = status.HTTP_201_CREATED
+        if disposition in {
+            WorkspaceKnowledgeMutationExecutionDispositionV1.EXISTING_RESULT,
+            WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY,
+        }:
+            status_code = status.HTTP_200_OK
+        payload = CreateConnectedIndexedSourceResponseV1(
             workspace_id=workspace_id,
             indexed_source_binding_id=result.binding_id,
             source_id=result.source_id,
-            knowledge_source_binding_ref=binding.knowledge_source_binding_ref if binding else "",
+            knowledge_source_binding_ref=binding.knowledge_source_binding_ref,
             safe_display_label=safe_label,
-            status=status_value,
+            status=binding.status.value,
             sync_mode="full",
             audience_eligibility="personal_only",
             configuration_revision=result.configuration_revision,
+        )
+        return Response(
+            content=payload.model_dump_json(),
+            media_type="application/json",
+            status_code=status_code,
         )
 
     @router.post(
@@ -246,23 +307,47 @@ def mount_connected_source_knowledge_routes(
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> ConnectedIndexedSourceSyncAcceptedV1:
         tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        binding = _resolve_committed_indexed_binding(
+            workspace_service,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        if binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="indexed_source_inactive",
+            )
+        source = workspace_service.repository.get_source(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=binding.source_id,
+        )
+        if source is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="source_not_found")
+        if source.source_type is not WorkspaceSourceType.CONNECTED_SOURCE:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_sync_unsupported_for_source_type",
+            )
         configuration = workspace_service.repository.get_knowledge_configuration_head(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
         committed = configuration.committed_revision if configuration is not None else 0
-        binding = None
-        for version in workspace_service.repository.list_knowledge_indexed_source_versions(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
+        if not is_workspace_source_product_visible(
+            source,
+            committed_configuration_revision=committed,
         ):
-            if version.indexed_source_binding_id != indexed_source_binding_id:
-                continue
-            if version.effective_revision <= committed:
-                if binding is None or version.effective_revision > binding.effective_revision:
-                    binding = version
-        if binding is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="indexed_source_not_found")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_not_product_visible",
+            )
+        if source.status is WorkspaceSourceStatus.ERROR:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="source_unavailable",
+            )
         try:
             operation = workspace_service.create_sync_operation(
                 tenant_id=tenant_id,

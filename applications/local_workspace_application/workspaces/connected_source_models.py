@@ -7,7 +7,9 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+import re
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class RemoteResourceTypeV1(StrEnum):
@@ -47,6 +49,16 @@ class ConnectedSourceDeliveryStatusV1(StrEnum):
 
 ConnectedSourceDeliveryStatus = ConnectedSourceDeliveryStatusV1
 
+_SHA256_HEX_RE = re.compile(r"^[a-f0-9]{64}$")
+
+
+class ConnectedSourceReconciliationStateV1(StrEnum):
+    NEW_RECONCILIATION = "new_reconciliation"
+    CONTINUATION = "continuation"
+
+
+ConnectedSourceReconciliationState = ConnectedSourceReconciliationStateV1
+
 
 class ConnectedSourceDeliveryReceiptV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -65,6 +77,27 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
     items_failed: int = Field(default=0, ge=0)
     created_at: datetime
     completed_at: datetime | None = None
+
+    @field_validator("delivery_id")
+    @classmethod
+    def _validate_delivery_id(cls, value: str) -> str:
+        if not _SHA256_HEX_RE.fullmatch(value):
+            raise ValueError("connected_source_delivery_id_invalid")
+        return value
+
+    @model_validator(mode="after")
+    def _validate_status_invariants(self) -> ConnectedSourceDeliveryReceiptV1:
+        if self.status is ConnectedSourceDeliveryStatusV1.IN_PROGRESS:
+            if self.completed_at is not None:
+                raise ValueError("connected_source_delivery_in_progress_completed_at_set")
+            if self.items_failed != 0:
+                raise ValueError("connected_source_delivery_in_progress_items_failed")
+        elif self.status is ConnectedSourceDeliveryStatusV1.COMPLETED:
+            if self.completed_at is None:
+                raise ValueError("connected_source_delivery_completed_missing_completed_at")
+            if self.items_failed != 0:
+                raise ValueError("connected_source_delivery_completed_items_failed")
+        return self
 
 
 ConnectedSourceDeliveryReceipt = ConnectedSourceDeliveryReceiptV1

@@ -22,11 +22,16 @@ from local_workspace_application.workspaces.knowledge_ingestion import (
     KnowledgeIngestionService,
     register_knowledge_ingestion_worker_handler,
 )
-from local_workspace_application.workspaces.models import WorkspaceOperationStatus
+from local_workspace_application.workspaces.models import (
+    WorkspaceOperationStatus,
+    WorkspaceSourceType,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import (
     LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
     decode_managed_workspace_sync_job,
+    ManagedWorkspaceSyncJob,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 from local_workspace_application.workspaces.sync_worker import (
@@ -34,6 +39,9 @@ from local_workspace_application.workspaces.sync_worker import (
 )
 
 if TYPE_CHECKING:
+    from local_workspace_application.workspaces.connected_source_recovery import (
+        ConnectedSourceRecoveryService,
+    )
     from local_workspace_application.workspaces.ingestion_recovery import (
         KnowledgeIngestionRecoveryService,
     )
@@ -48,6 +56,10 @@ class ManagedWorkspaceSyncRuntime:
     _main_loop: asyncio.AbstractEventLoop | None = field(default=None, repr=False)
     _knowledge_ingestion_registered: bool = field(default=False, repr=False)
     _recovery_service: KnowledgeIngestionRecoveryService | None = field(default=None, repr=False)
+    _connected_source_recovery: ConnectedSourceRecoveryService | None = field(
+        default=None,
+        repr=False,
+    )
     _started: bool = field(default=False, repr=False)
 
     def bind_main_loop(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -79,9 +91,19 @@ class ManagedWorkspaceSyncRuntime:
             raise RuntimeError("knowledge_ingestion_recovery_after_start")
         self._recovery_service = recovery_service
 
+    def attach_connected_source_recovery(
+        self,
+        recovery_service: ConnectedSourceRecoveryService,
+    ) -> None:
+        if self._started:
+            raise RuntimeError("connected_source_recovery_after_start")
+        self._connected_source_recovery = recovery_service
+
     def start(self) -> None:
         if self._recovery_service is not None:
             self._recovery_service.recover_all()
+        if self._connected_source_recovery is not None:
+            self._connected_source_recovery.recover_running_operations()
         self.worker.start()
         self._started = True
 
@@ -95,9 +117,11 @@ def build_managed_workspace_sync_runtime(
     sync_service: ManagedWorkspaceSyncService,
     repository: ManagedWorkspaceRepository,
     existing_message_bus: MessageBus | None = None,
+    connected_source_recovery_tenant_ids: tuple[str, ...] = (),
 ) -> ManagedWorkspaceSyncRuntime:
     """Prefer an injected MessageBus; otherwise use durable DocumentStoreTaskQueue."""
     runtime_holder: dict[str, ManagedWorkspaceSyncRuntime] = {}
+    wiring_holder: dict[str, ToolWiringContext] = {}
 
     def _main_loop_provider() -> asyncio.AbstractEventLoop | None:
         runtime = runtime_holder.get("runtime")
@@ -124,6 +148,32 @@ def build_managed_workspace_sync_runtime(
             return
         if operation.status is not WorkspaceOperationStatus.RUNNING:
             return
+        source = repository.get_source(
+            tenant_id=job.tenant_id,
+            workspace_id=job.workspace_id,
+            source_id=job.source_id,
+        )
+        if source is not None and source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+            repository.put_operation(
+                operation.model_copy(
+                    update={
+                        "status": WorkspaceOperationStatus.QUEUED,
+                        "error": None,
+                    }
+                )
+            )
+            context = wiring_holder.get("context")
+            if context is not None:
+                enqueue_managed_workspace_sync(
+                    context,
+                    ManagedWorkspaceSyncJob(
+                        tenant_id=job.tenant_id,
+                        workspace_id=job.workspace_id,
+                        source_id=job.source_id,
+                        operation_id=job.operation_id,
+                    ),
+                )
+            return
         repository.put_operation(
             operation.model_copy(
                 update={
@@ -136,6 +186,7 @@ def build_managed_workspace_sync_runtime(
 
     if existing_message_bus is not None:
         wiring_context = ToolWiringContext(message_bus=existing_message_bus)
+        wiring_holder["context"] = wiring_context
         placeholder = DocumentStoreTaskQueue(document_store)
         worker = DocumentStoreTaskWorker(
             placeholder,
@@ -149,10 +200,22 @@ def build_managed_workspace_sync_runtime(
             registry=registry,
         )
         runtime_holder["runtime"] = runtime
+        if connected_source_recovery_tenant_ids:
+            from local_workspace_application.workspaces.connected_source_recovery import (
+                ConnectedSourceRecoveryService,
+            )
+
+            recovery = ConnectedSourceRecoveryService(
+                repository,
+                wiring_context,
+                tenant_ids=connected_source_recovery_tenant_ids,
+            )
+            runtime.attach_connected_source_recovery(recovery)
         return runtime
 
     durable_queue = DocumentStoreTaskQueue(document_store)
     wiring_context = ToolWiringContext(message_bus=durable_queue)
+    wiring_holder["context"] = wiring_context
     worker = DocumentStoreTaskWorker(
         durable_queue,
         registry,
@@ -165,4 +228,15 @@ def build_managed_workspace_sync_runtime(
         registry=registry,
     )
     runtime_holder["runtime"] = runtime
+    if connected_source_recovery_tenant_ids:
+        from local_workspace_application.workspaces.connected_source_recovery import (
+            ConnectedSourceRecoveryService,
+        )
+
+        recovery = ConnectedSourceRecoveryService(
+            repository,
+            wiring_context,
+            tenant_ids=connected_source_recovery_tenant_ids,
+        )
+        runtime.attach_connected_source_recovery(recovery)
     return runtime

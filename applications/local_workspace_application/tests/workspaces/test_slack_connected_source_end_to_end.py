@@ -72,7 +72,9 @@ from local_workspace_application.workspaces.sync_service import ManagedWorkspace
 
 pytestmark = [pytest.mark.unit]
 
-_MARKER = "SLACK-ORION-DEPLOYMENT-BLOCKER-7319"
+_MARKER_ROOT = "SLACK-ORION-ROOT-7319"
+_MARKER_REPLY = "SLACK-ORION-REPLY-8421"
+_MARKER_EDIT = "SLACK-ORION-EDIT-9633"
 _CONVERSATION_ID = "C01234567"
 _CONNECTION = "conn.slack"
 _TENANT = "tenant-a"
@@ -119,6 +121,7 @@ def _search_task_result(
     file_name: str,
     document_id: str,
     source_path: str,
+    marker: str,
 ) -> TaskResult:
     return TaskResult(
         task_id="search-1",
@@ -132,7 +135,7 @@ def _search_task_result(
             summary="ok",
             structured_data={
                 "search_summary": {
-                    "query": _MARKER,
+                    "query": marker,
                     "workspace_id": workspace_id,
                     "evidence": [
                         {
@@ -141,7 +144,7 @@ def _search_task_result(
                             "workspace_id": workspace_id,
                             "source_path": source_path,
                             "file_name": file_name,
-                            "snippet": _MARKER,
+                            "snippet": marker,
                             "evidence_id": "E1",
                             "score": 0.99,
                         }
@@ -187,7 +190,7 @@ class _SlackFakeBackend:
                 items=(
                     _message(
                         message_ts=_ROOT_TS,
-                        text=f"root {_MARKER}",
+                        text=f"root {_MARKER_ROOT}",
                         reply_count=1,
                     ),
                 ),
@@ -200,7 +203,7 @@ class _SlackFakeBackend:
                 items=(
                     _message(
                         message_ts=_EDITED_TS,
-                        text=f"edited {_MARKER}",
+                        text=f"edited {_MARKER_EDIT}",
                         edited_at=datetime(2024, 1, 3, 12, 0, tzinfo=timezone.utc),
                     ),
                 ),
@@ -214,7 +217,7 @@ class _SlackFakeBackend:
                 items=(
                     _message(
                         message_ts=_REPLY_TS,
-                        text=f"reply {_MARKER}",
+                        text=f"reply {_MARKER_REPLY}",
                         root_thread_ts=_ROOT_TS,
                     ),
                 ),
@@ -275,9 +278,15 @@ class _ConnectedSourceIndexingService:
     async def index_one(self, **kwargs: Any) -> WorkspaceDocumentIndexingResult:
         physical_path = Path(str(kwargs["physical_path"]))
         content = physical_path.read_text(encoding="utf-8")
-        if _MARKER not in content:
+        marker_found = next(
+            (m for m in (_MARKER_ROOT, _MARKER_REPLY, _MARKER_EDIT) if m in content),
+            None,
+        )
+        if marker_found is None:
             raise RuntimeError("marker_missing")
         logical_source_path = str(kwargs["logical_source_path"])
+        if marker_found not in logical_source_path:
+            logical_source_path = f"{logical_source_path}#{marker_found}"
         unchanged = logical_source_path in self._indexed_paths
         if not unchanged:
             self._indexed_paths.add(logical_source_path)
@@ -313,25 +322,49 @@ class _SearchExecutor:
         metadata = getattr(task, "metadata", {}) or {}
         workspace_id = str(metadata.get("workspace_id") or "")
         tenant_id = str(getattr(task, "tenant_id", "") or metadata.get("tenant_id") or "")
+        query = str(metadata.get("query") or "")
         refs = self._repository.list_document_refs(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
-        if not refs:
+        for ref in refs:
+            marker = None
+            if _MARKER_ROOT in ref.source_path or _MARKER_ROOT in ref.file_name:
+                marker = _MARKER_ROOT
+            elif _MARKER_REPLY in ref.source_path or _MARKER_REPLY in ref.file_name:
+                marker = _MARKER_REPLY
+            elif _MARKER_EDIT in ref.source_path or _MARKER_EDIT in ref.file_name:
+                marker = _MARKER_EDIT
+            if marker is None:
+                continue
+            if query and marker not in query and query not in marker:
+                continue
             return _search_task_result(
                 workspace_id=workspace_id,
-                source_id="missing",
-                file_name="missing.md",
-                document_id="missing",
-                source_path="",
+                source_id=ref.source_id,
+                file_name=ref.file_name,
+                document_id=ref.document_id,
+                source_path=ref.source_path,
+                marker=marker,
             )
-        ref = refs[0]
-        return _search_task_result(
-            workspace_id=workspace_id,
-            source_id=ref.source_id,
-            file_name=ref.file_name,
-            document_id=ref.document_id,
-            source_path=ref.source_path,
+        return TaskResult(
+            task_id="search-empty",
+            run_id="search-empty",
+            state=TaskState.COMPLETED,
+            answer="ok",
+            execution_result=AgentExecutionResult(
+                agent_id="local_search",
+                run_id="search-empty",
+                status=AgentExecutionStatus.COMPLETED,
+                summary="ok",
+                structured_data={
+                    "search_summary": {
+                        "query": query,
+                        "workspace_id": workspace_id,
+                        "evidence": [],
+                    }
+                },
+            ),
         )
 
 
@@ -423,7 +456,7 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         fixed_text=json.dumps(
             {
                 "status": "completed",
-                "answer": _MARKER,
+                "answer": _MARKER_ROOT,
                 "used_evidence_ids": ["E1"],
             }
         )
@@ -457,7 +490,7 @@ def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         llm_adapter=llm,
     )
     with TestClient(app) as client:
-        yield client, backend, wiring, repo, integration
+        yield client, backend, wiring, repo, integration, runtime
 
 
 def _wait_operation(client: TestClient, operation_id: str) -> dict[str, object]:
@@ -476,7 +509,7 @@ def _wait_operation(client: TestClient, operation_id: str) -> dict[str, object]:
 
 
 def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
-    client, backend, wiring, _repo, integration = e2e_env
+    client, backend, wiring, repo, integration, runtime = e2e_env
     discovery = client.get(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
         headers={"X-Tenant-Id": _TENANT},
@@ -506,37 +539,43 @@ def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
     )
     assert sync_accepted.status_code == 202, sync_accepted.text
     operation_id = sync_accepted.json()["operation_id"]
-    import asyncio
-
-    async def _drive_sync() -> None:
-        for _ in range(12):
-            operation = await wiring.connected_source_sync_service.run_operation(
-                tenant_id=_TENANT,
-                operation_id=operation_id,
-            )
-            if operation.status.value in {"completed", "failed"}:
+    for _ in range(24):
+        if runtime.worker.drain_once() == 0:
+            operation = repo.get_operation(tenant_id=_TENANT, operation_id=operation_id)
+            if operation is not None and operation.status.value in {"completed", "failed"}:
                 break
-
-    asyncio.run(_drive_sync())
+        time.sleep(0.05)
     completed = _wait_operation(client, operation_id)
     assert completed["status"] == "completed", completed
     assert backend.history_calls >= 1
     assert completed["documents_indexed"] >= 1
 
-    search = client.post(
+    for marker in (_MARKER_ROOT, _MARKER_REPLY, _MARKER_EDIT):
+        search = client.post(
+            f"{_PREFIX}/workspaces/{_WORKSPACE}/search",
+            headers={"X-Tenant-Id": _TENANT},
+            json={"query": marker, "limit": 10},
+        )
+        assert search.status_code == 200, search.text
+        results = search.json()["results"]
+        assert results
+        assert any(marker in (hit.get("snippet") or "") for hit in results)
+
+    missing = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/search",
         headers={"X-Tenant-Id": _TENANT},
-        json={"query": _MARKER, "limit": 10},
+        json={"query": "SLACK-ORION-MISSING-0000", "limit": 10},
     )
-    assert search.status_code == 200, search.text
-    results = search.json()["results"]
-    assert results
-    assert any(_MARKER in (hit.get("snippet") or "") for hit in results)
+    assert missing.status_code == 200, missing.text
+    assert not any(
+        _MARKER_ROOT in (hit.get("snippet") or "")
+        for hit in missing.json()["results"]
+    )
 
     ask = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/ask",
         headers={"X-Tenant-Id": _TENANT, "Idempotency-Key": "e2e-ask"},
-        json={"question": f"What is {_MARKER}?"},
+        json={"question": f"What is {_MARKER_ROOT}?"},
     )
     assert ask.status_code == 200, ask.text
     body = ask.json()

@@ -1,7 +1,7 @@
 # LKW Conversation Context and Audience Isolation Architecture
 
 ```text
-Task: LKW-CONVERSATION-CONTEXT-ARCH-1
+Task: LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 Classification: docs-only architecture and roadmap contract
 Status: READY_FOR_REVIEW
 ```

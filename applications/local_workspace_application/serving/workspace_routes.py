@@ -147,7 +147,6 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
-    build_connected_source_wiring,
 )
 from local_workspace_application.serving.knowledge_connected_source_routes import (
     mount_connected_source_knowledge_routes,
@@ -326,6 +325,7 @@ def mount_managed_workspace_routes(
     web_content_capture: Any | None = None,
     indexing_service: WorkspaceDocumentIndexingService | None = None,
     connected_source_wiring: ConnectedSourceWiring | None = None,
+    shared_slack_integration: Any | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -376,15 +376,25 @@ def mount_managed_workspace_routes(
         },
     )
     connected_wiring = connected_source_wiring
-    if connected_wiring is None and settings.connected_source_opaque_ref_signing_key.strip():
-        connected_wiring = build_connected_source_wiring(
+    if connected_wiring is None and shared_slack_integration is not None:
+        from local_workspace_application.workspaces.connected_source_host_wiring import (
+            build_connected_source_host_bundle,
+        )
+
+        host_bundle = build_connected_source_host_bundle(
+            settings=settings,
             repository=repository,
             workspace_service=service,
             configuration_service=configuration_service,
             mutation_engine=mutation_engine,
             indexing_service=indexing_service,
-            settings=settings,
+            slack_integration=shared_slack_integration,
         )
+        connected_wiring = host_bundle.wiring
+        app.state.lkw_connected_source_readiness = host_bundle.readiness
+    recovery_tenant_ids: tuple[str, ...] = ()
+    if connected_wiring is not None and settings.slack_tenant_id.strip():
+        recovery_tenant_ids = (settings.slack_tenant_id.strip(),)
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
@@ -401,6 +411,7 @@ def mount_managed_workspace_routes(
             document_store=repository.document_store,
             sync_service=sync_service,
             repository=repository,
+            connected_source_recovery_tenant_ids=recovery_tenant_ids,
         )
         app.state.lkw_managed_workspace_sync_runtime = sync_runtime
 

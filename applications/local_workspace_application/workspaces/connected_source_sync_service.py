@@ -7,13 +7,14 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBindingService
 from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
 from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
@@ -23,6 +24,10 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
+)
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceReconciliationStateV1,
+    ConnectedSourceSyncSinkError,
 )
 from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
@@ -43,7 +48,6 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 
 logger = logging.getLogger(__name__)
@@ -61,36 +65,19 @@ class ConnectedSourceSyncDependencies:
     owner_id: str
 
 
-@dataclass
-class _DeliveryCountAccumulator:
-    documents_indexed: int = 0
-    documents_unchanged: int = 0
-    items_failed: int = 0
-    seen_delivery_ids: set[str] = field(default_factory=set)
-
-    def add(self, delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
-        if delivery_id in self.seen_delivery_ids:
-            return
-        self.seen_delivery_ids.add(delivery_id)
-        if result.replayed:
-            return
-        self.documents_indexed += result.documents_indexed
-        self.documents_unchanged += result.documents_unchanged
-        self.items_failed += result.items_failed
-
-
-class _CountingConnectedSourceSink:
+class _DeliveryCountingSink:
     def __init__(
         self,
         inner: WorkspaceConnectedSourceKnowledgeSyncSink,
-        accumulator: _DeliveryCountAccumulator,
+        *,
+        on_apply: Callable[[str, ConnectedSourceDeliveryApplyResult], None],
     ) -> None:
         self._inner = inner
-        self._accumulator = accumulator
+        self._on_apply = on_apply
 
     async def apply_batch(self, *, batch) -> ConnectedSourceDeliveryApplyResult:
         result = await self._inner.apply_batch(batch=batch)
-        self._accumulator.add(batch.delivery_id, result)
+        self._on_apply(batch.delivery_id, result)
         return result
 
 
@@ -161,12 +148,17 @@ class ManagedWorkspaceConnectedSourceSyncService:
         if binding_ref is None:
             return self._fail(operation, "indexed_source_binding_not_found")
 
-        restart = operation.started_at is None
+        reconciliation_state = operation.connected_source_reconciliation_state
+        if reconciliation_state is None:
+            reconciliation_state = ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
+
+        restart = reconciliation_state is ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
         claimed = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.RUNNING,
                 "started_at": operation.started_at or _utc_now(),
                 "error": None,
+                "connected_source_reconciliation_state": reconciliation_state,
             }
         )
         if not self._repository.claim_operation_if_queued(
@@ -180,10 +172,6 @@ class ManagedWorkspaceConnectedSourceSyncService:
             source.model_copy(update={"status": WorkspaceSourceStatus.SYNCING})
         )
 
-        accumulator = _DeliveryCountAccumulator(
-            documents_indexed=operation.documents_indexed,
-            documents_unchanged=operation.documents_unchanged,
-        )
         has_more = False
         worker_started = time.monotonic()
 
@@ -204,7 +192,21 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 tenant_binding_port=self._tenant_binding_port,
                 context=sink_context,
             )
-            sink = _CountingConnectedSourceSink(inner_sink, accumulator)
+
+            def _record_delivery(_delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
+                nonlocal operation
+                if result.replayed:
+                    return
+                operation = operation.model_copy(
+                    update={
+                        "documents_indexed": operation.documents_indexed + result.documents_indexed,
+                        "documents_unchanged": operation.documents_unchanged + result.documents_unchanged,
+                        "files_failed": operation.files_failed + result.items_failed,
+                    }
+                )
+                self._repository.put_operation(operation)
+
+            sink = _DeliveryCountingSink(inner_sink, on_apply=_record_delivery)
             coordinator = self._build_coordinator(
                 tenant_id=tenant_id,
                 dependencies=dependencies,
@@ -220,13 +222,25 @@ class ManagedWorkspaceConnectedSourceSyncService:
                     page_size=self._page_size,
                     restart=restart,
                 )
-                restart = False
                 if result.status is KnowledgeSyncRunStatus.LEASE_BUSY:
-                    reloaded = self._repository.get_operation(
-                        tenant_id=tenant_id,
-                        operation_id=operation_id,
+                    return self._requeue_lease_busy(operation, source)
+                if result.checkpoint_advanced and (
+                    operation.connected_source_reconciliation_state
+                    is ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
+                ):
+                    operation = operation.model_copy(
+                        update={
+                            "connected_source_reconciliation_state": (
+                                ConnectedSourceReconciliationStateV1.CONTINUATION
+                            )
+                        }
                     )
-                    return reloaded or operation
+                    self._repository.put_operation(operation)
+                    restart = False
+                elif operation.connected_source_reconciliation_state is (
+                    ConnectedSourceReconciliationStateV1.CONTINUATION
+                ):
+                    restart = False
                 if not result.has_more:
                     has_more = False
                     break
@@ -242,6 +256,28 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
             )
             return failed
+        except VendorKnowledgeError as exc:
+            if exc.retryable:
+                logger.warning(
+                    "connected_source_sync_retryable operation_id=%s code=%s",
+                    operation.operation_id,
+                    exc.code.value,
+                )
+                return self._requeue(
+                    operation,
+                    source,
+                    error_code=exc.code.value,
+                )
+            logger.exception(
+                "connected_source_sync_vendor_failed operation_id=%s code=%s",
+                operation.operation_id,
+                exc.code.value,
+            )
+            failed = self._fail(operation, exc.code.value)
+            self._repository.put_source(
+                source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
+            )
+            return failed
         except Exception:
             logger.exception(
                 "connected_source_sync_failed operation_id=%s",
@@ -253,14 +289,6 @@ class ManagedWorkspaceConnectedSourceSyncService:
             )
             return failed
 
-        operation = operation.model_copy(
-            update={
-                "documents_indexed": accumulator.documents_indexed,
-                "documents_unchanged": accumulator.documents_unchanged,
-                "files_failed": accumulator.items_failed,
-            }
-        )
-
         if has_more:
             return self._requeue(operation, source)
 
@@ -270,7 +298,6 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 "status": WorkspaceOperationStatus.COMPLETED,
                 "completed_at": completed,
                 "error": None,
-                "files_failed": accumulator.items_failed,
             }
         )
         self._repository.put_operation(operation)
@@ -289,7 +316,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         *,
         tenant_id: str,
         dependencies: ConnectedSourceSyncDependencies,
-        sink: _CountingConnectedSourceSink,
+        sink: _DeliveryCountingSink,
     ) -> VendorKnowledgeSyncCoordinator:
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):
@@ -327,11 +354,31 @@ class ManagedWorkspaceConnectedSourceSyncService:
             return binding.knowledge_source_binding_ref, binding.indexed_source_binding_id
         return None, ""
 
-    def _requeue(self, operation: WorkspaceOperation, source: WorkspaceSource) -> WorkspaceOperation:
+    def _requeue_lease_busy(
+        self,
+        operation: WorkspaceOperation,
+        source: WorkspaceSource,
+    ) -> WorkspaceOperation:
+        reloaded = self._repository.get_operation(
+            tenant_id=operation.tenant_id,
+            operation_id=operation.operation_id,
+        )
+        if reloaded is not None and reloaded.status is WorkspaceOperationStatus.RUNNING:
+            if reloaded.completed_at is not None or reloaded.error is not None:
+                return reloaded
+        return self._requeue(operation, source, error_code="lease_busy")
+
+    def _requeue(
+        self,
+        operation: WorkspaceOperation,
+        source: WorkspaceSource,
+        *,
+        error_code: str | None = None,
+    ) -> WorkspaceOperation:
         requeued = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.QUEUED,
-                "error": None,
+                "error": error_code,
             }
         )
         self._repository.put_operation(requeued)

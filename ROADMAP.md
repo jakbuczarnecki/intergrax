@@ -106,7 +106,7 @@ The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLI
 | Item | Notes |
 |------|-------|
 | **LKW-KNOWLEDGE-ACCESS-1** | **NEXT** — durable tenant Connection Catalog, restart-safe Connection configuration, SecretsStore-owned credentials, runtime registry rehydration; Remote Resources, Indexed Sources, Live Access Bindings and Query Policy |
-| **LKW-CONVERSATION-CONTEXT-ARCH-1** | **READY_FOR_REVIEW** — provider-neutral conversational context with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared `READ_ONLY_ASK` boundary and deterministic guards; proved first through Slack |
+| **LKW-CONVERSATION-CONTEXT-ARCH-1** | **ACCEPTED** — provider-neutral conversational context with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared `READ_ONLY_ASK` boundary and deterministic guards; proved first through Slack |
 | **Slack Knowledge vertical (application-first priority)** | Platform `SLACK-KNOWLEDGE-FOUNDATION-1` **DONE** → architecture `LKW-CONVERSATION-CONTEXT-ARCH-1` **READY_FOR_REVIEW** → LKW `LKW-SLACK-CONNECTED-SOURCE-1` **DONE** → LKW `LKW-CONVERSATION-CONTEXT-1` **NEXT** → LKW `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` → platform `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`; complete vertical precedes Microsoft Graph Calendar |
 | **Vendor knowledge durable + live branches** | Microsoft Graph Calendar adapter after Slack vertical; durable materialization sink contract; live capability contract and executor — convergence at Hybrid Ask |
 | **LKW-HYBRID-ASK-1** | Indexed RAG + authorized live evidence with unified provenance |

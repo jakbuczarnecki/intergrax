@@ -28,7 +28,7 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-def _receipt_identity_matches(
+def _receipt_core_identity_matches(
     receipt: ConnectedSourceDeliveryReceipt,
     *,
     tenant_id: str,
@@ -38,7 +38,6 @@ def _receipt_identity_matches(
     knowledge_source_binding_ref: str,
     delivery_id: str,
     binding_configuration_version: int,
-    operation_id: str,
 ) -> bool:
     return (
         receipt.tenant_id == tenant_id
@@ -48,8 +47,43 @@ def _receipt_identity_matches(
         and receipt.knowledge_source_binding_ref == knowledge_source_binding_ref
         and receipt.delivery_id == delivery_id
         and receipt.binding_configuration_version == binding_configuration_version
-        and receipt.operation_id == operation_id
     )
+
+
+def _receipt_identity_conflict(
+    receipt: ConnectedSourceDeliveryReceipt,
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    source_id: str,
+    indexed_source_binding_id: str,
+    knowledge_source_binding_ref: str,
+    delivery_id: str,
+    binding_configuration_version: int,
+) -> bool:
+    return not _receipt_core_identity_matches(
+        receipt,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        source_id=source_id,
+        indexed_source_binding_id=indexed_source_binding_id,
+        knowledge_source_binding_ref=knowledge_source_binding_ref,
+        delivery_id=delivery_id,
+        binding_configuration_version=binding_configuration_version,
+    )
+
+
+def _touch_receipt_operation_id(
+    *,
+    repository: ManagedWorkspaceRepository,
+    receipt: ConnectedSourceDeliveryReceipt,
+    operation_id: str,
+) -> ConnectedSourceDeliveryReceipt:
+    if receipt.operation_id == operation_id:
+        return receipt
+    updated = receipt.model_copy(update={"operation_id": operation_id})
+    repository.put_connected_source_delivery_receipt(updated)
+    return updated
 
 
 def delivery_receipt_completed(
@@ -72,7 +106,7 @@ def delivery_receipt_completed(
     )
     if existing is None:
         return None
-    if not _receipt_identity_matches(
+    if _receipt_identity_conflict(
         existing,
         tenant_id=tenant_id,
         workspace_id=workspace_id,
@@ -81,13 +115,16 @@ def delivery_receipt_completed(
         knowledge_source_binding_ref=knowledge_source_binding_ref,
         delivery_id=delivery_id,
         binding_configuration_version=binding_configuration_version,
-        operation_id=operation_id,
     ):
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
     if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
         if existing.completed_at is None or existing.items_failed != 0:
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_invalid")
-        return existing
+        return _touch_receipt_operation_id(
+            repository=repository,
+            receipt=existing,
+            operation_id=operation_id,
+        )
     if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
         return None
     raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
@@ -112,7 +149,7 @@ def begin_delivery_receipt(
         delivery_id=delivery_id,
     )
     if existing is not None:
-        if not _receipt_identity_matches(
+        if _receipt_identity_conflict(
             existing,
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -121,13 +158,20 @@ def begin_delivery_receipt(
             knowledge_source_binding_ref=knowledge_source_binding_ref,
             delivery_id=delivery_id,
             binding_configuration_version=binding_configuration_version,
-            operation_id=operation_id,
         ):
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
         if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
-            return existing
+            return _touch_receipt_operation_id(
+                repository=repository,
+                receipt=existing,
+                operation_id=operation_id,
+            )
         if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
-            return existing
+            return _touch_receipt_operation_id(
+                repository=repository,
+                receipt=existing,
+                operation_id=operation_id,
+            )
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
 
     now = _utc_now()
@@ -176,6 +220,7 @@ def complete_delivery_receipt(
     items_processed: int,
     items_failed: int,
 ) -> ConnectedSourceDeliveryReceipt:
+    _ = items_processed
     if receipt.status is ConnectedSourceDeliveryStatus.COMPLETED:
         return receipt
     if receipt.status is not ConnectedSourceDeliveryStatus.IN_PROGRESS:
@@ -205,7 +250,7 @@ def complete_delivery_receipt(
         if (
             reloaded is not None
             and reloaded.status is ConnectedSourceDeliveryStatus.COMPLETED
-            and _receipt_identity_matches(
+            and _receipt_core_identity_matches(
                 reloaded,
                 tenant_id=receipt.tenant_id,
                 workspace_id=receipt.workspace_id,
@@ -214,7 +259,6 @@ def complete_delivery_receipt(
                 knowledge_source_binding_ref=receipt.knowledge_source_binding_ref,
                 delivery_id=receipt.delivery_id,
                 binding_configuration_version=receipt.binding_configuration_version,
-                operation_id=receipt.operation_id,
             )
             and reloaded.completed_at is not None
             and reloaded.items_failed == 0

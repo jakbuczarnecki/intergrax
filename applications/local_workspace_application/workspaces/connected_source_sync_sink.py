@@ -35,6 +35,7 @@ from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    IndexedSourceAudienceEligibilityV1,
     WorkspaceIndexedSourceBindingStatusV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
@@ -251,6 +252,8 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_ref_mismatch")
         if indexed_binding.source_id != self._context.source_id:
             raise ConnectedSourceSyncSinkError("connected_source_indexed_binding_source_mismatch")
+        if indexed_binding.audience_eligibility is not IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY:
+            raise ConnectedSourceSyncSinkError("connected_source_audience_eligibility_rejected")
 
         source = self._repository.get_source(
             tenant_id=self._context.tenant_id,
@@ -271,6 +274,10 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             or source.knowledge_configuration_visibility_revision is None
         ):
             raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
+        if source.knowledge_configuration_creation_mutation_id != indexed_binding.mutation_id:
+            raise ConnectedSourceSyncSinkError("connected_source_source_binding_mutation_mismatch")
+        if source.knowledge_configuration_visibility_revision != indexed_binding.effective_revision:
+            raise ConnectedSourceSyncSinkError("connected_source_source_binding_revision_mismatch")
         if source.knowledge_configuration_visibility_revision > configuration.configuration_revision:
             raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
 
