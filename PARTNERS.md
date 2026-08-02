@@ -12,7 +12,9 @@ This brief explains who may be a good fit for technical review, design-partner d
 
 It does not create partnership terms, license grants, support obligations, production permission, certification, or compliance claims.
 
-Production use, commercial deployment, redistribution, incorporation into products or services, hosted services, and commercial derivative works require explicit written permission. Non-production evaluation, private evaluation modifications, forks for contribution, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). See [COLLABORATION.md](COLLABORATION.md).
+Production use, commercial deployment, redistribution, incorporation into products or services, hosted services, and commercial derivative works require explicit written permission. Non-production evaluation, private evaluation modifications, Authorized Forks for contribution, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). See [COLLABORATION.md](COLLABORATION.md).
+
+Potential partners may run a controlled evaluation, invite employees and contractors as **Evaluation Participants**, use synthetic or appropriately anonymized test data, and collaborate on an **Authorized Fork**. Real internal operational deployment for employees or customers is Production Use and requires explicit written permission.
 
 ---
 

@@ -9,14 +9,20 @@ The permissions below are granted by the **Intergrax Evaluation and Collaboratio
 ## What you may do
 
 - Clone and download the Official Repository
+- Clone, test, and collaborate on an **Authorized Fork** for evaluation, code review, or pull-request preparation
 - Perform local non-production installation
 - Run documented evaluation and proof paths, including Quick Start, tests, benchmarks, examples, demos, and documented evaluation workloads
-- Create private evaluation modifications for analysis, testing, debugging, integration assessment, or preparation of a contribution
+- Create private evaluation modifications for analysis, testing, debugging, integration assessment, or preparation of a Code Contribution or Documentation Contribution
+- Invite employees, contractors, and advisers to participate as **Evaluation Participants** in a controlled non-production Evaluation Environment
 - Create a GitHub fork for evaluation or contribution
 - Open issues and participate in technical discussions
 - Submit patches and pull requests
 - Create evaluation-only plugins, integrations, tools, skills, agents, application hosts, and adapters
 - Publish technical evaluation findings, test reports, and descriptions of system behavior
+
+**Evaluation Participants** (including employees and contractors) may install, run, test, review, and perform controlled technical pilots in an isolated Evaluation Environment. They may not use Intergrax as an operational business tool without explicit written permission. Calling a real deployment a pilot, sandbox, or proof of concept does not change Production Use if it supports real business processes, production data, or operational users.
+
+Issue comments, suggestions, and other **Feedback** are welcome and are not automatically Code Contributions. Substantial or potentially patent-relevant Code Contributions or Documentation Contributions may require a separate Contributor License Agreement before acceptance.
 
 ---
 

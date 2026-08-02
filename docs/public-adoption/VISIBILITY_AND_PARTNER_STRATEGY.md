@@ -10,7 +10,7 @@ This document defines a practical, step-by-step public-adoption strategy for Int
 
 It is intentionally a **public-safe visibility and partner strategy**, not a confidential fundraising plan, valuation memo, acquisition strategy, investor data room, sales forecast, or binding commercial offer.
 
-Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../LICENSE). Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../LICENSE), [`COLLABORATION.md`](../../COLLABORATION.md), and [`PARTNERS.md`](../../PARTNERS.md).
+Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, Authorized Forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../LICENSE). Controlled internal evaluation by organizations — including multiple Evaluation Participants — is permitted. Contributors retain copyright in Code Contributions and Documentation Contributions but license accepted contributions to the maintainer. Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../LICENSE), [`COLLABORATION.md`](../../COLLABORATION.md), and [`PARTNERS.md`](../../PARTNERS.md).
 
 ---
 

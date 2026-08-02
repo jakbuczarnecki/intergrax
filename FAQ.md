@@ -16,15 +16,43 @@ Yes. You may install dependencies and run Quick Start, tests, benchmarks, exampl
 
 ## Can I modify the code?
 
-Yes, for permitted evaluation. You may make private modifications for analysis, testing, debugging, integration assessment, or preparation of a contribution. Production deployment or commercial use of modified code still requires explicit written permission.
+Yes, for permitted evaluation. You may make private modifications for analysis, testing, debugging, integration assessment, or preparation of a Code Contribution or Documentation Contribution. Production deployment or commercial use of modified code still requires explicit written permission.
 
 ## Can I create a fork?
 
-Yes. You may create a public or private GitHub fork for evaluation, discussion, and preparation of a contribution. A fork may not be marketed as an independent distribution, competing product, hosted service, or commercial offering without separate permission.
+Yes. You may create a public or private GitHub fork as an **Authorized Fork** for evaluation, discussion, and preparation of a Code Contribution or Documentation Contribution. Other evaluators may clone and test your Authorized Fork for permitted evaluation and pull-request collaboration. An Authorized Fork may not be marketed as an independent distribution, hosted service, or commercial offering without separate permission.
+
+## Can a company evaluate Intergrax internally?
+
+Yes. Internal, non-production Evaluation by a commercial organization is permitted. Multiple employees, contractors, and advisers may participate as **Evaluation Participants** in a controlled Evaluation Environment.
+
+## Can multiple employees participate in an evaluation?
+
+Yes, when they act solely as Evaluation Participants in a controlled non-production Evaluation Environment. Using Intergrax as an everyday operational tool for employees is Production Use and requires explicit written permission.
+
+## Can I clone and test another contributor's fork?
+
+Yes. You may clone, run, test, and collaborate on an **Authorized Fork** for Evaluation, code review, and pull-request preparation. Authorized Fork rights do not include Production Use, Commercial Use, or independent distribution.
+
+## Does an issue comment become a code contribution?
+
+No. Ordinary issue comments and suggestions are **Feedback**, not automatic Code Contributions or Documentation Contributions. A pull request or other material clearly offered for inclusion is a Code Contribution or Documentation Contribution under the terms in [LICENSE](LICENSE).
+
+## Who owns external contributions?
+
+Contributors retain copyright in their Code Contributions and Documentation Contributions. The maintainer receives a license to use accepted contributions as described in [LICENSE](LICENSE). The maintainer does not automatically become the copyright owner.
+
+## Do contributions include patent rights?
+
+No automatic patent license is granted. The maintainer may require a separate Contributor License Agreement for substantial or potentially patent-relevant contributions. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Can I create a competing product?
+
+Local evaluation, private prototyping, comparison benchmarks, and independent original development are not prohibited by the license competitor clause. Offering, marketing, distributing, or providing to third parties a standalone or hosted platform based substantially on Intergrax and presented as a substitute for the Intergrax Harness AI / Agent OS platform requires explicit written permission. Production Use, Commercial Use, hosting, and incorporation into products still require separate permission regardless.
 
 ## Can I submit a pull request?
 
-Yes. You may submit patches and pull requests under the contribution terms in [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md). Submission does not guarantee acceptance and does not grant production or commercial rights.
+Yes. You may submit patches and pull requests under the Code Contribution and Documentation Contribution terms in [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md). Submission does not guarantee acceptance and does not grant production or commercial rights.
 
 ## Can I use Intergrax in production?
 

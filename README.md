@@ -108,7 +108,7 @@ Maturity uses **L0–L4** levels (not arbitrary percentages) — navigation summ
 
 Intergrax is public and source-available under the **Intergrax Evaluation and Collaboration License 1.0**.
 
-You may clone, install, run, test, and modify the repository locally for non-production evaluation; create GitHub forks and pull requests; and participate in technical collaboration as described in [COLLABORATION.md](COLLABORATION.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Intergrax is **not** open source. Production use and commercial use require **explicit written permission** from the copyright holder. Full terms: [LICENSE](LICENSE).
+You may clone, install, run, test, and modify the repository locally for non-production evaluation; create GitHub forks and pull requests; and participate in technical collaboration as described in [COLLABORATION.md](COLLABORATION.md) and [CONTRIBUTING.md](CONTRIBUTING.md). Intergrax is **not** open source. Controlled internal evaluation by organizations — including multiple Evaluation Participants — and collaboration on Authorized Forks are permitted. Production use, commercial use, hosting, and redistribution require **explicit written permission**. Contributors retain copyright in their contributions but license accepted Code Contributions and Documentation Contributions to the maintainer under the terms in [LICENSE](LICENSE). Full terms: [LICENSE](LICENSE).
 
 Active public feedback paths are listed in the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). Use it to choose the right curated issue for proof-path feedback, documentation clarity, integration feedback, or design-partner interest.
 
