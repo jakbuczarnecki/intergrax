@@ -47,6 +47,7 @@ class TenantConnectionIntegrationFactory(Protocol):
         connection_ref: str,
         provider_id: str,
         integration_kind: IntegrationCategory,
+        credential_ref: str,
         credential: str,
         secret_free_config: Mapping[str, JsonValue],
     ) -> object:
@@ -165,6 +166,7 @@ class TenantConnectionRehydrator:
                 connection_ref=connection.connection_ref,
                 provider_id=connection.provider_id,
                 integration_kind=connection.integration_kind,
+                credential_ref=connection.credential_ref,
                 credential=credential,
                 secret_free_config=connection.validated_secret_free_config,
             )

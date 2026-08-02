@@ -403,6 +403,7 @@ class _CountingFactory:
         connection_ref: str,
         provider_id: str,
         integration_kind: IntegrationCategory,
+        credential_ref: str,
         credential: str,
         secret_free_config: Mapping[str, object],
     ) -> object:
@@ -412,6 +413,7 @@ class _CountingFactory:
                 "connection_ref": connection_ref,
                 "provider_id": provider_id,
                 "integration_kind": integration_kind,
+                "credential_ref": credential_ref,
                 "credential": credential,
                 "secret_free_config": secret_free_config,
             }
@@ -448,6 +450,7 @@ def test_restart_rehydration_proof() -> None:
     assert len(secrets.calls) == 1
     assert secrets.calls[0] == "cred-path"
     assert len(factory.calls) == 1
+    assert factory.calls[0]["credential_ref"] == "cred-path"
     resolved = registry.resolve(
         tenant_id="tenant-1",
         connection_ref="conn-1",
