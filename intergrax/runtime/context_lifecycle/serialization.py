@@ -96,8 +96,12 @@ def _datetime_to_iso(value: datetime) -> str:
     return value.isoformat()
 
 
-def _mapping_to_json_dict(metadata: Mapping[str, Any]) -> dict[str, Any]:
-    return json.loads(json.dumps(dict(metadata)))
+def _to_json_safe_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _to_json_safe_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_to_json_safe_value(item) for item in value]
+    return value
 
 
 def context_optimization_policy_to_safe_dict(policy: ContextOptimizationPolicy) -> dict[str, Any]:
@@ -123,7 +127,7 @@ def context_optimization_policy_to_safe_dict(policy: ContextOptimizationPolicy) 
         "require_rollback_metadata": policy.require_rollback_metadata,
         "reservation_lease_seconds": policy.reservation_lease_seconds,
         "retention_policy_ref": policy.retention_policy_ref,
-        "safe_metadata": _mapping_to_json_dict(policy.safe_metadata),
+        "safe_metadata": _to_json_safe_value(policy.safe_metadata),
         "validation_contract_version": policy.validation_contract_version,
     }
 
@@ -172,12 +176,12 @@ def reusable_optimization_artifact_to_safe_dict(
         ),
         "raw_content_included": _RAW_CONTENT_INCLUDED,
         "receipt_ref": artifact.receipt_ref,
-        "safe_metadata": _mapping_to_json_dict(artifact.safe_metadata),
+        "safe_metadata": _to_json_safe_value(artifact.safe_metadata),
         "status": artifact.status.value,
         "supersedes_artifact_id": artifact.supersedes_artifact_id,
         "validation": {
             "reason_codes": list(artifact.validation.reason_codes),
-            "safe_metadata": _mapping_to_json_dict(artifact.validation.safe_metadata),
+            "safe_metadata": _to_json_safe_value(artifact.validation.safe_metadata),
             "status": artifact.validation.status.value,
             "validated_at": _datetime_to_iso(artifact.validation.validated_at),
             "validation_contract_version": artifact.validation.validation_contract_version,

@@ -8,9 +8,9 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum, StrEnum
 from types import MappingProxyType
-from typing import Any
+from typing import Any, TypeVar
 
 
 _FORBIDDEN_METADATA_KEYS: frozenset[str] = frozenset(
@@ -29,6 +29,35 @@ _FORBIDDEN_METADATA_KEYS: frozenset[str] = frozenset(
     }
 )
 
+EnumT = TypeVar("EnumT", bound=Enum)
+ContractT = TypeVar("ContractT")
+
+
+def _require_enum(
+    value: object,
+    enum_type: type[EnumT],
+    field_name: str,
+) -> EnumT:
+    if not isinstance(value, enum_type):
+        raise ValueError(f"{field_name} must be {enum_type.__name__}")
+    return value
+
+
+def _require_instance(
+    value: object,
+    expected_type: type[ContractT],
+    field_name: str,
+) -> ContractT:
+    if not isinstance(value, expected_type):
+        raise ValueError(f"{field_name} must be {expected_type.__name__}")
+    return value
+
+
+def _require_int(value: object, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
 
 def _require_non_empty(value: str, field_name: str) -> str:
     if not value:
@@ -36,16 +65,31 @@ def _require_non_empty(value: str, field_name: str) -> str:
     return value
 
 
-def _require_non_negative(value: int, field_name: str) -> int:
-    if value < 0:
+def _require_non_negative(value: object, field_name: str) -> int:
+    int_value = _require_int(value, field_name)
+    if int_value < 0:
         raise ValueError(f"{field_name} must be >= 0")
-    return value
+    return int_value
 
 
-def _require_positive(value: int, field_name: str) -> int:
-    if value <= 0:
+def _require_positive(value: object, field_name: str) -> int:
+    int_value = _require_int(value, field_name)
+    if int_value <= 0:
         raise ValueError(f"{field_name} must be > 0")
-    return value
+    return int_value
+
+
+def _require_finite_quality_score(value: object) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("minimum_quality_score must be a number")
+    score = float(value) if isinstance(value, int) else value
+    if not math.isfinite(score):
+        raise ValueError("minimum_quality_score must be finite")
+    if score < 0.0 or score > 1.0:
+        raise ValueError("minimum_quality_score must be between 0.0 and 1.0")
+    return score
 
 
 def _require_timezone_aware(value: datetime, field_name: str) -> datetime:
@@ -77,22 +121,29 @@ def _normalize_safe_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str,
             return value
         if isinstance(value, bytes):
             raise ValueError("safe_metadata must not contain bytes")
+        if isinstance(value, (set, frozenset)):
+            raise ValueError("safe_metadata must not contain sets")
+        if isinstance(value, datetime):
+            raise ValueError("safe_metadata must not contain datetime values")
+        if isinstance(value, Enum):
+            raise ValueError("safe_metadata must not contain enum values")
         if isinstance(value, Mapping):
-            return MappingProxyType(
-                {str(key): _normalize_value(item) for key, item in value.items()}
-            )
+            return _normalize_mapping(value)
         if isinstance(value, (list, tuple)):
             return tuple(_normalize_value(item) for item in value)
         raise ValueError("safe_metadata must contain only JSON-serializable values")
 
-    normalized: dict[str, Any] = {}
-    for key, value in metadata.items():
-        if not isinstance(key, str):
-            raise ValueError("safe_metadata keys must be strings")
-        if key.casefold() in _FORBIDDEN_METADATA_KEYS:
-            raise ValueError(f"safe_metadata must not contain forbidden key: {key}")
-        normalized[key] = _normalize_value(value)
-    return MappingProxyType(normalized)
+    def _normalize_mapping(mapping: Mapping[Any, Any]) -> MappingProxyType:
+        normalized: dict[str, Any] = {}
+        for key, value in mapping.items():
+            if not isinstance(key, str):
+                raise ValueError("safe_metadata keys must be strings")
+            if key.casefold() in _FORBIDDEN_METADATA_KEYS:
+                raise ValueError(f"safe_metadata must not contain forbidden key: {key}")
+            normalized[key] = _normalize_value(value)
+        return MappingProxyType(normalized)
+
+    return _normalize_mapping(metadata)
 
 
 class ModelCallExecutionScope(StrEnum):
@@ -268,6 +319,27 @@ class ArtifactLookupKey:
     locale: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "artifact_type",
+            _require_enum(self.artifact_type, OptimizationArtifactType, "artifact_type"),
+        )
+        object.__setattr__(
+            self,
+            "compression_target",
+            _require_instance(
+                self.compression_target,
+                ArtifactCompressionTarget,
+                "compression_target",
+            ),
+        )
+        if self.source_range is not None:
+            object.__setattr__(
+                self,
+                "source_range",
+                _require_instance(self.source_range, ArtifactSourceRange, "source_range"),
+            )
+
         object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
         object.__setattr__(
             self,
@@ -372,6 +444,20 @@ class ContextOptimizationPolicy:
         )
         object.__setattr__(
             self,
+            "mode",
+            _require_enum(self.mode, ContextOptimizationMode, "mode"),
+        )
+        object.__setattr__(
+            self,
+            "ephemeral_artifact_persistence",
+            _require_enum(
+                self.ephemeral_artifact_persistence,
+                EphemeralArtifactPersistencePolicy,
+                "ephemeral_artifact_persistence",
+            ),
+        )
+        object.__setattr__(
+            self,
             "recent_tail_min_messages",
             _require_non_negative(self.recent_tail_min_messages, "recent_tail_min_messages"),
         )
@@ -380,11 +466,11 @@ class ContextOptimizationPolicy:
             "reservation_lease_seconds",
             _require_positive(self.reservation_lease_seconds, "reservation_lease_seconds"),
         )
-
-        if self.minimum_quality_score is not None:
-            score = self.minimum_quality_score
-            if score < 0.0 or score > 1.0:
-                raise ValueError("minimum_quality_score must be between 0.0 and 1.0")
+        object.__setattr__(
+            self,
+            "minimum_quality_score",
+            _require_finite_quality_score(self.minimum_quality_score),
+        )
 
         if self.allow_llm_summarization and not self.allow_lossy:
             raise ValueError("allow_llm_summarization requires allow_lossy")
@@ -409,7 +495,10 @@ class ContextOptimizationPolicy:
         ):
             raise ValueError("artifact persistence requires allow_artifact_reuse")
 
-        artifact_types = tuple(self.allowed_artifact_types)
+        artifact_types = tuple(
+            _require_enum(item, OptimizationArtifactType, "allowed_artifact_types item")
+            for item in self.allowed_artifact_types
+        )
         if len(artifact_types) != len(set(artifact_types)):
             raise ValueError("allowed_artifact_types must not contain duplicates")
         object.__setattr__(self, "allowed_artifact_types", artifact_types)
@@ -460,6 +549,15 @@ class OptimizationExecutionGuard:
     active_strategy_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "execution_scope",
+            _require_enum(
+                self.execution_scope,
+                ModelCallExecutionScope,
+                "execution_scope",
+            ),
+        )
         object.__setattr__(self, "operation_id", _require_non_empty(self.operation_id, "operation_id"))
         depth = _require_non_negative(self.optimization_depth, "optimization_depth")
 
@@ -551,6 +649,11 @@ class ArtifactValidationSummary:
     def __post_init__(self) -> None:
         object.__setattr__(
             self,
+            "status",
+            _require_enum(self.status, ArtifactValidationStatus, "status"),
+        )
+        object.__setattr__(
+            self,
             "validation_contract_version",
             _require_non_empty(self.validation_contract_version, "validation_contract_version"),
         )
@@ -577,6 +680,11 @@ class ArtifactCompatibilityResult:
     reasons: tuple[ArtifactCompatibilityReason, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "status",
+            _require_enum(self.status, ArtifactCompatibilityStatus, "status"),
+        )
         object.__setattr__(self, "artifact_id", _require_non_empty(self.artifact_id, "artifact_id"))
         object.__setattr__(
             self,
@@ -588,7 +696,10 @@ class ArtifactCompatibilityResult:
             "artifact_lookup_key_hash",
             _require_non_empty(self.artifact_lookup_key_hash, "artifact_lookup_key_hash"),
         )
-        reasons = tuple(self.reasons)
+        reasons = tuple(
+            _require_enum(item, ArtifactCompatibilityReason, "reasons item")
+            for item in self.reasons
+        )
         if self.status is ArtifactCompatibilityStatus.COMPATIBLE:
             if reasons:
                 raise ValueError("COMPATIBLE requires empty reasons")
@@ -618,6 +729,21 @@ class ReusableOptimizationArtifact:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "artifact_id", _require_non_empty(self.artifact_id, "artifact_id"))
+        object.__setattr__(
+            self,
+            "lookup_key",
+            _require_instance(self.lookup_key, ArtifactLookupKey, "lookup_key"),
+        )
+        object.__setattr__(
+            self,
+            "validation",
+            _require_instance(self.validation, ArtifactValidationSummary, "validation"),
+        )
+        object.__setattr__(
+            self,
+            "status",
+            _require_enum(self.status, ReusableArtifactStatus, "status"),
+        )
         object.__setattr__(
             self,
             "artifact_content_hash",

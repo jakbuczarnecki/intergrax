@@ -747,3 +747,233 @@ def test_safe_metadata_rejects_raw_content_keys(key: str) -> None:
             validation_contract_version="validation-v1",
             safe_metadata={key: "secret"},
         )
+
+
+# --- strict enum type validation ---
+
+
+def test_artifact_lookup_key_rejects_raw_artifact_type_string() -> None:
+    with pytest.raises(ValueError, match="artifact_type must be OptimizationArtifactType"):
+        _lookup_key_with_refs(artifact_type="message_sequence")
+
+
+def test_context_optimization_policy_rejects_raw_mode_string() -> None:
+    with pytest.raises(ValueError, match="mode must be ContextOptimizationMode"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            mode="durable_compaction",  # type: ignore[arg-type]
+        )
+
+
+def test_context_optimization_policy_rejects_raw_ephemeral_persistence_string() -> None:
+    with pytest.raises(
+        ValueError,
+        match="ephemeral_artifact_persistence must be EphemeralArtifactPersistencePolicy",
+    ):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            ephemeral_artifact_persistence="do_not_persist_ephemeral_artifact",  # type: ignore[arg-type]
+        )
+
+
+def test_context_optimization_policy_rejects_invalid_allowed_artifact_type_item() -> None:
+    with pytest.raises(ValueError, match="allowed_artifact_types item must be OptimizationArtifactType"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            allowed_artifact_types=("message_sequence",),  # type: ignore[arg-type]
+        )
+
+
+def test_optimization_execution_guard_rejects_raw_execution_scope_string() -> None:
+    with pytest.raises(ValueError, match="execution_scope must be ModelCallExecutionScope"):
+        OptimizationExecutionGuard(
+            execution_scope="primary_model_call",  # type: ignore[arg-type]
+            operation_id="op-primary",
+            parent_operation_id=None,
+            optimization_depth=0,
+        )
+
+
+def test_artifact_validation_summary_rejects_raw_status_string() -> None:
+    with pytest.raises(ValueError, match="status must be ArtifactValidationStatus"):
+        _validation_summary(status="passed")  # type: ignore[arg-type]
+
+
+def test_artifact_compatibility_result_rejects_raw_status_string() -> None:
+    with pytest.raises(ValueError, match="status must be ArtifactCompatibilityStatus"):
+        ArtifactCompatibilityResult(
+            status="incompatible",  # type: ignore[arg-type]
+            artifact_id="artifact-1",
+            requested_lookup_key_hash="hash-1",
+            artifact_lookup_key_hash="hash-2",
+            reasons=(ArtifactCompatibilityReason.POLICY_VERSION_MISMATCH,),
+        )
+
+
+def test_artifact_compatibility_result_rejects_raw_reason_string() -> None:
+    with pytest.raises(ValueError, match="reasons item must be ArtifactCompatibilityReason"):
+        ArtifactCompatibilityResult(
+            status=ArtifactCompatibilityStatus.INCOMPATIBLE,
+            artifact_id="artifact-1",
+            requested_lookup_key_hash="hash-1",
+            artifact_lookup_key_hash="hash-2",
+            reasons=("policy_version_mismatch",),  # type: ignore[arg-type]
+        )
+
+
+def test_reusable_optimization_artifact_rejects_raw_status_string() -> None:
+    with pytest.raises(ValueError, match="status must be ReusableArtifactStatus"):
+        _reusable_artifact(status="validated")  # type: ignore[arg-type]
+
+
+def test_artifact_lookup_key_rejects_dict_compression_target() -> None:
+    with pytest.raises(ValueError, match="compression_target must be ArtifactCompressionTarget"):
+        _lookup_key_with_refs(compression_target={"target_tokens": 100})  # type: ignore[arg-type]
+
+
+def test_artifact_lookup_key_rejects_dict_source_range() -> None:
+    with pytest.raises(ValueError, match="source_range must be ArtifactSourceRange"):
+        _lookup_key_with_range(source_range={"start_sequence": 0, "end_sequence": 5})  # type: ignore[arg-type]
+
+
+def test_reusable_optimization_artifact_rejects_dict_lookup_key() -> None:
+    with pytest.raises(ValueError, match="lookup_key must be ArtifactLookupKey"):
+        _reusable_artifact(lookup_key={"tenant_id": "tenant-1"})  # type: ignore[arg-type]
+
+
+def test_reusable_optimization_artifact_rejects_dict_validation() -> None:
+    with pytest.raises(ValueError, match="validation must be ArtifactValidationSummary"):
+        _reusable_artifact(validation={"status": "passed"})  # type: ignore[arg-type]
+
+
+# --- strict numeric type validation ---
+
+
+def test_artifact_source_range_rejects_bool_start_sequence() -> None:
+    with pytest.raises(ValueError, match="start_sequence must be an integer"):
+        ArtifactSourceRange(start_sequence=False, end_sequence=0)  # type: ignore[arg-type]
+
+
+def test_artifact_source_range_rejects_bool_end_sequence() -> None:
+    with pytest.raises(ValueError, match="end_sequence must be an integer"):
+        ArtifactSourceRange(start_sequence=0, end_sequence=True)  # type: ignore[arg-type]
+
+
+def test_artifact_compression_target_rejects_bool_target_tokens() -> None:
+    with pytest.raises(ValueError, match="target_tokens must be an integer"):
+        ArtifactCompressionTarget(target_tokens=True)  # type: ignore[arg-type]
+
+
+def test_artifact_compression_target_rejects_float_target_tokens() -> None:
+    with pytest.raises(ValueError, match="target_tokens must be an integer"):
+        ArtifactCompressionTarget(target_tokens=1.0)  # type: ignore[arg-type]
+
+
+def test_artifact_compression_target_rejects_string_target_tokens() -> None:
+    with pytest.raises(ValueError, match="target_tokens must be an integer"):
+        ArtifactCompressionTarget(target_tokens="100")  # type: ignore[arg-type]
+
+
+def test_context_optimization_policy_rejects_bool_recent_tail_min_messages() -> None:
+    with pytest.raises(ValueError, match="recent_tail_min_messages must be an integer"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            recent_tail_min_messages=True,  # type: ignore[arg-type]
+        )
+
+
+def test_context_optimization_policy_rejects_bool_reservation_lease_seconds() -> None:
+    with pytest.raises(ValueError, match="reservation_lease_seconds must be an integer"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            reservation_lease_seconds=True,  # type: ignore[arg-type]
+        )
+
+
+def test_optimization_execution_guard_rejects_bool_optimization_depth() -> None:
+    with pytest.raises(ValueError, match="optimization_depth must be an integer"):
+        OptimizationExecutionGuard(
+            execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+            operation_id="op-primary",
+            parent_operation_id=None,
+            optimization_depth=False,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "score",
+    [
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        True,
+        "0.5",
+    ],
+)
+def test_context_optimization_policy_rejects_invalid_quality_score_types(score: object) -> None:
+    with pytest.raises(ValueError, match="minimum_quality_score"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            minimum_quality_score=score,  # type: ignore[arg-type]
+        )
+
+
+# --- recursive safe metadata validation ---
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"details": {"prompt": "secret"}},
+        {"nested": {"RAW_SUMMARY": "secret"}},
+        {"level1": {"level2": {"Messages": []}}},
+    ],
+)
+def test_safe_metadata_rejects_nested_forbidden_keys(metadata: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="safe_metadata must not contain forbidden key"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            safe_metadata=metadata,
+        )
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"nested": {1: "value"}},
+        {"nested": {True: "value"}},
+    ],
+)
+def test_safe_metadata_rejects_nested_non_string_keys(metadata: dict[str, object]) -> None:
+    with pytest.raises(ValueError, match="safe_metadata keys must be strings"):
+        ContextOptimizationPolicy(
+            policy_version="policy-v1",
+            validation_contract_version="validation-v1",
+            safe_metadata=metadata,
+        )
+
+
+def test_safe_metadata_nested_mappings_and_sequences_are_immutable() -> None:
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        safe_metadata={
+            "outer": {
+                "count": 2,
+                "flags": [True, False],
+                "nested": {"name": "safe"},
+            },
+        },
+    )
+    assert isinstance(policy.safe_metadata, MappingProxyType)
+    assert isinstance(policy.safe_metadata["outer"], MappingProxyType)
+    assert isinstance(policy.safe_metadata["outer"]["flags"], tuple)
+    with pytest.raises(TypeError):
+        policy.safe_metadata["outer"]["value"] = "mutated"  # type: ignore[index]

@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-1** ready for review
+**Status:** **CTX-UCL-1** correction delivered through **CTX-UCL-1-R1** — ready for review
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -18,8 +18,9 @@
 | **CTX-UCL-ARCH-1-R3** | **Closed through R4** |
 | **CTX-UCL-ARCH-1-R4** | **Accepted / Closed** |
 | **CTX-UCL-ARCH-1-R4-R1** | **Accepted / Closed** |
-| **CTX-UCL-1** | **Ready for review** |
-| **CTX-UCL-2 … CTX-UCL-6** | Not started |
+| **CTX-UCL-1** | **Correction delivered through CTX-UCL-1-R1** — ready for review |
+| **CTX-UCL-1-R1** | **Ready for review** |
+| **CTX-UCL-2 … CTX-UCL-6** | Not started / **CTX-UCL-2 blocked** pending CTX-UCL-1 acceptance |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |

@@ -250,3 +250,53 @@ def test_public_imports_from_context_lifecycle_package() -> None:
     assert ModelCallExecutionScope is not None
     assert ReusableOptimizationArtifact is not None
     assert compute_artifact_lookup_key_hash(_lookup_key())
+
+
+# --- recursive safe serialization ---
+
+
+def test_nested_safe_metadata_serializes_to_json_safe_structures() -> None:
+    metadata = {
+        "outer": {
+            "count": 2,
+            "flags": [True, False],
+            "nested": {"name": "safe"},
+        },
+    }
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        safe_metadata=metadata,
+    )
+    payload = context_optimization_policy_to_safe_dict(policy)
+    serialized = json.dumps(payload)
+
+    assert payload["safe_metadata"]["outer"]["count"] == 2
+    assert payload["safe_metadata"]["outer"]["flags"] == [True, False]
+    assert payload["safe_metadata"]["outer"]["nested"]["name"] == "safe"
+    assert isinstance(payload["safe_metadata"], dict)
+    assert isinstance(payload["safe_metadata"]["outer"], dict)
+    assert isinstance(payload["safe_metadata"]["outer"]["flags"], list)
+    json.loads(serialized)
+
+
+def test_nested_safe_metadata_serialization_survives_input_mutation() -> None:
+    metadata = {
+        "outer": {
+            "count": 2,
+            "nested": {"name": "safe"},
+        },
+    }
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        safe_metadata=metadata,
+    )
+    payload_before = context_optimization_policy_to_safe_dict(policy)
+    metadata["outer"]["count"] = 99
+    metadata["outer"]["nested"]["name"] = "mutated"
+    payload_after = context_optimization_policy_to_safe_dict(policy)
+
+    assert payload_before == payload_after
+    assert payload_after["safe_metadata"]["outer"]["count"] == 2
+    assert payload_after["safe_metadata"]["outer"]["nested"]["name"] == "safe"
