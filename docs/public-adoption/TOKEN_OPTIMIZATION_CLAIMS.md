@@ -40,7 +40,7 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- **CTX-UCL** — Unified Context Lifecycle architecture draft defines reusable optimization artifacts and a reuse-before-create lifecycle; runtime implementation has not started ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
+- **CTX-UCL** — Unified Context Lifecycle architecture draft defines reusable optimization artifacts, reuse-before-create lifecycle, non-recursive internal optimization calls, and single-flight reusable artifact creation; runtime implementation has not started ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
 - **TOKEN-10E** — policy-governed durable compaction integration profile documented; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed; runtime not implemented.
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
@@ -62,7 +62,7 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
-- Unified Context Lifecycle architecture draft defines reusable optimization artifacts, reuse-before-create lifecycle, and integration boundary for session revision and durable compaction (runtime not yet available; ready for review — **CTX-UCL-ARCH-1-R3**).
+- Unified Context Lifecycle architecture draft defines reusable optimization artifacts, reuse-before-create lifecycle, non-recursive internal optimization calls, single-flight reusable artifact creation, and integration boundary for session revision and durable compaction (runtime not yet available; ready for review — **CTX-UCL-ARCH-1-R4**).
 - TOKEN-10E in-cache compaction integration profile and safety boundary are documented (runtime implementation not yet available; blocked until CTX-UCL-CLOSEOUT-1).
 
 ---
@@ -156,7 +156,7 @@ Explicit forbidden examples:
 - Do not say “production-proven token savings” before the required production and TOKEN-10G evidence exists.
 - Do not call Intergrax a “token-accurate optimizer” while the general optimization path has no provider-aware tokenizer.
 - Do not say in-cache compaction is implemented, automatic context compaction is available, rollback is available, or long conversations are already cheaper — TOKEN-10E architecture is documented; runtime is not implemented.
-- Do not claim production durable compaction, session revision store, rollback execution, semantic compression active in production, provider cache mutation, measured production savings from UCL, summary reuse implemented, summary cache available, LLM summarization deduplicated in runtime, artifact repository exists, artifact invalidation works, TOKEN-10E implementation, or LKW UCL integration — UCL architecture is defined; runtime is not implemented.
+- Do not claim production durable compaction, session revision store, rollback execution, semantic compression active in production, provider cache mutation, measured production savings from UCL, summary reuse implemented, summary cache available, LLM summarization deduplicated in runtime, artifact repository exists, artifact reservations operational, internal summarizer recursion prevented in runtime, single-flight creation implemented, InMemoryOptimizationArtifactRepository exists, artifact invalidation works, TOKEN-10E implementation, or LKW UCL integration — UCL architecture is defined; runtime is not implemented.
 
 ---
 

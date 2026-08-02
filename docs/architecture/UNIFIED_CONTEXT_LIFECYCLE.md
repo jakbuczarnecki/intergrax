@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** Ready for review (**CTX-UCL-ARCH-1-R3**)
+**Status:** Ready for review (**CTX-UCL-ARCH-1-R4**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
-**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture pass:** 2026-08-01 — **CTX-UCL-ARCH-1-R3** reusable artifact lifecycle and reuse-before-create
+**ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — Proposed / Ready for Review) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
+**Last architecture pass:** 2026-08-02 — **CTX-UCL-ARCH-1-R4** internal model-call boundary, single-flight artifact creation, repository delivery ownership
 
 ---
 
@@ -13,8 +13,8 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-ARCH-1-R3** — reusable artifact lifecycle, reuse-before-create, decision outcomes, roadmap sync |
-| Prior passes | **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R1** · **CTX-UCL-ARCH-1** |
+| Task | **CTX-UCL-ARCH-1-R4** — internal model-call boundary, single-flight artifact creation, repository delivery ownership |
+| Prior passes | **CTX-UCL-ARCH-1-R3** (correction delivered through R4) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R1** · **CTX-UCL-ARCH-1** |
 | Runtime implementation | **Not started** |
 | TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
@@ -89,7 +89,7 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 
 ### 5.1 Memory / Session — durable source of truth
 
-**Owns:** `ConversationLedger` (append-only raw messages and events); stable message IDs; sequence numbers; tool-call/tool-result relationships; attachments and message metadata; `SessionContextRevision` manifests; `ActiveContextRevisionPointer`; revision persistence contracts; revision activation through compare-and-swap; rollback execution; retention and archival lifecycle; optimistic concurrency; **Reusable Optimization Artifact Catalog** (persistence contract, lookup contract, content-addressed catalog, artifact availability and lifecycle state, artifact retention, artifact invalidation persistence); artifact references from `SessionContextRevision`; tenant/session scoping for artifacts.
+**Owns:** `ConversationLedger` (append-only raw messages and events); stable message IDs; sequence numbers; tool-call/tool-result relationships; attachments and message metadata; `SessionContextRevision` manifests; `ActiveContextRevisionPointer`; revision persistence contracts; revision activation through compare-and-swap; rollback execution; retention and archival lifecycle; optimistic concurrency; **Reusable Optimization Artifact Catalog** and **`OptimizationArtifactRepository`** contracts (persistence contract, lookup contract, single-flight creation reservation, content-addressed catalog, artifact availability and lifecycle state, artifact retention, artifact invalidation persistence); **`InMemoryOptimizationArtifactRepository`** reference implementation (**CTX-UCL-2**); artifact references from `SessionContextRevision`; tenant/session scoping for artifacts.
 
 **Does not own:** global prompt budget; optimization algorithms; strategy selection; model-facing context composition; application authorization or UX; **whether an artifact should be used for the current model call** (Nexus orchestrates lookup-before-create; CE supplies requirements).
 
@@ -148,48 +148,56 @@ Compatibility shim: `intergrax/applications/_shared/context_runtime_bridge.py`.
 
 ## 6. Unified Context Lifecycle
 
-### 6.1 Ephemeral assembly flow (`EPHEMERAL_ASSEMBLY` — canonical model call)
+### 6.1 Ephemeral assembly flow (`EPHEMERAL_ASSEMBLY` — `PRIMARY_MODEL_CALL`)
 
-Every canonical model call traverses the UCL optimization decision point. Token Optimization transformation execution is **optional**; artifact lookup may occur without invoking Token Optimization.
+Every canonical model call is a **`PRIMARY_MODEL_CALL`** and traverses the full UCL optimization decision point. Token Optimization transformation execution is **optional**; artifact lookup may occur without invoking Token Optimization. Internal summarization for artifact creation uses a bounded **`INTERNAL_OPTIMIZATION_CALL`** path that does not re-enter full UCL for the same optimization target.
 
 ```text
-Memory/Session:
+PRIMARY_MODEL_CALL (execution_scope; optimization_depth == 0)
+        ↓
+Memory/Session snapshot:
   resolve ActiveContextRevisionPointer
-        ↓
   load immutable ConversationSnapshot / structural references
-        ↓
-Nexus:
-  start lifecycle coordination
         ↓
 Context Engineering:
   collect sources
   resolve one global ContextPlan
         ↓
-Nexus:
+Nexus UCL decision:
   determine whether optimization is required
         ↓
-optimization not required
-  → NO_OP or SELECT_ONLY (as applicable)
+NO_OP / SELECT_ONLY (budget satisfied without transformation)
         ↓
 optimization required
   → construct ArtifactLookupKey
         ↓
-Memory/Session Optimization Artifact Catalog:
-  lookup compatible artifact
+OptimizationArtifactRepository lookup
         ↓
-compatible artifact found
+artifact found
   → REUSE_ARTIFACT
   → validate artifact eligibility (reuse-time compatibility and integrity)
   → provide artifact to final CE compilation
   → llm_transform_invoked = false
         ↓
-no compatible artifact found
+artifact not found
+  → try_acquire_creation_reservation(key, operation_id, lease_deadline)
+        ↓
+reservation acquired (ACQUIRED)
   → CREATE_ARTIFACT
-  → invoke approved Token Optimization executor (TOKEN-10D RUN when applicable)
-  → candidate-level validation
-  → persist reusable artifact when policy permits
+  → TOKEN-10D timing/policy gate when applicable
+  → INTERNAL_OPTIMIZATION_CALL (optimization_depth == 1; bounded input/output budget)
+  → candidate validation
+  → store_validated_artifact (atomic or observably ordered)
+  → release_creation_reservation
   → provide artifact to final CE compilation
-  → llm_transform_invoked = true when LLM summarizer used
+  → llm_transform_invoked = true when LLM summarizer used (at most one per key)
+        ↓
+reservation already held (ALREADY_IN_PROGRESS)
+  → no Token Optimization execution
+  → no summarizer invocation for non-owner caller
+  → wait_for_artifact_or_reservation_change (bounded timeout)
+  → retry lookup → REUSE_ARTIFACT when artifact available
+  → or explicit non-transforming defer / ARTIFACT_CREATION_IN_PROGRESS outcome
         ↓
 Context Engineering:
   final compilation into exact model-facing ChatMessage[]
@@ -200,10 +208,10 @@ verify_context_preflight / token-window validation
         ↓
 exact-send materialization and hash/integrity verification
         ↓
-LLM Adapter invocation
+primary LLM adapter invocation
 ```
 
-**Rules:** `EPHEMERAL_ASSEMBLY` never changes `ActiveContextRevisionPointer`; never creates a durable revision by default; no content transformation after final model-facing integrity validation. `REUSE_ARTIFACT` must not execute an LLM summarizer or transformation executor. `CREATE_ARTIFACT` may execute an LLM summarizer only when policy and strategy allow it.
+**Rules:** `EPHEMERAL_ASSEMBLY` never changes `ActiveContextRevisionPointer`; never creates a durable revision by default; no content transformation after final model-facing integrity validation. `REUSE_ARTIFACT` must not execute an LLM summarizer or transformation executor. `CREATE_ARTIFACT` may execute an LLM summarizer only when policy and strategy allow it **and** the caller holds a valid creation reservation. The internal summarizer result is **not** sent as the primary application response. No hidden busy loop; no unbounded waiting; no second LLM call for the same compatible key while a valid reservation exists.
 
 ### 6.2 Durable compaction flow (`DURABLE_COMPACTION` — TOKEN-10E scope)
 
@@ -377,6 +385,127 @@ Do **not** call the reusable summary catalog a provider prompt cache or KV cache
 
 A reusable summary artifact is platform-owned persisted content, not provider cache state.
 
+### 6.4 Model call execution scope (`ModelCallExecutionScope`)
+
+Typed distinction between user-facing model calls and internal optimization model calls. Do not overload an unrelated existing request type solely to encode this distinction.
+
+| Value | Definition |
+|-------|------------|
+| **`PRIMARY_MODEL_CALL`** | A canonical model invocation whose result serves the application, agent workflow, or user-facing task. Traverses the full UCL optimization decision point (`optimization_depth == 0`). |
+| **`INTERNAL_OPTIMIZATION_CALL`** | A bounded internal model invocation initiated by an approved Token Optimization executor to create or refresh an optimization artifact (for example an LLM-generated summary). Does not recursively traverse the full UCL optimization lifecycle for the same optimization target. |
+
+Optional future values (not required now): `EVALUATION_CALL`, `VALIDATION_CALL`, `BACKGROUND_MAINTENANCE_CALL`.
+
+**Canonical internal-call rule:** Every `PRIMARY_MODEL_CALL` traverses the canonical UCL optimization decision point. An `INTERNAL_OPTIMIZATION_CALL` does not recursively traverse the full UCL optimization lifecycle for the same optimization target. Internal optimization calls use a bounded internal assembly path with explicit budgets, protected inputs, preflight, and telemetry — but without history summarization or artifact creation recursion.
+
+#### `INTERNAL_OPTIMIZATION_CALL` requirements
+
+Must:
+
+- have an explicit bounded input budget
+- have an explicit reserved output budget
+- use protected-region and structural constraints appropriate to the artifact
+- run token-window preflight
+- produce safe telemetry
+- carry parent operation identity
+- carry `ArtifactLookupKey` or target identity where applicable
+
+Must not:
+
+- re-enter the full optimization decision point for the same source target
+- perform artifact lookup for the artifact it is currently creating
+- trigger another `CREATE_ARTIFACT` for the same source
+- recursively invoke the same summarization strategy
+- mutate `ActiveContextRevisionPointer`
+- activate a durable revision
+- bypass adapter safety or token preflight
+
+#### Internal call context rule
+
+An internal summarization call must receive only the explicitly selected source material and required summarization instructions. It must not automatically receive: the complete original conversation; the current application history provider output; the active UCL history artifact as a new target; unrelated RAG context; the application's complete tool catalog; or application-specific context not required by the summarization strategy.
+
+#### Internal model adapter rule
+
+The internal summarizer may use the same underlying adapter family or a separately configured summarization adapter, but invocation must always be distinguishable by: `execution_scope`, operation lineage, strategy identity, artifact target, and telemetry classification. The architecture does not depend on a separate physical model — the same model may be used safely if execution scope and recursion guard are enforced.
+
+### 6.5 Optimization execution guard (`OptimizationExecutionGuard`)
+
+Conceptual recursion guard preventing infinite optimization recursion and duplicate concurrent creation for the same target.
+
+| Field | Purpose |
+|-------|---------|
+| `execution_scope` | `PRIMARY_MODEL_CALL` or `INTERNAL_OPTIMIZATION_CALL` |
+| `operation_id` | Current operation identity |
+| `parent_operation_id` | Parent operation when nested |
+| `optimization_depth` | Depth in optimization chain |
+| `active_artifact_lookup_key` | Key currently being created (if any) |
+| `active_strategy_id` | Strategy currently executing (if any) |
+
+**Normative invariants:**
+
+- `PRIMARY_MODEL_CALL`: `optimization_depth == 0`
+- first `INTERNAL_OPTIMIZATION_CALL`: `optimization_depth == 1`
+- `optimization_depth > 1`: rejected for the same artifact-creation chain unless a future explicitly approved strategy contract allows bounded composition
+- same `ArtifactLookupKey` already active in the operation ancestry: **fail closed**
+- same strategy + same source target already active: **fail closed**
+
+**Required reason codes:** `OPTIMIZATION_RECURSION_BLOCKED`, `OPTIMIZATION_DEPTH_EXCEEDED`, `DUPLICATE_ACTIVE_ARTIFACT_CREATION`. Exact enum/package placement may be finalized during **CTX-UCL-1**; semantics are normative.
+
+### 6.6 Single-flight artifact creation (`ArtifactCreationReservation`)
+
+For one compatible `ArtifactLookupKey`, the platform **MUST** allow at most one active artifact-creation execution at a time. Content-addressed storage deduplication alone is insufficient because it does not prevent duplicate LLM calls.
+
+**Canonical term:** `ArtifactCreationReservation` (lease semantics with bounded expiry).
+
+**Normative repository operations** (exact method names may be finalized in **CTX-UCL-2**):
+
+| Operation | Purpose |
+|-----------|---------|
+| `lookup(key)` | Find compatible existing artifact |
+| `try_acquire_creation_reservation(key, operation_id, lease_deadline)` | Acquire exclusive creation right |
+| `store_validated_artifact(reservation, artifact)` | Atomically store validated artifact and complete reservation |
+| `release_creation_reservation(reservation, outcome)` | Release on failure or expiry |
+| `wait_for_artifact_or_reservation_change(key, timeout)` | Bounded wait for non-owner callers |
+
+**Reservation acquisition outcomes:**
+
+| Outcome | UCL behavior |
+|---------|--------------|
+| `ARTIFACT_AVAILABLE` | `REUSE_ARTIFACT` (artifact appeared between lookup and acquisition) |
+| `ACQUIRED` | `CREATE_ARTIFACT` |
+| `ALREADY_IN_PROGRESS` | Defer or explicit `ARTIFACT_CREATION_IN_PROGRESS`; **no summarizer invocation** for non-owner |
+| `RESERVATION_EXPIRED` | Policy-controlled reacquisition |
+| `RESERVATION_CONFLICT` | Fail closed or explicit retryable conflict |
+
+**Decision vs coordination separation:** `ContextOptimizationDecision` describes the context optimization result. `ArtifactCreationCoordinationStatus` describes reservation/concurrency state. Do not conflate the two.
+
+**Lease and failure semantics:** A creation reservation must be scoped by tenant and `ArtifactLookupKey`; have an owner `operation_id`; have a bounded expiry or lease deadline; support safe recovery after process failure; and not permanently block future artifact creation. On summarizer or validation failure: do not store an eligible artifact; release or fail the reservation; record safe failure metadata; allow a later policy-controlled retry. On successful creation: artifact store and reservation completion must be atomic or observably ordered so waiters do not launch duplicate creation.
+
+**Required reason/status codes:** `ARTIFACT_CREATION_IN_PROGRESS`, `ARTIFACT_CREATION_RESERVATION_CONFLICT`, `ARTIFACT_CREATION_LEASE_EXPIRED`, `ARTIFACT_CREATION_FAILED`. Do not expose raw summary or source content in reservation telemetry.
+
+#### Concurrency acceptance invariant
+
+Two concurrent canonical model calls with the same compatible `ArtifactLookupKey` and no existing artifact must result in:
+
+- exactly one `CREATE_ARTIFACT` execution
+- exactly one summarizer invocation
+- one validated stored artifact
+- the second caller observing in-progress state and later reusing the stored artifact, or returning an explicit non-transforming defer result
+
+Two concurrent calls with different `ArtifactLookupKey` values may create artifacts independently.
+
+### 6.7 TOKEN-10D relationship with reservation
+
+Preserve existing TOKEN-10D semantics. Ordering:
+
+| State | TOKEN-10D behavior |
+|-------|-------------------|
+| lookup hit → `REUSE_ARTIFACT` | TOKEN-10D transform timing does not run a transformation |
+| lookup miss + reservation acquired → `CREATE_ARTIFACT` | TOKEN-10D timing/policy gate when applicable; `RUN` may invoke executor |
+| reservation already held | no Token Optimization execution |
+
+Do not change TOKEN-10D router/timing result semantics in this architecture pass.
+
 ---
 
 ## 7. Ephemeral assembly (`EPHEMERAL_ASSEMBLY`)
@@ -475,6 +604,22 @@ Canonical artifact compatibility identity for catalog lookup (see §6.3.2). Impl
 ### 9.10 `ReusableOptimizationArtifact`
 
 Canonical reusable optimization artifact metadata record (see §6.3.3). Persisted by Memory/Session catalog; created by Token Optimization only on `CREATE_ARTIFACT`.
+
+### 9.11 `ModelCallExecutionScope`
+
+Typed execution scope for model invocations (see §6.4). Minimum values: `PRIMARY_MODEL_CALL`, `INTERNAL_OPTIMIZATION_CALL`. Implemented in **CTX-UCL-1**.
+
+### 9.12 `OptimizationExecutionGuard`
+
+Recursion guard contract (see §6.5). Implemented in **CTX-UCL-1**.
+
+### 9.13 `ArtifactCreationCoordinationStatus`
+
+Reservation/concurrency coordination status separate from `ContextOptimizationDecision` (see §6.6). Implemented in **CTX-UCL-1**.
+
+### 9.14 `ArtifactCreationReservation`
+
+Single-flight creation reservation/lease contract (see §6.6). Repository operations implemented in **CTX-UCL-2** (`OptimizationArtifactRepository` + `InMemoryOptimizationArtifactRepository` reference implementation).
 
 ---
 
@@ -651,7 +796,7 @@ Safe event model — **no raw conversation content** in standard events.
 |-------|----------------|
 | `snapshot_created` | IDs, revision, hashes, counts |
 | `context_plan_resolved` | budget, segment counts, policy version |
-| `optimization_decision` | `decision` (`NO_OP`, `SELECT_ONLY`, `REUSE_ARTIFACT`, `CREATE_ARTIFACT`, `POLICY_BLOCKED`, `FAIL_CLOSED`); `artifact_id` or `artifact_ref` when reusable; `lookup_hit`; `lookup_miss_reason`; `compatibility_result`; `invalidation_reason`; `strategy_id`; `strategy_version`; `policy_version`; `source_hash`; `target_budget_class`; `llm_transform_invoked`; `receipt_ref`; `raw_content_included = false` |
+| `optimization_decision` | `decision` (`NO_OP`, `SELECT_ONLY`, `REUSE_ARTIFACT`, `CREATE_ARTIFACT`, `POLICY_BLOCKED`, `FAIL_CLOSED`); `artifact_id` or `artifact_ref` when reusable; `lookup_hit`; `lookup_miss_reason`; `compatibility_result`; `invalidation_reason`; `strategy_id`; `strategy_version`; `policy_version`; `source_hash`; `target_budget_class`; `llm_transform_invoked`; `receipt_ref`; `execution_scope`; `operation_id`; `parent_operation_id`; `optimization_depth`; `artifact_lookup_key_hash`; `creation_coordination_status`; `reservation_owner_operation_id` or safe hash; `lease_expiry` category; `wait_or_defer` outcome; `recursion_guard_result`; `reason_code`; `raw_content_included = false` |
 | `optimization_requested` | operation_id, mode, strategy IDs |
 | `candidate_generated` / `candidate_rejected` | status, reason codes, measurements |
 | `validation_completed` | validation type, pass/fail, reason codes |
@@ -659,7 +804,7 @@ Safe event model — **no raw conversation content** in standard events.
 | `rollback_requested` / `rollback_completed` | revision IDs, status |
 | `cache_lineage_changed` | lineage refs, hashes |
 
-**Invariant:** `REUSE_ARTIFACT` → `llm_transform_invoked = false`. `CREATE_ARTIFACT` with LLM summary → `llm_transform_invoked = true`. Do not expose raw source messages or summary content in standard telemetry.
+**Invariants:** `REUSE_ARTIFACT` → `llm_transform_invoked = false`. `ALREADY_IN_PROGRESS` (non-owner) → `llm_transform_invoked = false`. Reservation owner + `CREATE_ARTIFACT` → at most one `llm_transform_invoked = true`. `INTERNAL_OPTIMIZATION_CALL` → `execution_scope` explicitly reported. Do not expose raw source messages, summary content, full prompts, tool arguments, or raw `ArtifactLookupKey` content where it contains sensitive identity.
 
 ---
 
@@ -679,6 +824,13 @@ Safe event model — **no raw conversation content** in standard events.
 | `ACTIVATION_CONFLICT` | CAS activation failed |
 | `IDEMPOTENCY_CONFLICT` | Duplicate durable operation |
 | `POLICY_BLOCKED` | Policy gate blocked transform |
+| `OPTIMIZATION_RECURSION_BLOCKED` | Internal call attempted to re-enter full UCL for same target |
+| `OPTIMIZATION_DEPTH_EXCEEDED` | `optimization_depth` violation in artifact-creation chain |
+| `ARTIFACT_CREATION_IN_PROGRESS` | Valid reservation held by another operation |
+| `ARTIFACT_CREATION_RESERVATION_CONFLICT` | Reservation acquisition conflict |
+| `ARTIFACT_CREATION_LEASE_EXPIRED` | Creation lease expired; policy-controlled reacquisition |
+| `ARTIFACT_CREATION_FAILED` | Summarizer or validation failed; no eligible artifact stored |
+| Repository unavailable | No duplicate uncoordinated creation; fail closed, defer, or policy-approved no-op — do not silently bypass repository and invoke summarizer |
 
 **No hidden fallback** to another lossy strategy without explicit result entry and receipt.
 
@@ -725,6 +877,9 @@ See §13. Production model: append-only ledger, revision manifests, content-addr
 8. LTM consolidation ≠ conversation compaction.
 9. Retention ≠ token optimization.
 10. Cache lineage ≠ content revision.
+11. Internal optimization calls do not recursively traverse full UCL for the same target.
+12. Same-key concurrent artifact creation is single-flight coordinated.
+13. Content addressing alone does not replace creation reservation coordination.
 
 ---
 
@@ -746,6 +901,12 @@ See §13. Production model: append-only ledger, revision manifests, content-addr
 14. Token Optimization-owned artifact persistence.
 15. Reuse based only on source range without `source_content_hash`.
 16. Reuse without policy and validation version checks.
+17. Run full UCL recursively for summarizer calls.
+18. Rely only on content-addressed deduplication to prevent duplicate LLM calls.
+19. Allow duplicate creation and deduplicate after LLM execution.
+20. Application-local mutex for summary creation coordination.
+21. Token Optimization-owned artifact repository.
+22. Ambiguous `CTX-UCL-2+` repository delivery without concrete task assignment.
 
 ---
 
@@ -759,29 +920,32 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Delivered through R1/R2/R3** |
+| **CTX-UCL-ARCH-1** | Cross-domain architecture freeze | **Delivered through R1/R2/R3/R4** |
 | **CTX-UCL-ARCH-1-R1** | Ownership, flow, TOKEN-10E reconciliation, ADR-UCL-001 | **Correction delivered** |
 | **CTX-UCL-ARCH-1-R2** | Document integrity and audit accuracy | **Accepted / Closed** |
-| **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Ready for review** |
-| **CTX-UCL-1** | `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, artifact compatibility contracts, policy fields for reuse/persistence/LLM summarization | Not started |
-| **CTX-UCL-2** | Optimization Artifact Catalog contracts, lookup/store/invalidate, revision artifact references | Not started |
-| **CTX-UCL-3** | `ContextPlan` artifact requirements; structured SessionHistoryProvider + single CE budget | Not started |
-| **CTX-UCL-4** | `MessageSequenceArtifactExecutor` — invoked only after `CREATE_ARTIFACT`; no duplicate LLM summarization on identical source | Not started |
-| **CTX-UCL-5** | Canonical Nexus reuse-before-create integration; ephemeral artifact persistence policy | Not started |
-| **CTX-UCL-6** | Legacy migration — remove independent HistoryLayer summarization, application-local caches | Not started |
-| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime and documentation closeout; reuse-before-create proven | Not started |
+| **CTX-UCL-ARCH-1-R3** | Reusable artifact lifecycle, reuse-before-create, roadmap sync | **Correction delivered through R4** |
+| **CTX-UCL-ARCH-1-R4** | Internal model-call boundary, single-flight creation, repository delivery ownership | **Ready for review** |
+| **CTX-UCL-1** | Contracts only: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no repository implementation; no LLM calls** | Not started |
+| **CTX-UCL-2** | `OptimizationArtifactRepository` neutral interface; **`InMemoryOptimizationArtifactRepository`** reference implementation; atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; atomic or observably ordered validated store; reservation release/failure handling; artifact invalidation and retirement; artifact reference resolution; `SessionContextRevision` artifact references; deterministic concurrency tests | Not started |
+| **CTX-UCL-3** | `ContextPlan` source/target requirements; internal-call budget classification where CE participates; deterministic `ArtifactLookupKey` inputs; no catalog lookup inside CE | Not started |
+| **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source; no executor on `REUSE_ARTIFACT` or `ALREADY_IN_PROGRESS`; receipt tied to parent operation and lookup key | Not started |
+| **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile; inject `OptimizationArtifactRepository`; use `InMemoryOptimizationArtifactRepository` in reference tests; sequential and concurrent single-flight proofs | Not started |
+| **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Not started |
+| **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no ambiguous delivery item; no competing summary caches | Not started |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R3` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1-R4` → accepted → `CTX-UCL-1` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
 
 **After CTX-UCL-CLOSEOUT-1:**
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **TOKEN-10E-1** | Durable compaction contracts over UCL | Blocked |
-| **TOKEN-10E-2** | Durable candidate construction over `MessageSequenceArtifact` | Blocked |
-| **TOKEN-10E-3** | Receipts, rollback metadata, validation | Blocked |
-| **TOKEN-10E-4** | Revision activation + cache-lineage transition | Blocked |
+| **TOKEN-10E-1** | Durable policies and contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | Blocked |
+| **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | Blocked |
+| **TOKEN-10E-3** | Durable receipts and rollback metadata | Blocked |
+| **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages; delivery coordinated by TOKEN-10E-4) | Blocked |
 | **TOKEN-10E-CLOSEOUT-1** | Public contract freeze | Blocked |
+
+**`InMemoryOptimizationArtifactRepository`:** reference runtime implementation for unit/integration tests and local runtime wiring — not the final durable production backend; not application-owned; not Token Optimization-owned.
 
 **TOKEN-10F/G/H:** Planned (proof harness, hard gates, public promotion).
 

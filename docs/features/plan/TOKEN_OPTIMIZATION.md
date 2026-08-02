@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Review and accept **CTX-UCL-ARCH-1-R3** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Current next step:** Review and accept **CTX-UCL-ARCH-1-R4** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 ### LKW proof phase map (post-design)
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Review **CTX-UCL-ARCH-1-R1**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Next step:** Review **CTX-UCL-ARCH-1-R4**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1697,7 +1697,7 @@ Closeout:
 
 **Dependency:** Accepted **TOKEN-10D** (typed cache evidence → reconciliation → signal normalization → timing gate → router → deterministic pipeline on `RUN` only).
 
-#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R3; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
+#### Architecture invariants (frozen at CTX-UCL-ARCH-1-R4; TOKEN-10E detail in TOKEN_OPTIMIZATION §8.10)
 
 ```text
 1. No compaction without explicit policy opt-in.
@@ -1717,7 +1717,9 @@ Closeout:
 15. TOKEN-10E architecture does not mean TOKEN-10E runtime implementation.
 16. Reuse-before-create: durable compaction performs artifact lookup before transformation.
 17. Identical compatible source must not trigger repeated LLM summarization.
-18. No duplicate artifact repository — TOKEN-10E extends UCL artifact and revision contracts.
+18. No duplicate artifact repository — TOKEN-10E extends UCL artifact, reservation, and revision contracts.
+19. Internal summarizer uses INTERNAL_OPTIMIZATION_CALL; does not re-enter full UCL for same target.
+20. Same-key concurrent misses produce at most one transformation execution via ArtifactCreationReservation.
 ```
 
 #### Planned substeps
@@ -1762,17 +1764,17 @@ Closeout:
 
 **Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it, reuse vs create attribution.
 
-##### TOKEN-10E-4 — SessionContextRevision activation request and cache-lineage transition
+##### TOKEN-10E-4 — Durable production repository adapter and SessionContextRevision activation
 
-**Goal:** Activation operates on `SessionContextRevision` references and must not regenerate artifact content. CAS activation and rollback reuse immutable artifact references.
+**Goal:** Deliver the first durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration. Implementation may physically live in Memory/Session packages; delivery is coordinated by TOKEN-10E-4. Activation operates on `SessionContextRevision` references and must not regenerate artifact content.
 
-**Main contracts:** activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
+**Main contracts:** durable repository adapter; activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
 
-**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation — not Application or Token Optimization.
+**Invariants:** no silent retry on CAS conflict; no provider cache deletion claims; no summary regeneration on activation; Memory/Session owns activation — not Application or Token Optimization; TOKEN-10E must not create a second repository or reservation mechanism.
 
-**Out of scope:** rollback UX, storage backend selection.
+**Out of scope:** rollback UX; reference in-memory repository (owned by CTX-UCL-2).
 
-**Acceptance:** contract tests for activation request and conflict paths; activation references artifact without content rewrite; no direct application activation API.
+**Acceptance:** contract tests for activation request and conflict paths; activation references artifact without content rewrite; durable repository adapter passes UCL reservation semantics; no direct application activation API.
 
 **Blocked by:** CTX-UCL-2, TOKEN-10E-3.
 
@@ -1784,7 +1786,7 @@ Closeout:
 
 **Acceptance:** public exports frozen; claim guardrail tests pass; TOKEN-10E marked implemented/ready for review only after closeout — not before.
 
-#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R3; UCL sole lifecycle source)
+#### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R4; UCL sole lifecycle source)
 
 - [x] TOKEN_OPTIMIZATION §8.10 is bounded integration profile linked to UCL (not second lifecycle)
 - [x] Memory/Session owns persistence, CAS activation, rollback execution, artifact catalog
@@ -1798,7 +1800,9 @@ Closeout:
 - [x] Receipt and rollback metadata defined
 - [x] Stale-write protection and cache-lineage semantics defined
 - [x] Fail-closed matrix and safe reporting documented
-- [x] Implementation decomposed into limited future tasks
+- [x] Internal-call boundary and single-flight creation defined in UCL
+- [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
+- [x] TOKEN-10E-4 owns first durable production repository adapter delivery
 - [ ] Runtime implementation (TOKEN-10E-1..4) — **not started**
 - [ ] Phase closeout — **not started**
 

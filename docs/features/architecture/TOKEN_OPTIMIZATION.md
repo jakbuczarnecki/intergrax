@@ -769,7 +769,7 @@ Contracts and helpers live under `intergrax/runtime/token_optimization/` (`Token
 
 #### In-cache compaction (**TOKEN-10E** — architecture defined / ready for review)
 
-In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R3**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R4**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 
@@ -1052,7 +1052,7 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** Integration profile / ready for review. **Not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, and cross-domain ownership. **ADR-UCL-001** freezes cross-domain decisions (Proposed / Ready for Review). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** until **CTX-UCL-CLOSEOUT-1** is accepted/closed. No runtime code, public exports, or production enablement exist for TOKEN-10E.
+**Status:** Integration profile / ready for review. **Not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **ADR-UCL-001** freezes cross-domain decisions (Proposed / Ready for Review). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** until **CTX-UCL-CLOSEOUT-1** is accepted/closed. No runtime code, public exports, or production enablement exist for TOKEN-10E.
 
 #### 1. Status and dependency
 
@@ -1070,14 +1070,16 @@ TOKEN-10E owns **only** the durable compaction contribution implemented through 
 ```text
 policy evaluation for compaction targets
 artifact lookup by ArtifactLookupKey (reuse-before-create)
-MessageSequenceArtifact candidate construction (CREATE_ARTIFACT only on lookup miss)
+creation reservation coordination on lookup miss (single-flight)
+MessageSequenceArtifact candidate construction (CREATE_ARTIFACT only on reservation ACQUIRED)
+INTERNAL_OPTIMIZATION_CALL for LLM summarizer (non-recursive bounded path)
 candidate schema/structural/protected/quality validation contracts
 receipt and rollback-metadata compilation
 cache-lineage transition calculation
 safe result reporting
 ```
 
-TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization; **artifact catalog persistence or lookup**.
+TOKEN-10E does **not** own: ConversationLedger; SessionContextRevision persistence; ActiveContextRevisionPointer; revision activation; rollback execution; global prompt budget; application authorization; **artifact catalog persistence, lookup, or reservation coordination** (reuses UCL `OptimizationArtifactRepository` contracts).
 
 #### 3. MessageSequenceArtifact requirement
 
@@ -1109,13 +1111,15 @@ Nexus resolves ContextOptimizationPolicy
         ↓
 construct ArtifactLookupKey
         ↓
-Memory/Session catalog lookup
+OptimizationArtifactRepository lookup
         ↓
-REUSE_ARTIFACT (no LLM) or CREATE_ARTIFACT
+REUSE_ARTIFACT (no LLM) or try_acquire_creation_reservation on miss
+        ↓
+CREATE_ARTIFACT on ACQUIRED only (no TO execution on ALREADY_IN_PROGRESS)
         ↓
 TOKEN-10D timing gate (when applicable, on CREATE_ARTIFACT)
         ↓
-MessageSequenceArtifactExecutor (on RUN / CREATE_ARTIFACT only)
+MessageSequenceArtifactExecutor (on RUN / CREATE_ARTIFACT only; INTERNAL_OPTIMIZATION_CALL)
         ↓
 validated TOKEN-10E candidate
 ```
@@ -1188,7 +1192,7 @@ Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, doma
 
 **Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
-**Next step:** Review and accept **CTX-UCL-ARCH-1-R3**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
+**Next step:** Review and accept **CTX-UCL-ARCH-1-R4**; complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1**; then begin **TOKEN-10E-1**.
 
 ---
 

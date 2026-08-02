@@ -21,6 +21,7 @@ _UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 _FORBIDDEN_CONTEXT_MARKERS = (
     "do not say",
+    "do not claim",
     "forbidden",
     "unless a future",
     "by x%",
@@ -52,8 +53,29 @@ _REGENERATION_FORBIDDEN_PHRASES = (
     "always invoke summarizer",
 )
 
+# CTX-UCL-ARCH-1-R4: internal-call boundary, single-flight creation, repository delivery guardrails.
+_R4_REQUIRED_CONCEPTS = (
+    "PRIMARY_MODEL_CALL",
+    "INTERNAL_OPTIMIZATION_CALL",
+    "OptimizationExecutionGuard",
+    "ArtifactCreationReservation",
+    "single-flight",
+    "InMemoryOptimizationArtifactRepository",
+    "OPTIMIZATION_RECURSION_BLOCKED",
+    "ARTIFACT_CREATION_IN_PROGRESS",
+)
+
+_R4_FORBIDDEN_PHRASES = (
+    "internal summarizer traverses the full ucl lifecycle",
+    "allow duplicate summarization and deduplicate afterward",
+    "content addressing alone prevents duplicate llm calls",
+    "token optimization owns the artifact repository",
+    "application-local mutex coordinates summary creation",
+)
+
 _ARTIFACT_OWNERSHIP_FORBIDDEN_PHRASES = (
     "token optimization owns artifact persistence",
+    "token optimization owns the artifact repository",
     "application owns the summary cache",
 )
 
@@ -282,3 +304,35 @@ def test_ucl_architecture_documents_llm_transform_invariant_on_reuse() -> None:
     content = _read_public_doc(_UCL_ARCH).lower()
     assert "llm_transform_invoked" in content
     assert "reuse_artifact" in content
+
+
+# --- CTX-UCL-ARCH-1-R4: internal-call and single-flight guardrails ---
+
+
+@pytest.mark.parametrize("concept", _R4_REQUIRED_CONCEPTS)
+def test_ucl_architecture_documents_r4_required_concepts(concept: str) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    assert concept in content, f"Missing required UCL R4 concept: {concept!r}"
+
+
+@pytest.mark.parametrize("phrase", _R4_FORBIDDEN_PHRASES)
+def test_ucl_architecture_rejects_r4_regression_phrases(phrase: str) -> None:
+    content = _read_public_doc(_UCL_ARCH).lower()
+    assert phrase not in content, f"Forbidden R4 regression phrase in UCL arch: {phrase!r}"
+
+
+def test_claims_doc_does_not_claim_runtime_single_flight_or_recursion_protection() -> None:
+    content = _read_claims_doc()
+    forbidden_runtime_claims = (
+        "single-flight is implemented",
+        "artifact reservations are operational",
+        "inmemoryoptimizationartifactrepository exists",
+        "internal summarizer recursion is prevented in runtime",
+    )
+    for claim in forbidden_runtime_claims:
+        offenders = [
+            line.strip()
+            for line in content.splitlines()
+            if claim in line.lower() and not _line_is_forbidden_example_context(line)
+        ]
+        assert offenders == [], f"Forbidden runtime claim in claims doc: {claim!r} -> {offenders}"
