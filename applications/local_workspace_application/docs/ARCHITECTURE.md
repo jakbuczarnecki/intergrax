@@ -613,11 +613,15 @@ A Slack command must behave the same regardless of where storage is located. Bin
 
 **Conversation Context Binding** is an LKW application-domain durable product relationship — not a `slack_companion`, `SlackConversationChannelIntegration`, or `vendor_knowledge` concern.
 
-It binds: one tenant + one conversational frontend connection/installation + one external conversation + one audience mode (`PERSONAL` | `SHARED`) + one LKW workspace + one activation policy + one context/memory policy.
+It binds: one tenant + one conversational frontend connection + one external conversation (semantic identity: `tenant_id` + `conversation_connection_ref` + `opaque_conversation_ref`; at most one `ACTIVE` binding) + one audience mode (`PERSONAL` | `SHARED`) + workspace resolution policy (`FIXED_WORKSPACE` | `PERSONAL_SELECTION`) + one activation policy + thread context policy.
 
-**Persistence owner:** LKW application domain (future `LKW-CONVERSATION-CONTEXT-1`). Provider adapters map external conversation addresses into opaque refs; they do not choose workspaces, merge memory partitions, or authorize evidence.
+**Ingress:** provider adapters produce `ConversationIngressContext` with `observed_audience` (`PERSONAL` | `SHARED` | `UNKNOWN`). `binding.audience_mode` must match `ingress.observed_audience` before workspace resolution, memory lookup or Ask. `UNKNOWN` or mismatch fails closed.
 
-**Memory partitions** are separate for `PERSONAL` and `SHARED` contexts. `PERSONAL` context cannot be resolved from a `SHARED` conversation. No automatic copying between partitions.
+**Persistence owner:** LKW application domain (future `LKW-CONVERSATION-CONTEXT-1`). Provider adapters map external conversation addresses into opaque refs and observed audience; they do not choose workspaces, merge memory partitions, or authorize evidence.
+
+**Conversation-level state** (workspace selection, preferences) is separate from **thread-level memory** (keyed by `tenant_id` + `conversation_context_binding_id` + `canonical_thread_ref`). Partitions are separate for `PERSONAL` and `SHARED` contexts. `PERSONAL` context cannot be resolved from a `SHARED` conversation. No automatic copying between partitions or threads.
+
+V1 shared conversations default to `READ_ONLY_ASK`; administrative binding mutations require an authorized admin path.
 
 Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
 

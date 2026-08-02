@@ -168,9 +168,11 @@ whether we are ready to deploy.
 
 Slack remains a **thin client**. It must not own knowledge configuration, provider credentials, vendor clients, RAG, tool selection or operation state. Binding architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 
-**Current implemented slice:** approved-user **DM-only** workflow — select workspace, Ask over indexed knowledge, inspect sources, managed-file and URL intake via HTTP (planner execution not yet wired for natural language). This is the current MVP, not the final LKW conversational architecture.
+**Current implemented slice:** approved-user **DM-only** workflow — temporary in-memory personal workspace selection, Ask over indexed knowledge, inspect sources, managed-file and URL intake via HTTP (planner execution not yet wired for natural language). This is the current MVP, not the final LKW conversational architecture.
 
-**Future target:** provider-neutral Conversation Context Binding over the same LKW HTTP/capability layer. Slack channel, private-channel and group-conversation support will arrive through `LKW-CONVERSATION-CONTEXT-1` and `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, not as Slack-specific core product logic. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
+**Future target:** provider-neutral Conversation Context Binding with `ConversationIngressContext` observed-audience validation, durable `PERSONAL_SELECTION` workspace state and `READ_ONLY_ASK` shared capability boundary over the same LKW HTTP/capability layer. Slack channel, private-channel and group-conversation support will arrive through `LKW-CONVERSATION-CONTEXT-1` and `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`, not as Slack-specific core product logic. Canonical contract: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md).
+
+**Slack observed-audience mapping (adapter examples):** IM/app DM → `PERSONAL`; public/private channel and MPIM/group DM → `SHARED`.
 
 **Slack historical knowledge access does not yet exist.** Channel or conversation history ingestion and bounded live Slack reads are future platform-backed capabilities (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**, `LKW-SLACK-CONNECTED-SOURCE-1`, `SLACK-LIVE-CAPABILITY-1`). Do not add Slack Web API history calls to the LKW Slack companion.
 

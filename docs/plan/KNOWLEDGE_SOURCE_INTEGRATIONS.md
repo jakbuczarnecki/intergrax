@@ -99,7 +99,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` freezes provider-neutral personal/shared Conversation Context Binding and audience isolation in the LKW application domain — prerequisite before shared-channel runtime and connected-source work. LKW bridge, conversation context implementation and live capability remain **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Microsoft Graph Calendar. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` freezes provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain — prerequisite before shared-channel runtime and connected-source work. LKW bridge, conversation context implementation and live capability remain **not** implemented.
 
 **Execution order (frozen):**
 
@@ -120,11 +120,18 @@ CURRENT ARCHITECTURE PREREQUISITE:
 LKW-CONVERSATION-CONTEXT-ARCH-1
 
 THEN:
-LKW-SLACK-CONNECTED-SOURCE-1
-LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-CONNECTED-SOURCE-1          # independent from conversational activation
+LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
-LKW-SLACK-KNOWLEDGE-PROOF-1
+
+JOIN (final Slack proof):
+LKW-SLACK-CONNECTED-SOURCE-1
++ LKW-CONVERSATION-CONTEXT-1
++ LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
++ SLACK-LIVE-CAPABILITY-1
++ LKW-HYBRID-ASK-1
+→ LKW-SLACK-KNOWLEDGE-PROOF-1
 
 AFTER COMPLETE SLACK USER VERTICAL:
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
@@ -1034,7 +1041,7 @@ Recommended implementation/proof order inside the Microsoft scope:
 5. calendar   ← after complete Slack Knowledge user vertical
 ```
 
-The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → `LKW-SLACK-CONNECTED-SOURCE-1` → `LKW-CONVERSATION-CONTEXT-1` → `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` → `SLACK-LIVE-CAPABILITY-1` → `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
+The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`.
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
@@ -1265,7 +1272,7 @@ Connecting a Slack conversation as an Indexed Source does **not** activate the b
 
 **Status:** `PLANNED` (LKW application — LKW-wide, not platform Slack ownership)
 
-Provider-neutral durable Conversation Context Bindings, workspace audience policy, memory partitioning and evidence guards. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+Provider-neutral durable Conversation Context Bindings, observed-audience validation, workspace audience policy, conversation-level state versus thread-level memory, evidence guards and shared `READ_ONLY_ASK` capability boundary. Canonical architecture: [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 #### `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1`
 
@@ -1292,6 +1299,8 @@ No automatic durable persistence.
 #### `LKW-SLACK-KNOWLEDGE-PROOF-1`
 
 **Status:** `PLANNED` (LKW application)
+
+**Prerequisites (join):** `LKW-SLACK-CONNECTED-SOURCE-1` + `LKW-CONVERSATION-CONTEXT-1` + `LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1` + `SLACK-LIVE-CAPABILITY-1` + `LKW-HYBRID-ASK-1`. Cannot claim indexed + live combined evidence before Hybrid Ask exists.
 
 Required user proof:
 

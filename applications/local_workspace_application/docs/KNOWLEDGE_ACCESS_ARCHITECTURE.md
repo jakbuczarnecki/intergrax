@@ -872,11 +872,17 @@ Conversation Context Binding, Indexed Source Binding and Live Access Binding are
 The audience of the outbound answer determines the maximum knowledge scope.
 ```
 
-For a **SHARED** conversation, indexed and live evidence must satisfy the bound shared workspace and shared-audience approval. Caller private permissions, personal workspace selection, personal memory and private connector grants must **never** expand the evidence boundary.
+**Ingress:** `binding.audience_mode` must match `ingress.observed_audience` before workspace resolution, memory lookup or Ask. `UNKNOWN` fails closed.
 
-**Before model invocation (shared conversation):** every evidence item must match `binding.tenant_id`, `binding.workspace_id`, be from an active source approved for `SHARED` consumption, and must not originate from a `PERSONAL` memory partition.
+**Shared source eligibility** (default-deny): sources and Live Access Bindings carry `PERSONAL_ONLY` | `SHARED_ALLOWED`. Shared evidence requires `SHARED` workspace audience **and** `SHARED_ALLOWED` eligibility. Existing sources are not silently promoted.
 
-**Before outbound delivery:** validate response conversation/thread, citation workspace membership, and absence of personal-memory or personal-workspace evidence.
+For a **SHARED** conversation, indexed and live evidence must satisfy the bound shared workspace and `SHARED_ALLOWED` eligibility. Caller private permissions, personal workspace selection, personal memory and private connector grants must **never** expand the evidence boundary.
+
+**Before model invocation:** validate active unique binding, audience match, principal rules, activation policy, workspace resolution, thread partition identity, and that every evidence/memory item matches tenant + workspace + audience eligibility — including thread memory, live tool results and planner context, not only citations.
+
+**Before outbound delivery:** validate response conversation/thread, citation workspace membership, audience unchanged, and absence of personal-memory or personal-workspace evidence. Guard failure suppresses the outbound answer.
+
+V1 shared conversations default to `READ_ONLY_ASK`; ordinary shared messages must not mutate bindings, connections, sources or approvals.
 
 Hybrid Ask and the Knowledge Query Orchestrator must reject mixed personal/shared evidence deterministically — not through prompt instructions alone.
 
