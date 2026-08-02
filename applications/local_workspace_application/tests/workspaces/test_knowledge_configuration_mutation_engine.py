@@ -263,6 +263,114 @@ class _FailingMutationFinalizeStore(InMemoryDocumentStore):
         return super().replace_if_match(expected=expected, replacement=replacement)
 
 
+class _RevisionRaceBeforeWriterSlotCASStore(InMemoryDocumentStore):
+    """Bumps committed revision immediately before writer-slot CAS."""
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_head" in expected.partition_key
+            and not expected.data.get("pending_mutation_id")
+            and replacement.data.get("pending_mutation_id")
+            and expected.data.get("committed_revision") == 4
+        ):
+            bumped = expected.model_copy(
+                update={
+                    "data": {
+                        **expected.data,
+                        "committed_revision": 5,
+                        "updated_at": replacement.data.get("updated_at"),
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=bumped)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+class _FailingHeadReleaseStore(InMemoryDocumentStore):
+    """Returns False for pending-head release CAS."""
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_head" in expected.partition_key
+            and expected.data.get("pending_mutation_id")
+            and not replacement.data.get("pending_mutation_id")
+        ):
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+class _AbortedRestartCommittedRaceStore(InMemoryDocumentStore):
+    """Replaces ABORTED mutation with COMMITTED before restart CAS."""
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_mutation" in expected.partition_key
+            and expected.data.get("status") == "aborted"
+            and replacement.data.get("status") == "reserved"
+        ):
+            committed = expected.model_copy(
+                update={
+                    "data": {
+                        **expected.data,
+                        "status": "committed",
+                        "outcome": "applied",
+                        "target_revision": 1,
+                        "committed_revision": 1,
+                        "result_entity_type": _RESULT_TYPE,
+                        "result_entity_id": _RESULT_ID,
+                        "committed_at": _NOW.isoformat(),
+                        "error_code": None,
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=committed)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
+class _AbortedRestartReservedRaceStore(InMemoryDocumentStore):
+    """Replaces ABORTED mutation with RESERVED before restart CAS."""
+
+    def replace_if_match(
+        self,
+        *,
+        expected: DocumentRecord,
+        replacement: DocumentRecord,
+    ) -> bool:
+        if (
+            "knowledge_configuration_mutation" in expected.partition_key
+            and expected.data.get("status") == "aborted"
+            and replacement.data.get("status") == "reserved"
+        ):
+            reserved = replacement.model_copy(
+                update={
+                    "data": {
+                        **replacement.data,
+                        "mutation_id": "mutation-race-winner",
+                    }
+                }
+            )
+            super().replace_if_match(expected=expected, replacement=reserved)
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+
 def _build_engine(
   *,
     store: InMemoryDocumentStore | None = None,
@@ -1095,3 +1203,215 @@ def test_module_has_no_raw_transport_names() -> None:
     source = inspect.getsource(module)
     for token in ("Idempotency-Key", "If-Match", "FastAPI", "HTTPException"):
         assert token not in source
+
+
+# --- CAS atomicity and recovery classification ---
+
+
+def test_revision_changes_between_validation_and_writer_slot_cas() -> None:
+    store = _RevisionRaceBeforeWriterSlotCASStore()
+    engine, repo, handler = _build_engine(store=store)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=4,
+            updated_at=_NOW,
+        )
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine, expected_revision=4)
+    assert exc.value.error_code == "configuration_revision_conflict"
+    assert handler.stage_calls == 0
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    assert head.committed_revision == 5
+    assert head.pending_mutation_id is None
+    assert head.pending_revision is None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.ABORTED
+    assert loaded.target_revision is None
+
+
+def test_pre_publication_rollback_fails_when_head_release_cas_fails() -> None:
+    store = _FailingHeadReleaseStore()
+    handler = _FakeHandler()
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    engine, repo, _handler = _build_engine(store=store, handler=handler)
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine)
+    assert exc.value.error_code == "configuration_mutation_cleanup_failed"
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    assert head.pending_mutation_id is not None
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is not WorkspaceKnowledgeMutationStatusV1.ABORTED
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+
+
+def test_recovery_head_release_cas_failure_does_not_report_aborted() -> None:
+    store = _FailingHeadReleaseStore()
+    engine, repo, handler = _build_engine(
+        store=store,
+        mutation_ids=["mutation-incomplete-release"],
+    )
+    mutation = _mutation_record(
+        mutation_id="mutation-incomplete-release",
+        target_revision=1,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            pending_revision=1,
+            pending_mutation_id="mutation-incomplete-release",
+            updated_at=_NOW,
+        )
+    )
+    handler.inspection_state = WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    handler.stage(
+        repository=repo,
+        mutation=mutation,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        engine.recover_workspace_knowledge_mutation(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+        )
+    assert exc.value.error_code in {
+        "configuration_recovery_required",
+        "configuration_mutation_cleanup_failed",
+    }
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    assert head.pending_mutation_id == "mutation-incomplete-release"
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.status is not WorkspaceKnowledgeMutationStatusV1.ABORTED
+
+
+def test_recovery_commits_other_mutation_does_not_replay_current_row() -> None:
+    engine, repo, handler = _build_engine(
+        mutation_ids=["mutation-a", "mutation-b", "mutation-c"],
+    )
+    mutation_a = _mutation_record(
+        mutation_id="mutation-a",
+        status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
+        target_revision=None,
+        idempotency_key_hash=_SHA256,
+    )
+    mutation_b = _mutation_record(
+        mutation_id="mutation-b",
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        target_revision=1,
+        idempotency_key_hash=_SHA256_B,
+        result_entity_type=_RESULT_TYPE,
+        result_entity_id=_RESULT_ID,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(mutation_a)
+    repo.put_knowledge_configuration_mutation_if_absent(mutation_b)
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=1,
+            last_committed_mutation_id="other",
+            updated_at=_NOW,
+        )
+    )
+    handler.stage(
+        repository=repo,
+        mutation=mutation_b,
+        target_revision=1,
+        intent=object(),
+        now=_NOW,
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine, idempotency_key_hash=_SHA256)
+    assert exc.value.error_code in {
+        "configuration_revision_conflict",
+        "configuration_recovery_required",
+        "configuration_mutation_state_conflict",
+    }
+    loaded_a = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded_a is not None
+    assert loaded_a.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    loaded_b = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256_B,
+    )
+    assert loaded_b is not None
+    assert loaded_b.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+
+
+def test_aborted_restart_race_won_by_committed_record() -> None:
+    store = _AbortedRestartCommittedRaceStore()
+    engine, repo, handler = _build_engine(
+        store=store,
+        mutation_ids=["mutation-restart-race", "mutation-unused"],
+    )
+    aborted = _mutation_record(
+        mutation_id="mutation-old",
+        status=WorkspaceKnowledgeMutationStatusV1.ABORTED,
+        error_code="configuration_revision_conflict",
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(aborted)
+    result = _execute(engine)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert result.configuration_revision == 1
+    assert result.result_entity_id == _RESULT_ID
+    assert handler.stage_calls == 0
+
+
+def test_aborted_restart_race_won_by_reserved_record() -> None:
+    store = _AbortedRestartReservedRaceStore()
+    engine, repo, handler = _build_engine(
+        store=store,
+        mutation_ids=["mutation-restart-race", "mutation-unused"],
+    )
+    aborted = _mutation_record(
+        mutation_id="mutation-old",
+        status=WorkspaceKnowledgeMutationStatusV1.ABORTED,
+        error_code="configuration_revision_conflict",
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(aborted)
+    result = _execute(engine)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.mutation_id == "mutation-race-winner"
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
