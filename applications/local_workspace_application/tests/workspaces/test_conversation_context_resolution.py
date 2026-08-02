@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.document_store import DocumentRecord
 from local_workspace_application.workspaces.conversation_context_models import (
     ConversationActivationPolicy,
     ConversationActivationSignal,
@@ -26,6 +27,7 @@ from local_workspace_application.workspaces.conversation_context_models import (
 )
 from local_workspace_application.workspaces.conversation_context_repository import (
     ConversationContextRepository,
+    ConversationContextRepositoryError,
 )
 from local_workspace_application.workspaces.conversation_context_resolution import (
     ConversationContextResolutionError,
@@ -593,3 +595,31 @@ def test_two_tenants_cannot_resolve_each_others_binding_or_state() -> None:
     with pytest.raises(ConversationContextResolutionError) as exc_info:
         resolver.resolve(tenant_id=_TENANT_B, ingress=_ingress())
     assert exc_info.value.error_code == "NO_ACTIVE_BINDING"
+
+
+def test_corrupt_binding_record_fails_closed_before_ports() -> None:
+    store = InMemoryDocumentStore()
+    partition_key = f"lkw.conversation_context:{_TENANT}:conversation_context_binding"
+    corrupt = _binding(opaque_conversation_ref="conv.other")
+    store.put(
+        DocumentRecord(
+            partition_key=partition_key,
+            row_key=f"{_CONNECTION}\x1e{_CONVERSATION}\x1e{_BINDING_ID}",
+            data=corrupt.model_dump(mode="json"),
+        )
+    )
+    connection = _ConnectionPort(active_connections={(_TENANT, _CONNECTION)})
+    workspace = _WorkspacePort(
+        active_workspaces={(_TENANT, _WORKSPACE)},
+        authorized={(_TENANT, _WORKSPACE, _PRINCIPAL)},
+    )
+    resolver, _, connection, workspace = _resolver(
+        ConversationContextRepository(store),
+        connection_port=connection,
+        workspace_port=workspace,
+    )
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        resolver.resolve(tenant_id=_TENANT, ingress=_ingress())
+    assert exc_info.value.error_code == "conversation_context_record_identity_mismatch"
+    assert connection.calls == []
+    assert workspace.calls == []

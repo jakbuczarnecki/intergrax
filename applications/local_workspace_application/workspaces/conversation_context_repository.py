@@ -58,6 +58,67 @@ def _binding_semantic_prefix(
     )
 
 
+def _binding_id_from_row_key(
+    *,
+    row_key: str,
+    conversation_connection_ref: str,
+    opaque_conversation_ref: str,
+) -> str:
+    prefix = _binding_semantic_prefix(
+        conversation_connection_ref=conversation_connection_ref,
+        opaque_conversation_ref=opaque_conversation_ref,
+    )
+    if not row_key.startswith(prefix):
+        raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+    return row_key[len(prefix) :]
+
+
+def _assert_binding_record_identity(
+    binding: ConversationContextBindingV1,
+    *,
+    tenant_id: str,
+    conversation_connection_ref: str,
+    opaque_conversation_ref: str,
+    conversation_context_binding_id: str | None = None,
+    row_key: str | None = None,
+) -> None:
+    if binding.tenant_id != tenant_id:
+        raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+    if binding.conversation_connection_ref != conversation_connection_ref:
+        raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+    if binding.opaque_conversation_ref != opaque_conversation_ref:
+        raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+    if (
+        conversation_context_binding_id is not None
+        and binding.conversation_context_binding_id != conversation_context_binding_id
+    ):
+        raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+    if row_key is not None:
+        row_key_binding_id = _binding_id_from_row_key(
+            row_key=row_key,
+            conversation_connection_ref=conversation_connection_ref,
+            opaque_conversation_ref=opaque_conversation_ref,
+        )
+        if row_key_binding_id != binding.conversation_context_binding_id:
+            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+
+
+def _assert_binding_immutable_fields_unchanged(
+    expected: ConversationContextBindingV1,
+    replacement: ConversationContextBindingV1,
+) -> None:
+    if (
+        expected.conversation_connection_ref != replacement.conversation_connection_ref
+        or expected.opaque_conversation_ref != replacement.opaque_conversation_ref
+        or expected.frontend_provider_id != replacement.frontend_provider_id
+        or expected.audience_mode != replacement.audience_mode
+        or expected.created_at != replacement.created_at
+    ):
+        raise ConversationContextRepositoryError(
+            "conversation_context_binding_immutable_field_changed"
+        )
+
+
 def _personal_state_row_key(
     *,
     conversation_context_binding_id: str,
@@ -175,8 +236,14 @@ class ConversationContextRepository:
         if record is None:
             return None
         binding = self._parse_binding(dict(record.data))
-        if binding.tenant_id != tenant_id:
-            raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        _assert_binding_record_identity(
+            binding,
+            tenant_id=tenant_id,
+            conversation_connection_ref=conversation_connection_ref,
+            opaque_conversation_ref=opaque_conversation_ref,
+            conversation_context_binding_id=conversation_context_binding_id,
+            row_key=row_key,
+        )
         return binding
 
     def replace_binding_if_match(
@@ -189,6 +256,11 @@ class ConversationContextRepository:
             raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
         if expected.tenant_id != replacement.tenant_id:
             raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+        if replacement.configuration_version != expected.configuration_version + 1:
+            raise ConversationContextRepositoryError(
+                "conversation_context_configuration_version_invalid"
+            )
+        _assert_binding_immutable_fields_unchanged(expected, replacement)
         partition_key = _partition(expected.tenant_id, _ENTITY_BINDING)
         row_key = _binding_row_key(
             conversation_connection_ref=expected.conversation_connection_ref,
@@ -224,8 +296,13 @@ class ConversationContextRepository:
         bindings: list[ConversationContextBindingV1] = []
         for doc in result.documents:
             binding = self._parse_binding(dict(doc.data))
-            if binding.tenant_id != tenant_id:
-                raise ConversationContextRepositoryError("conversation_context_record_identity_mismatch")
+            _assert_binding_record_identity(
+                binding,
+                tenant_id=tenant_id,
+                conversation_connection_ref=conversation_connection_ref,
+                opaque_conversation_ref=opaque_conversation_ref,
+                row_key=doc.row_key,
+            )
             bindings.append(binding)
         return bindings
 

@@ -213,3 +213,163 @@ def test_workspace_audience_policy_is_tenant_workspace_scoped() -> None:
     assert repo_b.get_workspace_audience_policy(tenant_id=_TENANT_B, workspace_id=_WORKSPACE) is None
     loaded = repo_a.get_workspace_audience_policy(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert loaded == policy
+
+
+def _corrupt_binding_record(
+    store: InMemoryDocumentStore,
+    binding: ConversationContextBindingV1,
+    *,
+    row_connection: str = _CONNECTION,
+    row_conversation: str = _CONVERSATION,
+    row_binding_id: str = _BINDING_ID,
+) -> None:
+    partition_key = _partition(_TENANT, _ENTITY_BINDING)
+    row_key = f"{row_connection}\x1e{row_conversation}\x1e{row_binding_id}"
+    store.put(
+        DocumentRecord(
+            partition_key=partition_key,
+            row_key=row_key,
+            data=binding.model_dump(mode="json"),
+        )
+    )
+
+
+def test_get_binding_rejects_record_identity_mismatch_on_conversation() -> None:
+    store = InMemoryDocumentStore()
+    corrupt = _binding(opaque_conversation_ref="conv.other")
+    _corrupt_binding_record(store, corrupt)
+    repo = _repo(store)
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.get_binding(
+            tenant_id=_TENANT,
+            conversation_connection_ref=_CONNECTION,
+            opaque_conversation_ref=_CONVERSATION,
+            conversation_context_binding_id=_BINDING_ID,
+        )
+    assert exc_info.value.error_code == "conversation_context_record_identity_mismatch"
+
+
+def test_list_bindings_rejects_record_identity_mismatch_on_connection() -> None:
+    store = InMemoryDocumentStore()
+    corrupt = _binding(conversation_connection_ref="conn.other")
+    _corrupt_binding_record(store, corrupt)
+    repo = _repo(store)
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.list_bindings_for_semantic_identity(
+            tenant_id=_TENANT,
+            conversation_connection_ref=_CONNECTION,
+            opaque_conversation_ref=_CONVERSATION,
+        )
+    assert exc_info.value.error_code == "conversation_context_record_identity_mismatch"
+
+
+def test_list_bindings_rejects_row_key_binding_id_mismatch() -> None:
+    store = InMemoryDocumentStore()
+    binding = _binding()
+    _corrupt_binding_record(store, binding, row_binding_id="binding-row-key")
+    repo = _repo(store)
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.list_bindings_for_semantic_identity(
+            tenant_id=_TENANT,
+            conversation_connection_ref=_CONNECTION,
+            opaque_conversation_ref=_CONVERSATION,
+        )
+    assert exc_info.value.error_code == "conversation_context_record_identity_mismatch"
+
+
+@pytest.mark.parametrize(
+    ("field_name", "field_value"),
+    [
+        ("conversation_connection_ref", "conn.mutated"),
+        ("opaque_conversation_ref", "conv.mutated"),
+        ("frontend_provider_id", "provider.mutated"),
+        ("audience_mode", ConversationAudienceMode.SHARED),
+        ("created_at", datetime(2024, 7, 1, 12, 0, tzinfo=UTC)),
+    ],
+)
+def test_replace_binding_rejects_immutable_field_change(
+    field_name: str,
+    field_value: object,
+) -> None:
+    repo = _repo()
+    original = _binding()
+    assert repo.put_binding_if_absent(original) is True
+    replacement = original.model_copy(
+        update={
+            field_name: field_value,
+            "configuration_version": 2,
+            "updated_at": _NOW,
+        }
+    )
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.replace_binding_if_match(expected=original, replacement=replacement)
+    assert exc_info.value.error_code == "conversation_context_binding_immutable_field_changed"
+    loaded = repo.get_binding(
+        tenant_id=_TENANT,
+        conversation_connection_ref=_CONNECTION,
+        opaque_conversation_ref=_CONVERSATION,
+        conversation_context_binding_id=_BINDING_ID,
+    )
+    assert loaded == original
+    if field_name == "conversation_connection_ref":
+        assert (
+            repo.list_bindings_for_semantic_identity(
+                tenant_id=_TENANT,
+                conversation_connection_ref="conn.mutated",
+                opaque_conversation_ref=_CONVERSATION,
+            )
+            == []
+        )
+    if field_name == "opaque_conversation_ref":
+        assert (
+            repo.list_bindings_for_semantic_identity(
+                tenant_id=_TENANT,
+                conversation_connection_ref=_CONNECTION,
+                opaque_conversation_ref="conv.mutated",
+            )
+            == []
+        )
+
+
+def test_replace_binding_rejects_same_configuration_version() -> None:
+    repo = _repo()
+    original = _binding()
+    assert repo.put_binding_if_absent(original) is True
+    replacement = original.model_copy(update={"updated_at": _NOW})
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.replace_binding_if_match(expected=original, replacement=replacement)
+    assert exc_info.value.error_code == "conversation_context_configuration_version_invalid"
+    loaded = repo.get_binding(
+        tenant_id=_TENANT,
+        conversation_connection_ref=_CONNECTION,
+        opaque_conversation_ref=_CONVERSATION,
+        conversation_context_binding_id=_BINDING_ID,
+    )
+    assert loaded == original
+
+
+def test_replace_binding_rejects_skipped_configuration_version() -> None:
+    repo = _repo()
+    original = _binding()
+    assert repo.put_binding_if_absent(original) is True
+    replacement = original.model_copy(update={"configuration_version": 3, "updated_at": _NOW})
+    with pytest.raises(ConversationContextRepositoryError) as exc_info:
+        repo.replace_binding_if_match(expected=original, replacement=replacement)
+    assert exc_info.value.error_code == "conversation_context_configuration_version_invalid"
+    loaded = repo.get_binding(
+        tenant_id=_TENANT,
+        conversation_connection_ref=_CONNECTION,
+        opaque_conversation_ref=_CONVERSATION,
+        conversation_context_binding_id=_BINDING_ID,
+    )
+    assert loaded == original
+
+
+def test_replace_binding_version_two_with_stale_expected_fails_cas() -> None:
+    repo = _repo()
+    original = _binding()
+    assert repo.put_binding_if_absent(original) is True
+    version_two = original.model_copy(update={"configuration_version": 2, "updated_at": _NOW})
+    assert repo.replace_binding_if_match(expected=original, replacement=version_two) is True
+    stale_replacement = version_two.model_copy(update={"updated_at": _NOW})
+    assert repo.replace_binding_if_match(expected=original, replacement=stale_replacement) is False
