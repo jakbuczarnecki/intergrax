@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, timezone
 
@@ -123,11 +124,52 @@ def _scope(
     )
 
 
+class _AtomicInMemoryThreadMemoryLifecyclePort:
+    """Test-only synchronized in-memory lifecycle port."""
+
+    def __init__(self) -> None:
+        self._store: dict[str, ThreadMemoryLifecycleEnvelopeV1] = {}
+        self._lock = threading.Lock()
+
+    def _partition_key(self, partition: ConversationThreadMemoryPartitionV1) -> str:
+        return derive_conversation_thread_session_key(
+            tenant_id=partition.tenant_id,
+            conversation_context_binding_id=partition.conversation_context_binding_id,
+            canonical_thread_ref=partition.canonical_thread_ref,
+        )
+
+    def load_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
+        with self._lock:
+            return self._store.get(self._partition_key(partition))
+
+    def save_envelope(
+        self,
+        *,
+        partition: ConversationThreadMemoryPartitionV1,
+        envelope: ThreadMemoryLifecycleEnvelopeV1,
+        expected_revision_id: str | None,
+    ) -> bool:
+        key = self._partition_key(partition)
+        with self._lock:
+            current = self._store.get(key)
+            if expected_revision_id is None:
+                if current is not None:
+                    return False
+            elif current is None or current.revision_id != expected_revision_id:
+                return False
+            self._store[key] = envelope
+            return True
+
+
 def _adapter(
-    port: InMemoryThreadMemoryLifecyclePort | None = None,
+    port: _AtomicInMemoryThreadMemoryLifecyclePort | None = None,
 ) -> SessionHistorySnapshotConversationThreadMemoryAdapter:
     return SessionHistorySnapshotConversationThreadMemoryAdapter(
-        port=port or InMemoryThreadMemoryLifecyclePort(),
+        port=port or _AtomicInMemoryThreadMemoryLifecyclePort(),
     )
 
 
@@ -149,6 +191,31 @@ def _tamper_envelope(
     return ConversationThreadMemorySnapshotV1(**fields)  # type: ignore[arg-type]
 
 
+def _empty_snapshot_envelope(
+    context: object,
+) -> ConversationThreadMemorySnapshotV1:
+    partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
+    return _build_snapshot_envelope(
+        partition=partition,
+        context_scope_id=_scope(),
+        messages=(),
+        created_at_entries=(),
+    )
+
+
+def _seed_empty_snapshot(
+    context: object,
+) -> tuple[_AtomicInMemoryThreadMemoryLifecyclePort, ConversationThreadMemorySnapshotV1]:
+    empty = _empty_snapshot_envelope(context)
+    partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
+    port.save_envelope(
+        partition=partition,
+        envelope=ThreadMemoryLifecycleEnvelopeV1(memory_snapshot=empty),
+        expected_revision_id=None,
+    )
+    return port, empty
+
 
 def _platform_message(
     *,
@@ -167,7 +234,7 @@ def _platform_message(
 
 def _seed_non_contiguous_snapshot(
     context: object,
-) -> tuple[InMemoryThreadMemoryLifecyclePort, ConversationThreadMemorySnapshotV1]:
+) -> tuple[_AtomicInMemoryThreadMemoryLifecyclePort, ConversationThreadMemorySnapshotV1]:
     partition = ConversationThreadMemoryPartitionV1.from_execution_context(context)  # type: ignore[arg-type]
     messages = (
         _platform_message(sequence=0, role="user", content="m0", message_id="msg-0"),
@@ -185,7 +252,7 @@ def _seed_non_contiguous_snapshot(
         messages=messages,
         created_at_entries=created_at_entries,
     )
-    port = InMemoryThreadMemoryLifecyclePort()
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
     port.save_envelope(
         partition=partition,
         envelope=ThreadMemoryLifecycleEnvelopeV1(memory_snapshot=snapshot),
@@ -196,7 +263,7 @@ def _seed_non_contiguous_snapshot(
 
 @dataclass
 class _RecordingLifecyclePort:
-    inner: InMemoryThreadMemoryLifecyclePort
+    inner: _AtomicInMemoryThreadMemoryLifecyclePort
     load_count: int = 0
     save_count: int = 0
     last_expected_revision_id: str | None = None
@@ -226,7 +293,7 @@ class _RecordingLifecyclePort:
 
 
 class _ConflictOnSavePort:
-    def __init__(self, *, inner: InMemoryThreadMemoryLifecyclePort) -> None:
+    def __init__(self, *, inner: _AtomicInMemoryThreadMemoryLifecyclePort) -> None:
         self._inner = inner
 
     def load_envelope(
@@ -274,7 +341,7 @@ def test_non_contiguous_sequences_load_and_append() -> None:
 
 def test_append_message_passes_expected_revision_to_port() -> None:
     context = _context()
-    inner = InMemoryThreadMemoryLifecyclePort()
+    inner = _AtomicInMemoryThreadMemoryLifecyclePort()
     recording: ThreadMemoryLifecyclePort = _RecordingLifecyclePort(inner=inner)
     adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(port=recording)
     first = adapter.append_message(
@@ -309,7 +376,7 @@ def test_matching_revision_append_succeeds() -> None:
 
 def test_mismatching_revision_raises_conflict() -> None:
     context = _context()
-    port = InMemoryThreadMemoryLifecyclePort()
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
     adapter = _adapter(port=port)
     adapter.append_message(
         context=context,  # type: ignore[arg-type]
@@ -375,7 +442,7 @@ def test_mismatching_revision_raises_conflict() -> None:
 
 def test_append_exchange_performs_one_load_and_one_save() -> None:
     context = _context()
-    inner = InMemoryThreadMemoryLifecyclePort()
+    inner = _AtomicInMemoryThreadMemoryLifecyclePort()
     recording: ThreadMemoryLifecyclePort = _RecordingLifecyclePort(inner=inner)
     adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(port=recording)
     adapter.append_exchange(
@@ -395,7 +462,7 @@ def test_append_exchange_performs_one_load_and_one_save() -> None:
 
 def test_append_exchange_conflict_persists_neither_half() -> None:
     context = _context()
-    inner = InMemoryThreadMemoryLifecyclePort()
+    inner = _AtomicInMemoryThreadMemoryLifecyclePort()
     adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
         port=_ConflictOnSavePort(inner=inner),
     )
@@ -433,6 +500,42 @@ def test_append_to_empty_returns_new_snapshot() -> None:
     assert snapshot is not None
     assert len(snapshot.snapshot.messages) == 1
     assert snapshot.snapshot.revision_id.startswith("lkw-thread-revision:v1:")
+
+
+def test_append_message_to_valid_empty_snapshot_assigns_sequence_zero() -> None:
+    context = _context()
+    port, empty = _seed_empty_snapshot(context)
+    adapter = _adapter(port=port)
+    updated = adapter.append_message(
+        context=context,  # type: ignore[arg-type]
+        message=_message(content="first"),
+    )
+    assert len(updated.snapshot.messages) == 1
+    assert updated.snapshot.messages[0].sequence == 0
+    assert empty.snapshot.messages == ()
+    assert empty.message_created_at == ()
+
+
+def test_append_exchange_to_valid_empty_snapshot_assigns_sequences_zero_and_one() -> None:
+    context = _context()
+    port, empty = _seed_empty_snapshot(context)
+    adapter = _adapter(port=port)
+    updated = adapter.append_exchange(
+        context=context,  # type: ignore[arg-type]
+        user_message=_message(role=ConversationThreadMemoryMessageRole.USER, content="q"),
+        assistant_message=_message(
+            role=ConversationThreadMemoryMessageRole.ASSISTANT,
+            content="a",
+            created_at=_NOW + timedelta(seconds=1),
+        ),
+    )
+    assert len(updated.snapshot.messages) == 2
+    assert updated.snapshot.messages[0].role == "user"
+    assert updated.snapshot.messages[1].role == "assistant"
+    assert updated.snapshot.messages[0].sequence == 0
+    assert updated.snapshot.messages[1].sequence == 1
+    assert empty.snapshot.messages == ()
+    assert empty.message_created_at == ()
 
 
 def test_original_snapshot_unchanged_after_append() -> None:
@@ -490,7 +593,7 @@ def test_append_exchange_creates_one_result_with_user_then_assistant() -> None:
 
 def test_invalid_assistant_role_fails_before_result() -> None:
     context = _context()
-    port = InMemoryThreadMemoryLifecyclePort()
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
     adapter = _adapter(port=port)
     with pytest.raises(ConversationThreadMemoryError) as exc_info:
         adapter.append_exchange(
@@ -505,7 +608,7 @@ def test_invalid_assistant_role_fails_before_result() -> None:
 
 def test_invalid_user_role_fails_before_result() -> None:
     context = _context()
-    port = InMemoryThreadMemoryLifecyclePort()
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
     adapter = _adapter(port=port)
     with pytest.raises(ConversationThreadMemoryError) as exc_info:
         adapter.append_exchange(
@@ -544,7 +647,7 @@ def test_different_content_gives_different_revision_id() -> None:
         context=context,  # type: ignore[arg-type]
         message=_message(content="alpha"),
     )
-    port = InMemoryThreadMemoryLifecyclePort()
+    port = _AtomicInMemoryThreadMemoryLifecyclePort()
     second_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(port=port)
     second = second_adapter.append_message(
         context=context,  # type: ignore[arg-type]
@@ -759,6 +862,48 @@ def test_non_utc_timestamp_fails_closed() -> None:
     tampered = _tamper_envelope(
         snapshot,
         message_created_at=((message_id, warsaw.isoformat()),),
+    )
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        SessionHistorySnapshotConversationThreadMemoryAdapter.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_INVALID"
+
+
+def test_malformed_timestamp_string_fails_closed() -> None:
+    context = _context()
+    snapshot = _adapter().append_message(
+        context=context,  # type: ignore[arg-type]
+        message=_message(),
+    )
+    message_id = snapshot.snapshot.messages[0].message_id
+    tampered = _tamper_envelope(
+        snapshot,
+        message_created_at=((message_id, "not-a-date"),),
+    )
+    with pytest.raises(ConversationThreadMemoryError) as exc_info:
+        SessionHistorySnapshotConversationThreadMemoryAdapter.load_bounded_history(
+            context=context,  # type: ignore[arg-type]
+            memory_snapshot=tampered,
+            limits=_limits(),
+            now=_NOW,
+        )
+    assert exc_info.value.error_code == "THREAD_MEMORY_CREATED_AT_INVALID"
+
+
+def test_non_string_timestamp_fails_closed() -> None:
+    context = _context()
+    snapshot = _adapter().append_message(
+        context=context,  # type: ignore[arg-type]
+        message=_message(),
+    )
+    message_id = snapshot.snapshot.messages[0].message_id
+    tampered = _tamper_envelope(
+        snapshot,
+        message_created_at=((message_id, 1_704_067_200),),  # type: ignore[arg-type]
     )
     with pytest.raises(ConversationThreadMemoryError) as exc_info:
         SessionHistorySnapshotConversationThreadMemoryAdapter.load_bounded_history(

@@ -99,6 +99,20 @@ class ThreadMemoryLifecycleEnvelopeV1:
 
 
 class ThreadMemoryLifecyclePort(Protocol):
+    """Atomic compare-and-set lifecycle port for thread memory envelopes.
+
+    Implementations must perform the revision comparison and envelope
+    replacement as one atomic storage operation.
+
+    ``save_envelope`` semantics:
+
+    * ``expected_revision_id is None`` — create only when no envelope exists.
+    * ``expected_revision_id`` is a revision — replace only when the currently
+      stored revision exactly matches it.
+    * Successful create or replace — return ``True``.
+    * Absent envelope or current revision mismatch — return ``False``.
+    """
+
     def load_envelope(
         self,
         *,
@@ -114,44 +128,6 @@ class ThreadMemoryLifecyclePort(Protocol):
         expected_revision_id: str | None,
     ) -> bool:
         ...
-
-
-class InMemoryThreadMemoryLifecyclePort:
-    """Application-owned in-memory lifecycle port for tests and local wiring."""
-
-    def __init__(self) -> None:
-        self._store: dict[str, ThreadMemoryLifecycleEnvelopeV1] = {}
-
-    def _partition_key(self, partition: ConversationThreadMemoryPartitionV1) -> str:
-        return derive_conversation_thread_session_key(
-            tenant_id=partition.tenant_id,
-            conversation_context_binding_id=partition.conversation_context_binding_id,
-            canonical_thread_ref=partition.canonical_thread_ref,
-        )
-
-    def load_envelope(
-        self,
-        *,
-        partition: ConversationThreadMemoryPartitionV1,
-    ) -> ThreadMemoryLifecycleEnvelopeV1 | None:
-        return self._store.get(self._partition_key(partition))
-
-    def save_envelope(
-        self,
-        *,
-        partition: ConversationThreadMemoryPartitionV1,
-        envelope: ThreadMemoryLifecycleEnvelopeV1,
-        expected_revision_id: str | None,
-    ) -> bool:
-        key = self._partition_key(partition)
-        current = self._store.get(key)
-        if expected_revision_id is None:
-            if current is not None:
-                return False
-        elif current is None or current.revision_id != expected_revision_id:
-            return False
-        self._store[key] = envelope
-        return True
 
 
 def _role_to_platform(role: ConversationThreadMemoryMessageRole) -> str:
@@ -163,7 +139,10 @@ def _role_from_platform(role: str) -> ConversationThreadMemoryMessageRole:
 
 
 def _parse_created_at(value: str) -> datetime:
-    parsed = datetime.fromisoformat(value)
+    try:
+        parsed = datetime.fromisoformat(value)
+    except (TypeError, ValueError) as exc:
+        raise ConversationThreadMemoryError("THREAD_MEMORY_CREATED_AT_INVALID") from exc
     if parsed.tzinfo is None:
         raise ConversationThreadMemoryError("THREAD_MEMORY_CREATED_AT_INVALID")
     offset = parsed.utcoffset()
@@ -354,10 +333,10 @@ def _build_snapshot_envelope(
     )
 
 
-def _next_sequence(existing_messages: tuple[SessionHistoryMessage, ...]) -> int:
-    if not existing_messages:
+def _next_message_sequence(messages: tuple[SessionHistoryMessage, ...]) -> int:
+    if not messages:
         return 0
-    return existing_messages[-1].sequence + 1
+    return messages[-1].sequence + 1
 
 
 def _build_appended_snapshot(
@@ -380,7 +359,7 @@ def _build_appended_snapshot(
         existing_messages = ()
         created_at_entries = []
 
-    next_sequence = _next_sequence(existing_messages)
+    next_sequence = _next_message_sequence(existing_messages)
     platform_messages: list[SessionHistoryMessage] = []
     for offset, message in enumerate(messages):
         platform_message = _to_platform_message(message, sequence=next_sequence + offset)
