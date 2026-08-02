@@ -937,3 +937,591 @@ async def test_receipt_complete_counter_crash_repaired_on_replay() -> None:
     )
     assert second.applied is False
     assert repaired_again.documents_indexed == 1
+
+
+def test_accounting_record_exists_zero_counters_repaired_on_retry() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation())
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceOperationDeliveryAccounting,
+    )
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    repo.put_connected_source_delivery_accounting_if_absent(
+        ConnectedSourceOperationDeliveryAccounting(
+            tenant_id=_TENANT,
+            operation_id=_OPERATION,
+            delivery_id=_DELIVERY,
+            documents_indexed=1,
+            documents_unchanged=0,
+            items_failed=0,
+            accounted_at=_NOW,
+        )
+    )
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+    assert operation.documents_indexed == 0
+
+    updated, result = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=operation,
+        delivery_id=_DELIVERY,
+    )
+    assert result.applied is True
+    assert updated.documents_indexed == 1
+
+
+def test_accounting_second_retry_counters_unchanged() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation().model_copy(update={"documents_indexed": 1}))
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceOperationDeliveryAccounting,
+    )
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    repo.put_connected_source_delivery_accounting_if_absent(
+        ConnectedSourceOperationDeliveryAccounting(
+            tenant_id=_TENANT,
+            operation_id=_OPERATION,
+            delivery_id=_DELIVERY,
+            documents_indexed=1,
+            documents_unchanged=0,
+            items_failed=0,
+            accounted_at=_NOW,
+        )
+    )
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+    _, second = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=operation,
+        delivery_id=_DELIVERY,
+    )
+    assert second.applied is False
+    assert operation.documents_indexed == 1
+
+
+def test_accounting_two_deliveries_aggregate_exact_counters() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation())
+    delivery_b = "b" * 64
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    repo.put_connected_source_delivery_receipt(
+        replace(
+            _completed_receipt(),
+            delivery_id=delivery_b,
+            documents_indexed=2,
+            documents_unchanged=1,
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceOperationDeliveryAccounting,
+    )
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    for delivery_id, indexed, unchanged in (
+        (_DELIVERY, 1, 0),
+        (delivery_b, 2, 1),
+    ):
+        repo.put_connected_source_delivery_accounting_if_absent(
+            ConnectedSourceOperationDeliveryAccounting(
+                tenant_id=_TENANT,
+                operation_id=_OPERATION,
+                delivery_id=delivery_id,
+                documents_indexed=indexed,
+                documents_unchanged=unchanged,
+                items_failed=0,
+                accounted_at=_NOW,
+            )
+        )
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+    updated, result = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=operation,
+        delivery_id=_DELIVERY,
+    )
+    assert result.applied is True
+    assert updated.documents_indexed == 3
+    assert updated.documents_unchanged == 1
+
+
+def test_conflicting_accounting_record_raises_deterministic_failure() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation())
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceOperationDeliveryAccounting,
+    )
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        ConnectedSourceDeliveryAccountingConflictError,
+        apply_completed_delivery_accounting,
+    )
+
+    repo.put_connected_source_delivery_accounting_if_absent(
+        ConnectedSourceOperationDeliveryAccounting(
+            tenant_id=_TENANT,
+            operation_id=_OPERATION,
+            delivery_id=_DELIVERY,
+            documents_indexed=9,
+            documents_unchanged=0,
+            items_failed=0,
+            accounted_at=_NOW,
+        )
+    )
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+    with pytest.raises(ConnectedSourceDeliveryAccountingConflictError) as exc_info:
+        apply_completed_delivery_accounting(
+            repository=repo,
+            operation=operation,
+            delivery_id=_DELIVERY,
+        )
+    assert exc_info.value.error_code == "connected_source_delivery_accounting_conflict"
+
+
+def test_stale_operation_cannot_overwrite_terminal_status() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(
+        _queued_operation().model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+            }
+        )
+    )
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    stale = _queued_operation()
+    updated, result = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=stale,
+        delivery_id=_DELIVERY,
+    )
+    assert result.applied is True
+    assert updated.status is WorkspaceOperationStatus.COMPLETED
+
+
+def test_enqueue_generation_allocation_is_monotonic() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    operation = _queued_operation()
+    first = repo.allocate_connected_source_sync_enqueue_generation(
+        tenant_id=operation.tenant_id,
+        workspace_id=operation.workspace_id,
+        source_id=operation.source_id,
+        operation_id=operation.operation_id,
+    )
+    second = repo.allocate_connected_source_sync_enqueue_generation(
+        tenant_id=operation.tenant_id,
+        workspace_id=operation.workspace_id,
+        source_id=operation.source_id,
+        operation_id=operation.operation_id,
+    )
+    assert first.enqueue_generation == 1
+    assert second.enqueue_generation == 2
+
+
+def _mark_enqueued(
+    repo: ManagedWorkspaceRepository,
+    *,
+    operation: WorkspaceOperation,
+    generation: int,
+    task_id: str,
+) -> None:
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceSyncEnqueueIntent,
+    )
+
+    repo.put_connected_source_sync_enqueue_intent(
+        ConnectedSourceSyncEnqueueIntent(
+            tenant_id=operation.tenant_id,
+            workspace_id=operation.workspace_id,
+            source_id=operation.source_id,
+            operation_id=operation.operation_id,
+            enqueue_generation=generation,
+            last_enqueued_generation=generation,
+            last_task_id=task_id,
+            last_queue_provider="document_store",
+            updated_at=_NOW,
+        )
+    )
+
+
+def test_pending_task_is_reused_without_new_enqueue() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="pending-reuse",
+        )
+    )
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is False
+    assert result.enqueue_generation == 1
+
+
+def test_running_task_is_reused_without_new_enqueue() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="running-reuse",
+        )
+    )
+    from intergrax.queueing.contracts.task_queue import TaskHandle
+
+    running_handle = TaskHandle(
+        task_id=handle.task_id,
+        provider=handle.provider,
+        tenant_id=handle.tenant_id,
+    )
+    queue.claim_pending(tenant_id=_TENANT, limit=1)
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=running_handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is False
+
+
+def test_failed_task_allocates_next_generation() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="failed-next",
+        )
+    )
+    from intergrax.queueing.contracts.task_queue import TaskHandle
+
+    task_handle = TaskHandle(
+        task_id=handle.task_id,
+        provider=handle.provider,
+        tenant_id=handle.tenant_id,
+    )
+    claimed = queue.claim_pending(tenant_id=_TENANT, limit=1)
+    assert claimed
+    queue.mark_failed(task_handle, error_message="boom")
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is True
+    assert result.enqueue_generation == 2
+
+
+def test_succeeded_task_allocates_next_generation() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="succeeded-next",
+        )
+    )
+    from intergrax.queueing.contracts.task_queue import TaskHandle
+
+    task_handle = TaskHandle(
+        task_id=handle.task_id,
+        provider=handle.provider,
+        tenant_id=handle.tenant_id,
+    )
+    queue.claim_pending(tenant_id=_TENANT, limit=1)
+    queue.mark_succeeded(task_handle)
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is True
+    assert result.enqueue_generation == 2
+
+
+def test_missing_task_allocates_next_generation() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    _mark_enqueued(repo, operation=operation, generation=1, task_id="dstq_missing_task")
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is True
+    assert result.enqueue_generation == 2
+
+
+def test_terminal_operation_is_not_enqueued() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation().model_copy(
+        update={
+            "status": WorkspaceOperationStatus.COMPLETED,
+            "completed_at": _NOW,
+        }
+    )
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is False
+    assert result.error == "operation_terminal"
+
+
+def test_completed_operation_syncing_source_projection_repair() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation().model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_source(
+        repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE).model_copy(  # type: ignore[union-attr]
+            update={"status": WorkspaceSourceStatus.SYNCING}
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        repair_connected_source_source_projection,
+    )
+
+    repaired = repair_connected_source_source_projection(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert repaired is not None
+    assert repaired.status is WorkspaceSourceStatus.READY
+    assert repaired.last_sync_at == _NOW
+
+
+def test_failed_operation_syncing_source_projection_repair() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation().model_copy(
+            update={
+                "status": WorkspaceOperationStatus.FAILED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_source(
+        repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE).model_copy(  # type: ignore[union-attr]
+            update={"status": WorkspaceSourceStatus.SYNCING}
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        repair_connected_source_source_projection,
+    )
+
+    repaired = repair_connected_source_source_projection(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert repaired is not None
+    assert repaired.status is WorkspaceSourceStatus.ERROR
+
+
+def test_older_completed_newer_queued_source_projection_syncing() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation(operation_id="op-old").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_operation(
+        _queued_operation(operation_id="op-new").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.QUEUED,
+                "created_at": datetime(2024, 6, 2, 12, 0, tzinfo=UTC),
+            }
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        project_connected_source_source_status,
+    )
+
+    status = project_connected_source_source_status(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert status is WorkspaceSourceStatus.SYNCING
+
+
+def test_source_projection_repair_is_idempotent() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation().model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_source(
+        repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE).model_copy(  # type: ignore[union-attr]
+            update={"status": WorkspaceSourceStatus.SYNCING}
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        repair_connected_source_source_projection,
+    )
+
+    first = repair_connected_source_source_projection(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    second = repair_connected_source_source_projection(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert first is not None
+    assert second is not None
+    assert first.status == second.status
+    assert first.last_sync_at == second.last_sync_at

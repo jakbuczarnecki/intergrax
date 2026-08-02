@@ -8,6 +8,10 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from intergrax.queueing.contracts.task_queue import TaskHandle, TaskStatus
+from intergrax.queueing.providers.document_store.document_store_task_queue import (
+    DocumentStoreTaskQueue,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceSyncEnqueueIntent,
@@ -24,6 +28,12 @@ from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 
 logger = logging.getLogger(__name__)
+
+_MAX_CAS_RETRIES = 3
+_TERMINAL_OPERATION_STATUSES = {
+    WorkspaceOperationStatus.COMPLETED,
+    WorkspaceOperationStatus.FAILED,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,22 +52,77 @@ def record_connected_source_enqueue_intent(
     repository: ManagedWorkspaceRepository,
     operation: WorkspaceOperation,
 ) -> ConnectedSourceSyncEnqueueIntent:
-    existing = repository.get_connected_source_sync_enqueue_intent(
-        tenant_id=operation.tenant_id,
-        operation_id=operation.operation_id,
-    )
-    generation = 1 if existing is None else existing.enqueue_generation + 1
-    intent = ConnectedSourceSyncEnqueueIntent(
+    return repository.allocate_connected_source_sync_enqueue_generation(
         tenant_id=operation.tenant_id,
         workspace_id=operation.workspace_id,
         source_id=operation.source_id,
         operation_id=operation.operation_id,
-        enqueue_generation=generation,
-        last_enqueued_generation=existing.last_enqueued_generation if existing else 0,
-        updated_at=_utc_now(),
+        max_attempts=_MAX_CAS_RETRIES,
     )
-    repository.put_connected_source_sync_enqueue_intent(intent)
-    return intent
+
+
+def _document_store_task_record_exists(
+    queue: DocumentStoreTaskQueue,
+    *,
+    tenant_id: str,
+    task_id: str,
+) -> bool:
+    for row in queue.list_tasks(tenant_id, limit=500):
+        if row.task_id == task_id:
+            return True
+    return False
+
+
+def _inspect_document_store_task_status(
+    queue: DocumentStoreTaskQueue,
+    *,
+    tenant_id: str,
+    task_id: str,
+    queue_provider: str,
+) -> TaskStatus | None:
+    handle = TaskHandle(task_id=task_id, provider=queue_provider, tenant_id=tenant_id)
+    if not _document_store_task_record_exists(queue, tenant_id=tenant_id, task_id=task_id):
+        return None
+    return queue.get_status(handle)
+
+
+def _latest_task_is_active(
+    *,
+    wiring_context: ToolWiringContext,
+    intent: ConnectedSourceSyncEnqueueIntent,
+) -> bool | None:
+    if intent.last_task_id is None or intent.last_queue_provider is None:
+        return False
+    if intent.last_enqueued_generation != intent.enqueue_generation:
+        return False
+    bus = wiring_context.message_bus
+    if isinstance(bus, DocumentStoreTaskQueue):
+        status = _inspect_document_store_task_status(
+            bus,
+            tenant_id=intent.tenant_id,
+            task_id=intent.last_task_id,
+            queue_provider=intent.last_queue_provider,
+        )
+        if status is None:
+            return False
+        return status in {TaskStatus.PENDING, TaskStatus.RUNNING}
+    # Non-DocumentStore backends cannot be inspected here; preserve best-effort reuse.
+    return None
+
+
+def _should_allocate_next_generation(
+    *,
+    wiring_context: ToolWiringContext,
+    intent: ConnectedSourceSyncEnqueueIntent,
+) -> bool:
+    if intent.last_enqueued_generation < intent.enqueue_generation:
+        return False
+    active = _latest_task_is_active(wiring_context=wiring_context, intent=intent)
+    if active is True:
+        return False
+    if active is None and intent.last_enqueued_generation == intent.enqueue_generation:
+        return False
+    return True
 
 
 def try_enqueue_connected_source_sync(
@@ -67,6 +132,13 @@ def try_enqueue_connected_source_sync(
     operation: WorkspaceOperation,
     intent: ConnectedSourceSyncEnqueueIntent | None = None,
 ) -> ConnectedSourceEnqueueResult:
+    if operation.status in _TERMINAL_OPERATION_STATUSES:
+        return ConnectedSourceEnqueueResult(
+            enqueued=False,
+            enqueue_generation=0,
+            error="operation_terminal",
+        )
+
     resolved_intent = intent or repository.get_connected_source_sync_enqueue_intent(
         tenant_id=operation.tenant_id,
         operation_id=operation.operation_id,
@@ -76,11 +148,29 @@ def try_enqueue_connected_source_sync(
             repository=repository,
             operation=operation,
         )
-    if resolved_intent.last_enqueued_generation >= resolved_intent.enqueue_generation:
+
+    if _latest_task_is_active(wiring_context=wiring_context, intent=resolved_intent) is True:
         return ConnectedSourceEnqueueResult(
             enqueued=False,
             enqueue_generation=resolved_intent.enqueue_generation,
         )
+
+    if _should_allocate_next_generation(
+        wiring_context=wiring_context,
+        intent=resolved_intent,
+    ):
+        resolved_intent = record_connected_source_enqueue_intent(
+            repository=repository,
+            operation=operation,
+        )
+
+    if resolved_intent.last_enqueued_generation >= resolved_intent.enqueue_generation:
+        if _latest_task_is_active(wiring_context=wiring_context, intent=resolved_intent) is not False:
+            return ConnectedSourceEnqueueResult(
+                enqueued=False,
+                enqueue_generation=resolved_intent.enqueue_generation,
+            )
+
     job = ManagedWorkspaceSyncJob(
         tenant_id=operation.tenant_id,
         workspace_id=operation.workspace_id,
@@ -88,7 +178,7 @@ def try_enqueue_connected_source_sync(
         operation_id=operation.operation_id,
     )
     try:
-        enqueue_managed_workspace_sync(
+        enqueue_output = enqueue_managed_workspace_sync(
             wiring_context,
             job,
             enqueue_generation=resolved_intent.enqueue_generation,
@@ -108,12 +198,16 @@ def try_enqueue_connected_source_sync(
         tenant_id=operation.tenant_id,
         operation_id=operation.operation_id,
         expected_generation=resolved_intent.enqueue_generation,
+        task_id=enqueue_output.task_id,
+        queue_provider=enqueue_output.provider,
     ):
         reloaded = repository.get_connected_source_sync_enqueue_intent(
             tenant_id=operation.tenant_id,
             operation_id=operation.operation_id,
         )
-        generation = reloaded.enqueue_generation if reloaded is not None else resolved_intent.enqueue_generation
+        generation = (
+            reloaded.enqueue_generation if reloaded is not None else resolved_intent.enqueue_generation
+        )
         return ConnectedSourceEnqueueResult(enqueued=False, enqueue_generation=generation)
     return ConnectedSourceEnqueueResult(
         enqueued=True,
@@ -129,6 +223,9 @@ def durable_requeue_connected_source_operation(
     source_status: WorkspaceSourceStatus = WorkspaceSourceStatus.SYNCING,
     error_code: str | None = None,
 ) -> tuple[WorkspaceOperation, ConnectedSourceEnqueueResult | None]:
+    if operation.status in _TERMINAL_OPERATION_STATUSES:
+        return operation, None
+
     intent = record_connected_source_enqueue_intent(repository=repository, operation=operation)
     requeued = operation.model_copy(
         update={
@@ -143,8 +240,6 @@ def durable_requeue_connected_source_operation(
         source_id=operation.source_id,
     )
     if source is not None and source.status is not source_status:
-        from local_workspace_application.workspaces.models import WorkspaceSource
-
         repository.put_source(source.model_copy(update={"status": source_status}))
     if wiring_context is None:
         return requeued, None
@@ -212,7 +307,20 @@ def repair_connected_source_pending_enqueue(
                         repository=repository,
                         operation=working,
                     )
-                if intent.last_enqueued_generation < intent.enqueue_generation:
+                if _latest_task_is_active(wiring_context=wiring_context, intent=intent) is True:
+                    continue
+                if _should_allocate_next_generation(
+                    wiring_context=wiring_context,
+                    intent=intent,
+                ):
+                    intent = record_connected_source_enqueue_intent(
+                        repository=repository,
+                        operation=working,
+                    )
+                if intent.last_enqueued_generation < intent.enqueue_generation or (
+                    working.status is WorkspaceOperationStatus.QUEUED
+                    and _latest_task_is_active(wiring_context=wiring_context, intent=intent) is not True
+                ):
                     result = try_enqueue_connected_source_sync(
                         repository=repository,
                         wiring_context=wiring_context,
@@ -220,15 +328,6 @@ def repair_connected_source_pending_enqueue(
                         intent=intent,
                     )
                     if result.enqueued or result.error is None:
-                        operations_repaired += 1
-                elif working.status is WorkspaceOperationStatus.QUEUED:
-                    result = try_enqueue_connected_source_sync(
-                        repository=repository,
-                        wiring_context=wiring_context,
-                        operation=working,
-                        intent=intent,
-                    )
-                    if result.enqueued:
                         operations_repaired += 1
             except Exception:  # noqa: BLE001 - fail-closed per operation
                 errors += 1

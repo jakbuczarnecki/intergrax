@@ -145,7 +145,15 @@ class ConnectedSourceSyncEnqueueIntentV1(BaseModel):
     operation_id: str = Field(..., min_length=1, max_length=128)
     enqueue_generation: int = Field(..., ge=1)
     last_enqueued_generation: int = Field(default=0, ge=0)
+    last_task_id: str | None = None
+    last_queue_provider: str | None = None
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def _validate_enqueue_generation_invariants(self) -> ConnectedSourceSyncEnqueueIntentV1:
+        if self.last_enqueued_generation > self.enqueue_generation:
+            raise ValueError("connected_source_enqueue_generation_invariant_violation")
+        return self
 
 
 ConnectedSourceSyncEnqueueIntent = ConnectedSourceSyncEnqueueIntentV1

@@ -529,10 +529,7 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
         json={"query": "SLACK-ORION-MISSING-0000", "limit": 10},
     )
     assert missing.status_code == 200, missing.text
-    assert not any(
-        _MARKER_ROOT in (hit.get("snippet") or "")
-        for hit in missing.json()["results"]
-    )
+    assert missing.json()["results"] == []
 
     history_before_ask = backend.history_calls
     ask = client.post(

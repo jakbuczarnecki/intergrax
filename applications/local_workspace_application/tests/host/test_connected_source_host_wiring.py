@@ -312,3 +312,87 @@ def test_connected_source_readiness_state_matrix(
         assert bundle.wiring is not None
     else:
         assert bundle.wiring is None
+
+
+@pytest.mark.parametrize(
+    (
+        "signing_key",
+        "companion",
+        "use_slack_integration",
+        "tenant",
+        "connection",
+        "expected_state",
+    ),
+    [
+        ("", False, False, "", "", ConnectedSourceReadinessState.DISABLED),
+        ("", True, True, _TENANT, _CONNECTION, ConnectedSourceReadinessState.SIGNING_KEY_MISSING),
+        (_SIGNING_KEY, False, False, _TENANT, _CONNECTION, ConnectedSourceReadinessState.SLACK_INTEGRATION_UNAVAILABLE),
+        (_SIGNING_KEY, False, True, _TENANT, "", ConnectedSourceReadinessState.MAPPING_INCOMPLETE),
+        (_SIGNING_KEY, False, True, _TENANT, _CONNECTION, ConnectedSourceReadinessState.READY),
+    ],
+)
+def test_create_local_workspace_backend_app_connected_source_readiness_states(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    signing_key: str,
+    companion: bool,
+    use_slack_integration: bool,
+    tenant: str,
+    connection: str,
+    expected_state: ConnectedSourceReadinessState,
+) -> None:
+    store = InMemoryDocumentStore()
+    data_home = tmp_path / "data"
+    sqlite_dir = tmp_path / "sqlite"
+    shadow_dir = tmp_path / "shadow"
+    for path in (data_home, sqlite_dir, shadow_dir):
+        path.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
+    monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_MCP", "false")
+    monkeypatch.setenv("LOCAL_WORKSPACE_INCLUDE_SCHEDULER", "false")
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("LKW_DATA_HOME", str(data_home))
+    monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(sqlite_dir))
+    monkeypatch.setenv("INTERGRAX_SHADOW_ROOT", str(shadow_dir))
+    monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", signing_key)
+    monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_TENANT_ID", tenant)
+    monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_SLACK_CONNECTION_REF", connection)
+    monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_COMPANION_ENABLED", "true" if companion else "false")
+    monkeypatch.delenv("INTERGRAX_MONGODB_URI", raising=False)
+    monkeypatch.setattr(
+        "local_workspace_application.serving.workspace_routes.resolve_managed_workspace_document_store",
+        lambda document_store=None: store,
+    )
+
+    integration = None
+    if use_slack_integration:
+        integration = SlackConversationChannelIntegration.from_backend(
+            _FakeBackend(),  # type: ignore[arg-type]
+            enabled=True,
+        )
+        monkeypatch.setattr(
+            "local_workspace_application.workspaces.connected_source_host_wiring.build_shared_slack_integration_for_host",
+            lambda: integration,
+        )
+
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        connected_source_opaque_ref_signing_key=signing_key,
+        slack_tenant_id=tenant,
+        connected_source_slack_connection_ref=connection,
+        slack_companion_enabled=companion,
+        include_mcp=False,
+        include_scheduler=False,
+    )
+    app = create_local_workspace_backend_app(settings=settings)
+
+    with TestClient(app):
+        readiness = app.state.lkw_connected_source_readiness
+        assert readiness.state is expected_state
+        if expected_state is ConnectedSourceReadinessState.READY:
+            assert hasattr(app.state, "lkw_connected_source_wiring")
+            assert app.state.lkw_connected_source_wiring is not None
+        else:
+            assert not hasattr(app.state, "lkw_connected_source_wiring")

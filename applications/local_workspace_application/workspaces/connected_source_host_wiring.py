@@ -56,6 +56,8 @@ def connected_source_considered_for_host(settings: LocalWorkspaceBackendSettings
     return bool(
         settings.connected_source_opaque_ref_signing_key.strip()
         or settings.slack_companion_enabled
+        or settings.slack_tenant_id.strip()
+        or settings.connected_source_slack_connection_ref.strip()
     )
 
 

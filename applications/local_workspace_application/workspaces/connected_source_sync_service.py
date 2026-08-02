@@ -36,6 +36,9 @@ from local_workspace_application.workspaces.connected_source_operation_accountin
 from local_workspace_application.workspaces.connected_source_reconciliation import (
     resolve_connected_source_restart,
 )
+from local_workspace_application.workspaces.connected_source_source_projection import (
+    repair_connected_source_source_projection,
+)
 from local_workspace_application.workspaces.connected_source_sync_enqueue import (
     durable_requeue_connected_source_operation,
 )
@@ -279,8 +282,11 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 exc.error_code,
             )
             failed = self._fail(operation, exc.error_code)
-            self._repository.put_source(
-                source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
+            repair_connected_source_source_projection(
+                repository=self._repository,
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source_id=source.source_id,
             )
             return failed
         except VendorKnowledgeError as exc:
@@ -301,8 +307,11 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 exc.code.value,
             )
             failed = self._fail(operation, exc.code.value)
-            self._repository.put_source(
-                source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
+            repair_connected_source_source_projection(
+                repository=self._repository,
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source_id=source.source_id,
             )
             return failed
         except Exception:
@@ -311,8 +320,11 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 operation.operation_id,
             )
             failed = self._fail(operation, "connected_source_sync_failed")
-            self._repository.put_source(
-                source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
+            repair_connected_source_source_projection(
+                repository=self._repository,
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source_id=source.source_id,
             )
             return failed
 
@@ -328,13 +340,11 @@ class ManagedWorkspaceConnectedSourceSyncService:
             }
         )
         self._repository.put_operation(operation)
-        self._repository.put_source(
-            source.model_copy(
-                update={
-                    "status": WorkspaceSourceStatus.READY,
-                    "last_sync_at": completed,
-                }
-            )
+        repair_connected_source_source_projection(
+            repository=self._repository,
+            tenant_id=tenant_id,
+            workspace_id=operation.workspace_id,
+            source_id=source.source_id,
         )
         return operation
 

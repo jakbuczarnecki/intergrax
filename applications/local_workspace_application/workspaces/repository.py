@@ -412,6 +412,23 @@ class ManagedWorkspaceRepository:
             f"{operation_id}:{delivery_id}",
         )
 
+    def list_connected_source_delivery_accounting(
+        self,
+        *,
+        tenant_id: str,
+        operation_id: str,
+    ) -> list[ConnectedSourceOperationDeliveryAccounting]:
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY),
+            limit=500,
+            row_key_prefix=f"{operation_id}:",
+        )
+        items = [
+            ConnectedSourceOperationDeliveryAccounting.model_validate(dict(doc.data))
+            for doc in result.documents
+        ]
+        return sorted(items, key=lambda item: (item.accounted_at, item.delivery_id))
+
     # --- Connected source sync enqueue intent ---
 
     def put_connected_source_sync_enqueue_intent(
@@ -421,6 +438,63 @@ class ManagedWorkspaceRepository:
         partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
         self._put(partition_key, intent.operation_id, intent)
         return intent
+
+    def put_connected_source_sync_enqueue_intent_if_absent(
+        self,
+        intent: ConnectedSourceSyncEnqueueIntent,
+    ) -> bool:
+        partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
+        return self._put_if_absent(
+            intent,
+            partition_key=partition_key,
+            row_key=intent.operation_id,
+        )
+
+    def allocate_connected_source_sync_enqueue_generation(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        operation_id: str,
+        max_attempts: int = 3,
+    ) -> ConnectedSourceSyncEnqueueIntent:
+        from datetime import UTC, datetime
+
+        partition_key = _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
+        for _ in range(max_attempts):
+            existing = self.get_connected_source_sync_enqueue_intent(
+                tenant_id=tenant_id,
+                operation_id=operation_id,
+            )
+            now = datetime.now(UTC)
+            if existing is None:
+                intent = ConnectedSourceSyncEnqueueIntent(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    operation_id=operation_id,
+                    enqueue_generation=1,
+                    last_enqueued_generation=0,
+                    updated_at=now,
+                )
+                if self.put_connected_source_sync_enqueue_intent_if_absent(intent):
+                    return intent
+                continue
+            updated = existing.model_copy(
+                update={
+                    "enqueue_generation": existing.enqueue_generation + 1,
+                    "updated_at": now,
+                }
+            )
+            if self._replace_if_match(
+                expected=existing,
+                replacement=updated,
+                partition_key=partition_key,
+                row_key=operation_id,
+            ):
+                return updated
+        raise RuntimeError("connected_source_enqueue_generation_allocation_failed")
 
     def get_connected_source_sync_enqueue_intent(
         self,
@@ -440,6 +514,8 @@ class ManagedWorkspaceRepository:
         tenant_id: str,
         operation_id: str,
         expected_generation: int,
+        task_id: str,
+        queue_provider: str,
     ) -> bool:
         intent = self.get_connected_source_sync_enqueue_intent(
             tenant_id=tenant_id,
@@ -454,6 +530,8 @@ class ManagedWorkspaceRepository:
         updated = intent.model_copy(
             update={
                 "last_enqueued_generation": expected_generation,
+                "last_task_id": task_id,
+                "last_queue_provider": queue_provider,
                 "updated_at": datetime.now(UTC),
             }
         )
@@ -484,6 +562,19 @@ class ManagedWorkspaceRepository:
             operation,
         )
         return operation
+
+    def replace_operation_if_match(
+        self,
+        *,
+        expected: WorkspaceOperation,
+        replacement: WorkspaceOperation,
+    ) -> bool:
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(expected.tenant_id, _ENTITY_OPERATION),
+            row_key=expected.operation_id,
+        )
 
     def claim_operation_if_queued(
         self,

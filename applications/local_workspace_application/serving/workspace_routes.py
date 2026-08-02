@@ -376,27 +376,23 @@ def mount_managed_workspace_routes(
         },
     )
     connected_wiring = connected_source_wiring
-    if connected_wiring is None and (
-        shared_slack_integration is not None
-        or settings.connected_source_opaque_ref_signing_key.strip()
-        or settings.slack_companion_enabled
-    ):
-        from local_workspace_application.workspaces.connected_source_host_wiring import (
-            build_connected_source_host_bundle,
-        )
+    from local_workspace_application.workspaces.connected_source_host_wiring import (
+        build_connected_source_host_bundle,
+    )
 
-        host_bundle = build_connected_source_host_bundle(
-            settings=settings,
-            repository=repository,
-            workspace_service=service,
-            configuration_service=configuration_service,
-            mutation_engine=mutation_engine,
-            indexing_service=indexing_service,
-            slack_integration=shared_slack_integration,
-            sync_runtime=sync_runtime,
-        )
+    host_bundle = build_connected_source_host_bundle(
+        settings=settings,
+        repository=repository,
+        workspace_service=service,
+        configuration_service=configuration_service,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing_service,
+        slack_integration=shared_slack_integration,
+        sync_runtime=sync_runtime,
+    )
+    app.state.lkw_connected_source_readiness = host_bundle.readiness
+    if connected_wiring is None:
         connected_wiring = host_bundle.wiring
-        app.state.lkw_connected_source_readiness = host_bundle.readiness
     recovery_tenant_ids: tuple[str, ...] = ()
     if connected_wiring is not None and settings.slack_tenant_id.strip():
         recovery_tenant_ids = (settings.slack_tenant_id.strip(),)
