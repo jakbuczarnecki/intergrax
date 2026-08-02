@@ -138,6 +138,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     managed_file_max_bytes: int = 25 * 1024 * 1024
     managed_file_max_batch_files: int = 20
     web_url_preflight_timeout_seconds: float = 10.0
+    connected_source_opaque_ref_signing_key: str = ""
 
     @property
     def config_dir(self) -> str:
@@ -552,6 +553,11 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         if managed_file_max_batch_files < 1:
             raise ValueError("LOCAL_WORKSPACE_MANAGED_FILE_MAX_BATCH_FILES must be >= 1")
 
+        connected_source_opaque_ref_signing_key = env.str(
+            "CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY",
+            default=cls._field_default("connected_source_opaque_ref_signing_key"),  # type: ignore[arg-type]
+        )
+
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
         allowed_read_roots = frozenset(
@@ -614,4 +620,5 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "slack_ask_timeout_seconds": slack_ask_timeout_seconds,
             "managed_file_max_bytes": managed_file_max_bytes,
             "managed_file_max_batch_files": managed_file_max_batch_files,
+            "connected_source_opaque_ref_signing_key": connected_source_opaque_ref_signing_key,
         }

@@ -1208,6 +1208,8 @@ Required Slack scopes for knowledge reads are documented per credential route in
 
 LKW must not construct Slack SDK clients, read Slack API directly, store raw Slack tokens, implement provider paging, own provider cursors, implement Slack-specific synchronization or duplicate Slack response validation.
 
+**LKW application status:** `LKW-SLACK-CONNECTED-SOURCE-1` is **DONE** (HTTP discovery/create/sync, HMAC-signed opaque refs, crash-safe Vendor Knowledge delivery, authoritative sink validation, indexed Search/Ask proof). Next Slack-vertical LKW task: `LKW-CONVERSATION-CONTEXT-1`. Not implemented: shared-channel Ask, Conversation Context Binding, mention activation, `SHARED_ALLOWED` administration, live Slack access, Hybrid Ask.
+
 ---
 
 ## 14. Contract test requirements

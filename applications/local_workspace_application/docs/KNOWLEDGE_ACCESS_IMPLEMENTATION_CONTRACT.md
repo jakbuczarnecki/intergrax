@@ -103,7 +103,7 @@ lkw.ask_run:{tenant_id}:ask_run
 
 | Concern | Verified behavior |
 |---------|-------------------|
-| `WorkspaceSource` | Durable per-workspace Source; types include `CONNECTED_SOURCE` enum value but **not implemented** |
+| `WorkspaceSource` | Durable per-workspace Source; types include `CONNECTED_SOURCE` (**implemented** for Slack via `LKW-SLACK-CONNECTED-SOURCE-1`) |
 | `WorkspaceSourceStatus` | `registered`, `syncing`, `processing`, `ready`, `error` - indexing/processing health only; **no** `disabled` or `unavailable` |
 | Source ID generation | `uuid.uuid4()` for local folder; deterministic `src:knowledge_input_source:{input_id}` for intake-derived sources |
 | Tenant/workspace validation | `KnowledgeIntakeService.accept()` and resolvers check `repository.get_workspace()` |

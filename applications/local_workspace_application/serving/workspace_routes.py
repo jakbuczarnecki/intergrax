@@ -133,6 +133,25 @@ from local_workspace_application.workspaces.web_url_ingestion import (
     http_status_for_web_url_error,
 )
 from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    CreateIndexedSourceMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.connected_source_wiring import (
+    ConnectedSourceWiring,
+    build_connected_source_wiring,
+)
+from local_workspace_application.serving.knowledge_connected_source_routes import (
+    mount_connected_source_knowledge_routes,
+)
 from local_workspace_application.workspaces.vector_cleanup import (
     VectorstoreManagerWorkspaceCleanup,
 )
@@ -306,6 +325,7 @@ def mount_managed_workspace_routes(
     web_url_access_policy: Any | None = None,
     web_content_capture: Any | None = None,
     indexing_service: WorkspaceDocumentIndexingService | None = None,
+    connected_source_wiring: ConnectedSourceWiring | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -344,12 +364,36 @@ def mount_managed_workspace_routes(
         indexing_service,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
     )
+    configuration_service = WorkspaceKnowledgeConfigurationService(repository, service)
+    mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        repository,
+        service,
+        configuration_service,
+        {
+            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
+                CreateIndexedSourceMutationHandler()
+            ),
+        },
+    )
+    connected_wiring = connected_source_wiring
+    if connected_wiring is None and settings.connected_source_opaque_ref_signing_key.strip():
+        connected_wiring = build_connected_source_wiring(
+            repository=repository,
+            workspace_service=service,
+            configuration_service=configuration_service,
+            mutation_engine=mutation_engine,
+            indexing_service=indexing_service,
+            settings=settings,
+        )
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
         allowlist_roots=frozenset(allowlist) if allowlist else None,
         indexing_service=indexing_service,
         folder_indexing=folder_indexing,
+        connected_source_sync=(
+            connected_wiring.connected_source_sync_service if connected_wiring is not None else None
+        ),
     )
     owns_runtime = sync_runtime is None
     if sync_runtime is None:
@@ -359,6 +403,22 @@ def mount_managed_workspace_routes(
             repository=repository,
         )
         app.state.lkw_managed_workspace_sync_runtime = sync_runtime
+
+    if connected_wiring is not None:
+        connected_wiring.connected_source_sync_service.attach_continuation(
+            __import__(
+                "local_workspace_application.workspaces.connected_source_wiring",
+                fromlist=["_SyncRuntimeContinuation"],
+            )._SyncRuntimeContinuation(sync_runtime)
+        )
+        app.state.lkw_connected_source_wiring = connected_wiring
+        mount_connected_source_knowledge_routes(
+            app,
+            wiring=connected_wiring,
+            workspace_service=service,
+            sync_runtime=sync_runtime,
+            prefix=prefix,
+        )
 
     source_candidate_registry = SourceCandidateRegistry.load(settings.source_candidates_file)
     resolver_map: dict[KnowledgeInputKind, object] = {

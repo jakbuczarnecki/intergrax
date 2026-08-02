@@ -375,7 +375,13 @@ class KnowledgeSourceBindingService:
             binding_id=binding.binding_id,
         )
         if existing is not None:
-            if not self._bindings_equivalent(existing, binding):
+            if existing.status in {
+                KnowledgeSourceBindingStatus.DISABLED,
+                KnowledgeSourceBindingStatus.REVOKED,
+                KnowledgeSourceBindingStatus.EXPIRED,
+            }:
+                raise self._inactive_binding_error(existing)
+            if not self._bindings_identity_equivalent(existing, binding):
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
                     safe_message="Knowledge source binding identity conflict",
@@ -400,7 +406,7 @@ class KnowledgeSourceBindingService:
                     source_kind=binding.source_kind,
                     retryable=False,
                 ) from None
-            if not self._bindings_equivalent(reloaded, binding):
+            if not self._bindings_identity_equivalent(reloaded, binding):
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
                     safe_message="Knowledge source binding identity conflict",
@@ -408,6 +414,12 @@ class KnowledgeSourceBindingService:
                     source_kind=binding.source_kind,
                     retryable=False,
                 )
+            if reloaded.status in {
+                KnowledgeSourceBindingStatus.DISABLED,
+                KnowledgeSourceBindingStatus.REVOKED,
+                KnowledgeSourceBindingStatus.EXPIRED,
+            }:
+                raise self._inactive_binding_error(reloaded)
             return reloaded
         except KnowledgeSourceBindingCorruptRecord:
             raise VendorKnowledgeError(
@@ -429,7 +441,7 @@ class KnowledgeSourceBindingService:
             ) from None
         return binding
 
-    def _bindings_equivalent(
+    def _bindings_identity_equivalent(
         self,
         left: KnowledgeSourceBinding,
         right: KnowledgeSourceBinding,
@@ -442,12 +454,36 @@ class KnowledgeSourceBindingService:
             and left.source_kind == right.source_kind
             and left.connection_ref == right.connection_ref
             and left.credential_ref == right.credential_ref
-            and left.safe_display_name == right.safe_display_name
-            and left.scope == right.scope
-            and left.status == right.status
-            and left.configuration_version == right.configuration_version
+            and left.scope.remote_scope_type == right.scope.remote_scope_type
+            and left.scope.remote_scope_id == right.scope.remote_scope_id
+            and left.scope.parameters == right.scope.parameters
             and left.broad_scope == right.broad_scope
             and left.scope_approval_ref == right.scope_approval_ref
+        )
+
+    def _inactive_binding_error(self, binding: KnowledgeSourceBinding) -> VendorKnowledgeError:
+        if binding.status is KnowledgeSourceBindingStatus.DISABLED:
+            return VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge source binding is disabled",
+                provider_id=binding.provider_id,
+                source_kind=binding.source_kind,
+                retryable=False,
+            )
+        if binding.status is KnowledgeSourceBindingStatus.REVOKED:
+            return VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.AUTHORIZATION_DENIED,
+                safe_message="Knowledge source binding is revoked",
+                provider_id=binding.provider_id,
+                source_kind=binding.source_kind,
+                retryable=False,
+            )
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.AUTHENTICATION_FAILED,
+            safe_message="Knowledge source binding is expired",
+            provider_id=binding.provider_id,
+            source_kind=binding.source_kind,
+            retryable=False,
         )
 
     def _assert_service_tenant(self, tenant_id: str, *, provider_id: str | None) -> None:

@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Protocol
 
@@ -20,6 +21,9 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeSyncCheckpointRepository,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
+from local_workspace_application.workspaces.connected_source_delivery import (
+    ConnectedSourceDeliveryApplyResult,
+)
 from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
     WorkspaceConnectedSourceKnowledgeSyncSink,
@@ -39,6 +43,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 
 logger = logging.getLogger(__name__)
@@ -56,14 +61,41 @@ class ConnectedSourceSyncDependencies:
     owner_id: str
 
 
+@dataclass
+class _DeliveryCountAccumulator:
+    documents_indexed: int = 0
+    documents_unchanged: int = 0
+    items_failed: int = 0
+    seen_delivery_ids: set[str] = field(default_factory=set)
+
+    def add(self, delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
+        if delivery_id in self.seen_delivery_ids:
+            return
+        self.seen_delivery_ids.add(delivery_id)
+        if result.replayed:
+            return
+        self.documents_indexed += result.documents_indexed
+        self.documents_unchanged += result.documents_unchanged
+        self.items_failed += result.items_failed
+
+
+class _CountingConnectedSourceSink:
+    def __init__(
+        self,
+        inner: WorkspaceConnectedSourceKnowledgeSyncSink,
+        accumulator: _DeliveryCountAccumulator,
+    ) -> None:
+        self._inner = inner
+        self._accumulator = accumulator
+
+    async def apply_batch(self, *, batch) -> ConnectedSourceDeliveryApplyResult:
+        result = await self._inner.apply_batch(batch=batch)
+        self._accumulator.add(batch.delivery_id, result)
+        return result
+
+
 def _utc_now() -> datetime:
     return datetime.now(UTC)
-
-
-def _safe_error_message(exc: BaseException) -> str:
-    message = str(exc).strip() or exc.__class__.__name__
-    first_line = message.splitlines()[0].strip()
-    return first_line[:500]
 
 
 class ManagedWorkspaceConnectedSourceSyncService:
@@ -72,21 +104,28 @@ class ManagedWorkspaceConnectedSourceSyncService:
         repository: ManagedWorkspaceRepository,
         indexing_service: WorkspaceDocumentIndexingService,
         configuration_reader: WorkspaceKnowledgeConfigurationService,
+        tenant_binding_port: object,
         dependencies_factory: Callable[[str], ConnectedSourceSyncDependencies],
         *,
         page_size: int = 50,
         max_pages_per_operation: int = 8,
+        max_duration_seconds: float = 120.0,
         continuation: ConnectedSourceSyncContinuationPort | None = None,
         lease_ttl_seconds: int = 60,
     ) -> None:
         self._repository = repository
         self._indexing_service = indexing_service
         self._configuration_reader = configuration_reader
+        self._tenant_binding_port = tenant_binding_port
         self._dependencies_factory = dependencies_factory
         self._page_size = page_size
         self._max_pages_per_operation = max_pages_per_operation
+        self._max_duration_seconds = max_duration_seconds
         self._continuation = continuation
         self._lease_ttl_seconds = lease_ttl_seconds
+
+    def attach_continuation(self, continuation: ConnectedSourceSyncContinuationPort) -> None:
+        self._continuation = continuation
 
     async def run_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation:
         operation = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
@@ -99,13 +138,10 @@ class ManagedWorkspaceConnectedSourceSyncService:
         }:
             return operation
         if operation.status is WorkspaceOperationStatus.RUNNING:
-            logger.warning(
-                "connected_source_sync_duplicate_while_running operation_id=%s",
-                operation.operation_id,
-            )
-            return operation
+            reloaded = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
+            return reloaded or operation
         if operation.status is not WorkspaceOperationStatus.QUEUED:
-            return self._fail(operation, f"unexpected_operation_status:{operation.status.value}")
+            return self._fail(operation, "unexpected_operation_status")
 
         source = self._repository.get_source(
             tenant_id=tenant_id,
@@ -125,22 +161,31 @@ class ManagedWorkspaceConnectedSourceSyncService:
         if binding_ref is None:
             return self._fail(operation, "indexed_source_binding_not_found")
 
-        started = _utc_now()
-        operation = operation.model_copy(
+        restart = operation.started_at is None
+        claimed = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.RUNNING,
-                "started_at": started,
+                "started_at": operation.started_at or _utc_now(),
                 "error": None,
             }
         )
-        self._repository.put_operation(operation)
+        if not self._repository.claim_operation_if_queued(
+            expected=operation,
+            replacement=claimed,
+        ):
+            reloaded = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
+            return reloaded or operation
+        operation = claimed
         self._repository.put_source(
             source.model_copy(update={"status": WorkspaceSourceStatus.SYNCING})
         )
 
-        documents_indexed = operation.documents_indexed
-        documents_unchanged = operation.documents_unchanged
+        accumulator = _DeliveryCountAccumulator(
+            documents_indexed=operation.documents_indexed,
+            documents_unchanged=operation.documents_unchanged,
+        )
         has_more = False
+        worker_started = time.monotonic()
 
         try:
             dependencies = self._dependencies_factory(tenant_id)
@@ -152,19 +197,24 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 knowledge_source_binding_ref=binding_ref,
                 operation_id=operation.operation_id,
             )
-            sink = WorkspaceConnectedSourceKnowledgeSyncSink(
+            inner_sink = WorkspaceConnectedSourceKnowledgeSyncSink(
                 repository=self._repository,
                 indexing_service=self._indexing_service,
+                configuration_reader=self._configuration_reader,
+                tenant_binding_port=self._tenant_binding_port,
                 context=sink_context,
             )
+            sink = _CountingConnectedSourceSink(inner_sink, accumulator)
             coordinator = self._build_coordinator(
                 tenant_id=tenant_id,
                 dependencies=dependencies,
                 sink=sink,
             )
 
-            restart = True
             for _ in range(self._max_pages_per_operation):
+                if time.monotonic() - worker_started > self._max_duration_seconds:
+                    has_more = True
+                    break
                 result = await coordinator.reconcile_once(
                     binding_id=binding_ref,
                     page_size=self._page_size,
@@ -172,46 +222,55 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 )
                 restart = False
                 if result.status is KnowledgeSyncRunStatus.LEASE_BUSY:
-                    return self._requeue(operation, source)
-                documents_indexed += result.active_count
-                documents_unchanged += max(
-                    0,
-                    result.changes_count - result.active_count - result.tombstone_count,
-                )
+                    reloaded = self._repository.get_operation(
+                        tenant_id=tenant_id,
+                        operation_id=operation_id,
+                    )
+                    return reloaded or operation
                 if not result.has_more:
                     has_more = False
                     break
                 has_more = True
-        except Exception as exc:
+        except ConnectedSourceSyncSinkError as exc:
+            logger.exception(
+                "connected_source_sync_sink_failed operation_id=%s error=%s",
+                operation.operation_id,
+                exc.error_code,
+            )
+            failed = self._fail(operation, exc.error_code)
+            self._repository.put_source(
+                source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
+            )
+            return failed
+        except Exception:
             logger.exception(
                 "connected_source_sync_failed operation_id=%s",
                 operation.operation_id,
             )
-            failed = self._fail(operation, _safe_error_message(exc))
+            failed = self._fail(operation, "connected_source_sync_failed")
             self._repository.put_source(
                 source.model_copy(update={"status": WorkspaceSourceStatus.ERROR})
             )
             return failed
 
+        operation = operation.model_copy(
+            update={
+                "documents_indexed": accumulator.documents_indexed,
+                "documents_unchanged": accumulator.documents_unchanged,
+                "files_failed": accumulator.items_failed,
+            }
+        )
+
         if has_more:
-            return self._requeue(
-                operation.model_copy(
-                    update={
-                        "documents_indexed": documents_indexed,
-                        "documents_unchanged": documents_unchanged,
-                    }
-                ),
-                source,
-            )
+            return self._requeue(operation, source)
 
         completed = _utc_now()
         operation = operation.model_copy(
             update={
                 "status": WorkspaceOperationStatus.COMPLETED,
-                "documents_indexed": documents_indexed,
-                "documents_unchanged": documents_unchanged,
                 "completed_at": completed,
                 "error": None,
+                "files_failed": accumulator.items_failed,
             }
         )
         self._repository.put_operation(operation)
@@ -230,7 +289,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         *,
         tenant_id: str,
         dependencies: ConnectedSourceSyncDependencies,
-        sink: WorkspaceConnectedSourceKnowledgeSyncSink,
+        sink: _CountingConnectedSourceSink,
     ) -> VendorKnowledgeSyncCoordinator:
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):

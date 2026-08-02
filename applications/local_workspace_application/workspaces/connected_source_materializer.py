@@ -5,15 +5,33 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.runtime.vendor_knowledge.models import KnowledgeContent, KnowledgeContentMode
 from local_workspace_application.workspaces.connected_source_ids import connected_logical_path
 from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
 
 _SLACK_CONVERSATION_MESSAGE_SCHEMA = "slack.conversation.message.knowledge.v1"
+_REMOTE_HASH_PREFIX_LEN = 16
+
+
+class _SlackConversationMessageKnowledgeRecord(BaseModel):
+    model_config = ConfigDict(extra="ignore", frozen=True, strict=True)
+
+    schema: Literal["slack.conversation.message.knowledge.v1"]
+    provider: Literal["slack"]
+    source_kind: Literal["slack_conversation"]
+    conversation: dict[str, object]
+    message: dict[str, object]
+    thread: dict[str, object]
+    actor: dict[str, object]
+    text: str
+    timestamps: dict[str, object]
+    edit_state: dict[str, object]
+    safe_file_inventory: list[dict[str, object]] = Field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +58,11 @@ class ConnectedSourceContentMaterializer(Protocol):
 
 class ConnectedSourceContentMaterializerRegistry:
     def __init__(self, materializers: tuple[ConnectedSourceContentMaterializer, ...]) -> None:
-        self._by_schema = {item.schema_name: item for item in materializers}
+        self._by_schema: dict[str, ConnectedSourceContentMaterializer] = {}
+        for item in materializers:
+            if item.schema_name in self._by_schema:
+                raise ConnectedSourceSyncSinkError("connected_source_materializer_duplicate")
+            self._by_schema[item.schema_name] = item
 
     def resolve(self, schema_name: str) -> ConnectedSourceContentMaterializer:
         materializer = self._by_schema.get(schema_name)
@@ -64,44 +86,23 @@ class SlackConversationStructuredRecordMaterializer:
         record = content.structured_record
         if not isinstance(record, dict):
             raise ConnectedSourceSyncSinkError("connected_source_structured_record_invalid")
-        schema = record.get("schema")
-        if schema != self.schema_name:
-            raise ConnectedSourceSyncSinkError("connected_source_schema_unsupported")
+        try:
+            validated = _SlackConversationMessageKnowledgeRecord.model_validate(record)
+        except ValueError:
+            raise ConnectedSourceSyncSinkError("connected_source_structured_record_invalid") from None
 
-        text = record.get("text")
-        if not isinstance(text, str) or not text.strip():
-            text = _title_from_record(record)
-
-        message = record.get("message")
-        message_ts = ""
-        if isinstance(message, dict):
-            raw_ts = message.get("message_ts")
-            if isinstance(raw_ts, str):
-                message_ts = raw_ts.strip()
-
-        conversation = record.get("conversation")
-        conversation_id = ""
-        if isinstance(conversation, dict):
-            raw_id = conversation.get("conversation_id")
-            if isinstance(raw_id, str):
-                conversation_id = raw_id.strip()
-
-        title = _title_from_record(record)
+        safe_conversation_label = _safe_conversation_label(validated)
         markdown = _render_slack_message_markdown(
-            title=title,
-            text=text,
-            conversation_id=conversation_id,
-            message_ts=message_ts,
+            safe_conversation_label=safe_conversation_label,
+            record=validated,
         )
-        canonical = json.dumps(
-            {"schema": schema, "remote_id": remote_id, "markdown": markdown},
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ).encode("utf-8")
-        content_hash = hashlib.sha256(canonical).hexdigest()
+        markdown_bytes = markdown.encode("utf-8")
+        content_hash = hashlib.sha256(markdown_bytes).hexdigest()
         logical_source_path = connected_logical_path(source_id=source_id, remote_id=remote_id)
-        safe_file_name = f"{title[:120] or 'slack-message'}.md"
+        remote_hash_prefix = hashlib.sha256(remote_id.encode("utf-8")).hexdigest()[
+            :_REMOTE_HASH_PREFIX_LEN
+        ]
+        safe_file_name = f"slack-message-{remote_hash_prefix}.md"
         return MaterializedConnectedSourceDocument(
             logical_source_path=logical_source_path,
             safe_file_name=safe_file_name,
@@ -110,30 +111,60 @@ class SlackConversationStructuredRecordMaterializer:
         )
 
 
-def _title_from_record(record: dict[str, object]) -> str:
-    text = record.get("text")
-    if isinstance(text, str) and text.strip():
-        collapsed = " ".join(text.strip().split())
-        return collapsed[:120]
-    return "Slack message"
+def _safe_conversation_label(record: _SlackConversationMessageKnowledgeRecord) -> str:
+    conversation = record.conversation
+    for key in ("safe_display_name", "safe_name", "safe_label"):
+        value = conversation.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return "Slack conversation"
 
 
 def _render_slack_message_markdown(
     *,
-    title: str,
-    text: str,
-    conversation_id: str,
-    message_ts: str,
+    safe_conversation_label: str,
+    record: _SlackConversationMessageKnowledgeRecord,
 ) -> str:
-    lines = [f"# {title}", ""]
-    if conversation_id:
-        lines.append(f"Conversation: `{conversation_id}`")
-    if message_ts:
-        lines.append(f"Message timestamp: `{message_ts}`")
-    if conversation_id or message_ts:
+    created_at = record.timestamps.get("created_at")
+    edited_at = record.timestamps.get("edited_at")
+    actor_id = record.actor.get("provider_id")
+    root_thread_ts = record.thread.get("root_thread_ts")
+    reply_count = record.thread.get("reply_count")
+    lines = [
+        f"# {safe_conversation_label}",
+        "",
+        f"Conversation: {safe_conversation_label}",
+        f"Message: {record.text.strip()}",
+    ]
+    if isinstance(created_at, str) and created_at:
+        lines.append(f"Created at: {created_at}")
+    if isinstance(edited_at, str) and edited_at:
+        lines.append(f"Edited at: {edited_at}")
+    if isinstance(actor_id, str) and actor_id:
+        lines.append(f"Actor: {actor_id}")
+    if isinstance(root_thread_ts, str) and root_thread_ts:
+        lines.append("Thread root: reply")
+    elif isinstance(reply_count, int) and reply_count > 0:
+        lines.append("Thread root: root")
+    if record.safe_file_inventory:
         lines.append("")
-    lines.append(text.strip())
-    lines.append("")
+        lines.append("Files:")
+        for item in record.safe_file_inventory:
+            safe_name = item.get("safe_file_name")
+            mime = item.get("mimetype")
+            if isinstance(safe_name, str) and safe_name:
+                if isinstance(mime, str) and mime:
+                    lines.append(f"- {safe_name} ({mime})")
+                else:
+                    lines.append(f"- {safe_name}")
+    lines.extend(
+        [
+            "",
+            f"Provider: {record.provider}",
+            f"Source kind: {record.source_kind}",
+            "",
+        ]
+    )
     return "\n".join(lines)
 
 

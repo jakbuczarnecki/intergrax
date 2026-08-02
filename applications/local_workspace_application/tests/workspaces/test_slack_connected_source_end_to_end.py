@@ -1,16 +1,26 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""End-to-end Slack connected source proof through Vendor Knowledge and LKW sink."""
+"""End-to-end Slack connected source proof through HTTP, sync, Search and Ask."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import time
+from dataclasses import replace
 from datetime import UTC, datetime, timezone
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional, Sequence
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 
+from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
@@ -20,60 +30,47 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SlackConversationChannelIntegration,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SLACK_CONVERSATION_SOURCE_KIND,
     SlackConversationExactMessageResult,
+    SlackConversationInventoryPage,
     SlackConversationKind,
     SlackConversationMessage,
     SlackConversationMessagePage,
+    SlackConversationSummary,
     compute_slack_conversation_message_revision,
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
-from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    SLACK_CONVERSATION_SCOPE_TYPE,
-    encode_slack_conversation_scope_id,
-    register_slack_conversation_knowledge_adapter,
+from intergrax.runtime.task.task import TaskResult, TaskState
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
+from local_workspace_application.workspaces.connected_source_wiring import (
+    build_connected_source_wiring,
+    register_slack_connection_integration,
 )
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingService,
-    KnowledgeSourceBindingStatus,
-)
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceScope
-from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
-from intergrax.runtime.vendor_knowledge.sync_document_store import (
-    DocumentStoreKnowledgeRemoteItemStateRepository,
-    DocumentStoreKnowledgeSourceLeaseRepository,
-    DocumentStoreKnowledgeSyncCheckpointRepository,
-)
-from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
-from local_workspace_application.workspaces.connected_source_sync_sink import (
-    ConnectedSourceSyncSinkContext,
-    WorkspaceConnectedSourceKnowledgeSyncSink,
-)
-from local_workspace_application.workspaces.document_indexing import (
-    WorkspaceDocumentIndexingResult,
+from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    CreateIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
-    IndexedSourceAudienceEligibilityV1,
-    IndexedSourceSyncModeV1,
-    WorkspaceIndexedSourceBinding,
-    WorkspaceIndexedSourceBindingStatusV1,
+    WorkspaceConnectionAttachment,
+    WorkspaceConnectionAttachmentStatusV1,
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
 )
 from local_workspace_application.workspaces.models import (
     Workspace,
-    WorkspaceSource,
-    WorkspaceSourceStatus,
-    WorkspaceSourceType,
+    WorkspaceDocumentReference,
     WorkspaceStatus,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
+from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
 
-pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
+pytestmark = [pytest.mark.unit]
 
 _MARKER = "SLACK-ORION-DEPLOYMENT-BLOCKER-7319"
 _CONVERSATION_ID = "C01234567"
@@ -87,6 +84,72 @@ _REPLY_TS = "1704153601.000001"
 _EDITED_TS = "1704153602.000001"
 _TS = datetime(2024, 1, 2, 12, 0, tzinfo=timezone.utc)
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
+_PREFIX = "/v1/local_workspace"
+_SIGNING_KEY = "e2e-connected-source-signing-key"
+
+
+class _RecordingFakeLLM(LLMAdapter):
+    provider = "fake"
+    model = "fake"
+
+    def __init__(self, *, fixed_text: str) -> None:
+        super().__init__()
+        self._fixed_text = fixed_text
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 128_000
+
+    def generate_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        run_id: Optional[str] = None,
+    ) -> LLMAdapterResponse:
+        _ = messages, temperature, max_tokens, run_id
+        return build_adapter_response(content=self._fixed_text)
+
+
+def _search_task_result(
+    *,
+    workspace_id: str,
+    source_id: str,
+    file_name: str,
+    document_id: str,
+    source_path: str,
+) -> TaskResult:
+    return TaskResult(
+        task_id="search-1",
+        run_id="search-1",
+        state=TaskState.COMPLETED,
+        answer="ok",
+        execution_result=AgentExecutionResult(
+            agent_id="local_search",
+            run_id="search-1",
+            status=AgentExecutionStatus.COMPLETED,
+            summary="ok",
+            structured_data={
+                "search_summary": {
+                    "query": _MARKER,
+                    "workspace_id": workspace_id,
+                    "evidence": [
+                        {
+                            "document_id": document_id,
+                            "source_id": source_id,
+                            "workspace_id": workspace_id,
+                            "source_path": source_path,
+                            "file_name": file_name,
+                            "snippet": _MARKER,
+                            "evidence_id": "E1",
+                            "score": 0.99,
+                        }
+                    ],
+                }
+            },
+        ),
+    )
 
 
 def _message(
@@ -115,6 +178,7 @@ def _message(
 
 class _SlackFakeBackend:
     def __init__(self) -> None:
+        self.history_calls = 0
         self._history_pages = [
             SlackConversationMessagePage(
                 conversation_id=_CONVERSATION_ID,
@@ -157,14 +221,8 @@ class _SlackFakeBackend:
             )
         ]
         self._content: dict[str, SlackConversationMessage] = {}
-        self._content: dict[str, SlackConversationMessage] = {}
 
     async def list_accessible_conversations_page(self, *, cursor, limit):
-        from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-            SlackConversationInventoryPage,
-            SlackConversationSummary,
-        )
-
         return SlackConversationInventoryPage(
             items=(
                 SlackConversationSummary(
@@ -174,12 +232,12 @@ class _SlackFakeBackend:
                     is_archived=False,
                     is_private=False,
                 ),
-            )
+            ),
+            next_cursor=None,
         )
 
     async def read_conversation_history_page(self, **kwargs: Any) -> SlackConversationMessagePage:
-        if kwargs.get("cursor") is None and self._history_pages:
-            self._history_pages = list(self._history_pages)
+        self.history_calls += 1
         page = self._history_pages.pop(0)
         for item in page.items:
             self._content[item.message_ts] = item
@@ -209,192 +267,285 @@ class _SlackFakeBackend:
         raise NotImplementedError
 
 
-@dataclass
-class _Resolver:
-    integration: SlackConversationChannelIntegration
-
-    def resolve(self, *, source) -> SlackConversationChannelIntegration:
-        return self.integration
-
-
-class _RecordingIndexingService:
-    def __init__(self) -> None:
-        self.calls: list[dict[str, Any]] = []
+class _ConnectedSourceIndexingService:
+    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
+        self._repository = repository
         self._indexed_paths: set[str] = set()
 
     async def index_one(self, **kwargs: Any) -> WorkspaceDocumentIndexingResult:
-        physical_path = kwargs["physical_path"]
+        physical_path = Path(str(kwargs["physical_path"]))
         content = physical_path.read_text(encoding="utf-8")
-        self.calls.append({**kwargs, "content": content})
-        path = kwargs["logical_source_path"]
-        unchanged = path in self._indexed_paths
+        if _MARKER not in content:
+            raise RuntimeError("marker_missing")
+        logical_source_path = str(kwargs["logical_source_path"])
+        unchanged = logical_source_path in self._indexed_paths
         if not unchanged:
-            self._indexed_paths.add(path)
-        assert _MARKER in content
+            self._indexed_paths.add(logical_source_path)
+        document_id = f"doc-{len(self._indexed_paths)}"
+        if not unchanged:
+            self._repository.put_document_ref(
+                WorkspaceDocumentReference(
+                    document_id=document_id,
+                    tenant_id=str(kwargs["tenant_id"]),
+                    workspace_id=str(kwargs["workspace_id"]),
+                    source_id=str(kwargs["source_id"]),
+                    source_path=logical_source_path,
+                    file_name=str(kwargs["safe_file_name"]),
+                    content_hash=str(kwargs["content_hash"]),
+                    indexed_at=datetime.now(UTC),
+                )
+            )
         return WorkspaceDocumentIndexingResult(
             indexed=not unchanged,
             unchanged=unchanged,
-            document_id=f"doc-{len(self._indexed_paths)}",
+            document_id=document_id,
             documents_indexed=0 if unchanged else 1,
+            num_chunks=1,
+            reason="ingest_complete",
         )
 
 
-class _WorkspaceLookup:
-    def require_workspace(self, *, tenant_id: str, workspace_id: str):
-        return Workspace(
-            workspace_id=workspace_id,
+class _SearchExecutor:
+    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
+        self._repository = repository
+
+    async def execute(self, task: object) -> TaskResult:
+        metadata = getattr(task, "metadata", {}) or {}
+        workspace_id = str(metadata.get("workspace_id") or "")
+        tenant_id = str(getattr(task, "tenant_id", "") or metadata.get("tenant_id") or "")
+        refs = self._repository.list_document_refs(
             tenant_id=tenant_id,
-            name="ws",
-            status=WorkspaceStatus.ACTIVE,
-            created_at=_NOW,
-            updated_at=_NOW,
+            workspace_id=workspace_id,
+        )
+        if not refs:
+            return _search_task_result(
+                workspace_id=workspace_id,
+                source_id="missing",
+                file_name="missing.md",
+                document_id="missing",
+                source_path="",
+            )
+        ref = refs[0]
+        return _search_task_result(
+            workspace_id=workspace_id,
+            source_id=ref.source_id,
+            file_name=ref.file_name,
+            document_id=ref.document_id,
+            source_path=ref.source_path,
         )
 
 
-@pytest.mark.asyncio
-async def test_slack_connected_source_end_to_end_indexing_proof() -> None:
-    document_store = InMemoryDocumentStore()
-    repo = ManagedWorkspaceRepository(document_store)
-    repo.put_workspace(
-        Workspace(
-            workspace_id=_WORKSPACE,
-            tenant_id=_TENANT,
-            name="ws",
-            status=WorkspaceStatus.ACTIVE,
-            created_at=_NOW,
-            updated_at=_NOW,
-        )
+@pytest.fixture
+def e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", _SIGNING_KEY)
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
     )
-    binding_id = "ksb-slack-orion"
-    source_id = "src:connected:orion-proof"
-    indexed_binding_id = "idx-orion-proof"
-    repo.put_knowledge_indexed_source_version_if_absent(
-        WorkspaceIndexedSourceBinding(
-            indexed_source_binding_id=indexed_binding_id,
+    workspace = Workspace(
+        workspace_id=_WORKSPACE,
+        tenant_id=_TENANT,
+        name="ws",
+        status=WorkspaceStatus.ACTIVE,
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
+    repo.put_workspace(workspace)
+    repo.put_knowledge_connection_attachment_version_if_absent(
+        WorkspaceConnectionAttachment(
+            attachment_id="att-1",
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
-            knowledge_source_binding_ref=binding_id,
-            source_id=source_id,
-            sync_mode=IndexedSourceSyncModeV1.FULL,
-            status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
-            audience_eligibility=IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY,
+            connection_ref=_CONNECTION,
+            safe_display_label="Slack",
+            status=WorkspaceConnectionAttachmentStatusV1.ATTACHED,
             mutation_id="mut-1",
             effective_revision=1,
-            semantic_identity_hash="a" * 64,
             created_at=_NOW,
             updated_at=_NOW,
-            cached_safe_display_label="#project-orion",
         )
     )
+    head_mod = __import__(
+        "local_workspace_application.workspaces.knowledge_configuration_models",
+        fromlist=["WorkspaceKnowledgeConfigurationHead"],
+    )
     repo.put_knowledge_configuration_head_if_absent(
-        __import__(
-            "local_workspace_application.workspaces.knowledge_configuration_models",
-            fromlist=["WorkspaceKnowledgeConfigurationHead"],
-        ).WorkspaceKnowledgeConfigurationHead(
+        head_mod.WorkspaceKnowledgeConfigurationHead(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
             committed_revision=1,
             updated_at=_NOW,
         )
     )
-    repo.put_source(
-        WorkspaceSource(
-            source_id=source_id,
-            workspace_id=_WORKSPACE,
-            tenant_id=_TENANT,
-            source_type=WorkspaceSourceType.CONNECTED_SOURCE,
-            path="",
-            recursive=False,
-            status=WorkspaceSourceStatus.REGISTERED,
-            created_at=_NOW,
-            knowledge_configuration_creation_mutation_id="mut-1",
-            knowledge_configuration_visibility_revision=1,
-        )
-    )
+    from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
-    backend = _SlackFakeBackend()
-    config = SlackConversationChannelIntegrationConfig(
-        enabled=True,
-        app_token="xapp-test",
-        bot_token="xoxb-test",
+    service = ManagedWorkspaceService(repo)
+    config = WorkspaceKnowledgeConfigurationService(repo, service)
+    mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        repo,
+        service,
+        config,
+        {WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler()},
     )
+    indexing = _ConnectedSourceIndexingService(repo)
+    wiring = build_connected_source_wiring(
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,  # type: ignore[arg-type]
+        settings=settings,
+    )
+    backend = _SlackFakeBackend()
     integration = SlackConversationChannelIntegration.from_backend(
         backend,  # type: ignore[arg-type]
         enabled=True,
-        config=config,
+        config=SlackConversationChannelIntegrationConfig(
+            enabled=True,
+            app_token="xapp-test",
+            bot_token="xoxb-test",
+        ),
     )
-    registry = KnowledgeAdapterRegistry()
-    register_slack_conversation_knowledge_adapter(registry)
-    resolver = _Resolver(integration=integration)
-    facade = VendorKnowledgeFacadeService(
+    register_slack_connection_integration(
+        wiring=wiring,
         tenant_id=_TENANT,
-        resolver=resolver,
-        adapter_registry=registry,
+        connection_ref=_CONNECTION,
+        integration=integration,
     )
-    tenant_binding = KnowledgeSourceBinding(
-        binding_id=binding_id,
+    executor = _SearchExecutor(repo)
+    llm = _RecordingFakeLLM(
+        fixed_text=json.dumps(
+            {
+                "status": "completed",
+                "answer": _MARKER,
+                "used_evidence_ids": ["E1"],
+            }
+        )
+    )
+    sync = ManagedWorkspaceSyncService(
+        repo,
+        executor,  # type: ignore[arg-type]
+        indexing_service=indexing,  # type: ignore[arg-type]
+        connected_source_sync=wiring.connected_source_sync_service,
+    )
+    runtime = build_managed_workspace_sync_runtime(
+        document_store=store,
+        sync_service=sync,
+        repository=repo,
+    )
+    wiring.connected_source_sync_service.attach_continuation(
+        __import__(
+            "local_workspace_application.workspaces.connected_source_wiring",
+            fromlist=["_SyncRuntimeContinuation"],
+        )._SyncRuntimeContinuation(runtime)
+    )
+    app = FastAPI()
+    mount_managed_workspace_routes(
+        app,
+        task_executor=executor,  # type: ignore[arg-type]
+        settings=settings,
+        repository=repo,
+        sync_runtime=runtime,
+        connected_source_wiring=wiring,
+        indexing_service=indexing,  # type: ignore[arg-type]
+        llm_adapter=llm,
+    )
+    with TestClient(app) as client:
+        yield client, backend, wiring, repo, integration
+
+
+def _wait_operation(client: TestClient, operation_id: str) -> dict[str, object]:
+    deadline = time.monotonic() + 60.0
+    while time.monotonic() < deadline:
+        response = client.get(
+            f"{_PREFIX}/operations/{operation_id}",
+            headers={"X-Tenant-Id": _TENANT},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        if body["status"] in {"completed", "failed"}:
+            return body
+        time.sleep(0.1)
+    raise AssertionError("operation_timeout")
+
+
+def test_slack_connected_source_http_to_search_and_ask(e2e_env) -> None:
+    client, backend, wiring, _repo, integration = e2e_env
+    discovery = client.get(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
+        headers={"X-Tenant-Id": _TENANT},
+        params={"resource_type": "slack_conversation", "limit": 10},
+    )
+    assert discovery.status_code == 200, discovery.text
+    candidate = discovery.json()["items"][0]["opaque_candidate_ref"]
+    created = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers={
+            "X-Tenant-Id": _TENANT,
+            "If-Match": "WKC/1",
+            "Idempotency-Key": "e2e-create",
+        },
+        json={
+            "connection_ref": _CONNECTION,
+            "opaque_candidate_ref": candidate,
+            "root_oldest": _OLDEST,
+            "root_latest": _LATEST,
+        },
+    )
+    assert created.status_code == 201, created.text
+    source_id = created.json()["source_id"]
+    sync_accepted = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{created.json()['indexed_source_binding_id']}/sync",
+        headers={"X-Tenant-Id": _TENANT},
+    )
+    assert sync_accepted.status_code == 202, sync_accepted.text
+    operation_id = sync_accepted.json()["operation_id"]
+    import asyncio
+
+    async def _drive_sync() -> None:
+        for _ in range(12):
+            operation = await wiring.connected_source_sync_service.run_operation(
+                tenant_id=_TENANT,
+                operation_id=operation_id,
+            )
+            if operation.status.value in {"completed", "failed"}:
+                break
+
+    asyncio.run(_drive_sync())
+    completed = _wait_operation(client, operation_id)
+    assert completed["status"] == "completed", completed
+    assert backend.history_calls >= 1
+    assert completed["documents_indexed"] >= 1
+
+    search = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/search",
+        headers={"X-Tenant-Id": _TENANT},
+        json={"query": _MARKER, "limit": 10},
+    )
+    assert search.status_code == 200, search.text
+    results = search.json()["results"]
+    assert results
+    assert any(_MARKER in (hit.get("snippet") or "") for hit in results)
+
+    ask = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/ask",
+        headers={"X-Tenant-Id": _TENANT, "Idempotency-Key": "e2e-ask"},
+        json={"question": f"What is {_MARKER}?"},
+    )
+    assert ask.status_code == 200, ask.text
+    body = ask.json()
+    assert body["citations"]
+    assert body["citations"][0]["source_id"] == source_id
+    resolved = wiring.connection_registry.resolve(
         tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
         provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-        source_kind=SLACK_CONVERSATION_SOURCE_KIND,
-        connection_ref=_CONNECTION,
-        safe_display_name="#project-orion",
-        scope=KnowledgeSourceScope(
-            remote_scope_id=encode_slack_conversation_scope_id(
-                conversation_id=_CONVERSATION_ID,
-                conversation_kind=SlackConversationKind.PUBLIC_CHANNEL,
-                oldest=_OLDEST,
-                latest=_LATEST,
-            ),
-            remote_scope_type=SLACK_CONVERSATION_SCOPE_TYPE,
-            safe_display_name="#project-orion",
-            parameters={},
-        ),
-        status=KnowledgeSourceBindingStatus.ACTIVE,
-        configuration_version=1,
     )
-    binding_repo = DocumentStoreKnowledgeSourceBindingRepository(document_store)
-    binding_repo.create(tenant_binding)
-    binding_service = KnowledgeSourceBindingService(
-        tenant_id=_TENANT,
-        repository=binding_repo,
-        integration_resolver=resolver,
-        adapter_registry=registry,
-    )
-    indexing = _RecordingIndexingService()
-    sink = WorkspaceConnectedSourceKnowledgeSyncSink(
-        repository=repo,
-        indexing_service=indexing,
-        context=ConnectedSourceSyncSinkContext(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-            source_id=source_id,
-            indexed_source_binding_id=indexed_binding_id,
-            knowledge_source_binding_ref=binding_id,
-            operation_id="op-1",
-        ),
-    )
-    coordinator = VendorKnowledgeSyncCoordinator(
-        tenant_id=_TENANT,
-        owner_id="proof",
-        binding_service=binding_service,
-        facade=facade,
-        lease_repository=DocumentStoreKnowledgeSourceLeaseRepository(document_store),
-        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(document_store),
-        item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
-        sink=sink,
-        lease_ttl_seconds=30,
-    )
-    restart = True
-    while True:
-        result = await coordinator.reconcile_once(
-            binding_id=binding_id,
-            restart=restart,
-        )
-        assert result.status is KnowledgeSyncRunStatus.COMPLETED
-        restart = False
-        if not result.has_more:
-            break
-    assert len(indexing.calls) >= 2
-    for call in indexing.calls:
-        assert _MARKER in call["content"]
+    assert resolved is integration

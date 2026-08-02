@@ -24,7 +24,7 @@ class SlackConversationKindV1(StrEnum):
 class RemoteResourceCandidateV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    opaque_candidate_ref: str = Field(..., min_length=1, max_length=512)
+    opaque_candidate_ref: str = Field(..., min_length=1, max_length=1024)
     resource_type: RemoteResourceTypeV1
     safe_display_label: str = Field(..., min_length=1, max_length=256)
     conversation_kind: SlackConversationKindV1 | None = None
@@ -41,6 +41,7 @@ class RemoteResourceDiscoveryPageV1(BaseModel):
 
 
 class ConnectedSourceDeliveryStatusV1(StrEnum):
+    IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
 
 

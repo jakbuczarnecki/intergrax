@@ -963,11 +963,11 @@ LKW-CONVERSATION-CONTEXT-ARCH-1
 → provider-neutral personal/shared context and audience-isolation contract
 
 THEN (independent implementation tracks):
-LKW-SLACK-CONNECTED-SOURCE-1
+LKW-SLACK-CONNECTED-SOURCE-1 — DONE
 → an approved Slack conversation becomes an Indexed Source of a workspace
   (independent from conversational activation)
 
-LKW-CONVERSATION-CONTEXT-1
+LKW-CONVERSATION-CONTEXT-1 — NEXT
 → provider-neutral durable Conversation Context Bindings,
    workspace audience policy, memory partitioning and evidence guards
   (LKW-wide prerequisite for shared adapters — not a competing planner/executor)

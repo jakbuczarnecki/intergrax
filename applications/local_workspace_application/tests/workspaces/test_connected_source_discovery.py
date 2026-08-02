@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import inspect
+import time
 from datetime import UTC, datetime
 
 import pytest
@@ -26,12 +27,16 @@ from local_workspace_application.workspaces.connected_source_candidate import (
     encode_slack_conversation_candidate_ref,
 )
 from local_workspace_application.workspaces.connected_source_discovery import (
+    ConnectedSourceRevalidationLimits,
     WorkspaceRemoteResourceDiscoveryService,
 )
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDiscoveryError,
     RemoteResourceTypeV1,
     SlackConversationKindV1,
+)
+from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    RemoteResourceOpaqueRefCodec,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
@@ -46,24 +51,38 @@ pytestmark = pytest.mark.unit
 
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
 _TENANT = "tenant-a"
+_TENANT_B = "tenant-b"
 _WORKSPACE = "workspace-1"
 _CONNECTION = "conn.slack"
+_SIGNING_KEY = "connected-source-test-signing-key"
 
 
 class _FakeBackend:
-    async def list_accessible_conversations_page(self, *, cursor, limit):
-        return SlackConversationInventoryPage(
-            items=(
-                SlackConversationSummary(
-                    conversation_id="C01234567",
-                    kind=SlackConversationKind.PUBLIC_CHANNEL,
-                    safe_name="#project-orion",
-                    is_archived=False,
-                    is_private=False,
-                ),
-            ),
-            next_cursor=None,
+    def __init__(self, pages: list[SlackConversationInventoryPage] | None = None) -> None:
+        self._pages = list(
+            pages
+            or [
+                SlackConversationInventoryPage(
+                    items=(
+                        SlackConversationSummary(
+                            conversation_id="C01234567",
+                            kind=SlackConversationKind.PUBLIC_CHANNEL,
+                            safe_name="#project-orion",
+                            is_archived=False,
+                            is_private=False,
+                        ),
+                    ),
+                    next_cursor=None,
+                )
+            ]
         )
+        self.provider_cursors_seen: list[str | None] = []
+
+    async def list_accessible_conversations_page(self, *, cursor, limit):
+        self.provider_cursors_seen.append(cursor)
+        if not self._pages:
+            return SlackConversationInventoryPage(items=(), next_cursor=None)
+        return self._pages.pop(0)
 
     async def read_conversation_history_page(self, **kwargs):
         raise NotImplementedError
@@ -93,7 +112,12 @@ class _FakeWorkspaceLookup:
 
 
 @pytest.fixture
-def discovery_env():
+def codec() -> RemoteResourceOpaqueRefCodec:
+    return RemoteResourceOpaqueRefCodec.from_signing_key_material(_SIGNING_KEY)
+
+
+@pytest.fixture
+def discovery_env(codec: RemoteResourceOpaqueRefCodec):
     store = InMemoryDocumentStore()
     repo = __import__(
         "local_workspace_application.workspaces.repository",
@@ -135,8 +159,9 @@ def discovery_env():
         )
     )
     registry = KnowledgeConnectionRegistry()
+    backend = _FakeBackend()
     integration = SlackConversationChannelIntegration.from_backend(
-        _FakeBackend(),  # type: ignore[arg-type]
+        backend,  # type: ignore[arg-type]
         enabled=True,
     )
     registry.register(
@@ -152,13 +177,14 @@ def discovery_env():
         workspace_lookup=lookup,
         configuration_reader=config,
         connection_registry=registry,
+        opaque_ref_codec=codec,
     )
-    return service, registry, integration
+    return service, registry, integration, backend, codec
 
 
 @pytest.mark.asyncio
 async def test_attached_slack_connection_lists_safe_candidates(discovery_env) -> None:
-    service, _, _ = discovery_env
+    service, _, _, _, _ = discovery_env
     page = await service.list_remote_resources(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -176,7 +202,7 @@ async def test_attached_slack_connection_lists_safe_candidates(discovery_env) ->
 
 @pytest.mark.asyncio
 async def test_unattached_connection_rejected(discovery_env) -> None:
-    service, _, _ = discovery_env
+    service, _, _, _, _ = discovery_env
     with pytest.raises(ConnectedSourceDiscoveryError) as exc:
         await service.list_remote_resources(
             tenant_id=_TENANT,
@@ -189,8 +215,9 @@ async def test_unattached_connection_rejected(discovery_env) -> None:
     assert exc.value.error_code == "connection_not_attached"
 
 
-def test_tampered_candidate_rejected() -> None:
+def test_signed_candidate_mutation_rejected(codec: RemoteResourceOpaqueRefCodec) -> None:
     ref = encode_slack_conversation_candidate_ref(
+        codec=codec,
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         connection_ref=_CONNECTION,
@@ -200,7 +227,95 @@ def test_tampered_candidate_rejected() -> None:
     )
     tampered = ref[:-1] + ("A" if ref[-1] != "A" else "B")
     with pytest.raises(ConnectedSourceDiscoveryError):
-        decode_slack_conversation_candidate_ref(tampered)
+        decode_slack_conversation_candidate_ref(codec, tampered)
+
+
+def test_cross_tenant_candidate_rejected(codec: RemoteResourceOpaqueRefCodec) -> None:
+    ref = encode_slack_conversation_candidate_ref(
+        codec=codec,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        connection_ref=_CONNECTION,
+        conversation_id="C01234567",
+        conversation_kind=SlackConversationKindV1.PUBLIC_CHANNEL,
+        safe_display_label="#project-orion",
+    )
+    payload = decode_slack_conversation_candidate_ref(codec, ref)
+    with pytest.raises(ConnectedSourceDiscoveryError) as exc:
+        __import__(
+            "local_workspace_application.workspaces.connected_source_candidate",
+            fromlist=["validate_candidate_scope"],
+        ).validate_candidate_scope(
+            payload,
+            tenant_id=_TENANT_B,
+            workspace_id=_WORKSPACE,
+            connection_ref=_CONNECTION,
+        )
+    assert exc.value.error_code == "workspace_not_found"
+
+
+@pytest.mark.asyncio
+async def test_signed_pagination_cursor_and_no_raw_provider_cursor(discovery_env, codec) -> None:
+    service, _, _, backend, codec = discovery_env
+    backend._pages = [
+        SlackConversationInventoryPage(
+            items=(
+                SlackConversationSummary(
+                    conversation_id="C01234567",
+                    kind=SlackConversationKind.PUBLIC_CHANNEL,
+                    safe_name="#project-orion",
+                    is_archived=False,
+                    is_private=False,
+                ),
+            ),
+            next_cursor="provider-page-2",
+        ),
+        SlackConversationInventoryPage(items=(), next_cursor=None),
+    ]
+    first = await service.list_remote_resources(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        connection_ref=_CONNECTION,
+        resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+        cursor=None,
+        limit=10,
+    )
+    assert first.next_cursor is not None
+    assert "provider-page-2" not in first.next_cursor
+    await service.list_remote_resources(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        connection_ref=_CONNECTION,
+        resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+        cursor=first.next_cursor,
+        limit=10,
+    )
+    assert backend.provider_cursors_seen == [None, "provider-page-2"]
+
+
+@pytest.mark.asyncio
+async def test_bounded_revalidation_limit_exceeded(discovery_env, codec) -> None:
+    service, _, _, backend, _ = discovery_env
+    looping = SlackConversationInventoryPage(
+        items=(),
+        next_cursor="same",
+    )
+    backend._pages = [looping, looping, looping, looping]
+    service._revalidation_limits = ConnectedSourceRevalidationLimits(
+        max_pages=2,
+        max_total_candidates=10,
+        max_duration_seconds=1.0,
+        page_size=5,
+    )
+    with pytest.raises(ConnectedSourceDiscoveryError) as exc:
+        await service.revalidate_candidate_label(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            connection_ref=_CONNECTION,
+            conversation_id="C999",
+            conversation_kind=SlackConversationKindV1.PUBLIC_CHANNEL,
+        )
+    assert exc.value.error_code == "candidate_revalidation_limit_exceeded"
 
 
 def test_lkw_contains_no_slack_sdk_import() -> None:
@@ -212,7 +327,7 @@ def test_lkw_contains_no_slack_sdk_import() -> None:
 
 
 def test_one_integration_instance_reused(discovery_env) -> None:
-    _, registry, integration = discovery_env
+    _, registry, integration, _, _ = discovery_env
     resolved = registry.resolve(
         tenant_id=_TENANT,
         connection_ref=_CONNECTION,

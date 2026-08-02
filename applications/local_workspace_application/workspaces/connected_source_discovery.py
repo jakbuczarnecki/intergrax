@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -25,6 +27,9 @@ from local_workspace_application.workspaces.connected_source_models import (
     RemoteResourceDiscoveryPageV1,
     RemoteResourceTypeV1,
     SlackConversationKindV1,
+)
+from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    RemoteResourceOpaqueRefCodec,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachmentStatusV1,
@@ -59,6 +64,14 @@ class WorkspaceKnowledgeWorkspaceLookupPort(Protocol):
         ...
 
 
+@dataclass(frozen=True, slots=True)
+class ConnectedSourceRevalidationLimits:
+    max_pages: int = 8
+    max_total_candidates: int = 800
+    max_duration_seconds: float = 5.0
+    page_size: int = 100
+
+
 def _map_kind(kind: SlackConversationKind) -> SlackConversationKindV1:
     return SlackConversationKindV1(kind.value)
 
@@ -70,10 +83,14 @@ class WorkspaceRemoteResourceDiscoveryService:
         workspace_lookup: WorkspaceKnowledgeWorkspaceLookupPort,
         configuration_reader: WorkspaceKnowledgeConfigurationService,
         connection_registry: KnowledgeConnectionRegistry,
+        opaque_ref_codec: RemoteResourceOpaqueRefCodec,
+        revalidation_limits: ConnectedSourceRevalidationLimits | None = None,
     ) -> None:
         self._workspace_lookup = workspace_lookup
         self._configuration_reader = configuration_reader
         self._connection_registry = connection_registry
+        self._codec = opaque_ref_codec
+        self._revalidation_limits = revalidation_limits or ConnectedSourceRevalidationLimits()
 
     async def list_remote_resources(
         self,
@@ -101,8 +118,18 @@ class WorkspaceRemoteResourceDiscoveryService:
             connection_ref=connection_ref,
         )
 
+        provider_cursor: str | None = None
+        if cursor is not None:
+            provider_cursor = self._codec.decode_pagination_cursor(
+                opaque_cursor=cursor,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=resource_type,
+            )
+
         page = await integration.list_accessible_conversations_page(
-            cursor=cursor,
+            cursor=provider_cursor,
             limit=limit,
         )
 
@@ -110,6 +137,7 @@ class WorkspaceRemoteResourceDiscoveryService:
         for summary in page.items:
             kind = _map_kind(summary.kind)
             candidate_ref = encode_slack_conversation_candidate_ref(
+                codec=self._codec,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
@@ -132,7 +160,13 @@ class WorkspaceRemoteResourceDiscoveryService:
 
         return RemoteResourceDiscoveryPageV1(
             items=tuple(items),
-            next_cursor=page.next_cursor,
+            next_cursor=self._codec.encode_pagination_cursor(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=resource_type,
+                provider_cursor=page.next_cursor,
+            ),
         )
 
     def _require_attached_connection(
@@ -176,21 +210,38 @@ class WorkspaceRemoteResourceDiscoveryService:
             workspace_id=workspace_id,
             connection_ref=connection_ref,
         )
-        cursor: str | None = None
-        while True:
+        limits = self._revalidation_limits
+        provider_cursor: str | None = None
+        seen_cursors: set[str | None] = set()
+        total_candidates = 0
+        started = time.monotonic()
+        for _ in range(limits.max_pages):
+            if time.monotonic() - started > limits.max_duration_seconds:
+                raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
+            if provider_cursor in seen_cursors:
+                raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
+            seen_cursors.add(provider_cursor)
             page = await integration.list_accessible_conversations_page(
-                cursor=cursor,
-                limit=100,
+                cursor=provider_cursor,
+                limit=limits.page_size,
             )
+            total_candidates += len(page.items)
+            if total_candidates > limits.max_total_candidates:
+                raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
             for summary in page.items:
                 if (
                     summary.conversation_id == conversation_id
                     and summary.kind.value == conversation_kind.value
                 ):
                     return summary.safe_name
-            if page.next_cursor is None:
+            next_cursor = page.next_cursor
+            if next_cursor is None:
                 break
-            cursor = page.next_cursor
+            if next_cursor == provider_cursor or not str(next_cursor).strip():
+                raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
+            provider_cursor = next_cursor
+        else:
+            raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
         raise ConnectedSourceDiscoveryError("candidate_inaccessible")
 
     def _resolve_slack_integration(

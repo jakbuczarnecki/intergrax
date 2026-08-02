@@ -12,6 +12,9 @@ from local_workspace_application.workspaces.connected_source_candidate import (
     decode_slack_conversation_candidate_ref,
     validate_candidate_scope,
 )
+from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    RemoteResourceOpaqueRefCodec,
+)
 from local_workspace_application.workspaces.connected_source_ids import connected_source_id
 from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
@@ -66,12 +69,7 @@ class CreateConnectedIndexedSourceRequest:
     idempotency_key_hash: str
     root_oldest: str
     root_latest: str
-    sync_mode: IndexedSourceSyncModeV1 = IndexedSourceSyncModeV1.FULL
-    audience_eligibility: IndexedSourceAudienceEligibilityV1 = (
-        IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY
-    )
     start_sync: bool = False
-    allow_concurrent_sync: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,12 +90,14 @@ class WorkspaceKnowledgeAccessService:
         mutation_engine: WorkspaceKnowledgeConfigurationMutationEngine,
         workspace_service: ManagedWorkspaceService,
         tenant_binding_port: TenantKnowledgeSourceBindingPort,
+        opaque_ref_codec: RemoteResourceOpaqueRefCodec,
     ) -> None:
         self._discovery = discovery_service
         self._tenant_bindings = tenant_binding_service
         self._mutation_engine = mutation_engine
         self._workspace_service = workspace_service
         self._tenant_binding_port = tenant_binding_port
+        self._codec = opaque_ref_codec
 
     async def list_slack_conversations(
         self,
@@ -121,7 +121,10 @@ class WorkspaceKnowledgeAccessService:
         self,
         request: CreateConnectedIndexedSourceRequest,
     ) -> CreateConnectedIndexedSourceResult:
-        payload = decode_slack_conversation_candidate_ref(request.opaque_candidate_ref)
+        payload = decode_slack_conversation_candidate_ref(
+            self._codec,
+            request.opaque_candidate_ref,
+        )
         validate_candidate_scope(
             payload,
             tenant_id=request.tenant_id,
@@ -151,10 +154,13 @@ class WorkspaceKnowledgeAccessService:
         except ConnectedSourceBindingError as exc:
             raise ConnectedSourceDiscoveryError(exc.error_code) from exc
 
+        sync_mode = IndexedSourceSyncModeV1.FULL
+        audience_eligibility = IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY
+
         intent = CreateIndexedSourceMutationIntent(
             knowledge_source_binding_ref=tenant_binding.binding_id,
-            sync_mode=request.sync_mode,
-            audience_eligibility=request.audience_eligibility,
+            sync_mode=sync_mode,
+            audience_eligibility=audience_eligibility,
             cached_safe_display_label=safe_label,
         )
         normalized_hash = normalize_request_hash(
@@ -162,8 +168,8 @@ class WorkspaceKnowledgeAccessService:
             tenant_id=request.tenant_id,
             workspace_id=request.workspace_id,
             knowledge_source_binding_ref=tenant_binding.binding_id,
-            sync_mode=request.sync_mode,
-            audience_eligibility=request.audience_eligibility,
+            sync_mode=sync_mode,
+            audience_eligibility=audience_eligibility,
         )
         semantic_hash = semantic_identity_hash(
             operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
@@ -208,7 +214,6 @@ class WorkspaceKnowledgeAccessService:
                 tenant_id=request.tenant_id,
                 workspace_id=request.workspace_id,
                 source_id=source_id,
-                allow_concurrent=request.allow_concurrent_sync,
             )
 
         return CreateConnectedIndexedSourceResult(

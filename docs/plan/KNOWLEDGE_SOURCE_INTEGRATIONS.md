@@ -979,15 +979,15 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-**Next:** `LKW-CONVERSATION-CONTEXT-ARCH-1` architecture review, then `LKW-SLACK-CONNECTED-SOURCE-1` (LKW application — depends on completed platform foundation and accepted conversation context architecture)
+**Next:** `LKW-CONVERSATION-CONTEXT-1` (LKW application — next Slack-vertical task after completed connected-source vertical)
 
 **Planned execution order:**
 
 ```text
 SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
 LKW-CONVERSATION-CONTEXT-ARCH-1 — READY_FOR_REVIEW
-LKW-SLACK-CONNECTED-SOURCE-1
-LKW-CONVERSATION-CONTEXT-1
+LKW-SLACK-CONNECTED-SOURCE-1 — DONE
+LKW-CONVERSATION-CONTEXT-1 — NEXT
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
@@ -1249,7 +1249,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `PLANNED` (LKW application — depends on `SLACK-KNOWLEDGE-FOUNDATION-1` and accepted `LKW-CONVERSATION-CONTEXT-ARCH-1`)
+**Status:** `DONE` (LKW application — HTTP discovery/create/sync, HMAC-signed opaque refs, crash-safe delivery, authoritative sink validation, Search/Ask proof)
 
 Application-only use of the completed platform foundation:
 

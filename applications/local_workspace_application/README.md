@@ -276,7 +276,7 @@ All four platform/application keys plus `lkw_proof_summary.v1` are present in a 
 
 ## Running the LKW Slack Ask companion
 
-Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
+Temporary slice **LKW-SLACK-WORKFLOW-1A**: approved Slack **DM-only** → temporary in-memory personal workspace selection → Ask HTTP → threaded answer. **Slack connected source** (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**): HTTP discovery/create/sync for approved Slack conversations as `PERSONAL_ONLY` indexed sources with Search/Ask proof. Durable `PERSONAL_SELECTION`, observed-audience validation, shared-channel Ask, mention activation and Conversation Context Bindings are **not** implemented — see [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](docs/CONVERSATION_CONTEXT_ARCHITECTURE.md).
 
 ### Configuration architecture
 

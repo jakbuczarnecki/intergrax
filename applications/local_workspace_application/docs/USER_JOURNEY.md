@@ -73,6 +73,7 @@ Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat
 | Upload files | **IMPLEMENTED** (HTTP; Slack attachments via adapter) |
 | Add Web URL | **ACCEPTED** (`1B-5-2`, including C1 and C2) |
 | Configure Connections (MS365, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`) |
+| Attach Slack conversation as indexed source | **IMPLEMENTED** (`LKW-SLACK-CONNECTED-SOURCE-1` — HTTP discovery/create/sync, PERSONAL_ONLY) |
 | Choose indexed vs live access per resource | **PLANNED** |
 | Ask through Slack with Hybrid Ask | **PARTIAL** — indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |
 | Inspect citations and live freshness | **PARTIAL** — indexed citations **IMPLEMENTED**; live freshness **PLANNED** |

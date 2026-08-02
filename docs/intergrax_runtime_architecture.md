@@ -32,6 +32,7 @@ Current feature pairs:
 | Feature | Architecture | Plan |
 |---------|--------------|------|
 | `TOKEN_OPTIMIZATION` | [`features/architecture/TOKEN_OPTIMIZATION.md`](features/architecture/TOKEN_OPTIMIZATION.md) | [`features/plan/TOKEN_OPTIMIZATION.md`](features/plan/TOKEN_OPTIMIZATION.md) |
+| `LANGCHAIN_INDEPENDENCE` | [`features/architecture/LANGCHAIN_INDEPENDENCE.md`](features/architecture/LANGCHAIN_INDEPENDENCE.md) | [`features/plan/LANGCHAIN_INDEPENDENCE.md`](features/plan/LANGCHAIN_INDEPENDENCE.md) |
 
 ---
 
@@ -237,7 +238,7 @@ Canonical plan: [plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md](plan/KNOWLEDGE_SOURCE_IN
 | **SLACK-LIVE-CAPABILITY-1** | Bounded Slack live reads via same integration | **PLANNED** |
 | **MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR** | Microsoft Graph Calendar Vendor Knowledge adapter | **PLANNED** (after complete Slack user vertical) |
 
-LKW application tasks (LKW-CONVERSATION-CONTEXT-ARCH-1, LKW-SLACK-CONNECTED-SOURCE-1, LKW-CONVERSATION-CONTEXT-1, LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
+LKW application tasks (`LKW-SLACK-CONNECTED-SOURCE-1` **DONE**; `LKW-CONVERSATION-CONTEXT-1` **NEXT**; LKW-CONVERSATION-CONTEXT-ARCH-1, LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1, LKW-SLACK-KNOWLEDGE-PROOF-1; final proof joins LKW-HYBRID-ASK-1) are tracked in the [LKW Implementation Plan](../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) and [Conversation Context Architecture](../applications/local_workspace_application/docs/CONVERSATION_CONTEXT_ARCHITECTURE.md), not as platform adapter tasks.
 
 
 Former 1B-6 / 1C–1E slices are **mapped into** the blocks above; see Implementation Plan §3.4.

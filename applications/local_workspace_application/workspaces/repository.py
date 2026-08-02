@@ -328,6 +328,21 @@ class ManagedWorkspaceRepository:
         )
         return self._put_if_absent(receipt, partition_key=partition_key, row_key=row_key)
 
+    def complete_connected_source_delivery_receipt_if_in_progress(
+        self,
+        *,
+        expected: ConnectedSourceDeliveryReceipt,
+        replacement: ConnectedSourceDeliveryReceipt,
+    ) -> bool:
+        partition_key = _partition(expected.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT)
+        row_key = f"{expected.workspace_id}:{expected.source_id}:{expected.delivery_id}"
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=partition_key,
+            row_key=row_key,
+        )
+
     def get_connected_source_delivery_receipt(
         self,
         *,
@@ -364,6 +379,20 @@ class ManagedWorkspaceRepository:
             operation,
         )
         return operation
+
+    def claim_operation_if_queued(
+        self,
+        *,
+        expected: WorkspaceOperation,
+        replacement: WorkspaceOperation,
+    ) -> bool:
+        partition_key = _partition(expected.tenant_id, _ENTITY_OPERATION)
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=partition_key,
+            row_key=expected.operation_id,
+        )
 
     def get_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation | None:
         return self._get(

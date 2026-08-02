@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
@@ -44,13 +45,17 @@ class SlackConversationTenantBindingRequest:
 
 
 class WorkspaceConnectedSourceTenantBindingService:
-    def __init__(self, binding_service: KnowledgeSourceBindingService) -> None:
-        self._binding_service = binding_service
+    def __init__(
+        self,
+        binding_service_factory: Callable[[str], KnowledgeSourceBindingService],
+    ) -> None:
+        self._binding_service_factory = binding_service_factory
 
     def create_or_get_equivalent_for_slack_conversation(
         self,
         request: SlackConversationTenantBindingRequest,
     ) -> KnowledgeSourceBinding:
+        binding_service = self._binding_service_factory(request.tenant_id)
         encoded_scope = encode_slack_conversation_scope_id(
             conversation_id=request.conversation_id,
             conversation_kind=SlackConversationKind(request.conversation_kind.value),
@@ -83,6 +88,6 @@ class WorkspaceConnectedSourceTenantBindingService:
             configuration_version=1,
         )
         try:
-            return self._binding_service.create_or_get_equivalent(binding)
+            return binding_service.create_or_get_equivalent(binding)
         except VendorKnowledgeError as exc:
             raise ConnectedSourceBindingError("knowledge_source_binding_unavailable") from exc
