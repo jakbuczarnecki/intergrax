@@ -24,11 +24,10 @@ from intergrax.context.formatter import DefaultContextFormatter, merge_fragment_
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
+from intergrax.llm.messages import compute_model_facing_messages_hash
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.observability.context_counters import get_context_counters
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
-
-logger = logging.getLogger("intergrax.context.engine")
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
@@ -38,13 +37,14 @@ from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
     NexusUCLRuntimeDependencies,
-    compute_model_facing_messages_hash,
     resolve_ucl_context_plan,
 )
 
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
     from intergrax.runtime.nexus.config import RuntimeConfig
+
+logger = logging.getLogger("intergrax.context.engine")
 
 
 class DefaultNexusContextEngine:

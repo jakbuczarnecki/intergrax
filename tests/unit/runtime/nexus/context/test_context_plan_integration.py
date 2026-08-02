@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,7 +17,12 @@ from intergrax.context.contracts import (
     ContextDecisionSnapshot,
     ContextProviderContext,
 )
-from intergrax.context.session_history import SESSION_HISTORY_SNAPSHOT_HANDLE, build_session_history_snapshot
+from intergrax.context.registry import ContextPluginRegistry
+from intergrax.context.session_history import (
+    HandleSessionHistoryProvider,
+    SESSION_HISTORY_SNAPSHOT_HANDLE,
+    build_session_history_snapshot,
+)
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -39,7 +45,7 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import Messa
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 
 
 class _SmallWindowAdapter(LLMAdapter):
@@ -244,7 +250,11 @@ def test_planning_modules_do_not_import_repository() -> None:
     assert not matches
 
 
-def _ucl_runtime(model_calls: list[int]) -> NexusUCLRuntimeDependencies:
+def _ucl_runtime(
+    model_calls: list[int],
+    *,
+    repository: InMemoryOptimizationArtifactRepository | None = None,
+) -> NexusUCLRuntimeDependencies:
     def _invoke_model(_call: object) -> LLMAdapterResponse:
         model_calls[0] += 1
         return LLMAdapterResponse(content="engine integration summary")
@@ -255,7 +265,7 @@ def _ucl_runtime(model_calls: list[int]) -> NexusUCLRuntimeDependencies:
         count_tokens=lambda text: max(1, len(text) // 4),
     )
     return NexusUCLRuntimeDependencies(
-        repository=InMemoryOptimizationArtifactRepository(),
+        repository=repository or InMemoryOptimizationArtifactRepository(),
         message_sequence_executor=executor,
         strategy_versions={"message_sequence_summarization.v1": "1.0.0"},
         artifact_id_factory=lambda: "artifact-engine-1",
@@ -281,7 +291,9 @@ def _optimization_policy() -> ContextOptimizationPolicy:
 async def test_engine_ucl_runtime_create_then_reuse() -> None:
     adapter = _SmallWindowAdapter()
     config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    engine = DefaultNexusContextEngine()
+    registry = ContextPluginRegistry()
+    registry.add_provider(HandleSessionHistoryProvider())
+    engine = DefaultNexusContextEngine(registry=registry)
     history = [ChatMessage(role="user", content="history " * 80, entry_id="m1")]
     snapshot = build_session_history_snapshot(
         tenant_id="tenant",
@@ -301,6 +313,8 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
         assembly_options=TaskContextAssemblyOptions(),
     )
     model_calls = [0]
+    repository = InMemoryOptimizationArtifactRepository()
+    runtime = _ucl_runtime(model_calls, repository=repository)
     provider_ctx = ContextProviderContext(
         engine_id="default",
         handles={
@@ -308,18 +322,73 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],
             SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
             "context_optimization_policy": _optimization_policy(),
-            NEXUS_UCL_RUNTIME_HANDLE: _ucl_runtime(model_calls),
+            NEXUS_UCL_RUNTIME_HANDLE: runtime,
         },
     )
     first = await engine.assemble(request, provider_ctx=provider_ctx)
     second = await engine.assemble(
-        ContextAssemblyRequest(**{**request.__dict__, "run_id": "r2"}),
+        replace(request, run_id="r2"),
         provider_ctx=provider_ctx,
     )
+    assert first.context_plan is not None
+    assert first.context_plan.optimization_required
     assert model_calls[0] == 1
     assert any("engine integration summary" in (message.content or "") for message in first.messages)
     assert any("engine integration summary" in (message.content or "") for message in second.messages)
     assert not any("history " * 10 in (message.content or "") for message in second.messages)
+
+
+@pytest.mark.asyncio
+async def test_engine_detects_structural_tool_linkage_mutation() -> None:
+    adapter = _SmallWindowAdapter()
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    engine = DefaultNexusContextEngine()
+    planned_message = ChatMessage(
+        role="assistant",
+        content="call tool",
+        entry_id="assistant-1",
+        tool_calls=[{"id": "call-1", "type": "function", "function": {"name": "lookup", "arguments": "{}"}}],
+    )
+    mutated_message = ChatMessage(
+        role="assistant",
+        content="call tool",
+        entry_id="assistant-1",
+        tool_calls=[{"id": "call-2", "type": "function", "function": {"name": "lookup", "arguments": "{}"}}],
+    )
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            "runtime_config": config,
+            "messages": [planned_message],
+        },
+    )
+    degraded = type(
+        "CompileResult",
+        (),
+        {
+            "messages": [mutated_message],
+            "total_tokens": 1,
+            "budget_tokens": 100,
+            "degradation_steps": (),
+        },
+    )()
+    with patch(
+        "intergrax.runtime.nexus.context.context_engine.compile_chat_messages",
+        return_value=degraded,
+    ):
+        with pytest.raises(ValueError, match=NexusUCLExecutionReason.FINAL_COMPILE_MUTATED_PLAN.value):
+            await engine.assemble(request, provider_ctx=provider_ctx)
 
 
 @pytest.mark.asyncio

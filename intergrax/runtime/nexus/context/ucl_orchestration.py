@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import logging
 import math
@@ -31,8 +30,10 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactLookupKey,
     ArtifactValidationStatus,
     ContextOptimizationDecision,
+    ContextOptimizationMode,
     ContextOptimizationPolicy,
     ContextOptimizationReasonCode,
+    OptimizationArtifactType,
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationExecutionGuard,
@@ -85,6 +86,7 @@ class NexusUCLExecutionReason(StrEnum):
     PRIMARY_SCOPE_REQUIRED = "ucl_primary_scope_required"
     RUNTIME_REQUIRED = "ucl_runtime_required"
     POLICY_REQUIRED = "ucl_policy_required"
+    POLICY_BLOCKED = "ucl_policy_blocked"
     STRATEGY_VERSION_UNAVAILABLE = "ucl_strategy_version_unavailable"
     PLAN_MATERIALIZATION_FAILED = "ucl_plan_materialization_failed"
     NON_CONTIGUOUS_ARTIFACT_TARGET = "ucl_non_contiguous_artifact_target"
@@ -139,6 +141,16 @@ class NexusUCLRuntimeDependencies:
         if not math.isfinite(timeout_value) or timeout_value < 0 or timeout_value > 5.0:
             raise ValueError("wait_timeout_seconds must be finite and in [0, 5.0]")
         object.__setattr__(self, "wait_timeout_seconds", timeout_value)
+
+
+@dataclass(frozen=True, slots=True)
+class _PreparedArtifactMaterialization:
+    filtered_messages: tuple[ChatMessage, ...]
+    filtered_group_ids: tuple[str, ...]
+    target_group_ids: tuple[str, ...]
+    first_target_index: int
+    fragments_included: tuple[ContextFragment, ...]
+    fragments_excluded: tuple[tuple[ContextFragment, str], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,20 +243,6 @@ class NexusUCLResolution:
                 raise ValueError("CREATE_ARTIFACT requires llm_transform_invoked is True")
 
 
-def compute_model_facing_messages_hash(messages: Sequence[ChatMessage]) -> str:
-    """Stable hash of model-facing messages for post-compile integrity checks."""
-    parts: list[str] = []
-    for message in messages:
-        payload = {
-            "content": message.content or "",
-            "entry_id": message.entry_id,
-            "role": message.role,
-        }
-        parts.append(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
-    canonical = "\n".join(parts)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
 async def resolve_ucl_context_plan(
     *,
     request: ContextAssemblyRequest,
@@ -303,10 +301,22 @@ async def resolve_ucl_context_plan(
     if lookup_inputs.context_scope_id != session_history.context_scope_id:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 
+    _enforce_ucl_policy_gate(optimization_policy, requirement)
+
     strategy_id, strategy_version = _select_strategy(
         requirement.allowed_strategy_ids,
         optimization_policy.allowed_strategy_ids,
         runtime.strategy_versions,
+    )
+
+    prepared_materialization = _prepare_artifact_materialization(
+        context_plan=context_plan,
+        requirement=requirement,
+        messages_for_compile=messages_for_compile,
+        fragment_messages=fragment_messages,
+        ranked_fragments=ranked_fragments,
+        message_group_ids=message_group_ids,
+        excluded_group_ids=excluded_group_ids,
     )
 
     lookup_key_kwargs = artifact_lookup_key_kwargs_from_context_inputs(lookup_inputs)
@@ -326,13 +336,7 @@ async def resolve_ucl_context_plan(
         )
         artifact_reference = build_optimization_artifact_reference(stored_artifact)
         resolution = _materialize_artifact_messages(
-            messages_for_compile=messages_for_compile,
-            fragment_messages=fragment_messages,
-            ranked_fragments=ranked_fragments,
-            message_group_ids=message_group_ids,
-            context_plan=context_plan,
-            requirement=requirement,
-            excluded_group_ids=excluded_group_ids,
+            prepared=prepared_materialization,
             decision=ContextOptimizationDecision.REUSE_ARTIFACT,
             lookup_hash=lookup_hash,
             summary=summary,
@@ -373,13 +377,7 @@ async def resolve_ucl_context_plan(
         )
         artifact_reference = build_optimization_artifact_reference(stored_artifact)
         resolution = _materialize_artifact_messages(
-            messages_for_compile=messages_for_compile,
-            fragment_messages=fragment_messages,
-            ranked_fragments=ranked_fragments,
-            message_group_ids=message_group_ids,
-            context_plan=context_plan,
-            requirement=requirement,
-            excluded_group_ids=excluded_group_ids,
+            prepared=prepared_materialization,
             decision=ContextOptimizationDecision.REUSE_ARTIFACT,
             lookup_hash=lookup_hash,
             summary=summary,
@@ -419,13 +417,7 @@ async def resolve_ucl_context_plan(
         )
         artifact_reference = build_optimization_artifact_reference(stored_artifact)
         resolution = _materialize_artifact_messages(
-            messages_for_compile=messages_for_compile,
-            fragment_messages=fragment_messages,
-            ranked_fragments=ranked_fragments,
-            message_group_ids=message_group_ids,
-            context_plan=context_plan,
-            requirement=requirement,
-            excluded_group_ids=excluded_group_ids,
+            prepared=prepared_materialization,
             decision=ContextOptimizationDecision.REUSE_ARTIFACT,
             lookup_hash=lookup_hash,
             summary=summary,
@@ -478,8 +470,6 @@ async def resolve_ucl_context_plan(
     )
 
     artifact_reference: OptimizationArtifactReference | None = None
-    summary: str
-    artifact_content_hash: str
     try:
         execution_result = await asyncio.to_thread(
             runtime.message_sequence_executor.execute,
@@ -490,9 +480,7 @@ async def resolve_ucl_context_plan(
             execution_result.artifact_content_hash,
             lookup_key=lookup_key,
         )
-        artifact_id = runtime.artifact_id_factory()
-        if not isinstance(artifact_id, str) or not artifact_id:
-            raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_CREATION_FAILED)
+        artifact_id = _allocate_artifact_id(runtime.artifact_id_factory)
 
         metadata = ReusableOptimizationArtifact(
             artifact_id=artifact_id,
@@ -518,6 +506,16 @@ async def resolve_ucl_context_plan(
             encoding=execution_result.encoding,
         )
 
+        resolution = _materialize_artifact_messages(
+            prepared=prepared_materialization,
+            decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+            lookup_hash=lookup_hash,
+            summary=summary,
+            artifact_content_hash=artifact_content_hash,
+            artifact_id=artifact_id,
+            count_tokens=count_tokens,
+        )
+
         persistence = optimization_policy.ephemeral_artifact_persistence
         if persistence in _PERSIST_POLICIES:
             artifact_reference = await asyncio.to_thread(
@@ -526,10 +524,14 @@ async def resolve_ucl_context_plan(
                 artifact=stored,
             )
         else:
-            await asyncio.to_thread(
+            released = await asyncio.to_thread(
                 repository.release_creation_reservation,
                 reservation=coordination.reservation,
             )
+            if released is not True:
+                raise NexusUCLExecutionError(
+                    ContextOptimizationReasonCode.ARTIFACT_CREATION_RESERVATION_CONFLICT.value
+                )
             artifact_reference = None
     except NexusUCLExecutionError:
         await _release_reservation_on_failure(repository, coordination.reservation)
@@ -538,21 +540,6 @@ async def resolve_ucl_context_plan(
         await _release_reservation_on_failure(repository, coordination.reservation)
         raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_CREATION_FAILED) from None
 
-    resolution = _materialize_artifact_messages(
-        messages_for_compile=messages_for_compile,
-        fragment_messages=fragment_messages,
-        ranked_fragments=ranked_fragments,
-        message_group_ids=message_group_ids,
-        context_plan=context_plan,
-        requirement=requirement,
-        excluded_group_ids=excluded_group_ids,
-        decision=ContextOptimizationDecision.CREATE_ARTIFACT,
-        lookup_hash=lookup_hash,
-        summary=summary,
-        artifact_content_hash=artifact_content_hash,
-        artifact_id=artifact_reference.artifact_id if artifact_reference is not None else None,
-        count_tokens=count_tokens,
-    )
     _log_ucl_resolution(
         decision=ContextOptimizationDecision.CREATE_ARTIFACT,
         lookup_hash=lookup_hash,
@@ -764,26 +751,67 @@ def _build_executor_source_inputs(
     return tuple(source_messages), tuple(proofs)
 
 
-def _materialize_artifact_messages(
+def _enforce_ucl_policy_gate(
+    optimization_policy: ContextOptimizationPolicy,
+    requirement: Any,
+) -> None:
+    if not optimization_policy.enabled:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if optimization_policy.mode is not ContextOptimizationMode.EPHEMERAL_ASSEMBLY:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if not optimization_policy.allow_artifact_reuse:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if not optimization_policy.allow_lossy:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if not optimization_policy.allow_llm_summarization:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+
+    lookup_inputs = requirement.lookup_inputs
+    if lookup_inputs.artifact_type is not OptimizationArtifactType.MESSAGE_SEQUENCE:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if OptimizationArtifactType.MESSAGE_SEQUENCE not in optimization_policy.allowed_artifact_types:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+    if lookup_inputs.lossiness_profile != "lossy":
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.POLICY_BLOCKED)
+
+
+def _allocate_artifact_id(factory: Callable[[], str]) -> str:
+    try:
+        value = factory()
+    except NexusUCLExecutionError:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_CREATION_FAILED) from None
+    except Exception:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_CREATION_FAILED) from None
+    if not isinstance(value, str) or not value.strip():
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_CREATION_FAILED)
+    return value
+
+
+def _prepare_artifact_materialization(
     *,
+    context_plan: ContextPlan,
+    requirement: Any,
     messages_for_compile: Sequence[ChatMessage],
     fragment_messages: Sequence[ChatMessage],
     ranked_fragments: Sequence[ContextFragment],
     message_group_ids: tuple[str, ...],
-    context_plan: ContextPlan,
-    requirement: Any,
     excluded_group_ids: set[str],
-    decision: ContextOptimizationDecision,
-    lookup_hash: str,
-    summary: str,
-    artifact_content_hash: str,
-    artifact_id: str | None,
-    count_tokens: Callable[[str], int],
-) -> _ArtifactMaterialization:
-    target_group_ids = set(requirement.source_group_ids)
-    selected_group_ids = set(context_plan.selected_group_ids)
-    if not target_group_ids.issubset(selected_group_ids):
+) -> _PreparedArtifactMaterialization:
+    target_group_ids_list = list(requirement.source_group_ids)
+    if not target_group_ids_list:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+
+    groups_by_id = {group.group_id: group for group in context_plan.source_groups}
+    selected_group_ids = set(context_plan.selected_group_ids)
+    target_group_ids_set = set(target_group_ids_list)
+
+    for group_id in target_group_ids_list:
+        if group_id not in groups_by_id:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+        if group_id not in selected_group_ids:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+        if group_id in excluded_group_ids:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 
     filtered_messages: list[ChatMessage] = []
     filtered_group_ids: list[str] = []
@@ -793,17 +821,63 @@ def _materialize_artifact_messages(
         filtered_messages.append(message)
         filtered_group_ids.append(group_id)
 
+    for group_id in filtered_group_ids:
+        if group_id in excluded_group_ids:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+
+    for group_id in target_group_ids_list:
+        if group_id not in filtered_group_ids:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+
     target_indices = [
-        index for index, group_id in enumerate(filtered_group_ids) if group_id in target_group_ids
+        index
+        for index, group_id in enumerate(filtered_group_ids)
+        if group_id in target_group_ids_set
     ]
     if not target_indices:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
     first_target = min(target_indices)
     last_target = max(target_indices)
     for index in range(first_target, last_target + 1):
-        if filtered_group_ids[index] not in target_group_ids:
+        if filtered_group_ids[index] not in target_group_ids_set:
             raise NexusUCLExecutionError(NexusUCLExecutionReason.NON_CONTIGUOUS_ARTIFACT_TARGET)
 
+    fragment_group_map = _fragment_group_ids_by_plan(
+        fragment_messages=fragment_messages,
+        ranked_fragments=ranked_fragments,
+        context_plan=context_plan,
+    )
+    fragments_included: list[ContextFragment] = []
+    fragments_excluded: list[tuple[ContextFragment, str]] = []
+    for fragment, group_id in zip(ranked_fragments, fragment_group_map, strict=True):
+        if group_id in excluded_group_ids:
+            fragments_excluded.append((fragment, "context_plan_excluded"))
+        elif group_id in target_group_ids_set:
+            fragments_excluded.append((fragment, "replaced_by_optimization_artifact"))
+        else:
+            fragments_included.append(fragment)
+
+    return _PreparedArtifactMaterialization(
+        filtered_messages=tuple(filtered_messages),
+        filtered_group_ids=tuple(filtered_group_ids),
+        target_group_ids=tuple(target_group_ids_list),
+        first_target_index=first_target,
+        fragments_included=tuple(fragments_included),
+        fragments_excluded=tuple(fragments_excluded),
+    )
+
+
+def _materialize_artifact_messages(
+    *,
+    prepared: _PreparedArtifactMaterialization,
+    decision: ContextOptimizationDecision,
+    lookup_hash: str,
+    summary: str,
+    artifact_content_hash: str,
+    artifact_id: str | None,
+    count_tokens: Callable[[str], int],
+) -> _ArtifactMaterialization:
+    target_group_ids_set = set(prepared.target_group_ids)
     replacement_metadata: dict[str, Any] = {
         "artifact_lookup_key_hash": lookup_hash,
         "artifact_content_hash": artifact_content_hash,
@@ -821,31 +895,16 @@ def _materialize_artifact_messages(
 
     final_messages: list[ChatMessage] = []
     inserted = False
-    for index, message in enumerate(filtered_messages):
-        group_id = filtered_group_ids[index]
-        if group_id in target_group_ids:
-            if not inserted and index == first_target:
+    for index, message in enumerate(prepared.filtered_messages):
+        group_id = prepared.filtered_group_ids[index]
+        if group_id in target_group_ids_set:
+            if not inserted and index == prepared.first_target_index:
                 final_messages.append(replacement_message)
                 inserted = True
             continue
         final_messages.append(message)
     if not inserted:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
-
-    fragments_included: list[ContextFragment] = []
-    fragments_excluded: list[tuple[ContextFragment, str]] = []
-    fragment_group_map = _fragment_group_ids_by_plan(
-        fragment_messages=fragment_messages,
-        ranked_fragments=ranked_fragments,
-        context_plan=context_plan,
-    )
-    for fragment, group_id in zip(ranked_fragments, fragment_group_map, strict=True):
-        if group_id in excluded_group_ids:
-            fragments_excluded.append((fragment, "context_plan_excluded"))
-        elif group_id in target_group_ids:
-            fragments_excluded.append((fragment, "replaced_by_optimization_artifact"))
-        else:
-            fragments_included.append(fragment)
 
     synthetic_metadata: dict[str, Any] = {
         "artifact_lookup_key_hash": lookup_hash,
@@ -864,13 +923,13 @@ def _materialize_artifact_messages(
         mandatory=False,
         metadata=synthetic_metadata,
     )
-    fragments_included.append(synthetic_fragment)
+    fragments_included = (*prepared.fragments_included, synthetic_fragment)
 
     return _ArtifactMaterialization(
         decision=decision,
         messages=tuple(final_messages),
-        fragments_included=tuple(fragments_included),
-        fragments_excluded=tuple(fragments_excluded),
+        fragments_included=fragments_included,
+        fragments_excluded=prepared.fragments_excluded,
     )
 
 
