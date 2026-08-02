@@ -487,12 +487,47 @@ class ContextPlan:
         elif self.artifact_requirement is not None:
             raise ValueError("artifact_requirement must be None when optimization_required is false")
 
+        group_token_total = sum(group.token_estimate for group in groups)  # type: ignore[union-attr]
+        if self.estimated_total_tokens != group_token_total:
+            raise ValueError("estimated_total_tokens must equal source group token total")
+
+        for allocation in allocations:
+            allocation_selected = allocation.selected_group_ids  # type: ignore[union-attr]
+            allocation_total = sum(
+                groups_by_id[group_id].token_estimate for group_id in allocation_selected
+            )
+            if allocation.allocated_tokens != allocation_total:  # type: ignore[union-attr]
+                raise ValueError("allocation allocated_tokens mismatch")
+
         if self.artifact_requirement is not None:
             if not isinstance(self.artifact_requirement, ContextArtifactRequirement):
                 raise ValueError("artifact_requirement must be ContextArtifactRequirement")
             compressible = set(self.compressible_group_ids)
             protected = set(self.protected_group_ids)
             artifact_sources = set(self.artifact_requirement.source_group_ids)
+            lookup = self.artifact_requirement.lookup_inputs
+            if lookup.artifact_type is OptimizationArtifactType.MESSAGE_SEQUENCE:
+                preservation_flags = self.artifact_requirement.minimum_preservation
+                if not preservation_flags.preserve_message_order:
+                    raise ValueError("MESSAGE_SEQUENCE requires preserve_message_order")
+                if not preservation_flags.preserve_roles:
+                    raise ValueError("MESSAGE_SEQUENCE requires preserve_roles")
+                if not preservation_flags.preserve_message_ids:
+                    raise ValueError("MESSAGE_SEQUENCE requires preserve_message_ids")
+                if not preservation_flags.preserve_tool_call_links:
+                    raise ValueError("MESSAGE_SEQUENCE requires preserve_tool_call_links")
+            expected_source_refs = tuple(
+                source_ref
+                for group_id in self.artifact_requirement.source_group_ids
+                for source_ref in groups_by_id[group_id].source_refs  # type: ignore[union-attr]
+            )
+            if lookup.source_refs != expected_source_refs:
+                raise ValueError("lookup source refs mismatch")
+            plan_artifact_order = tuple(
+                group.group_id for group in groups if group.group_id in artifact_sources  # type: ignore[union-attr]
+            )
+            if plan_artifact_order != tuple(self.artifact_requirement.source_group_ids):
+                raise ValueError("artifact source group IDs wrong order")
             for group_id in artifact_sources:
                 if group_id not in group_id_set:
                     raise ValueError(f"unknown group ID referenced: {group_id}")
@@ -520,6 +555,7 @@ class ContextPlan:
 
 MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT = "mandatory_context_exceeds_model_limit"
 NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET = "no_eligible_context_optimization_target"
+NO_ALLOWED_CONTEXT_OPTIMIZATION_STRATEGY = "no_allowed_context_optimization_strategy"
 
 
 class ContextPlanningError(ValueError):

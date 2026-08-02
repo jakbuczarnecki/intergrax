@@ -154,7 +154,7 @@ def test_context_plan_optimization_invariant() -> None:
         execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
         budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
         resolved_global_budget_tokens=100,
-        estimated_total_tokens=120,
+        estimated_total_tokens=10,
         source_groups=(group,),
         source_allocations=(
             ContextSourceBudgetAllocation(
@@ -214,7 +214,7 @@ def _minimal_plan_kwargs(**overrides: object) -> dict[str, object]:
         "execution_scope": ModelCallExecutionScope.PRIMARY_MODEL_CALL,
         "budget_class": ContextBudgetClass.PRIMARY_MODEL_INPUT,
         "resolved_global_budget_tokens": 100,
-        "estimated_total_tokens": 120,
+        "estimated_total_tokens": 10,
         "source_groups": (group,),
         "source_allocations": (
             ContextSourceBudgetAllocation(
@@ -379,7 +379,7 @@ def test_preservation_ids_match_plan_required_protected() -> None:
             execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
             budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
             resolved_global_budget_tokens=100,
-            estimated_total_tokens=120,
+            estimated_total_tokens=18,
             source_groups=(protected_group, artifact_group),
             source_allocations=(
                 ContextSourceBudgetAllocation(
@@ -440,7 +440,7 @@ def test_preservation_ids_disjoint_from_artifact_target() -> None:
             execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
             budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
             resolved_global_budget_tokens=100,
-            estimated_total_tokens=120,
+            estimated_total_tokens=10,
             source_groups=(group,),
             source_allocations=(
                 ContextSourceBudgetAllocation(
@@ -454,6 +454,286 @@ def test_preservation_ids_disjoint_from_artifact_target() -> None:
             required_group_ids=("grp-1",),
             protected_group_ids=(),
             compressible_group_ids=("grp-1",),
+            droppable_group_ids=(),
+            trim_safe_group_ids=(),
+            optimization_required=True,
+            artifact_requirement=requirement,
+            final_validation_requirements=("preserve_message_order",),
+        )
+
+
+def test_estimated_total_mismatch_rejected() -> None:
+    with pytest.raises(ValueError, match="estimated_total_tokens must equal source group token total"):
+        ContextPlan(**_minimal_plan_kwargs(estimated_total_tokens=99))
+
+
+def test_allocation_token_mismatch_rejected() -> None:
+    with pytest.raises(ValueError, match="allocation allocated_tokens mismatch"):
+        ContextPlan(
+            **_minimal_plan_kwargs(
+                source_allocations=(
+                    ContextSourceBudgetAllocation(
+                        source=ContextFragmentSource.SESSION_HISTORY,
+                        allocated_tokens=99,
+                        selected_group_ids=("grp-1",),
+                    ),
+                ),
+            )
+        )
+
+
+def test_message_sequence_preserve_message_order_false_rejected() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=False,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="MESSAGE_SEQUENCE requires preserve_message_order"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_message_sequence_preserve_roles_false_rejected() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=False,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="MESSAGE_SEQUENCE requires preserve_roles"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_message_sequence_preserve_message_ids_false_rejected() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=False,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="MESSAGE_SEQUENCE requires preserve_message_ids"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_message_sequence_preserve_tool_call_links_false_rejected() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m1",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=False,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="MESSAGE_SEQUENCE requires preserve_tool_call_links"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_lookup_source_refs_mismatch_rejected() -> None:
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("wrong",),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-1",),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="lookup source refs mismatch"):
+        ContextPlan(**_minimal_plan_kwargs(artifact_requirement=requirement))
+
+
+def test_lookup_source_refs_wrong_order_rejected() -> None:
+    group_a = ContextSourceGroup(
+        group_id="grp-a",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m1",),
+        source_content_hash="hash-a",
+        token_estimate=5,
+        compressible=True,
+    )
+    group_b = ContextSourceGroup(
+        group_id="grp-b",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m2",),
+        source_content_hash="hash-b",
+        token_estimate=5,
+        compressible=True,
+    )
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m2", "m1"),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-a", "grp-b"),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="lookup source refs mismatch"):
+        ContextPlan(
+            execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+            budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
+            resolved_global_budget_tokens=100,
+            estimated_total_tokens=10,
+            source_groups=(group_a, group_b),
+            source_allocations=(
+                ContextSourceBudgetAllocation(
+                    source=ContextFragmentSource.SESSION_HISTORY,
+                    allocated_tokens=10,
+                    selected_group_ids=("grp-a", "grp-b"),
+                ),
+            ),
+            selected_group_ids=("grp-a", "grp-b"),
+            excluded_group_ids=(),
+            required_group_ids=(),
+            protected_group_ids=(),
+            compressible_group_ids=("grp-a", "grp-b"),
+            droppable_group_ids=(),
+            trim_safe_group_ids=(),
+            optimization_required=True,
+            artifact_requirement=requirement,
+            final_validation_requirements=("preserve_message_order",),
+        )
+
+
+def test_artifact_source_group_ids_wrong_order_rejected() -> None:
+    group_a = ContextSourceGroup(
+        group_id="grp-a",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m1",),
+        source_content_hash="hash-a",
+        token_estimate=5,
+        compressible=True,
+    )
+    group_b = ContextSourceGroup(
+        group_id="grp-b",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("m2",),
+        source_content_hash="hash-b",
+        token_estimate=5,
+        compressible=True,
+    )
+    lookup = ContextArtifactLookupInputs(
+        tenant_id="t1",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash="hash",
+        compression_target=ArtifactCompressionTarget(target_tokens=5),
+        lossiness_profile="lossless",
+        source_refs=("m2", "m1"),
+    )
+    requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup,
+        source_group_ids=("grp-b", "grp-a"),
+        allowed_strategy_ids=("message_sequence.summary.v1",),
+        minimum_preservation=ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=2,
+        ),
+    )
+    with pytest.raises(ValueError, match="artifact source group IDs wrong order"):
+        ContextPlan(
+            execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+            budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
+            resolved_global_budget_tokens=100,
+            estimated_total_tokens=10,
+            source_groups=(group_a, group_b),
+            source_allocations=(
+                ContextSourceBudgetAllocation(
+                    source=ContextFragmentSource.SESSION_HISTORY,
+                    allocated_tokens=10,
+                    selected_group_ids=("grp-a", "grp-b"),
+                ),
+            ),
+            selected_group_ids=("grp-a", "grp-b"),
+            excluded_group_ids=(),
+            required_group_ids=(),
+            protected_group_ids=(),
+            compressible_group_ids=("grp-a", "grp-b"),
             droppable_group_ids=(),
             trim_safe_group_ids=(),
             optimization_required=True,

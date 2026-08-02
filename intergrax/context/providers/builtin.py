@@ -86,6 +86,8 @@ async def _collect_session_history(
     request: ContextAssemblyRequest,
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
+    if not request.decision_profile.include_session_history:
+        return []
     provider = HandleSessionHistoryProvider()
     snapshot = await provider.load_snapshot(request, ctx)
     if snapshot is not None:

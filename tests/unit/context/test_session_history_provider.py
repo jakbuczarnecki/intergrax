@@ -111,3 +111,63 @@ async def test_snapshot_has_priority_when_snapshot_and_legacy_handles_both_exist
     assert len(fragments) == 1
     assert fragments[0].metadata["message_id"] == "m1"
     assert "legacy" not in fragments[0].content
+
+
+def _request_include_history(include_history: bool) -> ContextAssemblyRequest:
+    return ContextAssemblyRequest(
+        trace_id="trace",
+        run_id="run",
+        task_id="task",
+        tenant_id="tenant",
+        assembly_scope="graph_node",
+        objective="obj",
+        decision_profile=ContextDecisionSnapshot(include_session_history=include_history),
+        budget_policy=ContextBudgetSnapshot(),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_include_history_false_legacy_handle_returns_empty() -> None:
+    ctx = ContextProviderContext(
+        handles={
+            SESSION_HISTORY_MESSAGES_HANDLE: [
+                ChatMessage(role="user", content="legacy", entry_id="legacy-1"),
+            ],
+        }
+    )
+    fragments = await _collect_session_history(_request_include_history(False), ctx)
+    assert fragments == []
+
+
+@pytest.mark.asyncio
+async def test_include_history_false_snapshot_handle_returns_empty() -> None:
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=[ChatMessage(role="user", content="canonical", entry_id="m1")],
+    )
+    ctx = ContextProviderContext(handles={SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot})
+    fragments = await _collect_session_history(_request_include_history(False), ctx)
+    assert fragments == []
+
+
+@pytest.mark.asyncio
+async def test_include_history_false_both_handles_returns_empty() -> None:
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=[ChatMessage(role="user", content="canonical", entry_id="m1")],
+    )
+    ctx = ContextProviderContext(
+        handles={
+            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_MESSAGES_HANDLE: [
+                ChatMessage(role="user", content="legacy", entry_id="legacy-1"),
+            ],
+        }
+    )
+    fragments = await _collect_session_history(_request_include_history(False), ctx)
+    assert fragments == []

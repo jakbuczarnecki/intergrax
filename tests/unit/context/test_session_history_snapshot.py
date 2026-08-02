@@ -247,3 +247,151 @@ def test_messages_item_wrong_type_rejected() -> None:
             revision_id="rev-1",
             messages=(message, {"not": "a message"}),  # type: ignore[arg-type]
         )
+
+
+def test_numeric_message_id_rejected() -> None:
+    with pytest.raises(ValueError, match="message_id must be a non-empty string"):
+        SessionHistoryMessage(
+            message_id=1,  # type: ignore[arg-type]
+            sequence=0,
+            role="user",
+            content="hello",
+        )
+
+
+def test_numeric_tenant_id_rejected() -> None:
+    message = session_history_message_from_chat_message(
+        ChatMessage(role="user", content="hello", entry_id="m1"),
+        sequence=0,
+    )
+    with pytest.raises(ValueError, match="tenant_id must be a non-empty string"):
+        SessionHistorySnapshot(
+            tenant_id=1,  # type: ignore[arg-type]
+            context_scope_id="scope",
+            revision_id="rev-1",
+            messages=(message,),
+        )
+
+
+def test_numeric_revision_id_rejected() -> None:
+    message = session_history_message_from_chat_message(
+        ChatMessage(role="user", content="hello", entry_id="m1"),
+        sequence=0,
+    )
+    with pytest.raises(ValueError, match="revision_id must be a non-empty string"):
+        SessionHistorySnapshot(
+            tenant_id="tenant",
+            context_scope_id="scope",
+            revision_id=1,  # type: ignore[arg-type]
+            messages=(message,),
+        )
+
+
+def test_numeric_name_rejected() -> None:
+    with pytest.raises(ValueError, match="name must be a non-empty string"):
+        SessionHistoryMessage(
+            message_id="m1",
+            sequence=0,
+            role="user",
+            content="hello",
+            name=1,  # type: ignore[arg-type]
+        )
+
+
+def test_numeric_tool_call_id_rejected() -> None:
+    with pytest.raises(ValueError, match="tool_call_id must be a non-empty string"):
+        SessionHistoryMessage(
+            message_id="m1",
+            sequence=0,
+            role="tool",
+            content="result",
+            tool_call_id=1,  # type: ignore[arg-type]
+        )
+
+
+def test_strenum_nested_value_rejected() -> None:
+    from enum import StrEnum
+
+    class SampleStrEnum(StrEnum):
+        VALUE = "value"
+
+    with pytest.raises(ValueError, match="non-JSON-safe"):
+        session_history_message_from_chat_message(
+            ChatMessage(
+                role="assistant",
+                content="",
+                entry_id="a1",
+                tool_calls=[{"id": "c1", "payload": SampleStrEnum.VALUE}],
+            ),
+            sequence=0,
+        )
+
+
+def test_intenum_nested_value_rejected() -> None:
+    from enum import IntEnum
+
+    class SampleIntEnum(IntEnum):
+        VALUE = 1
+
+    with pytest.raises(ValueError, match="non-JSON-safe"):
+        session_history_message_from_chat_message(
+            ChatMessage(
+                role="assistant",
+                content="",
+                entry_id="a1",
+                tool_calls=[{"id": "c1", "payload": SampleIntEnum.VALUE}],
+            ),
+            sequence=0,
+        )
+
+
+def test_content_hash_zero_rejected() -> None:
+    with pytest.raises(ValueError, match="content_hash must be a non-empty string"):
+        SessionHistoryMessage(
+            message_id="m1",
+            sequence=0,
+            role="user",
+            content="hello",
+            content_hash=0,  # type: ignore[arg-type]
+        )
+
+
+def test_content_hash_false_rejected() -> None:
+    with pytest.raises(ValueError, match="content_hash must be a non-empty string"):
+        SessionHistoryMessage(
+            message_id="m1",
+            sequence=0,
+            role="user",
+            content="hello",
+            content_hash=False,  # type: ignore[arg-type]
+        )
+
+
+def test_source_content_hash_zero_rejected() -> None:
+    message = session_history_message_from_chat_message(
+        ChatMessage(role="user", content="hello", entry_id="m1"),
+        sequence=0,
+    )
+    with pytest.raises(ValueError, match="source_content_hash must be a non-empty string"):
+        SessionHistorySnapshot(
+            tenant_id="tenant",
+            context_scope_id="scope",
+            revision_id="rev-1",
+            messages=(message,),
+            source_content_hash=0,  # type: ignore[arg-type]
+        )
+
+
+def test_source_content_hash_false_rejected() -> None:
+    message = session_history_message_from_chat_message(
+        ChatMessage(role="user", content="hello", entry_id="m1"),
+        sequence=0,
+    )
+    with pytest.raises(ValueError, match="source_content_hash must be a non-empty string"):
+        SessionHistorySnapshot(
+            tenant_id="tenant",
+            context_scope_id="scope",
+            revision_id="rev-1",
+            messages=(message,),
+            source_content_hash=False,  # type: ignore[arg-type]
+        )

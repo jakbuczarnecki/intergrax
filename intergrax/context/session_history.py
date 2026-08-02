@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 from collections.abc import Mapping, Sequence
+from enum import Enum
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -23,10 +24,13 @@ from intergrax.llm.messages import ChatMessage, MessageRole
 SESSION_HISTORY_SNAPSHOT_HANDLE = "session_history_snapshot"
 
 
-def _require_non_empty(value: str, field_name: str) -> str:
-    if not value:
-        raise ValueError(f"{field_name} must be non-empty")
-    return value
+def _require_non_empty_str(
+    value: object,
+    field_name: str,
+) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value.strip()
 
 
 def _require_int(value: object, field_name: str) -> int:
@@ -38,6 +42,8 @@ def _require_int(value: object, field_name: str) -> int:
 def _freeze_json_value(value: object) -> object:
     if value is None:
         return None
+    if isinstance(value, Enum):
+        raise ValueError(f"non-JSON-safe value: {type(value).__name__}")
     if isinstance(value, bool):
         return value
     if isinstance(value, int) and not isinstance(value, bool):
@@ -89,8 +95,8 @@ def _tool_call_ids(tool_calls: tuple[Mapping[str, Any], ...]) -> tuple[str, ...]
     ids: list[str] = []
     for call in tool_calls:
         call_id = call.get("id")
-        if call_id is not None and str(call_id).strip():
-            ids.append(str(call_id).strip())
+        if isinstance(call_id, str) and call_id.strip():
+            ids.append(call_id.strip())
     return tuple(ids)
 
 
@@ -126,7 +132,7 @@ class SessionHistoryMessage:
     content_hash: str = ""
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "message_id", _require_non_empty(self.message_id, "message_id"))
+        object.__setattr__(self, "message_id", _require_non_empty_str(self.message_id, "message_id"))
         sequence = _require_int(self.sequence, "sequence")
         if sequence < 0:
             raise ValueError("sequence must be >= 0")
@@ -136,12 +142,12 @@ class SessionHistoryMessage:
         if not isinstance(self.content, str):
             raise ValueError("content must be a string")
         if self.name is not None:
-            object.__setattr__(self, "name", _require_non_empty(self.name, "name"))
+            object.__setattr__(self, "name", _require_non_empty_str(self.name, "name"))
         if self.tool_call_id is not None:
             object.__setattr__(
                 self,
                 "tool_call_id",
-                _require_non_empty(self.tool_call_id, "tool_call_id"),
+                _require_non_empty_str(self.tool_call_id, "tool_call_id"),
             )
         normalized_calls = _normalize_tool_calls(self.tool_calls)
         object.__setattr__(self, "tool_calls", normalized_calls)
@@ -152,13 +158,13 @@ class SessionHistoryMessage:
             tool_call_id=self.tool_call_id,
             tool_calls=normalized_calls,
         )
-        if self.content_hash:
-            stored_hash = _require_non_empty(self.content_hash, "content_hash")
+        if self.content_hash == "":
+            object.__setattr__(self, "content_hash", expected_hash)
+        else:
+            stored_hash = _require_non_empty_str(self.content_hash, "content_hash")
             if stored_hash != expected_hash:
                 raise ValueError("content_hash does not match canonical message content")
             object.__setattr__(self, "content_hash", stored_hash)
-        else:
-            object.__setattr__(self, "content_hash", expected_hash)
 
     @property
     def ordered_tool_call_ids(self) -> tuple[str, ...]:
@@ -225,13 +231,13 @@ class SessionHistorySnapshot:
     source_content_hash: str = ""
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
+        object.__setattr__(self, "tenant_id", _require_non_empty_str(self.tenant_id, "tenant_id"))
         object.__setattr__(
             self,
             "context_scope_id",
-            _require_non_empty(self.context_scope_id, "context_scope_id"),
+            _require_non_empty_str(self.context_scope_id, "context_scope_id"),
         )
-        object.__setattr__(self, "revision_id", _require_non_empty(self.revision_id, "revision_id"))
+        object.__setattr__(self, "revision_id", _require_non_empty_str(self.revision_id, "revision_id"))
         messages = tuple(self.messages)
         for message in messages:
             if not isinstance(message, SessionHistoryMessage):
@@ -253,13 +259,13 @@ class SessionHistorySnapshot:
             previous_sequence = message.sequence
 
         expected_hash = _snapshot_source_content_hash(messages)
-        if self.source_content_hash:
-            stored_hash = _require_non_empty(self.source_content_hash, "source_content_hash")
+        if self.source_content_hash == "":
+            object.__setattr__(self, "source_content_hash", expected_hash)
+        else:
+            stored_hash = _require_non_empty_str(self.source_content_hash, "source_content_hash")
             if stored_hash != expected_hash:
                 raise ValueError("source_content_hash does not match snapshot messages")
             object.__setattr__(self, "source_content_hash", stored_hash)
-        else:
-            object.__setattr__(self, "source_content_hash", expected_hash)
 
     @property
     def source_refs(self) -> tuple[str, ...]:

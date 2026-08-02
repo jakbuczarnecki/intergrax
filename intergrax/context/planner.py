@@ -15,6 +15,7 @@ from intergrax.context.contracts import (
 )
 from intergrax.context.planning import (
     MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT,
+    NO_ALLOWED_CONTEXT_OPTIMIZATION_STRATEGY,
     NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET,
     ContextArtifactLookupInputs,
     ContextArtifactRequirement,
@@ -76,38 +77,58 @@ def _group_content_hash(source_refs: tuple[str, ...], content_hashes: Sequence[s
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def _strict_tool_call_id(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    return value.strip()
+
+
 def _extract_tool_call_ids(tool_calls: tuple[object, ...] | list[object] | None) -> tuple[str, ...]:
     ids: list[str] = []
     if not tool_calls:
         return ()
     for call in tool_calls:
-        if isinstance(call, (dict, Mapping)):
-            call_id = call.get("id")
-            if call_id is not None and str(call_id).strip():
-                ids.append(str(call_id).strip())
+        if not isinstance(call, Mapping):
+            return ()
+        call_id = _strict_tool_call_id(call.get("id"))
+        if call_id is None:
+            return ()
+        ids.append(call_id)
     return tuple(ids)
 
 
-def _tool_call_group_incomplete(
+def _tool_call_group_complete(
     assistant: ChatMessage,
     tool_messages: Sequence[ChatMessage],
 ) -> bool:
-    call_ids = _extract_tool_call_ids(assistant.tool_calls)
+    tool_calls = assistant.tool_calls
+    if not tool_calls:
+        return False
+    call_ids: list[str] = []
+    for call in tool_calls:
+        if not isinstance(call, Mapping):
+            return False
+        call_id = _strict_tool_call_id(call.get("id"))
+        if call_id is None:
+            return False
+        call_ids.append(call_id)
     if not call_ids:
-        return True
+        return False
     if len(call_ids) != len(set(call_ids)):
-        return True
+        return False
     received: dict[str, int] = {}
     for tool_message in tool_messages:
         if tool_message.role != "tool":
-            return True
-        call_id = (tool_message.tool_call_id or "").strip()
-        if not call_id or call_id not in set(call_ids):
-            return True
+            return False
+        call_id = _strict_tool_call_id(tool_message.tool_call_id)
+        if call_id is None:
+            return False
+        if call_id not in set(call_ids):
+            return False
         if call_id in received:
-            return True
+            return False
         received[call_id] = 1
-    return set(call_ids) != set(received.keys())
+    return set(call_ids) == set(received.keys())
 
 
 def _base_message_group_id(message: ChatMessage, position: int) -> str:
@@ -176,7 +197,7 @@ def group_session_history_snapshot(
             while index < len(messages) and messages[index].role != "user":
                 current = messages[index]
                 if current.role == "assistant" and current.tool_calls:
-                    if turn_refs != [message.message_id] or turn_tokens > count_tokens(message.content):
+                    if turn_refs:
                         refs_tuple = tuple(turn_refs)
                         groups.append(
                             ContextSourceGroup(
@@ -198,13 +219,10 @@ def group_session_history_snapshot(
                     tool_tokens = count_tokens(current.content)
                     tool_start = current.sequence
                     tool_end = current.sequence
-                    expected_tool_ids = _extract_tool_call_ids(current.tool_calls)
                     index += 1
                     tool_messages: list = []
                     while index < len(messages) and messages[index].role == "tool":
                         tool_message = messages[index]
-                        if tool_message.tool_call_id not in expected_tool_ids:
-                            break
                         tool_messages.append(tool_message)
                         tool_refs.append(tool_message.message_id)
                         tool_hashes.append(tool_message.content_hash)
@@ -212,7 +230,7 @@ def group_session_history_snapshot(
                         tool_end = tool_message.sequence
                         index += 1
                     assistant_msg = session_history_message_to_chat_message(current)
-                    incomplete = _tool_call_group_incomplete(assistant_msg, tool_messages)
+                    complete = _tool_call_group_complete(assistant_msg, tool_messages)
                     refs_tuple = tuple(tool_refs)
                     groups.append(
                         ContextSourceGroup(
@@ -223,8 +241,8 @@ def group_session_history_snapshot(
                             token_estimate=tool_tokens,
                             start_sequence=tool_start,
                             end_sequence=tool_end,
-                            protected=incomplete,
-                            required=incomplete,
+                            protected=not complete,
+                            required=not complete,
                         )
                     )
                     continue
@@ -260,13 +278,10 @@ def group_session_history_snapshot(
                 tool_tokens = count_tokens(message.content)
                 tool_start = message.sequence
                 tool_end = message.sequence
-                expected_tool_ids = _extract_tool_call_ids(message.tool_calls)
                 index += 1
                 tool_messages = []
                 while index < len(messages) and messages[index].role == "tool":
                     tool_message = messages[index]
-                    if tool_message.tool_call_id not in expected_tool_ids:
-                        break
                     tool_messages.append(tool_message)
                     tool_refs.append(tool_message.message_id)
                     tool_hashes.append(tool_message.content_hash)
@@ -274,7 +289,7 @@ def group_session_history_snapshot(
                     tool_end = tool_message.sequence
                     index += 1
                 assistant_msg = session_history_message_to_chat_message(message)
-                incomplete = _tool_call_group_incomplete(assistant_msg, tool_messages)
+                complete = _tool_call_group_complete(assistant_msg, tool_messages)
                 refs_tuple = tuple(tool_refs)
                 groups.append(
                     ContextSourceGroup(
@@ -285,8 +300,8 @@ def group_session_history_snapshot(
                         token_estimate=tool_tokens,
                         start_sequence=tool_start,
                         end_sequence=tool_end,
-                        protected=incomplete,
-                        required=incomplete,
+                        protected=not complete,
+                        required=not complete,
                     )
                 )
                 continue
@@ -352,7 +367,7 @@ def _group_base_messages(
                 hashes.append(content_hash_for_text(current.content or ""))
                 token_total += count_tokens(current.content or "")
                 index += 1
-            incomplete = _tool_call_group_incomplete(message, tool_messages)
+            incomplete = not _tool_call_group_complete(message, tool_messages)
             refs_tuple = tuple(refs)
             groups.append(
                 ContextSourceGroup(
@@ -363,7 +378,7 @@ def _group_base_messages(
                     token_estimate=token_total,
                     required=incomplete,
                     protected=incomplete,
-                    compressible=not incomplete,
+                    compressible=False,
                     droppable=False,
                     trim_safe=False,
                 )
@@ -448,12 +463,13 @@ def _mark_session_groups(
     session_groups: list[ContextSourceGroup],
     *,
     recent_tail_ids: set[str],
+    canonical_snapshot_group_ids: set[str],
 ) -> list[ContextSourceGroup]:
     marked: list[ContextSourceGroup] = []
     for group in session_groups:
         protected = group.protected or group.group_id in recent_tail_ids
         compressible = (
-            group.source is ContextFragmentSource.SESSION_HISTORY
+            group.group_id in canonical_snapshot_group_ids
             and not protected
             and not group.required
         )
@@ -553,11 +569,13 @@ class ContextPlanner:
         all_groups: list[ContextSourceGroup] = []
 
         session_groups_raw: list[ContextSourceGroup] = []
+        canonical_snapshot_group_ids: set[str] = set()
         message_id_to_group_id: dict[str, str] = {}
         if session_history is not None:
             session_groups_raw = list(
                 group_session_history_snapshot(session_history, count_tokens=self._count_tokens)
             )
+            canonical_snapshot_group_ids = {group.group_id for group in session_groups_raw}
             for group in session_groups_raw:
                 for ref in group.source_refs:
                     message_id_to_group_id[ref] = group.group_id
@@ -659,7 +677,11 @@ class ContextPlanner:
 
         recent_tail = optimization_policy.recent_tail_min_messages if optimization_policy else 0
         recent_tail_ids = _apply_recent_tail_protection(session_groups, recent_tail_min_messages=recent_tail)
-        session_groups = _mark_session_groups(session_groups, recent_tail_ids=recent_tail_ids)
+        session_groups = _mark_session_groups(
+            session_groups,
+            recent_tail_ids=recent_tail_ids,
+            canonical_snapshot_group_ids=canonical_snapshot_group_ids,
+        )
         all_groups = session_groups + non_session_groups
         groups_by_id = {group.group_id: group for group in all_groups}
 
@@ -734,7 +756,13 @@ class ContextPlanner:
         if not target_groups:
             raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
 
+        if session_history is None:
+            raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
+
         target_group_ids = tuple(group.group_id for group in target_groups)
+        if not all(group_id in canonical_snapshot_group_ids for group_id in target_group_ids):
+            raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
+
         target_source_refs: list[str] = []
         for group in target_groups:
             target_source_refs.extend(group.source_refs)
@@ -753,23 +781,20 @@ class ContextPlanner:
             resolved_global_budget_tokens - non_target_tokens,
         )
 
-        allowed_strategy_ids: tuple[str, ...] = ()
-        if optimization_policy is not None:
-            allowed_strategy_ids = optimization_policy.allowed_strategy_ids
+        if optimization_policy is None or not optimization_policy.allowed_strategy_ids:
+            raise ContextPlanningError(NO_ALLOWED_CONTEXT_OPTIMIZATION_STRATEGY)
+
+        allowed_strategy_ids = optimization_policy.allowed_strategy_ids
 
         lossiness_profile = "lossless"
-        if optimization_policy is not None and optimization_policy.allow_lossy:
+        if optimization_policy.allow_lossy:
             lossiness_profile = "lossy"
 
-        protected_policy_version = None
-        if optimization_policy is not None:
-            protected_policy_version = optimization_policy.protected_region_policy_version
+        protected_policy_version = optimization_policy.protected_region_policy_version
 
         lookup_inputs = ContextArtifactLookupInputs(
-            tenant_id=session_history.tenant_id if session_history else request.tenant_id,
-            context_scope_id=(
-                session_history.context_scope_id if session_history else request.task_id
-            ),
+            tenant_id=session_history.tenant_id,
+            context_scope_id=session_history.context_scope_id,
             artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
             source_content_hash=source_content_hash,
             compression_target=ArtifactCompressionTarget(target_tokens=target_token_budget),
@@ -793,7 +818,7 @@ class ContextPlanner:
         artifact_requirement = ContextArtifactRequirement(
             lookup_inputs=lookup_inputs,
             source_group_ids=target_group_ids,
-            allowed_strategy_ids=allowed_strategy_ids or ("message_sequence.summary.v1",),
+            allowed_strategy_ids=allowed_strategy_ids,
             minimum_preservation=preservation,
         )
 
