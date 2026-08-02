@@ -4,24 +4,25 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import re
 from dataclasses import dataclass
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import TenantConnectionPort
 from intergrax.runtime.vendor_knowledge.tenant_connections import TenantConnectionAdministrativeStatus
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationIntent,
+    connection_attachment_id,
+    connection_attachment_request_hash,
+    connection_attachment_semantic_identity_hash,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
     WorkspaceConnectionAttachmentStatusV1,
+    WorkspaceKnowledgeConfigurationV1,
     WorkspaceKnowledgeMutationOperationV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationError,
     WorkspaceKnowledgeConfigurationMutationEngine,
     WorkspaceKnowledgeMutationExecutionDispositionV1,
 )
@@ -32,6 +33,7 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 _AUTHORIZATION_RE = re.compile(r"authorization\s*[:=]", re.IGNORECASE)
 _BEARER_RE = re.compile(r"bearer\s+\S", re.IGNORECASE)
 _API_KEY_RE = re.compile(r"api[_-]?key\s*[=:]", re.IGNORECASE)
+_URL_RE = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
 _SECRET_QUERY_KEYS = frozenset(
     {
         "api_key",
@@ -70,54 +72,17 @@ class AttachWorkspaceConnectionResult:
     disposition: WorkspaceKnowledgeMutationExecutionDispositionV1
 
 
-def _canonical_json(data: dict[str, object]) -> str:
-    return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+def _trim_url_suffix(url: str) -> str:
+    return url.rstrip(".,;:!?)]}")
 
 
-def connection_attachment_id(
-    *,
-    tenant_id: str,
-    workspace_id: str,
-    connection_ref: str,
-) -> str:
-    payload = _canonical_json(
-        {
-            "tenant_id": tenant_id.strip(),
-            "workspace_id": workspace_id.strip(),
-            "connection_ref": connection_ref.strip(),
-        }
-    )
-    return f"wca:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:32]}"
-
-
-def connection_attachment_semantic_identity_hash(
-    *,
-    tenant_id: str,
-    workspace_id: str,
-    connection_ref: str,
-) -> str:
-    payload = _canonical_json(
-        {
-            "tenant_id": tenant_id.strip(),
-            "workspace_id": workspace_id.strip(),
-            "connection_ref": connection_ref.strip(),
-        }
-    )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
-
-
-def normalize_attach_connection_request_hash(
-    *,
-    connection_ref: str,
-    safe_display_label: str,
-) -> str:
-    payload = _canonical_json(
-        {
-            "connection_ref": connection_ref.strip(),
-            "safe_display_label": safe_display_label,
-        }
-    )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+def _url_has_credential_material(url: str) -> bool:
+    trimmed = _trim_url_suffix(url)
+    parsed = urlparse(trimmed)
+    if parsed.username or parsed.password:
+        return True
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    return any(key.casefold() in _SECRET_QUERY_KEYS for key in query)
 
 
 def _label_contains_credential_material(value: str) -> bool:
@@ -127,15 +92,19 @@ def _label_contains_credential_material(value: str) -> bool:
         return True
     if _API_KEY_RE.search(value) is not None:
         return True
-    if "://" in value:
-        parsed = urlparse(value)
-        if parsed.username or parsed.password:
+    for url in _URL_RE.findall(value):
+        if _url_has_credential_material(url):
             return True
-        query = parse_qs(parsed.query, keep_blank_values=True)
-        for key in query:
-            if key.casefold() in _SECRET_QUERY_KEYS:
-                return True
     return False
+
+
+def _validate_safe_display_label(value: str) -> str:
+    resolved = value.strip()
+    if not resolved or len(resolved) > 256:
+        raise WorkspaceConnectionAttachmentError("safe_display_label_invalid")
+    if _label_contains_credential_material(resolved):
+        raise WorkspaceConnectionAttachmentError("safe_display_label_invalid")
+    return resolved
 
 
 def _resolve_safe_display_label(
@@ -144,15 +113,15 @@ def _resolve_safe_display_label(
     default_label: str,
 ) -> str:
     if requested is None:
-        return default_label
-    resolved = requested.strip()
-    if not resolved:
-        raise WorkspaceConnectionAttachmentError("safe_display_label_invalid")
-    if len(resolved) > 256:
-        raise WorkspaceConnectionAttachmentError("safe_display_label_invalid")
-    if _label_contains_credential_material(resolved):
-        raise WorkspaceConnectionAttachmentError("safe_display_label_invalid")
-    return resolved
+        return _validate_safe_display_label(default_label)
+    return _validate_safe_display_label(requested)
+
+
+def _connection_unavailable(status: TenantConnectionAdministrativeStatus) -> bool:
+    return status in {
+        TenantConnectionAdministrativeStatus.DISABLED,
+        TenantConnectionAdministrativeStatus.REVOKED,
+    }
 
 
 class WorkspaceConnectionAttachmentService:
@@ -171,19 +140,21 @@ class WorkspaceConnectionAttachmentService:
         self,
         command: AttachWorkspaceConnectionCommand,
     ) -> AttachWorkspaceConnectionResult:
+        tenant_id = command.tenant_id.strip()
+        workspace_id = command.workspace_id.strip()
         normalized_ref = command.connection_ref.strip()
         if not normalized_ref:
             raise WorkspaceConnectionAttachmentError("connection_not_found")
 
         connection = self._connection_port.get_connection(
-            tenant_id=command.tenant_id,
+            tenant_id=tenant_id,
             connection_ref=normalized_ref,
         )
-        if connection is None or connection.tenant_id != command.tenant_id.strip():
+        if connection is None or connection.tenant_id != tenant_id:
             raise WorkspaceConnectionAttachmentError("connection_not_found")
-        if connection.administrative_status is TenantConnectionAdministrativeStatus.DISABLED:
-            raise WorkspaceConnectionAttachmentError("connection_unavailable")
-        if connection.administrative_status is TenantConnectionAdministrativeStatus.REVOKED:
+        if connection.connection_ref.strip() != normalized_ref:
+            raise WorkspaceConnectionAttachmentError("connection_not_found")
+        if _connection_unavailable(connection.administrative_status):
             raise WorkspaceConnectionAttachmentError("connection_unavailable")
         if connection.administrative_status is not TenantConnectionAdministrativeStatus.ACTIVE:
             raise WorkspaceConnectionAttachmentError("connection_unavailable")
@@ -194,24 +165,15 @@ class WorkspaceConnectionAttachmentService:
         )
 
         configuration = self._configuration_service.get_configuration(
-            tenant_id=command.tenant_id,
-            workspace_id=command.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
         )
         if configuration is None:
             raise WorkspaceConnectionAttachmentError("workspace_not_found")
 
         attachment_id = connection_attachment_id(
-            tenant_id=command.tenant_id,
-            workspace_id=command.workspace_id,
-            connection_ref=normalized_ref,
-        )
-        normalized_request_hash = normalize_attach_connection_request_hash(
-            connection_ref=normalized_ref,
-            safe_display_label=safe_label,
-        )
-        semantic_hash = connection_attachment_semantic_identity_hash(
-            tenant_id=command.tenant_id,
-            workspace_id=command.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
             connection_ref=normalized_ref,
         )
         intent = AttachConnectionMutationIntent(
@@ -219,24 +181,27 @@ class WorkspaceConnectionAttachmentService:
             connection_ref=normalized_ref,
             safe_display_label=safe_label,
         )
-
-        try:
-            mutation_result = self._mutation_engine.execute(
-                tenant_id=command.tenant_id,
-                workspace_id=command.workspace_id,
-                operation=WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION,
-                expected_revision=command.expected_revision,
-                idempotency_key_hash=command.idempotency_key_hash,
-                normalized_request_hash=normalized_request_hash,
-                semantic_identity_hash=semantic_hash,
-                intent=intent,
-            )
-        except WorkspaceKnowledgeConfigurationMutationError:
-            raise
+        mutation_result = self._mutation_engine.execute(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION,
+            expected_revision=command.expected_revision,
+            idempotency_key_hash=command.idempotency_key_hash,
+            normalized_request_hash=connection_attachment_request_hash(
+                connection_ref=normalized_ref,
+                safe_display_label=safe_label,
+            ),
+            semantic_identity_hash=connection_attachment_semantic_identity_hash(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=normalized_ref,
+            ),
+            intent=intent,
+        )
 
         resolved_configuration = self._configuration_service.get_configuration(
-            tenant_id=command.tenant_id,
-            workspace_id=command.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
         )
         if resolved_configuration is None:
             raise WorkspaceConnectionAttachmentError("workspace_not_found")
@@ -244,8 +209,8 @@ class WorkspaceConnectionAttachmentService:
         attachment = _resolve_committed_attachment(
             configuration=resolved_configuration,
             result_entity_id=mutation_result.result_entity_id,
-            tenant_id=command.tenant_id,
-            workspace_id=command.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
             connection_ref=normalized_ref,
             configuration_revision=mutation_result.configuration_revision,
         )
@@ -258,26 +223,19 @@ class WorkspaceConnectionAttachmentService:
 
 def _resolve_committed_attachment(
     *,
-    configuration: object,
+    configuration: WorkspaceKnowledgeConfigurationV1,
     result_entity_id: str,
     tenant_id: str,
     workspace_id: str,
     connection_ref: str,
     configuration_revision: int,
 ) -> WorkspaceConnectionAttachment:
-    from local_workspace_application.workspaces.knowledge_configuration_models import (
-        WorkspaceKnowledgeConfigurationV1,
-    )
-
-    if not isinstance(configuration, WorkspaceKnowledgeConfigurationV1):
-        raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-
     for item in configuration.connection_attachments:
         if item.attachment_id != result_entity_id:
             continue
-        if item.tenant_id != tenant_id.strip():
+        if item.tenant_id != tenant_id:
             raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
-        if item.workspace_id != workspace_id.strip():
+        if item.workspace_id != workspace_id:
             raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
         if item.connection_ref != connection_ref:
             raise WorkspaceConnectionAttachmentError("connection_attachment_projection_incomplete")
