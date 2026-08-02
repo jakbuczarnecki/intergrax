@@ -364,6 +364,92 @@ class KnowledgeSourceBindingService:
         self._assert_resolvable(binding)
         return to_source_ref(binding)
 
+    def create_or_get_equivalent(self, binding: KnowledgeSourceBinding) -> KnowledgeSourceBinding:
+        """Create a binding or return an exactly equivalent existing binding."""
+        self._assert_service_tenant(binding.tenant_id, provider_id=binding.provider_id)
+        self._assert_broad_scope(binding)
+        self._assert_resolvable(binding)
+
+        existing = self._repository.get(
+            tenant_id=self._tenant_id,
+            binding_id=binding.binding_id,
+        )
+        if existing is not None:
+            if not self._bindings_equivalent(existing, binding):
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                    safe_message="Knowledge source binding identity conflict",
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                )
+            return existing
+
+        try:
+            self._repository.create(binding)
+        except KnowledgeSourceBindingAlreadyExists:
+            reloaded = self._repository.get(
+                tenant_id=self._tenant_id,
+                binding_id=binding.binding_id,
+            )
+            if reloaded is None:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Knowledge source binding persistence failed",
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                ) from None
+            if not self._bindings_equivalent(reloaded, binding):
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                    safe_message="Knowledge source binding identity conflict",
+                    provider_id=binding.provider_id,
+                    source_kind=binding.source_kind,
+                    retryable=False,
+                )
+            return reloaded
+        except KnowledgeSourceBindingCorruptRecord:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source binding record is invalid",
+                provider_id=binding.provider_id,
+                source_kind=binding.source_kind,
+                retryable=False,
+            ) from None
+        except VendorKnowledgeError:
+            raise
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source binding persistence failed",
+                provider_id=binding.provider_id,
+                source_kind=binding.source_kind,
+                retryable=False,
+            ) from None
+        return binding
+
+    def _bindings_equivalent(
+        self,
+        left: KnowledgeSourceBinding,
+        right: KnowledgeSourceBinding,
+    ) -> bool:
+        return (
+            left.binding_id == right.binding_id
+            and left.tenant_id == right.tenant_id
+            and left.provider_id == right.provider_id
+            and left.integration_kind == right.integration_kind
+            and left.source_kind == right.source_kind
+            and left.connection_ref == right.connection_ref
+            and left.credential_ref == right.credential_ref
+            and left.safe_display_name == right.safe_display_name
+            and left.scope == right.scope
+            and left.status == right.status
+            and left.configuration_version == right.configuration_version
+            and left.broad_scope == right.broad_scope
+            and left.scope_approval_ref == right.scope_approval_ref
+        )
+
     def _assert_service_tenant(self, tenant_id: str, *, provider_id: str | None) -> None:
         if tenant_id != self._tenant_id:
             raise VendorKnowledgeError(

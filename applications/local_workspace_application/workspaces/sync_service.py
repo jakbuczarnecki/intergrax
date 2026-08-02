@@ -15,6 +15,9 @@ from local_workspace_application.workspaces.document_indexing import (
 from local_workspace_application.workspaces.local_folder_indexing import (
     LocalFolderIndexingService,
 )
+from local_workspace_application.workspaces.connected_source_sync_service import (
+    ManagedWorkspaceConnectedSourceSyncService,
+)
 from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
     WorkspaceOperationStatus,
@@ -52,6 +55,7 @@ class ManagedWorkspaceSyncService:
         allowlist_roots: frozenset[str] | None = None,
         indexing_service: WorkspaceDocumentIndexingService | None = None,
         folder_indexing: LocalFolderIndexingService | None = None,
+        connected_source_sync: ManagedWorkspaceConnectedSourceSyncService | None = None,
     ) -> None:
         self._repository = repository
         self._task_executor = task_executor
@@ -64,6 +68,7 @@ class ManagedWorkspaceSyncService:
             self._indexing_service,
             allowlist_roots=allowlist_roots,
         )
+        self._connected_source_sync = connected_source_sync
 
     async def run_operation(self, *, tenant_id: str, operation_id: str) -> WorkspaceOperation:
         operation = self._repository.get_operation(tenant_id=tenant_id, operation_id=operation_id)
@@ -95,6 +100,13 @@ class ManagedWorkspaceSyncService:
         )
         if source is None:
             return self._fail(operation, "source_not_found")
+        if source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+            if self._connected_source_sync is None:
+                return self._fail(operation, "connected_source_sync_unavailable")
+            return await self._connected_source_sync.run_operation(
+                tenant_id=tenant_id,
+                operation_id=operation_id,
+            )
         if source.source_type is not WorkspaceSourceType.LOCAL_FOLDER:
             return self._fail(operation, "source_sync_unsupported_for_source_type")
 

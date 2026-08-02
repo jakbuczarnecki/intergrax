@@ -16,6 +16,9 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     DocumentStore,
 )
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryReceipt,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
     WorkspaceIndexedSourceBinding,
@@ -57,6 +60,7 @@ _ENTITY_KNOWLEDGE_CONFIGURATION_CONNECTION_ATTACHMENT = (
 _ENTITY_KNOWLEDGE_CONFIGURATION_INDEXED_SOURCE = "knowledge_configuration_indexed_source"
 _ENTITY_KNOWLEDGE_CONFIGURATION_LIVE_ACCESS = "knowledge_configuration_live_access"
 _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY = "knowledge_configuration_query_policy"
+_ENTITY_CONNECTED_SOURCE_DELIVERY = "connected_source_delivery"
 
 
 class WorkspaceKnowledgeConfigurationRepositoryError(RuntimeError):
@@ -79,6 +83,7 @@ _ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
 _ENTITY_MANAGED_FILE = "managed_file"
 _ENTITY_WEB_URL_LOCATOR = "web_url_locator"
 _ENTITY_INTAKE_BATCH = "intake_batch"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT = "connected_source_delivery_receipt"
 _ACTIVE_KNOWLEDGE_INGESTION_PARTITION = "lkw.managed_workspace:active_knowledge_ingestion"
 
 
@@ -240,6 +245,20 @@ class ManagedWorkspaceRepository:
         )
         return source
 
+    def put_source_if_absent(self, source: WorkspaceSource) -> bool:
+        return self._put_if_absent(
+            source,
+            partition_key=_partition(source.tenant_id, _ENTITY_SOURCE),
+            row_key=f"{source.workspace_id}:{source.source_id}",
+        )
+
+    def delete_source_if_match(self, source: WorkspaceSource) -> bool:
+        return self._delete_if_match(
+            source,
+            partition_key=_partition(source.tenant_id, _ENTITY_SOURCE),
+            row_key=f"{source.workspace_id}:{source.source_id}",
+        )
+
     def get_source(
         self,
         *,
@@ -285,6 +304,56 @@ class ManagedWorkspaceRepository:
             )
             deleted += 1
         return deleted
+
+    # --- Connected source delivery receipts ---
+
+    def put_connected_source_delivery_receipt(
+        self,
+        receipt: ConnectedSourceDeliveryReceipt,
+    ) -> ConnectedSourceDeliveryReceipt:
+        partition_key = _partition(receipt.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT)
+        row_key = (
+            f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
+        )
+        self._put(partition_key, row_key, receipt)
+        return receipt
+
+    def put_connected_source_delivery_receipt_if_absent(
+        self,
+        receipt: ConnectedSourceDeliveryReceipt,
+    ) -> bool:
+        partition_key = _partition(receipt.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT)
+        row_key = (
+            f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
+        )
+        return self._put_if_absent(receipt, partition_key=partition_key, row_key=row_key)
+
+    def get_connected_source_delivery_receipt(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        delivery_id: str,
+    ) -> ConnectedSourceDeliveryReceipt | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
+            f"{workspace_id}:{source_id}:{delivery_id}",
+            ConnectedSourceDeliveryReceipt,
+        )
+
+    def delete_connected_source_delivery_receipt(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        delivery_id: str,
+    ) -> None:
+        self._store.delete(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
+            f"{workspace_id}:{source_id}:{delivery_id}",
+        )
 
     # --- Operation ---
 

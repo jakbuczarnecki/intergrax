@@ -259,7 +259,11 @@ class ManagedWorkspaceService:
         )
         if source is None:
             raise LookupError("source_not_found")
-        if source.source_type is not WorkspaceSourceType.LOCAL_FOLDER:
+        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER:
+            pass
+        elif source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+            pass
+        else:
             raise ValueError("source_sync_unsupported_for_source_type")
 
         if not allow_concurrent:

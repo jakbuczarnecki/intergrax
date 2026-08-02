@@ -58,6 +58,11 @@ class IndexedSourceSyncModeV1(StrEnum):
     INCREMENTAL = "incremental"
 
 
+class IndexedSourceAudienceEligibilityV1(StrEnum):
+    PERSONAL_ONLY = "personal_only"
+    SHARED_ALLOWED = "shared_allowed"
+
+
 class WorkspaceIndexedSourceBindingStatusV1(StrEnum):
     ACTIVE = "active"
     DISABLED = "disabled"
@@ -147,6 +152,9 @@ class WorkspaceIndexedSourceBinding(BaseModel):
     sync_mode: IndexedSourceSyncModeV1 = IndexedSourceSyncModeV1.INCREMENTAL
     status: WorkspaceIndexedSourceBindingStatusV1 = (
         WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+    )
+    audience_eligibility: IndexedSourceAudienceEligibilityV1 = (
+        IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY
     )
 
     mutation_id: str = Field(..., min_length=1, max_length=128)
