@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
     WorkspaceOperationStatus,
@@ -18,19 +20,38 @@ _ACTIVE_OPERATION_STATUSES = {
     WorkspaceOperationStatus.QUEUED,
     WorkspaceOperationStatus.RUNNING,
 }
+_TERMINAL_OPERATION_STATUSES = {
+    WorkspaceOperationStatus.COMPLETED,
+    WorkspaceOperationStatus.FAILED,
+}
+_DATETIME_MIN_UTC = datetime.min.replace(tzinfo=UTC)
 
 
-def _operation_sort_key(operation: WorkspaceOperation) -> tuple[object, ...]:
+def _sortable_datetime(value: datetime | None) -> datetime:
+    if value is None:
+        return _DATETIME_MIN_UTC
+    return value
+
+
+def _operation_started_at(operation: WorkspaceOperation) -> datetime:
+    if operation.created_at is not None:
+        return operation.created_at
+    if operation.started_at is not None:
+        return operation.started_at
+    return _DATETIME_MIN_UTC
+
+
+def _operation_sort_key(operation: WorkspaceOperation) -> tuple[datetime, str]:
     return (
-        operation.created_at or operation.started_at,
+        _operation_started_at(operation),
         operation.operation_id,
     )
 
 
-def _terminal_sort_key(operation: WorkspaceOperation) -> tuple[object, ...]:
+def _terminal_sort_key(operation: WorkspaceOperation) -> tuple[datetime, datetime, str]:
     return (
-        operation.completed_at,
-        operation.created_at or operation.started_at,
+        _sortable_datetime(operation.completed_at),
+        _operation_started_at(operation),
         operation.operation_id,
     )
 
@@ -68,25 +89,18 @@ def project_connected_source_source_status(
     if any(operation.status in _ACTIVE_OPERATION_STATUSES for operation in operations):
         return WorkspaceSourceStatus.SYNCING
 
-    completed = [
+    terminal = [
         operation
         for operation in operations
-        if operation.status is WorkspaceOperationStatus.COMPLETED and operation.completed_at is not None
+        if operation.status in _TERMINAL_OPERATION_STATUSES and operation.completed_at is not None
     ]
-    if completed:
-        latest_completed = max(completed, key=_terminal_sort_key)
-        _ = latest_completed
+    if not terminal:
+        return None
+
+    latest_terminal = max(terminal, key=_terminal_sort_key)
+    if latest_terminal.status is WorkspaceOperationStatus.COMPLETED:
         return WorkspaceSourceStatus.READY
-
-    failed = [
-        operation
-        for operation in operations
-        if operation.status is WorkspaceOperationStatus.FAILED and operation.completed_at is not None
-    ]
-    if failed:
-        return WorkspaceSourceStatus.ERROR
-
-    return None
+    return WorkspaceSourceStatus.ERROR
 
 
 def repair_connected_source_source_projection(

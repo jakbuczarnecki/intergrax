@@ -1525,3 +1525,343 @@ def test_source_projection_repair_is_idempotent() -> None:
     assert second is not None
     assert first.status == second.status
     assert first.last_sync_at == second.last_sync_at
+
+
+def test_accounting_cas_retry_reloads_aggregate_after_concurrent_insert() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_operation(_queued_operation())
+    delivery_b = "b" * 64
+    repo.put_connected_source_delivery_receipt(_completed_receipt())
+    repo.put_connected_source_delivery_receipt(
+        replace(
+            _completed_receipt(),
+            delivery_id=delivery_b,
+            documents_indexed=2,
+            documents_unchanged=1,
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceOperationDeliveryAccounting,
+    )
+    from local_workspace_application.workspaces.connected_source_operation_accounting import (
+        apply_completed_delivery_accounting,
+    )
+
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
+    assert operation is not None
+
+    original_replace = repo.replace_operation_if_match
+    cas_attempts = 0
+
+    def _replace_with_race(*, expected, replacement):
+        nonlocal cas_attempts
+        cas_attempts += 1
+        if cas_attempts == 1:
+            repo.put_connected_source_delivery_accounting_if_absent(
+                ConnectedSourceOperationDeliveryAccounting(
+                    tenant_id=_TENANT,
+                    operation_id=_OPERATION,
+                    delivery_id=delivery_b,
+                    documents_indexed=2,
+                    documents_unchanged=1,
+                    items_failed=0,
+                    accounted_at=_NOW,
+                )
+            )
+            return False
+        return original_replace(expected=expected, replacement=replacement)
+
+    repo.replace_operation_if_match = _replace_with_race  # type: ignore[method-assign]
+
+    updated, result = apply_completed_delivery_accounting(
+        repository=repo,
+        operation=operation,
+        delivery_id=_DELIVERY,
+    )
+    assert result.applied is True
+    assert cas_attempts >= 2
+    assert updated.documents_indexed == 3
+    assert updated.documents_unchanged == 1
+
+
+def _seed_many_queue_tasks(
+    queue: DocumentStoreTaskQueue,
+    *,
+    count: int,
+) -> None:
+    for index in range(count):
+        handle = queue.enqueue(
+            TaskRequest(
+                tenant_id=_TENANT,
+                run_id=f"older-{index}",
+                task_name="older-task",
+                payload=b"older",
+                idempotency_key=f"older-task-{index}",
+            )
+        )
+        claimed = queue.claim_pending(tenant_id=_TENANT, limit=1)
+        assert claimed
+        queue.mark_succeeded(claimed[0][0])
+
+
+def test_pending_task_beyond_list_limit_is_reused_without_new_enqueue() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    _seed_many_queue_tasks(queue, count=501)
+    pending_handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="pending-beyond-limit",
+        )
+    )
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=pending_handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is False
+    assert result.enqueue_generation == 1
+
+
+def test_running_task_beyond_list_limit_is_reused_without_new_enqueue() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    queue = DocumentStoreTaskQueue(store)
+    wiring_context = ToolWiringContext(message_bus=queue)
+    operation = _queued_operation()
+    repo.put_operation(operation)
+    _seed_many_queue_tasks(queue, count=501)
+    running_handle = queue.enqueue(
+        TaskRequest(
+            tenant_id=_TENANT,
+            run_id=operation.operation_id,
+            task_name=LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
+            payload=encode_managed_workspace_sync_job(
+                ManagedWorkspaceSyncJob(
+                    tenant_id=_TENANT,
+                    workspace_id=_WORKSPACE,
+                    source_id=_SOURCE,
+                    operation_id=_OPERATION,
+                )
+            ),
+            idempotency_key="running-beyond-limit",
+        )
+    )
+    queue.claim_pending(tenant_id=_TENANT, limit=1)
+    _mark_enqueued(repo, operation=operation, generation=1, task_id=running_handle.task_id)
+    from local_workspace_application.workspaces.connected_source_sync_enqueue import (
+        try_enqueue_connected_source_sync,
+    )
+
+    result = try_enqueue_connected_source_sync(
+        repository=repo,
+        wiring_context=wiring_context,
+        operation=operation,
+    )
+    assert result.enqueued is False
+    assert result.enqueue_generation == 1
+
+
+def test_older_completed_newer_failed_source_projection_error() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation(operation_id="op-completed").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_operation(
+        _queued_operation(operation_id="op-failed").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.FAILED,
+                "completed_at": datetime(2024, 6, 2, 12, 0, tzinfo=UTC),
+                "created_at": datetime(2024, 6, 2, 12, 0, tzinfo=UTC),
+            }
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        project_connected_source_source_status,
+    )
+
+    status = project_connected_source_source_status(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert status is WorkspaceSourceStatus.ERROR
+
+
+def test_older_failed_newer_completed_source_projection_ready() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        _queued_operation(operation_id="op-failed").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.FAILED,
+                "completed_at": _NOW,
+                "created_at": _NOW,
+            }
+        )
+    )
+    repo.put_operation(
+        _queued_operation(operation_id="op-completed").model_copy(
+            update={
+                "status": WorkspaceOperationStatus.COMPLETED,
+                "completed_at": datetime(2024, 6, 2, 12, 0, tzinfo=UTC),
+                "created_at": datetime(2024, 6, 2, 12, 0, tzinfo=UTC),
+            }
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        project_connected_source_source_status,
+    )
+
+    status = project_connected_source_source_status(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert status is WorkspaceSourceStatus.READY
+
+
+def test_source_projection_handles_missing_operation_timestamps() -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    _seed_repo(repo)
+    repo.put_operation(
+        WorkspaceOperation(
+            operation_id="op-no-ts",
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            operation_type=WorkspaceOperationType.SOURCE_SYNC,
+            status=WorkspaceOperationStatus.COMPLETED,
+            completed_at=_NOW,
+        )
+    )
+    from local_workspace_application.workspaces.connected_source_source_projection import (
+        project_connected_source_source_status,
+        repair_connected_source_source_projection,
+    )
+
+    status = project_connected_source_source_status(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert status is WorkspaceSourceStatus.READY
+    repaired = repair_connected_source_source_projection(
+        repository=repo,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert repaired is not None
+    assert repaired.status is WorkspaceSourceStatus.READY
+
+
+@pytest.mark.asyncio
+async def test_indexed_binding_not_found_repairs_source_to_error(tmp_path: Path) -> None:
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_workspace(
+        Workspace(
+            workspace_id=_WORKSPACE,
+            tenant_id=_TENANT,
+            name="ws",
+            status=WorkspaceStatus.ACTIVE,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+    )
+    repo.put_source(
+        WorkspaceSource(
+            source_id=_SOURCE,
+            workspace_id=_WORKSPACE,
+            tenant_id=_TENANT,
+            source_type=WorkspaceSourceType.CONNECTED_SOURCE,
+            path="",
+            recursive=False,
+            status=WorkspaceSourceStatus.REGISTERED,
+            created_at=_NOW,
+            knowledge_configuration_creation_mutation_id="mut-1",
+            knowledge_configuration_visibility_revision=1,
+        )
+    )
+    repo.put_operation(_queued_operation())
+    settings = LocalWorkspaceBackendSettings(
+        data_home=str(tmp_path / "data"),
+        connected_source_opaque_ref_signing_key="recovery-signing-key",
+        slack_tenant_id=_TENANT,
+        connected_source_slack_connection_ref=_CONNECTION,
+    )
+    from local_workspace_application.workspaces.service import ManagedWorkspaceService
+
+    service = ManagedWorkspaceService(repo)
+    config = WorkspaceKnowledgeConfigurationService(repo, service)
+    mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        repo,
+        service,
+        config,
+        {
+            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
+                CreateIndexedSourceMutationHandler()
+            ),
+        },
+    )
+    indexing = _ConnectedSourceIndexingService()
+    wiring = build_connected_source_wiring(
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,  # type: ignore[arg-type]
+        settings=settings,
+    )
+    connected_sync = wiring.connected_source_sync_service
+
+    result = await connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+
+    assert result.status is WorkspaceOperationStatus.FAILED
+    assert result.error == "indexed_source_binding_not_found"
+    source = repo.get_source(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+    )
+    assert source is not None
+    assert source.status is WorkspaceSourceStatus.ERROR

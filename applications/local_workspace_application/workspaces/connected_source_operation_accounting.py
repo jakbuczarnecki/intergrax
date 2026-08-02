@@ -122,14 +122,6 @@ def apply_completed_delivery_accounting(
         receipt.items_failed,
     )
 
-    accountings = tuple(
-        repository.list_connected_source_delivery_accounting(
-            tenant_id=operation.tenant_id,
-            operation_id=operation.operation_id,
-        )
-    )
-    total_indexed, total_unchanged, total_failed = _aggregate_accounting_counters(accountings)
-
     for _ in range(_MAX_CAS_RETRIES):
         current = repository.get_operation(
             tenant_id=operation.tenant_id,
@@ -137,6 +129,14 @@ def apply_completed_delivery_accounting(
         )
         if current is None:
             return operation, ConnectedSourceDeliveryAccountingResult(applied=False)
+
+        accountings = tuple(
+            repository.list_connected_source_delivery_accounting(
+                tenant_id=operation.tenant_id,
+                operation_id=operation.operation_id,
+            )
+        )
+        total_indexed, total_unchanged, total_failed = _aggregate_accounting_counters(accountings)
 
         counters_match = (
             current.documents_indexed == total_indexed

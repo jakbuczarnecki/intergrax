@@ -166,7 +166,14 @@ class ManagedWorkspaceConnectedSourceSyncService:
             )
         )
         if binding_ref is None:
-            return self._fail(operation, "indexed_source_binding_not_found")
+            failed = self._fail(operation, "indexed_source_binding_not_found")
+            repair_connected_source_source_projection(
+                repository=self._repository,
+                tenant_id=tenant_id,
+                workspace_id=operation.workspace_id,
+                source_id=source.source_id,
+            )
+            return failed
 
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):

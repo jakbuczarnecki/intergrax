@@ -61,18 +61,6 @@ def record_connected_source_enqueue_intent(
     )
 
 
-def _document_store_task_record_exists(
-    queue: DocumentStoreTaskQueue,
-    *,
-    tenant_id: str,
-    task_id: str,
-) -> bool:
-    for row in queue.list_tasks(tenant_id, limit=500):
-        if row.task_id == task_id:
-            return True
-    return False
-
-
 def _inspect_document_store_task_status(
     queue: DocumentStoreTaskQueue,
     *,
@@ -81,9 +69,7 @@ def _inspect_document_store_task_status(
     queue_provider: str,
 ) -> TaskStatus | None:
     handle = TaskHandle(task_id=task_id, provider=queue_provider, tenant_id=tenant_id)
-    if not _document_store_task_record_exists(queue, tenant_id=tenant_id, task_id=task_id):
-        return None
-    return queue.get_status(handle)
+    return queue.get_status_if_present(handle)
 
 
 def _latest_task_is_active(
