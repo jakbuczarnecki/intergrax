@@ -8,10 +8,13 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRun,
     KnowledgeRemoteItemState,
+    KnowledgeRemoteItemStateReceipt,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncBatch,
     KnowledgeSyncCheckpoint,
+    KnowledgeSyncSinkReceipt,
 )
 
 
@@ -21,6 +24,10 @@ class KnowledgeSyncCheckpointConflict(Exception):
 
 class KnowledgeSyncCorruptState(Exception):
     """Durable synchronization state is corrupt or inconsistent."""
+
+
+class KnowledgeReconciliationRunConflict(Exception):
+    """Optimistic reconciliation-run compare-and-set conflict."""
 
 
 @runtime_checkable
@@ -42,8 +49,7 @@ class KnowledgeSourceLeaseRepository(Protocol):
         self,
         *,
         lease: KnowledgeSourceLeaseToken,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 @runtime_checkable
@@ -55,16 +61,14 @@ class KnowledgeSyncCheckpointRepository(Protocol):
         *,
         tenant_id: str,
         binding_id: str,
-    ) -> KnowledgeSyncCheckpoint | None:
-        ...
+    ) -> KnowledgeSyncCheckpoint | None: ...
 
     def commit(
         self,
         checkpoint: KnowledgeSyncCheckpoint,
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 @runtime_checkable
@@ -77,8 +81,7 @@ class KnowledgeRemoteItemStateRepository(Protocol):
         tenant_id: str,
         binding_id: str,
         remote_id: str,
-    ) -> KnowledgeRemoteItemState | None:
-        ...
+    ) -> KnowledgeRemoteItemState | None: ...
 
     def apply_batch(
         self,
@@ -87,8 +90,58 @@ class KnowledgeRemoteItemStateRepository(Protocol):
         binding_id: str,
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
-    ) -> None:
-        ...
+    ) -> None: ...
+
+    def inspect_delivery_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_state_mutations_fingerprint: str,
+    ) -> KnowledgeRemoteItemStateReceipt: ...
+
+
+@runtime_checkable
+class KnowledgeSyncSinkReceiptInspector(Protocol):
+    """Read-only sink delivery receipt inspection port."""
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ) -> KnowledgeSyncSinkReceipt: ...
+
+
+@runtime_checkable
+class KnowledgeReconciliationRunRepository(Protocol):
+    """Durable reconciliation-run port with optimistic compare-and-set semantics."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeReconciliationRun | None: ...
+
+    def create_initial_run(self, run: KnowledgeReconciliationRun) -> None: ...
+
+    def cas_replace(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None: ...
+
+    def cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None: ...
 
 
 @runtime_checkable
@@ -99,5 +152,4 @@ class KnowledgeSyncSink(Protocol):
         self,
         *,
         batch: KnowledgeSyncBatch,
-    ) -> None:
-        ...
+    ) -> None: ...

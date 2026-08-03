@@ -37,9 +37,13 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemState,
+    KnowledgeRemoteItemStateReceipt,
+    KnowledgeRemoteItemStateReceiptStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncBatch,
     KnowledgeSyncCheckpoint,
+    KnowledgeSyncSinkReceipt,
+    KnowledgeSyncSinkReceiptStatus,
 )
 from tests.unit.runtime.vendor_knowledge._fakes import make_content
 
@@ -191,7 +195,9 @@ class InMemoryLeaseRepository:
 
 @dataclass
 class InMemoryCheckpointRepository:
-    checkpoints: dict[tuple[str, str], KnowledgeSyncCheckpoint] = field(default_factory=dict)
+    checkpoints: dict[tuple[str, str], KnowledgeSyncCheckpoint] = field(
+        default_factory=dict
+    )
     get_calls: list[tuple[str, str]] = field(default_factory=list)
     commit_calls: list[dict[str, Any]] = field(default_factory=list)
     order: list[str] = field(default_factory=list)
@@ -237,7 +243,9 @@ class InMemoryCheckpointRepository:
 
 @dataclass
 class InMemoryRemoteItemStateRepository:
-    states: dict[tuple[str, str, str], KnowledgeRemoteItemState] = field(default_factory=dict)
+    states: dict[tuple[str, str, str], KnowledgeRemoteItemState] = field(
+        default_factory=dict
+    )
     applied_delivery_ids: set[str] = field(default_factory=set)
     apply_calls: list[dict[str, Any]] = field(default_factory=list)
     order: list[str] = field(default_factory=list)
@@ -279,6 +287,61 @@ class InMemoryRemoteItemStateRepository:
         for state in states:
             self.states[(tenant_id, binding_id, state.remote_id)] = state
         self.applied_delivery_ids.add(delivery_id)
+
+    def inspect_delivery_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_state_mutations_fingerprint: str,
+    ) -> KnowledgeRemoteItemStateReceipt:
+        if delivery_id not in self.applied_delivery_ids:
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.ABSENT
+            )
+        return KnowledgeRemoteItemStateReceipt(
+            status=KnowledgeRemoteItemStateReceiptStatus.COMPLETED,
+            delivery_id=delivery_id,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+        )
+
+
+@dataclass
+class RecordingSinkReceiptInspector:
+    durable: dict[str, str] = field(default_factory=dict)
+    unknown_delivery_ids: set[str] = field(default_factory=set)
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ) -> KnowledgeSyncSinkReceipt:
+        if delivery_id in self.unknown_delivery_ids:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.UNKNOWN,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        stored = self.durable.get(delivery_id)
+        if stored is None:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.ABSENT
+            )
+        if stored != prepared_batch_payload_fingerprint:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        return KnowledgeSyncSinkReceipt(
+            status=KnowledgeSyncSinkReceiptStatus.APPLIED,
+            delivery_id=delivery_id,
+            prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+        )
 
 
 @dataclass

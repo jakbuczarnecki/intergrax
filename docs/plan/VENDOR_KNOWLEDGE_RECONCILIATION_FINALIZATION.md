@@ -5,7 +5,7 @@
 **Review fix:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1`
 **Review-fix-1 status:** `CHANGES_REQUIRED`
 **Review fix 2:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2`
-**Review-fix-2 status:** `READY_FOR_REVIEW`
+**Review-fix-2 status:** `ACCEPTED`
 **Branch:** `development`
 **Plan:** [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
 **Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
@@ -922,7 +922,7 @@ Architecture only — implementation is split as follows.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`
 
-**Status:** `PLANNED` — blocked pending architecture correction acceptance.
+**Status:** `READY_FOR_REVIEW`
 
 Contracts and durable repositories:
 
@@ -942,7 +942,7 @@ Contracts and durable repositories:
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B`
 
-**Status:** `PLANNED`.
+**Status:** `PLANNED` — next after `1A` acceptance.
 
 Coordinator integration:
 
@@ -979,9 +979,9 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 |---|---|
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` | `READY_FOR_REVIEW` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `PLANNED` — blocked pending architecture correction acceptance |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `READY_FOR_REVIEW` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` — next after `1A` acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |
