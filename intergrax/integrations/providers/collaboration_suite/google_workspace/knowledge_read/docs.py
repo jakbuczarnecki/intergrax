@@ -289,19 +289,18 @@ def _validate_table_cell_ignored_fields(cell_mapping: dict[str, object]) -> None
         _require_exact_dict(cell_mapping["suggestedTableCellStyleChanges"])
 
 
-def _validate_unique_resource_id_tuple(value: object) -> tuple[str, ...]:
-    if value is None:
-        return ()
-    if isinstance(value, tuple):
-        items = value
-    elif isinstance(value, list):
-        items = value
-    else:
+def _validate_exact_unique_resource_id_tuple(value: object) -> tuple[str, ...]:
+    if type(value) is not tuple:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-    validated = tuple(_validate_resource_identifier(item) for item in items)
-    if len(validated) != len(set(validated)):
-        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-    return validated
+    validated: list[str] = []
+    seen: set[str] = set()
+    for item in value:
+        identifier = _validate_resource_identifier(item)
+        if identifier in seen:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        seen.add(identifier)
+        validated.append(identifier)
+    return tuple(validated)
 
 
 def _validate_index_range(
@@ -511,8 +510,6 @@ class GoogleDocsInlineElement(BaseModel):
             return None
         if type(value) is not str:
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-        if len(value) > _MAX_TEXT_FIELD_LENGTH:
-            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         return value
 
     @field_validator("auxiliary_text", mode="before")
@@ -520,7 +517,9 @@ class GoogleDocsInlineElement(BaseModel):
     def _validate_auxiliary_text_field(cls, value: object) -> str | None:
         if value is None:
             return None
-        return _validate_exact_nonblank_bounded_field(value, max_length=_MAX_TEXT_FIELD_LENGTH)
+        if type(value) is not str:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        return value
 
     @field_validator("mime_type", mode="before")
     @classmethod
@@ -532,16 +531,21 @@ class GoogleDocsInlineElement(BaseModel):
     @model_validator(mode="after")
     def _validate_invariants(self) -> GoogleDocsInlineElement:
         _validate_index_range(self.start_index, self.end_index)
-        if self.text is not None:
-            if self.kind is GoogleDocsInlineKind.TEXT_RUN:
-                if _UNSAFE_TEXT_CONTROL.search(self.text):
-                    raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-            elif not self.text.strip() or _ASCII_CONTROL.search(self.text):
+        if self.kind is GoogleDocsInlineKind.TEXT_RUN:
+            if self.text is None:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if _UNSAFE_TEXT_CONTROL.search(self.text):
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if len(self.text) > _MAX_TEXT_CHARS:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        elif self.text is not None:
+            if not self.text.strip() or _ASCII_CONTROL.search(self.text):
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if len(self.text) > _MAX_TEXT_FIELD_LENGTH:
                 raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         if self.kind is GoogleDocsInlineKind.TEXT_RUN:
             if (
-                self.text is None
-                or self.reference_id is not None
+                self.reference_id is not None
                 or self.auxiliary_text is not None
                 or self.mime_type is not None
             ):
@@ -588,6 +592,12 @@ class GoogleDocsInlineElement(BaseModel):
                 or self.mime_type is not None
             ):
                 raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if (
+                not self.auxiliary_text.strip()
+                or _ASCII_CONTROL.search(self.auxiliary_text)
+                or len(self.auxiliary_text) > _MAX_TEXT_FIELD_LENGTH
+            ):
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         elif self.kind is GoogleDocsInlineKind.RICH_LINK:
             if self.reference_id is None or self.text is None or self.auxiliary_text is not None:
                 raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
@@ -597,6 +607,12 @@ class GoogleDocsInlineElement(BaseModel):
                 or self.text is None
                 or self.auxiliary_text is None
                 or self.mime_type is not None
+            ):
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if (
+                not self.auxiliary_text.strip()
+                or _ASCII_CONTROL.search(self.auxiliary_text)
+                or len(self.auxiliary_text) > _MAX_TIMESTAMP_LENGTH
             ):
                 raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         return self
@@ -614,15 +630,7 @@ class GoogleDocsParagraph(BaseModel):
     @field_validator("positioned_object_ids", mode="before")
     @classmethod
     def _validate_positioned_object_ids(cls, value: object) -> tuple[str, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, tuple):
-            items = value
-        elif isinstance(value, list):
-            items = value
-        else:
-            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-        return tuple(_validate_resource_identifier(item) for item in items)
+        return _validate_exact_unique_resource_id_tuple(value)
 
     @model_validator(mode="after")
     def _validate_paragraph_invariants(self) -> GoogleDocsParagraph:
@@ -857,7 +865,7 @@ class GoogleDocsTab(BaseModel):
     @field_validator("list_ids", "inline_object_ids", "positioned_object_ids", mode="before")
     @classmethod
     def _validate_tab_resource_id_tuples(cls, value: object) -> tuple[str, ...]:
-        return _validate_unique_resource_id_tuple(value)
+        return _validate_exact_unique_resource_id_tuple(value)
 
     @model_validator(mode="after")
     def _validate_tab_invariants(self) -> GoogleDocsTab:

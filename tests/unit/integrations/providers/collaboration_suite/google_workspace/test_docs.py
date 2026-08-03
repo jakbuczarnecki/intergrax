@@ -44,6 +44,9 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDocsTableCell,
     GoogleDocsTableRow,
     GoogleDocsTab,
+    _MAX_TEXT_CHARS,
+    _MAX_TEXT_FIELD_LENGTH,
+    _MAX_TIMESTAMP_LENGTH,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceApiError,
@@ -1799,6 +1802,221 @@ def test_explicit_empty_content_collections_accepted() -> None:
     blocks = document.tabs[0].segments[0].blocks
     assert blocks[0].paragraph.elements == ()
     assert blocks[1].table.table_rows[0].cells[0].blocks == ()
+
+
+def test_text_run_parser_accepts_4097_characters() -> None:
+    long_text = "x" * 4097
+    body = [_paragraph_block(1, 4099, [_text_run(long_text, 1, 4098)])]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    text_run = document.tabs[0].segments[0].blocks[0].paragraph.elements[0]
+    assert text_run.kind is GoogleDocsInlineKind.TEXT_RUN
+    assert text_run.text == long_text
+    assert len(text_run.text) == 4097
+
+
+def test_text_run_direct_model_accepts_longer_than_4096() -> None:
+    long_text = "a" * 4097
+    element = _inline(GoogleDocsInlineKind.TEXT_RUN, text=long_text)
+    assert element.text == long_text
+    assert len(element.text) == 4097
+
+
+def test_text_run_direct_model_rejects_over_max_text_chars() -> None:
+    with pytest.raises(ValidationError):
+        _inline(GoogleDocsInlineKind.TEXT_RUN, text="b" * (_MAX_TEXT_CHARS + 1))
+
+
+@pytest.mark.parametrize(
+    "kind,kwargs",
+    [
+        (
+            GoogleDocsInlineKind.PERSON,
+            {"reference_id": "person-1", "text": "x" * (_MAX_TEXT_FIELD_LENGTH + 1), "auxiliary_text": "a@example.com"},
+        ),
+        (
+            GoogleDocsInlineKind.RICH_LINK,
+            {"reference_id": "rich-1", "text": "x" * (_MAX_TEXT_FIELD_LENGTH + 1)},
+        ),
+        (
+            GoogleDocsInlineKind.DATE,
+            {
+                "reference_id": "date-1",
+                "text": "x" * (_MAX_TEXT_FIELD_LENGTH + 1),
+                "auxiliary_text": "2024-01-01T00:00:00Z",
+            },
+        ),
+    ],
+)
+def test_non_text_run_text_over_field_limit_rejected(
+    kind: GoogleDocsInlineKind,
+    kwargs: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError):
+        _inline(kind, **kwargs)
+
+
+def test_date_timestamp_256_chars_accepted() -> None:
+    timestamp = "t" * _MAX_TIMESTAMP_LENGTH
+    element = _inline(
+        GoogleDocsInlineKind.DATE,
+        reference_id="date-1",
+        text="Jan 1",
+        auxiliary_text=timestamp,
+    )
+    assert element.auxiliary_text == timestamp
+    assert len(element.auxiliary_text) == _MAX_TIMESTAMP_LENGTH
+
+
+def test_date_timestamp_257_chars_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _inline(
+            GoogleDocsInlineKind.DATE,
+            reference_id="date-1",
+            text="Jan 1",
+            auxiliary_text="t" * (_MAX_TIMESTAMP_LENGTH + 1),
+        )
+
+
+def _minimal_body_segment() -> GoogleDocsSegment:
+    return GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=())
+
+
+class _TupleSubclass(tuple[str, ...]):
+    pass
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_exact_tuple_accepted(field_name: str) -> None:
+    tab = GoogleDocsTab(
+        tab_id="tab-1",
+        title="Main",
+        index=0,
+        nesting_level=0,
+        segments=(_minimal_body_segment(),),
+        **{field_name: ("id-1", "id-2")},
+    )
+    assert getattr(tab, field_name) == ("id-1", "id-2")
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_list_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: ["id-1"]},
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_none_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: None},
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_tuple_subclass_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: _TupleSubclass(("id-1",))},
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_duplicate_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: ("id-1", "id-1")},
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_canonical_duplicate_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: (" id-1", "id-1")},
+        )
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    ["list_ids", "inline_object_ids", "positioned_object_ids"],
+)
+def test_tab_identifier_collection_malformed_id_rejected(field_name: str) -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(_minimal_body_segment(),),
+            **{field_name: ("bad\x00id",)},
+        )
+
+
+def test_paragraph_positioned_object_ids_exact_tuple_accepted() -> None:
+    paragraph = GoogleDocsParagraph(elements=(), positioned_object_ids=("pos-1", "pos-2"))
+    assert paragraph.positioned_object_ids == ("pos-1", "pos-2")
+
+
+def test_paragraph_positioned_object_ids_list_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsParagraph(elements=(), positioned_object_ids=["pos-1"])  # type: ignore[arg-type]
+
+
+def test_paragraph_positioned_object_ids_none_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsParagraph(elements=(), positioned_object_ids=None)  # type: ignore[arg-type]
+
+
+def test_paragraph_positioned_object_ids_duplicate_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsParagraph(elements=(), positioned_object_ids=("pos-1", "pos-1"))
 
 
 @pytest.mark.parametrize(
