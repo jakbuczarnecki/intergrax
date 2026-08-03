@@ -578,3 +578,157 @@ def test_model_input_envelope_rejects_non_string_dict_key() -> None:
                 ChatMessage(role="user", content="final", entry_id="u1"),
             ]
         )
+
+
+@pytest.mark.parametrize(
+    ("messages", "match"),
+    [
+        (None, "model input messages must be a sequence of ChatMessage"),
+        ("messages", "model input messages must be a sequence of ChatMessage"),
+        (b"messages", "model input messages must be a sequence of ChatMessage"),
+        (object(), "model input messages must be a sequence of ChatMessage"),
+        ([object()], "model input messages must contain only ChatMessage instances"),
+        ([{}], "model input messages must contain only ChatMessage instances"),
+        (["message"], "model input messages must contain only ChatMessage instances"),
+    ],
+)
+def test_build_model_input_messages_envelope_rejects_malformed_outer_sequence(
+    messages: object,
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        build_model_input_messages_envelope(messages)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "messages",
+    [
+        None,
+        "messages",
+        [object()],
+    ],
+)
+def test_copy_model_input_messages_rejects_malformed_outer_sequence(messages: object) -> None:
+    with pytest.raises(ValueError):
+        copy_model_input_messages(messages)  # type: ignore[arg-type]
+
+
+def test_replace_final_user_message_rejects_malformed_outer_sequence() -> None:
+    with pytest.raises(ValueError, match="model input messages must be a sequence of ChatMessage"):
+        replace_final_user_message(None, "prompt")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("message", "match"),
+    [
+        (
+            ChatMessage(role="user", content="x", entry_id=[]),  # type: ignore[arg-type]
+            "invalid model input message entry_id",
+        ),
+        (
+            ChatMessage(role=[], content="x", entry_id="id-1"),  # type: ignore[arg-type]
+            "invalid model input message role",
+        ),
+    ],
+)
+def test_build_model_input_messages_envelope_rejects_runtime_invalid_chat_message_fields(
+    message: ChatMessage,
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        build_model_input_messages_envelope([message])
+
+
+@pytest.mark.parametrize(
+    ("role", "match"),
+    [
+        ({}, "invalid model input message role"),
+        (_ColorStrEnum.RED, "invalid model input message role"),
+    ],
+)
+def test_build_model_input_messages_envelope_rejects_invalid_role_container(
+    role: object,
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(role=role, content="x", entry_id="id-1"),  # type: ignore[arg-type]
+            ]
+        )
+
+
+@pytest.mark.parametrize(
+    ("entry_id", "match"),
+    [
+        ({}, "invalid model input message entry_id"),
+        ([], "invalid model input message entry_id"),
+    ],
+)
+def test_build_model_input_messages_envelope_rejects_invalid_entry_id_container(
+    entry_id: object,
+    match: str,
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(role="user", content="x", entry_id=entry_id),  # type: ignore[arg-type]
+            ]
+        )
+
+
+@pytest.mark.parametrize(
+    "role",
+    [
+        [],
+        {},
+        set(),
+        _ColorStrEnum.RED,
+    ],
+)
+def test_model_input_envelope_parser_rejects_malformed_role(role: object) -> None:
+    envelope = build_model_input_messages_envelope(
+        [ChatMessage(role="user", content="x", entry_id="id-1")]
+    )
+    rows = envelope["messages"]
+    assert isinstance(rows, list)
+    first_row = rows[0]
+    assert isinstance(first_row, dict)
+    tampered_row = dict(first_row)
+    tampered_row["role"] = role
+    tampered = dict(envelope)
+    tampered["messages"] = [tampered_row]
+    with pytest.raises(ValueError, match="invalid model input message role"):
+        model_input_messages_from_envelope(tampered)
+
+
+class _ModelInputVersion(StrEnum):
+    V1 = "model_input_messages.v1"
+
+
+def test_model_input_envelope_parser_rejects_str_enum_schema_version() -> None:
+    envelope = build_model_input_messages_envelope(
+        [ChatMessage(role="user", content="x", entry_id="id-1")]
+    )
+    envelope["schema_version"] = _ModelInputVersion.V1
+    with pytest.raises(ValueError, match="invalid model input envelope schema_version"):
+        model_input_messages_from_envelope(envelope)
+
+
+@pytest.mark.parametrize(
+    "schema_version",
+    [
+        [],
+        {},
+        None,
+    ],
+)
+def test_model_input_envelope_parser_rejects_malformed_schema_version(
+    schema_version: object,
+) -> None:
+    envelope = build_model_input_messages_envelope(
+        [ChatMessage(role="user", content="x", entry_id="id-1")]
+    )
+    envelope["schema_version"] = schema_version
+    with pytest.raises(ValueError, match="invalid model input envelope schema_version"):
+        model_input_messages_from_envelope(envelope)

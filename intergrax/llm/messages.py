@@ -170,6 +170,25 @@ def _json_safe_tool_calls(tool_calls: Optional[List[dict]]) -> Optional[List[dic
   return safe
 
 
+def _require_chat_message_sequence(
+  messages: object,
+) -> tuple[ChatMessage, ...]:
+  if messages is None or type(messages) in (str, bytes, bytearray):
+    raise ValueError("model input messages must be a sequence of ChatMessage")
+  if not isinstance(messages, Sequence):
+    raise ValueError("model input messages must be a sequence of ChatMessage")
+  try:
+    iterator = iter(messages)
+  except TypeError:
+    raise ValueError("model input messages must be a sequence of ChatMessage") from None
+  validated: list[ChatMessage] = []
+  for message in iterator:
+    if type(message) is not ChatMessage:
+      raise ValueError("model input messages must contain only ChatMessage instances")
+    validated.append(message)
+  return tuple(validated)
+
+
 def _message_to_envelope_row(message: ChatMessage) -> dict[str, object]:
   return {
     "entry_id": message.entry_id,
@@ -184,16 +203,18 @@ def _message_to_envelope_row(message: ChatMessage) -> dict[str, object]:
 def build_model_input_messages_envelope(
   messages: Sequence[ChatMessage],
 ) -> dict[str, object]:
+  validated_messages = _require_chat_message_sequence(messages)
   rows: list[dict[str, object]] = []
+  canonical_messages: list[ChatMessage] = []
   seen_entry_ids: set[str] = set()
-  for message in messages:
-    row = _message_to_envelope_row(message)
-    entry_id = row["entry_id"]
-    if type(entry_id) is str and entry_id in seen_entry_ids:
+  for source_message in validated_messages:
+    row = _message_to_envelope_row(source_message)
+    canonical_message = _chat_message_from_envelope_row(row)
+    if canonical_message.entry_id in seen_entry_ids:
       raise ValueError("duplicate model input message entry_id")
-    seen_entry_ids.add(entry_id)
+    seen_entry_ids.add(canonical_message.entry_id)
     rows.append(row)
-  canonical_messages = [_chat_message_from_envelope_row(row) for row in rows]
+    canonical_messages.append(canonical_message)
   messages_hash = compute_model_facing_messages_hash(canonical_messages)
   return {
     "schema_version": MODEL_INPUT_MESSAGES_SCHEMA_VERSION,
@@ -208,7 +229,7 @@ def _chat_message_from_envelope_row(row: dict[str, object]) -> ChatMessage:
   if set(row.keys()) != _MESSAGE_ROW_KEYS:
     raise ValueError("invalid model input message keys")
   role = row["role"]
-  if role not in _ALLOWED_MESSAGE_ROLES:
+  if type(role) is not str or role not in _ALLOWED_MESSAGE_ROLES:
     raise ValueError("invalid model input message role")
   content = row["content"]
   if type(content) is not str:
@@ -251,7 +272,10 @@ def model_input_messages_from_envelope(
   if set(raw.keys()) != _ENVELOPE_KEYS:
     raise ValueError("invalid model input envelope keys")
   schema_version = raw["schema_version"]
-  if schema_version != MODEL_INPUT_MESSAGES_SCHEMA_VERSION:
+  if (
+    type(schema_version) is not str
+    or schema_version != MODEL_INPUT_MESSAGES_SCHEMA_VERSION
+  ):
     raise ValueError("invalid model input envelope schema_version")
   raw_messages = raw["messages"]
   if type(raw_messages) is not list:

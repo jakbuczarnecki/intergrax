@@ -34,7 +34,10 @@ from intergrax.context.planning import (
     ContextSourceGroup,
 )
 from intergrax.context.planner import ContextPlanner
-from intergrax.context.session_history import build_session_history_snapshot
+from intergrax.context.session_history import (
+    build_session_history_snapshot,
+    fragments_from_session_history_snapshot,
+)
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -131,21 +134,7 @@ def _plan_fixture(
         revision_id="rev-1",
         messages=history_messages,
     )
-    fragments = [
-        ContextFragment(
-            fragment_id=f"frag-{index}",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content=content,
-            token_estimate=_count_tokens(content),
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": f"m{index}"},
-        )
-        for index, content in enumerate(history_contents)
-    ]
+    fragments = fragments_from_session_history_snapshot(snapshot)
     formatter = DefaultContextFormatter()
     request = _request()
     fragment_messages = formatter.format(fragments, request)
@@ -312,20 +301,13 @@ async def test_select_only_without_runtime() -> None:
         artifact_requirement=None,
         final_validation_requirements=("respect_resolved_global_budget",),
     )
-    fragments = (
-        ContextFragment(
-            fragment_id="frag-drop",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content="droppable history",
-            token_estimate=80,
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": "m0"},
-        ),
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev-1",
+        messages=[ChatMessage(role="user", content="droppable history", entry_id="m0")],
     )
+    fragments = fragments_from_session_history_snapshot(snapshot)
     formatter = DefaultContextFormatter()
     request = _request()
     fragment_messages = formatter.format(fragments, request)
@@ -1142,53 +1124,6 @@ async def test_non_contiguous_target_fails_before_repository_access() -> None:
         artifact_requirement=artifact_requirement,
         final_validation_requirements=("respect_resolved_global_budget",),
     )
-    fragments = (
-        ContextFragment(
-            fragment_id="frag-a",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content="history a " * 30,
-            token_estimate=80,
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": "m0"},
-        ),
-        ContextFragment(
-            fragment_id="frag-mid",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content="middle",
-            token_estimate=10,
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": "mid"},
-        ),
-        ContextFragment(
-            fragment_id="frag-b",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content="history b " * 30,
-            token_estimate=80,
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": "m1"},
-        ),
-    )
-    formatter = DefaultContextFormatter()
-    request = _request()
-    fragment_messages = formatter.format(fragments, request)
-    messages_for_compile = [
-        fragment_messages[0],
-        fragment_messages[1],
-        fragment_messages[2],
-        ChatMessage(role="user", content="current", entry_id="current"),
-    ]
     snapshot = build_session_history_snapshot(
         tenant_id="tenant",
         context_scope_id="scope",
@@ -1199,6 +1134,16 @@ async def test_non_contiguous_target_fails_before_repository_access() -> None:
             ChatMessage(role="user", content="history b " * 30, entry_id="m1"),
         ],
     )
+    fragments = fragments_from_session_history_snapshot(snapshot)
+    formatter = DefaultContextFormatter()
+    request = _request()
+    fragment_messages = formatter.format(fragments, request)
+    messages_for_compile = [
+        fragment_messages[0],
+        fragment_messages[1],
+        fragment_messages[2],
+        ChatMessage(role="user", content="current", entry_id="current"),
+    ]
     repo = _SpyOptimizationArtifactRepository()
     id_calls, id_factory = _artifact_id_call_counter()
     model_calls = [0]
@@ -1321,28 +1266,6 @@ async def test_partial_multi_message_group_fails_before_repository_access(
         "m0": "history part zero " * 20,
         "m1": "history part one " * 20,
     }
-    fragments = tuple(
-        ContextFragment(
-            fragment_id=f"frag-{source_ref}",
-            source=ContextFragmentSource.SESSION_HISTORY,
-            source_id="session",
-            content=history_by_ref[source_ref],
-            token_estimate=40,
-            relevance_score=0.5,
-            freshness_score=0.5,
-            confidence_score=0.5,
-            mandatory=False,
-            metadata={"message_id": source_ref},
-        )
-        for source_ref in compile_history_refs
-    )
-    formatter = DefaultContextFormatter()
-    request = _request()
-    fragment_messages = formatter.format(fragments, request)
-    messages_for_compile = [
-        *fragment_messages,
-        ChatMessage(role="user", content="current", entry_id="current"),
-    ]
     snapshot = build_session_history_snapshot(
         tenant_id="tenant",
         context_scope_id="scope",
@@ -1352,6 +1275,18 @@ async def test_partial_multi_message_group_fails_before_repository_access(
             for source_ref in history_source_refs
         ],
     )
+    fragments_by_id = {
+        fragment.metadata["message_id"]: fragment
+        for fragment in fragments_from_session_history_snapshot(snapshot)
+    }
+    fragments = tuple(fragments_by_id[source_ref] for source_ref in compile_history_refs)
+    formatter = DefaultContextFormatter()
+    request = _request()
+    fragment_messages = formatter.format(fragments, request)
+    messages_for_compile = [
+        *fragment_messages,
+        ChatMessage(role="user", content="current", entry_id="current"),
+    ]
     repo = _SpyOptimizationArtifactRepository()
     id_calls, id_factory = _artifact_id_call_counter()
     model_calls = [0]
