@@ -64,6 +64,8 @@ def _is_same_mutation_attempt(
         return False
     if expected.semantic_identity_hash != current.semantic_identity_hash:
         return False
+    if expected.stage_manifest_hash != current.stage_manifest_hash:
+        return False
     if require_target_revision_match and expected.target_revision != current.target_revision:
         return False
     return True
@@ -253,12 +255,14 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         normalized_request_hash: str,
         semantic_identity_hash: str | None,
         intent: object,
+        stage_manifest_hash: str | None = None,
     ) -> WorkspaceKnowledgeMutationExecutionResult:
         self._validate_execute_inputs(
             expected_revision=expected_revision,
             idempotency_key_hash=idempotency_key_hash,
             normalized_request_hash=normalized_request_hash,
             semantic_identity_hash=semantic_identity_hash,
+            stage_manifest_hash=stage_manifest_hash,
         )
         self._require_workspace(tenant_id=tenant_id, workspace_id=workspace_id)
         handler = self._require_handler(operation)
@@ -270,6 +274,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             idempotency_key_hash=idempotency_key_hash,
             normalized_request_hash=normalized_request_hash,
             semantic_identity_hash=semantic_identity_hash,
+            stage_manifest_hash=stage_manifest_hash,
             handler=handler,
         )
         if isinstance(mutation, WorkspaceKnowledgeMutationExecutionResult):
@@ -482,6 +487,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         idempotency_key_hash: str,
         normalized_request_hash: str,
         semantic_identity_hash: str | None,
+        stage_manifest_hash: str | None,
         handler: WorkspaceKnowledgeMutationHandler,
     ) -> WorkspaceKnowledgeMutationRecord | WorkspaceKnowledgeMutationExecutionResult:
         now = self._clock()
@@ -493,6 +499,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             idempotency_key_hash=idempotency_key_hash,
             normalized_request_hash=normalized_request_hash,
             semantic_identity_hash=semantic_identity_hash,
+            stage_manifest_hash=stage_manifest_hash,
             status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
             created_at=now,
             updated_at=now,
@@ -520,6 +527,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 normalized_request_hash=normalized_request_hash,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
+                stage_manifest_hash=stage_manifest_hash,
                 handler=handler,
             )
             if isinstance(classified, WorkspaceKnowledgeMutationExecutionResult):
@@ -537,6 +545,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         normalized_request_hash: str,
         tenant_id: str,
         workspace_id: str,
+        stage_manifest_hash: str | None,
         handler: WorkspaceKnowledgeMutationHandler,
     ) -> WorkspaceKnowledgeMutationRecord | WorkspaceKnowledgeMutationExecutionResult:
         if existing.normalized_request_hash != normalized_request_hash:
@@ -554,7 +563,10 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             )
 
         if status is WorkspaceKnowledgeMutationStatusV1.ABORTED:
-            restarted = self._restart_aborted_mutation(existing)
+            restarted = self._restart_aborted_mutation(
+                existing,
+                stage_manifest_hash=stage_manifest_hash,
+            )
             return restarted
 
         if status in (
@@ -578,6 +590,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
                 operation=existing.operation,
                 idempotency_key_hash=existing.idempotency_key_hash,
                 normalized_request_hash=normalized_request_hash,
+                stage_manifest_hash=stage_manifest_hash,
                 handler=handler,
             )
 
@@ -588,6 +601,8 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
     def _restart_aborted_mutation(
         self,
         aborted: WorkspaceKnowledgeMutationRecord,
+        *,
+        stage_manifest_hash: str | None,
     ) -> WorkspaceKnowledgeMutationRecord | WorkspaceKnowledgeMutationExecutionResult:
         now = self._clock()
         replacement = WorkspaceKnowledgeMutationRecord(
@@ -598,6 +613,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             idempotency_key_hash=aborted.idempotency_key_hash,
             normalized_request_hash=aborted.normalized_request_hash,
             semantic_identity_hash=aborted.semantic_identity_hash,
+            stage_manifest_hash=stage_manifest_hash,
             status=WorkspaceKnowledgeMutationStatusV1.RESERVED,
             created_at=now,
             updated_at=now,
@@ -736,6 +752,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         operation: WorkspaceKnowledgeMutationOperationV1,
         idempotency_key_hash: str,
         normalized_request_hash: str,
+        stage_manifest_hash: str | None,
         handler: WorkspaceKnowledgeMutationHandler,
     ) -> WorkspaceKnowledgeMutationRecord | WorkspaceKnowledgeMutationExecutionResult:
         reloaded = self._reload_mutation(
@@ -757,7 +774,10 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         if status is WorkspaceKnowledgeMutationStatusV1.COMMITTED:
             return self._committed_replay_result(reloaded)
         if status is WorkspaceKnowledgeMutationStatusV1.ABORTED:
-            return self._restart_aborted_mutation(reloaded)
+            return self._restart_aborted_mutation(
+                reloaded,
+                stage_manifest_hash=stage_manifest_hash,
+            )
         if status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED:
             raise WorkspaceKnowledgeConfigurationMutationError(
                 "configuration_recovery_required"
@@ -3006,6 +3026,7 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
         idempotency_key_hash: str,
         normalized_request_hash: str,
         semantic_identity_hash: str | None,
+        stage_manifest_hash: str | None,
     ) -> None:
         if not isinstance(expected_revision, int) or expected_revision < 0:
             raise WorkspaceKnowledgeConfigurationMutationError(
@@ -3023,4 +3044,9 @@ class WorkspaceKnowledgeConfigurationMutationEngine:
             if _SHA256_HEX_RE.fullmatch(semantic_identity_hash) is None:
                 raise WorkspaceKnowledgeConfigurationMutationError(
                     "knowledge_configuration_semantic_identity_hash_invalid"
+                )
+        if stage_manifest_hash is not None:
+            if _SHA256_HEX_RE.fullmatch(stage_manifest_hash) is None:
+                raise WorkspaceKnowledgeConfigurationMutationError(
+                    "knowledge_configuration_stage_manifest_hash_invalid"
                 )

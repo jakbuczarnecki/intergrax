@@ -170,6 +170,30 @@ def test_sha256_fields_reject_invalid_values(hash_value: str) -> None:
         _indexed_source_binding(semantic_identity_hash=hash_value)
 
 
+@pytest.mark.parametrize(
+    "hash_value",
+    [
+        "A" * 64,
+        "a" * 63,
+        "a" * 65,
+        "not-hex",
+    ],
+)
+def test_stage_manifest_hash_rejects_invalid_values(hash_value: str) -> None:
+    with pytest.raises(ValidationError):
+        _mutation_record(stage_manifest_hash=hash_value)
+
+
+def test_stage_manifest_hash_missing_is_valid() -> None:
+    record = _mutation_record()
+    assert record.stage_manifest_hash is None
+
+
+def test_stage_manifest_hash_valid_lowercase_accepted() -> None:
+    record = _mutation_record(stage_manifest_hash=_SHA256)
+    assert record.stage_manifest_hash == _SHA256
+
+
 # --- Connection attachment ---
 
 

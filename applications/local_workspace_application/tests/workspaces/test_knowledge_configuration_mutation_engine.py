@@ -536,6 +536,7 @@ def _execute(
     idempotency_key_hash: str = _SHA256,
     normalized_request_hash: str = _SHA256,
     semantic_identity_hash: str | None = None,
+    stage_manifest_hash: str | None = None,
     intent: object = object(),
 ) -> Any:
     return engine.execute(
@@ -546,6 +547,7 @@ def _execute(
         idempotency_key_hash=idempotency_key_hash,
         normalized_request_hash=normalized_request_hash,
         semantic_identity_hash=semantic_identity_hash,
+        stage_manifest_hash=stage_manifest_hash,
         intent=intent,
     )
 
@@ -802,6 +804,72 @@ def test_aborted_restart_preserves_row_identity_and_clears_state() -> None:
     assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
     assert loaded.error_code is None
     assert loaded.target_revision == 1
+
+
+# --- stage_manifest_hash ---
+
+
+_MANIFEST_A = "a" * 64
+_MANIFEST_B = "b" * 64
+
+
+def test_execute_persists_stage_manifest_hash() -> None:
+    engine, repo, _handler = _build_engine()
+    result = _execute(engine, stage_manifest_hash=_MANIFEST_A)
+    assert result.mutation.stage_manifest_hash == _MANIFEST_A
+
+
+def test_committed_replay_ignores_changed_stage_manifest_hash() -> None:
+    engine, repo, handler = _build_engine()
+    first = _execute(engine, stage_manifest_hash=_MANIFEST_A)
+    handler.stage_calls = 0
+    second = _execute(engine, stage_manifest_hash=_MANIFEST_B)
+    assert first.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
+    assert second.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.stage_manifest_hash == _MANIFEST_A
+    assert handler.stage_calls == 0
+
+
+def test_aborted_retry_uses_fresh_stage_manifest_hash() -> None:
+    engine, repo, _handler = _build_engine(mutation_ids=["mutation-retry", "mutation-new"])
+    aborted = _mutation_record(
+        status=WorkspaceKnowledgeMutationStatusV1.ABORTED,
+        mutation_id="mutation-old",
+        target_revision=2,
+        stage_manifest_hash=_MANIFEST_A,
+        error_code="configuration_revision_conflict",
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(aborted)
+    result = _execute(engine, stage_manifest_hash=_MANIFEST_B)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.stage_manifest_hash == _MANIFEST_B
+
+
+def test_existing_callers_persist_stage_manifest_hash_none() -> None:
+    engine, repo, _handler = _build_engine()
+    _execute(engine)
+    loaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=_OPERATION,
+        idempotency_key_hash=_SHA256,
+    )
+    assert loaded is not None
+    assert loaded.stage_manifest_hash is None
 
 
 # --- Semantic no-op ---

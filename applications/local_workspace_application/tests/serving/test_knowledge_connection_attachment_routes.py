@@ -24,6 +24,9 @@ from local_workspace_application.serving.knowledge_connection_attachment_routes 
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
 )
+from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
+    DetachConnectionMutationHandler,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeMutationOperationV1,
@@ -36,6 +39,9 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
     WorkspaceConnectionAttachmentService,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_service import (
+    WorkspaceConnectionDetachmentService,
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
@@ -102,6 +108,7 @@ def _build_client(
     workspaces: dict[tuple[str, str], Workspace] | None = None,
     connections: dict[tuple[str, str], SafeTenantConnectionV1] | None = None,
     mount_routes: bool = True,
+    with_detach: bool = True,
 ) -> tuple[TestClient, ManagedWorkspaceRepository, _FakeConnectionPort]:
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
     workspace_map = workspaces if workspaces is not None else {(_TENANT, _WORKSPACE): _workspace()}
@@ -109,23 +116,47 @@ def _build_client(
         repo.put_workspace(workspace)
     lookup = _FakeWorkspaceLookup(workspace_map)
     config_service = WorkspaceKnowledgeConfigurationService(repo, lookup)
+    mutation_ids = ["mutation-1", "mutation-2", "mutation-3"]
+    idx = {"i": 0}
+
+    def _next_id() -> str:
+        value = mutation_ids[idx["i"]]
+        idx["i"] = min(idx["i"] + 1, len(mutation_ids) - 1)
+        return value
+
     engine = WorkspaceKnowledgeConfigurationMutationEngine(
         repo,
         lookup,
         config_service,
-        {WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: AttachConnectionMutationHandler()},
+        {
+            WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: AttachConnectionMutationHandler(),
+            WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION: DetachConnectionMutationHandler(),
+        },
         clock=lambda: _NOW,
-        mutation_id_factory=lambda: "mutation-1",
+        mutation_id_factory=_next_id,
     )
     port = _FakeConnectionPort(connections or {(_TENANT, _CONNECTION): _safe_connection()})
     app = FastAPI()
     if mount_routes:
+        class _EmptyBindingPort:
+            def get_binding(self, *, tenant_id: str, binding_id: str):
+                return None
+
         mount_knowledge_connection_attachment_routes(
             app,
             attachment_service=WorkspaceConnectionAttachmentService(
                 connection_port=port,
                 configuration_service=config_service,
                 mutation_engine=engine,
+            ),
+            detachment_service=(
+                WorkspaceConnectionDetachmentService(
+                    configuration_service=config_service,
+                    mutation_engine=engine,
+                    tenant_binding_port=_EmptyBindingPort(),
+                )
+                if with_detach
+                else None
             ),
         )
     return TestClient(app), repo, port
@@ -262,3 +293,139 @@ def test_route_not_mounted_without_connection_port() -> None:
     with client:
         response = client.put(_path(), headers=_headers())
     assert response.status_code == 404
+
+
+def test_delete_applied_returns_200(client_bundle) -> None:
+    client, repo, _ = client_bundle
+    attach = client.put(_path(), headers=_headers())
+    assert attach.status_code == 201
+    response = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "detached"
+    assert payload["configuration_revision"] == 2
+    assert "idem" not in json.dumps(payload)
+    mutations = repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert "detach-1" not in json.dumps(mutations[1].model_dump(mode="json"))
+
+
+def test_delete_existing_result_and_committed_replay(client_bundle) -> None:
+    client, _, _ = client_bundle
+    client.put(_path(), headers=_headers())
+    first = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    replay = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    noop = client.delete(_path(), headers=_headers(if_match="WKC/2", idempotency="detach-2"))
+    assert first.status_code == 200 and replay.status_code == 200 and noop.status_code == 200
+    assert first.json()["configuration_revision"] == replay.json()["configuration_revision"]
+
+
+@pytest.mark.parametrize(
+    ("headers", "status_code", "detail"),
+    [
+        ({"X-Tenant-Id": _TENANT, "Idempotency-Key": "detach-1"}, 428, "knowledge_configuration_if_match_required"),
+        ({"X-Tenant-Id": _TENANT, "If-Match": "WKC/0"}, 428, "knowledge_configuration_idempotency_key_required"),
+        (_headers(if_match='"WKC/1"', idempotency="detach-1"), 400, "knowledge_configuration_if_match_invalid"),
+        (_headers(if_match="WKC/1", idempotency="bad\x00key"), 400, "knowledge_configuration_idempotency_key_invalid"),
+    ],
+)
+def test_delete_header_validation(headers, status_code, detail) -> None:
+    client, _, _ = _build_client()
+    with client:
+        client.put(_path(), headers=_headers())
+        response = client.delete(_path(), headers=headers)
+    assert response.status_code == status_code
+    assert response.json()["detail"] == detail
+
+
+def test_delete_workspace_not_found() -> None:
+    client, _, _ = _build_client(workspaces={})
+    with client:
+        response = client.delete(_path(), headers=_headers())
+    assert response.status_code == 404
+    assert response.json()["detail"] == "workspace_not_found"
+
+
+def test_delete_attachment_missing(client_bundle) -> None:
+    client, _, _ = client_bundle
+    response = client.delete(_path(), headers=_headers(if_match="WKC/0", idempotency="detach-1"))
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connection_attachment_not_found"
+
+
+def test_delete_revision_and_idempotency_conflicts(client_bundle) -> None:
+    client, _, port = client_bundle
+    port._connections[(_TENANT, "conn.other")] = _safe_connection(connection_ref="conn.other")
+    client.put(_path(), headers=_headers())
+    revision = client.delete(_path(), headers=_headers(if_match="WKC/0", idempotency="detach-1"))
+    client.put(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/connections/conn.other",
+        headers=_headers(if_match="WKC/1", idempotency="idem-2"),
+    )
+    idem = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/connections/conn.other",
+        headers=_headers(if_match="WKC/2", idempotency="detach-1"),
+    )
+    assert revision.status_code == 409 and revision.json()["detail"] == "configuration_revision_conflict"
+    assert idem.status_code == 409 and idem.json()["detail"] == "configuration_idempotency_conflict"
+
+
+def test_delete_dependency_resolution_failure(client_bundle) -> None:
+    client, repo, _ = client_bundle
+    from local_workspace_application.workspaces.knowledge_configuration_models import (
+        WorkspaceIndexedSourceBinding,
+        WorkspaceIndexedSourceBindingStatusV1,
+    )
+
+    client.put(_path(), headers=_headers())
+    repo.put_knowledge_indexed_source_version_if_absent(
+        WorkspaceIndexedSourceBinding(
+            indexed_source_binding_id="idx-1",
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            knowledge_source_binding_ref="ksb-1",
+            source_id="source-1",
+            status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
+            mutation_id="seed",
+            effective_revision=1,
+            semantic_identity_hash="a" * 64,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+    )
+    response = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    assert response.status_code == 503
+    assert response.json()["detail"] == "connection_detach_dependency_resolution_failed"
+
+
+def test_delete_recovery_required(client_bundle) -> None:
+    client, repo, _ = client_bundle
+    client.put(_path(), headers=_headers())
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    repo.replace_knowledge_configuration_head_if_match(
+        expected=head,
+        replacement=head.model_copy(
+            update={
+                "pending_revision": 2,
+                "pending_mutation_id": "pending",
+                "updated_at": _NOW,
+            }
+        ),
+    )
+    response = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-other"))
+    assert response.status_code == 503
+    assert response.json()["detail"] == "configuration_recovery_required"
+
+
+def test_delete_cross_tenant_attachment_lookup() -> None:
+    client, _, _ = _build_client(workspaces={(_TENANT, _WORKSPACE): _workspace()})
+    with client:
+        response = client.delete(_path(), headers=_headers())
+    assert response.status_code == 404
+    assert response.json()["detail"] == "connection_attachment_not_found"
+
+
+def test_put_attach_unchanged_after_delete_route(client_bundle) -> None:
+    client, _, _ = client_bundle
+    response = client.put(_path(), headers=_headers())
+    assert response.status_code == 201

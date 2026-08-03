@@ -347,6 +347,11 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
         min_length=64,
         max_length=64,
     )
+    stage_manifest_hash: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+    )
 
     target_revision: int | None = Field(default=None, ge=1)
     stage_claim_id: str | None = Field(
@@ -372,6 +377,7 @@ class WorkspaceKnowledgeMutationRecord(BaseModel):
         "idempotency_key_hash",
         "normalized_request_hash",
         "semantic_identity_hash",
+        "stage_manifest_hash",
     )
     @classmethod
     def _validate_hashes(cls, value: str | None) -> str | None:

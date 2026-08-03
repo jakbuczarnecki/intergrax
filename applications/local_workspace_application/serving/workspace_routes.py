@@ -137,6 +137,9 @@ from local_workspace_application.workspaces.knowledge_configuration_handlers imp
     AttachConnectionMutationHandler,
     CreateIndexedSourceMutationHandler,
 )
+from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
+    DetachConnectionMutationHandler,
+)
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
 )
@@ -152,6 +155,9 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import TenantConnectionPort
 from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
     WorkspaceConnectionAttachmentService,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_service import (
+    WorkspaceConnectionDetachmentService,
 )
 from local_workspace_application.serving.knowledge_connected_source_routes import (
     mount_connected_source_knowledge_routes,
@@ -385,6 +391,9 @@ def mount_managed_workspace_routes(
             WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: (
                 AttachConnectionMutationHandler()
             ),
+            WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION: (
+                DetachConnectionMutationHandler()
+            ),
         },
     )
     connected_wiring = connected_source_wiring
@@ -453,10 +462,18 @@ def mount_managed_workspace_routes(
             configuration_service=configuration_service,
             mutation_engine=mutation_engine,
         )
+        detachment_service: WorkspaceConnectionDetachmentService | None = None
+        if connected_wiring is not None:
+            detachment_service = WorkspaceConnectionDetachmentService(
+                configuration_service=configuration_service,
+                mutation_engine=mutation_engine,
+                tenant_binding_port=connected_wiring.tenant_binding_port,
+            )
         app.state.lkw_connection_attachment_service = connection_attachment_service
         mount_knowledge_connection_attachment_routes(
             app,
             attachment_service=connection_attachment_service,
+            detachment_service=detachment_service,
             prefix=prefix,
         )
 

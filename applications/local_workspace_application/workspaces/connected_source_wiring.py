@@ -40,6 +40,7 @@ from local_workspace_application.workspaces.connected_source_tenant_binding impo
 )
 from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
 from local_workspace_application.workspaces.knowledge_access_service import (
+    TenantKnowledgeSourceBindingPort,
     WorkspaceKnowledgeAccessService,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
@@ -83,6 +84,7 @@ class ConnectedSourceWiring:
     opaque_ref_codec: RemoteResourceOpaqueRefCodec
     discovery_service: WorkspaceRemoteResourceDiscoveryService
     tenant_binding_service: WorkspaceConnectedSourceTenantBindingService
+    tenant_binding_port: TenantKnowledgeSourceBindingPort
     knowledge_access_service: WorkspaceKnowledgeAccessService
     connected_source_sync_service: ManagedWorkspaceConnectedSourceSyncService
 
@@ -170,6 +172,7 @@ def build_connected_source_wiring(
         opaque_ref_codec=codec,
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
+        tenant_binding_port=tenant_binding_port,
         knowledge_access_service=knowledge_access,
         connected_source_sync_service=connected_sync,
     )
