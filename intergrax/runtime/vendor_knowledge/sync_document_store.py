@@ -918,6 +918,181 @@ def _validate_manifest_physical_identity(
         raise KnowledgeSyncCorruptState("active index manifest row key mismatch")
 
 
+def _require_sha256_hex_corrupt(value: str, *, field_name: str) -> str:
+    try:
+        return _require_sha256_hex(value, field_name=field_name)
+    except ValueError as exc:
+        raise KnowledgeSyncCorruptState(str(exc)) from None
+
+
+def _parse_active_index_manifest_strict(
+    document: DocumentRecord,
+    *,
+    expected_partition: str,
+    expected_tenant: str,
+    expected_binding: str,
+    expected_configuration_version: int,
+) -> dict[str, Any]:
+    _validate_manifest_physical_identity(
+        document, expected_partition=expected_partition
+    )
+    data = _data_as_dict(document.data)
+    try:
+        if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
+            raise KnowledgeSyncCorruptState("active index manifest schema is invalid")
+        tenant_id = data.get("tenant_id")
+        binding_id = data.get("binding_id")
+        config_version = data.get("binding_configuration_version")
+        completeness_state = data.get("completeness_state")
+        if tenant_id != expected_tenant or binding_id != expected_binding:
+            raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
+        if config_version != expected_configuration_version:
+            raise KnowledgeSyncCorruptState(
+                "active index manifest binding_configuration_version is invalid"
+            )
+        if completeness_state not in {_COMPLETENESS_CLEAN, _COMPLETENESS_DIRTY}:
+            raise KnowledgeSyncCorruptState(
+                "active index manifest completeness is invalid"
+            )
+        inflight_delivery = data.get("inflight_delivery_id")
+        inflight_batch = data.get("inflight_batch_fingerprint")
+        inflight_mutations = data.get("inflight_prepared_state_mutations_fingerprint")
+        if completeness_state == _COMPLETENESS_CLEAN:
+            if (
+                inflight_delivery is not None
+                or inflight_batch is not None
+                or inflight_mutations is not None
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "clean active index manifest must not contain inflight identity"
+                )
+        else:
+            if inflight_delivery is None or inflight_batch is None:
+                raise KnowledgeSyncCorruptState(
+                    "dirty active index manifest requires inflight mutation identity"
+                )
+            _require_sha256_hex_corrupt(
+                str(inflight_delivery), field_name="inflight_delivery_id"
+            )
+            _require_sha256_hex_corrupt(
+                str(inflight_batch), field_name="inflight_batch_fingerprint"
+            )
+            if inflight_mutations is not None:
+                _require_sha256_hex_corrupt(
+                    str(inflight_mutations),
+                    field_name="inflight_prepared_state_mutations_fingerprint",
+                )
+        return data
+    except KnowledgeSyncCorruptState:
+        raise
+    except Exception:
+        raise KnowledgeSyncCorruptState("active index manifest is corrupt") from None
+
+
+def _parse_active_index_row_strict(
+    document: DocumentRecord,
+    *,
+    expected_partition: str,
+    expected_tenant: str,
+    expected_binding: str,
+    expected_configuration_version: int,
+    store: ConditionalDocumentStore,
+    item_partition: str,
+) -> str:
+    if document.partition_key != expected_partition:
+        raise KnowledgeSyncCorruptState("active item index partition mismatch")
+    data = _data_as_dict(document.data)
+    _reject_secret_fields(data, kind="active item index")
+    try:
+        if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
+            raise KnowledgeSyncCorruptState("active item index schema is invalid")
+        remote_id = data.get("remote_id")
+        if not isinstance(remote_id, str) or not remote_id.strip():
+            raise KnowledgeSyncCorruptState("active item index remote_id is invalid")
+        cleaned_remote = remote_id.strip()
+        if document.row_key != _active_index_row_key(cleaned_remote):
+            raise KnowledgeSyncCorruptState("active item index row key mismatch")
+        if data.get("tenant_id") != expected_tenant:
+            raise KnowledgeSyncCorruptState(
+                "active item index tenant identity is invalid"
+            )
+        if data.get("binding_id") != expected_binding:
+            raise KnowledgeSyncCorruptState(
+                "active item index binding identity is invalid"
+            )
+        if data.get("binding_configuration_version") != expected_configuration_version:
+            raise KnowledgeSyncCorruptState(
+                "active item index configuration version mismatch"
+            )
+        item_state_document = store.get(item_partition, _item_row_key(cleaned_remote))
+        if item_state_document is None:
+            raise KnowledgeSyncCorruptState("active item index points to missing state")
+        parsed_state, _version = _parse_remote_item_state_document(
+            item_state_document,
+            expected_tenant=expected_tenant,
+            expected_binding=expected_binding,
+        )
+        if parsed_state.status is not KnowledgeRemoteItemStatus.ACTIVE:
+            raise KnowledgeSyncCorruptState(
+                "active item index points to non-active state"
+            )
+        if parsed_state.binding_configuration_version != expected_configuration_version:
+            raise KnowledgeSyncCorruptState(
+                "active item index configuration version mismatch"
+            )
+        return cleaned_remote
+    except KnowledgeSyncCorruptState:
+        raise
+    except Exception:
+        raise KnowledgeSyncCorruptState("active item index row is corrupt") from None
+
+
+def _parse_remote_item_state_document(
+    document: DocumentRecord,
+    *,
+    expected_tenant: str,
+    expected_binding: str,
+) -> tuple[KnowledgeRemoteItemState, str]:
+    data = _data_as_dict(document.data)
+    _reject_secret_fields(data, kind="remote item state")
+    try:
+        if data.get("schema_version") != _ITEM_STATE_SCHEMA:
+            raise KnowledgeSyncCorruptState("remote item state schema is invalid")
+        tenant_id = data.get("tenant_id")
+        binding_id = data.get("binding_id")
+        record_version = data.get("record_version")
+        raw_state = data.get("state")
+        if not isinstance(tenant_id, str) or tenant_id.strip() != expected_tenant:
+            raise KnowledgeSyncCorruptState("remote item tenant identity is invalid")
+        if not isinstance(binding_id, str) or binding_id.strip() != expected_binding:
+            raise KnowledgeSyncCorruptState("remote item binding identity is invalid")
+        if not isinstance(record_version, str) or not record_version.strip():
+            raise KnowledgeSyncCorruptState("remote item record version is invalid")
+        expected_partition = _item_partition_key(
+            tenant_id=expected_tenant,
+            binding_id=expected_binding,
+        )
+        if document.partition_key != expected_partition:
+            raise KnowledgeSyncCorruptState("remote item partition is invalid")
+        if not isinstance(raw_state, Mapping):
+            raise KnowledgeSyncCorruptState("remote item state payload is invalid")
+        _reject_secret_fields(raw_state, kind="remote item state")
+        state = KnowledgeRemoteItemState.model_validate(dict(raw_state))
+        if state.tenant_id != expected_tenant or state.binding_id != expected_binding:
+            raise KnowledgeSyncCorruptState("remote item payload identity is invalid")
+        if document.row_key != _item_row_key(state.remote_id):
+            raise KnowledgeSyncCorruptState("remote item row key is invalid")
+        return state, record_version.strip()
+    except KnowledgeSyncCorruptState:
+        raise
+    except ValidationError:
+        raise KnowledgeSyncCorruptState(
+            "remote item state payload is invalid"
+        ) from None
+    except Exception:
+        raise KnowledgeSyncCorruptState("remote item state record is corrupt") from None
+
+
 class DocumentStoreKnowledgeRemoteItemStateRepository:
     """Idempotent remote-item state repository with delivery markers."""
 
@@ -1457,60 +1632,17 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         expected_binding: str,
         expected_configuration_version: int,
     ) -> dict[str, Any]:
-        data = _data_as_dict(document.data)
-        if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
-            raise KnowledgeSyncCorruptState("active index manifest schema is invalid")
-        tenant_id = data.get("tenant_id")
-        binding_id = data.get("binding_id")
-        config_version = data.get("binding_configuration_version")
-        completeness_state = data.get("completeness_state")
-        if tenant_id != expected_tenant or binding_id != expected_binding:
-            raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
-        if config_version != expected_configuration_version:
-            raise KnowledgeSyncCorruptState(
-                "active index manifest binding_configuration_version is invalid"
-            )
-        if completeness_state not in {_COMPLETENESS_CLEAN, _COMPLETENESS_DIRTY}:
-            raise KnowledgeSyncCorruptState(
-                "active index manifest completeness is invalid"
-            )
-        self._validate_manifest_physical_identity(
+        return _parse_active_index_manifest_strict(
             document,
             expected_partition=_active_index_partition_key(
                 tenant_id=expected_tenant,
                 binding_id=expected_binding,
                 binding_configuration_version=expected_configuration_version,
             ),
+            expected_tenant=expected_tenant,
+            expected_binding=expected_binding,
+            expected_configuration_version=expected_configuration_version,
         )
-        inflight_delivery = data.get("inflight_delivery_id")
-        inflight_batch = data.get("inflight_batch_fingerprint")
-        inflight_mutations = data.get("inflight_prepared_state_mutations_fingerprint")
-        if completeness_state == _COMPLETENESS_CLEAN:
-            if (
-                inflight_delivery is not None
-                or inflight_batch is not None
-                or inflight_mutations is not None
-            ):
-                raise KnowledgeSyncCorruptState(
-                    "clean active index manifest must not contain inflight identity"
-                )
-        else:
-            if inflight_delivery is None or inflight_batch is None:
-                raise KnowledgeSyncCorruptState(
-                    "dirty active index manifest requires inflight mutation identity"
-                )
-            _require_sha256_hex(
-                str(inflight_delivery), field_name="inflight_delivery_id"
-            )
-            _require_sha256_hex(
-                str(inflight_batch), field_name="inflight_batch_fingerprint"
-            )
-            if inflight_mutations is not None:
-                _require_sha256_hex(
-                    str(inflight_mutations),
-                    field_name="inflight_prepared_state_mutations_fingerprint",
-                )
-        return data
 
     def _legacy_item_rows_exist(
         self,
@@ -1731,58 +1863,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         expected_tenant: str,
         expected_binding: str,
     ) -> tuple[KnowledgeRemoteItemState, str]:
-        data = _data_as_dict(document.data)
-        _reject_secret_fields(data, kind="remote item state")
-        try:
-            if data.get("schema_version") != _ITEM_STATE_SCHEMA:
-                raise KnowledgeSyncCorruptState("remote item state schema is invalid")
-            tenant_id = data.get("tenant_id")
-            binding_id = data.get("binding_id")
-            record_version = data.get("record_version")
-            raw_state = data.get("state")
-            if not isinstance(tenant_id, str) or tenant_id.strip() != expected_tenant:
-                raise KnowledgeSyncCorruptState(
-                    "remote item tenant identity is invalid"
-                )
-            if (
-                not isinstance(binding_id, str)
-                or binding_id.strip() != expected_binding
-            ):
-                raise KnowledgeSyncCorruptState(
-                    "remote item binding identity is invalid"
-                )
-            if not isinstance(record_version, str) or not record_version.strip():
-                raise KnowledgeSyncCorruptState("remote item record version is invalid")
-            expected_partition = _item_partition_key(
-                tenant_id=expected_tenant,
-                binding_id=expected_binding,
-            )
-            if document.partition_key != expected_partition:
-                raise KnowledgeSyncCorruptState("remote item partition is invalid")
-            if not isinstance(raw_state, Mapping):
-                raise KnowledgeSyncCorruptState("remote item state payload is invalid")
-            _reject_secret_fields(raw_state, kind="remote item state")
-            state = KnowledgeRemoteItemState.model_validate(dict(raw_state))
-            if (
-                state.tenant_id != expected_tenant
-                or state.binding_id != expected_binding
-            ):
-                raise KnowledgeSyncCorruptState(
-                    "remote item payload identity is invalid"
-                )
-            if document.row_key != _item_row_key(state.remote_id):
-                raise KnowledgeSyncCorruptState("remote item row key is invalid")
-            return state, record_version.strip()
-        except KnowledgeSyncCorruptState:
-            raise
-        except ValidationError:
-            raise KnowledgeSyncCorruptState(
-                "remote item state payload is invalid"
-            ) from None
-        except Exception:
-            raise KnowledgeSyncCorruptState(
-                "remote item state record is corrupt"
-            ) from None
+        return _parse_remote_item_state_document(
+            document,
+            expected_tenant=expected_tenant,
+            expected_binding=expected_binding,
+        )
 
     def _parse_marker(
         self,
@@ -1963,19 +2048,12 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
                     "legacy active inventory lacks completeness proof"
                 )
             return ()
-        manifest_data = _data_as_dict(manifest.data)
-        if manifest_data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
-            raise KnowledgeSyncCorruptState("active index manifest schema is invalid")
-        if (
-            manifest_data.get("tenant_id") != cleaned_tenant
-            or manifest_data.get("binding_id") != cleaned_binding
-            or manifest_data.get("binding_configuration_version")
-            != binding_configuration_version
-        ):
-            raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
-        _validate_manifest_physical_identity(
+        manifest_data = _parse_active_index_manifest_strict(
             manifest,
             expected_partition=index_partition,
+            expected_tenant=cleaned_tenant,
+            expected_binding=cleaned_binding,
+            expected_configuration_version=binding_configuration_version,
         )
         completeness_state = manifest_data.get("completeness_state")
         if completeness_state == _COMPLETENESS_DIRTY:
@@ -1986,68 +2064,24 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
             raise KnowledgeCandidateInventoryIncomplete(
                 "legacy active inventory lacks completeness proof"
             )
-        inflight_delivery = manifest_data.get("inflight_delivery_id")
-        inflight_batch = manifest_data.get("inflight_batch_fingerprint")
-        inflight_mutations = manifest_data.get(
-            "inflight_prepared_state_mutations_fingerprint"
-        )
-        if (
-            inflight_delivery is not None
-            or inflight_batch is not None
-            or inflight_mutations is not None
-        ):
-            raise KnowledgeSyncCorruptState(
-                "clean active index manifest must not contain inflight identity"
-            )
         result = self._store.query(
             index_partition, limit=limit, row_key_prefix="active:"
         )
         remote_ids: list[str] = []
         seen: set[str] = set()
         for document in result.documents:
-            data = _data_as_dict(document.data)
-            _reject_secret_fields(data, kind="active item index")
-            if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
-                raise KnowledgeSyncCorruptState("active item index schema is invalid")
-            if document.row_key != _active_index_row_key(
-                str(data.get("remote_id", ""))
-            ):
-                raise KnowledgeSyncCorruptState("active item index row key mismatch")
-            remote_id = data.get("remote_id")
-            if not isinstance(remote_id, str) or not remote_id.strip():
-                raise KnowledgeSyncCorruptState(
-                    "active item index remote_id is invalid"
-                )
-            cleaned_remote = remote_id.strip()
+            cleaned_remote = _parse_active_index_row_strict(
+                document,
+                expected_partition=index_partition,
+                expected_tenant=cleaned_tenant,
+                expected_binding=cleaned_binding,
+                expected_configuration_version=binding_configuration_version,
+                store=self._store,
+                item_partition=item_partition,
+            )
             if cleaned_remote in seen:
                 raise KnowledgeSyncCorruptState("active item index contains duplicates")
             seen.add(cleaned_remote)
-            item_state = self._store.get(
-                item_partition,
-                _item_row_key(cleaned_remote),
-            )
-            if item_state is None:
-                raise KnowledgeSyncCorruptState(
-                    "active item index points to missing state"
-                )
-            parsed_state, _version = DocumentStoreKnowledgeRemoteItemStateRepository(
-                self._store
-            )._parse_state(
-                item_state,
-                expected_tenant=cleaned_tenant,
-                expected_binding=cleaned_binding,
-            )
-            if parsed_state.status is not KnowledgeRemoteItemStatus.ACTIVE:
-                raise KnowledgeSyncCorruptState(
-                    "active item index points to non-active state"
-                )
-            if (
-                parsed_state.binding_configuration_version
-                != binding_configuration_version
-            ):
-                raise KnowledgeSyncCorruptState(
-                    "active item index configuration version mismatch"
-                )
             remote_ids.append(cleaned_remote)
         return tuple(sorted(remote_ids))
 

@@ -142,7 +142,12 @@ def test_dirty_manifest_rejected() -> None:
     dirty = DocumentRecord(
         partition_key=_INDEX_PARTITION,
         row_key="manifest",
-        data={**manifest.data, "completeness_state": "DIRTY"},
+        data={
+            **manifest.data,
+            "completeness_state": "DIRTY",
+            "inflight_delivery_id": "d" * 64,
+            "inflight_batch_fingerprint": "e" * 64,
+        },
     )
     store.put(dirty)
     inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
@@ -314,4 +319,160 @@ def test_mixed_configuration_batch_rejected_before_io() -> None:
             binding_id="binding-1",
             delivery_id=delivery,
             states=mixed,
+        )
+
+
+def _seed_clean_index(
+    store: InMemoryDocumentStore,
+    *,
+    remote_id: str = "item-1",
+) -> None:
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id="f1" * 32,
+        states=(_state(remote_id=remote_id, delivery_id="f1" * 32),),
+    )
+
+
+@pytest.mark.unit
+def test_invalid_dirty_manifest_delivery_digest_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    store.put(
+        DocumentRecord(
+            partition_key=_INDEX_PARTITION,
+            row_key="manifest",
+            data={
+                **manifest.data,
+                "completeness_state": "DIRTY",
+                "inflight_delivery_id": "not-a-digest",
+                "inflight_batch_fingerprint": "e" * 64,
+            },
+        )
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
+        )
+
+
+@pytest.mark.unit
+def test_invalid_dirty_manifest_batch_digest_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    store.put(
+        DocumentRecord(
+            partition_key=_INDEX_PARTITION,
+            row_key="manifest",
+            data={
+                **manifest.data,
+                "completeness_state": "DIRTY",
+                "inflight_delivery_id": "d" * 64,
+                "inflight_batch_fingerprint": "bad",
+            },
+        )
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
+        )
+
+
+@pytest.mark.unit
+def test_wrong_index_row_partition_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    row = store.query(_INDEX_PARTITION, limit=1, row_key_prefix="active:").documents[0]
+    store._rows[(_INDEX_PARTITION, row.row_key)] = DocumentRecord(  # type: ignore[attr-defined]
+        partition_key="vendor_knowledge.active_item_index.v1:wrong",
+        row_key=row.row_key,
+        data=row.data,
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
+        )
+
+
+@pytest.mark.unit
+def test_wrong_index_payload_tenant_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    row = store.query(_INDEX_PARTITION, limit=1, row_key_prefix="active:").documents[0]
+    store.put(
+        DocumentRecord(
+            partition_key=_INDEX_PARTITION,
+            row_key=row.row_key,
+            data={**row.data, "tenant_id": "other-tenant"},
+        )
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
+        )
+
+
+@pytest.mark.unit
+def test_wrong_index_payload_binding_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    row = store.query(_INDEX_PARTITION, limit=1, row_key_prefix="active:").documents[0]
+    store.put(
+        DocumentRecord(
+            partition_key=_INDEX_PARTITION,
+            row_key=row.row_key,
+            data={**row.data, "binding_id": "other-binding"},
+        )
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
+        )
+
+
+@pytest.mark.unit
+def test_wrong_index_payload_configuration_version_raises_corrupt_state() -> None:
+    store = InMemoryDocumentStore()
+    _seed_clean_index(store)
+    row = store.query(_INDEX_PARTITION, limit=1, row_key_prefix="active:").documents[0]
+    store.put(
+        DocumentRecord(
+            partition_key=_INDEX_PARTITION,
+            row_key=row.row_key,
+            data={**row.data, "binding_configuration_version": 2},
+        )
+    )
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        inventory.list_active_remote_ids(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            limit=10,
         )

@@ -291,3 +291,140 @@ def test_sync_resume_exact_rejects_page_prepared_evidence() -> None:
         coordinator.execute_reconciliation_recovery(command)
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
     assert "async" in exc_info.value.safe_message.lower()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_page_prepared_corrupt_item_receipt_enters_recovery() -> None:
+    from dataclasses import dataclass
+
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import (
+        InMemoryRemoteItemStateRepository,
+    )
+
+    @dataclass
+    class _CorruptItemInspector(InMemoryRemoteItemStateRepository):
+        inspect_calls: int = 0
+
+        def inspect_delivery_receipt(self, **kwargs):
+            self.inspect_calls += 1
+            raise KnowledgeSyncCorruptState("corrupt item receipt")
+
+    operation_id = "op-corrupt-item"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    state = _CorruptItemInspector()
+    coordinator, _, _, _, runs, _, inspector = _durable_coordinator(state=state)
+    prepared = _page_prepared().model_copy(update={"run_id": run_id})
+    runs.runs[("tenant-1", "binding-1")] = prepared
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    updated = runs.runs[("tenant-1", "binding-1")]
+    assert updated.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
+    assert state.inspect_calls == 1
+    assert inspector.durable == {}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_page_prepared_corrupt_sink_receipt_enters_recovery() -> None:
+    from dataclasses import dataclass
+
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import (
+        RecordingSinkReceiptInspector,
+    )
+
+    @dataclass
+    class _CountingSinkInspector(RecordingSinkReceiptInspector):
+        inspect_calls: int = 0
+
+        def inspect_receipt(self, **kwargs):
+            self.inspect_calls += 1
+            raise KnowledgeSyncCorruptState("corrupt sink receipt")
+
+    operation_id = "op-corrupt-sink"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    inspector = _CountingSinkInspector()
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator()
+    coordinator._sink_receipt_inspector = inspector  # type: ignore[attr-defined]
+    coordinator._reconciliation_engine._sink_receipt_inspector = inspector  # type: ignore[attr-defined]
+    prepared = _page_prepared().model_copy(update={"run_id": run_id})
+    runs.runs[("tenant-1", "binding-1")] = prepared
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
+    )
+    assert inspector.inspect_calls == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_page_prepared_receipt_backend_failure_preserves_phase() -> None:
+    from dataclasses import dataclass
+
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import (
+        InMemoryRemoteItemStateRepository,
+    )
+
+    @dataclass
+    class _FailingItemInspector(InMemoryRemoteItemStateRepository):
+        inspect_calls: int = 0
+
+        def inspect_delivery_receipt(self, **kwargs):
+            self.inspect_calls += 1
+            raise RuntimeError("backend down")
+
+    operation_id = "op-receipt-backend"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    state = _FailingItemInspector()
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(state=state)
+    prepared = _page_prepared().model_copy(update={"run_id": run_id})
+    runs.runs[("tenant-1", "binding-1")] = prepared
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.PAGE_PREPARED
+    )

@@ -337,3 +337,271 @@ def test_run_id_derived_from_operation_identity() -> None:
     )
     assert first == second
     assert first != other
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_finalizing_checkpoint_read_backend_failure_is_retryable() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationRunFinalizing,
+        KnowledgeSyncCheckpoint,
+        knowledge_sync_checkpoint_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-finalizing-read-fail"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    intended = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="final"),
+    )
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=2,
+        created_at=now,
+        updated_at=now,
+        applied_page_count=1,
+        last_applied_delivery_id="a" * 64,
+        last_applied_parent_delivery_id=None,
+        intended_final_completed_checkpoint=intended,
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            intended
+        ),
+        expected_previous_completed_checkpoint=None,
+        final_delivery_id="a" * 64,
+        prepared_batch_payload_fingerprint="b" * 64,
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.get_error = RuntimeError("backend down")
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(checkpoint=checkpoint)
+    runs.runs[("tenant-1", "binding-1")] = finalizing
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.FINALIZING
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_finalizing_checkpoint_read_corruption_enters_recovery() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationRunFinalizing,
+        KnowledgeSyncCheckpoint,
+        knowledge_sync_checkpoint_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-finalizing-read-corrupt"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    intended = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="final"),
+    )
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=2,
+        created_at=now,
+        updated_at=now,
+        applied_page_count=1,
+        last_applied_delivery_id="a" * 64,
+        last_applied_parent_delivery_id=None,
+        intended_final_completed_checkpoint=intended,
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            intended
+        ),
+        expected_previous_completed_checkpoint=None,
+        final_delivery_id="a" * 64,
+        prepared_batch_payload_fingerprint="b" * 64,
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.get_error = KnowledgeSyncCorruptState("corrupt checkpoint")
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(checkpoint=checkpoint)
+    runs.runs[("tenant-1", "binding-1")] = finalizing
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_finalizing_checkpoint_commit_backend_failure_is_retryable() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationRunFinalizing,
+        KnowledgeSyncCheckpoint,
+        knowledge_sync_checkpoint_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-finalizing-commit-fail"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    intended = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="final"),
+    )
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=2,
+        created_at=now,
+        updated_at=now,
+        applied_page_count=1,
+        last_applied_delivery_id="a" * 64,
+        last_applied_parent_delivery_id=None,
+        intended_final_completed_checkpoint=intended,
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            intended
+        ),
+        expected_previous_completed_checkpoint=None,
+        final_delivery_id="a" * 64,
+        prepared_batch_payload_fingerprint="b" * 64,
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.commit_error = RuntimeError("backend down")
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(checkpoint=checkpoint)
+    runs.runs[("tenant-1", "binding-1")] = finalizing
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.FINALIZING
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_finalizing_checkpoint_commit_corruption_enters_recovery() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationRunFinalizing,
+        KnowledgeSyncCheckpoint,
+        knowledge_sync_checkpoint_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-finalizing-commit-corrupt"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    intended = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=KnowledgeCursor(value="final"),
+    )
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=2,
+        created_at=now,
+        updated_at=now,
+        applied_page_count=1,
+        last_applied_delivery_id="a" * 64,
+        last_applied_parent_delivery_id=None,
+        intended_final_completed_checkpoint=intended,
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            intended
+        ),
+        expected_previous_completed_checkpoint=None,
+        final_delivery_id="a" * 64,
+        prepared_batch_payload_fingerprint="b" * 64,
+    )
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.commit_error = KnowledgeSyncCorruptState("corrupt checkpoint commit")
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(checkpoint=checkpoint)
+    runs.runs[("tenant-1", "binding-1")] = finalizing
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
+    )
