@@ -485,6 +485,8 @@ async def test_async_resume_item_completed_inspects_sink_zero_times() -> None:
         **prepared.model_dump(
             exclude={
                 "phase",
+                "record_version",
+                "updated_at",
                 "prepared_input_cursor",
                 "prepared_input_cursor_fingerprint",
                 "provider_page_fingerprint",
