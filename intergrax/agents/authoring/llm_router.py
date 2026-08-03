@@ -16,8 +16,7 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, LlmCallRecord
 from intergrax.llm.messages import (
     ChatMessage,
-    build_model_input_messages_envelope,
-    model_input_messages_from_envelope,
+    copy_model_input_messages,
     replace_final_user_message,
     StructuredModelInputRequiredError,
 )
@@ -94,11 +93,11 @@ class LLMAdapterCompletePort:
         provider: str,
     ) -> tuple[str, int, int]:
         del model_id, provider
-        defensive_messages = list(messages)
+        send_messages = copy_model_input_messages(messages)
 
         def _call() -> tuple[str, int, int]:
             response = self._adapter.generate_messages(  # type: ignore[attr-defined]
-                defensive_messages,
+                list(send_messages),
             )
             usage = response.usage
             tokens_in = int(usage.input_tokens) if usage is not None else 0
@@ -129,8 +128,9 @@ class StepLLMRouter:
 
     def __post_init__(self) -> None:
         if self.model_input_messages:
-            envelope = build_model_input_messages_envelope(self.model_input_messages)
-            self.model_input_messages = model_input_messages_from_envelope(envelope)
+            self.model_input_messages = copy_model_input_messages(
+                self.model_input_messages
+            )
 
     def list_allowed_models(self) -> list[str]:
         return list(self.allowed_models)
@@ -173,7 +173,8 @@ class StepLLMRouter:
             provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
 
         if self.model_input_messages:
-            messages = replace_final_user_message(self.model_input_messages, prompt)
+            prepared = replace_final_user_message(self.model_input_messages, prompt)
+            send_messages = copy_model_input_messages(prepared)
             completion_port = self._resolve_completion_port()
             complete_messages = (
                 getattr(completion_port, "complete_messages", None)
@@ -182,7 +183,7 @@ class StepLLMRouter:
             )
             if callable(complete_messages):
                 text, tokens_in, tokens_out = await complete_messages(
-                    list(messages),
+                    list(send_messages),
                     model_id=model_id,
                     provider=provider,
                 )
@@ -192,7 +193,7 @@ class StepLLMRouter:
                 raise RuntimeError("StepLLMRouter requires llm_port or llm_adapter in production mode")
             else:
                 text = prompt
-                tokens_in = sum(len((message.content or "").split()) for message in messages)
+                tokens_in = sum(len((message.content or "").split()) for message in send_messages)
                 tokens_out = len(text.split())
         else:
             if self.runtime_config is not None:

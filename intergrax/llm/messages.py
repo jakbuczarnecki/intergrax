@@ -9,6 +9,7 @@ import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 import uuid
 
@@ -23,6 +24,15 @@ STRUCTURED_MODEL_INPUT_REQUIRED_REASON = (
 )
 
 _ALLOWED_MESSAGE_ROLES = frozenset({"system", "user", "assistant", "tool"})
+_ENVELOPE_KEYS = frozenset({"schema_version", "messages", "messages_hash"})
+_MESSAGE_ROW_KEYS = frozenset({
+    "entry_id",
+    "role",
+    "content",
+    "name",
+    "tool_call_id",
+    "tool_calls",
+})
 
 
 class StructuredModelInputRequiredError(RuntimeError):
@@ -115,21 +125,23 @@ def compute_model_facing_messages_hash(messages: Sequence[ChatMessage]) -> str:
 
 def _json_safe_value(value: object) -> object:
   """Validate JSON serializability without ``default=str``."""
+  if isinstance(value, Enum):
+    raise ValueError("enum value in tool_calls")
   if value is None:
     return None
-  if isinstance(value, bool):
+  if type(value) is bool:
     return value
-  if isinstance(value, int):
+  if type(value) is int:
     return value
-  if isinstance(value, float):
+  if type(value) is float:
     if not math.isfinite(value):
       raise ValueError("non-finite float in tool_calls")
     return value
-  if isinstance(value, str):
+  if type(value) is str:
     return value
-  if isinstance(value, list):
+  if type(value) is list:
     return [_json_safe_value(item) for item in value]
-  if isinstance(value, dict):
+  if type(value) is dict:
     result: dict[str, object] = {}
     for key, item in value.items():
       if type(key) is not str:
@@ -142,8 +154,19 @@ def _json_safe_value(value: object) -> object:
 def _json_safe_tool_calls(tool_calls: Optional[List[dict]]) -> Optional[List[dict]]:
   if tool_calls is None:
     return None
-  safe = [_json_safe_value(dict(item)) for item in tool_calls]
-  json.dumps(safe)
+  if type(tool_calls) is not list:
+    raise ValueError("tool_calls must be a list")
+  safe: list[dict] = []
+  for item in tool_calls:
+    if type(item) is not dict:
+      raise ValueError("tool_calls must contain only dict rows")
+    safe.append(_json_safe_value(dict(item)))
+  json.dumps(
+    safe,
+    allow_nan=False,
+    sort_keys=True,
+    separators=(",", ":"),
+  )
   return safe
 
 
@@ -161,38 +184,52 @@ def _message_to_envelope_row(message: ChatMessage) -> dict[str, object]:
 def build_model_input_messages_envelope(
   messages: Sequence[ChatMessage],
 ) -> dict[str, object]:
-  rows = [_message_to_envelope_row(message) for message in messages]
+  rows: list[dict[str, object]] = []
+  seen_entry_ids: set[str] = set()
+  for message in messages:
+    row = _message_to_envelope_row(message)
+    entry_id = row["entry_id"]
+    if type(entry_id) is str and entry_id in seen_entry_ids:
+      raise ValueError("duplicate model input message entry_id")
+    seen_entry_ids.add(entry_id)
+    rows.append(row)
+  canonical_messages = [_chat_message_from_envelope_row(row) for row in rows]
+  messages_hash = compute_model_facing_messages_hash(canonical_messages)
   return {
     "schema_version": MODEL_INPUT_MESSAGES_SCHEMA_VERSION,
     "messages": rows,
-    "messages_hash": compute_model_facing_messages_hash(messages),
+    "messages_hash": messages_hash,
   }
 
 
 def _chat_message_from_envelope_row(row: dict[str, object]) -> ChatMessage:
-  role = row.get("role")
+  if type(row) is not dict:
+    raise ValueError("model input envelope message row must be a dict")
+  if set(row.keys()) != _MESSAGE_ROW_KEYS:
+    raise ValueError("invalid model input message keys")
+  role = row["role"]
   if role not in _ALLOWED_MESSAGE_ROLES:
     raise ValueError("invalid model input message role")
-  content = row.get("content")
+  content = row["content"]
   if type(content) is not str:
     raise ValueError("invalid model input message content")
-  entry_id = row.get("entry_id")
+  entry_id = row["entry_id"]
   if type(entry_id) is not str or not entry_id.strip():
     raise ValueError("invalid model input message entry_id")
-  name = row.get("name")
+  name = row["name"]
   if name is not None and (type(name) is not str or not name.strip()):
     raise ValueError("invalid model input message name")
-  tool_call_id = row.get("tool_call_id")
+  tool_call_id = row["tool_call_id"]
   if tool_call_id is not None and (type(tool_call_id) is not str or not tool_call_id.strip()):
     raise ValueError("invalid model input message tool_call_id")
-  raw_tool_calls = row.get("tool_calls")
+  raw_tool_calls = row["tool_calls"]
   tool_calls: Optional[List[dict]] = None
   if raw_tool_calls is not None:
     if type(raw_tool_calls) is not list:
       raise ValueError("invalid model input message tool_calls")
     tool_calls = []
     for item in raw_tool_calls:
-      if not isinstance(item, dict):
+      if type(item) is not dict:
         raise ValueError("invalid model input message tool_calls row")
       tool_calls.append(dict(item))
     tool_calls = _json_safe_tool_calls(tool_calls)
@@ -209,21 +246,27 @@ def _chat_message_from_envelope_row(row: dict[str, object]) -> ChatMessage:
 def model_input_messages_from_envelope(
   raw: object,
 ) -> tuple[ChatMessage, ...]:
-  if not isinstance(raw, dict):
+  if type(raw) is not dict:
     raise ValueError("model input envelope must be a dict")
-  schema_version = raw.get("schema_version")
+  if set(raw.keys()) != _ENVELOPE_KEYS:
+    raise ValueError("invalid model input envelope keys")
+  schema_version = raw["schema_version"]
   if schema_version != MODEL_INPUT_MESSAGES_SCHEMA_VERSION:
     raise ValueError("invalid model input envelope schema_version")
-  raw_messages = raw.get("messages")
+  raw_messages = raw["messages"]
   if type(raw_messages) is not list:
     raise ValueError("model input envelope messages must be a list")
-  stored_hash = raw.get("messages_hash")
-  if type(stored_hash) is not str or not stored_hash.strip():
+  stored_hash = raw["messages_hash"]
+  if (
+    type(stored_hash) is not str
+    or len(stored_hash) != 64
+    or not all(char in "0123456789abcdef" for char in stored_hash)
+  ):
     raise ValueError("invalid model input envelope messages_hash")
   seen_entry_ids: set[str] = set()
   messages: list[ChatMessage] = []
   for item in raw_messages:
-    if not isinstance(item, dict):
+    if type(item) is not dict:
       raise ValueError("model input envelope message row must be a dict")
     message = _chat_message_from_envelope_row(item)
     if message.entry_id in seen_entry_ids:
@@ -234,6 +277,14 @@ def model_input_messages_from_envelope(
   if computed_hash != stored_hash:
     raise ValueError("model input messages hash mismatch")
   return tuple(messages)
+
+
+def copy_model_input_messages(
+  messages: Sequence[ChatMessage],
+) -> tuple[ChatMessage, ...]:
+  return model_input_messages_from_envelope(
+    build_model_input_messages_envelope(messages)
+  )
 
 
 def model_input_messages_from_metadata(
@@ -250,9 +301,10 @@ def replace_final_user_message(
 ) -> tuple[ChatMessage, ...]:
   if type(prompt) is not str:
     raise ValueError("prompt must be a str")
-  if not messages:
+  copied = copy_model_input_messages(messages)
+  if not copied:
     raise ValueError("messages must not be empty")
-  final_message = messages[-1]
+  final_message = copied[-1]
   if final_message.role != "user":
     raise ValueError("final message must be user")
   updated_final = ChatMessage(
@@ -263,7 +315,7 @@ def replace_final_user_message(
     tool_call_id=final_message.tool_call_id,
     tool_calls=list(final_message.tool_calls) if final_message.tool_calls is not None else None,
   )
-  return tuple(list(messages[:-1]) + [updated_final])
+  return tuple(list(copied[:-1]) + [updated_final])
 
 
 def requires_structured_model_input(
@@ -271,20 +323,39 @@ def requires_structured_model_input(
 ) -> bool:
   if not messages:
     return False
-  for index, message in enumerate(messages):
-    is_final = index == len(messages) - 1
-    if message.role == "system":
-      content = message.content or ""
-      if not content.startswith("[context:"):
-        return True
-      if message.name is not None or message.tool_call_id is not None or message.tool_calls:
-        return True
-      continue
-    if is_final and message.role == "user":
-      if message.name is not None or message.tool_call_id is not None or message.tool_calls:
-        return True
-      continue
+
+  final = messages[-1]
+
+  if final.role != "user":
     return True
+
+  if (
+    final.name is not None
+    or final.tool_call_id is not None
+    or final.tool_calls
+  ):
+    return True
+
+  if type(final.content) is not str:
+    return True
+
+  for message in messages[:-1]:
+    if message.role != "system":
+      return True
+
+    if type(message.content) is not str:
+      return True
+
+    if not message.content.startswith("[context:"):
+      return True
+
+    if (
+      message.name is not None
+      or message.tool_call_id is not None
+      or message.tool_calls
+    ):
+      return True
+
   return False
 
 

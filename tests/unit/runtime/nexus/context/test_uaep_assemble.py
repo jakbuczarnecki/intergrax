@@ -12,6 +12,7 @@ from intergrax.context.session_history import (
     SessionHistorySnapshotRequiredError,
 )
 from intergrax.llm.messages import ChatMessage, StructuredModelInputRequiredError
+from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
@@ -220,3 +221,30 @@ async def test_uaep_prompt_projection_keeps_simple_context_compatibility() -> No
     )
     assert "simple objective" in prompt
     assert "role:" not in prompt
+
+
+def test_text_from_assembled_messages_rejects_system_context_only() -> None:
+    messages = (
+        ChatMessage(role="system", content="[context:task_message:t1] objective"),
+    )
+    with pytest.raises(StructuredModelInputRequiredError):
+        text_from_assembled_messages(messages)
+
+
+def test_text_from_assembled_messages_rejects_assistant_without_final_user() -> None:
+    messages = (
+        ChatMessage(role="system", content="[context:task_message:t1] objective"),
+        ChatMessage(role="assistant", content="assistant reply"),
+    )
+    with pytest.raises(StructuredModelInputRequiredError):
+        text_from_assembled_messages(messages)
+
+
+def test_text_from_assembled_messages_accepts_context_plus_final_user() -> None:
+    messages = (
+        ChatMessage(role="system", content="[context:task_message:t1] objective"),
+        ChatMessage(role="user", content="final user turn"),
+    )
+    projected = text_from_assembled_messages(messages)
+    assert "[context:task_message:t1] objective" in projected
+    assert "final user turn" in projected

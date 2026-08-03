@@ -18,6 +18,8 @@ Why this matters:
 
 from __future__ import annotations
 
+from enum import IntEnum, StrEnum
+
 import pytest
 
 from intergrax.llm.messages import (
@@ -25,6 +27,7 @@ from intergrax.llm.messages import (
     append_chat_messages,
     build_model_input_messages_envelope,
     compute_model_facing_messages_hash,
+    copy_model_input_messages,
     model_input_messages_from_envelope,
     replace_final_user_message,
     requires_structured_model_input,
@@ -202,7 +205,7 @@ def test_model_input_envelope_round_trip_preserves_exact_send() -> None:
 
 def test_model_input_envelope_rejects_hash_mutation() -> None:
     envelope = build_model_input_messages_envelope(_structured_round_trip_messages())
-    envelope["messages_hash"] = "tampered"
+    envelope["messages_hash"] = "0" * 64
     with pytest.raises(ValueError, match="hash mismatch"):
         model_input_messages_from_envelope(envelope)
 
@@ -224,9 +227,23 @@ def test_model_input_envelope_rejects_duplicate_entry_ids() -> None:
         ChatMessage(role="user", content="one", entry_id="dup"),
         ChatMessage(role="user", content="two", entry_id="dup"),
     ]
-    envelope = build_model_input_messages_envelope(messages)
     with pytest.raises(ValueError, match="duplicate"):
-        model_input_messages_from_envelope(envelope)
+        build_model_input_messages_envelope(messages)
+
+
+def test_model_input_envelope_parser_rejects_duplicate_entry_ids() -> None:
+    messages = [
+        ChatMessage(role="user", content="one", entry_id="id-1"),
+        ChatMessage(role="user", content="two", entry_id="id-2"),
+    ]
+    envelope = build_model_input_messages_envelope(messages)
+    rows = envelope["messages"]
+    assert isinstance(rows, list)
+    duplicated_rows = list(rows) + [dict(rows[0])]
+    tampered = dict(envelope)
+    tampered["messages"] = duplicated_rows
+    with pytest.raises(ValueError, match="duplicate"):
+        model_input_messages_from_envelope(tampered)
 
 
 def test_model_input_envelope_rejects_non_json_tool_calls() -> None:
@@ -269,4 +286,295 @@ def test_structured_transport_detection() -> None:
     structured = _structured_round_trip_messages()
     assert requires_structured_model_input(structured) is True
     assert requires_structured_model_input([]) is False
+    assert requires_structured_model_input([ChatMessage(role="user", content="final only")]) is False
+    assert requires_structured_model_input(
+        [ChatMessage(role="system", content="[context:task_message:t1] objective"), ChatMessage(role="user", content="final")]
+    ) is False
+    assert requires_structured_model_input(
+        [ChatMessage(role="system", content="[context:task_message:t1] objective")]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(role="assistant", content="reply"),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="assistant", content="reply"),
+            ChatMessage(role="user", content="final"),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(role="user", content="history user"),
+            ChatMessage(role="user", content="final"),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="plain system"),
+            ChatMessage(role="user", content="final"),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(role="user", content="final", name="agent"),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(
+                role="user",
+                content="final",
+                tool_calls=[{"id": "c1", "type": "function", "function": {"name": "x", "arguments": "{}"}}],
+            ),
+        ]
+    ) is True
+    assert requires_structured_model_input(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(role="user", content="final", tool_call_id="c1"),
+        ]
+    ) is True
     assert StructuredModelInputRequiredError().reason == STRUCTURED_MODEL_INPUT_REQUIRED_REASON
+
+
+def test_copy_model_input_messages_is_deep_and_independent() -> None:
+    original = [
+        ChatMessage(
+            role="assistant",
+            content="assistant reply",
+            entry_id="hist-assistant",
+            tool_calls=[
+                {
+                    "id": "call-1",
+                    "type": "function",
+                    "function": {"name": "search", "arguments": "{}"},
+                }
+            ],
+        ),
+        ChatMessage(role="user", content="final user", entry_id="final-user"),
+    ]
+    copied = copy_model_input_messages(original)
+    assert copied[0] is not original[0]
+    assert copied[0].tool_calls is not original[0].tool_calls
+    assert copied[0].tool_calls[0] is not original[0].tool_calls[0]
+    assert copied[0].tool_calls[0]["function"] is not original[0].tool_calls[0]["function"]
+
+    original[0].content = "MUTATED-ORIGINAL"
+    original[0].tool_calls[0]["id"] = "MUTATED-CALL"
+    original[0].tool_calls[0]["function"]["name"] = "MUTATED-FUNC"
+
+    assert copied[0].content == "assistant reply"
+    assert copied[0].tool_calls[0]["id"] == "call-1"
+    assert copied[0].tool_calls[0]["function"]["name"] == "search"
+
+    copied[0].content = "MUTATED-COPY"
+    copied[0].tool_calls[0]["function"]["arguments"] = '{"mutated":true}'
+
+    assert original[0].content == "MUTATED-ORIGINAL"
+    assert original[0].tool_calls[0]["function"]["arguments"] == "{}"
+
+
+def test_envelope_is_independent_from_source_mutation() -> None:
+    messages = _structured_round_trip_messages()
+    envelope = build_model_input_messages_envelope(messages)
+    messages[1].content = "MUTATED-USER"
+    messages[2].tool_calls[0]["id"] = "MUTATED-CALL"
+    restored = model_input_messages_from_envelope(envelope)
+    assert restored[1].content == "history user"
+    assert restored[2].tool_calls[0]["id"] == "call-1"
+
+    parsed = model_input_messages_from_envelope(envelope)
+    rows = envelope["messages"]
+    assert isinstance(rows, list)
+    rows[0]["content"] = "MUTATED-ROW"
+    assert parsed[0].content != "MUTATED-ROW"
+
+
+class _ColorStrEnum(StrEnum):
+    RED = "red"
+
+
+class _PriorityIntEnum(IntEnum):
+    LOW = 1
+
+
+@pytest.mark.parametrize(
+    ("mutator", "match"),
+    [
+        (lambda envelope: {**envelope, "extra_key": "x"}, "invalid model input envelope keys"),
+        (lambda envelope: {k: v for k, v in envelope.items() if k != "messages_hash"}, "invalid model input envelope keys"),
+        (
+            lambda envelope: {
+                **envelope,
+                "messages": [
+                    {**envelope["messages"][0], "extra_key": "x"},
+                    *envelope["messages"][1:],
+                ],
+            },
+            "invalid model input message keys",
+        ),
+        (
+            lambda envelope: {
+                **envelope,
+                "messages": [
+                    {k: v for k, v in envelope["messages"][0].items() if k != "name"},
+                    *envelope["messages"][1:],
+                ],
+            },
+            "invalid model input message keys",
+        ),
+        (lambda envelope: {**envelope, "messages_hash": "short"}, "invalid model input envelope messages_hash"),
+        (
+            lambda envelope: {**envelope, "messages_hash": "A" + envelope["messages_hash"][1:]},
+            "invalid model input envelope messages_hash",
+        ),
+        (
+            lambda envelope: {
+                **envelope,
+                "messages": [
+                    {**envelope["messages"][2], "tool_calls": ("not-a-list",)},
+                    *envelope["messages"][:2],
+                    *envelope["messages"][3:],
+                ],
+            },
+            "invalid model input message tool_calls",
+        ),
+        (
+            lambda envelope: {
+                **envelope,
+                "messages": [
+                    {
+                        **envelope["messages"][2],
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "type": "function",
+                                "function": {"name": "search", "arguments": "{}"},
+                            }
+                        ],
+                    },
+                    *envelope["messages"][:2],
+                    *envelope["messages"][3:],
+                ],
+            },
+            "hash mismatch",
+        ),
+    ],
+)
+def test_model_input_envelope_strict_contract_rejects_invalid_shapes(
+    mutator,
+    match: str,
+) -> None:
+    envelope = build_model_input_messages_envelope(_structured_round_trip_messages())
+    tampered = mutator(envelope)
+    with pytest.raises(ValueError, match=match):
+        model_input_messages_from_envelope(tampered)
+
+
+def test_model_input_envelope_rejects_non_dict_tool_calls_row() -> None:
+    with pytest.raises(ValueError, match="tool_calls must contain only dict rows"):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=[("not-a-dict",)],
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
+
+
+def test_model_input_envelope_rejects_tuple_tool_calls() -> None:
+    with pytest.raises(ValueError):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=({"id": "c1", "type": "function", "function": {"name": "x", "arguments": "{}"}},),
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
+
+
+def test_model_input_envelope_rejects_str_enum_in_nested_tool_calls() -> None:
+    with pytest.raises(ValueError, match="enum value in tool_calls"):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=[
+                        {
+                            "id": "c1",
+                            "type": "function",
+                            "function": {"name": _ColorStrEnum.RED, "arguments": "{}"},
+                        }
+                    ],
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
+
+
+def test_model_input_envelope_rejects_int_enum_in_nested_tool_calls() -> None:
+    with pytest.raises(ValueError, match="enum value in tool_calls"):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=[
+                        {
+                            "id": "c1",
+                            "type": "function",
+                            "function": {"name": "x", "arguments": "{}"},
+                            "priority": _PriorityIntEnum.LOW,
+                        }
+                    ],
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
+
+
+def test_model_input_envelope_rejects_custom_object_in_tool_calls() -> None:
+    with pytest.raises(ValueError, match="non-json-safe value in tool_calls"):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=[{"id": object(), "type": "function", "function": {"name": "x", "arguments": "{}"}}],
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
+
+
+def test_model_input_envelope_rejects_non_string_dict_key() -> None:
+    with pytest.raises(ValueError, match="non-string key in tool_calls"):
+        build_model_input_messages_envelope(
+            [
+                ChatMessage(
+                    role="assistant",
+                    content="x",
+                    entry_id="a1",
+                    tool_calls=[{1: "bad", "type": "function", "function": {"name": "x", "arguments": "{}"}}],
+                ),
+                ChatMessage(role="user", content="final", entry_id="u1"),
+            ]
+        )
