@@ -20,10 +20,21 @@ from intergrax.applications.contracts.environment_profile import (
     MemoryProfile,
 )
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
+from intergrax.runtime.context_lifecycle.contracts import (
+    ContextOptimizationMode,
+    ContextOptimizationPolicy,
+    OptimizationArtifactType,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.runtime.wiring.context_runtime_bridge import (
+    CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY,
+    LEGACY_SEMANTIC_COMPRESSION_METADATA_KEY,
+    LegacyCompressionConfigurationError,
+    resolve_context_optimization_policy_from_profile,
+)
 from testing_support.builder import FakeLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -150,3 +161,67 @@ def test_materialize_runtime_config_uses_default_harness_when_not_strict() -> No
 
     assert config.llm_adapter is not None
     assert config.enable_task_memory is True
+
+
+def test_legacy_semantic_compression_maps_to_canonical_policy() -> None:
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+    context = ContextProfile(
+        semantic_compression_enabled=True,
+        default_history_compression="summarize_oldest",
+    )
+
+    apply_context_profile_to_runtime_config(config, context)
+
+    policy = config.metadata[CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY]
+    assert isinstance(policy, ContextOptimizationPolicy)
+    assert policy.enabled is True
+    assert policy.allow_llm_summarization is True
+    assert policy.allow_lossy is True
+    assert LEGACY_SEMANTIC_COMPRESSION_METADATA_KEY not in config.metadata
+
+
+def test_legacy_truncate_strategy_disables_summarizer() -> None:
+    context = ContextProfile(
+        semantic_compression_enabled=True,
+        default_history_compression="truncate_oldest",
+    )
+
+    policy = resolve_context_optimization_policy_from_profile(context)
+
+    assert policy is not None
+    assert policy.allow_llm_summarization is False
+    assert policy.allowed_strategy_ids == ()
+
+
+def test_explicit_optimization_policy_conflicts_with_legacy_compression() -> None:
+    explicit = ContextOptimizationPolicy(
+        policy_version="policy.v1",
+        validation_contract_version="validation.v1",
+        enabled=True,
+        mode=ContextOptimizationMode.EPHEMERAL_ASSEMBLY,
+        allow_lossy=True,
+        allow_llm_summarization=True,
+        allowed_artifact_types=(OptimizationArtifactType.MESSAGE_SEQUENCE,),
+        allowed_strategy_ids=("message_sequence_summarization.v1",),
+    )
+    context = ContextProfile(
+        optimization_policy=explicit,
+        semantic_compression_enabled=True,
+    )
+
+    with pytest.raises(LegacyCompressionConfigurationError):
+        resolve_context_optimization_policy_from_profile(context)
+
+
+def test_canonical_budget_affects_run_budget_not_message_slicing() -> None:
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+    context = ContextProfile(
+        budget_policy=ContextBudgetPolicy(max_tokens_estimate=2_400),
+    )
+
+    apply_context_profile_to_runtime_config(config, context)
+
+    assert config.context_budget_policy is not None
+    assert config.context_budget_policy.max_tokens_estimate == 2_400
+    assert config.run_budget is not None
+    assert config.run_budget.max_total_tokens == 2_400

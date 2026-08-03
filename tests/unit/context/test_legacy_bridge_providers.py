@@ -526,6 +526,22 @@ def test_structural_guards_session_history_migration() -> None:
     assert "session_context_revision_id" in uaep_source
 
 
+def test_bridge_source_guards_no_independent_history_slicing() -> None:
+    from intergrax.applications._shared import context_runtime_bridge as app_bridge_mod
+    from intergrax.runtime.wiring import context_runtime_bridge as host_bridge_mod
+
+    host_source = inspect.getsource(host_bridge_mod.apply_context_profile_to_runtime_config)
+    app_source = inspect.getsource(app_bridge_mod.apply_context_profile_to_runtime_config)
+    for source in (host_source, app_source):
+        assert "messages[-limit:]" not in source
+        assert "history[-limit:]" not in source
+        assert "list(history)[-limit:]" not in source
+        assert "summary_model(" not in source
+        assert "summarize(" not in source
+    assert 'metadata["semantic_compression.v1"]' not in host_source
+    assert "semantic_compression.v1" not in app_source
+
+
 def test_graph_handles_reject_direct_snapshot_from_other_tenant() -> None:
     snapshot = build_session_history_snapshot(
         tenant_id="other",

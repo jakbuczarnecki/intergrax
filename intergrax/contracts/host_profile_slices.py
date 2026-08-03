@@ -17,6 +17,7 @@ from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resi
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
+from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 
 ContextEnginePreset = Literal[
@@ -82,6 +83,7 @@ class ContextProfile(BaseModel):
     enable_websearch: bool = True
     drift_monitoring_enabled: bool = False
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
+    optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
     default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = (
         "truncate_oldest"

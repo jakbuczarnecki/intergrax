@@ -19,6 +19,7 @@ from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextBudgetSnapshot,
     ContextDecisionSnapshot,
+    ContextFragmentSource,
     ContextProviderContext,
 )
 from intergrax.context.registry import ContextPluginRegistry
@@ -238,6 +239,11 @@ class _RuntimeConfigStub:
     production_mode: bool = False
     context_budget_policy: ContextBudgetPolicy | None = None
     context_decision_profile: dict[str, Any] | None = None
+    metadata: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
+        if self.metadata is None:
+            object.__setattr__(self, "metadata", {})
 
 
 class _SmallWindowAdapter(LLMAdapter):
@@ -786,3 +792,177 @@ async def test_engine_compile_mutation_raises_ucl_final_compile_mutated_plan() -
     ):
         with pytest.raises(ValueError, match=NexusUCLExecutionReason.FINAL_COMPILE_MUTATED_PLAN.value):
             await engine.assemble(request, provider_ctx=provider_ctx)
+
+
+@pytest.mark.asyncio
+async def test_engine_reads_optimization_policy_from_runtime_config_metadata() -> None:
+    adapter = _SmallWindowAdapter()
+    config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(
+            max_tokens_estimate=80,
+            max_chars=16_000,
+        ),
+    )
+    policy = _optimization_policy()
+    from intergrax.runtime.wiring.context_runtime_bridge import (
+        CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY,
+        apply_context_optimization_policy_to_runtime_config,
+    )
+
+    apply_context_optimization_policy_to_runtime_config(config, policy)  # type: ignore[arg-type]
+    registry = ContextPluginRegistry()
+    registry.add_provider(HandleSessionHistoryProvider())
+    engine = DefaultNexusContextEngine(registry=registry)
+    history = [ChatMessage(role="user", content="history " * 80, entry_id="m1")]
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant1",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=history,
+    )
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    model_calls = [0]
+    runtime = _ucl_runtime(model_calls)
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            "runtime_config": config,
+            "messages": [ChatMessage(role="user", content="current", entry_id="current")],
+            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
+            NEXUS_UCL_RUNTIME_HANDLE: runtime,
+        },
+    )
+    assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+    assert assembled.context_plan is not None
+    assert assembled.context_plan.optimization_required is True
+    assert model_calls[0] == 1
+    assert config.metadata[CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY] is policy
+
+
+@pytest.mark.asyncio
+async def test_retrieval_limit_does_not_change_session_history_plan() -> None:
+    adapter = _SmallWindowAdapter()
+    engine = DefaultNexusContextEngine()
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant1",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=[ChatMessage(role="user", content="hello", entry_id="m1")],
+    )
+    base_kwargs = {
+        "trace_id": "t1",
+        "run_id": "r1",
+        "task_id": "task1",
+        "tenant_id": "tenant1",
+        "assembly_scope": "acp_step",
+        "objective": "test",
+        "budget_policy": ContextBudgetSnapshot(max_tokens_estimate=200),
+        "assembly_options": TaskContextAssemblyOptions(),
+    }
+    provider_handles = {
+        "runtime_config": _RuntimeConfigStub(llm_adapter=adapter, production_mode=False),
+        "messages": [ChatMessage(role="user", content="short prompt", entry_id="current")],
+        SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+        SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+        SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
+    }
+    low_limit = ContextAssemblyRequest(
+        **base_kwargs,
+        decision_profile=ContextDecisionSnapshot(max_memory_entries_in_context=3),
+    )
+    high_limit = ContextAssemblyRequest(
+        **base_kwargs,
+        decision_profile=ContextDecisionSnapshot(max_memory_entries_in_context=12),
+    )
+    low = await engine.assemble(
+        low_limit,
+        provider_ctx=ContextProviderContext(engine_id="default", handles=provider_handles),
+    )
+    high = await engine.assemble(
+        high_limit,
+        provider_ctx=ContextProviderContext(engine_id="default", handles=provider_handles),
+    )
+    assert low.context_plan is not None
+    assert high.context_plan is not None
+    low_history = [
+        group
+        for group in low.context_plan.source_groups
+        if group.source is ContextFragmentSource.SESSION_HISTORY
+    ]
+    high_history = [
+        group
+        for group in high.context_plan.source_groups
+        if group.source is ContextFragmentSource.SESSION_HISTORY
+    ]
+    assert low_history == high_history
+    low_hash = compute_model_facing_messages_hash(
+        tuple(message for message in low.messages if message.entry_id == "m1")
+    )
+    high_hash = compute_model_facing_messages_hash(
+        tuple(message for message in high.messages if message.entry_id == "m1")
+    )
+    assert low_hash == high_hash
+
+
+@pytest.mark.asyncio
+async def test_canonical_budget_changes_resolved_global_budget_tokens() -> None:
+    adapter = _SmallWindowAdapter()
+    low_budget_config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(max_tokens_estimate=120),
+    )
+    high_budget_config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(max_tokens_estimate=360),
+    )
+    engine = DefaultNexusContextEngine()
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    low = await engine.assemble(
+        request,
+        provider_ctx=ContextProviderContext(
+            engine_id="default",
+            handles={
+                "runtime_config": low_budget_config,
+                "messages": [ChatMessage(role="user", content="short", entry_id="current")],
+            },
+        ),
+    )
+    high = await engine.assemble(
+        request,
+        provider_ctx=ContextProviderContext(
+            engine_id="default",
+            handles={
+                "runtime_config": high_budget_config,
+                "messages": [ChatMessage(role="user", content="short", entry_id="current")],
+            },
+        ),
+    )
+    assert low.context_plan is not None
+    assert high.context_plan is not None
+    assert low.context_plan.resolved_global_budget_tokens < high.context_plan.resolved_global_budget_tokens

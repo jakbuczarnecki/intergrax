@@ -35,6 +35,7 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
 )
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
+from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionError,
@@ -42,6 +43,7 @@ from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLRuntimeDependencies,
     resolve_ucl_context_plan,
 )
+from intergrax.runtime.wiring.context_runtime_bridge import optimization_policy_from_runtime_config
 
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
@@ -70,6 +72,18 @@ def _compile_preserved_planned_context(
         and planned_hash == compiled_hash
         and compiled_budget_tokens == planned_budget_tokens
     )
+
+
+def _resolve_optimization_policy(
+    ctx: ContextProviderContext,
+    runtime_config: RuntimeConfig,
+) -> ContextOptimizationPolicy | None:
+    direct = ctx.handles.get("context_optimization_policy")
+    if direct is not None:
+        if not isinstance(direct, ContextOptimizationPolicy):
+            raise ValueError("context_optimization_policy handle must be ContextOptimizationPolicy")
+        return direct
+    return optimization_policy_from_runtime_config(runtime_config)
 
 
 class DefaultNexusContextEngine:
@@ -218,7 +232,7 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
         )
         session_history = await _load_session_history_snapshot(request, ctx)
-        optimization_policy = ctx.handles.get("context_optimization_policy")
+        optimization_policy = _resolve_optimization_policy(ctx, runtime_config)
         planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
         context_plan = planner.plan(
             request,

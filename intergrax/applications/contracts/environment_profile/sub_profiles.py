@@ -25,6 +25,7 @@ from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
 
@@ -129,6 +130,7 @@ class ContextProfile(BaseModel):
     enable_websearch: bool = True
     drift_monitoring_enabled: bool = False
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
+    optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
     default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
 
