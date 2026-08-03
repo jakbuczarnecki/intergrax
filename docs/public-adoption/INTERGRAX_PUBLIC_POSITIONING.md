@@ -6,14 +6,16 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Public Positioning Contract
 
-This document is the canonical public-positioning contract for Intergrax. It governs:
+This document is a **Layer 5 maintainer contract**. It governs exact first-contact copy, product hierarchy, audience value, and CTA language for:
 
-- root README positioning;
+- root README positioning (consumed in PX-2);
 - public overview documents;
 - outreach introductions;
 - design-partner language;
 - repository descriptions;
 - future demo and landing-page copy.
+
+It is **not** a normal public-reader route.
 
 It does **not** replace:
 
@@ -22,130 +24,214 @@ It does **not** replace:
 - proof evidence;
 - license;
 - collaboration rules;
-- detailed proof and claims status (owned by a later canonical proof-and-claims document).
+- detailed proof and claims status (`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`, `PROOFS.md`).
 
 ---
 
-## 1. Canonical public position
+## At a glance
 
-**Primary sentence:**
-
-Intergrax helps teams build specialized agent applications without rebuilding the same policy, knowledge, evidence, integration, and execution foundations for every product.
-
-**Category descriptor:**
-
-Intergrax is a reusable Harness AI foundation for governed agent applications.
-
----
-
-## 2. Problem
-
-Building an impressive agent demo is relatively easy. Delivering a controlled application that a team can review, operate, and trust is difficult.
-
-Teams repeatedly rebuild the same foundations for every new product: identity and permissions, tool access, knowledge retrieval, memory, policy enforcement, human-in-the-loop gates, trace and evidence collection, testing, and operational boundaries. This repeated infrastructure work slows each new product and makes review and governance inconsistent across applications.
+| Item | Status |
+|------|--------|
+| Contract status | ACTIVE |
+| Current phase | PX-1 — READY_FOR_REVIEW |
+| Primary product path | Local Knowledge Workspace (LKW) |
+| Secondary capability path | Token Optimization |
+| Current primary CTA | See the LKW workflow |
+| Future product-trial CTA | Try LKW — only after PX-3 provides an actual supported path |
+| Root README application | PX-2 — not modified by PX-1 |
+| External reader validation | NOT_STARTED |
+| Real-user validation | INCOMPLETE |
+| Commercial validation | INCOMPLETE |
 
 ---
 
-## 3. Value
+## Canonical first-contact message
 
-Intergrax allows teams to:
+### Primary sentence
 
-- focus on the concrete application and user workflow;
-- reuse governed execution infrastructure;
-- reuse knowledge, evidence, integration, and model boundaries;
-- improve the shared platform through pressure from real products.
+Intergrax helps teams build AI applications that can use their knowledge and tools while keeping access, actions, and evidence under control.
 
-Do not claim a measured delivery-time reduction unless supported by the later proof-and-claims document.
+### Supporting sentence
 
----
+Teams reuse shared policy, knowledge, integration, execution, and evidence foundations instead of rebuilding them for every product.
 
-## 4. What the customer or partner receives
+### LKW product sentence
 
-The customer or partner receives a concrete solution to a concrete problem.
-Intergrax is the reusable foundation used to deliver that solution.
+Local Knowledge Workspace (LKW) is the primary product path: a private-by-default workspace for adding approved knowledge sources, asking questions, and receiving grounded answers with source references and inspectable evidence.
 
-Public messaging must not require the reader to buy into “Agent OS” as the product before understanding the concrete solution.
+### Current-status sentence
 
-The internal architectural phrase “The harness is the product.” may remain in deep technical material, but it must not be the primary public market message.
+LKW is a Backend Product Alpha / MVP under active development. The current bounded product proof covers indexed knowledge workflows; complete live or hybrid access, finished end-user packaging, real-user validation, and commercial validation are not complete.
 
----
+### Category descriptor
 
-## 5. Meaning of Harness AI
+Intergrax is a reusable foundation for governed AI applications.
 
-Harness AI is reusable infrastructure for governed agent applications. It provides shared foundations for:
-
-- governed execution;
-- policy and human-in-the-loop (HITL);
-- trace and evidence;
-- knowledge, RAG, and memory;
-- tools and integrations;
-- model portability;
-- application hosting and runtime boundaries;
-- testing and operational verification.
-
-Harness AI is explained after the problem and value because readers should first understand what concrete outcome Intergrax helps deliver. The explanation does not require knowledge of internal tier labels or component names.
+The category descriptor appears after the concrete problem, outcome, and LKW explanation — not as the opening headline.
 
 ---
 
-## 6. Role of LKW
+## Product and message hierarchy
 
-Local Knowledge Workspace (LKW) is:
+Public messaging must follow this order:
 
-- the current primary product-development and platform-validation program;
-- the first concrete product proof of Intergrax;
-- the driver of reusable platform improvements through real product requirements;
-- currently a Backend Product Alpha / MVP under active development.
+```text
+1. User problem and desired outcome
+2. LKW as the primary product path
+3. Current bounded result and honest maturity
+4. Current primary CTA
+5. Intergrax as the reusable foundation
+6. Token Optimization as a secondary capability
+7. Architecture and proof routes
+8. Partner, permission and license routes
+```
 
-LKW is **not**:
+Frozen ownership:
 
-- a finished SaaS;
-- a product that has completed real-user validation;
-- a product that has completed commercial validation;
-- proof that all planned providers, live access paths, or Hybrid Ask capabilities are complete;
-- the final definition of every product that can be built with Intergrax.
+```text
+LKW = primary public product CTA
+Token Optimization = secondary platform-capability CTA
+Architecture = deeper evaluation route
+Full certification proof = reviewer route, not first product introduction
+```
 
----
-
-## 7. Primary audiences
-
-The positioning is aimed narrowly at:
-
-1. teams building specialized agent-backed applications that need governance, evidence, knowledge access, or controlled tool execution;
-2. AI platform engineers and architects evaluating reusable agent-application infrastructure;
-3. technical design partners with a concrete workflow worth validating.
-
-It is **not** aimed at “everyone,” generic consumers, or every possible AI project.
+Product trial and platform evaluation are different routes. A certification runbook must not replace a product tour.
 
 ---
 
-## 8. Differentiators
+## Calls to action
 
-### Application-first
+### Current primary CTA
 
-Real applications and user workflows lead development.
+**See the LKW workflow**
 
-### Governed execution by default
+This is the active CTA until PX-3 is accepted and delivers a real supported path.
 
-Policy, HITL, trace, and evidence are execution concerns, not optional decorations.
+### Future primary CTA
 
-### Reusable delivery foundation
+**Try LKW**
 
-Multiple products reuse shared infrastructure instead of rebuilding the same foundations.
+Try LKW may become active only after PX-3 provides an actual supported path, the path is tested, documentation accurately matches it, and the product is not falsely presented as easier than it is.
 
-### Explicit responsibility boundaries
+### Secondary CTA
 
-Applications own product environment; orchestration coordinates work; agents make domain decisions; the harness controls execution and evidence.
+**Explore Token Optimization**
+
+### Deeper technical CTA
+
+**Review architecture and proofs**
+
+### Prohibited as public primary CTA
+
+The following must **not** be the first product action for normal readers:
+
+- Run echo.basic
+- Start lab_application
+- Evaluate the lab
+- Run the platform smoke test
+
+`echo.basic` is not a primary public CTA. `lab_application` is not a primary public CTA. Echo and lab may remain advanced platform smoke or maintainer diagnostics.
 
 ---
 
-## 9. Current-stage language
+## Audiences
+
+| Audience | Primary value they should understand | Primary next action |
+|----------|--------------------------------------|---------------------|
+| Potential LKW user | A governed knowledge-workflow product path exists; LKW is the primary product; maturity is honest and bounded | See the LKW workflow |
+| AI engineer or developer | Intergrax is a serious foundation for governed AI applications; builder paths exist separately from product trial | Open the bounded builder route |
+| Architect or platform engineer | Governance, architecture, and proof boundaries at a high level without first-contact subsystem jargon | Review architecture and proofs |
+| CTO, product lead or technical buyer | Problem, value, maturity, and honest proof status for decision-making | Assess use-case and evaluation fit |
+| Partner, integrator or design partner | Partner fit, pilot workflow, and what Intergrax does not promise publicly | Review the partner or pilot route |
+| Contributor or deep technical reviewer | Contribution boundaries, license scope, and where deep technical material lives | Open the technical documentation map |
+
+The positioning is **not** aimed at “everyone,” generic consumers, or every possible AI project.
+
+---
+
+## Harness AI terminology
+
+Harness AI is an **optional explanatory term only**. It is:
+
+- not the headline;
+- not the primary sentence;
+- not required to understand LKW;
+- explained after the product and user outcome;
+- defined as reusable infrastructure for governed AI applications.
+
+Harness AI must not be presented as a recognized market category without evidence. Legitimate deep technical use of the term may remain in architecture and reviewer material.
+
+---
+
+## Differentiators
+
+Express these through user outcomes, not subsystem names:
+
+1. **Product-first development** — real applications and user workflows lead development.
+2. **Controlled execution and evidence** — policy, human-in-the-loop gates, trace, and evidence are execution concerns, not optional decorations.
+3. **Reusable foundations across applications** — multiple products reuse shared infrastructure instead of rebuilding the same foundations.
+4. **Clear responsibility boundaries** — applications own product environment; orchestration coordinates work; agents make domain decisions; the harness controls execution and evidence.
+
+Do not claim:
+
+- guaranteed faster delivery;
+- guaranteed safety;
+- universal production readiness;
+- enterprise readiness;
+- completed market validation;
+- commercial validation;
+- universal superiority over other frameworks.
+
+Do not claim a measured delivery-time reduction unless supported by the proof-and-claims model.
+
+---
+
+## Category clarification
+
+Intergrax is **not**:
+
+- merely a single agent framework;
+- only a RAG toolkit;
+- currently a finished knowledge SaaS;
+- a no-code builder;
+- a claim to replace every existing framework.
+
+Intergrax **combines** reusable application foundations with concrete product paths and bounded proofs. Fuller comparison language belongs in PX-8; do not name or attack specific competitors here.
+
+---
+
+## Prohibited first-contact patterns
+
+The canonical first-contact section must **not** contain:
+
+```text
+Harness AI
+Agent OS
+Tier-0
+Tier-1
+Tier-2
+Tier-3
+Nexus
+echo.basic
+lab_application
+internal PX/TOKEN/CTX task IDs
+a long capability catalog
+a full architecture diagram
+license-first wording
+```
+
+These items may appear in appropriately deeper documents.
+
+---
+
+## Maturity and legal boundaries
 
 **Allowed public stage descriptions:**
 
 - source-available
 - active R&D
 - reusable harness/platform baseline
-- LKW Backend Product Alpha
+- LKW Backend Product Alpha / MVP
 - product-validation program
 - technical evaluation
 - design-partner discovery
@@ -165,56 +251,53 @@ Applications own product environment; orchestration coordinates work; agents mak
 - `production-grade Harness AI` is the strategic destination;
 - it is not an unrestricted public claim about every current component or deployment;
 - maturity scores describe internal evidence models and do not equal product certification;
-- real-user validation and commercial validation are not complete.
+- real-user validation is incomplete;
+- commercial validation is incomplete;
+- no production-certification claim;
+- no security or compliance certification claim;
+- no measured speed or savings claim without evidence.
+
+Value must appear before detailed limitations. Limitations remain visible.
+
+License and collaboration ownership remain in [`LICENSE`](../../LICENSE) and [`COLLABORATION.md`](../../COLLABORATION.md).
 
 ---
 
-## 10. What Intergrax is not
+## Messaging order
 
-Intergrax is not currently positioned as:
-
-- a finished SaaS;
-- a generic no-code agent builder;
-- a direct replacement for LangChain, LangGraph, CrewAI, or every agent framework;
-- a production certification;
-- a compliance or security certification;
-- a commercially validated product;
-- a completed implementation of every cataloged integration;
-- a guarantee that every future product will be faster or safer without measurement.
-
-Other frameworks and tools may suit different needs. This positioning does not dismiss them.
-
----
-
-## 11. Messaging order
-
-Public messaging must follow this order:
+The required public sequence:
 
 ```text
-1. Problem
-2. User or team outcome
-3. Concrete product or workflow
-4. Current proof and honest status
-5. Harness AI explanation
-6. Architecture deep dive
-7. Evaluation, pilot, or technical-review next step
-8. License details
+1. User problem
+2. Concrete outcome
+3. LKW product workflow
+4. One current next action
+5. Current maturity and limitations
+6. Intergrax foundation explanation
+7. Token Optimization capability
+8. Architecture and proof depth
+9. Partner or builder route
+10. License and permission details
 ```
 
-Legal and technical details remain available but must not dominate the first contact.
+Do not place license or architecture before the concrete product explanation.
 
 ---
 
-## 12. Source-of-truth boundaries
+## Source-of-truth boundaries
 
 | Topic | Owner |
 |-------|-------|
-| Public positioning | This document |
+| Exact first-contact copy, product hierarchy, audience value and CTA language | This document (`INTERGRAX_PUBLIC_POSITIONING.md`) |
+| PX phase status and experience gates | `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` |
+| Document layers and reader routes | `PUBLIC_DOCUMENTATION_ARCHITECTURE.md` |
+| Current public proof status | `PROOFS.md` |
+| Public product-validation direction | `ROADMAP.md` |
+| Legal rights and restrictions | `LICENSE` |
 | Detailed implementation status | Owning implementation plans |
-| Detailed proof claims | Later canonical proof-and-claims document |
-| License rights | [`LICENSE`](../../LICENSE) |
-| Collaboration permissions | [`COLLABORATION.md`](../../COLLABORATION.md) |
+| Detailed proof claims | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
+| Collaboration permissions | `COLLABORATION.md` |
 | Architecture details | Architecture canon |
-| Root README | Will consume this positioning in a later alignment task; not modified by this contract |
+| Root README | Consumes this contract in PX-2; not modified by PX-1 |
 
 Do not duplicate detailed task statuses or proof tables here.

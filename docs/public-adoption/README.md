@@ -16,7 +16,7 @@ They do not define an open-source contribution model, production-support channel
 
 | Step | Document | Purpose |
 |------|----------|---------|
-| 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical source for public problem statement, value proposition, Harness AI explanation, LKW role, audience, and public claim boundaries |
+| 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Maintainer contract for exact first-contact message, product hierarchy, audience value, and CTA language |
 | 1 | [Public Documentation Architecture](PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Canonical maintainer contract for public documentation layers, reader-intent routing, and proof classification |
 | 1a | [Public Product Experience Roadmap](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md) | Layer 5 product-experience transformation program, audience contract, and PX phase status |
 | 2 | [Public Proof and Claims Model](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Canonical status vocabulary, evidence requirements, claim qualification, and proof promotion rules |
@@ -28,11 +28,19 @@ They do not define an open-source contribution model, production-support channel
 | 8 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing recruitment templates and positioning guardrails |
 | 9 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) · [curated_public_issues.yml](curated_public_issues.yml) | Strategy, draft rationale and canonical source data for curated public issue automation |
 
+**Intergrax Public Positioning** — [`INTERGRAX_PUBLIC_POSITIONING.md`](INTERGRAX_PUBLIC_POSITIONING.md)
+
+```text
+Role: Exact first-contact message, product hierarchy, audience value and CTA language
+Status: ACTIVE — PX-1 READY_FOR_REVIEW
+Public-reader route: no
+```
+
 **Public Product Experience Roadmap** — [`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-0 READY_FOR_REVIEW
+Status: ACTIVE — PX-1 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -51,10 +59,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous public-documentation foundation: ACCEPTED / CLOSED through 9A
-Current program: Public Product Experience
-Current phase: PX-0 READY_FOR_REVIEW
-Next after acceptance: PX-1
+Previous phase: PX-0 ACCEPTED / CLOSED
+Current phase: PX-1 READY_FOR_REVIEW
+Next after acceptance: PX-2
 External sessions: NOT_STARTED
 ```
 

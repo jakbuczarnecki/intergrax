@@ -19,7 +19,7 @@ PROTOCOL_PATH = REPO_ROOT / "docs" / "public-adoption" / "EXTERNAL_READER_VALIDA
 ROOT_README_PATH = REPO_ROOT / "README.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md"
 
-_REQUIRED_ANCESTOR = "666b9ac2f78c679385ab0d34ce8bdc19a1a2fbe3"
+_REQUIRED_ANCESTOR = "9c423d0ff760fa6e574a3977e5c6fd2af2a5a95d"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -195,15 +195,15 @@ def test_roadmap_at_a_glance_status(roadmap_text: str) -> None:
     glance = _extract_h2_section(roadmap_text, "At a glance")
     for row in (
         "Roadmap status | ACTIVE",
-        "Current phase | PX-0 — READY_FOR_REVIEW",
-        "Next phase after acceptance | PX-1",
+        "Current phase | PX-1 — READY_FOR_REVIEW",
+        "Next phase after acceptance | PX-2",
         "External reader validation | NOT_STARTED",
         "Real-user validation | INCOMPLETE",
         "Commercial validation | INCOMPLETE",
     ):
         assert row in glance, f"At a glance missing: {row}"
-    assert "PX-0 — ACCEPTED" not in roadmap_text
-    assert "PX-0 — CLOSED" not in roadmap_text
+    assert "PX-1 — ACCEPTED" not in roadmap_text
+    assert "PX-1 — CLOSED" not in roadmap_text
 
 
 def test_roadmap_phase_completeness(roadmap_text: str) -> None:
@@ -212,13 +212,17 @@ def test_roadmap_phase_completeness(roadmap_text: str) -> None:
         assert len(matches) == 1, f"Expected exactly one ## {phase} heading, found {len(matches)}"
 
     px0 = _extract_h2_section(roadmap_text, "PX-0 —")
-    assert "READY_FOR_REVIEW" in px0
-    assert "ACCEPTED" not in px0.replace("READY_FOR_REVIEW", "")
+    assert "ACCEPTED / CLOSED" in px0
+    assert "9c423d0ff760fa6e574a3977e5c6fd2af2a5a95d" in px0
 
     px1 = _extract_h2_section(roadmap_text, "PX-1 —")
-    assert "BLOCKED_ON_PX_0_ACCEPTANCE" in px1
+    assert "READY_FOR_REVIEW" in px1
+    assert "ACCEPTED" not in px1.replace("READY_FOR_REVIEW", "")
 
-    for i in range(2, 16):
+    px2 = _extract_h2_section(roadmap_text, "PX-2 —")
+    assert "BLOCKED_ON_PX_1_ACCEPTANCE" in px2
+
+    for i in range(3, 16):
         section = _extract_h2_section(roadmap_text, f"PX-{i} —")
         assert "WAITING" in section, f"PX-{i} missing WAITING status"
 
@@ -389,9 +393,13 @@ def _validate_external_validation_boundary_section(section: str) -> None:
 def test_architecture_synchronization() -> None:
     text = _read(ARCHITECTURE_PATH)
     assert "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md" in text
+    assert "INTERGRAX_PUBLIC_POSITIONING.md" in text
     assert "Layer 5 maintainer control" in text
     assert "docs/PUBLIC_DOCUMENTATION_MAP.md" in text
     assert re.search(r"must\s+\*{0,2}not\*{0,2}\s+be\s+added", text, re.IGNORECASE)
+    norm = text.lower()
+    assert "lkw is the primary public product cta" in norm
+    assert "token optimization is the secondary capability cta" in norm
     section = _extract_h2_section(text, _EXTERNAL_VALIDATION_SECTION_HEADING)
     _validate_external_validation_boundary_section(section)
 
@@ -399,7 +407,9 @@ def test_architecture_synchronization() -> None:
 def test_maintainer_index_synchronization() -> None:
     text = _read(MAINTAINER_INDEX_PATH)
     assert "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md" in text
-    assert "PX-0 READY_FOR_REVIEW" in text or "PX-0 — READY_FOR_REVIEW" in text
+    assert "PX-1 READY_FOR_REVIEW" in text or "PX-1 — READY_FOR_REVIEW" in text
+    assert "INTERGRAX_PUBLIC_POSITIONING.md" in text
+    assert "Public-reader route: no" in text
 
 
 def test_no_public_reader_exposure() -> None:
