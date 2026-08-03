@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-3** **ACCEPTED / CLOSED** through R1/R2/R3; **CTX-UCL-2** accepted/closed through R1; **CTX-UCL-1** accepted/closed through R1/R2
+**Status:** **CTX-UCL-5** **ACCEPTED / CLOSED** through R1/R2/R3; **CTX-UCL-6** **IN PROGRESS** through **CTX-UCL-6A**
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -25,8 +25,8 @@
 | **CTX-UCL-2-R1** | **ACCEPTED / CLOSED** — monotonic bounded wait, deterministic wake proofs, provider lifecycle correction |
 | **CTX-UCL-3** | **ACCEPTED / CLOSED** through R1/R2/R3 — `ContextPlan`, `SessionHistorySnapshot`, deterministic lookup inputs, canonical session provider (no last-N slicing), CE global budget |
 | **CTX-UCL-4** | **ACCEPTED / CLOSED through R1** — non-recursive `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` + `ACQUIRED` only |
-| **CTX-UCL-5** | **READY_FOR_REVIEW** — canonical Nexus UCL flow with injected repository and single-flight proof |
-| **CTX-UCL-6** | Not started / blocked pending **CTX-UCL-5** acceptance |
+| **CTX-UCL-5** | **ACCEPTED / CLOSED** through R1/R2/R3 |
+| **CTX-UCL-6** | **IN PROGRESS** — **CTX-UCL-6A** **READY_FOR_REVIEW**; legacy HistoryLayer reduction authority disabled fail-closed |
 | **CTX-UCL-CLOSEOUT-1** | Not started |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
@@ -102,6 +102,7 @@ TOKEN-10E-1 → may begin
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
 | **CTX-UCL-6** | Disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Verify all history-summary creation uses canonical repository and execution-scope boundary |
+| **CTX-UCL-6A** | Disable HistoryLayer summarization/truncation authority; OFF remains raw compatibility load; legacy reduction strategies fail closed. | Independent review |
 
 ### Phase 4 — Closeout
 
@@ -196,4 +197,4 @@ TOKEN-10E-1 → may begin
 
 ## Next step
 
-**Independent review of CTX-UCL-5.** After acceptance: **CTX-UCL-6** legacy migration.
+Independent review of **CTX-UCL-6A**. After acceptance: **CTX-UCL-6B** legacy session-provider slicing and flattening migration.
