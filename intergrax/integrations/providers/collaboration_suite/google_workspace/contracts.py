@@ -15,21 +15,25 @@ _INVALID_CREDENTIAL_MATERIAL_MESSAGE = "Google Workspace credential material is 
 
 def copy_google_workspace_credential_material(material: object) -> dict[str, str]:
     """Validate and defensively copy opaque Google Workspace credential material."""
+    if not isinstance(material, Mapping):
+        raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
     try:
-        if not isinstance(material, Mapping) or not material:
-            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-        copied: dict[str, str] = {}
-        for key, value in material.items():
-            if not isinstance(key, str) or not key.strip():
-                raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-            if not isinstance(value, str):
-                raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-            copied[key] = value
-        return copied
-    except IntegrationConfigurationError:
-        raise
+        items = tuple(material.items())
     except Exception:
         raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE) from None
+    if not items:
+        raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+    copied: dict[str, str] = {}
+    for item in items:
+        if not isinstance(item, tuple) or len(item) != 2:
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        key, value = item
+        if not isinstance(key, str) or not key.strip():
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        if not isinstance(value, str):
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        copied[key] = value
+    return copied
 
 
 class GoogleWorkspaceSourceKind(StrEnum):

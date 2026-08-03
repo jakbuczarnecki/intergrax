@@ -281,37 +281,16 @@ def _validate_items_field(items_field: object) -> str:
 def _copy_params(params: Mapping[str, object] | None) -> dict[str, object] | None:
     if params is None:
         return None
+    if not isinstance(params, Mapping):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_query_parameter",
+            attempts=0,
+        )
     try:
-        if not isinstance(params, Mapping):
-            raise GoogleWorkspaceApiError(
-                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-                status_code=None,
-                retry_after_seconds=None,
-                safe_reason="invalid_query_parameter",
-                attempts=0,
-            )
-        copied: dict[str, object] = {}
-        for name, value in params.items():
-            if not isinstance(name, str):
-                raise GoogleWorkspaceApiError(
-                    kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-                    status_code=None,
-                    retry_after_seconds=None,
-                    safe_reason="invalid_query_parameter",
-                    attempts=0,
-                )
-            if name.casefold() in _FORBIDDEN_QUERY_PARAM_NAMES:
-                raise GoogleWorkspaceApiError(
-                    kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-                    status_code=None,
-                    retry_after_seconds=None,
-                    safe_reason="forbidden_query_parameter",
-                    attempts=0,
-                )
-            copied[name] = value
-        return copied
-    except GoogleWorkspaceApiError:
-        raise
+        items = tuple(params.items())
     except Exception:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
@@ -320,13 +299,60 @@ def _copy_params(params: Mapping[str, object] | None) -> dict[str, object] | Non
             safe_reason="invalid_query_parameter",
             attempts=0,
         ) from None
+    copied: dict[str, object] = {}
+    for item in items:
+        if not isinstance(item, tuple) or len(item) != 2:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="invalid_query_parameter",
+                attempts=0,
+            )
+        name, value = item
+        if not isinstance(name, str):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="invalid_query_parameter",
+                attempts=0,
+            )
+        if name.casefold() in _FORBIDDEN_QUERY_PARAM_NAMES:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="forbidden_query_parameter",
+                attempts=0,
+            )
+        copied[name] = value
+    return copied
 
 
 def _copy_headers(headers: Mapping[str, str] | None) -> dict[str, str]:
-    try:
-        copied: dict[str, str] = {}
-        if headers is not None:
-            if not isinstance(headers, Mapping):
+    copied: dict[str, str] = {}
+    if headers is not None:
+        if not isinstance(headers, Mapping):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="invalid_header",
+                attempts=0,
+            )
+        try:
+            items = tuple(headers.items())
+        except Exception:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="invalid_header",
+                attempts=0,
+            ) from None
+        for item in items:
+            if not isinstance(item, tuple) or len(item) != 2:
                 raise GoogleWorkspaceApiError(
                     kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
                     status_code=None,
@@ -334,36 +360,27 @@ def _copy_headers(headers: Mapping[str, str] | None) -> dict[str, str]:
                     safe_reason="invalid_header",
                     attempts=0,
                 )
-            for name, value in headers.items():
-                if not isinstance(name, str) or not isinstance(value, str):
-                    raise GoogleWorkspaceApiError(
-                        kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-                        status_code=None,
-                        retry_after_seconds=None,
-                        safe_reason="invalid_header",
-                        attempts=0,
-                    )
-                if name.casefold() in _FORBIDDEN_HEADER_NAMES:
-                    raise GoogleWorkspaceApiError(
-                        kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-                        status_code=None,
-                        retry_after_seconds=None,
-                        safe_reason="forbidden_header",
-                        attempts=0,
-                    )
-                copied[name] = value
-        copied["Accept"] = "application/json"
-        return copied
-    except GoogleWorkspaceApiError:
-        raise
-    except Exception:
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="invalid_header",
-            attempts=0,
-        ) from None
+            name, value = item
+            if not isinstance(name, str) or not isinstance(value, str):
+                raise GoogleWorkspaceApiError(
+                    kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                    status_code=None,
+                    retry_after_seconds=None,
+                    safe_reason="invalid_header",
+                    attempts=0,
+                )
+            folded_name = name.casefold()
+            if folded_name == "accept" or folded_name in _FORBIDDEN_HEADER_NAMES:
+                raise GoogleWorkspaceApiError(
+                    kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                    status_code=None,
+                    retry_after_seconds=None,
+                    safe_reason="forbidden_header",
+                    attempts=0,
+                )
+            copied[name] = value
+    copied["Accept"] = "application/json"
+    return copied
 
 
 def _build_service_url(
@@ -389,29 +406,16 @@ def _normalize_header_mapping(
     status_code: int | None,
     attempts: int,
 ) -> dict[str, str]:
+    if not isinstance(headers, Mapping):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_response_headers",
+            attempts=attempts,
+        )
     try:
-        if not isinstance(headers, Mapping):
-            raise GoogleWorkspaceApiError(
-                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
-                status_code=status_code,
-                retry_after_seconds=None,
-                safe_reason="invalid_response_headers",
-                attempts=attempts,
-            )
-        normalized: dict[str, str] = {}
-        for key, value in headers.items():
-            if not isinstance(key, str) or not isinstance(value, str):
-                raise GoogleWorkspaceApiError(
-                    kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
-                    status_code=status_code,
-                    retry_after_seconds=None,
-                    safe_reason="invalid_response_headers",
-                    attempts=attempts,
-                )
-            normalized[key] = value
-        return normalized
-    except GoogleWorkspaceApiError:
-        raise
+        items = tuple(headers.items())
     except Exception:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
@@ -420,6 +424,27 @@ def _normalize_header_mapping(
             safe_reason="invalid_response_headers",
             attempts=attempts,
         ) from None
+    normalized: dict[str, str] = {}
+    for item in items:
+        if not isinstance(item, tuple) or len(item) != 2:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_response_headers",
+                attempts=attempts,
+            )
+        key, value = item
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_response_headers",
+                attempts=attempts,
+            )
+        normalized[key] = value
+    return normalized
 
 
 def _validate_response_shape(

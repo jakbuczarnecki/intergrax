@@ -795,3 +795,208 @@ def test_malformed_headers_on_retry_preserves_attempt_and_status_metadata() -> N
     assert len(executor.calls) == 2
     assert len(sleeps) == 1
     assert _SECRET_MAPPING_MESSAGE not in str(exc_info.value)
+
+
+_SECRET_TYPED_ERROR_FRAGMENT = "access_token=super-secret-value"
+
+
+def _foreign_typed_api_error() -> GoogleWorkspaceApiError:
+    return GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.TEMPORARY,
+        status_code=503,
+        retry_after_seconds=30,
+        safe_reason=_SECRET_TYPED_ERROR_FRAGMENT,
+        attempts=99,
+    )
+
+
+class _TypedErrorRaisingItemsMapping(Mapping[object, object]):
+    def __getitem__(self, key: object) -> object:
+        return "value"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self) -> object:
+        raise _foreign_typed_api_error()
+
+
+class _LazyTypedErrorIterator:
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> tuple[str, str]:
+        raise _foreign_typed_api_error()
+
+
+class _LazyTypedErrorItemsMapping(Mapping[object, object]):
+    def __getitem__(self, key: object) -> object:
+        return "value"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self) -> object:
+        return _LazyTypedErrorIterator()
+
+
+@pytest.mark.parametrize(
+    "mapping",
+    [
+        _TypedErrorRaisingItemsMapping(),
+        _LazyTypedErrorItemsMapping(),
+    ],
+)
+def test_params_typed_mapping_exception_is_canonicalized(mapping: object) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            params=mapping,  # type: ignore[arg-type]
+        )
+    error = exc_info.value
+    assert error.error_code == "GOOGLE_WORKSPACE_INVALID_REQUEST"
+    assert error.kind is GoogleWorkspaceErrorKind.INVALID_REQUEST
+    assert error.safe_reason == "invalid_query_parameter"
+    assert error.status_code is None
+    assert error.attempts == 0
+    assert error.retry_after_seconds is None
+    assert executor.calls == []
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in error.safe_reason
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in str(error)
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in repr(error)
+
+
+@pytest.mark.parametrize(
+    "mapping",
+    [
+        _TypedErrorRaisingItemsMapping(),
+        _LazyTypedErrorItemsMapping(),
+    ],
+)
+def test_headers_typed_mapping_exception_is_canonicalized(mapping: object) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers=mapping,  # type: ignore[arg-type]
+        )
+    error = exc_info.value
+    assert error.error_code == "GOOGLE_WORKSPACE_INVALID_REQUEST"
+    assert error.kind is GoogleWorkspaceErrorKind.INVALID_REQUEST
+    assert error.safe_reason == "invalid_header"
+    assert error.status_code is None
+    assert error.attempts == 0
+    assert error.retry_after_seconds is None
+    assert executor.calls == []
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in error.safe_reason
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in str(error)
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in repr(error)
+
+
+class _TypedErrorResponseHeaders:
+    status_code = 401
+    content = b"{}"
+
+    @property
+    def headers(self) -> _TypedErrorRaisingItemsMapping:
+        return _TypedErrorRaisingItemsMapping()
+
+    def json(self) -> object:
+        return {}
+
+
+def test_response_headers_typed_mapping_exception_is_canonicalized() -> None:
+    executor = _RecordingExecutor(responses=[_TypedErrorResponseHeaders()])  # type: ignore[list-item]
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    error = exc_info.value
+    assert error.error_code == "GOOGLE_WORKSPACE_MALFORMED_RESPONSE"
+    assert error.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+    assert error.safe_reason == "invalid_response_headers"
+    assert error.status_code == 401
+    assert error.attempts == 1
+    assert error.retry_after_seconds is None
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in error.safe_reason
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in str(error)
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in repr(error)
+
+
+class _TypedErrorHeadersOnSecondAttempt:
+    status_code = 200
+    content = b'{"ok": true}'
+
+    @property
+    def headers(self) -> _TypedErrorRaisingItemsMapping:
+        return _TypedErrorRaisingItemsMapping()
+
+    def json(self) -> object:
+        return {"ok": True}
+
+
+def test_typed_response_headers_on_retry_preserves_real_status_and_attempt() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(503, content=b"{}"),
+            _TypedErrorHeadersOnSecondAttempt(),  # type: ignore[list-item]
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps, jitter_values=[0.5])
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    error = exc_info.value
+    assert error.error_code == "GOOGLE_WORKSPACE_MALFORMED_RESPONSE"
+    assert error.safe_reason == "invalid_response_headers"
+    assert error.status_code == 200
+    assert error.attempts == 2
+    assert error.retry_after_seconds is None
+    assert len(executor.calls) == 2
+    assert len(sleeps) == 1
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in error.safe_reason
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in str(error)
+    assert _SECRET_TYPED_ERROR_FRAGMENT not in repr(error)
+
+
+@pytest.mark.parametrize("accept_header", ["Accept", "accept", "ACCEPT"])
+def test_caller_accept_header_rejected_before_executor(accept_header: str) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers={accept_header: "text/plain"},
+        )
+    assert exc_info.value.safe_reason == "forbidden_header"
+    assert executor.calls == []
+
+
+def test_executor_receives_exactly_one_canonical_accept_header() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(200, content=b'{"ok": true}')])
+    transport = _transport(executor)
+    headers = {"X-Custom": "safe", "X-Request-Id": "trace-1"}
+    transport.get_json(
+        source_kind=GoogleWorkspaceSourceKind.DRIVE,
+        relative_path="/files",
+        headers=headers,
+    )
+    sent_headers = executor.calls[0]["headers"]
+    assert sent_headers["Accept"] == "application/json"
+    accept_keys = [name for name in sent_headers if name.casefold() == "accept"]
+    assert accept_keys == ["Accept"]
+    assert sent_headers["X-Custom"] == "safe"
+    assert sent_headers["X-Request-Id"] == "trace-1"
+    assert headers == {"X-Custom": "safe", "X-Request-Id": "trace-1"}

@@ -28,6 +28,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
     GoogleWorkspaceClientFamily,
     GoogleWorkspaceSourceKind,
+    copy_google_workspace_credential_material,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
@@ -849,3 +850,88 @@ def test_default_factory_passes_defensive_copy_to_executor_factory() -> None:
     assert executor_factory.received["kind"] == "opaque"
     assert executor_factory.received["scope"] == "drive"
     assert executor_factory.received["mutated"] == "changed"
+
+
+class _TypedErrorRaisingItemsMapping(Mapping[str, str]):
+    def __getitem__(self, key: str) -> str:
+        return "opaque"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self):
+        raise IntegrationConfigurationError(
+            f"private_key={_SECRET_CREDENTIAL_FRAGMENT}"
+        )
+
+
+class _LazyTypedErrorIterator:
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> tuple[str, str]:
+        raise IntegrationConfigurationError(
+            f"private_key={_SECRET_CREDENTIAL_FRAGMENT}"
+        )
+
+
+class _LazyTypedErrorItemsMapping(Mapping[str, str]):
+    def __getitem__(self, key: str) -> str:
+        return "opaque"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self):
+        return _LazyTypedErrorIterator()
+
+
+@pytest.mark.parametrize(
+    "credential_material",
+    [
+        _TypedErrorRaisingItemsMapping(),
+        _LazyTypedErrorItemsMapping(),
+    ],
+)
+def test_typed_credential_mapping_exception_is_canonicalized(
+    credential_material: object,
+) -> None:
+    executor_factory = _CountingExecutorFactory()
+    factory = _default_client_factory(executor_factory=executor_factory)
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match=_INVALID_CREDENTIAL_MESSAGE,
+    ) as exc_info:
+        factory.create_client_family(credential_material=credential_material)  # type: ignore[arg-type]
+    assert executor_factory.calls == 0
+    assert "private_key" not in str(exc_info.value)
+    assert "private_key" not in repr(exc_info.value)
+    assert _SECRET_CREDENTIAL_FRAGMENT not in str(exc_info.value)
+    assert _SECRET_CREDENTIAL_FRAGMENT not in repr(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "credential_material",
+    [
+        _TypedErrorRaisingItemsMapping(),
+        _LazyTypedErrorItemsMapping(),
+    ],
+)
+def test_copy_credential_material_canonicalizes_typed_mapping_exception(
+    credential_material: object,
+) -> None:
+    with pytest.raises(
+        IntegrationConfigurationError,
+        match=_INVALID_CREDENTIAL_MESSAGE,
+    ) as exc_info:
+        copy_google_workspace_credential_material(credential_material)
+    assert "private_key" not in str(exc_info.value)
+    assert "private_key" not in repr(exc_info.value)
+    assert _SECRET_CREDENTIAL_FRAGMENT not in str(exc_info.value)
+    assert _SECRET_CREDENTIAL_FRAGMENT not in repr(exc_info.value)
