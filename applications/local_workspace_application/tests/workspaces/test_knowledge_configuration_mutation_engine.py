@@ -1,4 +1,4 @@
-﻿# Â© Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """Tests for Workspace Knowledge Configuration mutation engine."""
 
@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import inspect
 import threading
+from enum import IntEnum
 from datetime import UTC, datetime
 from typing import Any
 
@@ -430,7 +431,7 @@ class _AbortedRestartReservedRaceStore(InMemoryDocumentStore):
 
 
 class _PreparedCASConcurrentPublicationStore(InMemoryDocumentStore):
-    """Another executor completes during local RESERVEDâ†’PREPARED CAS."""
+    """Another executor completes during local RESERVED→PREPARED CAS."""
 
     def __init__(self, *, finalize: bool = True) -> None:
         super().__init__()
@@ -4726,12 +4727,60 @@ _CONCURRENT_PREPARED_ID = "concurrent-prepared-result"
 _FENCE_REPLAY_ID = "fence-replay-result"
 
 
+class _FenceReplayPhase(IntEnum):
+    INITIAL = 0
+    FENCE_PERSISTED = 1
+    FIRST_RELOAD_RETURNED = 2
+    CLEANUP_FENCE_ACQUISITION_STARTED = 3
+    CONCURRENT_COMMIT_INJECTED = 4
+
+
 class _StageClaimHardeningStore(InMemoryDocumentStore):
     def __init__(self, mode: str, *, finalize: bool = False) -> None:
         super().__init__()
-        self._mode, self._finalize, self._prepared_failures, self._commit_on_fence = (
-            mode, finalize, 1, False,
-        )
+        self._mode = mode
+        self._finalize = finalize
+        self._prepared_failures = 1
+        self._fence_phase = _FenceReplayPhase.INITIAL
+        self.fence_persisted = False
+        self.first_recovery_required_reload_seen = False
+        self.cleanup_fence_path_entered = False
+        self.concurrent_commit_injected = False
+        self.direct_committed_after_prepared_cas = False
+        self.store_created_prepared = False
+        self.store_prepared_to_committed_on_claim = False
+
+    def _publish_head(
+        self, *, tenant_id: str, workspace_id: str, mutation_id: str, target_revision: int,
+    ) -> None:
+        head_pk = f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_head"
+        head_doc = self.get(head_pk, workspace_id)
+        if head_doc is None:
+            return
+        published = head_doc.model_copy(update={"data": {
+            **head_doc.data, "committed_revision": target_revision,
+            "pending_revision": None, "pending_mutation_id": None,
+            "last_committed_mutation_id": mutation_id,
+        }})
+        super().replace_if_match(expected=head_doc, replacement=published)
+
+    def _inject_fence_replay_commit(self, mutation_doc: DocumentRecord) -> DocumentRecord:
+        ed = mutation_doc.data
+        target_revision = ed.get("target_revision")
+        committed = mutation_doc.model_copy(update={"data": {
+            **ed, "status": "committed", "outcome": "applied", "stage_claim_id": None,
+            "committed_revision": target_revision, "result_entity_type": _RESULT_TYPE,
+            "result_entity_id": _FENCE_REPLAY_ID, "committed_at": _NOW.isoformat(), "error_code": None,
+        }})
+        super().replace_if_match(expected=mutation_doc, replacement=committed)
+        if target_revision is not None:
+            self._publish_head(
+                tenant_id=ed["tenant_id"], workspace_id=ed["workspace_id"],
+                mutation_id=ed["mutation_id"], target_revision=target_revision,
+            )
+        self.concurrent_commit_injected = True
+        self._fence_phase = _FenceReplayPhase.CONCURRENT_COMMIT_INJECTED
+        return committed
 
     def replace_if_match(self, *, expected: DocumentRecord, replacement: DocumentRecord) -> bool:
         pk = expected.partition_key
@@ -4750,26 +4799,14 @@ class _StageClaimHardeningStore(InMemoryDocumentStore):
                 "result_entity_type": _RESULT_TYPE, "result_entity_id": _CONCURRENT_PREPARED_ID,
             }})
             super().replace_if_match(expected=expected, replacement=prepared)
+            self.store_created_prepared = True
             if self._finalize:
                 target_revision = ed.get("target_revision")
-                tenant_id, workspace_id = ed["tenant_id"], ed["workspace_id"]
-                head_pk = f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_head"
-                head_doc = self.get(head_pk, workspace_id)
-                if head_doc is not None and target_revision is not None:
-                    published = head_doc.model_copy(update={"data": {
-                        **head_doc.data, "committed_revision": target_revision,
-                        "pending_revision": None, "pending_mutation_id": None,
-                        "last_committed_mutation_id": ed["mutation_id"],
-                    }})
-                    super().replace_if_match(expected=head_doc, replacement=published)
-                    prepared_doc = self.get(pk, expected.row_key)
-                    if prepared_doc is not None:
-                        committed_doc = prepared_doc.model_copy(update={"data": {
-                            **prepared_doc.data, "status": "committed", "outcome": "applied",
-                            "committed_revision": target_revision,
-                            "committed_at": prepared_doc.data.get("updated_at"),
-                        }})
-                        super().replace_if_match(expected=prepared_doc, replacement=committed_doc)
+                if target_revision is not None:
+                    self._publish_head(
+                        tenant_id=ed["tenant_id"], workspace_id=ed["workspace_id"],
+                        mutation_id=ed["mutation_id"], target_revision=target_revision,
+                    )
             return False
         if self._mode == "foreign_claim" and prepared_cas:
             foreign = expected.model_copy(update={"data": {**ed, "stage_claim_id": "foreign-claim"}})
@@ -4783,27 +4820,40 @@ class _StageClaimHardeningStore(InMemoryDocumentStore):
                 **ed, "status": "recovery_required", "error_code": _CLEANUP_FENCE_ERROR,
             }})
             super().replace_if_match(expected=expected, replacement=fenced)
-            self._commit_on_fence = True
+            self.fence_persisted = True
+            self._fence_phase = _FenceReplayPhase.FENCE_PERSISTED
+            return False
+        if (
+            self._mode == "fence_replay"
+            and self._fence_phase is _FenceReplayPhase.CLEANUP_FENCE_ACQUISITION_STARTED
+            and ed.get("status") == "recovery_required"
+            and ed.get("error_code") == _CLEANUP_FENCE_ERROR
+            and rd.get("status") == "recovery_required"
+        ):
+            self._inject_fence_replay_commit(expected)
             return False
         return super().replace_if_match(expected=expected, replacement=replacement)
 
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         doc = super().get(partition_key, row_key)
-        if not (
-            self._mode == "fence_replay" and self._commit_on_fence and doc is not None
-            and "knowledge_configuration_mutation" in partition_key
-            and doc.data.get("status") == "recovery_required"
+        if (
+            doc is None or self._mode != "fence_replay"
+            or "knowledge_configuration_mutation" not in partition_key
         ):
             return doc
-        target_revision = doc.data.get("target_revision")
-        committed = doc.model_copy(update={"data": {
-            **doc.data, "status": "committed", "outcome": "applied", "stage_claim_id": None,
-            "committed_revision": target_revision, "result_entity_type": _RESULT_TYPE,
-            "result_entity_id": _FENCE_REPLAY_ID, "committed_at": _NOW.isoformat(), "error_code": None,
-        }})
-        super().replace_if_match(expected=doc, replacement=committed)
-        self._commit_on_fence = False
-        return committed
+        status = doc.data.get("status")
+        if status == "committed" and self._fence_phase < _FenceReplayPhase.CONCURRENT_COMMIT_INJECTED:
+            self.direct_committed_after_prepared_cas = True
+            return doc
+        if self._fence_phase is _FenceReplayPhase.FENCE_PERSISTED:
+            self._fence_phase = _FenceReplayPhase.FIRST_RELOAD_RETURNED
+            self.first_recovery_required_reload_seen = True
+            return doc
+        if self._fence_phase is _FenceReplayPhase.FIRST_RELOAD_RETURNED:
+            self._fence_phase = _FenceReplayPhase.CLEANUP_FENCE_ACQUISITION_STARTED
+            self.cleanup_fence_path_entered = True
+            return doc
+        return doc
 
 
 class _ConcurrentCommitStageErrorHandler(_FakeHandler):
@@ -4846,14 +4896,39 @@ class _ConcurrentCommitStageErrorHandler(_FakeHandler):
 def test_claim_cas_loss_to_prepared_continues_without_staging(
     finalize: bool, expected_disposition: WorkspaceKnowledgeMutationExecutionDispositionV1,
 ) -> None:
+    handler = _FakeHandler()
+    if finalize:
+        handler.inspection_id = _CONCURRENT_PREPARED_ID
+        handler.staged_rows.append(
+            WorkspaceConnectionAttachment(
+                attachment_id=_CONCURRENT_PREPARED_ID,
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                connection_ref="conn.concurrent",
+                safe_display_label="Concurrent",
+                status=WorkspaceConnectionAttachmentStatusV1.ATTACHED,
+                mutation_id="mutation-1",
+                effective_revision=1,
+                created_at=_NOW,
+                updated_at=_NOW,
+            )
+        )
+    store = _StageClaimHardeningStore("claim_prepared", finalize=finalize)
     engine, repo, handler = _build_engine(
-        store=_StageClaimHardeningStore("claim_prepared", finalize=finalize), claim_ids=["claim-loser"])
+        store=store, handler=handler, claim_ids=["claim-loser"],
+    )
     result = _execute(engine)
-    assert result.disposition is expected_disposition and handler.stage_calls == 0
     loaded = _load_mutation(repo)
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    assert result.disposition is expected_disposition and handler.stage_calls == 0
     assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
     assert loaded.stage_claim_id is None and loaded.result_entity_id == _CONCURRENT_PREPARED_ID
     assert result.result_entity_id == _CONCURRENT_PREPARED_ID
+    assert head.committed_revision == 1 and head.pending_mutation_id is None
+    assert store.store_created_prepared
+    if finalize:
+        assert not store.store_prepared_to_committed_on_claim
 
 
 def test_stage_error_loses_to_committed_result() -> None:
@@ -4893,9 +4968,18 @@ def test_local_claim_fallback_prepared_cas_still_works() -> None:
 
 
 def test_same_claim_fence_path_returns_committed_replay() -> None:
-    engine, repo, handler = _build_engine(
-        store=_StageClaimHardeningStore("fence_replay"), claim_ids=["claim-fence-replay"])
+    store = _StageClaimHardeningStore("fence_replay")
+    engine, repo, handler = _build_engine(store=store, claim_ids=["claim-fence-replay"])
     result = _execute(engine)
+    loaded = _load_mutation(repo)
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
     assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
-    assert result.result_entity_id == _FENCE_REPLAY_ID and handler.cleanup_calls == 0
-    assert _load_mutation(repo).result_entity_id == _FENCE_REPLAY_ID
+    assert result.result_entity_id == _FENCE_REPLAY_ID
+    assert handler.stage_calls == 1 and handler.cleanup_calls == 0
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert loaded.stage_claim_id is None and loaded.result_entity_id == _FENCE_REPLAY_ID
+    assert head.committed_revision == 1 and head.pending_mutation_id is None
+    assert store.fence_persisted and store.first_recovery_required_reload_seen
+    assert store.cleanup_fence_path_entered and store.concurrent_commit_injected
+    assert not store.direct_committed_after_prepared_cas
