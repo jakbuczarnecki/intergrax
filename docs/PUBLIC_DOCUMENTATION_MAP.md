@@ -25,7 +25,9 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | See where the product-validation program is heading | [Roadmap](../ROADMAP.md) |
 | Discuss a pilot or partnership | [Partners](../PARTNERS.md) |
 | Check current proof status | [Intergrax Proofs](../PROOFS.md) |
-| Understand license and collaboration | [Collaboration](../COLLABORATION.md) · [LICENSE](../LICENSE) |
+| Contribute or provide technical feedback | [Collaboration](../COLLABORATION.md) |
+| Understand permission boundaries | [Collaboration](../COLLABORATION.md) and [LICENSE](../LICENSE) |
+| Read legally authoritative terms | [LICENSE](../LICENSE) |
 | Perform deep technical review | [Technical Documentation Map](DOCUMENTATION_MAP.md) |
 
 ---
@@ -60,10 +62,10 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Evaluation and building route selection |
 | [Evaluation Guide](../EVALUATION_GUIDE.md) | Bounded 5–60 minute evaluation paths |
 | [Use Cases](../USE_CASES.md) | Concrete fit map: current strongest use case, bounded fits, planned validation and not-fit boundaries |
-| [Partners](../PARTNERS.md) | Design-partner and pilot discovery brief |
-| [FAQ](../FAQ.md) | Common external questions |
+| [Partners](../PARTNERS.md) | Partner fit, evaluation-versus-operational pilot boundary, pilot preparation and success review |
+| [FAQ](../FAQ.md) | Concise first-contact questions |
 | [Roadmap](../ROADMAP.md) | Outcome-gated product-validation direction: now, next and later without implementation task IDs |
-| [Collaboration](../COLLABORATION.md) | Permitted evaluation and contribution boundaries |
+| [Collaboration](../COLLABORATION.md) | Evaluation feedback, contribution, pilot-discussion, permission-request and security routes |
 | [LICENSE](../LICENSE) | Legal evaluation and collaboration terms |
 | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](features/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
@@ -77,12 +79,7 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 
 ## Planned public structure
 
-The following reader-intent documents are **planned** and will be created in later commercialization tasks:
-
-```text
-PARTNERS_AND_PILOTS.md
-LICENSE_FAQ.md
-```
+No additional reader-intent document splits are currently planned.
 
 ---
 

@@ -83,9 +83,9 @@ PROOFS.md
 ARCHITECTURE_OVERVIEW.md
 BUILD_WITH_INTERGRAX.md
 USE_CASES.md
-PARTNERS_AND_PILOTS.md
+PARTNERS.md
+COLLABORATION.md
 FAQ.md
-LICENSE_FAQ.md
 ROADMAP.md
 ```
 
@@ -96,9 +96,9 @@ ROADMAP.md
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `PARTNERS_AND_PILOTS.md` | Design-partner and pilot workflow (successor to split partner docs) | planned |
-| `FAQ.md` | Common external questions | exists — root `FAQ.md` |
-| `LICENSE_FAQ.md` | License and permission FAQ without full legal text | planned |
+| `PARTNERS.md` | Partner fit and pilot workflow | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `COLLABORATION.md` | Collaboration and permission-request router | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
@@ -165,8 +165,11 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Build or evaluate with Intergrax | `BUILD_WITH_INTERGRAX.md` |
 | Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
 | Check current proof status | `PROOFS.md` — root proof dashboard |
-| Discuss a pilot or design-partner workflow | `PARTNERS.md`, later `PARTNERS_AND_PILOTS.md` |
-| Check permission boundaries | `COLLABORATION.md` and `LICENSE` |
+| Discuss a pilot or design-partner workflow | `PARTNERS.md` |
+| Contribute or provide technical feedback | `COLLABORATION.md` |
+| Understand practical permission boundaries | `COLLABORATION.md` |
+| Read legally authoritative rights and restrictions | `LICENSE` |
+| Read general first-contact questions | `FAQ.md` |
 | Perform deep technical review | `docs/DOCUMENTATION_MAP.md` |
 
 ---
@@ -271,16 +274,16 @@ Current root README may still contain pre-reconciliation promotion language; the
 | `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | stable — route selection owned by `BUILD_WITH_INTERGRAX.md` |
 | `USE_CASES.md` | Public use-case map | Layer 2 public use-case fit map | `USE_CASES.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `PARTNERS.md` | Partner brief | Reader-intent partnership | `PARTNERS_AND_PILOTS.md` | future commercialization |
-| `FAQ.md` | External FAQ | Reader-intent FAQ | `FAQ.md` (retain) | stable |
+| `PARTNERS.md` | Partner brief | Layer 2 partner-fit and pilot-workflow guide | `PARTNERS.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
+| `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `COLLABORATION.md` | Collaboration permissions | Permission boundary | `COLLABORATION.md` + `LICENSE_FAQ.md` | future commercialization |
+| `COLLABORATION.md` | Mixed collaboration and maintainer-control document | Layer 2 practical collaboration and permission-request router | `COLLABORATION.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `docs/public-adoption/LKW_PLATFORM_PROOF.md` | LKW guided proof | Primary product proof | LKW proof docs | stable |
 | `docs/features/token_optimization/README.md` | Token Optimization guide | Featured platform-capability proof entry | Token Optimization docs | stable (this task) |
 | `docs/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/DOCUMENTATION_MAP.md` | stable |
 | `docs/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/public-adoption/` | stable (this task) |
 
-`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` remains the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. Planned documents (`PARTNERS_AND_PILOTS.md`, `LICENSE_FAQ.md`) are **not** marked as implemented.
+`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` remains the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. `PARTNERS.md`, `COLLABORATION.md`, and `FAQ.md` are **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-8).
 
 ---
 
@@ -403,5 +406,8 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Token Optimization claim boundaries | `TOKEN_OPTIMIZATION_CLAIMS.md` |
 | Detailed proof status | `PROOFS.md` + `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
 | Product implementation status | owning implementation plans |
-| License rights | `LICENSE` |
-| Collaboration permissions | `COLLABORATION.md` |
+| Partner fit and pilot workflow | `PARTNERS.md` |
+| Collaboration and contribution routes | `COLLABORATION.md` |
+| Practical permission-request route | `COLLABORATION.md` |
+| Legally authoritative rights and restrictions | `LICENSE` |
+| General first-contact questions | `FAQ.md` |

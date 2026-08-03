@@ -4,108 +4,182 @@ Intergrax is source-available under the Intergrax Evaluation and Collaboration L
 See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
-# Intergrax Partner and Design-Partner Brief
+# Partners and Pilots
 
-Intergrax is a source-available Harness AI / Agent OS for governed agent applications.
+Intergrax is **source-available** and under **active R&D**. Local Knowledge Workspace (LKW) is **Backend Product Alpha / MVP** and remains **PARTIAL**.
 
-This brief explains who may be a good fit for technical review, design-partner discovery, selected integration feedback, or commercial discussions.
+A partner discussion or pilot name does **not** grant production, commercial, hosting, redistribution, or endorsement rights. [LICENSE](LICENSE) is legally authoritative.
 
-It does not create partnership terms, license grants, support obligations, production permission, certification, or compliance claims.
-
-Production use, commercial deployment, redistribution, incorporation into products or services, hosted services, and commercial derivative works require explicit written permission. Non-production evaluation, private evaluation modifications, Authorized Forks for contribution, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). See [COLLABORATION.md](COLLABORATION.md).
-
-Potential partners may run a controlled evaluation, invite employees and contractors as **Evaluation Participants**, use synthetic or appropriately anonymized test data, and collaborate on an **Authorized Fork**. Real internal operational deployment for employees or customers is Production Use and requires explicit written permission.
+This guide helps your team determine partner fit, prepare a bounded pilot, and understand when written permission is required before you start.
 
 ---
 
-## Who we want to talk to
+## At a glance
 
-We are most interested in conversations with:
-
-- AI platform teams building governed agent applications.
-- Teams moving beyond demo agents toward policy-controlled execution.
-- Observability, auditability, boundary-event, or attestation builders.
-- Teams with local/private knowledge workflows that need controlled RAG and trace/evidence.
-- Builders evaluating agent runtime, orchestration, memory, RAG, tools, HITL, and application-host boundaries.
-- Technical reviewers who can run proof paths and report friction.
-
----
-
-## Good-fit partner profiles
-
-| Profile | Why it may fit Intergrax |
-|---------|--------------------------|
-| AI platform / infrastructure team | Needs reusable harness/runtime infrastructure instead of rebuilding agent plumbing. |
-| Governance / observability team | Needs trace, evidence, policy, and inspectable execution surfaces. |
-| Attestation / auditability builder | Can evaluate boundary events, host signatures, and external receipt patterns. |
-| Local knowledge / controlled RAG team | Can validate Local Knowledge Workspace direction against real document workflows. |
-| Agent application builder | Can test whether governed agent applications need a harness layer beyond basic agent frameworks. |
+| Question | Answer |
+|----------|--------|
+| Strongest current partner path | Governed private knowledge workflow using LKW |
+| Good-fit partner | Concrete workflow requiring controlled knowledge, policy, evidence, or tool execution |
+| First preparation step | Define workflow, users, data, actions, boundaries, and success |
+| Evaluation-only pilot | Isolated non-production Evaluation subject to [LICENSE](LICENSE) |
+| Operational pilot | Real users, production data, or business processes require explicit written permission before starting |
+| Permission source | [LICENSE](LICENSE) |
+| Contact | jakbu.czarnecki.83@gmail.com |
 
 ---
 
-## Current validation tracks
+## Partner decision flow
 
-- **Proof path feedback** — Run the [proof-of-platform path](README.md#proof-of-platform) and report where local evaluation is clear or confusing. Feedback should be concrete and reproducible.
-- **BoundaryAttest / boundary-event attestation feedback** — Review the [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) and evaluate whether the separation between Intergrax runtime evidence and external observed claims is clear.
-- **Local Knowledge Workspace alpha feedback** — Review the [Local Knowledge Workspace alpha narrative](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) against real local/private document workflows.
-- **Governed agent application feedback** — Evaluate whether the Harness AI / Agent OS model fits teams building agent-backed applications that need policy, HITL, trace, evidence, memory, RAG, tools, and application-host boundaries.
-- **Trace/evidence/observability feedback** — Inspect evidence and trace surfaces and report what would make them more useful for governance, review, or integration work.
-- **Documentation and first-time evaluator clarity** — Use the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) and [ROADMAP.md](ROADMAP.md) to choose the right feedback path for first-run or documentation clarity.
+```mermaid
+flowchart TD
+    A[Concrete workflow to validate?]
+    A -->|No| B[Review use cases and proofs]
+    A -->|Yes| C[Can it stay isolated and non-production?]
+    C -->|Yes| D[Evaluation subject to LICENSE]
+    C -->|No| E[Written permission required]
+    D --> F[Define scope and evidence]
+    E --> F
+    F --> G[Run bounded pilot]
+    G --> H[Review outcomes and next step]
+```
 
----
-
-## What a first conversation should cover
-
-A useful first conversation should answer questions such as:
-
-- What governed agent application or workflow are you trying to build?
-- Where do current agent prototypes break down?
-- Do you need policy, trace, HITL, evidence, auditability, RAG, memory, or application-host boundaries?
-- What would make Intergrax worth evaluating in your environment?
-- Which proof path or validation track is most relevant?
-- What should not happen without explicit approval?
+Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual users, data, processes, and outputs determine the classification under [LICENSE](LICENSE).
 
 ---
 
-## What is not offered yet
+## Who is a good fit
 
-Intergrax is not currently presented as:
+| Partner profile | Concrete need | Best starting path |
+|-----------------|---------------|-------------------|
+| Private knowledge team | Governed assistant over controlled documents and citations | LKW private knowledge workflow |
+| Specialized agent-application product team | Reusable policy, evidence, and execution foundations for one product | Specialized governed application evaluation |
+| AI platform team | Reusable policy, evidence, or knowledge foundations across products | Token Optimization or architecture review |
+| Evidence, observability, or attestation integration team | Boundary events, receipts, or external attestation patterns | Evidence or attestation integration evaluation |
+| Technical evaluator | Bounded proof paths with reproducible friction reports | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) evaluation |
 
-- A hosted SaaS offer.
-- An open-source license grant.
-- Production support or SLA.
-- Certification, compliance, legal attestation, or security approval.
-- Permission for production use, commercial deployment, redistribution, incorporation into products, hosted services, or commercial derivative works without explicit written approval.
-- A guarantee that every proposed integration or partnership will be accepted.
-- A broad feature-request backlog.
+Not every proposal will be accepted. Fit depends on workflow clarity, scope, and current product boundaries.
 
 ---
 
-## Contact
+## Current partner and pilot tracks
 
-For commercial licensing, production use, partnerships, or permission requests, contact the maintainer directly.
+| Track | User outcome | Current boundary | Verify |
+|-------|--------------|------------------|--------|
+| LKW private knowledge workflow | Guided product proof over controlled knowledge | Primary product pilot direction · Backend Product Alpha / MVP · **PARTIAL** | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [PROOFS.md](PROOFS.md) |
+| Specialized governed application | Validate harness fit for one product workflow | Reasonable technical evaluation; product-specific validation remains required | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Token Optimization evaluation | Inspect deterministic optimization mechanisms | Featured platform-capability proof · **PARTIAL** · bounded technical evaluation | [Token Optimization guide](docs/features/token_optimization/README.md) |
+| Evidence or attestation integration | Test boundary-event and external receipt patterns | Bounded integration evaluation; not certification, compliance approval, or legal attestation | [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
+
+---
+
+## Evaluation or operational pilot?
+
+### Evaluation-only pilot
+
+An evaluation-only pilot stays **isolated and non-production** and is solely for **Evaluation** under [LICENSE](LICENSE):
+
+- synthetic or appropriately anonymized test data;
+- no real customer-facing service;
+- no ongoing operational business process;
+- no replacement of a production tool.
+
+**Evaluation Participants** may include employees, contractors, advisers, and technical reviewers acting solely for Evaluation. The activity remains subject to the exact terms of [LICENSE](LICENSE).
+
+### Operational or production pilot
+
+The following normally place the activity **outside** the public evaluation grant:
+
+- real operational users or real customers;
+- production data;
+- customer-facing output;
+- ongoing business process;
+- replacement of an operational tool;
+- hosting or SaaS;
+- paid or commercial product integration.
+
+**Explicit written permission or a separate agreement is required before the activity starts.** Contacting the maintainer does not grant permission.
+
+---
+
+## Pilot workflow
+
+1. **Check fit** — Output: confirmed workflow category and relevant proof path.
+2. **Describe the workflow** — Output: one-paragraph workflow summary with users and data sources.
+3. **Classify the intended use** — Output: evaluation-only or operational/production classification.
+4. **Define scope and evidence** — Output: allowed actions, forbidden actions, and required evidence.
+5. **Prepare the environment** — Output: isolated evaluation setup or written permission for operational use.
+6. **Run the bounded evaluation or authorized pilot** — Output: completed tasks with captured evidence.
+7. **Review outcomes** — Output: success review against criteria below.
+8. **Continue, revise, or stop** — Output: decision on next step, scope change, or exit.
+
+---
+
+## Pilot brief
+
+Prepare a concise brief that includes:
+
+- concrete user workflow;
+- intended users and roles;
+- knowledge and data sources;
+- production-data status;
+- allowed actions;
+- forbidden actions;
+- human approvals;
+- required evidence and citations;
+- environment and deployment assumptions;
+- success criteria;
+- repeated-use criteria;
+- integration requirements;
+- production or commercial intent;
+- desired decision after the pilot.
+
+---
+
+## Success review
+
+After the pilot, review:
+
+- useful task completion;
+- evidence and citation correctness;
+- policy and permission behavior;
+- setup repeatability;
+- restart and recovery behavior where applicable;
+- user trust;
+- repeated use;
+- blockers;
+- whether further development is justified.
+
+Do not treat a single pilot as proof of universal performance or production readiness.
+
+---
+
+## What is not included automatically
+
+A partner discussion or pilot does **not** include:
+
+- production rights;
+- commercial rights;
+- hosting rights;
+- redistribution rights;
+- exclusivity;
+- endorsement;
+- SLA;
+- production support;
+- certification;
+- compliance approval;
+- acceptance of every requested feature;
+- release-date commitment.
+
+---
+
+## Start a discussion
 
 **Email:** jakbu.czarnecki.83@gmail.com
 
-Start with:
+Send a concise pilot brief. Before contacting, review:
 
-- [COLLABORATION.md](COLLABORATION.md) — collaboration and permission model.
-- [FAQ.md](FAQ.md) — common external-reader questions.
-- [ROADMAP.md](ROADMAP.md) — public adoption roadmap and current priorities.
-- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — curated feedback paths.
-
----
-
-## Related documents
-
-| Document | Purpose |
-|----------|---------|
-| [README.md](README.md) | Repository overview and start paths. |
-| [USE_CASES.md](USE_CASES.md) | Use-case map for Intergrax validation and partner-fit discussions. |
-| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Focused 5/15/30/60-minute evaluation path for reviewers and design partners. |
-| [FAQ.md](FAQ.md) | Common external-reader questions. |
-| [COLLABORATION.md](COLLABORATION.md) | Collaboration and permission model. |
-| [ROADMAP.md](ROADMAP.md) | Public adoption roadmap. |
-| [docs/public-adoption/PUBLIC_ISSUE_INDEX.md](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) | Curated feedback paths. |
-| [docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) | Attestation case study. |
-| [docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | Local Knowledge Workspace alpha narrative. |
+- [USE_CASES.md](USE_CASES.md) — use-case fit;
+- [ROADMAP.md](ROADMAP.md) — current validation direction;
+- [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — evaluation paths;
+- [COLLABORATION.md](COLLABORATION.md) — collaboration and permission routes;
+- [LICENSE](LICENSE) — legally authoritative terms.

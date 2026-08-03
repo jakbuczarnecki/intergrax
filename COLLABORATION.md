@@ -1,103 +1,115 @@
-# Intergrax Collaboration Model
+<!--
+© Artur Czarnecki. All rights reserved.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
+-->
 
-Intergrax is a **source-available proprietary** project. The repository is **public for evaluation, review, and technical partner discovery**. It is **not** distributed under an open-source license grant.
+# Collaborate with Intergrax
 
-The permissions below are granted by the **Intergrax Evaluation and Collaboration License 1.0** and are not an open-source license grant.
+Intergrax is **source-available** and under **active R&D**. Collaboration does **not** grant production, commercial, hosting, or redistribution rights. [LICENSE](LICENSE) is legally authoritative.
 
----
-
-## What you may do
-
-- Clone and download the Official Repository
-- Clone, test, and collaborate on an **Authorized Fork** for evaluation, code review, or pull-request preparation
-- Perform local non-production installation
-- Run documented evaluation and proof paths, including Quick Start, tests, benchmarks, examples, demos, and documented evaluation workloads
-- Create private evaluation modifications for analysis, testing, debugging, integration assessment, or preparation of a Code Contribution or Documentation Contribution
-- Invite employees, contractors, and advisers to participate as **Evaluation Participants** in a controlled non-production Evaluation Environment
-- Create a GitHub fork for evaluation or contribution
-- Open issues and participate in technical discussions
-- Submit patches and pull requests
-- Create evaluation-only plugins, integrations, tools, skills, agents, application hosts, and adapters
-- Publish technical evaluation findings, test reports, and descriptions of system behavior
-
-**Evaluation Participants** (including employees and contractors) may install, run, test, review, and perform controlled technical pilots in an isolated Evaluation Environment. They may not use Intergrax as an operational business tool without explicit written permission. Calling a real deployment a pilot, sandbox, or proof of concept does not change Production Use if it supports real business processes, production data, or operational users.
-
-Issue comments, suggestions, and other **Feedback** are welcome and are not automatically Code Contributions. Contributors retain copyright in Code Contributions and Documentation Contributions. The contribution license in [LICENSE](LICENSE) applies upon submission; the maintainer may still reject or not use a submission. Substantial or potentially patent-relevant Code Contributions or Documentation Contributions may require a separate Contributor License Agreement before acceptance.
+This guide helps you choose the correct route for evaluation feedback, documentation changes, code contributions, technical discussion, pilot discussions, permission requests, and security reporting.
 
 ---
 
-## What requires permission
+## At a glance
 
-The following require **explicit written permission** from the copyright holder. See [LICENSE](LICENSE) for the full terms.
-
-- Production use
-- Commercial use
-- Hosted services, SaaS, and service-bureau use
-- Redistribution as an independent product
-- Incorporation into products or services
-- Commercial derivative works
-- Customer-facing deployment
-
----
-
-## Who we are looking for
-
-- Technical design partners
-- Agent governance, attestation, and observability builders
-- AI platform engineers
-- Teams building governed agent applications
-- People willing to run the proof path and report friction
+| Goal | Start here |
+|------|------------|
+| Evaluate Intergrax | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Report proof-path friction | GitHub issue with reproducible details |
+| Fix documentation | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Submit code | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Discuss a pilot | [PARTNERS.md](PARTNERS.md) |
+| Check permission boundaries | [LICENSE](LICENSE) |
+| Request permission | maintainer email |
+| Report a vulnerability | [SECURITY.md](SECURITY.md) |
 
 ---
 
-## Public Discussion Map
+## Evaluation feedback
 
-The open curated GitHub issues are a public discussion map for evaluating Intergrax as a **Harness AI / Agent OS** platform. They are structured discussion entry points and evaluation signals, not a generic implementation backlog.
+A useful report should include:
 
-The canonical entry point is the [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md). The source data for active curated issues is [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml). Architecture, product-validation, and deep technical discussion waves are described in [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md).
+- exact commit;
+- environment;
+- path followed;
+- expected result;
+- observed result;
+- relevant evidence;
+- blocker or limitation.
 
-Curated public issues do **not** create production-support obligations, SLA commitments, roadmap commitments, commercial-use permission, production-use permission, redistribution permission, derivative-work permission, public security vulnerability handling, or an open-source task board.
-
----
-
-## Current collaboration tracks
-
-Current public priorities are summarized in [ROADMAP.md](ROADMAP.md). Public-adoption control documents are indexed in [Public Adoption Documents](docs/public-adoption/README.md).
-
-| Track | Focus |
-|-------|-------|
-| Proof path feedback | Run evaluation paths locally; report friction and gaps |
-| Attestation / boundary events integration | Integration proposals and partner work on attestation flows |
-| Local Knowledge Workspace alpha feedback | Early feedback on LKW alpha capabilities |
-| Documentation clarity | Corrections, gaps, and readability improvements |
-| Agent / application proposals | New agent classes or Tier-3 application ideas aligned with harness boundaries |
-| Architecture discussion | Feedback on the Harness AI model, tier boundaries, Nexus, policy, context, RAG, memory, and agent contracts |
-| Product / application validation | Feedback on scaffolded or early product directions such as Legal review, Research, DSW, Intergrax Assistant, ProblemRadar, and Lab proof paths |
-
-Prior discussion is recommended before substantial work on any track. See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
+Concrete, reproducible feedback helps reviewers act on friction without expanding permission boundaries.
 
 ---
 
-## Contact
+## Documentation and code contributions
 
-**Email:** jakbu.czarnecki.83@gmail.com
-
-For commercial licensing, production use, partnerships, or permission requests, contact the maintainer directly.
+- Prior discussion is recommended for substantial work.
+- Follow [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and pull-request requirements.
+- Contribution terms are owned by [LICENSE](LICENSE).
+- Submission does **not** guarantee acceptance.
+- Substantial or potentially patent-relevant work may require a separate Contributor License Agreement before acceptance.
 
 ---
 
-## Related documents
+## Feedback and contributions are different
 
-- [FAQ.md](FAQ.md) — common external-reader questions
-- [PARTNERS.md](PARTNERS.md) — partner and design-partner brief
-- [USE_CASES.md](USE_CASES.md) — use-case map for governed agent applications and validation paths
-- [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) — focused evaluation path for technical reviewers and design partners
-- [ROADMAP.md](ROADMAP.md) — public adoption roadmap and collaboration priorities
-- [Public Adoption Documents](docs/public-adoption/README.md) — public-adoption control documents, issue index, triage playbook, and automation source
-- [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) — active curated public issue map and recommended evaluation paths
-- [Public Discussion Issue Expansion](docs/public-adoption/PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) — active architecture, product-validation, and deep technical discussion issue waves
-- [curated_public_issues.yml](docs/public-adoption/curated_public_issues.yml) — single canonical source data for active public issue automation
-- [Curated Public Issue Drafts](docs/public-adoption/CURATED_PUBLIC_ISSUES.md) — maintainer-curated public issue rationale for structured feedback and design-partner discovery
-- [LICENSE](LICENSE) — Intergrax Evaluation and Collaboration License 1.0
-- [README.md](README.md) — project overview and documentation index
-- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and requirements
+At a high level:
+
+- issue comments and suggestions are **Feedback**;
+- material clearly offered for inclusion is a **Code Contribution** or **Documentation Contribution**;
+- exact definitions and grants are in [LICENSE](LICENSE).
+
+Do not assume that ordinary discussion automatically grants rights beyond the license terms.
+
+---
+
+## Pilots and partner discussions
+
+For partner fit, pilot preparation, and success review, start with [PARTNERS.md](PARTNERS.md).
+
+A discussion does **not** create permission. Operational, production, or commercial activity still requires explicit written permission before it starts.
+
+---
+
+## Permission requests
+
+Contact: **jakbu.czarnecki.83@gmail.com**
+
+Include:
+
+- organization;
+- concrete workflow;
+- users;
+- data;
+- environment;
+- production or commercial intent;
+- hosting or redistribution needs;
+- desired scope.
+
+**A request does not grant permission. Permission exists only when explicitly provided in writing.**
+
+---
+
+## Security issues
+
+Do not open a public issue for a suspected vulnerability.
+
+Follow [SECURITY.md](SECURITY.md).
+
+---
+
+## What collaboration does not provide
+
+Collaboration routes feedback and contributions; it does **not** provide:
+
+- production rights;
+- commercial rights;
+- hosting rights;
+- redistribution rights;
+- SLA;
+- support commitment;
+- certification;
+- guaranteed contribution acceptance;
+- guaranteed roadmap placement.
