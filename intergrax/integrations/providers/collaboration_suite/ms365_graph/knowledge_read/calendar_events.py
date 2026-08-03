@@ -19,9 +19,12 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.config imp
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
     MsGraphCalendar,
+    MsGraphCalendarReference,
+    calendar_reference_from_calendar,
     validate_msgraph_calendar,
     validate_msgraph_calendar_event_id,
     validate_msgraph_calendar_id,
+    validate_msgraph_calendar_reference,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.common import (
     MsGraphKnowledgeContinuation,
@@ -707,6 +710,180 @@ def validate_msgraph_calendar_event_delta_page(
         raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
 
 
+def validate_msgraph_calendar_event_delta_page_by_reference(
+    value: object,
+    *,
+    calendar: MsGraphCalendarReference,
+    window: MsGraphCalendarViewWindow,
+    graph_base_url: str,
+) -> MsGraphCalendarEventDeltaPage:
+    if not isinstance(value, MsGraphCalendarEventDeltaPage):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    validated_calendar = validate_msgraph_calendar_reference(calendar)
+    if not validated_calendar.is_default_calendar:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        validated_window = MsGraphCalendarViewWindow.model_validate(
+            window.model_dump(mode="python")
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        raw_mailbox_user_id = value.mailbox_user_id
+        raw_calendar_remote_id = value.calendar_remote_id
+        raw_items = value.items
+        raw_continuation = value.continuation
+        raw_window = value.window
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if raw_mailbox_user_id != validated_calendar.mailbox_user_id:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+    if raw_calendar_remote_id != validated_calendar.calendar_remote_id:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if type(raw_items) is not tuple:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if not isinstance(raw_window, MsGraphCalendarViewWindow):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+    if (
+        raw_window.start_at != validated_window.start_at
+        or raw_window.end_at != validated_window.end_at
+    ):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    validated_items: list[MsGraphCalendarEventChange] = []
+    for item in raw_items:
+        if not isinstance(item, MsGraphCalendarEventChange):
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        validated_change = validate_msgraph_calendar_event_change(item)
+        if (
+            validated_change.mailbox_user_id != validated_calendar.mailbox_user_id
+            or validated_change.calendar_remote_id != validated_calendar.calendar_remote_id
+        ):
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        validated_items.append(validated_change)
+
+    remote_ids = [item.remote_id for item in validated_items]
+    if len(remote_ids) != len(set(remote_ids)):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if not isinstance(raw_continuation, MsGraphKnowledgeContinuation):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        revalidated_continuation = validate_msgraph_calendar_events_continuation(
+            raw_continuation,
+            mailbox_user_id=validated_calendar.mailbox_user_id,
+            calendar_id=validated_calendar.calendar_remote_id,
+            graph_base_url=graph_base_url,
+        )
+    except IntegrationConfigurationError:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        return MsGraphCalendarEventDeltaPage(
+            mailbox_user_id=validated_calendar.mailbox_user_id,
+            calendar_remote_id=validated_calendar.calendar_remote_id,
+            window=validated_window,
+            items=tuple(validated_items),
+            continuation=revalidated_continuation,
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+
+def validate_msgraph_calendar_event_snapshot_page_by_reference(
+    value: object,
+    *,
+    calendar: MsGraphCalendarReference,
+    window: MsGraphCalendarViewWindow,
+    graph_base_url: str,
+) -> MsGraphCalendarEventSnapshotPage:
+    if not isinstance(value, MsGraphCalendarEventSnapshotPage):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    validated_calendar = validate_msgraph_calendar_reference(calendar)
+    try:
+        validated_window = MsGraphCalendarViewWindow.model_validate(
+            window.model_dump(mode="python")
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        raw_mailbox_user_id = value.mailbox_user_id
+        raw_calendar_remote_id = value.calendar_remote_id
+        raw_window = value.window
+        raw_items = value.items
+        raw_continuation = value.continuation
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if raw_mailbox_user_id != validated_calendar.mailbox_user_id:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+    if raw_calendar_remote_id != validated_calendar.calendar_remote_id:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if not isinstance(raw_window, MsGraphCalendarViewWindow):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+    if (
+        raw_window.start_at != validated_window.start_at
+        or raw_window.end_at != validated_window.end_at
+    ):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    if type(raw_items) is not tuple:
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    validated_items: list[MsGraphCalendarEventChange] = []
+    for item in raw_items:
+        if not isinstance(item, MsGraphCalendarEventChange):
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        validated_change = validate_msgraph_calendar_event_change(item)
+        if (
+            validated_change.mailbox_user_id != validated_calendar.mailbox_user_id
+            or validated_change.calendar_remote_id != validated_calendar.calendar_remote_id
+        ):
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        if validated_change.kind is not MsGraphCalendarEventChangeKind.ACTIVE:
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        validated_items.append(validated_change)
+
+    remote_ids = [item.remote_id for item in validated_items]
+    if len(remote_ids) != len(set(remote_ids)):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    validated_continuation: MsGraphKnowledgeContinuation | None = None
+    if raw_continuation is not None:
+        if not isinstance(raw_continuation, MsGraphKnowledgeContinuation):
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+        try:
+            validated_continuation = validate_msgraph_calendar_events_snapshot_continuation(
+                raw_continuation,
+                mailbox_user_id=validated_calendar.mailbox_user_id,
+                calendar_id=validated_calendar.calendar_remote_id,
+                graph_base_url=graph_base_url,
+            )
+        except IntegrationConfigurationError:
+            raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+    try:
+        return MsGraphCalendarEventSnapshotPage(
+            mailbox_user_id=validated_calendar.mailbox_user_id,
+            calendar_remote_id=validated_calendar.calendar_remote_id,
+            window=validated_window,
+            items=tuple(validated_items),
+            continuation=validated_continuation,
+        )
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
+
+
 def _graph_base_path(graph_base_url: str) -> str:
     parsed_base = urlparse(graph_base_url)
     return parsed_base.path.rstrip("/") or "/"
@@ -1073,6 +1250,29 @@ def _snapshot_headers() -> dict[str, str]:
 
 
 @runtime_checkable
+class MsGraphCalendarReferencePagingReadClient(Protocol):
+    def read_calendar_events_delta_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+    ) -> MsGraphCalendarEventDeltaPage:
+        ...
+
+    def read_calendar_events_snapshot_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        ...
+
+
+@runtime_checkable
 class MsGraphCalendarEventsReadClient(Protocol):
     def read_calendar_events_delta_page(
         self,
@@ -1119,6 +1319,27 @@ class MsGraphCalendarEventsReader:
         limit: int,
     ) -> MsGraphCalendarEventDeltaPage:
         validated_calendar = validate_msgraph_calendar(calendar)
+        calendar_reference = calendar_reference_from_calendar(validated_calendar)
+        return self.read_calendar_events_delta_page_by_reference(
+            calendar=calendar_reference,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_delta_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+    ) -> MsGraphCalendarEventDeltaPage:
+        try:
+            validated_calendar = validate_msgraph_calendar_reference(calendar)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_CALENDAR_EVENTS_REQUEST) from None
+
         if not validated_calendar.is_default_calendar:
             raise IntegrationConfigurationError(
                 "Microsoft Graph v1.0 Calendar delta supports only the primary calendar"
@@ -1154,7 +1375,7 @@ class MsGraphCalendarEventsReader:
             validated_continuation = validate_msgraph_calendar_events_continuation(
                 continuation,
                 mailbox_user_id=validated_calendar.mailbox_user_id,
-                calendar_id=validated_calendar.remote_id,
+                calendar_id=validated_calendar.calendar_remote_id,
                 graph_base_url=self._config.graph_base_url,
             )
             payload = self._transport.get_continuation_json(
@@ -1175,19 +1396,19 @@ class MsGraphCalendarEventsReader:
             parse_msgraph_calendar_event_change(
                 raw_item,
                 expected_mailbox_user_id=validated_calendar.mailbox_user_id,
-                expected_calendar_id=validated_calendar.remote_id,
+                expected_calendar_id=validated_calendar.calendar_remote_id,
             )
             for raw_item in collection_page.items
         )
         deduplicated = _deduplicate_event_changes(parsed_items)
         page = _safe_construct_event_delta_page(
             mailbox_user_id=validated_calendar.mailbox_user_id,
-            calendar_remote_id=validated_calendar.remote_id,
+            calendar_remote_id=validated_calendar.calendar_remote_id,
             window=validated_window,
             items=deduplicated,
             continuation=collection_page.continuation,
         )
-        return validate_msgraph_calendar_event_delta_page(
+        return validate_msgraph_calendar_event_delta_page_by_reference(
             page,
             calendar=validated_calendar,
             window=validated_window,
@@ -1203,6 +1424,27 @@ class MsGraphCalendarEventsReader:
         limit: int,
     ) -> MsGraphCalendarEventSnapshotPage:
         validated_calendar = validate_msgraph_calendar(calendar)
+        calendar_reference = calendar_reference_from_calendar(validated_calendar)
+        return self.read_calendar_events_snapshot_page_by_reference(
+            calendar=calendar_reference,
+            window=window,
+            continuation=continuation,
+            limit=limit,
+        )
+
+    def read_calendar_events_snapshot_page_by_reference(
+        self,
+        *,
+        calendar: MsGraphCalendarReference,
+        window: MsGraphCalendarViewWindow,
+        continuation: MsGraphKnowledgeContinuation | None,
+        limit: int,
+    ) -> MsGraphCalendarEventSnapshotPage:
+        try:
+            validated_calendar = validate_msgraph_calendar_reference(calendar)
+        except ValueError:
+            raise IntegrationConfigurationError(_INVALID_CALENDAR_EVENTS_REQUEST) from None
+
         try:
             validated_window = MsGraphCalendarViewWindow.model_validate(
                 window.model_dump(mode="python")
@@ -1215,7 +1457,7 @@ class MsGraphCalendarEventsReader:
 
         if continuation is None:
             quoted_mailbox = quote(validated_calendar.mailbox_user_id, safe="")
-            quoted_calendar = quote(validated_calendar.remote_id, safe="")
+            quoted_calendar = quote(validated_calendar.calendar_remote_id, safe="")
             path = (
                 f"/users/{quoted_mailbox}/calendars/{quoted_calendar}/calendarView"
             )
@@ -1237,7 +1479,7 @@ class MsGraphCalendarEventsReader:
             validated_continuation = validate_msgraph_calendar_events_snapshot_continuation(
                 continuation,
                 mailbox_user_id=validated_calendar.mailbox_user_id,
-                calendar_id=validated_calendar.remote_id,
+                calendar_id=validated_calendar.calendar_remote_id,
                 graph_base_url=self._config.graph_base_url,
             )
             payload = self._transport.get_continuation_json(
@@ -1257,7 +1499,7 @@ class MsGraphCalendarEventsReader:
             change = parse_msgraph_calendar_event_change(
                 raw_item,
                 expected_mailbox_user_id=validated_calendar.mailbox_user_id,
-                expected_calendar_id=validated_calendar.remote_id,
+                expected_calendar_id=validated_calendar.calendar_remote_id,
             )
             if change.kind is not MsGraphCalendarEventChangeKind.ACTIVE:
                 raise ValueError(_MALFORMED_CALENDAR_EVENTS_RESPONSE) from None
@@ -1266,12 +1508,12 @@ class MsGraphCalendarEventsReader:
         deduplicated = _deduplicate_event_changes(tuple(parsed_items))
         page = _safe_construct_event_snapshot_page(
             mailbox_user_id=validated_calendar.mailbox_user_id,
-            calendar_remote_id=validated_calendar.remote_id,
+            calendar_remote_id=validated_calendar.calendar_remote_id,
             window=validated_window,
             items=deduplicated,
             continuation=collection_page.continuation,
         )
-        return validate_msgraph_calendar_event_snapshot_page(
+        return validate_msgraph_calendar_event_snapshot_page_by_reference(
             page,
             calendar=validated_calendar,
             window=validated_window,

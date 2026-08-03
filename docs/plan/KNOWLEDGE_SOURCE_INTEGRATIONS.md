@@ -176,7 +176,7 @@ global mailbox deletion.
 Item attachments, reference-attachment downloads, MIME, raw internet headers
 and recursive attached-message expansion are intentionally not implemented.
 
-No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail, Teams Channel and Teams Chat.
+No Microsoft Vendor Knowledge adapter is exposed yet except Drive, Mail, Teams Channel, Teams Chat and Calendar.
 
 Microsoft Graph Drive Vendor Knowledge adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`)
 is implemented.
@@ -189,6 +189,9 @@ Microsoft Graph Teams Channel Vendor Knowledge adapter
 
 Microsoft Graph Teams Chat Vendor Knowledge adapter
 (`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`) is implemented.
+
+Microsoft Graph Calendar Vendor Knowledge adapter
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **READY_FOR_REVIEW**.
 
 Drive capability matrix:
 
@@ -320,6 +323,36 @@ Live capability layer: not implemented
 
 Live search: not implemented
 
+Calendar capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`):
+
+```text
+source_kind: calendar
+scope: one known mailbox Calendar ID + immutable UTC time window
+primary full inventory: yes
+primary incremental changes: yes
+non-primary full inventory: yes
+non-primary incremental changes: no
+reconciliation: yes
+content: STRUCTURED_RECORD
+safe attachment inventory: yes
+binary attachment content: no
+permissions: no
+delta tombstones: primary only
+remote versions: yes
+```
+
+Structured schema: `msgraph.calendar.event.knowledge.v1`
+
+Primary calendar delta: yes
+
+Non-primary snapshot reconciliation: yes
+
+Attachment inventory: included (bounded)
+
+Attachment bytes: excluded
+
+Authoritative ACL: not implemented
+
 Microsoft Graph Calendar low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
 
@@ -342,9 +375,9 @@ reads are implemented.
 Removed delta entries apply only to the primary calendar view and are not
 treated as proof of global event deletion.
 
-No beta Graph endpoint, Calendar Vendor Knowledge adapter, Calendar ACL,
-group calendar, recursive item attachment or reference-attachment download is
-implemented.
+No beta Graph endpoint, group calendar, recursive item attachment or reference-attachment download is implemented.
+
+The Microsoft Graph Calendar Vendor Knowledge adapter is **READY_FOR_REVIEW** (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`). Calendar ACL is not implemented.
 
 Microsoft Graph Teams Chat low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -1004,6 +1037,8 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is **READY_FOR_REVIEW**.
+
 **Next:** `LKW-CONVERSATION-CONTEXT-1` (LKW application — next Slack-vertical implementation task; `LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED**)
 
 **Planned execution order:**
@@ -1016,7 +1051,7 @@ LKW-CONVERSATION-CONTEXT-1 — NEXT
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR   ← after LKW-GOOGLE-WORKSPACE-PROOF-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — READY_FOR_REVIEW
 ```
 
 Add separate thin adapters over the same resolved Microsoft Graph integration:
@@ -1045,7 +1080,7 @@ Content mapping:
 - `mail` → `STRUCTURED_RECORD`; attachment binary content deferred;
 - `teams_channel` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
 - `teams_chat` → `STRUCTURED_RECORD` only; safe attachment inventory included; attachment URLs, embedded payloads, hosted-content bytes and binary attachment materialization excluded;
-- `calendar` → planned / to be frozen by the adapter task (`STRUCTURED_RECORD`).
+- `calendar` → `STRUCTURED_RECORD`; safe attachment inventory included; attachment bytes deferred;
 
 Each adapter:
 
@@ -1063,10 +1098,12 @@ Recommended implementation/proof order inside the Microsoft scope:
 2. mail
 3. teams_channel
 4. teams_chat
-5. calendar   ← after first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`)
+5. calendar — READY_FOR_REVIEW (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`)
 ```
 
-The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes the Google Workspace proof-critical path. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof unless a newer accepted implementation on HEAD makes that placement obsolete.
+Google Workspace remains an independent workstream and does not gate Microsoft Graph Calendar adapter delivery. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is the current Vendor Knowledge task in the Microsoft Graph adapter family on HEAD.
+
+The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes the Google Workspace proof-critical path.
 
 The task is grouped as one Microsoft Graph adapter family, but implementation and verification must preserve independent `source_kind`, scope, cursor and ACL semantics for every surface.
 
@@ -1532,7 +1569,7 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
 → LKW-GOOGLE-WORKSPACE-PROOF-1
 → read surfaces 1E–1G + adapters 1E–1G
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — READY_FOR_REVIEW (independent of Google Workspace gate)
 ```
 
 Each read surface and its adapter must be independently reviewable before proceeding. The final Google LKW proof may combine Docs, Sheets, Calendar and an optional ordinary Drive file.

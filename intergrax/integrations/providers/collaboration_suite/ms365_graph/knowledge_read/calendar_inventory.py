@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote, unquote, urlparse
@@ -367,6 +368,93 @@ class MsGraphCalendarsReadClient(Protocol):
         limit: int,
     ) -> MsGraphCalendarPage:
         ...
+
+
+def _validate_exact_durable_opaque_reference_field(
+    value: object,
+    *,
+    validator: Callable[[object], str],
+    error: str = _MALFORMED_CALENDARS_RESPONSE,
+) -> str:
+    if not isinstance(value, str):
+        raise ValueError(error)
+    if value == "":
+        raise ValueError(error)
+    if value != value.strip():
+        raise ValueError(error)
+    canonical = validator(value)
+    if canonical != value:
+        raise ValueError(error)
+    return value
+
+
+class MsGraphCalendarReference(BaseModel):
+    """Identity-only Calendar reference for stateless paging without discovery metadata."""
+
+    model_config = _STRICT_MODEL_CONFIG
+
+    mailbox_user_id: str = Field(repr=False)
+    calendar_remote_id: str = Field(repr=False)
+    is_default_calendar: bool
+
+    @field_validator("mailbox_user_id", mode="before")
+    @classmethod
+    def _validate_mailbox_user_id(cls, value: object) -> str:
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_mailbox_user_id,
+        )
+
+    @field_validator("calendar_remote_id", mode="before")
+    @classmethod
+    def _validate_calendar_remote_id(cls, value: object) -> str:
+        return _validate_exact_durable_opaque_reference_field(
+            value,
+            validator=validate_msgraph_calendar_id,
+        )
+
+    @field_validator("is_default_calendar", mode="before")
+    @classmethod
+    def _validate_is_default_calendar(cls, value: object) -> bool:
+        return _validate_exact_bool(value)
+
+
+def validate_msgraph_calendar_reference(
+    value: object,
+) -> MsGraphCalendarReference:
+    if isinstance(value, MsGraphCalendarReference):
+        source: object = value.model_dump(mode="python")
+    elif isinstance(value, dict):
+        source = value
+    else:
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
+    if not isinstance(source, dict):
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
+    try:
+        dumped = dict(source)
+        dumped["mailbox_user_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("mailbox_user_id"),
+            validator=validate_msgraph_mailbox_user_id,
+        )
+        dumped["calendar_remote_id"] = _validate_exact_durable_opaque_reference_field(
+            dumped.get("calendar_remote_id"),
+            validator=validate_msgraph_calendar_id,
+        )
+        dumped["is_default_calendar"] = _validate_exact_bool(dumped.get("is_default_calendar"))
+        return MsGraphCalendarReference.model_validate(dumped)
+    except (ValueError, TypeError, AttributeError, ValidationError):
+        raise ValueError(_MALFORMED_CALENDARS_RESPONSE) from None
+
+
+def calendar_reference_from_calendar(calendar: MsGraphCalendar) -> MsGraphCalendarReference:
+    validated_calendar = validate_msgraph_calendar(calendar)
+    return validate_msgraph_calendar_reference(
+        {
+            "mailbox_user_id": validated_calendar.mailbox_user_id,
+            "calendar_remote_id": validated_calendar.remote_id,
+            "is_default_calendar": validated_calendar.is_default_calendar,
+        }
+    )
 
 
 def validate_msgraph_calendar(value: object) -> MsGraphCalendar:

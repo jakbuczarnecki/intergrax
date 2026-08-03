@@ -1271,3 +1271,36 @@ def test_security_calendar_repr_and_errors() -> None:
         )
     assert _SECRET_TOKEN not in str(exc.value)
     assert _MAILBOX_USER_ID not in str(exc.value)
+
+
+# --- calendar reference ---
+
+
+def test_calendar_reference_validation() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+        calendar_reference_from_calendar,
+        validate_msgraph_calendar_reference,
+    )
+
+    calendar = _valid_calendar()
+    reference = calendar_reference_from_calendar(calendar)
+    validated = validate_msgraph_calendar_reference(reference)
+    assert validated.mailbox_user_id == _MAILBOX_USER_ID
+    assert validated.calendar_remote_id == _CALENDAR_ID
+    assert validated.is_default_calendar is True
+
+
+def test_calendar_reference_rejects_non_exact_ids() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+        MsGraphCalendarReference,
+        validate_msgraph_calendar_reference,
+    )
+
+    with pytest.raises(ValueError, match=_SAFE_ERROR):
+        validate_msgraph_calendar_reference(
+            MsGraphCalendarReference(
+                mailbox_user_id=f" {_MAILBOX_USER_ID}",
+                calendar_remote_id=_CALENDAR_ID,
+                is_default_calendar=True,
+            )
+        )

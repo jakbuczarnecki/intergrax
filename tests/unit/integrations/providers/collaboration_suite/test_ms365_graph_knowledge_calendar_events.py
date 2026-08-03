@@ -1514,3 +1514,114 @@ def test_validate_snapshot_page_rejects_wrong_context() -> None:
             window=_valid_window(),
             graph_base_url=_GRAPH_BASE,
         )
+
+
+# --- reference-based paging ---
+
+
+def _valid_calendar_reference(**overrides: object) -> object:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+        MsGraphCalendarReference,
+        calendar_reference_from_calendar,
+    )
+
+    if overrides:
+        return MsGraphCalendarReference(
+            mailbox_user_id=str(overrides.get("mailbox_user_id", _MAILBOX_USER_ID)),
+            calendar_remote_id=str(overrides.get("calendar_remote_id", _CALENDAR_ID)),
+            is_default_calendar=bool(overrides.get("is_default_calendar", True)),
+        )
+    return calendar_reference_from_calendar(_valid_calendar())
+
+
+def test_reference_from_calendar_preserves_identity() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+        calendar_reference_from_calendar,
+        validate_msgraph_calendar_reference,
+    )
+
+    calendar = _valid_calendar()
+    reference = calendar_reference_from_calendar(calendar)
+    validated = validate_msgraph_calendar_reference(reference)
+    assert validated.mailbox_user_id == calendar.mailbox_user_id
+    assert validated.calendar_remote_id == calendar.remote_id
+    assert validated.is_default_calendar == calendar.is_default_calendar
+
+
+def test_complete_object_delta_remains_compatible() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(value=[_active_event_payload()], delta_link=_delta_link())
+    )
+    page = _reader(http).read_delta_page(
+        calendar=_valid_calendar(),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    assert page.is_complete
+    assert len(page.items) == 1
+
+
+def test_reference_based_primary_delta() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(value=[_active_event_payload()], delta_link=_delta_link())
+    )
+    page = _reader(http).read_calendar_events_delta_page_by_reference(
+        calendar=_valid_calendar_reference(),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    assert page.is_complete
+    assert page.items[0].remote_id == _EVENT_ID
+
+
+def test_reference_based_snapshot() -> None:
+    http = MagicMock()
+    http.get.return_value = _json_response(
+        payload=_page_payload(value=[_active_event_payload()])
+    )
+    page = _reader(http).read_calendar_events_snapshot_page_by_reference(
+        calendar=_valid_calendar_reference(is_default_calendar=False),
+        window=_valid_window(),
+        continuation=None,
+        limit=50,
+    )
+    assert page.is_complete
+    assert page.items[0].kind is MsGraphCalendarEventChangeKind.ACTIVE
+
+
+def test_non_primary_delta_by_reference_rejected() -> None:
+    with pytest.raises(IntegrationConfigurationError, match="primary calendar"):
+        _reader(MagicMock()).read_calendar_events_delta_page_by_reference(
+            calendar=_valid_calendar_reference(is_default_calendar=False),
+            window=_valid_window(),
+            continuation=None,
+            limit=50,
+        )
+
+
+def test_reference_delta_continuation_scope_validation() -> None:
+    from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+        validate_msgraph_calendar_reference,
+    )
+
+    continuation = MsGraphKnowledgeContinuation(
+        kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+        url=_next_link(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match=_CONT_ERROR):
+        _reader(MagicMock()).read_calendar_events_delta_page_by_reference(
+            calendar=validate_msgraph_calendar_reference(
+                {
+                    "mailbox_user_id": _OTHER_MAILBOX_USER_ID,
+                    "calendar_remote_id": _CALENDAR_ID,
+                    "is_default_calendar": True,
+                }
+            ),
+            window=_valid_window(),
+            continuation=continuation,
+            limit=50,
+        )
