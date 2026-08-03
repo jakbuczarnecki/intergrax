@@ -58,9 +58,11 @@ Hi,
 
 I maintain a source-available repository called Intergrax and am running a structured documentation comprehension review. I would value 15 minutes of your time.
 
-Please start at the repository root README only:
+Repository:
+<pinned-repository-root-url>
 
-`https://github.com/jakbuczarnecki/intergrax`
+Pinned revision:
+<pinned-ref>
 
 Use only the public repository documentation. Think aloud as you navigate. I will not explain the project until you complete the tasks.
 
@@ -81,7 +83,13 @@ Hi,
 
 Thank you for completing the first-contact documentation review. If you are willing to continue, I would appreciate a 30–60 minute technical evaluation pass.
 
-Please follow the time-boxed path in [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md). You may inspect or run documented evaluation and proof paths at your own pace.
+Evaluation guide:
+<pinned-evaluation-guide-url>
+
+Pinned revision:
+<pinned-ref>
+
+You may inspect or run documented evaluation and proof paths at your own pace.
 
 When reporting, please include:
 
@@ -111,11 +119,17 @@ You indicated interest in local or governed knowledge workflows. I would value a
 
 Local Knowledge Workspace (LKW) is Intergrax's **Primary product proof** — a **Backend Product Alpha / MVP** classified as **PARTIAL**. Real-user and commercial validation are incomplete. LKW is not a finished product or commercially validated offering.
 
-Please review:
+LKW Platform Proof:
+<pinned-lkw-proof-url>
 
-- [LKW Platform Proof](LKW_PLATFORM_PROOF.md)
-- [USE_CASES.md](../../USE_CASES.md)
-- [PARTNERS.md](../../PARTNERS.md)
+Use Cases:
+<pinned-use-cases-url>
+
+Partners and Pilots:
+<pinned-partners-url>
+
+Pinned revision:
+<pinned-ref>
 
 I would like you to describe:
 
@@ -140,11 +154,17 @@ Hi,
 
 I would value your review of Intergrax's public architecture and evidence surfaces. This is a documentation comprehension and navigation review, not a security audit or compliance certification.
 
-Entry points:
+Architecture overview:
+<pinned-architecture-url>
 
-- [ARCHITECTURE_OVERVIEW.md](../../ARCHITECTURE_OVERVIEW.md)
-- [PROOFS.md](../../PROOFS.md)
-- [BUILD_WITH_INTERGRAX.md](../../BUILD_WITH_INTERGRAX.md)
+Proof dashboard:
+<pinned-proofs-url>
+
+Build and evaluation routes:
+<pinned-build-url>
+
+Pinned revision:
+<pinned-ref>
 
 Questions:
 
@@ -153,7 +173,7 @@ Questions:
 - What governance or observability surfaces need clearer documentation?
 - Which claims feel too strong or unclear?
 
-License and collaboration boundaries: [COLLABORATION.md](../../COLLABORATION.md) and [LICENSE](../../LICENSE).
+License and collaboration boundaries are described in the public documentation at the pinned revision.
 
 This does not grant production permission or imply partnership.
 

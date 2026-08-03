@@ -324,7 +324,7 @@ Point 9 of the public-documentation commercialization roadmap is not complete un
 7. Maintainer controls do not become the default public journey.
 8. Archived documents are never normal navigation targets.
 9. Public documents must not duplicate the complete technical documentation map.
-10. Every new public document must be added to both this architecture contract and `docs/PUBLIC_DOCUMENTATION_MAP.md`.
+10. Every new reader-facing Layer 1–3 document must be added to both this architecture contract and `docs/PUBLIC_DOCUMENTATION_MAP.md`. A new Layer 5 maintainer control must be added to this architecture contract and `docs/public-adoption/README.md`, but must not become a normal public-reader route unless its role is intentionally changed.
 
 ---
 

@@ -59,8 +59,11 @@ _FORBIDDEN_COMPLETION_CLAIMS = (
     "real-user validation is complete",
     "commercial validation is complete",
     "commercially validated",
+    "intergrax is commercially validated",
+    "intergrax is production-ready",
     "product validated",
     "production ready",
+    "production-ready",
     "usability certified",
 )
 
@@ -101,9 +104,71 @@ _ISSUE_URL_PATTERN = re.compile(
 _MD_LINK = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 
 _INTERNAL_TASK_PATTERN = re.compile(
-    r"(CTX-UCL-|TOKEN-10|LKW-SLACK-|GOOGLE-WORKSPACE-KNOWLEDGE-|"
-    r"MSGRAPH-KNOWLEDGE-|PUBLIC-DOCS-COMMERCIALIZATION-)",
+    r"(CTX-UCL-|TOKEN-10|LKW-SLACK-|GOOGLE-WORKSPACE-|"
+    r"MSGRAPH-|PUBLIC-DOCS-COMMERCIALIZATION-)",
     re.IGNORECASE,
+)
+
+_MOVING_REPO_URL = re.compile(
+    r"https?://github\.com/jakbuczarnecki/intergrax/?(?:\s|$|\))",
+    re.IGNORECASE,
+)
+
+_RELATIVE_PARTICIPANT_LINK = re.compile(r"\]\(\.\./")
+
+_SESSION_TEMPLATE_METADATA_FIELDS = (
+    "Session ID",
+    "Validation wave",
+    "Date",
+    "Pinned commit or immutable tag",
+    "Participant-facing root URL",
+    "Primary cohort",
+    "Prior familiarity",
+    "Tracks attempted",
+    "Track B environment",
+    "Consent for quotation",
+)
+
+_SESSION_TEMPLATE_EVIDENCE_FIELDS = (
+    "Participant one-sentence description",
+    "Identified strongest product proof",
+    "Stated product-proof maturity",
+    "Wrong or uncertain conclusions",
+    "First navigation route",
+    "Dead ends",
+    "Moderator interventions",
+    "Broken links",
+    "Technical errors",
+    "Follow-up notes",
+)
+
+_INVITATION_SECTIONS = (
+    (
+        "Blind first-contact invitation",
+        ("<pinned-repository-root-url>", "<pinned-ref>"),
+    ),
+    (
+        "Technical evaluation invitation",
+        ("<pinned-evaluation-guide-url>", "<pinned-ref>"),
+    ),
+    (
+        "LKW workflow-fit invitation",
+        (
+            "<pinned-lkw-proof-url>",
+            "<pinned-use-cases-url>",
+            "<pinned-partners-url>",
+            "<pinned-ref>",
+        ),
+    ),
+    (
+        "Architecture and governance review invitation",
+        (
+            "<pinned-architecture-url>",
+            "<pinned-proofs-url>",
+            "<pinned-build-url>",
+            "<pinned-ref>",
+        ),
+    ),
 )
 
 _EVAL_GUIDE_LINKS = (
@@ -180,6 +245,64 @@ def _normalize(text: str) -> str:
     return re.sub(r"[*_`]", "", text).lower()
 
 
+def _normalize_claims_text(text: str) -> str:
+    text = re.sub(r"[*_`]", "", text)
+    text = re.sub(r"[-–—]", " ", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.lower()
+
+
+def _claim_units(text: str) -> list[str]:
+    units: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("|"):
+            cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+            units.extend(cell for cell in cells if cell)
+            continue
+        if re.match(r"^[-*+]\s+", stripped):
+            units.append(re.sub(r"^[-*+]\s+", "", stripped))
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", stripped):
+            if sentence.strip():
+                units.append(sentence.strip())
+    return units
+
+
+def _extract_h2_section(text: str, heading: str) -> str:
+    pattern = re.compile(rf"^## {re.escape(heading)}\s*$", re.MULTILINE)
+    match = pattern.search(text)
+    if not match:
+        raise AssertionError(f"Missing ## {heading} section")
+    after = text[match.end() :]
+    in_fence = False
+    pos = 0
+    while pos < len(after):
+        line_end = after.find("\n", pos)
+        if line_end == -1:
+            line_end = len(after)
+        line = after[pos:line_end]
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence and re.match(r"^## ", line):
+            return text[match.start() : match.end() + pos]
+        pos = line_end + 1 if line_end < len(after) else line_end
+    return text[match.start() :]
+
+
+def _assert_no_positive_forbidden_claim(text: str, path_name: str) -> None:
+    for unit in _claim_units(text):
+        normalized_unit = _normalize_claims_text(unit)
+        for phrase in _FORBIDDEN_COMPLETION_CLAIMS:
+            if phrase not in normalized_unit:
+                continue
+            assert any(marker in normalized_unit for marker in _NEGATION_MARKERS), (
+                f"{path_name}: positive forbidden claim {phrase!r} in unit: {unit!r}"
+            )
+
+
 def _through_at_a_glance(text: str) -> str:
     at_glance = re.search(r"^## At a glance\s*$", text, re.MULTILINE)
     if not at_glance:
@@ -189,21 +312,6 @@ def _through_at_a_glance(text: str) -> str:
     if not next_h2:
         raise AssertionError("Missing H2 section after ## At a glance")
     return text[: at_glance.end() + next_h2.start()]
-
-
-def _assert_no_positive_forbidden_claim(text: str, path_name: str) -> None:
-    lower = _normalize(text)
-    for phrase in _FORBIDDEN_COMPLETION_CLAIMS:
-        start = 0
-        while True:
-            idx = lower.find(phrase, start)
-            if idx == -1:
-                break
-            context = lower[max(0, idx - 80) : idx + len(phrase) + 80]
-            assert any(marker in context for marker in _NEGATION_MARKERS), (
-                f"{path_name}: positive forbidden claim {phrase!r} at index {idx}"
-            )
-            start = idx + 1
 
 
 @pytest.fixture(scope="module")
@@ -289,6 +397,11 @@ def test_facilitation_protections(protocol_text: str) -> None:
         "record",
         "intervention",
         "no correction of wrong conclusions until the end",
+        "same pinned commit or immutable tag",
+        "moving default-branch url",
+        "selected before recruitment",
+        "creates a new validation wave",
+        "must match the content actually shown",
     ):
         assert phrase in norm, f"Missing facilitation rule: {phrase}"
 
@@ -443,14 +556,70 @@ def test_relative_link_integrity() -> None:
             assert resolved.exists(), f"Broken link in {doc_path.name}: {target}"
 
 
-def test_no_internal_task_ids_in_evaluation_guide(evaluation_text: str) -> None:
-    match = _INTERNAL_TASK_PATTERN.search(evaluation_text)
-    assert match is None, f"EVALUATION_GUIDE contains internal task ID: {match.group() if match else ''}"
+def test_session_record_template_contract(protocol_text: str) -> None:
+    section = _extract_h2_section(protocol_text, "Session record template")
+    for field in _SESSION_TEMPLATE_METADATA_FIELDS:
+        assert field in section, f"Session template missing metadata field: {field}"
+    for field in _SESSION_TEMPLATE_EVIDENCE_FIELDS:
+        assert field in section, f"Session template missing evidence field: {field}"
+    assert section.count("PASS/FRICTION/FAIL/NOT_RUN") >= 8
+    for col in ("Severity", "Finding", "Evidence", "Resolution", "Rerun required"):
+        assert col in section, f"Session template findings missing: {col}"
+
+
+def test_outreach_invitation_contract(outreach_text: str) -> None:
+    for heading, placeholders in _INVITATION_SECTIONS:
+        section = _extract_h2_section(outreach_text, heading)
+        for placeholder in placeholders:
+            assert placeholder in section, f"{heading} missing placeholder: {placeholder}"
+        assert not _MOVING_REPO_URL.search(section), f"{heading} contains moving repo URL"
+        assert not _RELATIVE_PARTICIPANT_LINK.search(section), f"{heading} contains relative link"
+    maintainer = outreach_text.split("## Blind first-contact invitation", 1)[0]
+    assert _RELATIVE_PARTICIPANT_LINK.search(maintainer), "Maintainer sections should retain relative links"
+
+
+def test_no_internal_task_ids_in_public_docs(
+    protocol_text: str,
+    outreach_text: str,
+    launch_text: str,
+    evaluation_text: str,
+) -> None:
+    for path_name, text in (
+        (PROTOCOL_PATH.name, protocol_text),
+        (OUTREACH_KIT_PATH.name, outreach_text),
+        (LAUNCH_CHECKLIST_PATH.name, launch_text),
+        (EVALUATION_GUIDE_PATH.name, evaluation_text),
+    ):
+        match = _INTERNAL_TASK_PATTERN.search(text)
+        assert match is None, f"{path_name} contains internal task ID: {match.group() if match else ''}"
+
+
+def test_architecture_layer_aware_routing() -> None:
+    text = _read(PUBLIC_ARCHITECTURE_PATH)
+    assert "reader-facing Layer 1" in text
+    assert "Layer 5 maintainer control" in text
+    assert "docs/public-adoption/README.md" in text
+    assert "must not become a normal public-reader route" in text
+    public_map = _read(REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md")
+    assert "EXTERNAL_READER_VALIDATION_PROTOCOL" not in public_map
+
+
+def test_architecture_task_id_guard() -> None:
+    text = _read(PUBLIC_ARCHITECTURE_PATH)
+    assert "PUBLIC-DOCS-COMMERCIALIZATION-9A" in text
+    for leaked in (
+        "PUBLIC-DOCS-COMMERCIALIZATION-9B",
+        "CTX-UCL-",
+        "LKW-SLACK-",
+        "GOOGLE-WORKSPACE-",
+        "MSGRAPH-",
+    ):
+        assert leaked not in text, f"Architecture leaked task ID: {leaked}"
 
 
 def test_brevity() -> None:
     limits = {
-        PROTOCOL_PATH: 380,
+        PROTOCOL_PATH: 400,
         EVALUATION_GUIDE_PATH: 280,
         LAUNCH_CHECKLIST_PATH: 220,
         OUTREACH_KIT_PATH: 320,

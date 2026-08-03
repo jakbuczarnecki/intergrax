@@ -165,6 +165,32 @@ Do not treat positive interest as product or commercial validation.
 
 ## Facilitation rules
 
+Every participant-facing repository and document URL in one validation wave must resolve to the same pinned commit or immutable tag. A moving default-branch URL is not sufficient evidence of the tested revision.
+
+Pinned-revision rules (frozen):
+
+- the pinned ref is selected before recruitment;
+- all Track A, B and C participant-facing URLs resolve to that ref;
+- changing the pinned ref creates a new validation wave unless explicitly recorded as a rerun;
+- the ref written in the session record must match the content actually shown;
+- a moving `main`, `development` or repository-root URL is insufficient.
+
+Participant-facing URL placeholders for a validation wave:
+
+```text
+<pinned-ref>
+<pinned-repository-root-url>
+<pinned-evaluation-guide-url>
+<pinned-lkw-proof-url>
+<pinned-use-cases-url>
+<pinned-partners-url>
+<pinned-architecture-url>
+<pinned-proofs-url>
+<pinned-build-url>
+```
+
+Session facilitation:
+
 - one pinned repository revision for a validation wave;
 - the same mandatory prompts for all participants;
 - no coaching before task completion;
@@ -284,12 +310,15 @@ Copy and complete for each session. Do not populate with fictional results.
 
 | Field | Value |
 |-------|-------|
+| Session ID | <session-id> |
+| Validation wave | <wave-id> |
 | Date | <date> |
-| Pinned commit or tag | <pinned-ref> |
+| Pinned commit or immutable tag | <pinned-ref> |
+| Participant-facing root URL | <pinned-repository-root-url> |
 | Primary cohort | <cohort> |
 | Prior familiarity | <none / brief / detailed> |
 | Tracks attempted | <A / A+B / A+C / A+B+C> |
-| Environment (Track B) | <OS, Python, tools — or N/A> |
+| Track B environment | <OS, Python, tools — or N/A> |
 | Consent for quotation | <yes / no / partial> |
 
 ## Track A tasks
@@ -297,24 +326,34 @@ Copy and complete for each session. Do not populate with fictional results.
 | # | Task | Result | Notes |
 |---|------|--------|-------|
 | 1 | Explain Intergrax in one sentence | PASS/FRICTION/FAIL/NOT_RUN | |
-| 2 | Identify strongest product proof | | |
-| 3 | State proof maturity | | |
-| 4 | Find use-case fit route | | |
-| 5 | Find technical evaluation start | | |
-| 6 | Production/commercial permission | | |
-| 7 | Find pilot or partnership route | | |
-| 8 | State next action | | |
+| 2 | Identify strongest product proof | PASS/FRICTION/FAIL/NOT_RUN | |
+| 3 | State proof maturity | PASS/FRICTION/FAIL/NOT_RUN | |
+| 4 | Find use-case fit route | PASS/FRICTION/FAIL/NOT_RUN | |
+| 5 | Find technical evaluation start | PASS/FRICTION/FAIL/NOT_RUN | |
+| 6 | Production/commercial permission | PASS/FRICTION/FAIL/NOT_RUN | |
+| 7 | Find pilot or partnership route | PASS/FRICTION/FAIL/NOT_RUN | |
+| 8 | State next action | PASS/FRICTION/FAIL/NOT_RUN | |
 
-## Summary
+## Evidence
 
-Participant one-sentence description · identified proof · maturity · wrong conclusions ·
-first route · dead ends · interventions · broken links · technical errors
+| Field | Value |
+|-------|-------|
+| Participant one-sentence description | |
+| Identified strongest product proof | |
+| Stated product-proof maturity | |
+| Wrong or uncertain conclusions | |
+| First navigation route | |
+| Dead ends | |
+| Moderator interventions | |
+| Broken links | |
+| Technical errors | |
+| Follow-up notes | |
 
 ## Findings
 
-| Severity | Finding | Resolution |
-|----------|---------|------------|
-| CRITICAL/MAJOR/MINOR/OBSERVATION | | |
+| Severity | Finding | Evidence | Resolution | Rerun required |
+|----------|---------|----------|------------|----------------|
+| CRITICAL/MAJOR/MINOR/OBSERVATION | | | | yes / no |
 ```
 
 ---
@@ -348,4 +387,4 @@ security, legal or production-readiness validation.
 
 ## Next step
 
-Run real external-reader sessions (PUBLIC-DOCS-COMMERCIALIZATION-9B), capture anonymized evidence with the session template, and create an aggregate summary only from actual results. Do not create a results document until sessions are completed and reviewed.
+The next roadmap step is to run real external-reader sessions, capture anonymized evidence and create an aggregate summary only from actual reviewed results. Do not create a results document until sessions are completed and reviewed.

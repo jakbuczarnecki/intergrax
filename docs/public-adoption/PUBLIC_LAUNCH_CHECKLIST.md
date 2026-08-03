@@ -20,6 +20,9 @@ See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL
 
 - [ ] Intentional branch or ref selected for the validation wave or outreach.
 - [ ] Pinned commit or tag recorded.
+- [ ] Every participant-facing URL resolves to the recorded pinned commit or immutable tag.
+- [ ] Copied invitation links were tested outside the repository page.
+- [ ] No moving default-branch URL is treated as evidence of the tested revision.
 - [ ] Root [README.md](../../README.md) available and current at the pinned ref.
 - [ ] Public documentation contract tests passing at the pinned ref.
 - [ ] Public reader routes available (WHY, USE_CASES, ROADMAP, PROOFS, BUILD, PARTNERS, COLLABORATION, FAQ).
@@ -74,6 +77,9 @@ See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL
 ## Outreach readiness
 
 - [ ] Invitation matches one validation cohort.
+- [ ] All invitation placeholders have been replaced.
+- [ ] All participant URLs use the same pinned ref.
+- [ ] The participant-facing root URL matches the session-record ref.
 - [ ] First-contact participant starts from README only.
 - [ ] No expected answers are sent to the participant.
 - [ ] No endorsement request in the invitation.
