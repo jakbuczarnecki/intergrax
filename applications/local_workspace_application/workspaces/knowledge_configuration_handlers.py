@@ -9,6 +9,8 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 
+from pydantic import ValidationError
+
 from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     connected_source_id_from_semantic_hash,
@@ -366,19 +368,26 @@ def _stage_valid(binding_id: str) -> WorkspaceKnowledgeStageInspection:
 def _owned_indexed_bindings(
     repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord,
 ) -> list[WorkspaceIndexedSourceBinding]:
-    return [
-        v for v in repository.list_knowledge_indexed_source_versions(
+    try:
+        all_bindings = repository.list_knowledge_indexed_source_versions(
             tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id,
-        ) if v.mutation_id == mutation.mutation_id
-    ]
+        )
+    except ValueError as exc:
+        raise RuntimeError("indexed_source_list_invalid") from exc
+    return [v for v in all_bindings if v.mutation_id == mutation.mutation_id]
 
 def _owned_connected_sources(
     repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord,
 ) -> list[WorkspaceSource]:
-    return [
-        s for s in repository.list_sources(
+    try:
+        all_sources = repository.list_sources(
             tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id,
-        ) if s.knowledge_configuration_creation_mutation_id == mutation.mutation_id
+        )
+    except ValidationError as exc:
+        raise RuntimeError("connected_source_list_invalid") from exc
+    return [
+        s for s in all_sources
+        if s.knowledge_configuration_creation_mutation_id == mutation.mutation_id
     ]
 
 def _select_latest_indexed_predecessor(
@@ -471,17 +480,28 @@ def _connected_source(
         knowledge_configuration_visibility_revision=target_revision,
     )
 
-def _is_compatible_connected_source(actual: WorkspaceSource, *, expected: WorkspaceSource) -> bool:
-    return (
-        actual.tenant_id == expected.tenant_id and actual.workspace_id == expected.workspace_id
-        and actual.source_id == expected.source_id
-        and actual.source_type is WorkspaceSourceType.CONNECTED_SOURCE
-        and actual.path == "" and actual.recursive is False
-        and actual.knowledge_configuration_creation_mutation_id
-        == expected.knowledge_configuration_creation_mutation_id
-        and actual.knowledge_configuration_visibility_revision
-        == expected.knowledge_configuration_visibility_revision
+def _expected_initial_binding(
+    *, binding_id: str, source_id: str, semantic_hash: str,
+    mutation: WorkspaceKnowledgeMutationRecord, intent: CreateIndexedSourceMutationIntent,
+    target_revision: int, created_at: datetime,
+) -> WorkspaceIndexedSourceBinding:
+    return _active_binding(
+        binding_id=binding_id, source_id=source_id, semantic_hash=semantic_hash,
+        mutation=mutation, intent=intent, target_revision=target_revision,
+        now=created_at, created_at=created_at,
     )
+
+def _put_connected_source_if_absent(
+    repository: ManagedWorkspaceRepository, *, source: WorkspaceSource,
+    mutation: WorkspaceKnowledgeMutationRecord,
+) -> None:
+    if repository.put_source_if_absent(source):
+        return
+    existing = repository.get_source(
+        tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, source_id=source.source_id,
+    )
+    if existing is None or existing != source:
+        raise RuntimeError("connected_source_stage_conflict")
 
 def _assert_reactivation_predecessor(
     predecessor: WorkspaceIndexedSourceBinding, *, binding_id: str, source_id: str,
@@ -510,18 +530,6 @@ def _validate_origin_or_raise(
         )
     except ConnectedSourceOriginValidationError as exc:
         raise RuntimeError(f"indexed_source_origin_invalid:{exc}") from exc
-
-def _put_connected_source_if_absent(
-    repository: ManagedWorkspaceRepository, *, source: WorkspaceSource,
-    mutation: WorkspaceKnowledgeMutationRecord,
-) -> None:
-    if repository.put_source_if_absent(source):
-        return
-    existing = repository.get_source(
-        tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, source_id=source.source_id,
-    )
-    if existing is None or not _is_compatible_connected_source(existing, expected=source):
-        raise RuntimeError("connected_source_stage_conflict")
 
 def _put_binding_if_absent(
     repository: ManagedWorkspaceRepository, binding: WorkspaceIndexedSourceBinding,
@@ -592,15 +600,18 @@ def _prove_source_only_owned_partial(
     ids = _semantic_ids_or_none(mutation)
     if ids is None:
         return False
-    _, source_id = ids
+    binding_id, source_id = ids
+    if owned_source.source_id != source_id:
+        return False
+    if mutation.result_entity_type is not None and mutation.result_entity_type != _RESULT_ENTITY_TYPE:
+        return False
+    if mutation.result_entity_id is not None and mutation.result_entity_id != binding_id:
+        return False
     expected = _connected_source(
-        source_id=source_id,
-        mutation=mutation,
-        target_revision=mutation.target_revision,
-        created_at=owned_source.created_at,
-        status=owned_source.status,
+        source_id=source_id, mutation=mutation, target_revision=mutation.target_revision,
+        created_at=owned_source.created_at, status=WorkspaceSourceStatus.REGISTERED,
     )
-    if not _is_compatible_connected_source(owned_source, expected=expected):
+    if owned_source != expected or owned_source.last_sync_at is not None:
         return False
     prior = repository.get_source(
         tenant_id=mutation.tenant_id,
@@ -629,11 +640,28 @@ def _prove_binding_only_owned_partial(
     if (
         owned_binding.indexed_source_binding_id != binding_id
         or owned_binding.source_id != source_id
+        or owned_binding.tenant_id != mutation.tenant_id
+        or owned_binding.workspace_id != mutation.workspace_id
         or owned_binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE
         or owned_binding.effective_revision != mutation.target_revision
         or owned_binding.semantic_identity_hash != mutation.semantic_identity_hash
+        or owned_binding.created_at != owned_binding.updated_at
         or not owned_binding.knowledge_source_binding_ref.strip()
     ):
+        return False
+    intent = _intent_from_binding(owned_binding)
+    expected_request = normalize_create_indexed_source_request_hash(
+        tenant_id=mutation.tenant_id,
+        workspace_id=mutation.workspace_id,
+        knowledge_source_binding_ref=intent.knowledge_source_binding_ref.strip(),
+        sync_mode=intent.sync_mode,
+        audience_eligibility=intent.audience_eligibility,
+    )
+    if mutation.normalized_request_hash != expected_request:
+        return False
+    if mutation.result_entity_type is not None and mutation.result_entity_type != _RESULT_ENTITY_TYPE:
+        return False
+    if mutation.result_entity_id is not None and mutation.result_entity_id != binding_id:
         return False
     if _select_latest_indexed_predecessor(
         repository, mutation=mutation, binding_id=binding_id,
@@ -652,7 +680,15 @@ def _prove_initial_complete_stage(
     owned_binding: WorkspaceIndexedSourceBinding,
     owned_source: WorkspaceSource,
     intent: CreateIndexedSourceMutationIntent,
+    binding_id: str,
+    source_id: str,
+    semantic_hash: str,
+    target_revision: int,
 ) -> bool:
+    if mutation.operation is not WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE:
+        return False
+    if mutation.target_revision != target_revision:
+        return False
     expected_request = normalize_create_indexed_source_request_hash(
         tenant_id=mutation.tenant_id,
         workspace_id=mutation.workspace_id,
@@ -662,22 +698,57 @@ def _prove_initial_complete_stage(
     )
     if mutation.normalized_request_hash != expected_request:
         return False
+    if mutation.semantic_identity_hash != semantic_hash:
+        return False
     if mutation.result_entity_type is not None and mutation.result_entity_type != _RESULT_ENTITY_TYPE:
         return False
-    if mutation.result_entity_id is not None and mutation.result_entity_id != owned_binding.indexed_source_binding_id:
+    if mutation.result_entity_id is not None and mutation.result_entity_id != binding_id:
         return False
-    return (
-        owned_binding.created_at == owned_source.created_at
-        and owned_binding.updated_at == owned_binding.created_at
+    expected_binding = _expected_initial_binding(
+        binding_id=binding_id, source_id=source_id, semantic_hash=semantic_hash,
+        mutation=mutation, intent=intent, target_revision=target_revision,
+        created_at=owned_source.created_at,
     )
+    expected_source = _connected_source(
+        source_id=source_id, mutation=mutation, target_revision=target_revision,
+        created_at=owned_source.created_at, status=WorkspaceSourceStatus.REGISTERED,
+    )
+    return (
+        owned_binding == expected_binding
+        and owned_source == expected_source
+        and owned_binding.source_id == owned_source.source_id
+        and owned_binding.created_at == owned_source.created_at
+    )
+
+def _prove_incomplete_owned_partial(
+    repository: ManagedWorkspaceRepository,
+    *,
+    mutation: WorkspaceKnowledgeMutationRecord,
+    bindings: list[WorkspaceIndexedSourceBinding],
+    sources: list[WorkspaceSource],
+) -> bool:
+    if bindings and sources:
+        return False
+    if bindings and not _prove_binding_only_owned_partial(
+        repository, mutation=mutation, owned_binding=bindings[0],
+    ):
+        return False
+    if sources and not _prove_source_only_owned_partial(
+        repository, mutation=mutation, owned_source=sources[0],
+    ):
+        return False
+    return True
 
 def _inspect_create_indexed_staged(
     repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord,
 ) -> WorkspaceKnowledgeStageInspection:
     if mutation.target_revision is None:
         return _stage_conflict()
-    owned_bindings = _owned_indexed_bindings(repository, mutation)
-    owned_sources = _owned_connected_sources(repository, mutation)
+    try:
+        owned_bindings = _owned_indexed_bindings(repository, mutation)
+        owned_sources = _owned_connected_sources(repository, mutation)
+    except RuntimeError:
+        return _stage_conflict()
     if len(owned_bindings) > 1:
         return _stage_conflict()
     if len(owned_sources) > 1:
@@ -738,6 +809,10 @@ def _inspect_create_indexed_staged(
             owned_binding=owned_binding,
             owned_source=owned_source,
             intent=intent,
+            binding_id=binding_id,
+            source_id=source_id,
+            semantic_hash=semantic_hash,
+            target_revision=mutation.target_revision,
         ):
             return _stage_conflict()
         return _stage_valid(binding_id)
@@ -868,14 +943,17 @@ class CreateIndexedSourceMutationHandler:
                 return False
             bindings = _owned_indexed_bindings(repository, mutation)
             sources = _owned_connected_sources(repository, mutation)
-            if bindings and sources:
-                return False
-            if bindings and not _prove_binding_only_owned_partial(
-                repository, mutation=mutation, owned_binding=bindings[0],
+            if not _prove_incomplete_owned_partial(
+                repository, mutation=mutation, bindings=bindings, sources=sources,
             ):
                 return False
-            if sources and not _prove_source_only_owned_partial(
-                repository, mutation=mutation, owned_source=sources[0],
+            current_inspection = _inspect_create_indexed_staged(repository, mutation)
+            if current_inspection.state is not WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED:
+                return False
+            bindings = _owned_indexed_bindings(repository, mutation)
+            sources = _owned_connected_sources(repository, mutation)
+            if not _prove_incomplete_owned_partial(
+                repository, mutation=mutation, bindings=bindings, sources=sources,
             ):
                 return False
             return _delete_owned_indexed_rows(

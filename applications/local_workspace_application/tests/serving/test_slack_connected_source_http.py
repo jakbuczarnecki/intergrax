@@ -239,12 +239,7 @@ def _reactivate_after_disable(client, binding_id: str, *, if_match: str = "WKC/3
     response = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers=_headers(if_match=if_match, idempotency=idempotency),
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": _candidate_ref(client),
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=_create_body(client),
     )
     assert response.status_code == 200, response.text
     return response
@@ -254,15 +249,19 @@ def _create_indexed_source(client, *, if_match: str = "WKC/1", idempotency: str 
     response = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers=_headers(if_match=if_match, idempotency=idempotency),
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": _candidate_ref(client),
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=_create_body(client),
     )
     assert response.status_code == 201, response.text
     return response
+
+
+def _create_body(client) -> dict[str, str]:
+    return {
+        "connection_ref": _CONNECTION,
+        "opaque_candidate_ref": _candidate_ref(client),
+        "root_oldest": "1704067200.000001",
+        "root_latest": "1706745600.000001",
+    }
 
 
 def test_discovery_route_returns_signed_candidate(api_client) -> None:
@@ -285,52 +284,37 @@ def test_create_route_requires_preconditions(api_client) -> None:
         headers={"X-Tenant-Id": _TENANT},
         params={"resource_type": "slack_conversation", "limit": 10},
     ).json()
-    candidate = discovery["items"][0]["opaque_candidate_ref"]
+    body = {
+        "connection_ref": _CONNECTION,
+        "opaque_candidate_ref": discovery["items"][0]["opaque_candidate_ref"],
+        "root_oldest": "1704067200.000001",
+        "root_latest": "1706745600.000001",
+    }
     missing = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers={"X-Tenant-Id": _TENANT},
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": candidate,
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=body,
     )
     assert missing.status_code == 428
     created = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers=_headers(if_match="WKC/1"),
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": candidate,
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=body,
     )
     assert created.status_code == 201, created.text
-    body = created.json()
-    assert body["sync_mode"] == "full"
-    assert body["audience_eligibility"] == "personal_only"
+    body_created = created.json()
+    assert body_created["sync_mode"] == "full"
+    assert body_created["audience_eligibility"] == "personal_only"
     replay = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers=_headers(if_match="WKC/2", idempotency="idem-1"),
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": candidate,
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=body,
     )
     assert replay.status_code == 200, replay.text
     conflict = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
         headers=_headers(if_match="WKC/2", idempotency="idem-2"),
-        json={
-            "connection_ref": _CONNECTION,
-            "opaque_candidate_ref": candidate,
-            "root_oldest": "1704067200.000001",
-            "root_latest": "1706745600.000001",
-        },
+        json=body,
     )
     assert conflict.status_code == 200, conflict.text
 
@@ -561,3 +545,85 @@ def test_sync_after_reactivation_returns_202(api_client) -> None:
         headers={"X-Tenant-Id": _TENANT},
     )
     assert sync.status_code == 202, sync.text
+
+
+def test_post_tenant_binding_unavailable_returns_409(api_client, monkeypatch) -> None:
+    client, wiring, repo = api_client
+    from local_workspace_application.workspaces.connected_source_models import ConnectedSourceBindingError
+
+    monkeypatch.setattr(
+        wiring.tenant_binding_service,
+        "create_or_get_equivalent_for_slack_conversation",
+        lambda request: (_ for _ in ()).throw(
+            ConnectedSourceBindingError("knowledge_source_binding_unavailable")
+        ),
+    )
+    activate_called = False
+    original_activate = wiring.indexed_source_lifecycle_service.activate_indexed_source
+
+    def _track_activate(*args, **kwargs):
+        nonlocal activate_called
+        activate_called = True
+        return original_activate(*args, **kwargs)
+
+    monkeypatch.setattr(wiring.indexed_source_lifecycle_service, "activate_indexed_source", _track_activate)
+    mutations_before = len(repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+    response = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers=_headers(if_match="WKC/1", idempotency="idem-tenant-binding"),
+        json=_create_body(client),
+    )
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"] == "knowledge_source_binding_unavailable"
+    assert activate_called is False
+    assert len(repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE)) == mutations_before
+    assert repo.list_sources(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+
+
+def test_post_recovery_required_returns_503(api_client) -> None:
+    client, _, repo = api_client
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    repo.put_knowledge_configuration_mutation_if_absent(
+        WorkspaceKnowledgeMutationRecord(
+            mutation_id="mutation-recover-create", tenant_id=_TENANT, workspace_id=_WORKSPACE,
+            operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
+            idempotency_key_hash="a" * 64, normalized_request_hash="b" * 64,
+            semantic_identity_hash="c" * 64, target_revision=head.committed_revision + 1,
+            status=WorkspaceKnowledgeMutationStatusV1.PREPARED, created_at=_NOW, updated_at=_NOW,
+        )
+    )
+    repo.replace_knowledge_configuration_head_if_match(
+        expected=head,
+        replacement=head.model_copy(update={
+            "pending_revision": head.committed_revision + 1,
+            "pending_mutation_id": "mutation-recover-create",
+            "updated_at": _NOW,
+        }),
+    )
+    response = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers=_headers(if_match=f"WKC/{head.committed_revision}", idempotency="idem-recover-create"),
+        json=_create_body(client),
+    )
+    assert response.status_code == 503, response.text
+    assert response.json()["detail"] == "configuration_recovery_required"
+    assert not repo.list_sources(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
+def test_post_cleanup_failed_returns_503(api_client, monkeypatch) -> None:
+    client, wiring, _ = api_client
+    from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+        WorkspaceIndexedSourceLifecycleError,
+    )
+
+    async def _raise_cleanup(*args, **kwargs):
+        raise WorkspaceIndexedSourceLifecycleError("configuration_mutation_cleanup_failed")
+
+    monkeypatch.setattr(wiring.knowledge_access_service, "create_indexed_source_from_candidate", _raise_cleanup)
+    response = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers=_headers(if_match="WKC/1", idempotency="idem-cleanup-failed"),
+        json=_create_body(client),
+    )
+    assert response.status_code == 503 and response.json()["detail"] == "configuration_mutation_cleanup_failed"

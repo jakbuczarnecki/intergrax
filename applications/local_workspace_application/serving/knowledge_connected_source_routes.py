@@ -305,14 +305,8 @@ def mount_connected_source_knowledge_routes(
         except WorkspaceIndexedSourceLifecycleError as exc:
             raise _map_lifecycle_error(exc) from exc
         except ConnectedSourceBindingError as exc:
-            if exc.error_code == "knowledge_source_binding_invalid":
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=exc.error_code,
-                ) from exc
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=exc.error_code,
+            raise _map_lifecycle_error(
+                WorkspaceIndexedSourceLifecycleError(exc.error_code)
             ) from exc
         except WorkspaceKnowledgeConfigurationMutationError as exc:
             if exc.error_code in {
@@ -321,6 +315,15 @@ def mount_connected_source_knowledge_routes(
             }:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
+                    detail=exc.error_code,
+                ) from exc
+            if exc.error_code in {
+                "configuration_recovery_required",
+                "configuration_mutation_cleanup_failed",
+                "configuration_mutation_conditional_write_failed",
+            }:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=exc.error_code,
                 ) from exc
             if exc.error_code.endswith("_unavailable"):

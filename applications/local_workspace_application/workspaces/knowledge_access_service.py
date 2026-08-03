@@ -21,7 +21,6 @@ from local_workspace_application.workspaces.connected_source_discovery import (
 )
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceBindingError,
-    ConnectedSourceDiscoveryError,
     RemoteResourceDiscoveryPageV1,
     RemoteResourceTypeV1,
 )
@@ -204,7 +203,7 @@ class WorkspaceKnowledgeAccessService:
                 binding_request
             )
         except ConnectedSourceBindingError as exc:
-            raise ConnectedSourceDiscoveryError(exc.error_code) from exc
+            raise WorkspaceIndexedSourceLifecycleError(exc.error_code) from exc
         if tenant_binding.binding_id != expected_binding_id:
             raise WorkspaceIndexedSourceLifecycleError("knowledge_source_binding_invalid")
 
