@@ -10,7 +10,11 @@ from intergrax.context.contracts import (
     ContextDecisionSnapshot,
 )
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import (
+    ChatMessage,
+    StructuredModelInputRequiredError,
+    requires_structured_model_input,
+)
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.task.task import Task
@@ -49,17 +53,26 @@ def graph_messages_from_text(message: str) -> list[ChatMessage]:
     return [ChatMessage(role="user", content=message)]
 
 
-def text_from_assembled_messages(messages: tuple[ChatMessage, ...]) -> str:
-    """Extract agent-facing text — context injection blocks plus session turns."""
+def compatibility_text_from_assembled_messages(messages: tuple[ChatMessage, ...]) -> str:
+    """UI/debug/legacy compatibility projection — context blocks plus final user turn."""
     if not messages:
         return ""
     blocks: list[str] = []
-    for message in messages:
+    final_user_content: str | None = None
+    for index, message in enumerate(messages):
         content = message.content or ""
-        if not content:
-            continue
         if message.role == "system" and content.startswith("[context:"):
             blocks.append(content)
-        else:
-            blocks.append(content)
-    return "\n\n".join(blocks)
+        elif index == len(messages) - 1 and message.role == "user":
+            final_user_content = content
+    parts = list(blocks)
+    if final_user_content is not None:
+        parts.append(final_user_content)
+    return "\n\n".join(parts)
+
+
+def text_from_assembled_messages(messages: tuple[ChatMessage, ...]) -> str:
+    """Strict text projection — fails when structured history cannot be losslessly flattened."""
+    if requires_structured_model_input(messages):
+        raise StructuredModelInputRequiredError()
+    return compatibility_text_from_assembled_messages(messages)

@@ -50,7 +50,7 @@ def build_uaep_assembly_request(
     )
 
 
-async def assemble_uaep_session_prompt(
+async def assemble_uaep_session_messages(
     request: RuntimeRequest,
     *,
     agent_id: str,
@@ -58,8 +58,8 @@ async def assemble_uaep_session_prompt(
     llm_adapter: LLMAdapter,
     event_bus: RuntimeEventBus | None = None,
     assembly_options: TaskContextAssemblyOptions | None = None,
-) -> str:
-    """Run ``ContextEngine.assemble`` for a UAEP session turn when engine is wired."""
+) -> tuple[ChatMessage, ...]:
+    """Run ``ContextEngine.assemble`` for a UAEP session turn and return exact messages."""
     assembly_request = build_uaep_assembly_request(
         request,
         agent_id=agent_id,
@@ -81,7 +81,32 @@ async def assemble_uaep_session_prompt(
         ),
     )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)
-    return text_from_assembled_messages(assembled.messages) or base_message
+    return assembled.messages
+
+
+async def assemble_uaep_session_prompt(
+    request: RuntimeRequest,
+    *,
+    agent_id: str,
+    engine: ContextEngine,
+    llm_adapter: LLMAdapter,
+    event_bus: RuntimeEventBus | None = None,
+    assembly_options: TaskContextAssemblyOptions | None = None,
+) -> str:
+    """Compatibility wrapper — string projection only when losslessly allowed."""
+    assembled_messages = await assemble_uaep_session_messages(
+        request,
+        agent_id=agent_id,
+        engine=engine,
+        llm_adapter=llm_adapter,
+        event_bus=event_bus,
+        assembly_options=assembly_options,
+    )
+    base_message = request.message or ""
+    if not assembled_messages:
+        return base_message
+    projected = text_from_assembled_messages(assembled_messages)
+    return projected or base_message
 
 
 def _task_stub_from_request(request: RuntimeRequest):

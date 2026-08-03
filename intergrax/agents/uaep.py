@@ -20,8 +20,6 @@ from intergrax.agents.uaep_protocol import (
     UAEPAgent,
     UAEPAgentWithDecide,
     UAEPAgentWithResume,
-    is_uaep_agent,
-    supports_uaep,
 )
 from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -260,15 +258,21 @@ class UAEPExecutor:
             session_manager=runtime_context.session_manager,
         )
         if self._context_engine is not None and self._llm_adapter is not None:
-            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
+            from intergrax.llm.messages import StructuredModelInputRequiredError, STRUCTURED_MODEL_INPUT_REQUIRED_REASON
+            from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
+            from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_messages
 
-            assembled_prompt = await assemble_uaep_session_prompt(
+            assembled_messages = await assemble_uaep_session_messages(
                 request,
                 agent_id=contract.id,
                 engine=self._context_engine,
                 llm_adapter=self._llm_adapter,
                 event_bus=self._event_bus,
             )
+            try:
+                assembled_prompt = text_from_assembled_messages(assembled_messages)
+            except StructuredModelInputRequiredError as exc:
+                raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
             if assembled_prompt and assembled_prompt != (request.message or ""):
                 request = replace(request, message=assembled_prompt)
         exec_ctx.domain_context = runtime_context

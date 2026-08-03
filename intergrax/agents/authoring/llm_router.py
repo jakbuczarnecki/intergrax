@@ -7,13 +7,20 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, LlmCallRecord
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import (
+    ChatMessage,
+    build_model_input_messages_envelope,
+    model_input_messages_from_envelope,
+    replace_final_user_message,
+    StructuredModelInputRequiredError,
+)
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -36,6 +43,17 @@ class LlmCompletePort(Protocol):
     async def complete(
         self,
         prompt: str,
+        *,
+        model_id: str,
+        provider: str,
+    ) -> tuple[str, int, int]: ...
+
+
+@runtime_checkable
+class LlmMessagesCompletePort(Protocol):
+    async def complete_messages(
+        self,
+        messages: Sequence[ChatMessage],
         *,
         model_id: str,
         provider: str,
@@ -68,6 +86,27 @@ class LLMAdapterCompletePort:
 
         return await asyncio.to_thread(_call)
 
+    async def complete_messages(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        model_id: str,
+        provider: str,
+    ) -> tuple[str, int, int]:
+        del model_id, provider
+        defensive_messages = list(messages)
+
+        def _call() -> tuple[str, int, int]:
+            response = self._adapter.generate_messages(  # type: ignore[attr-defined]
+                defensive_messages,
+            )
+            usage = response.usage
+            tokens_in = int(usage.input_tokens) if usage is not None else 0
+            tokens_out = int(usage.output_tokens) if usage is not None else 0
+            return response.content, tokens_in, tokens_out
+
+        return await asyncio.to_thread(_call)
+
 
 @dataclass
 class StepLLMRouter:
@@ -84,8 +123,14 @@ class StepLLMRouter:
     llm_adapter: LLMAdapter | None = None
     runtime_config: RuntimeConfig | None = None
     require_real_llm: bool = False
+    model_input_messages: tuple[ChatMessage, ...] = ()
     _pending_calls: list[LlmCallRecord] = field(default_factory=list, init=False, repr=False)
     _last_effective_model: str = field(default="", init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.model_input_messages:
+            envelope = build_model_input_messages_envelope(self.model_input_messages)
+            self.model_input_messages = model_input_messages_from_envelope(envelope)
 
     def list_allowed_models(self) -> list[str]:
         return list(self.allowed_models)
@@ -121,28 +166,52 @@ class StepLLMRouter:
 
     async def complete(self, prompt: str, *, model_hint: str | None = None) -> LlmStepResult:
         model_id = self.resolve_model(model_hint)
-        if self.runtime_config is not None:
-            from intergrax.runtime.nexus.context.compile_service import compile_prompt_text
-
-            prompt = compile_prompt_text(prompt, self.runtime_config)  # type: ignore[arg-type]
         started = time.perf_counter()
-        completion_port = self._resolve_completion_port()
-        if completion_port is not None:
-            provider = self.provider
-            if self.runtime_config is not None and self.runtime_config.llm_adapter is not None:
-                raw_provider = self.runtime_config.llm_adapter.provider
-                provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
-            text, tokens_in, tokens_out = await completion_port.complete(
-                prompt,
-                model_id=model_id,
-                provider=provider,
+        provider = self.provider
+        if self.runtime_config is not None and self.runtime_config.llm_adapter is not None:
+            raw_provider = self.runtime_config.llm_adapter.provider
+            provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
+
+        if self.model_input_messages:
+            messages = replace_final_user_message(self.model_input_messages, prompt)
+            completion_port = self._resolve_completion_port()
+            complete_messages = (
+                getattr(completion_port, "complete_messages", None)
+                if completion_port is not None
+                else None
             )
-        elif self.require_real_llm:
-            raise RuntimeError("StepLLMRouter requires llm_port or llm_adapter in production mode")
+            if callable(complete_messages):
+                text, tokens_in, tokens_out = await complete_messages(
+                    list(messages),
+                    model_id=model_id,
+                    provider=provider,
+                )
+            elif completion_port is not None:
+                raise StructuredModelInputRequiredError()
+            elif self.require_real_llm:
+                raise RuntimeError("StepLLMRouter requires llm_port or llm_adapter in production mode")
+            else:
+                text = prompt
+                tokens_in = sum(len((message.content or "").split()) for message in messages)
+                tokens_out = len(text.split())
         else:
-            text = prompt
-            tokens_in = len(prompt.split())
-            tokens_out = len(text.split())
+            if self.runtime_config is not None:
+                from intergrax.runtime.nexus.context.compile_service import compile_prompt_text
+
+                prompt = compile_prompt_text(prompt, self.runtime_config)  # type: ignore[arg-type]
+            completion_port = self._resolve_completion_port()
+            if completion_port is not None:
+                text, tokens_in, tokens_out = await completion_port.complete(
+                    prompt,
+                    model_id=model_id,
+                    provider=provider,
+                )
+            elif self.require_real_llm:
+                raise RuntimeError("StepLLMRouter requires llm_port or llm_adapter in production mode")
+            else:
+                text = prompt
+                tokens_in = len(prompt.split())
+                tokens_out = len(text.split())
         latency_ms = int((time.perf_counter() - started) * 1000)
         call_record = LlmCallRecord(
             call_id=f"llm_{uuid.uuid4().hex[:12]}",

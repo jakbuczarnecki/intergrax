@@ -11,11 +11,14 @@ from intergrax.context.session_history import (
     SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON,
     SessionHistorySnapshotRequiredError,
 )
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, StructuredModelInputRequiredError
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
-from intergrax.runtime.nexus.context.uaep_assemble import assemble_uaep_session_prompt
+from intergrax.runtime.nexus.context.uaep_assemble import (
+    assemble_uaep_session_messages,
+    assemble_uaep_session_prompt,
+)
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.asyncio]
@@ -85,14 +88,22 @@ async def test_assemble_uaep_session_includes_full_history_with_revision() -> No
             ],
         },
     )
-    prompt = await assemble_uaep_session_prompt(
+    messages = await assemble_uaep_session_messages(
         request,
         agent_id="agent-1",
         engine=engine,
         llm_adapter=_Adapter(),
     )
-    assert "first question" in prompt
-    assert "first answer" in prompt
+    contents = [message.content for message in messages]
+    assert "first question" in contents
+    assert "first answer" in contents
+    with pytest.raises(StructuredModelInputRequiredError):
+        await assemble_uaep_session_prompt(
+            request,
+            agent_id="agent-1",
+            engine=engine,
+            llm_adapter=_Adapter(),
+        )
 
 
 @pytest.mark.asyncio
@@ -120,3 +131,92 @@ async def test_assemble_uaep_session_rejects_raw_history_without_revision() -> N
             llm_adapter=_Adapter(),
         )
     assert str(exc_info.value) == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
+
+
+@pytest.mark.asyncio
+async def test_uaep_message_assembly_preserves_structured_history() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    engine = CodebaseContextEngine(registry=registry)
+    request = RuntimeRequest(
+        agent_id="agent-1",
+        user_id="user-1",
+        session_id="sess-1",
+        message="follow up",
+        tenant_id="t1",
+        metadata={
+            "task_id": "task-1",
+            "session_context_revision_id": "rev-uaep-2",
+            "session_history_messages": [
+                ChatMessage(role="user", content="history user", entry_id="uaep-u3"),
+                ChatMessage(
+                    role="assistant",
+                    content="assistant",
+                    entry_id="uaep-a3",
+                    tool_calls=[{"id": "call-1", "type": "function", "function": {"name": "x", "arguments": "{}"}}],
+                ),
+                ChatMessage(role="tool", content="tool out", entry_id="uaep-t3", tool_call_id="call-1"),
+            ],
+        },
+    )
+    messages = await assemble_uaep_session_messages(
+        request,
+        agent_id="agent-1",
+        engine=engine,
+        llm_adapter=_Adapter(),
+    )
+    roles = [message.role for message in messages]
+    assert "user" in roles
+    assert "assistant" in roles
+    assert "tool" in roles
+    assert messages[-1].role == "user"
+    assert messages[-1].content == "follow up"
+
+
+@pytest.mark.asyncio
+async def test_uaep_prompt_projection_rejects_structured_history() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    engine = CodebaseContextEngine(registry=registry)
+    request = RuntimeRequest(
+        agent_id="agent-1",
+        user_id="user-1",
+        session_id="sess-1",
+        message="follow up",
+        tenant_id="t1",
+        metadata={
+            "task_id": "task-1",
+            "session_context_revision_id": "rev-uaep-3",
+            "session_history_messages": [
+                ChatMessage(role="user", content="history user", entry_id="uaep-u4"),
+                ChatMessage(role="assistant", content="assistant", entry_id="uaep-a4"),
+            ],
+        },
+    )
+    with pytest.raises(StructuredModelInputRequiredError):
+        await assemble_uaep_session_prompt(
+            request,
+            agent_id="agent-1",
+            engine=engine,
+            llm_adapter=_Adapter(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_uaep_prompt_projection_keeps_simple_context_compatibility() -> None:
+    registry = materialize_context_plugin_registry(["intergrax.builtin"])
+    engine = CodebaseContextEngine(registry=registry)
+    request = RuntimeRequest(
+        agent_id="agent-1",
+        user_id="user-1",
+        session_id="sess-1",
+        message="simple objective",
+        tenant_id="t1",
+        metadata={"task_id": "task-1", "workspace_files": {"app.py": "print('hi')\n"}},
+    )
+    prompt = await assemble_uaep_session_prompt(
+        request,
+        agent_id="agent-1",
+        engine=engine,
+        llm_adapter=_Adapter(),
+    )
+    assert "simple objective" in prompt
+    assert "role:" not in prompt

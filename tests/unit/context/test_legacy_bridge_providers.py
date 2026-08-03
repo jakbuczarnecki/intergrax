@@ -43,7 +43,7 @@ from intergrax.context.session_history import (
 )
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, MODEL_INPUT_MESSAGES_METADATA_KEY
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -182,7 +182,54 @@ async def test_graph_engine_path_includes_core_provider_fragments() -> None:
     assert "dependency summary" in bundle.message
     assert "[context:session_history:" not in bundle.message
     assert "user: earlier question" not in bundle.message
+    assert "earlier answer" not in bundle.message
     assert bundle.metadata.get("engine_id") == "default"
+    assert len(bundle.model_input_messages) >= 3
+    history_roles = [message.role for message in bundle.model_input_messages]
+    assert "user" in history_roles
+    assert "assistant" in history_roles
+    assert bundle.model_input_messages[-1].role == "user"
+    assert bundle.model_input_messages[-1].content == "main task"
+    assert bundle.metadata.get("model_input_message_count") == len(bundle.model_input_messages)
+    assert bundle.metadata.get("model_input_messages_hash")
+
+    applied = manager.apply_to_task(task, bundle)
+    envelope = applied.metadata.get(MODEL_INPUT_MESSAGES_METADATA_KEY)
+    assert isinstance(envelope, dict)
+    assert envelope.get("schema_version") == "model_input_messages.v1"
+    assert isinstance(envelope.get("messages"), list)
+    assert envelope.get("messages_hash")
+    for row in envelope["messages"]:
+        assert isinstance(row, dict)
+        assert "entry_id" in row
+        assert "role" in row
+        assert "content" in row
+        assert type(row["content"]) is str
+
+
+@pytest.mark.asyncio
+async def test_graph_compatibility_text_projection() -> None:
+    from intergrax.runtime.nexus.context.graph_assembly import (
+        compatibility_text_from_assembled_messages,
+        text_from_assembled_messages,
+    )
+    from intergrax.llm.messages import StructuredModelInputRequiredError
+
+    messages = tuple(
+        [
+            ChatMessage(role="system", content="[context:task_message:t1] objective"),
+            ChatMessage(role="user", content="history user", entry_id="h1"),
+            ChatMessage(role="assistant", content="history assistant", entry_id="h2"),
+            ChatMessage(role="user", content="final user", entry_id="h3"),
+        ]
+    )
+    compatibility = compatibility_text_from_assembled_messages(messages)
+    assert "[context:task_message:t1]" in compatibility
+    assert "final user" in compatibility
+    assert "history user" not in compatibility
+    assert "history assistant" not in compatibility
+    with pytest.raises(StructuredModelInputRequiredError):
+        text_from_assembled_messages(messages)
 
 
 @pytest.mark.asyncio

@@ -357,6 +357,78 @@ def test_session_history_chat_message_round_trip_preserves_model_fields() -> Non
     )
 
 
+def test_formatter_rejects_malformed_session_history_fragment() -> None:
+    from intergrax.context.contracts import ContextAssemblyRequest, ContextBudgetSnapshot, ContextDecisionSnapshot, ContextFragment, ContextFragmentSource
+    from intergrax.context.formatter import DefaultContextFormatter
+    from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+
+    fragment = ContextFragment(
+        fragment_id="frag-1",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_id="msg-1",
+        content="history text",
+        token_estimate=10,
+        relevance_score=1.0,
+        freshness_score=1.0,
+        confidence_score=1.0,
+        mandatory=False,
+        metadata={
+            "message_id": "msg-1",
+            "sequence": 0,
+            "role": "user",
+            "content_hash": "wrong-hash",
+        },
+        content_hash="wrong-hash",
+    )
+    request = ContextAssemblyRequest(
+        trace_id="trace-1",
+        run_id="run-1",
+        task_id="task-1",
+        tenant_id="tenant-1",
+        assembly_scope="graph_node",
+        objective="objective",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_chars=8000),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    formatter = DefaultContextFormatter()
+    with pytest.raises(ValueError):
+        formatter.format([fragment], request)
+
+
+def test_formatter_non_history_fragment_still_emits_system_block() -> None:
+    from intergrax.context.contracts import ContextAssemblyRequest, ContextBudgetSnapshot, ContextDecisionSnapshot, ContextFragment, ContextFragmentSource
+    from intergrax.context.formatter import DefaultContextFormatter
+    from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+
+    fragment = ContextFragment(
+        fragment_id="frag-2",
+        source=ContextFragmentSource.TASK_MESSAGE,
+        source_id="task-1",
+        content="objective text",
+        token_estimate=10,
+        relevance_score=1.0,
+        freshness_score=1.0,
+        confidence_score=1.0,
+        mandatory=False,
+    )
+    request = ContextAssemblyRequest(
+        trace_id="trace-1",
+        run_id="run-1",
+        task_id="task-1",
+        tenant_id="tenant-1",
+        assembly_scope="graph_node",
+        objective="objective",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_chars=8000),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    messages = DefaultContextFormatter().format([fragment], request)
+    assert len(messages) == 1
+    assert messages[0].role == "system"
+    assert messages[0].content.startswith("[context:task_message:")
+
+
 def test_structural_guards_session_history_r1() -> None:
     from intergrax.context import dedup as dedup_mod
     from intergrax.context import formatter as formatter_mod
