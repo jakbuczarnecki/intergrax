@@ -373,6 +373,7 @@ class GoogleWorkspaceDocsKnowledgeAdapter:
             provider_id=reconstructed.provider_id,
             integration_kind=reconstructed.integration_kind,
             source_kind=reconstructed.source_kind,
+            connection_ref=reconstructed.connection_ref,
             scope=KnowledgeSourceScope(
                 remote_scope_id=validated_id,
                 remote_scope_type=scope.remote_scope_type,

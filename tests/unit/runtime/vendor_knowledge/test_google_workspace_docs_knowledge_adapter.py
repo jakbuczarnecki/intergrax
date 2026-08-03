@@ -74,6 +74,12 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeSourceRef,
     KnowledgeSourceScope,
 )
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+    to_source_ref,
+)
+from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -362,6 +368,7 @@ def _source(
     provider_id: str = GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
     integration_kind: IntegrationCategory = IntegrationCategory.COLLABORATION_SUITE,
     source_kind: str = GOOGLE_DOCS_SOURCE_KIND,
+    connection_ref: str | None = "conn-google-1",
     safe_display_name: str = "Quarterly Plan",
 ) -> KnowledgeSourceRef:
     return KnowledgeSourceRef(
@@ -369,6 +376,7 @@ def _source(
         provider_id=provider_id,
         integration_kind=integration_kind,
         source_kind=source_kind,
+        connection_ref=connection_ref,
         scope=KnowledgeSourceScope(
             remote_scope_id=remote_scope_id,
             remote_scope_type=remote_scope_type,
@@ -478,6 +486,40 @@ class _BoundGoogleWorkspaceIntegration(GoogleWorkspaceCollaborationSuiteIntegrat
 
 def _integration(fake: _FakeGoogleWorkspaceIntegration) -> GoogleWorkspaceCollaborationSuiteIntegration:
     return _BoundGoogleWorkspaceIntegration.from_fake(fake)
+
+
+def _docs_binding(
+    *,
+    connection_ref: str = "conn-google-1",
+    safe_display_name: str = "Quarterly Plan",
+) -> KnowledgeSourceBinding:
+    return KnowledgeSourceBinding(
+        binding_id="binding-docs-1",
+        tenant_id="tenant-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_DOCS_SOURCE_KIND,
+        connection_ref=connection_ref,
+        safe_display_name=safe_display_name,
+        scope=KnowledgeSourceScope(
+            remote_scope_id=_DOCUMENT_ID,
+            remote_scope_type=GOOGLE_DOCS_DOCUMENT_SCOPE_TYPE,
+            safe_display_name=safe_display_name,
+            parameters={},
+        ),
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+        configuration_version=1,
+    )
+
+
+class _RecordingResolver:
+    def __init__(self, integration: GoogleWorkspaceCollaborationSuiteIntegration) -> None:
+        self._integration = integration
+        self.received_sources: list[KnowledgeSourceRef] = []
+
+    def resolve(self, *, source: KnowledgeSourceRef) -> object:
+        self.received_sources.append(source)
+        return self._integration
 
 
 def _scope_fingerprint(document_id: str) -> str:
@@ -616,9 +658,44 @@ async def test_valid_scope_inspect() -> None:
     fake = _FakeGoogleWorkspaceIntegration()
     source = _source()
     info = await adapter.inspect_scope(integration=_integration(fake), source=source)
-    assert info.source.scope.remote_scope_id == _DOCUMENT_ID
-    assert info.safe_display_name == "Quarterly Plan"
+    assert info.source == source
+    assert info.source.connection_ref == "conn-google-1"
+    assert info.safe_display_name == source.scope.safe_display_name
     assert info.capabilities == adapter.capabilities
+    assert fake.docs_calls == []
+
+
+async def test_binding_derived_source_inspect_preserves_connection_ref() -> None:
+    adapter = GoogleWorkspaceDocsKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    binding = _docs_binding()
+    source = to_source_ref(binding)
+    assert source.connection_ref == "conn-google-1"
+    info = await adapter.inspect_scope(integration=_integration(fake), source=source)
+    assert info.source == source
+    assert info.source.connection_ref == binding.connection_ref
+    assert fake.docs_calls == []
+
+
+async def test_facade_inspect_preserves_connection_ref() -> None:
+    fake = _FakeGoogleWorkspaceIntegration()
+    integration = _integration(fake)
+    resolver = _RecordingResolver(integration)
+    registry = KnowledgeAdapterRegistry()
+    register_google_workspace_docs_knowledge_adapter(registry)
+    facade = VendorKnowledgeFacadeService(
+        tenant_id="tenant-1",
+        resolver=resolver,
+        adapter_registry=registry,
+    )
+    source = to_source_ref(_docs_binding())
+    result = await facade.inspect_source(source=source)
+    assert result.source == source
+    assert source.connection_ref == "conn-google-1"
+    assert result.source.connection_ref == "conn-google-1"
+    assert len(resolver.received_sources) == 1
+    assert resolver.received_sources[0] == source
+    assert resolver.received_sources[0].connection_ref == "conn-google-1"
     assert fake.docs_calls == []
 
 
@@ -954,6 +1031,41 @@ async def test_foreign_source_subclass_rejected() -> None:
             limit=50,
         )
     _assert_invalid_scope_boundary(exc_info, fake=fake)
+
+
+async def test_empty_connection_ref_rejected() -> None:
+    adapter = GoogleWorkspaceDocsKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_DOCS_SOURCE_KIND,
+        connection_ref="",
+        scope=KnowledgeSourceScope(
+            remote_scope_id=_DOCUMENT_ID,
+            remote_scope_type=GOOGLE_DOCS_DOCUMENT_SCOPE_TYPE,
+            safe_display_name="Doc",
+            parameters={},
+        ),
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=source,
+            cursor=None,
+            limit=50,
+        )
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert err.retryable is False
+    assert err.safe_message == _INVALID_SCOPE_MESSAGE
+    assert err.__cause__ is None
+    _assert_canonical_error_identity(err)
+    assert fake.docs_calls == []
+    rendered = f"{err!r} {err.safe_message}"
+    assert 'connection_ref=""' not in rendered
+    assert "connection_ref=''" not in rendered
 
 
 async def test_malformed_model_construct_source_rejected() -> None:
