@@ -10,6 +10,7 @@ import sys
 import textwrap
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -47,10 +48,21 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
     DegradationStepKind,
 )
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from intergrax.context.planner import ContextPlanner
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionReason,
     NexusUCLRuntimeDependencies,
+)
+from intergrax.runtime.wiring.context_runtime_bridge import (
+    CONTEXT_OPTIMIZATION_POLICY_HANDLE,
+    CONTEXT_OPTIMIZATION_POLICY_SOURCE_CONFLICT_REASON,
+    LEGACY_SEMANTIC_COMPRESSION_METADATA_KEY,
+    LEGACY_SEMANTIC_COMPRESSION_METADATA_REASON,
+    MESSAGE_SEQUENCE_SUMMARIZATION_STRATEGY_ID,
+    LegacyCompressionConfigurationError,
+    apply_context_optimization_policy_to_runtime_config,
+    resolve_context_optimization_policy_from_profile,
 )
 from intergrax.runtime.token_optimization.message_sequence_artifact import MessageSequenceArtifactExecutor
 
@@ -966,3 +978,180 @@ async def test_canonical_budget_changes_resolved_global_budget_tokens() -> None:
     assert low.context_plan is not None
     assert high.context_plan is not None
     assert low.context_plan.resolved_global_budget_tokens < high.context_plan.resolved_global_budget_tokens
+
+
+@pytest.mark.asyncio
+async def test_legacy_summarize_oldest_profile_executes_canonical_ucl_path() -> None:
+    legacy_source = SimpleNamespace(
+        optimization_policy=None,
+        semantic_compression_enabled=True,
+        default_history_compression="summarize_oldest",
+    )
+    policy = resolve_context_optimization_policy_from_profile(legacy_source)
+    adapter = _SmallWindowAdapter()
+    config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(
+            max_tokens_estimate=80,
+            max_chars=16_000,
+        ),
+    )
+    apply_context_optimization_policy_to_runtime_config(config, policy)
+    registry = ContextPluginRegistry()
+    registry.add_provider(HandleSessionHistoryProvider())
+    engine = DefaultNexusContextEngine(registry=registry)
+    history = [ChatMessage(role="user", content="history " * 80, entry_id="m1")]
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant1",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=history,
+    )
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    model_calls = [0]
+    runtime = _ucl_runtime(model_calls)
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            "runtime_config": config,
+            "messages": [ChatMessage(role="user", content="current", entry_id="current")],
+            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
+            NEXUS_UCL_RUNTIME_HANDLE: runtime,
+        },
+    )
+    assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+    assert assembled.context_plan is not None
+    assert assembled.context_plan.optimization_required is True
+    requirement = assembled.context_plan.artifact_requirement
+    assert requirement is not None
+    assert requirement.lookup_inputs.artifact_type is OptimizationArtifactType.MESSAGE_SEQUENCE
+    assert requirement.allowed_strategy_ids == (MESSAGE_SEQUENCE_SUMMARIZATION_STRATEGY_ID,)
+    assert model_calls[0] == 1
+    assert any("engine integration summary" in (message.content or "") for message in assembled.messages)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("metadata_setup", "direct_policy", "expected_reason"),
+    [
+        (
+            "conflicting_metadata",
+            "direct_policy",
+            CONTEXT_OPTIMIZATION_POLICY_SOURCE_CONFLICT_REASON,
+        ),
+        (
+            "legacy_metadata",
+            "direct_policy",
+            LEGACY_SEMANTIC_COMPRESSION_METADATA_REASON,
+        ),
+    ],
+)
+async def test_engine_rejects_optimization_policy_conflict_before_planning(
+    metadata_setup: str,
+    direct_policy: str,
+    expected_reason: str,
+) -> None:
+    adapter = _SmallWindowAdapter()
+    config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(max_tokens_estimate=80, max_chars=16_000),
+    )
+    direct = ContextOptimizationPolicy(
+        policy_version="policy.v1",
+        validation_contract_version="validation.v1",
+        enabled=True,
+        mode=ContextOptimizationMode.EPHEMERAL_ASSEMBLY,
+        allow_lossy=True,
+        allow_llm_summarization=True,
+        allow_artifact_reuse=True,
+        allowed_artifact_types=(OptimizationArtifactType.MESSAGE_SEQUENCE,),
+        allowed_strategy_ids=(MESSAGE_SEQUENCE_SUMMARIZATION_STRATEGY_ID,),
+        ephemeral_artifact_persistence=EphemeralArtifactPersistencePolicy.DO_NOT_PERSIST,
+    )
+    if metadata_setup == "conflicting_metadata":
+        apply_context_optimization_policy_to_runtime_config(
+            config,
+            ContextOptimizationPolicy(
+                policy_version="policy.v1",
+                validation_contract_version="validation.v1",
+                enabled=False,
+                mode=ContextOptimizationMode.EPHEMERAL_ASSEMBLY,
+                allow_lossy=False,
+                allow_llm_summarization=False,
+                allowed_artifact_types=(),
+                allowed_strategy_ids=(),
+            ),
+        )
+    elif metadata_setup == "legacy_metadata":
+        config.metadata[LEGACY_SEMANTIC_COMPRESSION_METADATA_KEY] = {"enabled": True}
+
+    registry = ContextPluginRegistry()
+    registry.add_provider(HandleSessionHistoryProvider())
+    engine = DefaultNexusContextEngine(registry=registry)
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant1",
+        context_scope_id="scope",
+        revision_id="rev",
+        messages=[ChatMessage(role="user", content="history " * 80, entry_id="m1")],
+    )
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    model_calls = [0]
+    runtime = _ucl_runtime(model_calls)
+    planner_calls = [0]
+    ucl_calls = [0]
+
+    def _counting_plan(*args: object, **kwargs: object) -> object:
+        planner_calls[0] += 1
+        raise AssertionError("planner must not run")
+
+    async def _counting_ucl(*args: object, **kwargs: object) -> object:
+        ucl_calls[0] += 1
+        raise AssertionError("ucl must not run")
+
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            "runtime_config": config,
+            "messages": [ChatMessage(role="user", content="current", entry_id="current")],
+            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
+            CONTEXT_OPTIMIZATION_POLICY_HANDLE: direct,
+            NEXUS_UCL_RUNTIME_HANDLE: runtime,
+        },
+    )
+    with patch.object(ContextPlanner, "plan", side_effect=_counting_plan):
+        with patch(
+            "intergrax.runtime.nexus.context.context_engine.resolve_ucl_context_plan",
+            side_effect=_counting_ucl,
+        ):
+            with pytest.raises(LegacyCompressionConfigurationError) as exc_info:
+                await engine.assemble(request, provider_ctx=provider_ctx)
+    assert exc_info.value.reason == expected_reason
+    assert planner_calls[0] == 0
+    assert ucl_calls[0] == 0
+    assert model_calls[0] == 0

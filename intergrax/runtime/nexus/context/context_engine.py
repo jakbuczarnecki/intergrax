@@ -35,7 +35,10 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
 )
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
-from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
+from intergrax.runtime.wiring.context_runtime_bridge import (
+    CONTEXT_OPTIMIZATION_POLICY_HANDLE,
+    resolve_context_optimization_policy,
+)
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionError,
@@ -43,10 +46,9 @@ from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLRuntimeDependencies,
     resolve_ucl_context_plan,
 )
-from intergrax.runtime.wiring.context_runtime_bridge import optimization_policy_from_runtime_config
-
 if TYPE_CHECKING:
     from intergrax.llm.messages import ChatMessage
+    from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 logger = logging.getLogger("intergrax.context.engine")
@@ -78,12 +80,10 @@ def _resolve_optimization_policy(
     ctx: ContextProviderContext,
     runtime_config: RuntimeConfig,
 ) -> ContextOptimizationPolicy | None:
-    direct = ctx.handles.get("context_optimization_policy")
-    if direct is not None:
-        if not isinstance(direct, ContextOptimizationPolicy):
-            raise ValueError("context_optimization_policy handle must be ContextOptimizationPolicy")
-        return direct
-    return optimization_policy_from_runtime_config(runtime_config)
+    return resolve_context_optimization_policy(
+        runtime_config,
+        direct_policy=ctx.handles.get(CONTEXT_OPTIMIZATION_POLICY_HANDLE),
+    )
 
 
 class DefaultNexusContextEngine:
