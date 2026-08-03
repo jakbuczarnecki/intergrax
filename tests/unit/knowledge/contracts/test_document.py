@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
@@ -66,6 +67,65 @@ def _document(**overrides: object) -> KnowledgeDocument:
     }
     payload.update(overrides)
     return KnowledgeDocument.model_validate(payload)
+
+
+def _document_omitting_metadata(**overrides: object) -> KnowledgeDocument:
+    payload: dict[str, object] = {
+        "schema_version": 1,
+        "identity": _identity(),
+        "scope": _scope(),
+        "content": "Hello knowledge",
+        "provenance": _provenance(),
+    }
+    payload.update(overrides)
+    return KnowledgeDocument.model_validate(payload)
+
+
+@pytest.mark.unit
+def test_omitted_metadata_is_deeply_immutable() -> None:
+    document = _document_omitting_metadata()
+    assert document.metadata == {}
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata["token"] = "secret"  # type: ignore[index]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata.update({"token": "secret"})  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata.clear()  # type: ignore[attr-defined]
+
+
+@pytest.mark.unit
+def test_omitted_metadata_instances_are_not_shared() -> None:
+    first = _document_omitting_metadata()
+    second = _document_omitting_metadata()
+    assert first.metadata == {}
+    assert second.metadata == {}
+    assert first.metadata is not second.metadata
+
+
+@pytest.mark.unit
+def test_metadata_public_read_contract() -> None:
+    document = _document(metadata={"count": 1, "nested": {"items": [True]}})
+    metadata = document.metadata
+    assert isinstance(metadata, Mapping)
+    assert metadata["count"] == 1
+    assert metadata.get("missing") is None
+    assert metadata.get("count") == 1
+    assert list(metadata.keys()) == ["count", "nested"]
+    assert list(metadata.values()) == [1, {"items": [True]}]
+    assert list(metadata.items()) == [("count", 1), ("nested", {"items": [True]})]
+    assert len(metadata) == 2
+    assert "count" in metadata
+    dumped = document.model_dump(mode="json")
+    assert isinstance(dumped["metadata"], dict)
+    assert dumped["metadata"] == {"count": 1, "nested": {"items": [True]}}
+
+
+@pytest.mark.unit
+def test_omitted_metadata_round_trip() -> None:
+    document = _document_omitting_metadata()
+    restored = load_knowledge_document(dump_knowledge_document(document))
+    assert restored.metadata == {}
+    assert restored == document
 
 
 @pytest.mark.unit

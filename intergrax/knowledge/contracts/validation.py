@@ -338,5 +338,13 @@ def _freeze_json_value(value: JsonValue) -> JsonValue:
     return value
 
 
-def freeze_knowledge_metadata(value: dict[str, JsonValue]) -> _FrozenJsonObject:
-    return _FrozenJsonObject(value)
+def knowledge_metadata_to_plain(value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+    if isinstance(value, _FrozenJsonObject):
+        return value.to_plain()
+    return {key: _json_value_to_plain(child) for key, child in value.items()}
+
+
+def freeze_knowledge_metadata(value: Mapping[str, JsonValue]) -> Mapping[str, JsonValue]:
+    if isinstance(value, _FrozenJsonObject):
+        return value
+    return _FrozenJsonObject(dict(value))

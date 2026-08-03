@@ -127,7 +127,7 @@ KnowledgeDocument
 ├── identity: KnowledgeDocumentIdentity
 ├── scope: KnowledgeDocumentScope
 ├── content: str
-├── metadata: dict[str, JsonValue]
+├── metadata: Mapping[str, JsonValue]  # in-memory read-only; serialized as dict[str, JsonValue]
 └── provenance: KnowledgeDocumentProvenance
 
 KnowledgeDocumentIdentity
@@ -167,7 +167,7 @@ class KnowledgeDocument(BaseModel): ...
 | `identity` | `KnowledgeDocumentIdentity` | Required |
 | `scope` | `KnowledgeDocumentScope` | Required |
 | `content` | `str` | Required; non-empty; not whitespace-only |
-| `metadata` | `dict[str, JsonValue]` | Required; default `{}`; JSON-compatible values only |
+| `metadata` | In-memory API: read-only `Mapping[str, JsonValue]`. Serialized representation: JSON object / `dict[str, JsonValue]`. | Required; default `{}`; JSON-compatible values only |
 | `provenance` | `KnowledgeDocumentProvenance` | Required |
 
 ### 4.3 KnowledgeDocumentIdentity

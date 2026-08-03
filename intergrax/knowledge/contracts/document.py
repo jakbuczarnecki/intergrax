@@ -25,6 +25,7 @@ from intergrax.knowledge.contracts.validation import (
     JsonValue,
     assert_knowledge_metadata,
     freeze_knowledge_metadata,
+    knowledge_metadata_to_plain,
     require_non_empty_str,
     validate_safe_url,
 )
@@ -167,7 +168,10 @@ class KnowledgeDocument(BaseModel):
     identity: KnowledgeDocumentIdentity
     scope: KnowledgeDocumentScope
     content: StrictKnowledgeString
-    metadata: dict[str, JsonValue] = Field(default_factory=dict)
+    metadata: Mapping[str, JsonValue] = Field(
+        default_factory=dict,
+        validate_default=True,
+    )
     provenance: KnowledgeDocumentProvenance
 
     @field_validator("schema_version")
@@ -197,17 +201,12 @@ class KnowledgeDocument(BaseModel):
 
     @field_validator("metadata", mode="after")
     @classmethod
-    def _freeze_metadata(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
-        frozen = freeze_knowledge_metadata(value)
-        return frozen  # type: ignore[return-value]
+    def _freeze_metadata(cls, value: dict[str, JsonValue]) -> Mapping[str, JsonValue]:
+        return freeze_knowledge_metadata(value)
 
     @field_serializer("metadata")
-    def _serialize_metadata(self, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
-        from intergrax.knowledge.contracts.validation import _FrozenJsonObject
-
-        if isinstance(value, _FrozenJsonObject):
-            return value.to_plain()
-        return value
+    def _serialize_metadata(self, value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
+        return knowledge_metadata_to_plain(value)
 
 
 def _reject_non_finite_json_constant(constant: str) -> float:
