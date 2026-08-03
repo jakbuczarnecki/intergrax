@@ -33,6 +33,15 @@ Load **only** the satellite matching your task or cited §.
 | Satellite | Contents |
 |-----------|----------|
 | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
+| [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | **Native Knowledge Document Contract** (`KnowledgeDocument`) — LCI-1A source of truth |
+
+## Native Knowledge Document Contract
+
+RAG is the **functional owner** of the platform knowledge document ABI. The canonical type is **`KnowledgeDocument`**, implemented in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (LCI-1B), public import: `from intergrax.knowledge.contracts import KnowledgeDocument`.
+
+**Source of truth:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+
+**Policy:** No new local document models in RAG contracts, memory, modality, or integrations — all shared pipelines consume `KnowledgeDocument`. Replaces `langchain_core.documents.Document` in public contracts per LangChain Independence inventory.
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 ## Maturity score (audit map L0–L4)

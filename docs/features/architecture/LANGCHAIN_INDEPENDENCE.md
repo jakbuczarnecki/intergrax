@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** `LCI-0B` — LangChain architecture boundary guard (enforcement)
+**Current active task:** `LCI-1A` — Native knowledge document contract architecture
 
 **Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -201,6 +201,24 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 
 ---
 
+## LCI-1A — Native knowledge document contract (summary)
+
+Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**).
+
+| Decision | Value |
+|----------|-------|
+| Public import | `from intergrax.knowledge.contracts import KnowledgeDocument` |
+| Functional owner | RAG |
+| Shared consumers | Memory, modality, integrations |
+| Replaces | `langchain_core.documents.Document` in public contracts (16 inventory leaks) |
+| Schema version | `1` — immutable Pydantic v2, `extra="forbid"`, `frozen=True` |
+
+Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDocumentScope` (required `tenant_id`), `KnowledgeDocumentProvenance` (source trace). Content is non-empty `str` only; binary/media normalized before document creation. Vendor Knowledge models inform semantics but are not imported — fetch-stage → RAG-ready normalization is a separate adapter step.
+
+**Full specification:** [`satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+
+---
+
 ## LCI-0B enforcement boundary
 
 `LCI-0B` adds a deterministic AST-based CI guard that freezes existing LangChain/LangGraph production import violations while blocking new leaks into protected zones.
@@ -228,5 +246,6 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 |----------|------|
 | [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md) | Task roadmap `LCI-0A`–`LCI-8A` |
 | [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) | Evidence-backed import and package inventory |
+| [`satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | Native `KnowledgeDocument` contract spec (LCI-1A) |
 | [`../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md`](../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md) | Domain plan routing for future rows |
 | [`../../architecture/RAG.md`](../../architecture/RAG.md) | Primary anchor domain architecture |

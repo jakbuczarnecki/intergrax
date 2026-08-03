@@ -59,3 +59,13 @@ Load **only** the satellite matching your task or cited gap ID.
 **Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** — **Frozen**. Closeout: [Phase M-RAG-CONVERGE](#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
 
 ---
+
+## Active cross-feature work — LangChain Independence
+
+| Task | Priority | Status | Deliverable | Next |
+|------|----------|--------|-------------|------|
+| LCI-1A | P0 | READY_FOR_REVIEW | Native knowledge document architecture (`KnowledgeDocument`) | LCI-1B |
+
+**Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
+
+---

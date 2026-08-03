@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **READY_FOR_REVIEW**; LCI-1A **PLANNED**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **READY_FOR_REVIEW**; LCI-1B **PLANNED**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-0C
-**Next task after acceptance:** LCI-1A
+**Current task:** LCI-1A
+**Next task after acceptance:** LCI-1B
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -92,13 +92,14 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Decide structure, semantics, identity, serialization, metadata, and provenance for native knowledge documents. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-0C |
 | **Exact scope** | Architecture + contract spec; mapping table from LangChain Document |
 | **Explicit out of scope** | Implementation; LangChain bridge |
-| **Acceptance criteria** | Approved native document contract published in architecture/RAG |
+| **Contract satellite** | [../architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) |
+| **Acceptance criteria** | Canonical location (`intergrax/knowledge/contracts/document.py`, public import `KnowledgeDocument`); complete field contract (`KnowledgeDocument`, `KnowledgeDocumentIdentity`, `KnowledgeDocumentScope`, `KnowledgeDocumentProvenance`); identity and lineage rules; tenant fail-closed policy; metadata and provenance rules; serialization/versioning (`schema_version = 1`); LangChain `Document` mapping table; Vendor Knowledge reuse decision; explicit boundaries for LCI-1B–LCI-1D; RAG architecture hub entry published |
 | **User-visible outcome** | Stable document ABI specification |
 
 ---
