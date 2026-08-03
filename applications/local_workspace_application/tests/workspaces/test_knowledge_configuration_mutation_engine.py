@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# Â© Artur Czarnecki. All rights reserved.
 
 """Tests for Workspace Knowledge Configuration mutation engine."""
 
@@ -430,7 +430,7 @@ class _AbortedRestartReservedRaceStore(InMemoryDocumentStore):
 
 
 class _PreparedCASConcurrentPublicationStore(InMemoryDocumentStore):
-    """Another executor completes during local RESERVED→PREPARED CAS."""
+    """Another executor completes during local RESERVEDâ†’PREPARED CAS."""
 
     def __init__(self, *, finalize: bool = True) -> None:
         super().__init__()
@@ -4718,3 +4718,184 @@ def test_claim_owner_cleanup_failure_preserves_fence() -> None:
     assert loaded.stage_claim_id == "claim-cleanup-fail"
     head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert head is not None and head.pending_mutation_id is not None
+
+
+# --- R3 stage-claim CAS loss and committed replay hardening ---
+
+_CONCURRENT_PREPARED_ID = "concurrent-prepared-result"
+_FENCE_REPLAY_ID = "fence-replay-result"
+
+
+class _StageClaimHardeningStore(InMemoryDocumentStore):
+    def __init__(self, mode: str, *, finalize: bool = False) -> None:
+        super().__init__()
+        self._mode, self._finalize, self._prepared_failures, self._commit_on_fence = (
+            mode, finalize, 1, False,
+        )
+
+    def replace_if_match(self, *, expected: DocumentRecord, replacement: DocumentRecord) -> bool:
+        pk = expected.partition_key
+        if "knowledge_configuration_mutation" not in pk:
+            return super().replace_if_match(expected=expected, replacement=replacement)
+        ed, rd = expected.data, replacement.data
+        claim_cas = (
+            ed.get("status") == "reserved" and ed.get("stage_claim_id") is None and rd.get("stage_claim_id")
+        )
+        prepared_cas = (
+            ed.get("status") == "reserved" and rd.get("status") == "prepared" and ed.get("stage_claim_id")
+        )
+        if self._mode == "claim_prepared" and claim_cas:
+            prepared = expected.model_copy(update={"data": {
+                **ed, "status": "prepared", "stage_claim_id": None,
+                "result_entity_type": _RESULT_TYPE, "result_entity_id": _CONCURRENT_PREPARED_ID,
+            }})
+            super().replace_if_match(expected=expected, replacement=prepared)
+            if self._finalize:
+                target_revision = ed.get("target_revision")
+                tenant_id, workspace_id = ed["tenant_id"], ed["workspace_id"]
+                head_pk = f"lkw.managed_workspace:{tenant_id}:knowledge_configuration_head"
+                head_doc = self.get(head_pk, workspace_id)
+                if head_doc is not None and target_revision is not None:
+                    published = head_doc.model_copy(update={"data": {
+                        **head_doc.data, "committed_revision": target_revision,
+                        "pending_revision": None, "pending_mutation_id": None,
+                        "last_committed_mutation_id": ed["mutation_id"],
+                    }})
+                    super().replace_if_match(expected=head_doc, replacement=published)
+                    prepared_doc = self.get(pk, expected.row_key)
+                    if prepared_doc is not None:
+                        committed_doc = prepared_doc.model_copy(update={"data": {
+                            **prepared_doc.data, "status": "committed", "outcome": "applied",
+                            "committed_revision": target_revision,
+                            "committed_at": prepared_doc.data.get("updated_at"),
+                        }})
+                        super().replace_if_match(expected=prepared_doc, replacement=committed_doc)
+            return False
+        if self._mode == "foreign_claim" and prepared_cas:
+            foreign = expected.model_copy(update={"data": {**ed, "stage_claim_id": "foreign-claim"}})
+            super().replace_if_match(expected=expected, replacement=foreign)
+            return False
+        if self._mode == "fail_first" and prepared_cas and self._prepared_failures > 0:
+            self._prepared_failures -= 1
+            return False
+        if self._mode == "fence_replay" and prepared_cas:
+            fenced = expected.model_copy(update={"data": {
+                **ed, "status": "recovery_required", "error_code": _CLEANUP_FENCE_ERROR,
+            }})
+            super().replace_if_match(expected=expected, replacement=fenced)
+            self._commit_on_fence = True
+            return False
+        return super().replace_if_match(expected=expected, replacement=replacement)
+
+    def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
+        doc = super().get(partition_key, row_key)
+        if not (
+            self._mode == "fence_replay" and self._commit_on_fence and doc is not None
+            and "knowledge_configuration_mutation" in partition_key
+            and doc.data.get("status") == "recovery_required"
+        ):
+            return doc
+        target_revision = doc.data.get("target_revision")
+        committed = doc.model_copy(update={"data": {
+            **doc.data, "status": "committed", "outcome": "applied", "stage_claim_id": None,
+            "committed_revision": target_revision, "result_entity_type": _RESULT_TYPE,
+            "result_entity_id": _FENCE_REPLAY_ID, "committed_at": _NOW.isoformat(), "error_code": None,
+        }})
+        super().replace_if_match(expected=doc, replacement=committed)
+        self._commit_on_fence = False
+        return committed
+
+
+class _ConcurrentCommitStageErrorHandler(_FakeHandler):
+    concurrent_result_id = "committed-during-stage"
+
+    def stage(self, *, repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord,
+              target_revision: int, intent: object, now: datetime) -> WorkspaceKnowledgeStagedResult:
+        self.stage_calls += 1
+        head = repository.get_knowledge_configuration_head(
+            tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id)
+        assert head is not None
+        repository.replace_knowledge_configuration_head_if_match(
+            expected=head, replacement=head.model_copy(update={
+                "committed_revision": target_revision, "pending_revision": None,
+                "pending_mutation_id": None, "last_committed_mutation_id": mutation.mutation_id,
+                "updated_at": now,
+            }))
+        current = repository.get_knowledge_configuration_mutation(
+            tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id,
+            operation=mutation.operation, idempotency_key_hash=mutation.idempotency_key_hash)
+        assert current is not None
+        repository.replace_knowledge_configuration_mutation_if_match(
+            expected=current, replacement=current.model_copy(update={
+                "status": WorkspaceKnowledgeMutationStatusV1.COMMITTED,
+                "outcome": WorkspaceKnowledgeMutationOutcomeV1.APPLIED, "stage_claim_id": None,
+                "target_revision": target_revision, "committed_revision": target_revision,
+                "result_entity_type": _RESULT_TYPE, "result_entity_id": self.concurrent_result_id,
+                "committed_at": now,
+            }))
+        raise RuntimeError("stage failed after concurrent commit")
+
+
+@pytest.mark.parametrize(
+    ("finalize", "expected_disposition"),
+    [
+        (False, WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED),
+        (True, WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY),
+    ],
+)
+def test_claim_cas_loss_to_prepared_continues_without_staging(
+    finalize: bool, expected_disposition: WorkspaceKnowledgeMutationExecutionDispositionV1,
+) -> None:
+    engine, repo, handler = _build_engine(
+        store=_StageClaimHardeningStore("claim_prepared", finalize=finalize), claim_ids=["claim-loser"])
+    result = _execute(engine)
+    assert result.disposition is expected_disposition and handler.stage_calls == 0
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert loaded.stage_claim_id is None and loaded.result_entity_id == _CONCURRENT_PREPARED_ID
+    assert result.result_entity_id == _CONCURRENT_PREPARED_ID
+
+
+def test_stage_error_loses_to_committed_result() -> None:
+    handler = _ConcurrentCommitStageErrorHandler()
+    engine, repo, _handler = _build_engine(handler=handler, claim_ids=["claim-stage-error"])
+    result = _execute(engine)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert result.result_entity_id == handler.concurrent_result_id
+    assert handler.stage_calls == 1 and handler.cleanup_calls == 0
+    assert _load_mutation(repo).result_entity_id == handler.concurrent_result_id
+
+
+def test_foreign_claim_cannot_be_cleared() -> None:
+    handler = _FakeHandler()
+    engine, repo, _handler = _build_engine(
+        store=_StageClaimHardeningStore("foreign_claim"), handler=handler, claim_ids=["claim-local"])
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        _execute(engine)
+    assert exc.value.error_code == "configuration_recovery_required"
+    assert handler.stage_calls == 1 and handler.cleanup_calls == 0
+    loaded = _load_mutation(repo)
+    assert loaded.status in (WorkspaceKnowledgeMutationStatusV1.RESERVED,
+                             WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED)
+    assert loaded.stage_claim_id == "foreign-claim" and loaded.result_entity_type is None
+    assert repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE).pending_mutation_id
+
+
+def test_local_claim_fallback_prepared_cas_still_works() -> None:
+    engine, repo, handler = _build_engine(
+        store=_StageClaimHardeningStore("fail_first"), claim_ids=["claim-fallback"])
+    result = _execute(engine)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
+    assert handler.stage_calls == 1
+    loaded = _load_mutation(repo)
+    assert loaded.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED and loaded.stage_claim_id is None
+    assert loaded.result_entity_type == _RESULT_TYPE and loaded.result_entity_id == _RESULT_ID
+
+
+def test_same_claim_fence_path_returns_committed_replay() -> None:
+    engine, repo, handler = _build_engine(
+        store=_StageClaimHardeningStore("fence_replay"), claim_ids=["claim-fence-replay"])
+    result = _execute(engine)
+    assert result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert result.result_entity_id == _FENCE_REPLAY_ID and handler.cleanup_calls == 0
+    assert _load_mutation(repo).result_entity_id == _FENCE_REPLAY_ID
