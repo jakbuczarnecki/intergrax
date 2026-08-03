@@ -7,18 +7,43 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from enum import Enum
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from intergrax.knowledge.contracts.validation import (
     JsonValue,
     assert_knowledge_metadata,
+    freeze_knowledge_metadata,
     require_non_empty_str,
     validate_safe_url,
 )
 
 SCHEMA_VERSION = 1
+
+
+def _reject_enum_string(value: object) -> object:
+    if isinstance(value, Enum):
+        raise ValueError("value must be a string")
+    return value
+
+
+StrictKnowledgeString = Annotated[
+    str,
+    BeforeValidator(_reject_enum_string),
+    Field(strict=True),
+]
+OptionalStrictKnowledgeString = StrictKnowledgeString | None
 
 RESERVED_METADATA_KEYS: frozenset[str] = frozenset(
     {
@@ -42,9 +67,9 @@ RESERVED_METADATA_KEYS: frozenset[str] = frozenset(
 class KnowledgeDocumentIdentity(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    document_id: str
-    root_document_id: str
-    parent_document_id: str | None = None
+    document_id: StrictKnowledgeString
+    root_document_id: StrictKnowledgeString
+    parent_document_id: OptionalStrictKnowledgeString = None
 
     @field_validator("document_id", "root_document_id")
     @classmethod
@@ -80,8 +105,8 @@ class KnowledgeDocumentIdentity(BaseModel):
 class KnowledgeDocumentScope(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    tenant_id: str
-    namespace: str | None = None
+    tenant_id: StrictKnowledgeString
+    namespace: OptionalStrictKnowledgeString = None
 
     @field_validator("tenant_id")
     @classmethod
@@ -99,13 +124,13 @@ class KnowledgeDocumentScope(BaseModel):
 class KnowledgeDocumentProvenance(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    source_kind: str
-    source_id: str
-    source_parent_id: str | None = None
-    provider_id: str | None = None
-    source_revision: str | None = None
-    source_uri: str | None = None
-    content_hash: str | None = None
+    source_kind: StrictKnowledgeString
+    source_id: StrictKnowledgeString
+    source_parent_id: OptionalStrictKnowledgeString = None
+    provider_id: OptionalStrictKnowledgeString = None
+    source_revision: OptionalStrictKnowledgeString = None
+    source_uri: OptionalStrictKnowledgeString = None
+    content_hash: OptionalStrictKnowledgeString = None
 
     @field_validator("source_kind", "source_id")
     @classmethod
@@ -141,8 +166,8 @@ class KnowledgeDocument(BaseModel):
     schema_version: Annotated[int, Field(strict=True)]
     identity: KnowledgeDocumentIdentity
     scope: KnowledgeDocumentScope
-    content: str
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    content: StrictKnowledgeString
+    metadata: dict[str, JsonValue] = Field(default_factory=dict)
     provenance: KnowledgeDocumentProvenance
 
     @field_validator("schema_version")
@@ -154,21 +179,35 @@ class KnowledgeDocument(BaseModel):
 
     @field_validator("content")
     @classmethod
-    def _non_empty_content(cls, value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("content must be a string")
+    def _non_empty_content(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("content must be a non-empty string")
         return value
 
-    @field_validator("metadata")
+    @field_validator("metadata", mode="before")
     @classmethod
-    def _safe_metadata(cls, value: Mapping[str, Any]) -> dict[str, JsonValue]:
+    def _validate_metadata_raw(cls, value: object) -> dict[str, JsonValue]:
+        if not isinstance(value, Mapping):
+            raise ValueError("metadata must be a mapping")
         return assert_knowledge_metadata(
             value,
             field_name="metadata",
             reserved_keys=RESERVED_METADATA_KEYS,
         )
+
+    @field_validator("metadata", mode="after")
+    @classmethod
+    def _freeze_metadata(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        frozen = freeze_knowledge_metadata(value)
+        return frozen  # type: ignore[return-value]
+
+    @field_serializer("metadata")
+    def _serialize_metadata(self, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        from intergrax.knowledge.contracts.validation import _FrozenJsonObject
+
+        if isinstance(value, _FrozenJsonObject):
+            return value.to_plain()
+        return value
 
 
 def _reject_non_finite_json_constant(constant: str) -> float:
@@ -183,7 +222,10 @@ def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def dump_knowledge_document(document: KnowledgeDocument) -> bytes:
-    payload = document.model_dump(mode="json")
+    if not isinstance(document, KnowledgeDocument):
+        raise TypeError("document must be a KnowledgeDocument")
+    validated = KnowledgeDocument.model_validate(document.model_dump(mode="python"))
+    payload = validated.model_dump(mode="json")
     return json.dumps(
         payload,
         sort_keys=True,

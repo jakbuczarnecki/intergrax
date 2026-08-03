@@ -396,6 +396,205 @@ def test_load_rejects_non_finite_json_constants() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("field_path", "invalid_value"),
+    [
+        ("content", b"hello"),
+        ("identity", {"document_id": b"file:abc123", "root_document_id": "file:abc123"}),
+        ("scope", {"tenant_id": b"tenant-1"}),
+        ("scope", {"tenant_id": "tenant-1", "namespace": b"kb"}),
+        ("provenance", {"source_kind": b"file", "source_id": "abc123"}),
+        ("provenance", {"source_kind": "file", "source_id": b"abc123"}),
+        (
+            "provenance",
+            {
+                "source_kind": "file",
+                "source_id": "abc123",
+                "source_uri": b"https://example.test/item",
+            },
+        ),
+    ],
+)
+def test_strict_string_fields_reject_bytes(field_path: str, invalid_value: object) -> None:
+    overrides: dict[str, object] = {field_path: invalid_value}
+    with pytest.raises(ValidationError):
+        _document(**overrides)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "invalid_value",
+    [
+        bytearray(b"hello"),
+        42,
+        True,
+    ],
+)
+def test_content_rejects_non_string_coercion(invalid_value: object) -> None:
+    with pytest.raises(ValidationError):
+        _document(content=invalid_value)
+
+
+@pytest.mark.unit
+def test_content_rejects_strenum_coercion() -> None:
+    class _Label(StrEnum):
+        NOTE = "note"
+
+    with pytest.raises(ValidationError):
+        _document(content=_Label.NOTE)
+
+
+@pytest.mark.unit
+def test_strict_strings_preserve_original_value() -> None:
+    document = _document(
+        content="  padded content  ",
+        scope=_scope(namespace="  kb  "),
+    )
+    assert document.content == "  padded content  "
+    assert document.scope.namespace == "  kb  "
+
+
+@pytest.mark.unit
+def test_top_level_metadata_mutation_rejected() -> None:
+    document = _document(metadata={"count": 1})
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata["token"] = "secret"  # type: ignore[index]
+    with pytest.raises(TypeError, match="immutable"):
+        del document.metadata["count"]  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata.update({"more": 2})  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata.clear()  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata.pop("count")  # type: ignore[attr-defined]
+
+
+@pytest.mark.unit
+def test_nested_object_metadata_mutation_rejected() -> None:
+    document = _document(metadata={"nested": {"items": [1]}})
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata["nested"]["new"] = "value"  # type: ignore[index]
+
+
+@pytest.mark.unit
+def test_nested_array_metadata_mutation_rejected() -> None:
+    document = _document(metadata={"items": [1, 2]})
+    nested_items = document.metadata["items"]
+    with pytest.raises(TypeError, match="immutable"):
+        nested_items.append(3)  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        nested_items.extend([4])  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        nested_items[0] = 9  # type: ignore[index]
+    with pytest.raises(TypeError, match="immutable"):
+        nested_items.pop()  # type: ignore[attr-defined]
+    with pytest.raises(TypeError, match="immutable"):
+        nested_items.sort()  # type: ignore[attr-defined]
+
+
+@pytest.mark.unit
+def test_metadata_inplace_operators_rejected() -> None:
+    document = _document(metadata={"items": [1]})
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata["items"] += [2]  # type: ignore[operator]
+    with pytest.raises(TypeError, match="immutable"):
+        document.metadata |= {"more": 2}  # type: ignore[operator]
+
+
+@pytest.mark.unit
+def test_metadata_input_alias_mutation_does_not_affect_document() -> None:
+    source = {"nested": {"items": [1]}}
+    document = _document(metadata=source)
+    source["nested"]["items"].append(2)
+    assert document.metadata["nested"] == {"items": [1]}
+
+
+@pytest.mark.unit
+def test_metadata_model_dump_json_compatible() -> None:
+    document = _document(metadata={"nested": {"items": [1, True]}})
+    dumped = document.model_dump(mode="json")
+    assert dumped["metadata"] == {"nested": {"items": [1, True]}}
+    assert isinstance(dumped["metadata"], dict)
+    assert isinstance(dumped["metadata"]["nested"], dict)
+    assert isinstance(dumped["metadata"]["nested"]["items"], list)
+
+
+@pytest.mark.unit
+def test_immutable_metadata_round_trip() -> None:
+    document = _document(metadata={"nested": {"items": [1, 2]}})
+    restored = load_knowledge_document(dump_knowledge_document(document))
+    assert restored.metadata == {"nested": {"items": [1, 2]}}
+    assert restored == document
+
+
+@pytest.mark.unit
+def test_dump_rejects_constructed_model_with_secret_metadata() -> None:
+    malformed = KnowledgeDocument.model_construct(
+        schema_version=1,
+        identity=KnowledgeDocumentIdentity(
+            document_id="file:abc123",
+            root_document_id="file:abc123",
+        ),
+        scope=KnowledgeDocumentScope(tenant_id="tenant-1"),
+        content="Hello knowledge",
+        metadata={"token": "secret"},
+        provenance=KnowledgeDocumentProvenance(
+            source_kind="file",
+            source_id="abc123",
+        ),
+    )
+    with pytest.raises(ValidationError):
+        dump_knowledge_document(malformed)
+
+
+@pytest.mark.unit
+def test_dump_rejects_constructed_model_with_non_finite_metadata() -> None:
+    malformed = KnowledgeDocument.model_construct(
+        schema_version=1,
+        identity=KnowledgeDocumentIdentity(
+            document_id="file:abc123",
+            root_document_id="file:abc123",
+        ),
+        scope=KnowledgeDocumentScope(tenant_id="tenant-1"),
+        content="Hello knowledge",
+        metadata={"score": math.nan},
+        provenance=KnowledgeDocumentProvenance(
+            source_kind="file",
+            source_id="abc123",
+        ),
+    )
+    with pytest.raises(ValidationError):
+        dump_knowledge_document(malformed)
+
+
+@pytest.mark.unit
+def test_dump_rejects_constructed_model_with_wrong_type() -> None:
+    malformed = KnowledgeDocument.model_construct(
+        schema_version=1,
+        identity=KnowledgeDocumentIdentity(
+            document_id="file:abc123",
+            root_document_id="file:abc123",
+        ),
+        scope=KnowledgeDocumentScope(tenant_id="tenant-1"),
+        content="Hello knowledge",
+        metadata={"blob": b"raw"},
+        provenance=KnowledgeDocumentProvenance(
+            source_kind="file",
+            source_id="abc123",
+        ),
+    )
+    with pytest.raises(ValidationError):
+        dump_knowledge_document(malformed)
+
+
+@pytest.mark.unit
+def test_dump_rejects_non_document_argument() -> None:
+    document = _document()
+    with pytest.raises(TypeError, match="KnowledgeDocument"):
+        dump_knowledge_document(document.model_dump())  # type: ignore[arg-type]
+
+
+@pytest.mark.unit
 def test_knowledge_package_has_no_langchain_imports() -> None:
     knowledge_root = Path(__file__).resolve().parents[3] / "intergrax" / "knowledge"
     forbidden_markers = (

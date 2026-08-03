@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from enum import Enum
 from typing import Any
 from urllib.parse import parse_qsl, urlparse
@@ -43,6 +43,8 @@ _SECRET_KEY_SUFFIXES: tuple[str, ...] = (
 )
 
 _ALLOWED_SECRET_LIKE_KEYS: frozenset[str] = frozenset({"credential_ref"})
+
+_MUTATION_ERROR = "knowledge metadata is immutable"
 
 
 def _normalize_key(key: str) -> str:
@@ -157,9 +159,10 @@ def validate_json_value(value: object, *, field_name: str, path: str = "") -> Js
 
 
 def assert_safe_mapping(value: Mapping[str, Any], *, field_name: str) -> dict[str, JsonValue]:
-    as_dict = dict(value)
-    validate_json_value(as_dict, field_name=field_name)
-    return as_dict
+    validated = validate_json_value(value, field_name=field_name)
+    if not isinstance(validated, dict):
+        raise ValueError(f"{field_name} must be a JSON object")
+    return validated
 
 
 def assert_knowledge_metadata(
@@ -172,3 +175,168 @@ def assert_knowledge_metadata(
         if key in reserved_keys:
             raise ValueError(f"{field_name} must not contain reserved key '{key}'")
     return assert_safe_mapping(value, field_name=field_name)
+
+
+def _json_value_to_plain(value: JsonValue) -> JsonValue:
+    if isinstance(value, _FrozenJsonObject):
+        return value.to_plain()
+    if isinstance(value, _FrozenJsonArray):
+        return value.to_plain()
+    if isinstance(value, dict):
+        return {key: _json_value_to_plain(child) for key, child in value.items()}
+    if isinstance(value, list):
+        return [_json_value_to_plain(child) for child in value]
+    return value
+
+
+class _FrozenJsonArray(Sequence[JsonValue]):
+    __slots__ = ("_items",)
+
+    def __init__(self, items: list[JsonValue]) -> None:
+        object.__setattr__(
+            self,
+            "_items",
+            tuple(_freeze_json_value(item) for item in items),
+        )
+
+    def __getitem__(self, index: int | slice) -> JsonValue | _FrozenJsonArray:
+        result = self._items[index]
+        if isinstance(index, slice):
+            return _FrozenJsonArray(list(result))
+        return result
+
+    def __iter__(self) -> Iterator[JsonValue]:
+        return iter(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _FrozenJsonArray):
+            return self._items == other._items
+        if isinstance(other, list):
+            return self.to_plain() == other
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return repr(self.to_plain())
+
+    def to_plain(self) -> list[JsonValue]:
+        return [_json_value_to_plain(item) for item in self._items]
+
+    def __setitem__(self, index: int | slice, value: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def __delitem__(self, index: int | slice) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def append(self, value: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def extend(self, values: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def insert(self, index: int, value: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def remove(self, value: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def pop(self, index: int = -1) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def clear(self) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def sort(self, *args: object, **kwargs: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def reverse(self) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def __iadd__(self, other: object) -> _FrozenJsonArray:
+        raise TypeError(_MUTATION_ERROR)
+
+
+class _FrozenJsonObject(Mapping[str, JsonValue]):
+    __slots__ = ("_items",)
+
+    def __init__(self, value: dict[str, JsonValue]) -> None:
+        object.__setattr__(
+            self,
+            "_items",
+            {key: _freeze_json_value(child) for key, child in value.items()},
+        )
+
+    def __getitem__(self, key: str) -> JsonValue:
+        return self._items[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._items)
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._items
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, _FrozenJsonObject):
+            return self._items == other._items
+        if isinstance(other, Mapping):
+            return self.to_plain() == dict(other)
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        return repr(self.to_plain())
+
+    def keys(self) -> Iterator[str]:
+        return iter(self._items.keys())
+
+    def values(self) -> Iterator[JsonValue]:
+        return iter(self._items.values())
+
+    def items(self) -> Iterator[tuple[str, JsonValue]]:
+        return iter(self._items.items())
+
+    def get(self, key: str, default: JsonValue | None = None) -> JsonValue | None:
+        return self._items.get(key, default)
+
+    def to_plain(self) -> dict[str, JsonValue]:
+        return {key: _json_value_to_plain(child) for key, child in self._items.items()}
+
+    def __setitem__(self, key: str, value: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def __delitem__(self, key: str) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def update(self, *args: object, **kwargs: object) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def clear(self) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def pop(self, key: str, default: object = ...) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def popitem(self) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def setdefault(self, key: str, default: object = None) -> None:
+        raise TypeError(_MUTATION_ERROR)
+
+    def __ior__(self, other: object) -> _FrozenJsonObject:
+        raise TypeError(_MUTATION_ERROR)
+
+
+def _freeze_json_value(value: JsonValue) -> JsonValue:
+    if isinstance(value, dict):
+        return _FrozenJsonObject(value)
+    if isinstance(value, list):
+        return _FrozenJsonArray(value)
+    return value
+
+
+def freeze_knowledge_metadata(value: dict[str, JsonValue]) -> _FrozenJsonObject:
+    return _FrozenJsonObject(value)
