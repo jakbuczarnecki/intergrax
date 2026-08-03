@@ -14,10 +14,12 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 
 | I want to… | Start here |
 |------------|------------|
-| Understand Intergrax | [README](../README.md) |
+| Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
+| Understand the public architecture | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
+| Build or evaluate | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
+| Understand Intergrax (first contact) | [README](../README.md) |
 | See the LKW product proof | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
 | Explore Token Optimization | [Token Optimization Engine](features/token_optimization/README.md) |
-| Review the architecture | [Harness AI narrative in README](../README.md#harness-ai--the-core-idea) · [Runtime architecture hub](intergrax_runtime_architecture.md) |
 | Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
 | Check use-case fit | [Use Cases](../USE_CASES.md) |
 | Discuss a pilot or partnership | [Partners](../PARTNERS.md) |
@@ -52,6 +54,9 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | Document | Purpose |
 |----------|---------|
 | [README](../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
+| [WHY_INTERGRAX](../WHY_INTERGRAX.md) | Problem, value, audience, and fit without tier jargon |
+| [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
+| [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Evaluation and building route selection |
 | [Evaluation Guide](../EVALUATION_GUIDE.md) | Bounded 5–60 minute evaluation paths |
 | [Use Cases](../USE_CASES.md) | Problem-area map for fit assessment |
 | [Partners](../PARTNERS.md) | Design-partner and pilot discovery brief |
@@ -71,12 +76,9 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 
 ## Planned public structure
 
-The following reader-intent documents are **planned** and will be created in later commercialization tasks. They are not yet available:
+The following reader-intent documents are **planned** and will be created in later commercialization tasks:
 
 ```text
-WHY_INTERGRAX.md
-ARCHITECTURE_OVERVIEW.md
-BUILD_WITH_INTERGRAX.md
 PARTNERS_AND_PILOTS.md
 LICENSE_FAQ.md
 ```

@@ -90,10 +90,10 @@ ROADMAP.md
 
 | Document | Responsibility | Status |
 |----------|----------------|--------|
-| `WHY_INTERGRAX.md` | Problem, value, and audience without tier jargon | planned |
+| `WHY_INTERGRAX.md` | Problem, value, and audience without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
-| `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | planned |
-| `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | planned |
+| `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `PARTNERS_AND_PILOTS.md` | Design-partner and pilot workflow (successor to split partner docs) | planned |
 | `FAQ.md` | Common external questions | exists — root `FAQ.md` |
 | `LICENSE_FAQ.md` | License and permission FAQ without full legal text | planned |
@@ -154,11 +154,12 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 
 | Reader intent | Primary destination |
 |-------------|---------------------|
-| Understand the problem and value | root README now; future `WHY_INTERGRAX.md` |
+| Understand the problem and value | `WHY_INTERGRAX.md` |
 | See a real product workflow | LKW Platform Proof — `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
-| Review high-level architecture | current Harness Narrative in root README; future `ARCHITECTURE_OVERVIEW.md` |
-| Run a bounded evaluation | `EVALUATION_GUIDE.md` |
+| Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
+| Build or evaluate with Intergrax | `BUILD_WITH_INTERGRAX.md` |
+| Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
 | Check current proof status | `PROOFS.md` — root proof dashboard |
 | Discuss a pilot or design-partner workflow | `PARTNERS.md`, later `PARTNERS_AND_PILOTS.md` |
 | Check permission boundaries | `COLLABORATION.md` and `LICENSE` |
@@ -261,7 +262,10 @@ Current root README may still contain pre-reconciliation promotion language; the
 |------------------|--------------|-------------|--------------|------------------|
 | `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-5 |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
-| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Reader-intent evaluation | `BUILD_WITH_INTERGRAX.md` (partial merge) | future commercialization |
+| `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | stable — route selection owned by `BUILD_WITH_INTERGRAX.md` |
 | `USE_CASES.md` | Use-case map | Reader-intent fit check | `WHY_INTERGRAX.md` / use-case section | future commercialization |
 | `PARTNERS.md` | Partner brief | Reader-intent partnership | `PARTNERS_AND_PILOTS.md` | future commercialization |
 | `FAQ.md` | External FAQ | Reader-intent FAQ | `FAQ.md` (retain) | stable |
@@ -272,7 +276,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 | `docs/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/DOCUMENTATION_MAP.md` | stable |
 | `docs/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/public-adoption/` | stable (this task) |
 
-`PROOFS.md` is **implemented** (root proof dashboard). Planned documents (`WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, `BUILD_WITH_INTERGRAX.md`, `PARTNERS_AND_PILOTS.md`, `LICENSE_FAQ.md`) are **not** marked as implemented.
+`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` remains the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. Planned documents (`PARTNERS_AND_PILOTS.md`, `LICENSE_FAQ.md`) are **not** marked as implemented.
 
 ---
 
@@ -381,6 +385,9 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Topic | Owner |
 |-------|-------|
 | Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
+| Public value and fit | `WHY_INTERGRAX.md` |
+| Public architecture overview | `ARCHITECTURE_OVERVIEW.md` |
+| Evaluation and building route selection | `BUILD_WITH_INTERGRAX.md` |
 | Public documentation architecture | this document |
 | Public proof and claims model | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
 | Public proof dashboard | `PROOFS.md` |

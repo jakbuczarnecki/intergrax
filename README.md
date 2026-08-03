@@ -10,26 +10,15 @@ Intergrax is a reusable Harness AI foundation for governed agent applications.
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](PROOFS.md)
 
 <picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/assets/public/intergrax-hero-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/assets/public/intergrax-hero-light.svg"
-  >
-  <img
-    alt="Intergrax connects specialized agent applications with reusable policy, knowledge, evidence, integration and execution foundations."
-    src="docs/assets/public/intergrax-hero-light.svg"
-  >
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/public/intergrax-hero-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/public/intergrax-hero-light.svg">
+  <img alt="Intergrax connects specialized agent applications with reusable policy, knowledge, evidence, integration and execution foundations." src="docs/assets/public/intergrax-hero-light.svg">
 </picture>
 
 **[See the LKW product proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)** · **[Explore Token Optimization](docs/features/token_optimization/README.md)** · **[Review current proofs](PROOFS.md)**
 
 > [!NOTE]
 > Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
-
----
 
 ## Building the agent is not the hard part
 
@@ -39,7 +28,7 @@ Teams repeatedly rebuild the same foundations for every new product: permissions
 
 Intergrax provides reusable foundations so product teams can focus on the concrete workflow instead of rebuilding the harness for each application.
 
----
+**Why Intergrax:** [WHY_INTERGRAX.md](WHY_INTERGRAX.md)
 
 ## What Intergrax changes
 
@@ -49,8 +38,6 @@ Intergrax provides reusable foundations so product teams can focus on the concre
 | **Governed execution** | Policy, budgets, human review, and trace surround every step — not bolted on after the demo works. |
 | **Reusable knowledge and evidence foundations** | Indexing, retrieval, receipts, and observability are platform capabilities products compose — not one-off scripts. |
 | **Explicit responsibility boundaries** | Applications, orchestration, agents, and the harness each own a clear slice of the system. |
-
----
 
 ## Product proof: Local Knowledge Workspace
 
@@ -72,8 +59,6 @@ flowchart LR
 
 **Go deeper:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [Proof dashboard](PROOFS.md)
 
----
-
 ## What is proven today
 
 > [!WARNING]
@@ -86,8 +71,6 @@ flowchart LR
 | **Shared platform foundations** | IMPLEMENTED — bounded supporting evidence | RAG, observability, proof receipts exercised by LKW | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) |
 
 Full matrices, limitations, and claim boundaries: **[PROOFS.md](PROOFS.md)**
-
----
 
 ## Featured platform capability: Token Optimization
 
@@ -113,8 +96,6 @@ flowchart LR
 **Not complete:** Unified Context Lifecycle remains **partial**; **durable in-cache compaction incomplete**; universal hard gates are incomplete; **universal savings not claimed**; production-proven savings are not claimed.
 
 **Go deeper:** [Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
-
----
 
 ## How Intergrax works
 
@@ -143,9 +124,7 @@ flowchart LR
 - **Agents** make domain decisions.
 - **The harness** controls execution, policy, and evidence.
 
-**Deep dive:** [Harness AI narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/DOCUMENTATION_MAP.md)
-
----
+**Deep dive:** [Architecture overview](ARCHITECTURE_OVERVIEW.md) · [Harness AI narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/DOCUMENTATION_MAP.md)
 
 ## Quick start
 
@@ -158,42 +137,26 @@ Python 3.12 · [`uv`](https://github.com/astral-sh/uv) · Git
 ### Install and verify
 
 ```bash
-git clone https://github.com/jakbuczarnecki/intergrax.git
-cd intergrax
-uv sync --extra dev
-uv run intergrax doctor
-uv run pytest -m gate -q
+git clone https://github.com/jakbuczarnecki/intergrax.git && cd intergrax
+uv sync --extra dev && uv run intergrax doctor && uv run pytest -m gate -q
 ```
 
 ### Run the lab host
 
 ```bash
-uv run uvicorn lab_application.host.main:app \
-  --host 127.0.0.1 \
-  --port 8090
+uv run uvicorn lab_application.host.main:app --host 127.0.0.1 --port 8090
 ```
 
 ### Execute and inspect
 
 ```bash
-# Submit a run (Echo agent via capability routing)
-curl -s -X POST http://127.0.0.1:8090/v1/lab/run \
-  -H "Content-Type: application/json" \
-  -d '{"message":"hello","capability":"echo.basic"}'
-
-# Inspect trace — copy task_id from the POST response JSON above
+curl -s -X POST http://127.0.0.1:8090/v1/lab/run -H "Content-Type: application/json" -d '{"message":"hello","capability":"echo.basic"}'
 curl -s "http://127.0.0.1:8090/debug/tasks/{task_id}/trace?include_runtime=true"
 ```
 
-**Expected response (abbreviated):**
+**Expected response (abbreviated):** `{"task_id":"01JABC…","state":"completed","answer":"hello","agent_id":"echo"}`
 
-```json
-{"task_id":"01JABC…","run_id":"01JABC…","state":"completed","answer":"hello","agent_id":"echo"}
-```
-
-**Trace excerpt:** `step_started → tool_requested → tool_completed → step_completed`
-
-**Builder and evaluation paths:** [Evaluation Guide](EVALUATION_GUIDE.md) · [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md)
+**Builder and evaluation paths:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [Evaluation Guide](EVALUATION_GUIDE.md) · [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) · [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md)
 
 <details>
 <summary>Run the complete local evidence path</summary>
@@ -212,16 +175,7 @@ uv run intergrax evidence posture export
 
 Artifacts land under `build/evidence/`.
 
-**What this does not prove:**
-
-- production runtime certification
-- security/compliance attestation
-- real provider execution
-- real LLM evaluation
-- billing
-- provider pricing
-- cloud cost estimation
-- product-specific acceptance
+**What this does not prove:** production runtime certification; security/compliance attestation; real provider execution; real LLM evaluation; billing; provider pricing; cloud cost estimation; product-specific acceptance.
 
 **Architecture framing:** [Production gates](docs/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md) · [Harness evidence pack](docs/plan/HARNESS_EVIDENCE_PACK.md)
 
@@ -233,12 +187,13 @@ Artifacts land under `build/evidence/`.
 <a id="harness-ai--the-core-idea"></a>
 <a id="the-agent-model--why-architects-choose-intergrax"></a>
 
----
-
 ## Choose your path
 
 | Goal | Start here |
 | ---- | ---------- |
+| Understand why Intergrax exists | [WHY_INTERGRAX.md](WHY_INTERGRAX.md) |
+| See the public architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Build or evaluate with Intergrax | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | See a real product proof | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Explore Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) |
 | Check current evidence | [PROOFS.md](PROOFS.md) |
@@ -249,8 +204,6 @@ Artifacts land under `build/evidence/`.
 | Check permission boundaries | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 
 Technical readers: [llms.txt](llms.txt)
-
----
 
 ## License and collaboration
 
