@@ -63,6 +63,7 @@ def _map_live_access_error(exc: WorkspaceLiveAccessBindingError) -> HTTPExceptio
         "connection_unavailable",
         "capability_catalog_unavailable",
         "remote_resource_lookup_unavailable",
+        "remote_resource_lookup_invalid",
         "live_access_projection_incomplete",
         "configuration_recovery_required",
         "configuration_mutation_cleanup_failed",

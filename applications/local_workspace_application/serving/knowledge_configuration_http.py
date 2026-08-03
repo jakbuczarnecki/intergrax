@@ -15,6 +15,7 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
 )
 
 _IF_MATCH_RE = re.compile(r"^WKC/(\d+)$")
+_IDEMPOTENCY_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
 
 
 def resolve_knowledge_configuration_tenant_id(
@@ -57,7 +58,13 @@ def require_knowledge_configuration_idempotency_key(value: str | None) -> str:
             status_code=status.HTTP_428_PRECONDITION_REQUIRED,
             detail="knowledge_configuration_idempotency_key_required",
         )
-    return value.strip()
+    normalized = value.strip()
+    if _IDEMPOTENCY_CONTROL_RE.search(normalized) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="knowledge_configuration_idempotency_key_invalid",
+        )
+    return normalized
 
 
 def hash_knowledge_configuration_idempotency_key(value: str) -> str:

@@ -9,7 +9,7 @@ import json
 from datetime import UTC, datetime
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
@@ -25,6 +25,10 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
 from intergrax.runtime.vendor_knowledge.tenant_connections import (
     SafeTenantConnectionV1,
     TenantConnectionAdministrativeStatus,
+)
+from local_workspace_application.serving.knowledge_configuration_http import (
+    hash_knowledge_configuration_idempotency_key,
+    require_knowledge_configuration_idempotency_key,
 )
 from local_workspace_application.serving.knowledge_live_access_routes import (
     mount_knowledge_live_access_routes,
@@ -329,3 +333,23 @@ def test_capability_validation_error_returns_400() -> None:
     )
     assert response.status_code == 400
     assert response.json()["detail"] == "capability_not_found"
+
+
+@pytest.mark.parametrize(
+    "bad_key",
+    ["\x00bad", "bad\x1fkey", "bad\x7fkey"],
+)
+def test_idempotency_key_control_characters_rejected(bad_key: str) -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        require_knowledge_configuration_idempotency_key(bad_key)
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "knowledge_configuration_idempotency_key_invalid"
+    assert bad_key not in str(exc_info.value.detail)
+
+
+def test_idempotency_key_opaque_accepted_and_hashed() -> None:
+    key = "opaque-stable-key"
+    assert require_knowledge_configuration_idempotency_key(key) == key
+    digest = hash_knowledge_configuration_idempotency_key(key)
+    assert digest != key
+    assert key not in digest

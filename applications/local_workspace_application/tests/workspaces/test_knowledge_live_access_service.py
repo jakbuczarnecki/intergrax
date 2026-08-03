@@ -27,8 +27,8 @@ from local_workspace_application.workspaces.knowledge_configuration_handlers imp
 )
 from local_workspace_application.workspaces.knowledge_configuration_hashing import (
     live_access_binding_id_from_semantic_hash,
+    live_access_binding_stage_manifest_hash,
     normalize_create_live_access_binding_request_hash,
-    normalize_disable_live_access_binding_request_hash,
     normalize_live_access_capability_set,
     semantic_identity_hash_for_live_access_binding,
 )
@@ -182,15 +182,29 @@ class _FakeCatalog:
         return self._descriptors
 
 
-class _FakeResourceLookup:
-    def __init__(self, resource: RemoteResourceDescriptorV1 | None) -> None:
+class _WrongResourceLookup:
+    def __init__(self, resource: RemoteResourceDescriptorV1) -> None:
         self._resource = resource
         self.call_count = 0
 
     async def get_remote_resource(self, *, tenant_id: str, connection_ref: str, remote_resource_id: str):
         self.call_count += 1
-        if self._resource is None or remote_resource_id != self._resource.remote_resource_id:
+        return self._resource
+
+
+class _FakeResourceLookup:
+    def __init__(self, resource: RemoteResourceDescriptorV1 | object | None) -> None:
+        self._resource = resource
+        self.call_count = 0
+
+    async def get_remote_resource(self, *, tenant_id: str, connection_ref: str, remote_resource_id: str):
+        self.call_count += 1
+        if self._resource is None:
             return None
+        if isinstance(self._resource, RemoteResourceDescriptorV1):
+            if remote_resource_id != self._resource.remote_resource_id:
+                return None
+            return self._resource
         return self._resource
 
 
@@ -567,7 +581,43 @@ def _pending_head(repo, *, revision: int, mutation_id: str) -> None:
     )
 
 
-def _create_mutation(repo, *, revision: int, mutation_id: str = "mutation-create") -> WorkspaceKnowledgeMutationRecord:
+def _valid_create_intent() -> CreateLiveAccessBindingMutationIntent:
+    return CreateLiveAccessBindingMutationIntent(
+        connection_ref=_CONNECTION,
+        remote_resource_id=None,
+        allowed_capability_ids=(_CAP_READ,),
+        audience_eligibility=_AUDIENCE,
+        derived_provider_id=_PROVIDER,
+        derived_integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+        derived_resource_type=None,
+        derived_safe_display_label="Slack",
+    )
+
+
+def _stage_manifest_for_intent(intent: CreateLiveAccessBindingMutationIntent) -> str:
+    return live_access_binding_stage_manifest_hash(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        live_access_binding_id=_BINDING_ID,
+        connection_ref=intent.connection_ref,
+        remote_resource_id=intent.remote_resource_id,
+        allowed_capability_ids=intent.allowed_capability_ids,
+        audience_eligibility=intent.audience_eligibility,
+        derived_provider_id=intent.derived_provider_id,
+        derived_integration_kind=intent.derived_integration_kind,
+        derived_resource_type=intent.derived_resource_type,
+        derived_safe_display_label=intent.derived_safe_display_label,
+    )
+
+
+def _create_mutation(
+    repo,
+    *,
+    revision: int,
+    mutation_id: str = "mutation-create",
+    stage_manifest_hash: str | None = None,
+) -> WorkspaceKnowledgeMutationRecord:
+    intent = _valid_create_intent()
     request_hash = normalize_create_live_access_binding_request_hash(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -576,6 +626,7 @@ def _create_mutation(repo, *, revision: int, mutation_id: str = "mutation-create
         allowed_capability_ids=(_CAP_READ,),
         audience_eligibility=_AUDIENCE,
     )
+    manifest = stage_manifest_hash if stage_manifest_hash is not None else _stage_manifest_for_intent(intent)
     mutation = WorkspaceKnowledgeMutationRecord(
         mutation_id=mutation_id,
         tenant_id=_TENANT,
@@ -584,6 +635,7 @@ def _create_mutation(repo, *, revision: int, mutation_id: str = "mutation-create
         idempotency_key_hash=_SHA256_A,
         normalized_request_hash=request_hash,
         semantic_identity_hash=_SEMANTIC,
+        stage_manifest_hash=manifest,
         target_revision=revision,
         status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
         result_entity_type="live_access_binding",
@@ -601,16 +653,7 @@ async def test_complete_prepared_create_recovery_commits() -> None:
     attach, _, repo, _, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
     mutation = _create_mutation(repo, revision=rev + 1)
-    intent = CreateLiveAccessBindingMutationIntent(
-        connection_ref=_CONNECTION,
-        remote_resource_id=None,
-        allowed_capability_ids=(_CAP_READ,),
-        audience_eligibility=_AUDIENCE,
-        derived_provider_id=_PROVIDER,
-        derived_integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-        derived_resource_type=None,
-        derived_safe_display_label="Slack",
-    )
+    intent = _valid_create_intent()
     _CREATE_HANDLER.stage(
         repository=repo,
         mutation=mutation,
@@ -653,3 +696,193 @@ def test_cleanup_deletes_exact_owned_row() -> None:
     assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
     recovery = engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.ABORTED
+
+
+@pytest.mark.parametrize(
+    "field, corrupt_value",
+    [
+        ("derived_provider_id", "other.provider"),
+        ("derived_integration_kind", IntegrationCategory.DOCUMENT_STORE),
+        ("derived_resource_type", "wrong_type"),
+        ("derived_safe_display_label", "Wrong Label"),
+        ("allowed_capability_ids", ("cap.other",)),
+        ("audience_eligibility", KnowledgeAudienceEligibilityV1.SHARED_ALLOWED),
+    ],
+)
+def test_corrupt_staged_manifest_field_blocks_recovery(field: str, corrupt_value: object) -> None:
+    attach, _, repo, _, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
+    rev = _attach(attach)
+    mutation = _create_mutation(repo, revision=rev + 1)
+    intent = _valid_create_intent()
+    _CREATE_HANDLER.stage(
+        repository=repo,
+        mutation=mutation,
+        target_revision=mutation.target_revision,
+        intent=intent,
+        now=_NOW,
+    )
+    staged = repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)[0]
+    repo.delete_knowledge_live_access_version_if_match(staged)
+    repo.put_knowledge_live_access_version_if_absent(
+        staged.model_copy(update={field: corrupt_value, "updated_at": _NOW})
+    )
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
+        engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id == mutation.mutation_id
+    reloaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING,
+        idempotency_key_hash=mutation.idempotency_key_hash,
+    )
+    assert reloaded is not None and reloaded.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert len(repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 1
+
+
+def test_stage_rejects_manifest_mismatch() -> None:
+    attach, _, repo, _, _, _ = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
+    rev = _attach(attach)
+    mutation = _create_mutation(repo, revision=rev + 1, stage_manifest_hash="f" * 64)
+    intent = _valid_create_intent()
+    with pytest.raises(RuntimeError, match="create_live_access_binding_stage_manifest_mismatch"):
+        _CREATE_HANDLER.stage(
+            repository=repo,
+            mutation=mutation,
+            target_revision=mutation.target_revision,
+            intent=intent,
+            now=_NOW,
+        )
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+
+
+@pytest.mark.asyncio
+async def test_remote_resource_identity_mismatch_rejected() -> None:
+    catalog = _FakeCatalog(
+        (
+            _descriptor(
+                capability_id=_CAP_RESOURCE,
+                resource_scope_required=True,
+                supported_resource_types=("slack_conversation",),
+            ),
+        )
+    )
+    other = _resource_descriptor(remote_resource_id="resource-other")
+    lookup = _WrongResourceLookup(other)
+    attach, service, repo, _, _, _ = _build_stack(catalog=catalog, lookup=lookup)
+    rev = _attach(attach)
+    head_before = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="remote_resource_lookup_invalid"):
+        await service.create_live_access_binding(
+            _create_cmd(
+                expected_revision=rev,
+                remote_resource_id=_RESOURCE,
+                allowed_capability_ids=(_CAP_RESOURCE,),
+            )
+        )
+    head_after = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head_after == head_before
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_resource",
+    [
+        LiveCapabilityDescriptorV1.model_construct(
+            capability_id=_CAP_RESOURCE,
+            provider_id=_PROVIDER,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            effect=CapabilityEffectV1.READ,
+            read_only=True,
+            resource_scope_required=True,
+            request_schema_ref="schema://req",
+            result_schema_ref="schema://res",
+            available=True,
+        ),
+        object(),
+    ],
+)
+async def test_malformed_remote_resource_lookup_rejected(bad_resource: object) -> None:
+    catalog = _FakeCatalog(
+        (
+            _descriptor(
+                capability_id=_CAP_RESOURCE,
+                resource_scope_required=True,
+                supported_resource_types=("slack_conversation",),
+            ),
+        )
+    )
+    lookup = _FakeResourceLookup(bad_resource)
+    attach, service, repo, _, _, _ = _build_stack(catalog=catalog, lookup=lookup)
+    rev = _attach(attach)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="remote_resource_lookup_invalid"):
+        await service.create_live_access_binding(
+            _create_cmd(
+                expected_revision=rev,
+                remote_resource_id=_RESOURCE,
+                allowed_capability_ids=(_CAP_RESOURCE,),
+            )
+        )
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("catalog_payload", "error"),
+    [
+        (LiveCapabilityDescriptorV1.model_construct(
+            capability_id=_CAP_READ,
+            provider_id=_PROVIDER,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            effect=CapabilityEffectV1.READ,
+            read_only=True,
+            resource_scope_required=False,
+            request_schema_ref=None,
+            result_schema_ref="schema://res",
+            available=True,
+        ), "capability_catalog_invalid"),
+        (object(), "capability_catalog_invalid"),
+    ],
+)
+async def test_malformed_catalog_boundary(catalog_payload: object, error: str) -> None:
+    attach, service, _, _, _, _ = _build_stack(catalog=_FakeCatalog((catalog_payload,)))  # type: ignore[arg-type]
+    rev = _attach(attach)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match=error):
+        await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+
+
+@pytest.mark.asyncio
+async def test_duplicate_catalog_capability_ids_rejected() -> None:
+    descriptor = _descriptor()
+    attach, service, _, _, _, _ = _build_stack(catalog=_FakeCatalog((descriptor, descriptor)))
+    rev = _attach(attach)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="capability_catalog_invalid"):
+        await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+
+
+@pytest.mark.asyncio
+async def test_catalog_integration_kind_mismatch_rejected() -> None:
+    attach, service, _, _, _, _ = _build_stack(
+        catalog=_FakeCatalog((_descriptor(integration_kind=IntegrationCategory.DOCUMENT_STORE),)),
+    )
+    rev = _attach(attach)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="capability_catalog_invalid"):
+        await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+
+
+@pytest.mark.asyncio
+async def test_non_tuple_catalog_rejected() -> None:
+    class _ListCatalog:
+        def list_capabilities(self, *, tenant_id: str, connection_ref: str, remote_resource_id: str | None):
+            return [_descriptor()]
+
+    attach, service, repo, _, _, _ = _build_stack()
+    rev = _attach(attach)
+    service._capability_catalog = _ListCatalog()  # type: ignore[assignment]
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="capability_catalog_invalid"):
+        await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []

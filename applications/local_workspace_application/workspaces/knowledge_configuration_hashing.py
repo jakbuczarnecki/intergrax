@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 
+from intergrax.integrations.contracts.base import IntegrationCategory
 from local_workspace_application.workspaces.connected_source_ids import (
     workspace_indexed_source_semantic_hash,
 )
@@ -14,6 +15,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     IndexedSourceAudienceEligibilityV1,
     IndexedSourceSyncModeV1,
     KnowledgeAudienceEligibilityV1,
+    LiveAccessBindingStatusV1,
     WorkspaceKnowledgeMutationOperationV1,
 )
 
@@ -194,6 +196,42 @@ def normalize_create_live_access_binding_request_hash(
             "remote_resource_id": normalized_resource_id,
             "allowed_capability_ids": list(normalized_capabilities),
             "audience_eligibility": audience_eligibility.value,
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def live_access_binding_stage_manifest_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    live_access_binding_id: str,
+    connection_ref: str,
+    remote_resource_id: str | None,
+    allowed_capability_ids: tuple[str, ...],
+    audience_eligibility: KnowledgeAudienceEligibilityV1,
+    derived_provider_id: str,
+    derived_integration_kind: IntegrationCategory,
+    derived_resource_type: str | None,
+    derived_safe_display_label: str,
+) -> str:
+    normalized_resource_id = normalize_live_access_remote_resource_id(remote_resource_id)
+    normalized_capabilities = normalize_live_access_capability_set(allowed_capability_ids)
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "live_access_binding_id": live_access_binding_id.strip(),
+            "connection_ref": connection_ref.strip(),
+            "normalized_remote_resource_id": normalized_resource_id,
+            "normalized_capability_set": list(normalized_capabilities),
+            "audience_eligibility": audience_eligibility.value,
+            "derived_provider_id": derived_provider_id.strip(),
+            "derived_integration_kind": derived_integration_kind.value,
+            "derived_resource_type": derived_resource_type,
+            "derived_safe_display_label": derived_safe_display_label.strip(),
+            "expected_status": LiveAccessBindingStatusV1.ACTIVE.value,
         }
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()

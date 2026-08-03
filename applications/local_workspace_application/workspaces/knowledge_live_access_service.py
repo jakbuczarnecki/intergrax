@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
     RemoteResourceAvailabilityV1,
@@ -26,6 +26,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
 )
 from local_workspace_application.workspaces.knowledge_configuration_hashing import (
     live_access_binding_id_from_semantic_hash,
+    live_access_binding_stage_manifest_hash,
     normalize_create_live_access_binding_request_hash,
     normalize_disable_live_access_binding_request_hash,
     normalize_live_access_capability_set,
@@ -157,7 +158,10 @@ def _validate_catalog(descriptors: object, connection: SafeTenantConnectionV1, s
     for raw in descriptors:
         if not isinstance(raw, BaseModel):
             raise WorkspaceLiveAccessBindingError("capability_catalog_invalid")
-        descriptor = LiveCapabilityDescriptorV1.model_validate(raw.model_dump())
+        try:
+            descriptor = LiveCapabilityDescriptorV1.model_validate(raw.model_dump())
+        except ValidationError:
+            raise WorkspaceLiveAccessBindingError("capability_catalog_invalid") from None
         if descriptor.provider_id != connection.provider_id or descriptor.integration_kind != connection.integration_kind:
             raise WorkspaceLiveAccessBindingError("capability_catalog_invalid")
         if descriptor.capability_id in catalog:
@@ -265,6 +269,7 @@ class WorkspaceLiveAccessBindingService:
                     expected_revision=command.expected_revision,
                     idempotency_key_hash=command.idempotency_key_hash,
                     normalized_request_hash=request_hash, semantic_identity_hash=semantic_hash,
+                    stage_manifest_hash=existing.stage_manifest_hash,
                     intent=_intent_from_binding(historical),
                 )
                 if replay.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY:
@@ -309,17 +314,32 @@ class WorkspaceLiveAccessBindingService:
                 tenant_id=tenant_id, workspace_id=workspace_id,
             )
         )
+        create_intent = CreateLiveAccessBindingMutationIntent(
+            connection_ref=connection_ref, remote_resource_id=resource_id,
+            allowed_capability_ids=capabilities, audience_eligibility=command.audience_eligibility,
+            derived_provider_id=connection.provider_id, derived_integration_kind=connection.integration_kind,
+            derived_resource_type=derived_type, derived_safe_display_label=derived_label,
+        )
+        manifest_hash = live_access_binding_stage_manifest_hash(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            live_access_binding_id=binding_id,
+            connection_ref=connection_ref,
+            remote_resource_id=resource_id,
+            allowed_capability_ids=capabilities,
+            audience_eligibility=command.audience_eligibility,
+            derived_provider_id=connection.provider_id,
+            derived_integration_kind=connection.integration_kind,
+            derived_resource_type=derived_type,
+            derived_safe_display_label=derived_label,
+        )
         mutation_result = self._mutation_engine.execute(
             tenant_id=tenant_id, workspace_id=workspace_id,
             operation=WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING,
             expected_revision=command.expected_revision, idempotency_key_hash=command.idempotency_key_hash,
             normalized_request_hash=request_hash, semantic_identity_hash=semantic_hash,
-            intent=CreateLiveAccessBindingMutationIntent(
-                connection_ref=connection_ref, remote_resource_id=resource_id,
-                allowed_capability_ids=capabilities, audience_eligibility=command.audience_eligibility,
-                derived_provider_id=connection.provider_id, derived_integration_kind=connection.integration_kind,
-                derived_resource_type=derived_type, derived_safe_display_label=derived_label,
-            ),
+            stage_manifest_hash=manifest_hash,
+            intent=create_intent,
         )
         binding = _resolve_historical_binding(
             self._repository, result=mutation_result, tenant_id=tenant_id, workspace_id=workspace_id,
@@ -401,6 +421,14 @@ class WorkspaceLiveAccessBindingService:
             raise WorkspaceLiveAccessBindingError("remote_resource_lookup_unavailable") from exc
         if resource is None:
             raise WorkspaceLiveAccessBindingError("remote_resource_not_found")
+        if not isinstance(resource, BaseModel):
+            raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid")
+        try:
+            resource = RemoteResourceDescriptorV1.model_validate(resource.model_dump())
+        except ValidationError:
+            raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid") from None
+        if resource.remote_resource_id.strip() != remote_resource_id.strip():
+            raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid")
         if resource.connection_ref.strip() != connection_ref.strip():
             raise WorkspaceLiveAccessBindingError("remote_resource_connection_mismatch")
         if resource.provider_id != connection.provider_id or resource.integration_kind != connection.integration_kind:
