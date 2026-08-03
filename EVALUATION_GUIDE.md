@@ -6,15 +6,22 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Evaluation Guide
 
-Intergrax is a source-available Harness AI / Agent OS for building governed agent applications.
+Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary product proof** — classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** are incomplete. The [LICENSE](LICENSE) is legally authoritative for permitted use.
 
-This guide helps technical reviewers, design partners, and integration builders evaluate Intergrax in a focused 5, 15, 30, or 60 minute pass. All evaluation steps described here — including clone, local install, Quick Start, tests, benchmarks, proof paths, private evaluation modifications, evaluation-only integrations, and collaboration on an **Authorized Fork** — are permitted under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE).
+This guide provides time-boxed evaluation paths for technical reviewers, design partners, and integration builders. It is a reader-facing companion — not a maintainer validation protocol, not a product brochure, and not proof that external validation has occurred.
 
-**Evaluation Participants** may include employees, contractors, advisers, and technical reviewers acting solely in a controlled non-production Evaluation Environment. Evaluation must not support a real ongoing business process, serve operational users, or rely on production customer data. Using production data or operational users may change the use to Production Use, which requires explicit written permission.
+Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
 
-It is not a product brochure, SaaS offer, open-source license grant, production-readiness claim, certification, compliance statement, support commitment, or partnership term.
+---
 
-Production use, commercial use, hosted services, redistribution as an independent product, incorporation into products or services, and commercial derivative works require explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
+## At a glance
+
+| Time | Start here | Goal |
+|------|------------|------|
+| 5 minutes | [README.md](README.md) + [FAQ.md](FAQ.md) | Understand what Intergrax is and is not |
+| 15 minutes | [WHY_INTERGRAX.md](WHY_INTERGRAX.md) + [USE_CASES.md](USE_CASES.md) + [ROADMAP.md](ROADMAP.md) | Understand problem, fit and direction |
+| 30 minutes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [README.md](README.md) quick start + [PROOFS.md](PROOFS.md) | Inspect or run a bounded technical path |
+| 45–60 minutes | Choose LKW Platform Proof, Token Optimization guide, architecture review or partner/pilot review | Deep evaluation of one surface |
 
 ---
 
@@ -22,25 +29,14 @@ Production use, commercial use, hosted services, redistribution as an independen
 
 Use this guide if you are:
 
-- evaluating whether Intergrax solves a real governed-agent problem;
-- reviewing the Harness AI / Agent OS architecture for the first time;
-- checking whether the proof path is understandable;
-- assessing trace/evidence, policy, HITL, RAG, memory, tools, or orchestration surfaces;
+- evaluating whether Intergrax addresses a governed-agent or knowledge-workflow problem;
+- reviewing the Harness AI architecture for the first time;
+- checking whether a documented proof path is understandable;
+- assessing trace, evidence, policy, HITL, RAG, memory, tools, or orchestration surfaces;
 - considering design-partner or selected integration feedback;
-- deciding which public feedback path to use.
+- deciding which evaluation path fits your available time.
 
-If you are looking for a finished SaaS, production support, an open-source contribution model, or unrestricted commercial use, start with [FAQ.md](FAQ.md), [COLLABORATION.md](COLLABORATION.md), and [LICENSE](LICENSE).
-
----
-
-## Evaluation paths by available time
-
-| Time | Goal | Start here | Outcome |
-|------|------|------------|---------|
-| 5 minutes | Understand what Intergrax is and is not | [README.md](README.md), [FAQ.md](FAQ.md) | Know whether the repo is relevant to you |
-| 15 minutes | Understand the architecture and use cases | [README.md#start-here](README.md#start-here), [USE_CASES.md](USE_CASES.md) | Know which use case or validation path fits |
-| 30 minutes | Run or inspect a proof path | [README.md#quick-start](README.md#quick-start), [README.md#proof-of-platform](README.md#proof-of-platform) | Report first-run friction or proof-path gaps |
-| 45-60 minutes | Review deeper validation surfaces | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md), [BoundaryAttest PoC](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md), [LKW alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | Provide structured feedback or design-partner signal |
+If you need a finished SaaS, production support, an open-source contribution model, or unrestricted commercial use, start with [FAQ.md](FAQ.md), [COLLABORATION.md](COLLABORATION.md), and [LICENSE](LICENSE).
 
 ---
 
@@ -50,63 +46,48 @@ Goal: decide whether Intergrax is relevant before reading deeply.
 
 Read:
 
-1. [README.md](README.md) — repository overview and Start here table.
+1. [README.md](README.md) — repository overview, LKW product proof, and maturity boundaries.
 2. [FAQ.md](FAQ.md) — common questions about license, status, collaboration, and public use.
-3. [COLLABORATION.md](COLLABORATION.md) — what is allowed and what requires permission.
 
 Check whether the following statement is clear:
 
-> Intergrax is a source-available Harness AI / Agent OS for governed agent applications, not a finished SaaS, not an open-source framework, and not a production certification claim.
+> Intergrax is source-available for evaluation and collaboration, not open source, not a finished SaaS, and not a production-readiness claim.
 
 Useful feedback after this pass:
 
 - Is the repository positioning clear?
 - Is the license/collaboration boundary clear?
 - Do you understand where to start?
-- What phrase or section is confusing?
-
-Recommended feedback path: [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md), especially documentation clarity issues.
 
 ---
 
-## 15-minute architecture and use-case scan
+## 15-minute problem, fit and direction
 
-Goal: understand what problem Intergrax is trying to solve.
+Goal: understand what problem Intergrax addresses and whether it fits your context.
 
 Read:
 
-1. [README.md#the-agent-model--why-architects-choose-intergrax](README.md#the-agent-model--why-architects-choose-intergrax)
-2. [USE_CASES.md](USE_CASES.md)
-3. [PARTNERS.md](PARTNERS.md)
-4. Optional — cross-layer capabilities: [docs/features/README.md](docs/features/README.md) (`docs/features/architecture/<FEATURE>.md` ↔ `docs/features/plan/<FEATURE>.md`)
-
-Evaluate whether the model is understandable:
-
-- agents decide domain steps;
-- the harness executes under policy, trace, state, and budgets;
-- Nexus orchestrates graphs and multi-agent flow;
-- Tier-3 applications own environment, identity, profile, and product boundaries;
-- tools, skills, RAG, memory, HITL, and evidence are harness-managed surfaces.
+1. [WHY_INTERGRAX.md](WHY_INTERGRAX.md) — problem, value, and audience.
+2. [USE_CASES.md](USE_CASES.md) — use-case fit and applicability.
+3. [ROADMAP.md](ROADMAP.md) — product-validation direction and outcome gates.
 
 Questions to answer:
 
-- Does the Harness AI / Agent OS model make sense?
-- Does the separation between agent, harness, Nexus, and application host feel useful?
-- Which use case is most relevant to your work?
+- Does the problem statement resonate with your work?
+- Which use case is most relevant?
 - What would you need to see next to justify deeper evaluation?
-
-Recommended feedback path: [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md), especially Harness AI mental model and governed agent application issues.
 
 ---
 
-## 30-minute proof-path evaluation
+## 30-minute bounded technical evaluation
 
 Goal: test whether the local evaluation path is understandable and reproducible.
 
 Start from:
 
-- [README.md#quick-start](README.md#quick-start)
-- [README.md#proof-of-platform](README.md#proof-of-platform)
+- [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — route selection and prerequisites.
+- [README.md](README.md) — quick start commands.
+- [PROOFS.md](PROOFS.md) — current proof status and claim boundaries.
 
 Typical local flow:
 
@@ -116,45 +97,40 @@ uv run intergrax doctor
 uv run pytest -m gate -q
 ```
 
-Optional proof/evidence paths are documented in README. Follow only the commands that match your evaluation intent and environment.
-
 Evaluate:
 
 - Are prerequisites clear?
 - Does install work as written?
 - Does `intergrax doctor` provide useful feedback?
 - Are gate tests discoverable and understandable?
-- Is the proof-of-platform path visible enough?
+- Is the proof status visible enough?
 - Are trace/evidence outputs understandable when inspected?
 
 Do not assume that passing local checks grants production permission, commercial use, support, certification, or compliance status.
 
-Recommended feedback path: [#186 README quick start feedback](https://github.com/jakbuczarnecki/intergrax/issues/186) and [#188 evidence and trace inspection feedback](https://github.com/jakbuczarnecki/intergrax/issues/188).
-
 ---
 
-## 45-60 minute validation review
+## 45–60 minute deep evaluation
 
-Goal: evaluate whether Intergrax is worth deeper technical feedback, selected integration discussion, or design-partner discovery.
+Goal: evaluate whether Intergrax is worth deeper technical feedback, integration discussion, or pilot discovery.
 
 Choose the path that matches your interest:
 
-| Interest | Read | Feedback path |
-|----------|------|---------------|
-| Boundary events, receipts, attestation, auditability | [BoundaryAttest Attestation PoC](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) | [#189](https://github.com/jakbuczarnecki/intergrax/issues/189) |
-| Trace/evidence export and observability | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md), README trace/evidence sections | [#188](https://github.com/jakbuczarnecki/intergrax/issues/188), [#192](https://github.com/jakbuczarnecki/intergrax/issues/192) |
-| Local/private knowledge workflows and controlled RAG | [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | [#193](https://github.com/jakbuczarnecki/intergrax/issues/193) |
-| Governed agent applications beyond demos | [USE_CASES.md](USE_CASES.md), [PARTNERS.md](PARTNERS.md) | [#190](https://github.com/jakbuczarnecki/intergrax/issues/190) |
-| MCP or controlled tool/task surfaces | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) | [#194](https://github.com/jakbuczarnecki/intergrax/issues/194) |
+| Interest | Read |
+|----------|------|
+| LKW product proof and workflow | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| Token Optimization capability | [Token Optimization guide](docs/features/token_optimization/README.md) |
+| High-level architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Partner or pilot fit | [PARTNERS.md](PARTNERS.md) |
+| Permission and collaboration boundaries | [COLLABORATION.md](COLLABORATION.md) |
 
 Useful review questions:
 
-- Which current agent/platform problem does Intergrax address clearly?
-- Which runtime boundary is most valuable: policy, trace, HITL, tools, RAG, memory, Nexus, or application host?
+- Which current problem does Intergrax address clearly?
+- Which runtime boundary is most valuable?
 - What is missing for a serious technical evaluation?
 - Which proof path should be easier?
 - Which claims are unclear or too strong?
-- What should not happen without explicit approval?
 
 ---
 
@@ -162,19 +138,25 @@ Useful review questions:
 
 High-value feedback is concrete and scoped.
 
-Good feedback includes:
+A useful feedback record must include:
 
-- the exact document, section, command, or issue you evaluated;
-- what you expected to happen;
-- what actually happened;
-- what was unclear;
-- your environment when reporting local proof-path friction;
-- which use case or validation track you were evaluating;
+- exact commit;
+- environment;
+- path followed;
+- expected result;
+- observed result;
+- evidence;
+- blocker or confusion.
+
+Route ordinary evaluation feedback through [COLLABORATION.md](COLLABORATION.md).
+
+Good feedback also includes:
+
+- the exact document, section, or command you evaluated;
+- which use case or evaluation track you were following;
 - whether you are reporting documentation clarity, proof-path friction, integration feedback, or design-partner interest.
 
-Avoid broad feature requests unless they are tied to a specific use case and current validation track.
-
-Use [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) to choose the right curated issue.
+Avoid broad feature requests unless they are tied to a specific use case and current evaluation track.
 
 ---
 
@@ -189,7 +171,7 @@ Do not infer that this repository offers:
 - free commercial use;
 - permission to redistribute, derive from, incorporate, or productize Intergrax;
 - acceptance of every proposed integration or partnership;
-- a broad public feature-request backlog.
+- completed real-user or commercial validation.
 
 For commercial licensing, production use, partnership, or permission requests, contact the maintainer directly. See [PARTNERS.md](PARTNERS.md) and [COLLABORATION.md](COLLABORATION.md).
 
@@ -201,10 +183,15 @@ For commercial licensing, production use, partnership, or permission requests, c
 |------|---------------|
 | Repository overview | [README.md](README.md) |
 | Common questions | [FAQ.md](FAQ.md) |
+| Problem and value | [WHY_INTERGRAX.md](WHY_INTERGRAX.md) |
 | Use-case fit | [USE_CASES.md](USE_CASES.md) |
-| Partner or design-partner fit | [PARTNERS.md](PARTNERS.md) |
+| Product-validation direction | [ROADMAP.md](ROADMAP.md) |
+| Evaluation and building routes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Proof status | [PROOFS.md](PROOFS.md) |
+| Architecture overview | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| LKW product proof | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) |
+| Partner or pilot fit | [PARTNERS.md](PARTNERS.md) |
 | License and collaboration boundaries | [COLLABORATION.md](COLLABORATION.md), [LICENSE](LICENSE) |
-| Public feedback routing | [Public Issue Index](docs/public-adoption/PUBLIC_ISSUE_INDEX.md) |
-| Attestation validation | [BoundaryAttest Attestation PoC](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
-| Local/private knowledge validation | [Local Knowledge Workspace alpha](docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) |
-
+| Public reader navigation | [Public Documentation Map](docs/PUBLIC_DOCUMENTATION_MAP.md) |
+| Technical/developer navigation | [Documentation Map](docs/DOCUMENTATION_MAP.md) |

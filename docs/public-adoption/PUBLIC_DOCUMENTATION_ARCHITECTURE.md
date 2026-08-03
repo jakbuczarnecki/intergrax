@@ -141,10 +141,24 @@ Includes:
 - positioning contract;
 - public documentation architecture (this document);
 - claim guardrails;
+- external reader validation protocol;
 - launch checklist;
 - outreach kit;
 - triage playbooks;
 - issue automation.
+
+Frozen responsibilities:
+
+```text
+External reader validation methodology
+→ EXTERNAL_READER_VALIDATION_PROTOCOL.md
+
+Pre-session and pre-outreach readiness
+→ PUBLIC_LAUNCH_CHECKLIST.md
+
+Participant recruitment and session-request templates
+→ OUTREACH_KIT.md
+```
 
 These controls govern public communication but are **not** the default first-contact path for normal readers.
 
@@ -272,7 +286,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | stable — route selection owned by `BUILD_WITH_INTERGRAX.md` |
+| `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-9A |
 | `USE_CASES.md` | Public use-case map | Layer 2 public use-case fit map | `USE_CASES.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `PARTNERS.md` | Partner brief | Layer 2 partner-fit and pilot-workflow guide | `PARTNERS.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `FAQ.md` | Mixed general, architecture and legal FAQ | Layer 2 concise first-contact FAQ | `FAQ.md` | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
@@ -283,7 +297,19 @@ Current root README may still contain pre-reconciliation promotion language; the
 | `docs/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/DOCUMENTATION_MAP.md` | stable |
 | `docs/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/public-adoption/` | stable (this task) |
 
-`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` remains the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. `PARTNERS.md`, `COLLABORATION.md`, and `FAQ.md` are **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-8).
+`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` is **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-9A) as the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. `PARTNERS.md`, `COLLABORATION.md`, and `FAQ.md` are **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-8).
+
+---
+
+## External-validation boundary
+
+A protocol, checklist, automated test, internal audit or maintainer review does not constitute external validation.
+
+External validation requires real independent sessions recorded against a pinned repository revision.
+
+Documentation comprehension validation is not product validation, real-user validation, commercial validation, security review, legal review or production-readiness proof.
+
+Point 9 of the public-documentation commercialization roadmap is not complete until real external-reader sessions (9B) and findings review (9C) are done.
 
 ---
 
@@ -411,3 +437,7 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Practical permission-request route | `COLLABORATION.md` |
 | Legally authoritative rights and restrictions | `LICENSE` |
 | General first-contact questions | `FAQ.md` |
+| External reader validation methodology | `EXTERNAL_READER_VALIDATION_PROTOCOL.md` |
+| Reader-facing evaluation paths | `EVALUATION_GUIDE.md` |
+| Validation readiness | `PUBLIC_LAUNCH_CHECKLIST.md` |
+| Validation recruitment templates | `OUTREACH_KIT.md` |

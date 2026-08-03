@@ -1,90 +1,112 @@
 <!--
 © Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
-Use, modification, or distribution without written permission is prohibited.
+Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.
+See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
 # Intergrax Public Launch Checklist
 
-This checklist is for maintainers preparing public outreach, reviewer requests, design-partner discovery, or public posts.
+This checklist is for maintainers preparing external-reader sessions, reviewer requests, partner discovery, or public posts.
 
-It does not create a release, license grant, support obligation, partnership term, production claim, certification, or compliance statement.
+It does not create a release, license grant, support obligation, partnership term, production claim, certification, or compliance statement. **Checklist completion does not mean external validation is complete.**
 
 Use it together with [README.md](../../README.md), [FAQ.md](../../FAQ.md), [COLLABORATION.md](../../COLLABORATION.md), [ROADMAP.md](../../ROADMAP.md), [PARTNERS.md](../../PARTNERS.md), [USE_CASES.md](../../USE_CASES.md), and [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md).
-See [OUTREACH_KIT.md](OUTREACH_KIT.md) for draft messages and positioning guardrails.
+
+See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL.md) for validation methodology and [OUTREACH_KIT.md](OUTREACH_KIT.md) for recruitment templates.
 
 ---
 
-## 1. Repository entry points
+## Repository baseline
 
-- [ ] README has a clear `Start here` path.
-- [ ] README links to FAQ, EVALUATION_GUIDE, USE_CASES, PARTNERS, ROADMAP, COLLABORATION, LICENSE and Public Issue Index.
-- [ ] EVALUATION_GUIDE provides a time-boxed 5/15/30/60-minute path for external reviewers.
-- [ ] USE_CASES explains Intergrax through use-case fit and validation paths without duplicating case studies.
-- [ ] PARTNERS explains partner/design-partner fit, non-goals, and permission boundaries.
-- [ ] FAQ answers open source, production use, contribution, security and product-status questions.
-- [ ] COLLABORATION clearly explains permitted evaluation and permission-required use.
-- [ ] README links to BoundaryAttest case study and Local Knowledge Workspace alpha narrative.
-
----
-
-## 2. Public-adoption controls
-
-- [ ] Public Issue Index lists only maintainer-curated issues.
-- [ ] Curated issues do not turn the repo into a broad feature-request backlog.
-- [ ] Issue templates route bug reports, proof-path feedback, documentation feedback, integration proposals and design-partner interest.
-- [ ] Triage playbook is available for maintainer responses.
-- [ ] Security reports are routed through [SECURITY.md](../../SECURITY.md), not public issues.
+- [ ] Intentional branch or ref selected for the validation wave or outreach.
+- [ ] Pinned commit or tag recorded.
+- [ ] Root [README.md](../../README.md) available and current at the pinned ref.
+- [ ] Public documentation contract tests passing at the pinned ref.
+- [ ] Public reader routes available (WHY, USE_CASES, ROADMAP, PROOFS, BUILD, PARTNERS, COLLABORATION, FAQ).
+- [ ] No known broken core links in documents used by validation tasks.
+- [ ] No unpublished development URL sent accidentally.
 
 ---
 
-## 3. Claims and positioning
+## Reader journey readiness
+
+- [ ] Problem and value route: [WHY_INTERGRAX.md](../../WHY_INTERGRAX.md).
+- [ ] Use-case fit route: [USE_CASES.md](../../USE_CASES.md).
+- [ ] Product-validation direction: [ROADMAP.md](../../ROADMAP.md).
+- [ ] LKW proof route: [LKW_PLATFORM_PROOF.md](LKW_PLATFORM_PROOF.md).
+- [ ] Technical evaluation route: [BUILD_WITH_INTERGRAX.md](../../BUILD_WITH_INTERGRAX.md) and [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md).
+- [ ] Architecture overview: [ARCHITECTURE_OVERVIEW.md](../../ARCHITECTURE_OVERVIEW.md).
+- [ ] Partner/pilot route: [PARTNERS.md](../../PARTNERS.md).
+- [ ] Collaboration and feedback route: [COLLABORATION.md](../../COLLABORATION.md).
+- [ ] Permission boundaries: [LICENSE](../../LICENSE) and [COLLABORATION.md](../../COLLABORATION.md).
+- [ ] Security reporting routed through [SECURITY.md](../../SECURITY.md), not validation notes.
+
+---
+
+## Validation protocol readiness
+
+- [ ] Protocol status is `READY_TO_RUN`.
+- [ ] External validation remains `NOT_STARTED` before the first real session.
+- [ ] Cohorts selected for the validation wave.
+- [ ] Standard prompts frozen (no expected answers distributed).
+- [ ] Pinned ref recorded for the wave.
+- [ ] Session record template prepared.
+- [ ] Moderator understands no-coaching rules.
+- [ ] Privacy handling agreed (no personal data committed).
+- [ ] No fictional results document exists.
+
+---
+
+## Claims and legal boundaries
 
 - [ ] Use `source-available`, not `open source`.
-- [ ] Use `technical review`, `proof-path feedback`, `selected integration feedback`, and `design-partner discovery`.
-- [ ] Do not say `production-ready`, `compliance-ready`, `certified`, `secure by default`, `free for commercial use`, or `official partnership`.
-- [ ] BoundaryAttest is described as technical integration validation, not certification.
-- [ ] Local Knowledge Workspace is described as alpha/product-validation direction, not a finished product or SaaS.
-- [ ] Commercial or production use points to maintainer permission and [COLLABORATION.md](../../COLLABORATION.md).
+- [ ] State `active R&D`.
+- [ ] LKW described as **Backend Product Alpha / MVP** and **PARTIAL**.
+- [ ] Real-user validation described as incomplete.
+- [ ] Commercial validation described as incomplete.
+- [ ] No `production-ready`, `compliance-ready`, `certified`, or `secure by default` claim.
+- [ ] No certification or compliance claim.
+- [ ] Permission routes point to [LICENSE](../../LICENSE) and [COLLABORATION.md](../../COLLABORATION.md).
+- [ ] Token Optimization described as **Featured platform-capability proof** and **PARTIAL** — no universal savings claim.
 
 ---
 
-## 4. Outreach readiness
+## Outreach readiness
 
-- [ ] Outreach message links to README, EVALUATION_GUIDE, USE_CASES, PARTNERS, FAQ, COLLABORATION and ROADMAP.
-- [ ] Message routes reviewers to EVALUATION_GUIDE when they need a time-boxed review path.
-- [ ] Message asks for concrete feedback, not broad endorsement.
-- [ ] Message matches the audience:
-  - technical reviewer,
-  - attestation / observability builder,
-  - Local Knowledge Workspace design partner,
-  - governed agent application builder.
-- [ ] Message does not imply partnership, support or production permission.
-- [ ] Message includes or references the relevant public issue / feedback path when available.
+- [ ] Invitation matches one validation cohort.
+- [ ] First-contact participant starts from README only.
+- [ ] No expected answers are sent to the participant.
+- [ ] No endorsement request in the invitation.
+- [ ] No partnership implication in the invitation.
+- [ ] No production permission implication in the invitation.
+- [ ] Participant understands the time box (15 minutes for Track A).
+- [ ] Follow-up path is defined ([COLLABORATION.md](../../COLLABORATION.md) or session debrief).
 
 ---
 
-## 5. Proof and validation readiness
+## Evidence and privacy
 
-- [ ] README proof path is reachable and understandable.
-- [ ] EVALUATION_GUIDE provides a clear 5/15/30/60-minute evaluation flow.
-- [ ] USE_CASES maps validation paths to concrete problem areas.
-- [ ] PARTNERS separates partner-fit discussion from license grants, support, production permission, certification, or compliance claims.
-- [ ] BoundaryAttest case study includes validation-flow diagram.
-- [ ] BoundaryAttest case study keeps Intergrax runtime claim separate from external `client_observed` claim.
-- [ ] Local Knowledge Workspace alpha explains problem, validation goals, non-goals and useful feedback questions.
-- [ ] Public docs distinguish proof paths, product-validation narratives and canonical technical architecture.
+- [ ] Anonymized session IDs used.
+- [ ] No personal data committed to the repository.
+- [ ] Raw notes stored privately.
+- [ ] Quotes require participant consent.
+- [ ] Exact pinned ref recorded for every session.
+- [ ] Moderator interventions recorded.
+- [ ] `NOT_RUN` reasons recorded when tasks are skipped.
+- [ ] Aggregate results created only after real sessions.
 
 ---
 
-## 6. Final pre-post checks
+## Final gate
 
-- [ ] Links in the public post / DM are valid.
-- [ ] Branch references are intentional: use `main` when public stable content is merged, avoid accidentally linking to `development` unless intended.
-- [ ] No private contact details, secrets, tokens, customer names or confidential materials are included.
-- [ ] No screenshots or demo media expose private local paths, keys, emails, documents or user data.
-- [ ] No claim expands rights beyond LICENSE and COLLABORATION.
-- [ ] If unsure, link to FAQ and keep the message conservative.
+After completing all sections above, choose one outcome:
+
+| Outcome | When |
+|---------|------|
+| **READY_TO_RUN** | All checks pass; sessions or outreach may proceed |
+| **BLOCKED** | A prerequisite is missing; do not proceed until resolved |
+
+Checklist completion prepares the experiment. It does not conduct sessions, record fictional feedback, or claim external validation.
 
 ---
 
@@ -92,16 +114,10 @@ See [OUTREACH_KIT.md](OUTREACH_KIT.md) for draft messages and positioning guardr
 
 | Document | Purpose |
 |----------|---------|
-| [../../README.md](../../README.md) | Repository overview and start paths |
-| [../../FAQ.md](../../FAQ.md) | Common external-reader questions |
-| [../../EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) | Time-boxed evaluation guide for reviewers |
-| [../../USE_CASES.md](../../USE_CASES.md) | Use-case map and validation paths |
-| [../../PARTNERS.md](../../PARTNERS.md) | Partner and design-partner brief |
+| [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL.md) | Validation methodology, tasks, scoring, privacy and completion gates |
+| [OUTREACH_KIT.md](OUTREACH_KIT.md) | Recruitment and session-request templates |
+| [../../EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) | Reader-facing time-boxed evaluation paths |
+| [../../README.md](../../README.md) | Repository overview |
 | [../../COLLABORATION.md](../../COLLABORATION.md) | Collaboration and permission model |
-| [../../ROADMAP.md](../../ROADMAP.md) | Public adoption roadmap |
-| [../../SECURITY.md](../../SECURITY.md) | Security reporting |
-| [PUBLIC_ISSUE_INDEX.md](PUBLIC_ISSUE_INDEX.md) | Active curated public issues |
+| [PUBLIC_ISSUE_INDEX.md](PUBLIC_ISSUE_INDEX.md) | Curated public issue map |
 | [MAINTAINER_TRIAGE_PLAYBOOK.md](MAINTAINER_TRIAGE_PLAYBOOK.md) | Public issue triage rules |
-| [OUTREACH_KIT.md](OUTREACH_KIT.md) | Outreach drafts and positioning guardrails |
-| [../case-studies/BOUNDARYATTEST_ATTESTATION_POC.md](../case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) | Attestation case study |
-| [../product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md](../product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md) | LKW alpha narrative |

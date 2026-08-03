@@ -19,13 +19,13 @@ They do not define an open-source contribution model, production-support channel
 | 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical source for public problem statement, value proposition, Harness AI explanation, LKW role, audience, and public claim boundaries |
 | 1 | [Public Documentation Architecture](PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Canonical maintainer contract for public documentation layers, reader-intent routing, and proof classification |
 | 2 | [Public Proof and Claims Model](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Canonical status vocabulary, evidence requirements, claim qualification, and proof promotion rules |
-| 3 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
-| 4 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
-| 5 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
-| 6 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
-| 7 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
-| 8 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 9 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
+| 3 | [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md) | Canonical methodology, tasks, scoring, privacy and completion gates |
+| 4 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before external-reader sessions, reviewer requests or design-partner outreach |
+| 5 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
+| 6 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
+| 7 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
+| 8 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing recruitment templates and positioning guardrails |
+| 9 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) · [curated_public_issues.yml](curated_public_issues.yml) | Strategy, draft rationale and canonical source data for curated public issue automation |
 
 ## Reader-facing public navigation
 
@@ -38,6 +38,20 @@ Normal readers should start with the public documentation map:
 **Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
+
+## Validation status
+
+```text
+Protocol status:
+READY_TO_RUN
+
+External reader validation:
+NOT_STARTED
+```
+
+No external result is claimed until real sessions are completed, anonymized and reviewed.
+
+The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md) is a maintainer methodology document — not a normal external first-contact route. Normal readers should start with the [Public Documentation Map](../PUBLIC_DOCUMENTATION_MAP.md).
 
 ## Featured public proof routes
 
