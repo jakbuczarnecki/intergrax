@@ -291,7 +291,69 @@ _ACTIVE_LEGACY_9B_9C_PATTERNS = (
     re.compile(r"active external-validation phases", re.I),
 )
 
-_HISTORICAL_9B_9C_QUALIFIERS = ("paused", "superseded", "historical", "replaced")
+_ALLOWED_9B_9C_SENTENCE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"the previous planned 9b and 9c execution steps are "
+        r"(?:paused and superseded|superseded and paused|paused and replaced|"
+        r"replaced and paused|replaced|superseded) "
+        r"by px-13 and px-14 of public_product_experience_roadmap\.md\.?"
+    ),
+    re.compile(
+        r"the historical names 9b and 9c do not define an additional "
+        r"active execution path\.?"
+    ),
+)
+
+
+def _normalize_boundary_sentence(sentence: str) -> str:
+    sentence = re.sub(r"[*`]", "", sentence)
+    sentence = re.sub(r"\s+", " ", sentence).strip().lower()
+    return sentence
+
+
+def _boundary_section_sentences(section: str) -> list[str]:
+    prose_lines = [
+        line.strip()
+        for line in section.splitlines()
+        if line.strip() and not line.strip().startswith("##")
+    ]
+    return [
+        sentence.strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", " ".join(prose_lines))
+        if sentence.strip()
+    ]
+
+
+def _valid_external_validation_boundary_section(
+    *,
+    additional_sentence: str | None = None,
+) -> str:
+    lines = [
+        f"## {_EXTERNAL_VALIDATION_SECTION_HEADING}",
+        "",
+        (
+            "The previous planned 9B and 9C execution steps are paused and "
+            "superseded by PX-13 and PX-14 of "
+            "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md."
+        ),
+    ]
+    if additional_sentence is not None:
+        lines.extend(["", additional_sentence])
+    lines.extend(
+        [
+            "",
+            "PX-13 owns real external comprehension and trial sessions.",
+            "",
+            "PX-14 owns findings, corrections and required reruns.",
+            "",
+            (
+                "The historical names 9B and 9C do not define an additional "
+                "active execution path."
+            ),
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def _validate_external_validation_boundary_section(section: str) -> None:
@@ -315,13 +377,13 @@ def _validate_external_validation_boundary_section(section: str) -> None:
         assert not pattern.search(section), (
             f"Active legacy 9B/9C wording found: {pattern.pattern}"
         )
-    for sentence in re.split(r"(?<=[.!?])\s+", section):
-        if not re.search(r"\b9[BC]\b", sentence):
+    for sentence in _boundary_section_sentences(section):
+        if not re.search(r"\b9[BC]\b", sentence, re.IGNORECASE):
             continue
-        sentence_lower = sentence.lower()
+        normalized = _normalize_boundary_sentence(sentence)
         assert any(
-            qualifier in sentence_lower for qualifier in _HISTORICAL_9B_9C_QUALIFIERS
-        ), f"9B/9C mention lacks historical qualifier: {sentence!r}"
+            pattern.fullmatch(normalized) for pattern in _ALLOWED_9B_9C_SENTENCE_PATTERNS
+        ), f"9B/9C sentence not on historical allowlist: {sentence!r}"
 
 
 def test_architecture_synchronization() -> None:
@@ -383,34 +445,43 @@ _NEGATIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS = (
     "Point 9 is not complete until 9B and 9C are done.",
     "Run PX-13 and PX-14, then complete 9B and 9C.",
     "9B and 9C remain the active external-validation phases.",
+    "Historical 9B and 9C should still be completed after PX-14.",
+    "The paused 9B and 9C will run after PX-14.",
+    "Historical 9B and 9C remain required before external validation is complete.",
+    "9B and 9C were superseded, but they must still be executed after PX-14.",
+    "After PX-14, complete the historical 9B and 9C steps.",
+    (
+        "PX-13 and PX-14 are active, while historical 9B and 9C remain "
+        "future work."
+    ),
 )
 
 _POSITIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS = (
-    "Historical 9B and 9C are paused and superseded by PX-13 and PX-14.",
     (
-        "PX-13 and PX-14 are the active phases; historical 9B and 9C do not "
-        "define an additional active path."
+        "The previous planned 9B and 9C execution steps are paused and "
+        "superseded by PX-13 and PX-14 of PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md."
+    ),
+    (
+        "The historical names 9B and 9C do not define an additional "
+        "active execution path."
     ),
 )
 
 
+def test_valid_external_validation_boundary_section_passes() -> None:
+    _validate_external_validation_boundary_section(
+        _valid_external_validation_boundary_section()
+    )
+
+
 @pytest.mark.parametrize("text", _NEGATIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS)
 def test_external_validation_boundary_negative_mutations_raise(text: str) -> None:
-    section = f"## {_EXTERNAL_VALIDATION_SECTION_HEADING}\n\n{text}"
-    with pytest.raises(AssertionError):
+    section = _valid_external_validation_boundary_section(additional_sentence=text)
+    with pytest.raises(AssertionError, match="9B/9C|historical|legacy"):
         _validate_external_validation_boundary_section(section)
 
 
 @pytest.mark.parametrize("text", _POSITIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS)
 def test_external_validation_boundary_positive_mutations_pass(text: str) -> None:
-    section = (
-        f"## {_EXTERNAL_VALIDATION_SECTION_HEADING}\n\n"
-        f"The previous planned 9B and 9C execution steps are paused and "
-        f"superseded by PX-13 and PX-14 of PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md.\n\n"
-        f"{text}\n\n"
-        "PX-13 owns real external comprehension and trial sessions.\n\n"
-        "PX-14 owns findings, corrections and required reruns.\n\n"
-        "The historical names 9B and 9C do not define an additional active "
-        "execution path.\n"
-    )
+    section = _valid_external_validation_boundary_section(additional_sentence=text)
     _validate_external_validation_boundary_section(section)
