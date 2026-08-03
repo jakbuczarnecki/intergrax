@@ -684,3 +684,114 @@ def test_non_string_header_value_fails_safely() -> None:
         )
     assert exc_info.value.safe_reason == "invalid_header"
     assert executor.calls == []
+
+
+_SECRET_MAPPING_MESSAGE = "secret mapping message"
+
+
+class _RaisingItemsMapping(Mapping[object, object]):
+    def __getitem__(self, key: object) -> object:
+        return "value"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self) -> object:
+        raise RuntimeError(_SECRET_MAPPING_MESSAGE)
+
+
+class _MalformedResponseHeaders:
+    status_code = 200
+    content = b"{}"
+
+    @property
+    def headers(self) -> _RaisingItemsMapping:
+        return _RaisingItemsMapping()
+
+    def json(self) -> object:
+        return {}
+
+
+def test_params_mapping_exception_fails_closed() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            params=_RaisingItemsMapping(),
+        )
+    assert exc_info.value.error_code == "GOOGLE_WORKSPACE_INVALID_REQUEST"
+    assert exc_info.value.safe_reason == "invalid_query_parameter"
+    assert executor.calls == []
+    assert _SECRET_MAPPING_MESSAGE not in str(exc_info.value)
+
+
+def test_headers_mapping_exception_fails_closed() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers=_RaisingItemsMapping(),
+        )
+    assert exc_info.value.error_code == "GOOGLE_WORKSPACE_INVALID_REQUEST"
+    assert exc_info.value.safe_reason == "invalid_header"
+    assert executor.calls == []
+    assert _SECRET_MAPPING_MESSAGE not in str(exc_info.value)
+
+
+def test_response_headers_mapping_exception_fails_closed() -> None:
+    executor = _RecordingExecutor(responses=[_MalformedResponseHeaders()])  # type: ignore[list-item]
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.error_code == "GOOGLE_WORKSPACE_MALFORMED_RESPONSE"
+    assert exc_info.value.status_code == 200
+    assert exc_info.value.attempts == 1
+    assert exc_info.value.safe_reason == "invalid_response_headers"
+    assert _SECRET_MAPPING_MESSAGE not in str(exc_info.value)
+
+
+def test_malformed_headers_on_retry_preserves_attempt_and_status_metadata() -> None:
+    class _BadHeadersOnSecondAttempt:
+        status_code = 503
+        content = b"{}"
+        headers: dict[str, str] = {}
+
+        def json(self) -> object:
+            return {}
+
+    class _MalformedHeaders503:
+        status_code = 503
+        content = b"{}"
+
+        @property
+        def headers(self) -> _RaisingItemsMapping:
+            return _RaisingItemsMapping()
+
+        def json(self) -> object:
+            return {}
+
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    executor = _RecordingExecutor(
+        responses=[
+            _BadHeadersOnSecondAttempt(),
+            _MalformedHeaders503(),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps, jitter_values=[0.5])
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.error_code == "GOOGLE_WORKSPACE_MALFORMED_RESPONSE"
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.attempts == 2
+    assert exc_info.value.safe_reason == "invalid_response_headers"
+    assert len(executor.calls) == 2
+    assert len(sleeps) == 1
+    assert _SECRET_MAPPING_MESSAGE not in str(exc_info.value)

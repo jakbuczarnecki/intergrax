@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import threading
-from collections.abc import Mapping
 
 from pydantic import PrivateAttr
 
@@ -26,6 +25,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceCredentialResolver,
     GoogleWorkspaceSourceKind,
     GoogleWorkspaceTransport,
+    copy_google_workspace_credential_material,
 )
 from intergrax.runtime.integrations.categories._base import (
     _CONNECT_READ_WRITE_HEALTH,
@@ -43,7 +43,6 @@ GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID = "google_workspace"
 
 _DISABLED_INTEGRATION_MESSAGE = "Google Workspace integration is disabled"
 _CREDENTIAL_RESOLUTION_FAILURE_MESSAGE = "Google Workspace credential resolution failed"
-_INVALID_CREDENTIAL_MATERIAL_MESSAGE = "Google Workspace credential material is invalid"
 _CLIENT_FACTORY_FAILURE_MESSAGE = "Google Workspace client family could not be created"
 _INVALID_FACTORY_FAMILY_MESSAGE = (
     "Google Workspace client factory returned an invalid client family"
@@ -53,19 +52,6 @@ _INVALID_INJECTED_FAMILY_MESSAGE = (
 )
 
 GoogleWorkspaceCollaborationSuiteClient = CollaborationSuite
-
-
-def _validate_credential_material(material: object) -> dict[str, str]:
-    if not isinstance(material, Mapping) or not material:
-        raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-    copied: dict[str, str] = {}
-    for key, value in material.items():
-        if not isinstance(key, str) or not key.strip():
-            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-        if not isinstance(value, str):
-            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
-        copied[key] = value
-    return copied
 
 
 def _validate_client_family(
@@ -186,14 +172,7 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
                     _CREDENTIAL_RESOLUTION_FAILURE_MESSAGE,
                 ) from None
 
-            try:
-                credential_material = _validate_credential_material(resolved_material)
-            except IntegrationConfigurationError:
-                raise
-            except Exception:
-                raise IntegrationConfigurationError(
-                    _INVALID_CREDENTIAL_MATERIAL_MESSAGE,
-                ) from None
+            credential_material = copy_google_workspace_credential_material(resolved_material)
 
             try:
                 family = factory.create_client_family(credential_material=credential_material)

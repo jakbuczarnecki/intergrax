@@ -18,6 +18,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.confi
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GoogleWorkspaceClientFamily,
+    GoogleWorkspaceSourceKind,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
@@ -47,7 +48,15 @@ from tests.unit.runtime.vendor_knowledge.test_tenant_connection_document_store i
 
 @dataclass(frozen=True, slots=True)
 class _FakeTransport:
-    pass
+    def get_json(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> dict[str, object]:
+        return {}
 
 
 @dataclass(frozen=True, slots=True)

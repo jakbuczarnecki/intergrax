@@ -8,6 +8,29 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Mapping, Protocol, runtime_checkable
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+
+_INVALID_CREDENTIAL_MATERIAL_MESSAGE = "Google Workspace credential material is invalid"
+
+
+def copy_google_workspace_credential_material(material: object) -> dict[str, str]:
+    """Validate and defensively copy opaque Google Workspace credential material."""
+    try:
+        if not isinstance(material, Mapping) or not material:
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        copied: dict[str, str] = {}
+        for key, value in material.items():
+            if not isinstance(key, str) or not key.strip():
+                raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+            if not isinstance(value, str):
+                raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+            copied[key] = value
+        return copied
+    except IntegrationConfigurationError:
+        raise
+    except Exception:
+        raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE) from None
+
 
 class GoogleWorkspaceSourceKind(StrEnum):
     """Supported Google Workspace knowledge source kinds for one provider integration."""

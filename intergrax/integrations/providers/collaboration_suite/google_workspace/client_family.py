@@ -14,6 +14,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceRequestExecutor,
     GoogleWorkspaceRequestExecutorFactory,
     GoogleWorkspaceTransport,
+    copy_google_workspace_credential_material,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceHttpTransport,
@@ -56,7 +57,7 @@ class DefaultGoogleWorkspaceClientFactory:
         *,
         credential_material: Mapping[str, str],
     ) -> GoogleWorkspaceClientFamily:
-        material_copy = dict(credential_material)
+        material_copy = copy_google_workspace_credential_material(credential_material)
         try:
             executor = self._executor_factory.create_request_executor(
                 credential_material=material_copy,

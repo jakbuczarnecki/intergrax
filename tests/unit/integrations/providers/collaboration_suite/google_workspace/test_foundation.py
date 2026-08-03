@@ -741,3 +741,111 @@ def test_later_valid_call_materializes_and_caches_family() -> None:
     second = integration.require_client_family()
     assert first is second
     assert len(working_factory.calls) == 1
+
+
+_INVALID_CREDENTIAL_MESSAGE = "Google Workspace credential material is invalid"
+_SECRET_CREDENTIAL_FRAGMENT = "super-secret-credential-value"
+
+
+class _RaisingItemsMapping(Mapping[str, str]):
+    def __getitem__(self, key: str) -> str:
+        return "opaque"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 1
+
+    def items(self):
+        raise RuntimeError(f"secret mapping message {_SECRET_CREDENTIAL_FRAGMENT}")
+
+
+class _ValidExecutor:
+    def get(
+        self,
+        *,
+        url: str,
+        params: Mapping[str, object] | None,
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> object:
+        raise NotImplementedError
+
+
+class _CountingExecutorFactory:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_request_executor(
+        self,
+        *,
+        credential_material: Mapping[str, str],
+    ) -> _ValidExecutor:
+        self.calls += 1
+        return _ValidExecutor()
+
+
+def _default_client_factory(
+    executor_factory: object | None = None,
+) -> object:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.client_family import (
+        DefaultGoogleWorkspaceClientFactory,
+    )
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+        GoogleWorkspaceRetryPolicy,
+    )
+
+    return DefaultGoogleWorkspaceClientFactory(
+        executor_factory=executor_factory or _CountingExecutorFactory(),
+        retry_policy=GoogleWorkspaceRetryPolicy(),
+    )
+
+
+@pytest.mark.parametrize(
+    "credential_material",
+    [
+        "not-a-mapping",
+        {},
+        {1: "value"},  # type: ignore[dict-item]
+        {"": "value"},
+        {"kind": 123},  # type: ignore[dict-item]
+        _RaisingItemsMapping(),
+    ],
+)
+def test_default_factory_rejects_invalid_credential_material(
+    credential_material: object,
+) -> None:
+    executor_factory = _CountingExecutorFactory()
+    factory = _default_client_factory(executor_factory=executor_factory)
+    with pytest.raises(IntegrationConfigurationError, match=_INVALID_CREDENTIAL_MESSAGE) as exc_info:
+        factory.create_client_family(credential_material=credential_material)  # type: ignore[arg-type]
+    assert executor_factory.calls == 0
+    assert _SECRET_CREDENTIAL_FRAGMENT not in str(exc_info.value)
+    assert "secret mapping message" not in str(exc_info.value)
+
+
+def test_default_factory_passes_defensive_copy_to_executor_factory() -> None:
+    class _MutatingExecutorFactory:
+        def __init__(self) -> None:
+            self.received: Mapping[str, str] | None = None
+
+        def create_request_executor(
+            self,
+            *,
+            credential_material: Mapping[str, str],
+        ) -> _ValidExecutor:
+            self.received = credential_material
+            credential_material["mutated"] = "changed"  # type: ignore[index]
+            return _ValidExecutor()
+
+    executor_factory = _MutatingExecutorFactory()
+    factory = _default_client_factory(executor_factory=executor_factory)
+    caller_material = {"kind": "opaque", "scope": "drive"}
+    factory.create_client_family(credential_material=caller_material)
+    assert executor_factory.received is not caller_material
+    assert caller_material == {"kind": "opaque", "scope": "drive"}
+    assert executor_factory.received is not None
+    assert executor_factory.received["kind"] == "opaque"
+    assert executor_factory.received["scope"] == "drive"
+    assert executor_factory.received["mutated"] == "changed"
