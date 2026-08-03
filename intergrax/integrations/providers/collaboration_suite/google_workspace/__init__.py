@@ -4,15 +4,27 @@
 from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
+    "DefaultGoogleWorkspaceClientFactory",
     "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
     "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
+    "GoogleWorkspaceApiError",
     "GoogleWorkspaceClientFactory",
+    "GoogleWorkspaceClientFamily",
+    "GoogleWorkspaceCollectionPage",
     "GoogleWorkspaceCollaborationSuiteIntegration",
     "GoogleWorkspaceCollaborationSuiteIntegrationConfig",
     "GoogleWorkspaceCredentialResolver",
+    "GoogleWorkspaceErrorKind",
+    "GoogleWorkspaceHttpTransport",
+    "GoogleWorkspacePageToken",
+    "GoogleWorkspaceRequestExecutor",
+    "GoogleWorkspaceRequestExecutorFactory",
+    "GoogleWorkspaceRetryPolicy",
     "GoogleWorkspaceSourceKind",
+    "GoogleWorkspaceTransport",
     "create_google_workspace_collaboration_suite",
     "create_google_workspace_collaboration_suite_integration",
+    "parse_google_workspace_collection_page",
     "register_google_workspace_integration",
 ]
 
@@ -25,13 +37,25 @@ _BUNDLE_EXPORTS = frozenset(
 
 _FOUNDATION_EXPORTS = frozenset(
     {
+        "DefaultGoogleWorkspaceClientFactory",
         "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
         "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
+        "GoogleWorkspaceApiError",
         "GoogleWorkspaceClientFactory",
+        "GoogleWorkspaceClientFamily",
+        "GoogleWorkspaceCollectionPage",
         "GoogleWorkspaceCollaborationSuiteIntegration",
         "GoogleWorkspaceCollaborationSuiteIntegrationConfig",
         "GoogleWorkspaceCredentialResolver",
+        "GoogleWorkspaceErrorKind",
+        "GoogleWorkspaceHttpTransport",
+        "GoogleWorkspacePageToken",
+        "GoogleWorkspaceRequestExecutor",
+        "GoogleWorkspaceRequestExecutorFactory",
+        "GoogleWorkspaceRetryPolicy",
         "GoogleWorkspaceSourceKind",
+        "GoogleWorkspaceTransport",
+        "parse_google_workspace_collection_page",
     }
 )
 
@@ -47,6 +71,26 @@ def __getattr__(name: str):
         from intergrax.integrations.providers.collaboration_suite.google_workspace import bundle as _bundle
 
         return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
+    if name == "DefaultGoogleWorkspaceClientFactory":
+        from intergrax.integrations.providers.collaboration_suite.google_workspace.client_family import (
+            DefaultGoogleWorkspaceClientFactory,
+        )
+
+        return DefaultGoogleWorkspaceClientFactory
+    if name in {
+        "GoogleWorkspaceApiError",
+        "GoogleWorkspaceCollectionPage",
+        "GoogleWorkspaceErrorKind",
+        "GoogleWorkspaceHttpTransport",
+        "GoogleWorkspacePageToken",
+        "GoogleWorkspaceRetryPolicy",
+        "parse_google_workspace_collection_page",
+    }:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            transport as _transport,
+        )
+
+        return export_from_bundle(_transport, name, _FOUNDATION_EXPORTS)
     if name in _FOUNDATION_EXPORTS:
         if name == "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID":
             from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
@@ -62,8 +106,12 @@ def __getattr__(name: str):
             return GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS
         if name in {
             "GoogleWorkspaceClientFactory",
+            "GoogleWorkspaceClientFamily",
             "GoogleWorkspaceCredentialResolver",
+            "GoogleWorkspaceRequestExecutor",
+            "GoogleWorkspaceRequestExecutorFactory",
             "GoogleWorkspaceSourceKind",
+            "GoogleWorkspaceTransport",
         }:
             from intergrax.integrations.providers.collaboration_suite.google_workspace import (
                 contracts as _contracts,

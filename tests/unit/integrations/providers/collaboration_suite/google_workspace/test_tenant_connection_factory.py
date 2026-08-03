@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -42,6 +43,24 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
 from tests.unit.runtime.vendor_knowledge.test_tenant_connection_document_store import (
     ConditionalInMemoryDocumentStore,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class _FakeTransport:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class _FakeClientFamily:
+    _transport: _FakeTransport
+
+    @property
+    def transport(self) -> _FakeTransport:
+        return self._transport
+
+
+def _make_family() -> _FakeClientFamily:
+    return _FakeClientFamily(_transport=_FakeTransport())
 
 
 def _utc_now(offset_seconds: int = 0) -> datetime:
@@ -93,7 +112,7 @@ class _SpyClientFactory:
         credential_material: Mapping[str, str],
     ) -> GoogleWorkspaceClientFamily:
         self.calls.append(dict(credential_material))
-        return object()
+        return _make_family()
 
 
 class _RecordingSecretsStore:
@@ -343,3 +362,75 @@ def test_no_client_factory_invocation_on_construction_or_rehydration() -> None:
     )
     rehydrator.rehydrate_tenant(tenant_id="tenant-1")
     assert client_factory.calls == []
+
+
+@pytest.mark.unit
+def test_rehydration_and_registry_do_not_materialize_client_family() -> None:
+    credential_ref = "cred-google-workspace"
+    credential_payload = _valid_credential_json()
+    store = ConditionalInMemoryDocumentStore()
+    repo = DocumentStoreTenantConnectionRepository(store)
+    repo.create(_google_connection(credential_ref=credential_ref))
+    registry = KnowledgeConnectionRegistry()
+    client_factory = _SpyClientFactory()
+    factory = GoogleWorkspaceTenantConnectionIntegrationFactory(
+        client_factory=client_factory,
+    )
+    rehydrator = TenantConnectionRehydrator(
+        repository=repo,
+        secrets_store=_RecordingSecretsStore(secret=credential_payload),
+        integration_factory=factory,
+        connection_registry=registry,
+    )
+    rehydrator.rehydrate_tenant(tenant_id="tenant-1")
+    assert client_factory.calls == []
+
+    integration = registry.resolve(
+        tenant_id="tenant-1",
+        connection_ref="gw-conn-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+    )
+    assert isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration)
+    integration.validate_runtime()
+    assert client_factory.calls == []
+
+
+@pytest.mark.unit
+def test_first_require_client_family_materializes_once_from_rehydrated_integration() -> None:
+    credential_ref = "cred-google-workspace"
+    credential_payload = _valid_credential_json()
+    expected_material = json.loads(credential_payload)
+    store = ConditionalInMemoryDocumentStore()
+    repo = DocumentStoreTenantConnectionRepository(store)
+    repo.create(_google_connection(credential_ref=credential_ref))
+    registry = KnowledgeConnectionRegistry()
+    client_factory = _SpyClientFactory()
+    factory = GoogleWorkspaceTenantConnectionIntegrationFactory(
+        client_factory=client_factory,
+    )
+    rehydrator = TenantConnectionRehydrator(
+        repository=repo,
+        secrets_store=_RecordingSecretsStore(secret=credential_payload),
+        integration_factory=factory,
+        connection_registry=registry,
+    )
+    rehydrator.rehydrate_tenant(tenant_id="tenant-1")
+    integration = registry.resolve(
+        tenant_id="tenant-1",
+        connection_ref="gw-conn-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+    )
+    assert isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration)
+
+    first = integration.require_client_family()
+    second = integration.require_client_family()
+    assert client_factory.calls == [expected_material]
+    assert first is second
+
+    public_view = integration.config.public_view()
+    assert "client-id-value" not in str(public_view)
+    assert "private-key-value" not in str(public_view)
+    assert "client-id-value" not in repr(first)
+    assert "private-key-value" not in repr(first)

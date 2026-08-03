@@ -1,0 +1,454 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
+    GoogleWorkspaceSourceKind,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+    GoogleWorkspaceApiError,
+    GoogleWorkspaceCollectionPage,
+    GoogleWorkspaceErrorKind,
+    GoogleWorkspaceHttpTransport,
+    GoogleWorkspacePageToken,
+    GoogleWorkspaceRetryPolicy,
+    parse_google_workspace_collection_page,
+)
+
+_APPROVED_ROOTS = {
+    GoogleWorkspaceSourceKind.DRIVE: "https://www.googleapis.com/drive/v3",
+    GoogleWorkspaceSourceKind.DOCS: "https://docs.googleapis.com/v1",
+    GoogleWorkspaceSourceKind.SHEETS: "https://sheets.googleapis.com/v4",
+    GoogleWorkspaceSourceKind.SLIDES: "https://slides.googleapis.com/v1",
+    GoogleWorkspaceSourceKind.CALENDAR: "https://www.googleapis.com/calendar/v3",
+    GoogleWorkspaceSourceKind.MAIL: "https://gmail.googleapis.com/gmail/v1",
+    GoogleWorkspaceSourceKind.CHAT: "https://chat.googleapis.com/v1",
+}
+
+
+@dataclass
+class _FakeResponse:
+    status_code: int
+    headers: dict[str, str] = field(default_factory=dict)
+    content: bytes = b"{}"
+
+    def json(self) -> object:
+        return json.loads(self.content)
+
+
+@dataclass
+class _RecordingExecutor:
+    calls: list[dict[str, object]] = field(default_factory=list)
+    responses: list[_FakeResponse] = field(default_factory=list)
+    errors: list[Exception] = field(default_factory=list)
+
+    def get(
+        self,
+        *,
+        url: str,
+        params: Mapping[str, object] | None,
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> _FakeResponse:
+        self.calls.append(
+            {
+                "url": url,
+                "params": None if params is None else dict(params),
+                "headers": dict(headers),
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        if self.errors:
+            raise self.errors.pop(0)
+        return self.responses.pop(0)
+
+
+def _transport(
+    executor: _RecordingExecutor,
+    *,
+    policy: GoogleWorkspaceRetryPolicy | None = None,
+    sleeper: list[float] | None = None,
+    jitter_values: list[float] | None = None,
+) -> GoogleWorkspaceHttpTransport:
+    sleeps: list[float] = sleeper if sleeper is not None else []
+
+    def _sleeper(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    jitter_queue = list(jitter_values or [0.0])
+
+    def _jitter() -> float:
+        if jitter_queue:
+            return jitter_queue.pop(0)
+        return 0.0
+
+    return GoogleWorkspaceHttpTransport(
+        executor=executor,
+        retry_policy=policy or GoogleWorkspaceRetryPolicy(),
+        sleeper=_sleeper,
+        jitter_source=_jitter,
+    )
+
+
+def test_all_source_kinds_map_to_approved_roots() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    for kind, root in _APPROVED_ROOTS.items():
+        executor.responses.append(_FakeResponse(200, content=b'{"ok": true}'))
+        transport.get_json(source_kind=kind, relative_path="/files")
+        assert executor.calls[-1]["url"] == f"{root}/files"
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "forbidden"),
+    [
+        ("https://evil.example/files", "absolute"),
+        ("//evil.example/files", "protocol_relative"),
+        ("/a/../b", "traversal"),
+        ("/files?x=1", "query_in_path"),
+    ],
+)
+def test_unsafe_relative_paths_rejected(relative_path: str, forbidden: str) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path=relative_path,
+        )
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.INVALID_REQUEST
+    assert executor.calls == []
+
+
+@pytest.mark.parametrize(
+    "param_name",
+    ["access_token", "OAUTH_TOKEN", "Authorization", "API_KEY", "refresh_token"],
+)
+def test_forbidden_query_parameters_rejected(param_name: str) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            params={param_name: "secret"},
+        )
+    assert exc_info.value.safe_reason == "forbidden_query_parameter"
+    assert executor.calls == []
+
+
+@pytest.mark.parametrize("header_name", ["Authorization", "cookie", "X-Goog-Api-Key"])
+def test_forbidden_headers_rejected(header_name: str) -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers={header_name: "secret"},
+        )
+    assert exc_info.value.safe_reason == "forbidden_header"
+    assert executor.calls == []
+
+
+def test_successful_get_json_uses_executor_once_and_applies_accept() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(200, content=b'{"value": 1}')])
+    transport = _transport(executor)
+    params = {"pageSize": 10}
+    headers = {"X-Custom": "safe"}
+    result = transport.get_json(
+        source_kind=GoogleWorkspaceSourceKind.DRIVE,
+        relative_path="/files",
+        params=params,
+        headers=headers,
+    )
+    assert result == {"value": 1}
+    assert len(executor.calls) == 1
+    call = executor.calls[0]
+    assert call["url"] == "https://www.googleapis.com/drive/v3/files"
+    assert call["params"] == {"pageSize": 10}
+    assert call["headers"]["Accept"] == "application/json"
+    assert call["headers"]["X-Custom"] == "safe"
+    assert call["timeout_seconds"] == 30.0
+    assert params == {"pageSize": 10}
+    assert headers == {"X-Custom": "safe"}
+
+
+def test_invalid_status_type_rejected() -> None:
+    class _BadStatus:
+        status_code = "200"
+        headers: dict[str, str] = {}
+        content = b"{}"
+
+        def json(self) -> object:
+            return {}
+
+    executor = _RecordingExecutor()
+    executor.responses.append(_BadStatus())  # type: ignore[arg-type]
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+
+
+def test_invalid_status_range_rejected() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(99, content=b"{}")])
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+
+
+def test_non_bytes_content_rejected() -> None:
+    class _BadContent:
+        status_code = 200
+        headers: dict[str, str] = {}
+        content = "{}"
+
+        def json(self) -> object:
+            return {}
+
+    executor = _RecordingExecutor()
+    executor.responses.append(_BadContent())  # type: ignore[arg-type]
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+
+
+def test_oversized_response_rejected_before_json_decode() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_response_bytes=4)
+    executor = _RecordingExecutor(responses=[_FakeResponse(200, content=b"12345")])
+    transport = _transport(executor, policy=policy)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.safe_reason == "response_too_large"
+
+
+def test_top_level_non_object_json_rejected() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(200, content=b"[]")])
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.error_code == "GOOGLE_WORKSPACE_MALFORMED_RESPONSE"
+
+
+@pytest.mark.parametrize(
+    ("status_code", "body", "expected_kind", "retryable"),
+    [
+        (400, b'{"error": {"message": "bad"}}', GoogleWorkspaceErrorKind.INVALID_REQUEST, False),
+        (401, b"{}", GoogleWorkspaceErrorKind.AUTHENTICATION, False),
+        (403, b'{"error": {"errors": [{"reason": "forbidden"}]}}', GoogleWorkspaceErrorKind.AUTHORIZATION, False),
+        (
+            403,
+            b'{"error": {"errors": [{"reason": "rateLimitExceeded"}]}}',
+            GoogleWorkspaceErrorKind.RATE_LIMITED,
+            True,
+        ),
+        (404, b"{}", GoogleWorkspaceErrorKind.NOT_FOUND, False),
+        (408, b"{}", GoogleWorkspaceErrorKind.TEMPORARY, True),
+        (429, b"{}", GoogleWorkspaceErrorKind.RATE_LIMITED, True),
+        (500, b"{}", GoogleWorkspaceErrorKind.TEMPORARY, True),
+        (502, b"{}", GoogleWorkspaceErrorKind.TEMPORARY, True),
+        (503, b"{}", GoogleWorkspaceErrorKind.TEMPORARY, True),
+        (504, b"{}", GoogleWorkspaceErrorKind.TEMPORARY, True),
+        (302, b"{}", GoogleWorkspaceErrorKind.UNEXPECTED_REDIRECT, False),
+    ],
+)
+def test_error_mapping(
+    status_code: int,
+    body: bytes,
+    expected_kind: GoogleWorkspaceErrorKind,
+    retryable: bool,
+) -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(status_code, content=body)])
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=1)
+    transport = _transport(executor, policy=policy)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    error = exc_info.value
+    assert error.kind is expected_kind
+    assert error.retryable is retryable
+    assert "bad" not in str(error)
+    assert error.attempts == 1
+
+
+def test_executor_exception_maps_to_temporary_without_message() -> None:
+    executor = _RecordingExecutor(errors=[RuntimeError("network secret failure")])
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.TEMPORARY
+    assert "network secret failure" not in str(exc_info.value)
+
+
+def test_non_retryable_errors_do_not_retry() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(400, content=b"{}")])
+    sleeps: list[float] = []
+    transport = _transport(executor, sleeper=sleeps)
+    with pytest.raises(GoogleWorkspaceApiError):
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert len(executor.calls) == 1
+    assert sleeps == []
+
+
+def test_retryable_errors_retry_until_max_attempts_without_final_sleep() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3, base_backoff_seconds=1.0, max_backoff_seconds=8.0)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(503, content=b"{}"),
+            _FakeResponse(503, content=b"{}"),
+            _FakeResponse(503, content=b"{}"),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps, jitter_values=[0.5, 0.5])
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert len(executor.calls) == 3
+    assert sleeps == [0.5, 1.0]
+    assert exc_info.value.attempts == 3
+
+
+def test_successful_second_attempt_returns_payload() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(429, content=b"{}", headers={"Retry-After": "2"}),
+            _FakeResponse(200, content=b'{"ok": true}'),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps)
+    result = transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert result == {"ok": True}
+    assert len(executor.calls) == 2
+    assert sleeps == [2.0]
+
+
+def test_retry_after_is_bounded() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=2, max_retry_after_seconds=5)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(429, content=b"{}", headers={"Retry-After": "120"}),
+            _FakeResponse(200, content=b'{"ok": true}'),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps)
+    transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert sleeps == [5.0]
+
+
+def test_invalid_retry_after_is_ignored() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=2, base_backoff_seconds=2.0)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(429, content=b"{}", headers={"Retry-After": "-1"}),
+            _FakeResponse(200, content=b'{"ok": true}'),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps, jitter_values=[0.0])
+    transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert sleeps == [0.0]
+
+
+def test_retry_after_http_date_honored() -> None:
+    future = datetime.now(timezone.utc) + timedelta(seconds=3)
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=2, max_retry_after_seconds=30.0)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(
+                429,
+                content=b"{}",
+                headers={"Retry-After": future.strftime("%a, %d %b %Y %H:%M:%S GMT")},
+            ),
+            _FakeResponse(200, content=b'{"ok": true}'),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps)
+    transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert len(sleeps) == 1
+    assert 0 < sleeps[0] <= 30.0
+
+
+def test_security_fields_not_exposed_in_error() -> None:
+    body = json.dumps(
+        {
+            "error": {
+                "message": "provider secret message",
+                "errors": [{"reason": "rateLimitExceeded"}],
+            }
+        }
+    ).encode()
+    executor = _RecordingExecutor(responses=[_FakeResponse(429, content=body)])
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            params={"pageToken": "opaque-token-value"},
+        )
+    error = exc_info.value
+    assert "provider secret message" not in str(error)
+    assert "opaque-token-value" not in str(error)
+    assert "access_token" not in str(error)
+
+
+def test_page_token_hidden_from_repr() -> None:
+    token = GoogleWorkspacePageToken(value="super-secret-token")
+    assert "super-secret-token" not in repr(token)
+
+
+def test_parse_collection_page_valid_without_token() -> None:
+    payload = {"files": [{"id": "1"}, {"id": "2"}]}
+    original = json.loads(json.dumps(payload))
+    page = parse_google_workspace_collection_page(payload, items_field="files")
+    assert isinstance(page, GoogleWorkspaceCollectionPage)
+    assert page.items == ({"id": "1"}, {"id": "2"})
+    assert page.next_page_token is None
+    assert payload == original
+
+
+def test_parse_collection_page_valid_with_token() -> None:
+    page = parse_google_workspace_collection_page(
+        {"files": [{"id": "1"}], "nextPageToken": "token-1"},
+        items_field="files",
+    )
+    assert page.next_page_token is not None
+    assert page.next_page_token.value == "token-1"
+
+
+def test_parse_collection_page_preserves_item_order() -> None:
+    page = parse_google_workspace_collection_page(
+        {"files": [{"id": "a"}, {"id": "b"}, {"id": "c"}]},
+        items_field="files",
+    )
+    assert [item["id"] for item in page.items] == ["a", "b", "c"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "items_field"),
+    [
+        ("not-a-dict", "files"),
+        ({"files": "nope"}, "files"),
+        ({"other": []}, "files"),
+        ({"files": ["bad"]}, "files"),
+        ({"files": [{}], "nextPageToken": "   "}, "files"),
+        ({"files": [{}], "nextPageToken": "x" * 5000}, "files"),
+        ({"files": [{}], "nextPageToken": "bad\x00token"}, "files"),
+    ],
+)
+def test_parse_collection_page_malformed_rejected(payload: object, items_field: str) -> None:
+    with pytest.raises((ValueError, TypeError)):
+        parse_google_workspace_collection_page(payload, items_field=items_field)

@@ -4,11 +4,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 
 import pytest
 from pydantic import ValidationError
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationConfigurationError,
+    IntegrationDependencyError,
+)
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers import collaboration_suite
 from intergrax.integrations.providers.collaboration_suite import google_workspace
@@ -29,6 +34,24 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.integ
     GoogleWorkspaceCollaborationSuiteIntegration,
 )
 from intergrax.runtime.integrations.contracts import PlatformIntegrationKind, PlatformIntegrationStatus
+
+
+@dataclass(frozen=True, slots=True)
+class _FakeTransport:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class _FakeClientFamily:
+    _transport: _FakeTransport
+
+    @property
+    def transport(self) -> _FakeTransport:
+        return self._transport
+
+
+def _make_family() -> _FakeClientFamily:
+    return _FakeClientFamily(_transport=_FakeTransport())
 
 
 class _SpyCredentialResolver:
@@ -54,7 +77,7 @@ class _SpyClientFactory:
         credential_material: Mapping[str, str],
     ) -> GoogleWorkspaceClientFamily:
         self.calls.append(dict(credential_material))
-        return object()
+        return _make_family()
 
 
 def test_provider_identity_and_category() -> None:
@@ -276,3 +299,167 @@ def test_lazy_package_imports_foundation_symbols() -> None:
         collaboration_suite.google_workspace.GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID
         == "google_workspace"
     )
+
+
+def test_health_does_not_materialize_client_family() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    health = integration.check_health()
+    assert health.status is not PlatformIntegrationStatus.UNAVAILABLE
+    assert resolver.calls == []
+    assert factory.calls == []
+
+
+def test_require_client_family_resolves_and_creates_once() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    first = integration.require_client_family()
+    second = integration.require_client_family()
+    assert resolver.calls == ["refs/google-workspace"]
+    assert factory.calls == [{"kind": "opaque"}]
+    assert first is second
+
+
+def test_require_client_family_concurrent_first_calls_share_one_family() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+
+    def _require() -> GoogleWorkspaceClientFamily:
+        return integration.require_client_family()
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        families = list(pool.map(lambda _: _require(), range(8)))
+
+    assert resolver.calls == ["refs/google-workspace"]
+    assert len(factory.calls) == 1
+    assert len({id(family) for family in families}) == 1
+
+
+class _FailingCredentialResolver:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def resolve_credential(self, credential_ref: str) -> Mapping[str, str]:
+        self.calls += 1
+        raise RuntimeError("secret-token-value must not leak")
+
+
+class _FailingClientFactory:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def create_client_family(
+        self,
+        *,
+        credential_material: Mapping[str, str],
+    ) -> GoogleWorkspaceClientFamily:
+        self.calls += 1
+        raise RuntimeError(f"boom {credential_material['kind']}")
+
+
+def test_resolver_failure_is_not_cached() -> None:
+    resolver = _FailingCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    with pytest.raises(IntegrationConfigurationError, match="could not resolve") as exc_info:
+        integration.require_client_family()
+    assert "secret-token-value" not in str(exc_info.value)
+    with pytest.raises(IntegrationConfigurationError):
+        integration.require_client_family()
+    assert resolver.calls == 2
+    assert factory.calls == []
+
+
+def test_factory_failure_is_not_cached() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _FailingClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    with pytest.raises(IntegrationDependencyError, match="could not create") as exc_info:
+        integration.require_client_family()
+    assert "opaque" not in str(exc_info.value)
+    assert "boom" not in str(exc_info.value)
+    with pytest.raises(IntegrationDependencyError):
+        integration.require_client_family()
+    assert factory.calls == 2
+
+
+class _InvalidFamilyFactory:
+    def create_client_family(
+        self,
+        *,
+        credential_material: Mapping[str, str],
+    ) -> GoogleWorkspaceClientFamily:
+        return object()  # type: ignore[return-value]
+
+
+def test_invalid_factory_result_fails_closed() -> None:
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=_SpyCredentialResolver(),
+        client_factory=_InvalidFamilyFactory(),
+    )
+    with pytest.raises(IntegrationConfigurationError, match="invalid client family"):
+        integration.require_client_family()
+
+
+def test_injected_client_family_returned_directly() -> None:
+    family = _make_family()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.from_client(
+        family,  # type: ignore[arg-type]
+        enabled=True,
+    )
+    assert integration.require_client_family() is family
+
+
+def test_legacy_injected_client_remains_healthy_but_fails_on_require_family() -> None:
+    client = _MinimalCollaborationSuiteClient()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.from_client(
+        client,
+        enabled=True,
+    )
+    integration.validate_runtime()
+    health = integration.check_health()
+    assert health.status is not PlatformIntegrationStatus.UNAVAILABLE
+    with pytest.raises(IntegrationConfigurationError, match="does not expose"):
+        integration.require_client_family()

@@ -5,9 +5,14 @@
 
 from __future__ import annotations
 
+import threading
+
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationConfigurationError,
+    IntegrationDependencyError,
+)
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
     GoogleWorkspaceCollaborationSuiteCompositionMode,
@@ -16,6 +21,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.confi
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
     GoogleWorkspaceClientFactory,
+    GoogleWorkspaceClientFamily,
     GoogleWorkspaceCredentialResolver,
     GoogleWorkspaceSourceKind,
 )
@@ -50,6 +56,8 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
     _credential_resolver: GoogleWorkspaceCredentialResolver | None = PrivateAttr(default=None)
     _client_factory: GoogleWorkspaceClientFactory | None = PrivateAttr(default=None)
     _client: GoogleWorkspaceCollaborationSuiteClient | None = PrivateAttr(default=None)
+    _client_family: GoogleWorkspaceClientFamily | None = PrivateAttr(default=None)
+    _client_family_lock: threading.Lock = PrivateAttr(default_factory=threading.Lock)
 
     @property
     def supported_source_kinds(self) -> tuple[GoogleWorkspaceSourceKind, ...]:
@@ -85,6 +93,71 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} requires an injected client factory when enabled=True",
             )
+
+    def require_client_family(self) -> GoogleWorkspaceClientFamily:
+        """Materialize and cache the shared client family on first successful request."""
+        if (
+            self.config.composition_mode
+            == GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT
+        ):
+            client = self._client
+            if client is None:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} requires an injected client when enabled=True "
+                    "in injected_client composition mode",
+                )
+            if isinstance(client, GoogleWorkspaceClientFamily):
+                return client
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} injected client does not expose a Google Workspace "
+                "client family",
+            )
+
+        cached = self._client_family
+        if cached is not None:
+            return cached
+
+        with self._client_family_lock:
+            cached = self._client_family
+            if cached is not None:
+                return cached
+
+            self.validate_runtime()
+            resolver = self._credential_resolver
+            factory = self._client_factory
+            if resolver is None or factory is None:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} requires injected credential resolver and client "
+                    "factory when enabled=True",
+                )
+
+            try:
+                credential_material = resolver.resolve_credential(self.config.credential_ref)
+            except IntegrationConfigurationError:
+                raise
+            except Exception:
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} could not resolve configured credential reference",
+                ) from None
+
+            try:
+                family = factory.create_client_family(credential_material=credential_material)
+            except IntegrationDependencyError:
+                raise
+            except IntegrationConfigurationError:
+                raise
+            except Exception:
+                raise IntegrationDependencyError(
+                    f"{type(self).__name__} could not create Google Workspace client family",
+                ) from None
+
+            if not isinstance(family, GoogleWorkspaceClientFamily):
+                raise IntegrationConfigurationError(
+                    f"{type(self).__name__} client factory returned an invalid client family",
+                )
+
+            self._client_family = family
+            return family
 
     def check_health(self) -> PlatformIntegrationHealth:
         if not self.config.enabled:
