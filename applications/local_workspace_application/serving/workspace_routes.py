@@ -142,6 +142,9 @@ from local_workspace_application.workspaces.knowledge_live_access_handlers impor
     CreateLiveAccessBindingMutationHandler,
     DisableLiveAccessBindingMutationHandler,
 )
+from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
+    UpdateQueryPolicyMutationHandler,
+)
 from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
     DetachConnectionMutationHandler,
 )
@@ -179,6 +182,12 @@ from local_workspace_application.serving.knowledge_connected_source_routes impor
 )
 from local_workspace_application.serving.knowledge_connection_attachment_routes import (
     mount_knowledge_connection_attachment_routes,
+)
+from local_workspace_application.serving.knowledge_query_policy_routes import (
+    mount_knowledge_query_policy_routes,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_service import (
+    WorkspaceQueryPolicyService,
 )
 from local_workspace_application.workspaces.vector_cleanup import (
     VectorstoreManagerWorkspaceCleanup,
@@ -420,7 +429,21 @@ def mount_managed_workspace_routes(
             WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING: (
                 DisableLiveAccessBindingMutationHandler()
             ),
+            WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: (
+                UpdateQueryPolicyMutationHandler()
+            ),
         },
+    )
+    query_policy_service = WorkspaceQueryPolicyService(
+        repository=repository,
+        configuration_service=configuration_service,
+        mutation_engine=mutation_engine,
+    )
+    mount_knowledge_query_policy_routes(
+        app,
+        query_policy_service=query_policy_service,
+        configuration_service=configuration_service,
+        prefix=prefix,
     )
     connected_wiring = connected_source_wiring
     from local_workspace_application.workspaces.connected_source_host_wiring import (
