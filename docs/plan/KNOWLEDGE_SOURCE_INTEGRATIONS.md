@@ -75,7 +75,10 @@ ACCEPTED:
 LKW-CONVERSATION-CONTEXT-ARCH-1
 READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1
+CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
+  correction under review
 IN_PROGRESS:
 LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
@@ -96,6 +99,7 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
   blocked by: VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A, 1B
 PLANNED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A
+  blocked pending architecture correction acceptance
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1
 LKW-CONVERSATION-CONTEXT-1
@@ -116,7 +120,7 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation, shared-channel runtime and live capability remain **not** implemented.
 
-**Execution order (frozen):**
+**Execution order (frozen) — parallel tracks:**
 
 ```text
 DONE:
@@ -135,7 +139,7 @@ LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 IN_PROGRESS / CHANGES_REQUIRED:
 LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
 
-THEN:
+THEN (Slack / LKW track):
 LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 SLACK-LIVE-CAPABILITY-1
@@ -148,7 +152,15 @@ LKW-SLACK-CONNECTED-SOURCE-1
 + LKW-HYBRID-ASK-1
 → LKW-SLACK-KNOWLEDGE-PROOF-1
 
-AFTER LKW-SLACK-KNOWLEDGE-PROOF-1 ACCEPTED (complete Slack Knowledge vertical):
+CURRENT VENDOR KNOWLEDGE / MICROSOFT GRAPH TRACK (independent of Google Workspace):
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correction under review
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 — READY_FOR_REVIEW
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A — PLANNED, blocked pending architecture correction acceptance
+→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B — PLANNED
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1
+→ Microsoft Graph adapter-family audit
+
+INDEPENDENT GOOGLE WORKSPACE TRACK (after LKW-SLACK-KNOWLEDGE-PROOF-1 ACCEPTED):
 GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1A-DRIVE
 → GOOGLE-WORKSPACE-KNOWLEDGE-ADAPTERS-1A-DRIVE
@@ -165,10 +177,10 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
 → LKW-GOOGLE-WORKSPACE-PROOF-1
 → GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1E–1G + matching adapters
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A
-→ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1
-Microsoft Graph family audit
+
+Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance.
+Microsoft Calendar work does not gate the independent Google Workspace workstream.
+
 remaining Hybrid Ask and provider packs
 ```
 
@@ -385,7 +397,7 @@ treated as proof of global event deletion.
 
 No beta Graph endpoint, group calendar, recursive item attachment or reference-attachment download is implemented.
 
-The Microsoft Graph Calendar Vendor Knowledge adapter is **CHANGES_REQUIRED** (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`). Missing-item detection for non-primary calendar reconciliation is **not implemented** on HEAD; Calendar is blocked by shared reconciliation-finalization (`VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` **READY_FOR_REVIEW** → `1A` → `1B` → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`). Calendar ACL is not implemented.
+The Microsoft Graph Calendar Vendor Knowledge adapter is **CHANGES_REQUIRED** (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`). Missing-item detection for non-primary calendar reconciliation is **not implemented** on HEAD; Calendar is blocked by shared reconciliation-finalization (`VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` **CHANGES_REQUIRED** → `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` **READY_FOR_REVIEW** → `1A` → `1B` → `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`). Calendar ACL is not implemented.
 
 Microsoft Graph Teams Chat low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -898,22 +910,29 @@ VendorKnowledgeSyncRuntime.
 
 #### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED` — correction under review
+
+**Review fix:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` — `READY_FOR_REVIEW`
 
 **Purpose:** Freeze provider-neutral durable reconciliation-finalization semantics so completed snapshot reconciliation can emit deterministic synthetic tombstones for items absent from the synchronized inventory without the checkpoint-failure / `restart=True` nondeterminism present on HEAD.
 
 **Architecture:** [`VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md`](VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md)
 
-**Frozen decisions:**
+**Frozen decisions (review-fix):**
 
-- separate reconciliation-run state machine (`COLLECTING` → `PAGE_PREPARED` → `FINALIZING` → `COMPLETED`);
+- separate reconciliation-run state machine (`COLLECTING` → `PAGE_PREPARED` → `FINALIZING` → `COMPLETED`) with fail-closed `RECOVERY_REQUIRED` and controlled terminal `ABORTED`;
+- single active slot keyed by `(tenant_id, binding_id)` with `binding_configuration_version` inside the run;
 - `PAGE_PREPARED` intent before sink or remote-item state mutation;
-- bounded active candidate inventory with fail-closed over-limit behavior;
+- `prepared_batch_fingerprint` and `prepared_state_mutations` for exact materialized batch identity;
+- inspectable sink and item-state delivery receipts with receipt-driven retry;
+- `FINALIZING` checkpoint idempotency including crash-after-checkpoint-commit recovery;
+- operator-safe recovery interface (`RESUME_EXACT`, `FINALIZE_ALREADY_COMMITTED`, `ABORT_PRISTINE`, `REPAIR_REQUIRED`);
+- bounded active candidate inventory with count and byte limits;
 - deterministic delivery-ID contract including synthetic tombstone IDs;
 - incremental sync blocked while an active reconciliation run exists;
 - reconciliation tombstones mean `absent_from_completed_synchronized_source_inventory` only.
 
-**Next after acceptance:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
+**Next after acceptance:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` (currently **PLANNED**, blocked pending architecture correction acceptance).
 
 **Blocks:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` (currently **CHANGES_REQUIRED**). Missing-item detection is **not implemented** on HEAD.
 
@@ -1067,26 +1086,23 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is **CHANGES_REQUIRED** — blocked by `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` and `1B`. Architecture frozen in [`VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md`](VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md) (`VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` **READY_FOR_REVIEW**).
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is **CHANGES_REQUIRED** — blocked by `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` and `1B`. Architecture in [`VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md`](VENDOR_KNOWLEDGE_RECONCILIATION_FINALIZATION.md) (`VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` **CHANGES_REQUIRED**; `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` **READY_FOR_REVIEW**).
 
-**Next (Microsoft Graph Vendor Knowledge):** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` after architecture acceptance (`LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED** on the LKW track; `LKW-CONVERSATION-CONTEXT-1` is not the next Microsoft Graph task).
+**Next (Microsoft Graph Vendor Knowledge):** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` after architecture correction acceptance (`LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED** on the LKW track; `LKW-CONVERSATION-CONTEXT-1` is not the next Microsoft Graph task).
 
-**Planned execution order:**
+**Vendor Knowledge / Microsoft Graph track (independent of Google Workspace):**
 
 ```text
-SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
-LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
-LKW-SLACK-CONNECTED-SOURCE-1 — IN_PROGRESS / CHANGES_REQUIRED
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A — NEXT (after arch acceptance)
-VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correction under review
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1 — READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A — NEXT (after arch acceptance; blocked pending acceptance)
+VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B — PLANNED
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — CHANGES_REQUIRED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1
-LKW-CONVERSATION-CONTEXT-1
-LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
-SLACK-LIVE-CAPABILITY-1
-LKW-SLACK-KNOWLEDGE-PROOF-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 — PLANNED
+→ Microsoft Graph adapter-family audit
 ```
+
+Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
 
 Add separate thin adapters over the same resolved Microsoft Graph integration:
 
@@ -1135,7 +1151,7 @@ Recommended implementation/proof order inside the Microsoft scope:
 5. calendar — CHANGES_REQUIRED (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; blocked by reconciliation finalization)
 ```
 
-Google Workspace remains an independent workstream and does not gate Microsoft Graph Calendar adapter delivery. After `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` acceptance, the next Vendor Knowledge task in the Microsoft Graph adapter family is `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
+Google Workspace remains an independent workstream. Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream. After architecture correction acceptance, the next Vendor Knowledge task in the Microsoft Graph adapter family is `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
 
 The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes the Google Workspace proof-critical path.
 
@@ -1603,7 +1619,8 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
 → LKW-GOOGLE-WORKSPACE-PROOF-1
 → read surfaces 1E–1G + adapters 1E–1G
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 (after reconciliation finalization 1A/1B; independent of Google Workspace gate)
 ```
+
+Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
 
 Each read surface and its adapter must be independently reviewable before proceeding. The final Google LKW proof may combine Docs, Sheets, Calendar and an optional ordinary Drive file.
