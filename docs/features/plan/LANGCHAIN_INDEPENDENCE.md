@@ -76,7 +76,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Confirm whether meta-package langchain is used; remove from core if clean-install proof shows no use; add controlled upper version ranges; clean-install smoke. |
 | **Owning domain plan** | docs/plan/PLATFORM_FOUNDATION.md |
 | **Dependencies** | LCI-0B |
@@ -99,7 +99,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | **Exact scope** | Architecture + contract spec; mapping table from LangChain Document |
 | **Explicit out of scope** | Implementation; LangChain bridge |
 | **Contract satellite** | [../architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) |
-| **Acceptance criteria** | Canonical location (`intergrax/knowledge/contracts/document.py`, public import `KnowledgeDocument`); complete field contract (`KnowledgeDocument`, `KnowledgeDocumentIdentity`, `KnowledgeDocumentScope`, `KnowledgeDocumentProvenance`); identity and lineage rules; tenant fail-closed policy; metadata and provenance rules; serialization/versioning (`schema_version = 1`); LangChain `Document` mapping table; Vendor Knowledge reuse decision; explicit boundaries for LCI-1B–LCI-1D; RAG architecture hub entry published |
+| **Acceptance criteria** | Canonical location (`intergrax/knowledge/contracts/document.py`, public import `KnowledgeDocument`); complete field contract (`KnowledgeDocument`, `KnowledgeDocumentIdentity`, `KnowledgeDocumentScope`, `KnowledgeDocumentProvenance`); canonical scoped identity; source hierarchy separated from document lineage; strict source/derivative lineage invariants; identity and lineage rules; tenant fail-closed policy; metadata and provenance rules; reserved metadata always rejected; finite JSON numbers; serialization/versioning (`schema_version = 1`); LangChain `Document` mapping table; Vendor Knowledge reuse decision; shared validation reuse decision; explicit boundaries for LCI-1B–LCI-1D; RAG architecture hub entry published |
 | **User-visible outcome** | Stable document ABI specification |
 
 ---
