@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
     PdfSmartDocumentHandler,
@@ -50,7 +50,10 @@ def test_document_handler_contract(tmp_path: Path, handler_cls, extension, creat
     assert hasattr(parsers[0], "load")
 
     # real parsing
-    docs = handler.load(str(file_path))
+    docs = handler.load(
+        str(file_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert all(isinstance(d, Document) for d in docs)
+    assert all(isinstance(d, KnowledgeDocument) for d in docs)

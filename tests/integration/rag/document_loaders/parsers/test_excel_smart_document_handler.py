@@ -8,8 +8,7 @@ import pytest
 from pathlib import Path
 
 import pandas as pd
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.excel_smart_document_handler import (
     ExcelSmartDocumentHandler,
@@ -66,12 +65,15 @@ def test_excel_handler_loads_csv(tmp_path: Path):
 
     handler = ExcelSmartDocumentHandler()
 
-    docs = handler.load(str(csv_path))
+    docs = handler.load(
+        str(csv_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert all(isinstance(d, Document) for d in docs)
+    assert all(isinstance(d, KnowledgeDocument) for d in docs)
 
-    content = " ".join(d.page_content for d in docs)
+    content = " ".join(d.content for d in docs)
 
     assert "Alice" in content
     assert "Bob" in content

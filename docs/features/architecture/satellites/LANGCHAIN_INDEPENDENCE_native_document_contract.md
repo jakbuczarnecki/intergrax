@@ -534,3 +534,21 @@ Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_de
 | CI workflow | `.github/workflows/unit-tests.yml` (PR smoke + full governance) |
 | Blocked namespaces | `langchain`, `langchain_*`, `langgraph`, `langgraph_*`, `intergrax.compat` |
 | Proof boundary | Native `KnowledgeDocument` import/serialize proof only; full LangChain-free core installation remains **LCI-7B** |
+
+## LCI-2B handler and loader boundary
+
+Native ingestion path:
+
+`	ext
+ParsedDocumentFragment
+→ scoped BaseDocumentHandler
+→ KnowledgeDocument
+→ DocumentsLoader
+→ KnowledgeDocument
+`
+
+- Parser fragments do not carry tenant scope; the handler receives typed KnowledgeDocumentScope.
+- Fragment document_id is deterministic per normalized source + position.
+- Parser
+ative_handle is parser-local ephemeral provider state and is not part of the RAG-ready ABI; it is discarded at the KnowledgeDocument boundary with a debug log.
+- DocumentsLoader applies a temporary normalization/metadata LangChain bridge (removed in LCI-2C).

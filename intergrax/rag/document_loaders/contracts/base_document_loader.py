@@ -5,13 +5,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import JsonValue
 
 
-MetadataCallback = Callable[[Document, Path], Dict[str, Any]]
+MetadataCallback = Callable[
+    [KnowledgeDocument, Path | str],
+    Mapping[str, JsonValue],
+]
 
 
 class BaseDocumentsLoader(ABC):
@@ -21,14 +26,18 @@ class BaseDocumentsLoader(ABC):
         self,
         source: str,
         *,
+        tenant_id: str,
+        namespace: str | None = None,
         use_default_metadata: bool = True,
         call_custom_metadata: Optional[MetadataCallback] = None,
-    ) -> List[Document]:
+    ) -> List[KnowledgeDocument]:
         """
         Load a single source (path/http/s3/etc.) using handler registry + metadata pipeline.
 
         Args:
             source: URI or path passed to the resolved handler.
+            tenant_id: Required tenant scope for produced KnowledgeDocument instances.
+            namespace: Optional namespace within the tenant scope.
             use_default_metadata: When True, run the configured metadata pipeline after normalize.
             call_custom_metadata: Optional callback ``(doc, path) -> dict`` merged into each
                 document's metadata (after default enrichment when enabled).
@@ -48,6 +57,9 @@ class BaseDocumentsLoader(ABC):
     def load_documents(
         self,
         directory_path: str,
-    ) -> List[Document]:
+        *,
+        tenant_id: str,
+        namespace: str | None = None,
+    ) -> List[KnowledgeDocument]:
 
         raise NotImplementedError

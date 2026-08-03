@@ -8,8 +8,7 @@ import pytest
 from pathlib import Path
 
 import docx
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.doc_smart_document_handler import (
     DocSmartDocumentHandler,
@@ -59,11 +58,14 @@ def test_doc_handler_loads_docx(tmp_path: Path):
 
     handler = DocSmartDocumentHandler()
 
-    docs = handler.load(str(doc_path))
+    docs = handler.load(
+        str(doc_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert all(isinstance(d, Document) for d in docs)
+    assert all(isinstance(d, KnowledgeDocument) for d in docs)
 
-    content = " ".join(d.page_content for d in docs)
+    content = " ".join(d.content for d in docs)
 
     assert "Hello from DOCX handler test." in content

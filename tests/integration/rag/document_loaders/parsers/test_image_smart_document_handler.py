@@ -9,6 +9,8 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
+
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.image_smart_document_handler import (
     ImageSmartDocumentHandler,
@@ -74,8 +76,11 @@ def test_image_handler_load(monkeypatch, tmp_path: Path):
 
     handler = ImageSmartDocumentHandler()
 
-    docs = handler.load(str(image_path))
+    docs = handler.load(
+        str(image_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert isinstance(docs[0], Document)
-    assert docs[0].page_content == "dummy image text"
+    assert isinstance(docs[0], KnowledgeDocument)
+    assert docs[0].content == "dummy image text"

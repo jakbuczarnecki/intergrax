@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.compat.langchain import to_langchain_document
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
@@ -98,6 +99,13 @@ class IngestPipeline:
                 )
 
             base_metadata = dict(request.base_metadata)
+            tenant_id = base_metadata.get("tenant_id")
+            if not isinstance(tenant_id, str) or not tenant_id.strip():
+                return IngestResult(used=False, reason="missing_tenant_id")
+
+            namespace = base_metadata.get("namespace")
+            loader_namespace = namespace if isinstance(namespace, str) and namespace.strip() else None
+
             version_policy = evaluate_ingest_embedding_version(
                 profile=self._profile,
                 base_metadata=base_metadata,
@@ -110,16 +118,25 @@ class IngestPipeline:
             def _cb(doc: Any, source: str) -> Dict[str, Any]:
                 if self._metadata_callback is not None:
                     return self._metadata_callback(doc, source)
-                return dict(base_metadata)
+                filtered = {
+                    key: value
+                    for key, value in base_metadata.items()
+                    if key not in {"tenant_id", "namespace"}
+                }
+                return filtered
 
             with rag_span("rag.ingest.load", attributes={"rag.ingest.source": str(path)}):
-                docs = self._loader.load_document(
+                native_docs = self._loader.load_document(
                     str(path),
+                    tenant_id=tenant_id,
+                    namespace=loader_namespace,
                     use_default_metadata=True,
                     call_custom_metadata=_cb,
                 )
-            if not docs:
+            if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
+
+            docs: List[Document] = [to_langchain_document(doc) for doc in native_docs]
 
             strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
             sem_allowed, sem_reason, _ = semantic_chunking_allowed(

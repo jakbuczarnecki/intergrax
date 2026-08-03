@@ -7,8 +7,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.audio_smart_document_handler import (
@@ -73,8 +72,11 @@ def test_audio_handler_load(monkeypatch, tmp_path: Path):
 
     handler = AudioSmartDocumentHandler()
 
-    docs = handler.load(str(audio_path))
+    docs = handler.load(
+        str(audio_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert isinstance(docs[0], Document)
-    assert docs[0].page_content == "dummy audio transcript"
+    assert isinstance(docs[0], KnowledgeDocument)
+    assert docs[0].content == "dummy audio transcript"

@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
+from intergrax.knowledge.contracts import KnowledgeDocumentScope
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
 from intergrax.rag.document_loaders.handlers.pdf_smart_document_handler import (
     PdfSmartDocumentHandler,
@@ -59,7 +60,10 @@ def test_pdf_handler_loads_pdf(tmp_path: Path):
 
     handler = PdfSmartDocumentHandler(enable_ocr=False)
 
-    docs = handler.load(str(pdf_path))
+    docs = handler.load(
+        str(pdf_path),
+        scope=KnowledgeDocumentScope(tenant_id="tenant.test"),
+    )
 
     assert docs
-    assert any("Hello Intergrax PDF test" in d.page_content for d in docs)
+    assert any("Hello Intergrax PDF test" in d.content for d in docs)

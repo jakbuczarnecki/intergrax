@@ -4,15 +4,24 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 from typing import Sequence
 
-from langchain_core.documents import Document
-
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.knowledge.contracts import (
+    KnowledgeDocument,
+    KnowledgeDocumentScope,
+)
+from intergrax.rag.document_loaders.contracts.base_document_handler import (
+    BaseDocumentHandler,
+    _fragment_to_knowledge_document,
+    _resolve_source_kind,
+)
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import (
     TRACE_METADATA_KEY,
     ParserPipeline,
@@ -20,6 +29,8 @@ from intergrax.rag.document_loaders.pipeline.parser_pipeline import (
 
 
 pytestmark = pytest.mark.unit
+
+_SCOPE = KnowledgeDocumentScope(tenant_id="tenant.test", namespace="ns.test")
 
 
 class _DummyParser(BaseDocumentParser):
@@ -50,8 +61,16 @@ class _DummyParser(BaseDocumentParser):
         return self._fragments or []
 
 
-def _fragment(text: str = "ok", **metadata: object) -> ParsedDocumentFragment:
-    return ParsedDocumentFragment(text=text, metadata=dict(metadata))
+def _fragment(
+    text: str = "ok",
+    *,
+    source: str = "file",
+    position: int = 0,
+    **metadata: object,
+) -> ParsedDocumentFragment:
+    base = build_loader_metadata(source=source, parser="tests.dummy", position=position)
+    base.update(metadata)
+    return ParsedDocumentFragment(text=text, metadata=base)
 
 
 def test_pipeline_requires_at_least_one_parser():
@@ -158,37 +177,115 @@ class _BridgeHandler(BaseDocumentHandler):
         return self._parsers
 
 
-def test_handler_legacy_bridge_returns_langchain_document():
+def test_handler_returns_knowledge_document():
+
+    fragment = _fragment("hello", source="C:\\docs\\a.pdf", position=0)
+    handler = _BridgeHandler([_DummyParser(fragments=[fragment])])
+
+    docs = handler.load("C:\\docs\\a.pdf", scope=_SCOPE)
+
+    assert len(docs) == 1
+    assert isinstance(docs[0], KnowledgeDocument)
+    assert docs[0].content == "hello"
+    assert docs[0].scope.tenant_id == "tenant.test"
+    assert docs[0].scope.namespace == "ns.test"
+    assert docs[0].provenance.source_kind == "file"
+    assert docs[0].provenance.source_id == "C:\\docs\\a.pdf"
+    assert docs[0].provenance.provider_id == "tests.dummy"
+    assert DocumentMetadataKey.DOCUMENT_ID.value not in docs[0].metadata
+    assert docs[0].metadata["parser"] == "tests.dummy"
+    assert docs[0].identity.root_document_id == docs[0].identity.document_id
+    assert docs[0].identity.parent_document_id is None
+    expected_id = build_loader_metadata(
+        source="C:\\docs\\a.pdf", parser="tests.dummy", position=0
+    )["document_id"]
+    assert docs[0].identity.document_id == expected_id
+
+
+def test_handler_multi_fragment_unique_ids():
+
+    source = "/home/a.pdf"
+    fragments = [
+        _fragment("one", source=source, position=0),
+        _fragment("two", source=source, position=1),
+    ]
+    handler = _BridgeHandler([_DummyParser(fragments=fragments)])
+
+    docs = handler.load(source, scope=_SCOPE)
+
+    assert len(docs) == 2
+    assert docs[0].identity.document_id != docs[1].identity.document_id
+
+
+def test_handler_reload_preserves_document_ids():
+
+    source = "s3://bucket/a"
+    fragment = _fragment("body", source=source, position=0)
+    handler = _BridgeHandler([_DummyParser(fragments=[fragment])])
+
+    first = handler.load(source, scope=_SCOPE)
+    second = handler.load(source, scope=_SCOPE)
+
+    assert first[0].identity.document_id == second[0].identity.document_id
+
+
+def test_handler_uri_source_kind_mapping():
+
+    assert _resolve_source_kind("https://example.com/a") == "https"
+    assert _resolve_source_kind("s3://bucket/a") == "s3"
+    assert _resolve_source_kind("/home/a.pdf") == "file"
+
+
+def test_handler_rejects_whitespace_only_content():
+
+    fragment = _fragment("   ", source="file", position=0)
+
+    with pytest.raises(ValueError, match="content must be a non-empty string"):
+        _fragment_to_knowledge_document(fragment, source="file", scope=_SCOPE)
+
+
+def test_handler_rejects_reserved_parser_metadata():
+
+    fragment = _fragment("ok", source="file", position=0, tenant_id="leak")
+
+    with pytest.raises(ValueError, match="reserved KnowledgeDocument key"):
+        _fragment_to_knowledge_document(fragment, source="file", scope=_SCOPE)
+
+
+def test_handler_discards_native_handle_without_leaking(caplog: pytest.LogCaptureFixture):
 
     handle = {"doc": 1}
     fragment = ParsedDocumentFragment(
         text="hello",
-        metadata={"source": "file", "parser": "tests.dummy"},
+        metadata=build_loader_metadata(source="file", parser="tests.dummy", position=0),
         native_handle=handle,
     )
     handler = _BridgeHandler([_DummyParser(fragments=[fragment])])
 
-    docs = handler.load("file")
+    with caplog.at_level(logging.DEBUG):
+        docs = handler.load("file", scope=_SCOPE)
 
-    assert len(docs) == 1
-    assert isinstance(docs[0], Document)
-    assert docs[0].page_content == "hello"
-    assert docs[0].metadata["source"] == "file"
-    assert docs[0].metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META] is handle
-    assert fragment.metadata == {"source": "file", "parser": "tests.dummy"}
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META not in docs[0].metadata
+    assert str(handle) not in caplog.text
+    assert repr(handle) not in caplog.text
+    assert any(
+        "document parser native handle discarded at KnowledgeDocument boundary" in record.message
+        for record in caplog.records
+    )
 
 
-def test_handler_legacy_bridge_preserves_trace_metadata():
+def test_handler_preserves_trace_metadata():
 
     traced = ParsedDocumentFragment(
         text="ok",
         metadata={
+            **build_loader_metadata(source="file", parser="tests.dummy", position=0),
             TRACE_METADATA_KEY: {"parser_id": "tests.dummy"},
             "integration_parser_id": "tests.dummy",
         },
     )
     handler = _BridgeHandler([_DummyParser(fragments=[traced])])
 
-    docs = handler.load("file")
+    docs = handler.load("file", scope=_SCOPE)
 
     assert docs[0].metadata[TRACE_METADATA_KEY]["parser_id"] == "tests.dummy"

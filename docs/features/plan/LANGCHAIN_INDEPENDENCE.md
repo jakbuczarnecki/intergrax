@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-2A
-**Next task after acceptance:** LCI-2B
+**Current task:** LCI-2B
+**Next task after acceptance:** LCI-2C
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -159,7 +159,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Parser contracts stop returning LangChain Document. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/INTEGRATIONS.md |
 | **Dependencies** | LCI-1D |
@@ -169,7 +169,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **User-visible outcome** | Parsed output is native at parser boundary |
 | **Canonical parser-stage output** | `ParsedDocumentFragment` |
 | **KnowledgeDocument construction** | deferred to scoped handler/loader boundary in LCI-2B |
-| **Temporary compatibility** | `BaseDocumentHandler` maps fragments to LangChain `Document` until LCI-2B |
+| **Temporary compatibility** | removed in LCI-2B — handler now emits `KnowledgeDocument` |
 
 ---
 
@@ -178,14 +178,20 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | Loaders, handlers, registry, and documents_loader operate on native contract. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Scoped handler and loader boundary emits `KnowledgeDocument`. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2A |
-| **Exact scope** | documents_loader.py; handler registry; loader pipelines |
-| **Explicit out of scope** | Normalization, chunking, ingest |
-| **Acceptance criteria** | Loader/handler paths use native documents end-to-end in unit tests |
-| **User-visible outcome** | Filesystem and handler ingest accepts native documents |
+| **Exact scope** | `BaseDocumentHandler`, `BaseDocumentsLoader`, `DocumentsLoader`, downstream ingest call-site bridges |
+| **Explicit out of scope** | Normalization, metadata providers, chunking, embedding, indexing |
+| **Acceptance criteria** | Handler/loader paths return `KnowledgeDocument`; required `tenant_id` scope; temporary LangChain bridge around normalization/metadata; ingest call sites convert to LangChain before splitter |
+| **User-visible outcome** | Filesystem and handler ingest produce scoped native documents |
+| **Handler output** | `KnowledgeDocument` |
+| **Loader output** | `KnowledgeDocument` |
+| **Scope** | required `tenant_id`, optional `namespace` |
+| **Identity** | deterministic per parser fragment (`source` + `position`) |
+| **Normalization/metadata bridge** | temporary until LCI-2C |
+| **Downstream LangChain conversion** | limited to existing ingest call sites |
 
 ---
 

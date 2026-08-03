@@ -28,6 +28,9 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.compat.langchain import to_langchain_document
+from intergrax.knowledge.contracts import KnowledgeDocument
+
 from intergrax.llm.messages import AttachmentRef
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
@@ -341,6 +344,9 @@ class AttachmentIngestionService:
         # 1) Resolve AttachmentRef → Path (or raise FileNotFoundError/ValueError)
         path: Path = await self._resolver.resolve_to_path(attachment)
 
+        if not isinstance(tenant_id, str) or not tenant_id.strip():
+            raise ValueError("tenant_id is required for attachment ingestion")
+
         # 2) Build base metadata that we want on every chunk
         base_metadata: Dict[str, Any] = {
             "attachment_id": attachment.id,
@@ -354,11 +360,11 @@ class AttachmentIngestionService:
             base_metadata.update(attachment.metadata)
 
         # 3) Use IntergraxDocumentsLoader.load_document(...) for a single file
-        def _metadata_callback(doc: Document, p: str) -> Dict[str, Any]:
+        def _metadata_callback(doc: KnowledgeDocument, p: str) -> Dict[str, Any]:
             """
             Custom metadata callback for the IntergraxDocumentsLoader.
 
-            It receives each loaded Document and its Path, and returns a dict
+            It receives each loaded KnowledgeDocument and its Path, and returns a dict
             merged into doc.metadata. We always inject our base_metadata, but
             we do not override keys that the loader already set (unless they
             are absent).
@@ -367,11 +373,15 @@ class AttachmentIngestionService:
             # Optionally, we could inspect doc.metadata here and adjust.
             return merged
 
-        docs: List[Document] = self._loader.load_document(
+        native_docs = self._loader.load_document(
             str(path),
+            tenant_id=tenant_id,
+            namespace=workspace_id,
             use_default_metadata=True,
             call_custom_metadata=_metadata_callback,
         )
+
+        docs: List[Document] = [to_langchain_document(doc) for doc in native_docs]
 
         if docs and self._trace_writer is not None:
             from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY

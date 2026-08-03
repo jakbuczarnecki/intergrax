@@ -102,24 +102,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0037",
-      "path": "intergrax/rag/document_loaders/contracts/base_document_handler.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0038",
-      "path": "intergrax/rag/document_loaders/contracts/base_document_loader.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0039",
       "path": "intergrax/rag/document_loaders/contracts/base_document_normalizer.py",
       "kind": "from",
@@ -131,15 +113,6 @@
     {
       "inventory_id": "LCI-INV-0041",
       "path": "intergrax/rag/document_loaders/contracts/metadata_provider.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0042",
-      "path": "intergrax/rag/document_loaders/documents_loader.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

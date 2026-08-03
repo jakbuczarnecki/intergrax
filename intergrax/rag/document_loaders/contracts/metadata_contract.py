@@ -28,9 +28,9 @@ def build_loader_metadata(
     position
     """
 
-    def _safe_document_id(source: str) -> str:
+    def _safe_document_id(source: str, position: int) -> str:
         """
-        Generate a stable deterministic document identifier.
+        Generate a stable deterministic document identifier per source fragment.
 
         The identifier must remain stable regardless of loader,
         parser, or ingestion pipeline.
@@ -42,20 +42,20 @@ def build_loader_metadata(
         - database identifier
         - arbitrary string
 
-        The ID must therefore be derived deterministically from source.
+        The ID must therefore be derived deterministically from source and position.
         """
 
         if not source:
             return "unknown_document"
 
         normalized = source.replace("\\", "/").rstrip("/")
+        material = f"{normalized}\0fragment:{position}"
 
-        digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()
+        digest = hashlib.sha1(material.encode("utf-8")).hexdigest()
 
         return digest[:16]
-    
 
-    doc_id = _safe_document_id(source)
+    doc_id = _safe_document_id(source, position)
 
     return {
         DocumentMetadataKey.SOURCE: source,
