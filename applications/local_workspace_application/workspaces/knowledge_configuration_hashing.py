@@ -16,8 +16,38 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     IndexedSourceSyncModeV1,
     KnowledgeAudienceEligibilityV1,
     LiveAccessBindingStatusV1,
+    LiveResultRetentionV1,
+    QueryPolicyModeV1,
     WorkspaceKnowledgeMutationOperationV1,
 )
+
+_QUERY_POLICY_ENTITY_ID = "query-policy"
+
+
+def normalize_query_policy_string_tuple(
+    value: tuple[str, ...] | list[str],
+) -> tuple[str, ...]:
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for item in value:
+        trimmed = item.strip()
+        if not trimmed:
+            raise ValueError("blank_query_policy_tuple_value")
+        if trimmed not in seen:
+            seen.add(trimmed)
+            normalized.append(trimmed)
+    return tuple(sorted(normalized))
+
+
+def _normalized_query_policy_fields(
+    *,
+    allowed_connection_refs: tuple[str, ...] | list[str],
+    allowed_capability_ids: tuple[str, ...] | list[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    return (
+        normalize_query_policy_string_tuple(allowed_connection_refs),
+        normalize_query_policy_string_tuple(allowed_capability_ids),
+    )
 
 
 def _canonical_json(data: dict[str, object]) -> str:
@@ -249,6 +279,132 @@ def normalize_disable_live_access_binding_request_hash(
             "tenant_id": tenant_id.strip(),
             "workspace_id": workspace_id.strip(),
             "live_access_binding_id": live_access_binding_id.strip(),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _query_policy_config_payload(
+    *,
+    mode: QueryPolicyModeV1,
+    allowed_connection_refs: tuple[str, ...] | list[str],
+    allowed_capability_ids: tuple[str, ...] | list[str],
+    max_live_calls: int,
+    max_total_duration_ms: int,
+    max_result_items: int,
+    max_result_bytes: int,
+    live_result_retention: LiveResultRetentionV1,
+) -> dict[str, object]:
+    normalized_connection_refs, normalized_capability_ids = _normalized_query_policy_fields(
+        allowed_connection_refs=allowed_connection_refs,
+        allowed_capability_ids=allowed_capability_ids,
+    )
+    return {
+        "mode": mode.value,
+        "allowed_connection_refs": list(normalized_connection_refs),
+        "allowed_capability_ids": list(normalized_capability_ids),
+        "max_live_calls": max_live_calls,
+        "max_total_duration_ms": max_total_duration_ms,
+        "max_result_items": max_result_items,
+        "max_result_bytes": max_result_bytes,
+        "live_result_retention": live_result_retention.value,
+    }
+
+
+def normalize_update_query_policy_request_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    mode: QueryPolicyModeV1,
+    allowed_connection_refs: tuple[str, ...],
+    allowed_capability_ids: tuple[str, ...],
+    max_live_calls: int,
+    max_total_duration_ms: int,
+    max_result_items: int,
+    max_result_bytes: int,
+    live_result_retention: LiveResultRetentionV1,
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            **_query_policy_config_payload(
+                mode=mode,
+                allowed_connection_refs=allowed_connection_refs,
+                allowed_capability_ids=allowed_capability_ids,
+                max_live_calls=max_live_calls,
+                max_total_duration_ms=max_total_duration_ms,
+                max_result_items=max_result_items,
+                max_result_bytes=max_result_bytes,
+                live_result_retention=live_result_retention,
+            ),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def semantic_identity_hash_for_query_policy(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    mode: QueryPolicyModeV1,
+    allowed_connection_refs: tuple[str, ...],
+    allowed_capability_ids: tuple[str, ...],
+    max_live_calls: int,
+    max_total_duration_ms: int,
+    max_result_items: int,
+    max_result_bytes: int,
+    live_result_retention: LiveResultRetentionV1,
+) -> str:
+    payload = _canonical_json(
+        {
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            **_query_policy_config_payload(
+                mode=mode,
+                allowed_connection_refs=allowed_connection_refs,
+                allowed_capability_ids=allowed_capability_ids,
+                max_live_calls=max_live_calls,
+                max_total_duration_ms=max_total_duration_ms,
+                max_result_items=max_result_items,
+                max_result_bytes=max_result_bytes,
+                live_result_retention=live_result_retention,
+            ),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def query_policy_stage_manifest_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    mode: QueryPolicyModeV1,
+    allowed_connection_refs: tuple[str, ...],
+    allowed_capability_ids: tuple[str, ...],
+    max_live_calls: int,
+    max_total_duration_ms: int,
+    max_result_items: int,
+    max_result_bytes: int,
+    live_result_retention: LiveResultRetentionV1,
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "query_policy_entity_id": _QUERY_POLICY_ENTITY_ID,
+            **_query_policy_config_payload(
+                mode=mode,
+                allowed_connection_refs=allowed_connection_refs,
+                allowed_capability_ids=allowed_capability_ids,
+                max_live_calls=max_live_calls,
+                max_total_duration_ms=max_total_duration_ms,
+                max_result_items=max_result_items,
+                max_result_bytes=max_result_bytes,
+                live_result_retention=live_result_retention,
+            ),
         }
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
