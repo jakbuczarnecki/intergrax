@@ -18,6 +18,7 @@ They do not define an open-source contribution model, production-support channel
 |------|----------|---------|
 | 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical source for public problem statement, value proposition, Harness AI explanation, LKW role, audience, and public claim boundaries |
 | 1 | [Public Documentation Architecture](PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Canonical maintainer contract for public documentation layers, reader-intent routing, and proof classification |
+| 1a | [Public Product Experience Roadmap](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md) | Layer 5 product-experience transformation program, audience contract, and PX phase status |
 | 2 | [Public Proof and Claims Model](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Canonical status vocabulary, evidence requirements, claim qualification, and proof promotion rules |
 | 3 | [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md) | Canonical methodology, tasks, scoring, privacy and completion gates |
 | 4 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before external-reader sessions, reviewer requests or design-partner outreach |
@@ -26,6 +27,14 @@ They do not define an open-source contribution model, production-support channel
 | 7 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
 | 8 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing recruitment templates and positioning guardrails |
 | 9 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) · [curated_public_issues.yml](curated_public_issues.yml) | Strategy, draft rationale and canonical source data for curated public issue automation |
+
+**Public Product Experience Roadmap** — [`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
+
+```text
+Role: Layer 5 roadmap and measurable product-experience contract
+Status: ACTIVE — PX-0 READY_FOR_REVIEW
+Public-reader route: no
+```
 
 ## Reader-facing public navigation
 
@@ -38,6 +47,16 @@ Normal readers should start with the public documentation map:
 **Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
+
+## Current program status
+
+```text
+Previous public-documentation foundation: ACCEPTED / CLOSED through 9A
+Current program: Public Product Experience
+Current phase: PX-0 READY_FOR_REVIEW
+Next after acceptance: PX-1
+External sessions: NOT_STARTED
+```
 
 ## Validation status
 

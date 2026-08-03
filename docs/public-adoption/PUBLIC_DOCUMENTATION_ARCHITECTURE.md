@@ -150,6 +150,11 @@ Includes:
 Frozen responsibilities:
 
 ```text
+Public product experience transformation
+Audience and first-contact success contract
+PX-0 through PX-15 phase status
+→ PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md
+
 External reader validation methodology
 → EXTERNAL_READER_VALIDATION_PROTOCOL.md
 
@@ -159,6 +164,8 @@ Pre-session and pre-outreach readiness
 Participant recruitment and session-request templates
 → OUTREACH_KIT.md
 ```
+
+`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` is a **Layer 5 maintainer control**. It is indexed from `docs/public-adoption/README.md`. It is **not** a normal public-reader route and must **not** be added to `docs/PUBLIC_DOCUMENTATION_MAP.md`. Previous planned external-reader execution steps 9B and 9C are replaced by PX-13 and PX-14 after the product-experience redesign. `EXTERNAL_READER_VALIDATION_PROTOCOL.md` continues to own session methodology, not roadmap phase status.
 
 These controls govern public communication but are **not** the default first-contact path for normal readers.
 
@@ -437,6 +444,9 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Practical permission-request route | `COLLABORATION.md` |
 | Legally authoritative rights and restrictions | `LICENSE` |
 | General first-contact questions | `FAQ.md` |
+| Public product experience transformation | `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` |
+| Audience and first-contact success contract | `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` |
+| PX-0 through PX-15 phase status | `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md` |
 | External reader validation methodology | `EXTERNAL_READER_VALIDATION_PROTOCOL.md` |
 | Reader-facing evaluation paths | `EVALUATION_GUIDE.md` |
 | Validation readiness | `PUBLIC_LAUNCH_CHECKLIST.md` |
