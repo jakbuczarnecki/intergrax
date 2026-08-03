@@ -34,6 +34,7 @@ from intergrax.runtime.vendor_knowledge.models import (
 )
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncCheckpointConflict,
+    KnowledgeSyncCorruptState,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemState,
@@ -247,6 +248,9 @@ class InMemoryRemoteItemStateRepository:
         default_factory=dict
     )
     applied_delivery_ids: set[str] = field(default_factory=set)
+    _delivery_markers: dict[tuple[str, str, str], dict[str, str]] = field(
+        default_factory=dict
+    )
     apply_calls: list[dict[str, Any]] = field(default_factory=list)
     order: list[str] = field(default_factory=list)
     apply_error: Exception | None = None
@@ -270,6 +274,7 @@ class InMemoryRemoteItemStateRepository:
         binding_id: str,
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         self.apply_calls.append(
             {
@@ -277,16 +282,37 @@ class InMemoryRemoteItemStateRepository:
                 "binding_id": binding_id,
                 "delivery_id": delivery_id,
                 "states": states,
+                "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
             }
         )
         self.order.append("state")
         if self.apply_error is not None:
             raise self.apply_error
-        if delivery_id in self.applied_delivery_ids:
+        marker_key = (tenant_id, binding_id, delivery_id)
+        existing = self._delivery_markers.get(marker_key)
+        if existing is not None:
+            if prepared_state_mutations_fingerprint is not None:
+                stored_fp = existing.get("prepared_state_mutations_fingerprint")
+                if stored_fp is None:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker cannot prove reconciliation receipt"
+                    )
+                if stored_fp != prepared_state_mutations_fingerprint:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker prepared_state_mutations_fingerprint mismatch"
+                    )
+            if delivery_id in self.applied_delivery_ids:
+                return
+        elif delivery_id in self.applied_delivery_ids:
             return
         for state in states:
             self.states[(tenant_id, binding_id, state.remote_id)] = state
         self.applied_delivery_ids.add(delivery_id)
+        if prepared_state_mutations_fingerprint is not None:
+            self._delivery_markers[marker_key] = {
+                "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+                "status": "completed",
+            }
 
     def inspect_delivery_receipt(
         self,
@@ -296,9 +322,30 @@ class InMemoryRemoteItemStateRepository:
         delivery_id: str,
         prepared_state_mutations_fingerprint: str,
     ) -> KnowledgeRemoteItemStateReceipt:
-        if delivery_id not in self.applied_delivery_ids:
+        marker_key = (tenant_id, binding_id, delivery_id)
+        marker = self._delivery_markers.get(marker_key)
+        if marker is None:
+            if delivery_id not in self.applied_delivery_ids:
+                return KnowledgeRemoteItemStateReceipt(
+                    status=KnowledgeRemoteItemStateReceiptStatus.ABSENT
+                )
             return KnowledgeRemoteItemStateReceipt(
-                status=KnowledgeRemoteItemStateReceiptStatus.ABSENT
+                status=KnowledgeRemoteItemStateReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            )
+        stored_fp = marker.get("prepared_state_mutations_fingerprint")
+        if stored_fp is None or stored_fp != prepared_state_mutations_fingerprint:
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            )
+        if marker.get("status") == "applying":
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.APPLYING,
+                delivery_id=delivery_id,
+                prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
             )
         return KnowledgeRemoteItemStateReceipt(
             status=KnowledgeRemoteItemStateReceiptStatus.COMPLETED,

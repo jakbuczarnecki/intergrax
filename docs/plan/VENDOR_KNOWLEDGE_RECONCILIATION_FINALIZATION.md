@@ -922,7 +922,7 @@ Architecture only — implementation is split as follows.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED`
 
 Contracts and durable repositories:
 
@@ -940,9 +940,15 @@ Contracts and durable repositories:
 - DocumentStore implementation;
 - model/repository tests.
 
+### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1`
+
+**Status:** `READY_FOR_REVIEW`
+
+Review-fix contracts for durable base checkpoint retention, exact recovery evidence, real v2 item-state receipt binding, remote-ID byte limits, ordered mutation templates and full durable prepared-record measurement.
+
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B`
 
-**Status:** `PLANNED` — next after `1A` acceptance.
+**Status:** `PLANNED` — next after `1A-REVIEW-FIX-1` acceptance.
 
 Coordinator integration:
 
@@ -980,8 +986,9 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` | `ACCEPTED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `READY_FOR_REVIEW` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` — next after `1A` acceptance |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `READY_FOR_REVIEW` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` — blocked pending `1A-REVIEW-FIX-1` acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |

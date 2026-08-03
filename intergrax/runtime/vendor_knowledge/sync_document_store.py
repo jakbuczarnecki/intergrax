@@ -32,14 +32,17 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationLimitPolicy,
     KnowledgeReconciliationRun,
     KnowledgeReconciliationRunCollecting,
+    KnowledgeReconciliationRunFinalizing,
     KnowledgeReconciliationRunPagePrepared,
     KnowledgeReconciliationRunPhase,
+    KnowledgeReconciliationRunRecoveryRequired,
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStateReceipt,
     KnowledgeRemoteItemStateReceiptStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncCheckpoint,
     parse_knowledge_reconciliation_run,
+    recovery_evidence_from_run,
     validate_reconciliation_candidate_inventory,
     validate_reconciliation_prepared_intent,
 )
@@ -94,6 +97,13 @@ def _require_non_empty(value: str, *, field_name: str) -> str:
     cleaned = value.strip()
     if not cleaned:
         raise ValueError(f"{field_name} must be a non-empty string")
+    return cleaned
+
+
+def _require_sha256_hex(value: str, *, field_name: str) -> str:
+    cleaned = _require_non_empty(value, field_name=field_name)
+    if _SHA256_HEX_RE.fullmatch(cleaned) is None:
+        raise ValueError(f"{field_name} must be a lowercase SHA-256 hex digest")
     return cleaned
 
 
@@ -260,8 +270,88 @@ def _validate_reconciliation_identity_unchanged(
         or expected.created_at != replacement.created_at
         or expected.binding_configuration_version
         != replacement.binding_configuration_version
+        or expected.expected_base_completed_checkpoint
+        != replacement.expected_base_completed_checkpoint
     ):
         raise KnowledgeSyncCorruptState("reconciliation run immutable identity changed")
+
+
+def _validate_reconciliation_monotonicity(
+    *,
+    expected: KnowledgeReconciliationRun,
+    replacement: KnowledgeReconciliationRun,
+) -> None:
+    if replacement.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+        if replacement.applied_page_count != expected.applied_page_count:
+            raise KnowledgeSyncCorruptState(
+                "recovery transition must not change applied_page_count"
+            )
+        if replacement.last_applied_delivery_id != expected.last_applied_delivery_id:
+            raise KnowledgeSyncCorruptState(
+                "recovery transition must not change last_applied_delivery_id"
+            )
+        if not isinstance(replacement, KnowledgeReconciliationRunRecoveryRequired):
+            raise KnowledgeSyncCorruptState(
+                "recovery transition requires recovery evidence"
+            )
+        if isinstance(
+            expected,
+            (
+                KnowledgeReconciliationRunCollecting,
+                KnowledgeReconciliationRunPagePrepared,
+                KnowledgeReconciliationRunFinalizing,
+            ),
+        ):
+            preserved = recovery_evidence_from_run(expected)
+            if replacement.recovery_evidence != preserved:
+                raise KnowledgeSyncCorruptState(
+                    "recovery transition must retain exact origin evidence"
+                )
+        return
+
+    if (
+        expected.phase is KnowledgeReconciliationRunPhase.COLLECTING
+        and replacement.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED
+    ):
+        if replacement.applied_page_count != expected.applied_page_count:
+            raise KnowledgeSyncCorruptState(
+                "page preparation must not change applied_page_count"
+            )
+        if replacement.last_applied_delivery_id != expected.last_applied_delivery_id:
+            raise KnowledgeSyncCorruptState(
+                "page preparation must not change last_applied_delivery_id"
+            )
+        return
+
+    if expected.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED and isinstance(
+        expected, KnowledgeReconciliationRunPagePrepared
+    ):
+        if replacement.phase in {
+            KnowledgeReconciliationRunPhase.COLLECTING,
+            KnowledgeReconciliationRunPhase.FINALIZING,
+        }:
+            if replacement.applied_page_count != expected.applied_page_count + 1:
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must increment applied_page_count exactly once"
+                )
+            if replacement.last_applied_delivery_id != expected.delivery_id:
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must set last_applied_delivery_id"
+                )
+        return
+
+    if (
+        expected.phase is KnowledgeReconciliationRunPhase.FINALIZING
+        and replacement.phase is KnowledgeReconciliationRunPhase.COMPLETED
+    ):
+        if replacement.applied_page_count != expected.applied_page_count:
+            raise KnowledgeSyncCorruptState(
+                "completion must not change applied_page_count"
+            )
+        if replacement.last_applied_delivery_id != expected.last_applied_delivery_id:
+            raise KnowledgeSyncCorruptState(
+                "completion must not change last_applied_delivery_id"
+            )
 
 
 def _validate_reconciliation_transition(
@@ -673,10 +763,17 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         binding_id: str,
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
         cleaned_delivery = _require_non_empty(delivery_id, field_name="delivery_id")
+        cleaned_mutations_fingerprint: str | None = None
+        if prepared_state_mutations_fingerprint is not None:
+            cleaned_mutations_fingerprint = _require_sha256_hex(
+                prepared_state_mutations_fingerprint,
+                field_name="prepared_state_mutations_fingerprint",
+            )
         self._validate_batch_states(
             tenant_id=cleaned_tenant,
             binding_id=cleaned_binding,
@@ -697,8 +794,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 expected_binding=cleaned_binding,
                 expected_delivery=cleaned_delivery,
             )
-            if marker["batch_fingerprint"] != fingerprint:
-                raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
+            self._assert_marker_fingerprint_compatible(
+                marker=marker,
+                batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
+            )
             if marker["status"] == _MARKER_STATUS_COMPLETED:
                 return
             self._write_states(partition_key=partition_key, states=states)
@@ -708,6 +808,8 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 binding_id=cleaned_binding,
                 delivery_id=cleaned_delivery,
                 batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint
+                or marker.get("prepared_state_mutations_fingerprint"),
             )
             return
 
@@ -721,6 +823,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 str(self._version_factory()),
                 field_name="record_version",
             ),
+            prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
         )
         if not self._store.put_if_absent(applying):
             latest = self._store.get(partition_key, marker_row)
@@ -732,8 +835,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 expected_binding=cleaned_binding,
                 expected_delivery=cleaned_delivery,
             )
-            if marker["batch_fingerprint"] != fingerprint:
-                raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
+            self._assert_marker_fingerprint_compatible(
+                marker=marker,
+                batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
+            )
             if marker["status"] == _MARKER_STATUS_COMPLETED:
                 return
             self._write_states(partition_key=partition_key, states=states)
@@ -743,6 +849,8 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 binding_id=cleaned_binding,
                 delivery_id=cleaned_delivery,
                 batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint
+                or marker.get("prepared_state_mutations_fingerprint"),
             )
             return
 
@@ -756,6 +864,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             binding_id=cleaned_binding,
             delivery_id=cleaned_delivery,
             batch_fingerprint=fingerprint,
+            prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
         )
 
     def inspect_delivery_receipt(
@@ -834,6 +943,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         binding_id: str,
         delivery_id: str,
         batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         partition_key = _item_partition_key(tenant_id=tenant_id, binding_id=binding_id)
         marker_row = _delivery_row_key(delivery_id)
@@ -847,6 +957,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 str(self._version_factory()),
                 field_name="record_version",
             ),
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
         )
         if self._store.replace_if_match(expected=existing, replacement=completed):
             return
@@ -949,6 +1060,26 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             data=data,
         )
 
+    def _assert_marker_fingerprint_compatible(
+        self,
+        *,
+        marker: dict[str, str],
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None,
+    ) -> None:
+        if marker["batch_fingerprint"] != batch_fingerprint:
+            raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
+        stored_mutations = marker.get("prepared_state_mutations_fingerprint")
+        if prepared_state_mutations_fingerprint is not None:
+            if stored_mutations is None:
+                raise KnowledgeSyncCorruptState(
+                    "delivery marker cannot prove reconciliation receipt"
+                )
+            if stored_mutations != prepared_state_mutations_fingerprint:
+                raise KnowledgeSyncCorruptState(
+                    "delivery marker prepared_state_mutations_fingerprint mismatch"
+                )
+
     def _marker_document(
         self,
         *,
@@ -958,9 +1089,15 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         batch_fingerprint: str,
         status: str,
         record_version: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> DocumentRecord:
-        data = {
-            "schema_version": _DELIVERY_MARKER_SCHEMA,
+        schema_version = (
+            _DELIVERY_MARKER_SCHEMA_V2
+            if prepared_state_mutations_fingerprint is not None
+            else _DELIVERY_MARKER_SCHEMA
+        )
+        data: dict[str, Any] = {
+            "schema_version": schema_version,
             "tenant_id": tenant_id,
             "binding_id": binding_id,
             "delivery_id": delivery_id,
@@ -968,6 +1105,10 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             "status": status,
             "record_version": record_version,
         }
+        if prepared_state_mutations_fingerprint is not None:
+            data["prepared_state_mutations_fingerprint"] = (
+                prepared_state_mutations_fingerprint
+            )
         _reject_secret_fields(data, kind="delivery marker")
         return DocumentRecord(
             partition_key=_item_partition_key(
@@ -1206,6 +1347,9 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
                 "reconciliation run record_version must increment by one"
             )
         _validate_reconciliation_transition(expected=expected, replacement=replacement)
+        _validate_reconciliation_monotonicity(
+            expected=expected, replacement=replacement
+        )
         if expected.phase in {
             KnowledgeReconciliationRunPhase.COMPLETED,
             KnowledgeReconciliationRunPhase.ABORTED,

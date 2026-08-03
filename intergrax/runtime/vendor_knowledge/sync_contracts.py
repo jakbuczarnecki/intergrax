@@ -90,6 +90,7 @@ class KnowledgeRemoteItemStateRepository(Protocol):
         binding_id: str,
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None: ...
 
     def inspect_delivery_receipt(

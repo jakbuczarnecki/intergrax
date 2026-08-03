@@ -29,6 +29,7 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationLimitPolicy,
+    KnowledgeReconciliationMutationSemantic,
     KnowledgeReconciliationPreparedStateMutationTemplate,
     KnowledgeReconciliationRunAborted,
     KnowledgeReconciliationRunCollecting,
@@ -41,6 +42,8 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncCheckpoint,
     canonical_prepared_state_mutations_fingerprint,
     knowledge_cursor_fingerprint_sha256,
+    reconciliation_run_durable_document_bytes,
+    recovery_evidence_from_run,
 )
 
 _NOW = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
@@ -49,12 +52,12 @@ _FINGERPRINT = "b" * 64
 _NULL_CURSOR_FP = knowledge_cursor_fingerprint_sha256(None)
 
 
-def _checkpoint() -> KnowledgeSyncCheckpoint:
+def _checkpoint(*, value: str = "cursor-1") -> KnowledgeSyncCheckpoint:
     return KnowledgeSyncCheckpoint(
         tenant_id="tenant-1",
         binding_id="binding-1",
         binding_configuration_version=1,
-        cursor=KnowledgeCursor(value="cursor-1", version="v1"),
+        cursor=KnowledgeCursor(value=value, version="v1"),
     )
 
 
@@ -82,7 +85,18 @@ def _collecting(
     )
 
 
-def _template() -> KnowledgeReconciliationPreparedStateMutationTemplate:
+def _template(
+    *,
+    remote_id: str = "item-1",
+    synthetic_tombstone: bool = False,
+) -> KnowledgeReconciliationPreparedStateMutationTemplate:
+    if synthetic_tombstone:
+        return KnowledgeReconciliationPreparedStateMutationTemplate(
+            remote_id=remote_id,
+            resulting_status=KnowledgeRemoteItemStatus.DELETED,
+            binding_configuration_version=1,
+            reconciliation_semantic=KnowledgeReconciliationMutationSemantic.ABSENT_FROM_COMPLETED_SYNCHRONIZED_SOURCE_INVENTORY,
+        )
     return KnowledgeReconciliationPreparedStateMutationTemplate(
         remote_id="item-1",
         resulting_status=KnowledgeRemoteItemStatus.ACTIVE,
@@ -94,7 +108,7 @@ def _template() -> KnowledgeReconciliationPreparedStateMutationTemplate:
 def _page_prepared(
     *, record_version: int = 2
 ) -> KnowledgeReconciliationRunPagePrepared:
-    templates = (_template(),)
+    templates = (_template(), _template(remote_id="item-z", synthetic_tombstone=True))
     return KnowledgeReconciliationRunPagePrepared(
         tenant_id="tenant-1",
         binding_id="binding-1",
@@ -300,6 +314,9 @@ def test_recovery_required_supersession_forbidden() -> None:
         created_at=_NOW,
         updated_at=_NOW,
         recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(
+            _collecting(remote_ids=("item-a",))
+        ),
     )
     store.put(
         DocumentRecord(
@@ -562,3 +579,193 @@ def test_repository_protocol_runtime_checkable() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
     assert isinstance(repo, KnowledgeReconciliationRunRepository)
+
+
+@pytest.mark.unit
+def test_base_checkpoint_immutable_across_cas() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    base = _checkpoint()
+    initial = _collecting().model_copy(
+        update={"expected_base_completed_checkpoint": base}
+    )
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2).model_copy(
+        update={"expected_base_completed_checkpoint": base}
+    )
+    repo.cas_replace(expected=initial, replacement=prepared)
+    mutated = prepared.model_copy(
+        update={
+            "record_version": 3,
+            "expected_base_completed_checkpoint": _checkpoint(value="mutated"),
+        }
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=prepared, replacement=mutated)
+
+
+@pytest.mark.unit
+def test_cas_monotonicity_page_prepared_to_collecting() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2)
+    repo.cas_replace(expected=initial, replacement=prepared)
+    bad_collecting = _collecting(
+        record_version=3,
+        remote_ids=(),
+    ).model_copy(
+        update={
+            "applied_page_count": 0,
+            "last_applied_delivery_id": None,
+            "current_input_cursor_fingerprint": _NULL_CURSOR_FP,
+        }
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=prepared, replacement=bad_collecting)
+
+
+@pytest.mark.unit
+def test_recovery_transition_retains_exact_evidence() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2)
+    repo.cas_replace(expected=initial, replacement=prepared)
+    recovery = KnowledgeReconciliationRunRecoveryRequired(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=3,
+        created_at=_NOW,
+        updated_at=_NOW,
+        applied_page_count=0,
+        recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(prepared),
+    )
+    repo.cas_replace(expected=prepared, replacement=recovery)
+    loaded = repo.get(tenant_id="tenant-1", binding_id="binding-1")
+    assert isinstance(loaded, KnowledgeReconciliationRunRecoveryRequired)
+    assert loaded.recovery_evidence.delivery_id == _DELIVERY
+
+
+@pytest.mark.unit
+def test_real_apply_inspect_receipt_completed() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    templates = (_template(),)
+    mutations_fp = canonical_prepared_state_mutations_fingerprint(templates)
+    states = (_state(),)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        states=states,
+        prepared_state_mutations_fingerprint=mutations_fp,
+    )
+    receipt = repo.inspect_delivery_receipt(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        prepared_state_mutations_fingerprint=mutations_fp,
+    )
+    assert receipt.status is KnowledgeRemoteItemStateReceiptStatus.COMPLETED
+
+
+@pytest.mark.unit
+def test_v2_apply_idempotent_and_conflict() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    mutations_fp = canonical_prepared_state_mutations_fingerprint((_template(),))
+    states = (_state(),)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        states=states,
+        prepared_state_mutations_fingerprint=mutations_fp,
+    )
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        states=states,
+        prepared_state_mutations_fingerprint=mutations_fp,
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=_DELIVERY,
+            states=states,
+            prepared_state_mutations_fingerprint="c" * 64,
+        )
+
+
+@pytest.mark.unit
+def test_legacy_v1_marker_cannot_prove_v2_receipt() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    states = (_state(),)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        states=states,
+    )
+    mutations_fp = canonical_prepared_state_mutations_fingerprint((_template(),))
+    receipt = repo.inspect_delivery_receipt(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=_DELIVERY,
+        prepared_state_mutations_fingerprint=mutations_fp,
+    )
+    assert receipt.status is KnowledgeRemoteItemStateReceiptStatus.CONFLICT
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=_DELIVERY,
+            states=states,
+            prepared_state_mutations_fingerprint=mutations_fp,
+        )
+
+
+@pytest.mark.unit
+def test_remote_id_overflow_leaves_prior_run_unchanged() -> None:
+    store = InMemoryDocumentStore()
+    policy = KnowledgeReconciliationLimitPolicy(max_reconciliation_remote_id_bytes=4)
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store, policy=policy)
+    initial = _collecting(remote_ids=("abcd",))
+    repo.create_initial_run(initial)
+    overflow = _collecting(remote_ids=("abcde",)).model_copy(
+        update={"record_version": 2}
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        repo.cas_replace(expected=initial, replacement=overflow)
+    assert exc_info.value.code.value == "configuration_error"
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == initial
+
+
+@pytest.mark.unit
+def test_prepared_wrapper_limit_rejects_run_only_fit() -> None:
+    prepared = _page_prepared(record_version=2)
+    wrapper_len = len(reconciliation_run_durable_document_bytes(prepared))
+    run_only_len = len(prepared.model_dump_json().encode("utf-8"))
+    assert wrapper_len > run_only_len
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(
+        store,
+        policy=KnowledgeReconciliationLimitPolicy(
+            max_reconciliation_prepared_intent_payload_bytes=run_only_len
+        ),
+    )
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    with pytest.raises(VendorKnowledgeError):
+        repo.cas_replace(expected=initial, replacement=prepared)

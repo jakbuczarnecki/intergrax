@@ -23,6 +23,7 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationLimitPolicy,
+    KnowledgeReconciliationMutationSemantic,
     KnowledgeReconciliationPreparedStateMutationTemplate,
     KnowledgeReconciliationRecoveryCommand,
     KnowledgeReconciliationRecoveryCommandKind,
@@ -43,6 +44,8 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     knowledge_cursor_fingerprint_sha256,
     knowledge_sync_checkpoint_fingerprint_sha256,
     parse_knowledge_reconciliation_run,
+    reconciliation_run_durable_document_bytes,
+    recovery_evidence_from_run,
     validate_reconciliation_candidate_inventory,
     validate_reconciliation_prepared_intent,
 )
@@ -93,7 +96,16 @@ def _collecting(
 
 def _template(
     remote_id: str = "item-1",
+    *,
+    synthetic_tombstone: bool = False,
 ) -> KnowledgeReconciliationPreparedStateMutationTemplate:
+    if synthetic_tombstone:
+        return KnowledgeReconciliationPreparedStateMutationTemplate(
+            remote_id=remote_id,
+            resulting_status=KnowledgeRemoteItemStatus.DELETED,
+            binding_configuration_version=1,
+            reconciliation_semantic=KnowledgeReconciliationMutationSemantic.ABSENT_FROM_COMPLETED_SYNCHRONIZED_SOURCE_INVENTORY,
+        )
     return KnowledgeReconciliationPreparedStateMutationTemplate(
         remote_id=remote_id,
         resulting_status=KnowledgeRemoteItemStatus.ACTIVE,
@@ -103,7 +115,17 @@ def _template(
 
 
 def _page_prepared(*, has_more: bool = True) -> KnowledgeReconciliationRunPagePrepared:
-    templates = (_template("item-a"), _template("item-b"))
+    templates: tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...]
+    if has_more:
+        templates = (_template("item-a"), _template("item-b"))
+        synthetic_ids: tuple[str, ...] = ()
+    else:
+        templates = (
+            _template("item-a"),
+            _template("item-b"),
+            _template("item-z", synthetic_tombstone=True),
+        )
+        synthetic_ids = ("item-z",)
     mutations_fp = canonical_prepared_state_mutations_fingerprint(templates)
     return KnowledgeReconciliationRunPagePrepared(
         tenant_id="tenant-1",
@@ -127,7 +149,7 @@ def _page_prepared(*, has_more: bool = True) -> KnowledgeReconciliationRunPagePr
         has_more=has_more,
         delivery_id=_DELIVERY,
         remaining_candidate_remote_ids=("item-c",),
-        synthetic_tombstone_remote_ids=() if has_more else ("item-z",),
+        synthetic_tombstone_remote_ids=synthetic_ids,
     )
 
 
@@ -151,6 +173,7 @@ def test_all_reconciliation_phases_validate() -> None:
         updated_at=_NOW,
         applied_page_count=1,
         last_applied_delivery_id=_DELIVERY,
+        expected_base_completed_checkpoint=checkpoint,
         intended_final_completed_checkpoint=checkpoint,
         intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
             checkpoint
@@ -187,6 +210,7 @@ def test_all_reconciliation_phases_validate() -> None:
         applied_page_count=1,
         last_applied_delivery_id=_DELIVERY,
         recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(finalizing),
     )
     aborted = KnowledgeReconciliationRunAborted(
         tenant_id="tenant-1",
@@ -504,3 +528,321 @@ def test_configuration_limit_error_is_not_provider_response() -> None:
         retryable=False,
     )
     assert err.code.value == "configuration_error"
+
+
+@pytest.mark.unit
+def test_base_checkpoint_none_for_first_sync() -> None:
+    collecting = _collecting()
+    assert collecting.expected_base_completed_checkpoint is None
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=3,
+        created_at=_NOW,
+        updated_at=_NOW,
+        applied_page_count=1,
+        last_applied_delivery_id=_DELIVERY,
+        intended_final_completed_checkpoint=_checkpoint(),
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            _checkpoint()
+        ),
+        expected_previous_completed_checkpoint=None,
+        final_delivery_id=_DELIVERY,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+    )
+    assert finalizing.expected_previous_completed_checkpoint is None
+
+
+@pytest.mark.unit
+def test_base_checkpoint_tenant_binding_mismatch_rejected() -> None:
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunCollecting(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=1,
+            created_at=_NOW,
+            updated_at=_NOW,
+            current_input_cursor_fingerprint=_NULL_CURSOR_FP,
+            expected_base_completed_checkpoint=KnowledgeSyncCheckpoint(
+                tenant_id="other",
+                binding_id="binding-1",
+                binding_configuration_version=1,
+                cursor=KnowledgeCursor(value="c", version="v1"),
+            ),
+        )
+
+
+@pytest.mark.unit
+def test_finalizing_with_existing_base_checkpoint() -> None:
+    base = _checkpoint(cursor_value="base")
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=2,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=3,
+        created_at=_NOW,
+        updated_at=_NOW,
+        applied_page_count=1,
+        last_applied_delivery_id=_DELIVERY,
+        expected_base_completed_checkpoint=base,
+        intended_final_completed_checkpoint=_checkpoint(cursor_value="final"),
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            _checkpoint(cursor_value="final")
+        ),
+        expected_previous_completed_checkpoint=base,
+        final_delivery_id=_DELIVERY,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+    )
+    assert finalizing.expected_base_completed_checkpoint == base
+
+
+@pytest.mark.unit
+def test_page_prepared_recovery_evidence_round_trip() -> None:
+    prepared = _page_prepared(has_more=False)
+    evidence = recovery_evidence_from_run(prepared)
+    run = KnowledgeReconciliationRunRecoveryRequired(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=3,
+        created_at=_NOW,
+        updated_at=_NOW,
+        recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=evidence,
+    )
+    restored = parse_knowledge_reconciliation_run(run.model_dump(mode="json"))
+    assert isinstance(restored, KnowledgeReconciliationRunRecoveryRequired)
+    assert restored.recovery_evidence == evidence
+    assert isinstance(
+        restored.recovery_evidence,
+        type(evidence),
+    )
+
+
+@pytest.mark.unit
+def test_finalizing_recovery_evidence_round_trip() -> None:
+    base = _checkpoint()
+    finalizing = KnowledgeReconciliationRunFinalizing(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=3,
+        created_at=_NOW,
+        updated_at=_NOW,
+        applied_page_count=1,
+        last_applied_delivery_id=_DELIVERY,
+        expected_base_completed_checkpoint=base,
+        intended_final_completed_checkpoint=base,
+        intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
+            base
+        ),
+        expected_previous_completed_checkpoint=base,
+        final_delivery_id=_DELIVERY,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+    )
+    evidence = recovery_evidence_from_run(finalizing)
+    restored = parse_knowledge_reconciliation_run(
+        KnowledgeReconciliationRunRecoveryRequired(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=4,
+            created_at=_NOW,
+            updated_at=_NOW,
+            applied_page_count=1,
+            last_applied_delivery_id=_DELIVERY,
+            expected_base_completed_checkpoint=base,
+            recovery_reason_code="checkpoint_mismatch",
+            recovery_evidence=evidence,
+        ).model_dump(mode="json")
+    )
+    assert isinstance(restored, KnowledgeReconciliationRunRecoveryRequired)
+    assert restored.recovery_evidence.final_delivery_id == _DELIVERY
+
+
+@pytest.mark.unit
+def test_recovery_repr_and_exceptions_remain_secret_free() -> None:
+    prepared = _page_prepared()
+    evidence = recovery_evidence_from_run(prepared)
+    rendered = repr(evidence)
+    assert "https://example.test" not in rendered
+    assert "secret" not in rendered
+    with pytest.raises(ValidationError) as exc_info:
+        KnowledgeReconciliationRunRecoveryRequired(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=3,
+            created_at=_NOW,
+            updated_at=_NOW,
+            recovery_reason_code="provider_page_mismatch",
+            recovery_evidence=evidence.model_copy(
+                update={"prepared_next_cursor_fingerprint": "d" * 64}
+            ),
+        )
+    assert "https://example.test" not in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_malformed_recovery_evidence_rejected() -> None:
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunRecoveryRequired(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=3,
+            created_at=_NOW,
+            updated_at=_NOW,
+            recovery_reason_code="provider_page_mismatch",
+            recovery_evidence={
+                "origin_phase": "page_prepared",
+                "delivery_id": "short",
+            },
+        )
+
+
+@pytest.mark.unit
+def test_remote_id_utf8_byte_limit() -> None:
+    policy = KnowledgeReconciliationLimitPolicy(max_reconciliation_remote_id_bytes=4)
+    exact = "é" * 2
+    assert len(exact.encode("utf-8")) == 4
+    validate_reconciliation_candidate_inventory((exact,), policy=policy)
+    with pytest.raises(ValueError):
+        validate_reconciliation_candidate_inventory((exact + "x",), policy=policy)
+
+
+@pytest.mark.unit
+def test_mutation_templates_require_unique_sorted_remote_ids() -> None:
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=2,
+            created_at=_NOW,
+            updated_at=_NOW,
+            prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+            provider_page_fingerprint=_FINGERPRINT,
+            prepared_batch_payload_fingerprint=_FINGERPRINT,
+            prepared_state_mutation_templates=(
+                _template("item-b"),
+                _template("item-a"),
+            ),
+            prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+                (_template("item-b"), _template("item-a"))
+            ),
+            prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+            prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+            has_more=True,
+            delivery_id=_DELIVERY,
+            remaining_candidate_remote_ids=("item-c",),
+        )
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=2,
+            created_at=_NOW,
+            updated_at=_NOW,
+            prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+            provider_page_fingerprint=_FINGERPRINT,
+            prepared_batch_payload_fingerprint=_FINGERPRINT,
+            prepared_state_mutation_templates=(
+                _template("item-a"),
+                _template("item-a"),
+            ),
+            prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+                (_template("item-a"), _template("item-a"))
+            ),
+            prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+            prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+            has_more=True,
+            delivery_id=_DELIVERY,
+            remaining_candidate_remote_ids=("item-c",),
+        )
+
+
+@pytest.mark.unit
+def test_synthetic_tombstone_semantic_marker_required() -> None:
+    templates = (
+        _template("item-a"),
+        _template("item-b"),
+        _template("item-z"),
+    )
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=2,
+            created_at=_NOW,
+            updated_at=_NOW,
+            prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+            provider_page_fingerprint=_FINGERPRINT,
+            prepared_batch_payload_fingerprint=_FINGERPRINT,
+            prepared_state_mutation_templates=templates,
+            prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+                templates
+            ),
+            prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+            prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+            has_more=False,
+            delivery_id=_DELIVERY,
+            remaining_candidate_remote_ids=(),
+            synthetic_tombstone_remote_ids=("item-z",),
+        )
+
+
+@pytest.mark.unit
+def test_prepared_intent_measures_complete_durable_wrapper() -> None:
+    prepared = _page_prepared()
+    wrapper = reconciliation_run_durable_document_bytes(prepared)
+    run_only = len(prepared.model_dump_json().encode("utf-8"))
+    assert len(wrapper) >= run_only
+    policy = KnowledgeReconciliationLimitPolicy(
+        max_reconciliation_prepared_intent_payload_bytes=len(wrapper)
+    )
+    validate_reconciliation_prepared_intent(prepared, policy=policy)
+    with pytest.raises(ValueError):
+        validate_reconciliation_prepared_intent(
+            prepared,
+            policy=KnowledgeReconciliationLimitPolicy(
+                max_reconciliation_prepared_intent_payload_bytes=len(wrapper) - 1
+            ),
+        )
