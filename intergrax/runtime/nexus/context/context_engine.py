@@ -30,6 +30,9 @@ from intergrax.runtime.observability.context_counters import get_context_counter
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
+from intergrax.runtime.nexus.context.context_compiler_models import (
+    DegradationStepKind,
+)
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
 from intergrax.runtime.nexus.context.ucl_orchestration import (
@@ -45,6 +48,28 @@ if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
 
 logger = logging.getLogger("intergrax.context.engine")
+
+_NO_MUTATION_DEGRADATION_STEPS = frozenset(
+    {
+        (),
+        (DegradationStepKind.FULL.value,),
+    }
+)
+
+
+def _compile_preserved_planned_context(
+    *,
+    degradation_steps: tuple[str, ...],
+    planned_hash: str,
+    compiled_hash: str,
+    compiled_budget_tokens: int,
+    planned_budget_tokens: int,
+) -> bool:
+    return (
+        degradation_steps in _NO_MUTATION_DEGRADATION_STEPS
+        and planned_hash == compiled_hash
+        and compiled_budget_tokens == planned_budget_tokens
+    )
 
 
 class DefaultNexusContextEngine:
@@ -235,10 +260,12 @@ class DefaultNexusContextEngine:
             run_preflight=False,
         )
         compiled_hash = compute_model_facing_messages_hash(compile_result.messages)
-        if (
-            compile_result.degradation_steps != ()
-            or planned_hash != compiled_hash
-            or compile_result.budget_tokens != context_plan.resolved_global_budget_tokens
+        if not _compile_preserved_planned_context(
+            degradation_steps=compile_result.degradation_steps,
+            planned_hash=planned_hash,
+            compiled_hash=compiled_hash,
+            compiled_budget_tokens=compile_result.budget_tokens,
+            planned_budget_tokens=context_plan.resolved_global_budget_tokens,
         ):
             raise ValueError(NexusUCLExecutionReason.FINAL_COMPILE_MUTATED_PLAN.value)
 

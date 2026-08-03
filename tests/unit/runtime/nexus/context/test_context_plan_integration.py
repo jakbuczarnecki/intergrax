@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import ast
+import subprocess
+import sys
+import textwrap
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -37,6 +40,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
 )
 from intergrax.runtime.context_lifecycle.in_memory_repository import InMemoryOptimizationArtifactRepository
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+from intergrax.runtime.nexus.context.context_compiler_models import (
+    DegradationStepKind,
+)
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
@@ -48,6 +54,180 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import Messa
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
+
+
+def test_context_engine_import_does_not_load_legacy_or_optional_ml_stack() -> None:
+    script = textwrap.dedent(
+        """
+        import sys
+
+        from intergrax.runtime.nexus.context.context_engine import (
+            DefaultNexusContextEngine,
+        )
+
+        assert DefaultNexusContextEngine
+
+        for module_name in (
+            "intergrax.runtime.nexus.context.context_manager",
+            "intergrax.rag.retrieval.resolve",
+            "sentence_transformers",
+            "transformers",
+            "psutil",
+        ):
+            assert module_name not in sys.modules, module_name
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
+
+
+def test_context_package_preserves_lazy_context_manager_exports() -> None:
+    script = textwrap.dedent(
+        """
+        import sys
+        import types
+
+        import intergrax.runtime.nexus.context as context_package
+
+        assert (
+            "intergrax.runtime.nexus.context.context_manager"
+            not in sys.modules
+        )
+
+        module_name = (
+            "intergrax.runtime.nexus.context.context_manager"
+        )
+
+        stub = types.ModuleType(module_name)
+
+        class StubAgentContextBundle:
+            pass
+
+        class StubContextManager:
+            pass
+
+        stub.AgentContextBundle = StubAgentContextBundle
+        stub.ContextManager = StubContextManager
+        sys.modules[module_name] = stub
+
+        from intergrax.runtime.nexus.context import (
+            AgentContextBundle,
+            ContextManager,
+        )
+
+        assert AgentContextBundle is StubAgentContextBundle
+        assert ContextManager is StubContextManager
+
+        assert (
+            context_package.AgentContextBundle
+            is StubAgentContextBundle
+        )
+        assert (
+            context_package.ContextManager
+            is StubContextManager
+        )
+
+        assert "AgentContextBundle" in context_package.__all__
+        assert "ContextManager" in context_package.__all__
+
+        assert "AgentContextBundle" in dir(context_package)
+        assert "ContextManager" in dir(context_package)
+
+        assert (
+            context_package.__dict__["AgentContextBundle"]
+            is StubAgentContextBundle
+        )
+        assert (
+            context_package.__dict__["ContextManager"]
+            is StubContextManager
+        )
+
+        del sys.modules[module_name]
+
+        assert (
+            context_package.ContextManager
+            is StubContextManager
+        )
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, (
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
+
+
+def test_context_package_unknown_attribute_fails_normally() -> None:
+    import intergrax.runtime.nexus.context as context_package
+
+    with pytest.raises(
+        AttributeError,
+        match="has no attribute",
+    ):
+        getattr(
+            context_package,
+            "DefinitelyMissingContextSymbol",
+        )
+
+
+def test_context_builder_defers_retrieval_resolver_import() -> None:
+    builder_source = (
+        REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "nexus"
+        / "context"
+        / "context_builder.py"
+    ).read_text(encoding="utf-8")
+    tree = ast.parse(builder_source)
+
+    for node in tree.body:
+        if (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "intergrax.rag.retrieval.resolve"
+        ):
+            pytest.fail("top-level resolve import not allowed")
+
+    method_node = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "ContextBuilder":
+            for item in node.body:
+                if (
+                    isinstance(item, ast.FunctionDef)
+                    and item.name == "_retrieve_for_session"
+                ):
+                    method_node = item
+                    break
+            break
+
+    assert method_node is not None
+
+    resolve_imports = [
+        node
+        for node in ast.walk(method_node)
+        if isinstance(node, ast.ImportFrom)
+        and node.module == "intergrax.rag.retrieval.resolve"
+        and any(
+            alias.name == "resolve_retrieval_service"
+            for alias in node.names
+        )
+    ]
+    assert len(resolve_imports) == 1
 
 
 @dataclass(slots=True)
@@ -373,6 +553,85 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "degradation_steps",
+    [
+        (),
+        (DegradationStepKind.FULL.value,),
+    ],
+)
+async def test_engine_accepts_no_mutation_compile_markers(
+    degradation_steps: tuple[str, ...],
+) -> None:
+    adapter = _SmallWindowAdapter()
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
+    engine = DefaultNexusContextEngine()
+    planned_message = ChatMessage(
+        role="user",
+        content="short",
+        entry_id="current",
+    )
+    resolved_budget = engine._compiler.resolve_global_input_budget(
+        config,
+        max_output_tokens=None,
+    )
+    request = ContextAssemblyRequest(
+        trace_id="t1",
+        run_id="r1",
+        task_id="task1",
+        tenant_id="tenant1",
+        assembly_scope="acp_step",
+        objective="test",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        assembly_options=TaskContextAssemblyOptions(),
+    )
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        handles={
+            "runtime_config": config,
+            "messages": [planned_message],
+        },
+    )
+    preflight_calls = [0]
+    validator_calls = [0]
+
+    def _fake_preflight(*args: object, **kwargs: object) -> object:
+        preflight_calls[0] += 1
+        return None
+
+    original_validate = engine._validator.validate
+
+    def _counting_validate(*args: object, **kwargs: object) -> object:
+        validator_calls[0] += 1
+        return original_validate(*args, **kwargs)
+
+    compile_result = type(
+        "CompileResult",
+        (),
+        {
+            "messages": [planned_message],
+            "total_tokens": 1,
+            "budget_tokens": resolved_budget,
+            "degradation_steps": degradation_steps,
+        },
+    )()
+    with patch(
+        "intergrax.runtime.nexus.context.context_engine.compile_chat_messages",
+        return_value=compile_result,
+    ):
+        with patch.object(engine._validator, "validate", side_effect=_counting_validate):
+            with patch(
+                "intergrax.runtime.nexus.context.context_engine.verify_context_preflight",
+                side_effect=_fake_preflight,
+            ):
+                assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+    assert assembled.messages == (planned_message,)
+    assert validator_calls[0] == 1
+    assert preflight_calls[0] == 1
+
+
+@pytest.mark.asyncio
 async def test_engine_detects_structural_tool_linkage_mutation() -> None:
     adapter = _SmallWindowAdapter()
     config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
@@ -421,7 +680,9 @@ async def test_engine_detects_structural_tool_linkage_mutation() -> None:
             "messages": [mutated_message],
             "total_tokens": 1,
             "budget_tokens": resolved_budget,
-            "degradation_steps": (),
+            "degradation_steps": (
+                DegradationStepKind.FULL.value,
+            ),
         },
     )()
     with patch(
@@ -476,6 +737,11 @@ async def test_engine_compile_mutation_raises_ucl_final_compile_mutated_plan() -
     adapter = _SmallWindowAdapter()
     config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
+    planned_message = ChatMessage(role="user", content="short", entry_id="current")
+    resolved_budget = engine._compiler.resolve_global_input_budget(
+        config,
+        max_output_tokens=None,
+    )
     request = ContextAssemblyRequest(
         trace_id="t1",
         run_id="r1",
@@ -491,17 +757,19 @@ async def test_engine_compile_mutation_raises_ucl_final_compile_mutated_plan() -
         engine_id="default",
         handles={
             "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="short", entry_id="current")],
+            "messages": [planned_message],
         },
     )
     degraded = type(
         "CompileResult",
         (),
         {
-            "messages": [ChatMessage(role="user", content="mutated", entry_id="current")],
+            "messages": [planned_message],
             "total_tokens": 1,
-            "budget_tokens": 100,
-            "degradation_steps": ("trim",),
+            "budget_tokens": resolved_budget,
+            "degradation_steps": (
+                DegradationStepKind.DROP_LOWEST_SCORED.value,
+            ),
         },
     )()
     with patch(

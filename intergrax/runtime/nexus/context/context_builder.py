@@ -16,7 +16,6 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.rag.profiles.rag_profile import RagProfile
-from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -149,6 +148,10 @@ class ContextBuilder:
         profile = self._config.rag_profile or RagProfile(final_top_k=max_docs)
         service = self._config.retrieval_service
         if service is None:
+            from intergrax.rag.retrieval.resolve import (
+                resolve_retrieval_service,
+            )
+
             service = resolve_retrieval_service(
                 vectorstore_manager=self._vectorstore,
                 embedding_manager=embedding_manager,
