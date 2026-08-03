@@ -20,12 +20,12 @@ They do not define an open-source contribution model, production-support channel
 | 1 | [Public Documentation Architecture](PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Canonical maintainer contract for public documentation layers, reader-intent routing, and proof classification |
 | 2 | [Public Proof and Claims Model](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Canonical status vocabulary, evidence requirements, claim qualification, and proof promotion rules |
 | 3 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
-| 3 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
-| 4 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
-| 5 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
-| 6 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
-| 7 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 8 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
+| 4 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
+| 5 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
+| 6 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
+| 7 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
+| 8 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
+| 9 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
 
 ## Reader-facing public navigation
 

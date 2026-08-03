@@ -42,7 +42,7 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- **CTX-UCL** — Unified Context Lifecycle: architecture accepted/closed through CTX-UCL-ARCH-1-R4-R1; runtime contracts CTX-UCL-1 through CTX-UCL-4 **accepted/closed**; CTX-UCL-5 **ready for review**; CTX-UCL-6 and CTX-UCL-CLOSEOUT-1 **not started** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
+- **CTX-UCL** — Unified Context Lifecycle: architecture accepted/closed through CTX-UCL-ARCH-1-R4-R1; runtime contracts CTX-UCL-1 through CTX-UCL-5 **accepted/closed**; CTX-UCL-6 **in progress**; CTX-UCL-6A **ready for review**; CTX-UCL-CLOSEOUT-1 **not started** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
 - **TOKEN-10E** — policy-governed durable compaction integration profile documented; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed; runtime not implemented.
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
@@ -64,7 +64,7 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
-- Unified Context Lifecycle contracts and reference repository are implemented through CTX-UCL-4; CTX-UCL-5 Nexus integration proof is ready for review; durable production adapter and closeout remain planned (runtime not complete for production claims).
+- Unified Context Lifecycle contracts and runtime integration through CTX-UCL-5 are accepted/closed; CTX-UCL-6 legacy migration is in progress; CTX-UCL-6A is ready for review; CTX-UCL-CLOSEOUT-1 and durable production integration remain not started (runtime not complete for production claims).
 - TOKEN-10E in-cache compaction integration profile and safety boundary are documented (runtime implementation not yet available; blocked until CTX-UCL-CLOSEOUT-1).
 
 ---

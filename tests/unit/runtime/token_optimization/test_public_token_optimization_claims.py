@@ -15,6 +15,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CLAIMS_DOC = _REPO_ROOT / "docs" / "public-adoption" / "TOKEN_OPTIMIZATION_CLAIMS.md"
 _PROOFS_DOC = _REPO_ROOT / "PROOFS.md"
 _PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
+_PUBLIC_PROOF_MODEL = (
+    _REPO_ROOT
+    / "docs"
+    / "public-adoption"
+    / "PUBLIC_PROOF_AND_CLAIMS_MODEL.md"
+)
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
 _TOKEN_OPT_README = _REPO_ROOT / "docs" / "features" / "token_optimization" / "README.md"
 _TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
@@ -119,6 +125,113 @@ def _read_claims_doc() -> str:
 
 def _read_public_doc(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def _normalize_public_text(text: str) -> str:
+    normalized = text.lower()
+    normalized = re.sub(r"\*+", "", normalized)
+    normalized = re.sub(r"[_`]+", "", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+    return normalized.strip()
+
+
+_UCL_PUBLIC_SURFACES = (
+    ("PROOFS.md", _PROOFS_DOC),
+    ("token_optimization/README.md", _TOKEN_OPT_README),
+    ("PUBLIC_PROOF_AND_CLAIMS_MODEL.md", _PUBLIC_PROOF_MODEL),
+    ("TOKEN_OPTIMIZATION_CLAIMS.md", _CLAIMS_DOC),
+)
+
+_CTX_UCL_6_MILESTONE = re.compile(r"ctx-ucl-6(?!a)", re.IGNORECASE)
+
+
+def _ucl_status_window(normalized: str, milestone: str) -> str:
+    milestone_lower = milestone.lower()
+    if milestone == "CTX-UCL-6":
+        match = _CTX_UCL_6_MILESTONE.search(normalized)
+        if match is None:
+            return ""
+        return normalized[match.start() : match.start() + 200]
+    idx = normalized.find(milestone_lower)
+    if idx == -1:
+        return ""
+    return normalized[idx : idx + 200]
+
+
+def _ucl_status_segment(normalized: str, milestone: str, *, width: int = 80) -> str:
+    milestone_lower = milestone.lower()
+    if milestone == "CTX-UCL-6":
+        match = _CTX_UCL_6_MILESTONE.search(normalized)
+        if match is None:
+            return ""
+        return normalized[match.start() : match.start() + width]
+    idx = normalized.find(milestone_lower)
+    if idx == -1:
+        return ""
+    return normalized[idx : idx + width]
+
+
+def _assert_required_ucl_statuses(normalized: str) -> None:
+    ucl5 = _ucl_status_window(normalized, "CTX-UCL-5")
+    assert "accepted" in ucl5 and "closed" in ucl5, "CTX-UCL-5 must be accepted/closed"
+
+    ucl6 = _ucl_status_window(normalized, "CTX-UCL-6")
+    assert "in progress" in ucl6, "CTX-UCL-6 must be in progress"
+
+    ucl6a = _ucl_status_window(normalized, "CTX-UCL-6A")
+    assert "ready for review" in ucl6a, "CTX-UCL-6A must be ready for review"
+
+    closeout = _ucl_status_window(normalized, "CTX-UCL-CLOSEOUT-1")
+    assert "not started" in closeout or _ucl_closeout_reports_not_started(normalized), (
+        "CTX-UCL-CLOSEOUT-1 must be not started"
+    )
+
+
+def _ucl_closeout_reports_not_started(normalized: str) -> bool:
+    milestone = "ctx-ucl-closeout-1"
+    start = 0
+    while True:
+        idx = normalized.find(milestone, start)
+        if idx == -1:
+            return False
+        window = normalized[idx : idx + 80]
+        if "not started" in window:
+            return True
+        start = idx + len(milestone)
+    return False
+
+
+_CTX_UCL_6_NOT_STARTED = re.compile(
+    r"ctx-ucl-6(?!a)\b[^;|]{0,40}\bnot started\b",
+    re.IGNORECASE,
+)
+
+
+def _assert_no_stale_ucl_wording(normalized: str) -> None:
+    ucl5_segment = _ucl_status_segment(normalized, "CTX-UCL-5")
+    assert not (
+        ("ready for review" in ucl5_segment or "in review" in ucl5_segment)
+        and "accepted" not in ucl5_segment
+    ), "CTX-UCL-5 must not be described as ready for review or in review"
+
+    assert not _CTX_UCL_6_NOT_STARTED.search(normalized), (
+        "CTX-UCL-6 must not be described as not started"
+    )
+
+    combined_stale_patterns = (
+        re.compile(
+            r"ctx-ucl-6(?!a).{0,40}and\s+ctx-ucl-closeout-1.{0,40}not\s+started",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        re.compile(
+            r"ctx-ucl-6(?!a).{0,40}and\s+closeout.{0,40}not\s+started",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    )
+    for pattern in combined_stale_patterns:
+        assert not pattern.search(normalized), (
+            f"Stale combined UCL wording matched pattern: {pattern.pattern!r}"
+        )
 
 
 def _token_optimization_section_810() -> str:
@@ -421,3 +534,33 @@ def test_claims_doc_does_not_claim_runtime_single_flight_or_recursion_protection
             if claim in line.lower() and not _line_is_forbidden_example_context(line)
         ]
         assert offenders == [], f"Forbidden runtime claim in claims doc: {claim!r} -> {offenders}"
+
+
+# --- UCL public status synchronization guardrails ---
+
+
+@pytest.mark.parametrize("surface_name, surface_path", _UCL_PUBLIC_SURFACES)
+def test_ucl_public_surface_reports_current_status(
+    surface_name: str,
+    surface_path: Path,
+) -> None:
+    normalized = _normalize_public_text(_read_public_doc(surface_path))
+    _assert_required_ucl_statuses(normalized)
+
+
+@pytest.mark.parametrize("surface_name, surface_path", _UCL_PUBLIC_SURFACES)
+def test_ucl_public_surface_rejects_stale_status_wording(
+    surface_name: str,
+    surface_path: Path,
+) -> None:
+    normalized = _normalize_public_text(_read_public_doc(surface_path))
+    _assert_no_stale_ucl_wording(normalized)
+
+
+def test_public_adoption_reading_order_is_zero_through_nine_unique() -> None:
+    content = _read_public_doc(_PUBLIC_ADOPTION_README)
+    start = content.index("## Recommended reading order")
+    section_end = content.index("\n## ", start + 1)
+    section = content[start:section_end]
+    steps = [int(match.group(1)) for match in re.finditer(r"^\|\s*(\d+)\s*\|", section, re.MULTILINE)]
+    assert steps == list(range(10))
