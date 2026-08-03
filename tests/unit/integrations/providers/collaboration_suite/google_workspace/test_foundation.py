@@ -935,3 +935,178 @@ def test_copy_credential_material_canonicalizes_typed_mapping_exception(
     assert "private_key" not in repr(exc_info.value)
     assert _SECRET_CREDENTIAL_FRAGMENT not in str(exc_info.value)
     assert _SECRET_CREDENTIAL_FRAGMENT not in repr(exc_info.value)
+
+
+# --- Drive foundation delegation ---
+
+
+class _DriveRecordingTransport:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def get_json(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> dict[str, object]:
+        self.calls.append(
+            {
+                "source_kind": source_kind,
+                "relative_path": relative_path,
+                "params": dict(params or {}),
+            }
+        )
+        if relative_path == "/drives":
+            return {
+                "drives": [
+                    {
+                        "id": "drive-1",
+                        "name": "Team",
+                        "createdTime": "2024-01-01T00:00:00Z",
+                        "hidden": False,
+                    },
+                ],
+            }
+        if relative_path == "/files":
+            return {"files": []}
+        if relative_path == "/changes/startPageToken":
+            return {"startPageToken": "start-token"}
+        if relative_path == "/changes":
+            return {"changes": [], "newStartPageToken": "checkpoint"}
+        return {}
+
+
+@dataclass(frozen=True, slots=True)
+class _DriveFakeClientFamily:
+    _transport: _DriveRecordingTransport
+
+    @property
+    def transport(self) -> _DriveRecordingTransport:
+        return self._transport
+
+
+def test_disabled_integration_blocks_drive_methods() -> None:
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=False,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=_SpyCredentialResolver(),
+        client_factory=_SpyClientFactory(),
+    )
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+
+    scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    with pytest.raises(IntegrationConfigurationError, match="disabled"):
+        integration.list_drive_shared_drives_page()
+    with pytest.raises(IntegrationConfigurationError, match="disabled"):
+        integration.read_drive_items_page(scope=scope)
+
+
+def test_first_drive_call_materializes_client_family_once() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    transport = _DriveRecordingTransport()
+    integration._client_family = _DriveFakeClientFamily(_transport=transport)  # type: ignore[assignment]
+    integration.list_drive_shared_drives_page()
+    assert resolver.calls == []
+    assert factory.calls == []
+
+
+def test_multiple_drive_operations_reuse_same_family_and_transport() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+        GoogleWorkspacePageToken,
+    )
+
+    transport = _DriveRecordingTransport()
+    family = _DriveFakeClientFamily(_transport=transport)
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=_SpyCredentialResolver(),
+        client_factory=_SpyClientFactory(),
+    )
+    integration._client_family = family  # type: ignore[assignment]
+    scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    integration.list_drive_shared_drives_page()
+    integration.read_drive_items_page(scope=scope)
+    integration.read_drive_start_page_token(scope=scope)
+    integration.read_drive_changes_page(
+        scope=scope,
+        page_token=GoogleWorkspacePageToken(value="page-1"),
+    )
+    assert len(transport.calls) == 4
+    assert integration.require_client_family() is family
+
+
+def test_health_and_construction_do_not_materialize_drive() -> None:
+    resolver = _SpyCredentialResolver()
+    factory = _SpyClientFactory()
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=resolver,
+        client_factory=factory,
+    )
+    health = integration.check_health()
+    assert health.status is not PlatformIntegrationStatus.UNAVAILABLE
+    assert resolver.calls == []
+    assert factory.calls == []
+    assert integration._client_family is None
+
+
+def test_injected_valid_client_family_serves_drive_operations() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+
+    transport = _DriveRecordingTransport()
+    family = _DriveFakeClientFamily(_transport=transport)
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.from_client(
+        family,  # type: ignore[arg-type]
+        enabled=True,
+    )
+    scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    page = integration.list_drive_shared_drives_page()
+    assert len(page.items) == 1
+    integration.read_drive_items_page(scope=scope)
+    assert len(transport.calls) == 2
+
+
+def test_lazy_drive_foundation_exports_resolve() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveKnowledgeReader,
+    )
+
+    assert google_workspace.GOOGLE_DRIVE_SOURCE_KIND == "drive"
+    assert google_workspace.GoogleDriveKnowledgeReader is GoogleDriveKnowledgeReader
+
+
+def test_existing_public_exports_remain_present_with_drive_symbols() -> None:
+    public_names = set(google_workspace.__all__)
+    assert "GoogleWorkspaceCollaborationSuiteIntegration" in public_names
+    assert "GoogleWorkspacePageToken" in public_names
+    assert "GoogleDriveKnowledgeReader" in public_names

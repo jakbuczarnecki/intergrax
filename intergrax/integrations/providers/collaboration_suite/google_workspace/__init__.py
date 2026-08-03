@@ -5,8 +5,20 @@ from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
     "DefaultGoogleWorkspaceClientFactory",
+    "GOOGLE_DRIVE_SOURCE_KIND",
     "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
     "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
+    "GoogleDriveChange",
+    "GoogleDriveChangePage",
+    "GoogleDriveItem",
+    "GoogleDriveItemKind",
+    "GoogleDriveItemPage",
+    "GoogleDriveKnowledgeReadClient",
+    "GoogleDriveKnowledgeReader",
+    "GoogleDriveScope",
+    "GoogleDriveScopeKind",
+    "GoogleDriveSharedDrive",
+    "GoogleDriveSharedDrivePage",
     "GoogleWorkspaceApiError",
     "GoogleWorkspaceClientFactory",
     "GoogleWorkspaceClientFamily",
@@ -27,6 +39,23 @@ __all__ = [
     "parse_google_workspace_collection_page",
     "register_google_workspace_integration",
 ]
+
+_DRIVE_EXPORTS = frozenset(
+    {
+        "GOOGLE_DRIVE_SOURCE_KIND",
+        "GoogleDriveChange",
+        "GoogleDriveChangePage",
+        "GoogleDriveItem",
+        "GoogleDriveItemKind",
+        "GoogleDriveItemPage",
+        "GoogleDriveKnowledgeReadClient",
+        "GoogleDriveKnowledgeReader",
+        "GoogleDriveScope",
+        "GoogleDriveScopeKind",
+        "GoogleDriveSharedDrive",
+        "GoogleDriveSharedDrivePage",
+    }
+)
 
 _BUNDLE_EXPORTS = frozenset(
     {
@@ -91,6 +120,12 @@ def __getattr__(name: str):
         )
 
         return export_from_bundle(_transport, name, _FOUNDATION_EXPORTS)
+    if name in _DRIVE_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _DRIVE_EXPORTS)
     if name in _FOUNDATION_EXPORTS:
         if name == "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID":
             from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (

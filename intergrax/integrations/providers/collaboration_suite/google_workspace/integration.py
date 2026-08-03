@@ -27,6 +27,17 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceTransport,
     copy_google_workspace_credential_material,
 )
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+    GoogleDriveChangePage,
+    GoogleDriveItem,
+    GoogleDriveItemPage,
+    GoogleDriveKnowledgeReader,
+    GoogleDriveScope,
+    GoogleDriveSharedDrivePage,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+    GoogleWorkspacePageToken,
+)
 from intergrax.runtime.integrations.categories._base import (
     _CONNECT_READ_WRITE_HEALTH,
     category_for_provider,
@@ -182,6 +193,62 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
             validated_family = _validate_client_family(family, injected=False)
             self._client_family = validated_family
             return validated_family
+
+    def _drive_reader(self) -> GoogleDriveKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleDriveKnowledgeReader(transport=family.transport)
+
+    def list_drive_shared_drives_page(
+        self,
+        *,
+        page_token: GoogleWorkspacePageToken | None = None,
+        limit: int = 100,
+    ) -> GoogleDriveSharedDrivePage:
+        return self._drive_reader().list_shared_drives_page(
+            page_token=page_token,
+            limit=limit,
+        )
+
+    def read_drive_items_page(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        page_token: GoogleWorkspacePageToken | None = None,
+        limit: int = 200,
+    ) -> GoogleDriveItemPage:
+        return self._drive_reader().read_items_page(
+            scope=scope,
+            page_token=page_token,
+            limit=limit,
+        )
+
+    def read_drive_item(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        file_id: str,
+    ) -> GoogleDriveItem:
+        return self._drive_reader().read_item(scope=scope, file_id=file_id)
+
+    def read_drive_start_page_token(
+        self,
+        *,
+        scope: GoogleDriveScope,
+    ) -> GoogleWorkspacePageToken:
+        return self._drive_reader().read_start_page_token(scope=scope)
+
+    def read_drive_changes_page(
+        self,
+        *,
+        scope: GoogleDriveScope,
+        page_token: GoogleWorkspacePageToken,
+        limit: int = 200,
+    ) -> GoogleDriveChangePage:
+        return self._drive_reader().read_changes_page(
+            scope=scope,
+            page_token=page_token,
+            limit=limit,
+        )
 
     def check_health(self) -> PlatformIntegrationHealth:
         if not self.config.enabled:
