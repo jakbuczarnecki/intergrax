@@ -44,6 +44,12 @@ _MAX_CHECKSUM_LENGTH = 128
 _MAX_REVISION_ID_LENGTH = 1024
 
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+_RFC3339_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T"
+    r"\d{2}:\d{2}:\d{2}"
+    r"(?:\.\d{1,9})?"
+    r"(?:Z|[+-]\d{2}:\d{2})$"
+)
 
 _SHARED_DRIVE_LIST_LIMIT_MIN = 1
 _SHARED_DRIVE_LIST_LIMIT_MAX = 100
@@ -110,13 +116,13 @@ def _validate_nonblank_bounded_string(
 def _parse_timezone_aware_datetime(value: object) -> datetime:
     if type(value) is not str:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-    trimmed = value.strip()
-    if not trimmed:
+    if _ASCII_CONTROL.search(value):
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-    if trimmed.endswith("Z"):
-        trimmed = f"{trimmed[:-1]}+00:00"
+    if not _RFC3339_TIMESTAMP.fullmatch(value):
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    iso_value = f"{value[:-1]}+00:00" if value.endswith("Z") else value
     try:
-        parsed = datetime.fromisoformat(trimmed)
+        parsed = datetime.fromisoformat(iso_value)
     except ValueError:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE) from None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
@@ -194,12 +200,6 @@ def _validate_required_page_token(page_token: object) -> GoogleWorkspacePageToke
     return page_token
 
 
-def _validate_scope(scope: object) -> GoogleDriveScope:
-    if not isinstance(scope, GoogleDriveScope):
-        raise IntegrationConfigurationError(_INVALID_SCOPE_MESSAGE)
-    return scope
-
-
 def _parse_provider_bool(mapping: dict[str, object], key: str) -> bool:
     if key not in mapping:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
@@ -215,12 +215,16 @@ def _parse_optional_provider_bool(mapping: dict[str, object], key: str) -> bool 
     return _parse_provider_bool(mapping, key)
 
 
-def _parse_parent_ids(value: object) -> tuple[str, ...]:
-    if not isinstance(value, list):
+def _canonicalize_parent_ids(value: object) -> tuple[str, ...]:
+    if isinstance(value, tuple):
+        items = value
+    elif isinstance(value, list):
+        items = value
+    else:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
     seen: set[str] = set()
     parent_ids: list[str] = []
-    for item in value:
+    for item in items:
         validated = _validate_drive_identifier(item)
         if validated in seen:
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
@@ -235,19 +239,37 @@ def _parse_optional_drive_id(value: object) -> str | None:
     return _validate_drive_identifier(value)
 
 
-def _validate_shared_drive_id_agreement(
+def _validate_item_ownership(
+    scope: GoogleDriveScope,
+    *,
+    drive_id: str | None,
+    message: str = _UNEXPECTED_RESPONSE_MESSAGE,
+) -> None:
+    if scope.kind is GoogleDriveScopeKind.USER:
+        if drive_id is not None:
+            raise ValueError(message)
+    elif scope.kind is GoogleDriveScopeKind.SHARED_DRIVE:
+        if drive_id is None or drive_id != scope.drive_id:
+            raise ValueError(message)
+
+
+def _validate_change_ownership(
     scope: GoogleDriveScope,
     *,
     change_drive_id: str | None,
     item_drive_id: str | None,
+    removed: bool,
 ) -> None:
-    if scope.kind is not GoogleDriveScopeKind.SHARED_DRIVE:
-        return
-    expected = scope.drive_id
-    if change_drive_id is not None and change_drive_id != expected:
-        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-    if item_drive_id is not None and item_drive_id != expected:
-        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    if scope.kind is GoogleDriveScopeKind.USER:
+        if change_drive_id is not None:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        if not removed and item_drive_id is not None:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    elif scope.kind is GoogleDriveScopeKind.SHARED_DRIVE:
+        if change_drive_id is None or change_drive_id != scope.drive_id:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        if not removed and (item_drive_id is None or item_drive_id != scope.drive_id):
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
 
 
 class GoogleDriveScope(BaseModel):
@@ -272,6 +294,22 @@ class GoogleDriveScope(BaseModel):
             if self.drive_id is None:
                 raise ValueError(_INVALID_SCOPE_MESSAGE)
         return self
+
+
+def _copy_and_validate_drive_scope(value: object) -> GoogleDriveScope:
+    if type(value) is not GoogleDriveScope:
+        raise ValueError(_INVALID_SCOPE_MESSAGE)
+    try:
+        return GoogleDriveScope(**value.model_dump(mode="python"))
+    except (ValueError, TypeError, ValidationError):
+        raise ValueError(_INVALID_SCOPE_MESSAGE) from None
+
+
+def _validate_scope(scope: object) -> GoogleDriveScope:
+    try:
+        return _copy_and_validate_drive_scope(scope)
+    except ValueError:
+        raise IntegrationConfigurationError(_INVALID_SCOPE_MESSAGE) from None
 
 
 class GoogleDriveSharedDrive(BaseModel):
@@ -358,6 +396,11 @@ class GoogleDriveItem(BaseModel):
     def _validate_remote_id(cls, value: object) -> str:
         return _validate_drive_identifier(value)
 
+    @field_validator("scope", mode="before")
+    @classmethod
+    def _validate_scope_field(cls, value: object) -> GoogleDriveScope:
+        return _copy_and_validate_drive_scope(value)
+
     @field_validator("name", mode="before")
     @classmethod
     def _validate_name(cls, value: object) -> str:
@@ -379,15 +422,7 @@ class GoogleDriveItem(BaseModel):
     @field_validator("parent_ids", mode="before")
     @classmethod
     def _validate_parent_ids(cls, value: object) -> tuple[str, ...]:
-        if isinstance(value, tuple):
-            seen: set[str] = set()
-            for item in value:
-                validated = _validate_drive_identifier(item)
-                if validated in seen:
-                    raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-                seen.add(validated)
-            return value
-        return _parse_parent_ids(value)
+        return _canonicalize_parent_ids(value)
 
     @field_validator("drive_id", mode="before")
     @classmethod
@@ -473,9 +508,15 @@ class GoogleDriveItem(BaseModel):
 
     @model_validator(mode="after")
     def _validate_item_invariants(self) -> GoogleDriveItem:
-        if self.scope.kind is GoogleDriveScopeKind.SHARED_DRIVE:
-            if self.drive_id is not None and self.drive_id != self.scope.drive_id:
-                raise ValueError(_INVALID_SCOPE_MESSAGE)
+        _validate_item_ownership(
+            self.scope,
+            drive_id=self.drive_id,
+            message=_INVALID_SCOPE_MESSAGE,
+        )
+
+        expected_kind = _classify_item_kind(self.mime_type)
+        if self.kind != expected_kind:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
 
         if self.kind is GoogleDriveItemKind.SHORTCUT:
             if self.shortcut_target_id is None or self.shortcut_target_mime_type is None:
@@ -521,6 +562,11 @@ class GoogleDriveChange(BaseModel):
     def _validate_file_id(cls, value: object) -> str:
         return _validate_drive_identifier(value)
 
+    @field_validator("scope", mode="before")
+    @classmethod
+    def _validate_scope_field(cls, value: object) -> GoogleDriveScope:
+        return _copy_and_validate_drive_scope(value)
+
     @field_validator("removed", mode="before")
     @classmethod
     def _validate_removed(cls, value: object) -> bool:
@@ -537,14 +583,13 @@ class GoogleDriveChange(BaseModel):
 
     @model_validator(mode="after")
     def _validate_change_invariants(self) -> GoogleDriveChange:
-        if self.removed:
-            return self
-        if self.item is None:
+        if not self.removed and self.item is None:
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-        if self.item.remote_id != self.file_id:
-            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-        if self.item.scope != self.scope:
-            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        if self.item is not None:
+            if self.item.remote_id != self.file_id:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            if self.item.scope != self.scope:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         return self
 
 
@@ -637,17 +682,13 @@ def _parse_item_from_provider(
         validated_remote = _validate_drive_identifier(remote_id)
 
     drive_id = _parse_optional_drive_id(mapping.get("driveId"))
-    _validate_shared_drive_id_agreement(
-        scope,
-        change_drive_id=None,
-        item_drive_id=drive_id,
-    )
+    _validate_item_ownership(scope, drive_id=drive_id)
 
     parents_value = mapping.get("parents")
     if parents_value is None:
         parent_ids: tuple[str, ...] = ()
     else:
-        parent_ids = _parse_parent_ids(parents_value)
+        parent_ids = _canonicalize_parent_ids(parents_value)
 
     size_value = mapping.get("size")
     if kind in {GoogleDriveItemKind.FOLDER, GoogleDriveItemKind.SHORTCUT}:
@@ -727,12 +768,6 @@ def _parse_change_from_provider(
     changed_at = _parse_timezone_aware_datetime(mapping.get("time"))
 
     change_drive_id = _parse_optional_drive_id(mapping.get("driveId"))
-    _validate_shared_drive_id_agreement(
-        scope,
-        change_drive_id=change_drive_id,
-        item_drive_id=None,
-    )
-
     item: GoogleDriveItem | None = None
     if not removed:
         file_payload = mapping.get("file")
@@ -743,11 +778,12 @@ def _parse_change_from_provider(
             scope=scope,
             expected_remote_id=file_id,
         )
-        _validate_shared_drive_id_agreement(
-            scope,
-            change_drive_id=change_drive_id,
-            item_drive_id=item.drive_id,
-        )
+    _validate_change_ownership(
+        scope,
+        change_drive_id=change_drive_id,
+        item_drive_id=item.drive_id if item is not None else None,
+        removed=removed,
+    )
 
     return _safe_construct_change(
         file_id=file_id,
@@ -988,11 +1024,13 @@ class GoogleDriveKnowledgeReader:
             "pageSize": validated_limit,
             "spaces": "drive",
             "includeRemoved": True,
-            "includeItemsFromAllDrives": True,
             "supportsAllDrives": True,
             "fields": _CHANGE_FIELDS,
         }
-        if validated_scope.kind is GoogleDriveScopeKind.SHARED_DRIVE:
+        if validated_scope.kind is GoogleDriveScopeKind.USER:
+            params["includeItemsFromAllDrives"] = False
+        else:
+            params["includeItemsFromAllDrives"] = True
             params["driveId"] = validated_scope.drive_id
 
         payload = self._transport.get_json(

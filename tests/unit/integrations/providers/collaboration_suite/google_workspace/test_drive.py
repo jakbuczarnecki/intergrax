@@ -940,3 +940,647 @@ def test_parse_folder_native_shortcut_kinds() -> None:
         GoogleDriveItemKind.NATIVE_DOCUMENT,
         GoogleDriveItemKind.SHORTCUT,
     ]
+
+
+# --- Scope ownership: USER items ---
+
+
+def test_user_item_without_drive_id_passes() -> None:
+    transport = _RecordingTransport(responses=[{"files": [_blob_payload()]}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    page = reader.read_items_page(scope=_USER_SCOPE)
+    assert page.items[0].drive_id is None
+
+
+def test_user_item_with_drive_id_fails() -> None:
+    payload = _blob_payload(drive_id="unexpected-drive")
+    transport = _RecordingTransport(responses=[{"files": [payload]}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError, match="unexpected"):
+        reader.read_items_page(scope=_USER_SCOPE)
+
+
+def test_user_item_direct_model_with_drive_id_fails() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDriveItem(
+            remote_id="file-1",
+            scope=_USER_SCOPE,
+            kind=GoogleDriveItemKind.BLOB,
+            name="doc.pdf",
+            mime_type="application/pdf",
+            parent_ids=(),
+            drive_id="unexpected-drive",
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            version=1,
+            can_download=True,
+        )
+
+
+# --- Scope ownership: SHARED_DRIVE items ---
+
+
+def test_shared_drive_item_matching_drive_id_passes() -> None:
+    payload = _blob_payload(drive_id=_SHARED_DRIVE_ID)
+    transport = _RecordingTransport(responses=[{"files": [payload]}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    page = reader.read_items_page(scope=_SHARED_SCOPE)
+    assert page.items[0].drive_id == _SHARED_DRIVE_ID
+
+
+def test_shared_drive_item_missing_drive_id_fails() -> None:
+    transport = _RecordingTransport(responses=[{"files": [_blob_payload()]}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_items_page(scope=_SHARED_SCOPE)
+
+
+def test_shared_drive_item_different_drive_id_fails() -> None:
+    payload = _blob_payload(drive_id="other-drive")
+    transport = _RecordingTransport(responses=[{"files": [payload]}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_items_page(scope=_SHARED_SCOPE)
+
+
+def test_shared_drive_item_direct_model_without_drive_id_fails() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDriveItem(
+            remote_id="file-1",
+            scope=_SHARED_SCOPE,
+            kind=GoogleDriveItemKind.BLOB,
+            name="doc.pdf",
+            mime_type="application/pdf",
+            parent_ids=(),
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            version=1,
+            can_download=True,
+        )
+
+
+def test_shared_drive_read_item_enforces_ownership() -> None:
+    payload = _blob_payload(drive_id="other-drive")
+    transport = _RecordingTransport(responses=[payload])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_item(scope=_SHARED_SCOPE, file_id="file-blob-1")
+
+
+def test_shared_drive_change_item_enforces_ownership() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": False,
+                        "fileId": "file-blob-1",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": _SHARED_DRIVE_ID,
+                        "file": _blob_payload(drive_id=_SHARED_DRIVE_ID),
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    page = reader.read_changes_page(
+        scope=_SHARED_SCOPE,
+        page_token=GoogleWorkspacePageToken(value="start"),
+    )
+    assert page.changes[0].item is not None
+    assert page.changes[0].item.drive_id == _SHARED_DRIVE_ID
+
+
+# --- Change ownership: USER ---
+
+
+def test_user_changes_include_items_from_all_drives_false() -> None:
+    transport = _RecordingTransport(
+        responses=[{"changes": [], "newStartPageToken": "checkpoint"}]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    reader.read_changes_page(
+        scope=_USER_SCOPE,
+        page_token=GoogleWorkspacePageToken(value="start"),
+    )
+    params = transport.calls[0]["params"]
+    assert params["includeItemsFromAllDrives"] is False
+    assert "driveId" not in params
+
+
+def test_user_change_with_drive_id_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": True,
+                        "fileId": "file-1",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": "some-drive",
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_USER_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+def test_user_change_item_with_drive_id_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": False,
+                        "fileId": "file-blob-1",
+                        "time": "2024-01-03T12:00:00Z",
+                        "file": _blob_payload(drive_id="some-drive"),
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_USER_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+# --- Change ownership: SHARED_DRIVE ---
+
+
+def test_shared_drive_removed_change_matching_drive_id_passes() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": True,
+                        "fileId": "file-removed",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": _SHARED_DRIVE_ID,
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    page = reader.read_changes_page(
+        scope=_SHARED_SCOPE,
+        page_token=GoogleWorkspacePageToken(value="start"),
+    )
+    assert page.changes[0].removed is True
+    assert page.changes[0].item is None
+
+
+def test_shared_drive_removed_change_without_drive_id_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": True,
+                        "fileId": "file-removed",
+                        "time": "2024-01-03T12:00:00Z",
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_SHARED_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+def test_shared_drive_removed_change_wrong_drive_id_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": True,
+                        "fileId": "file-removed",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": "other-drive",
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_SHARED_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+def test_shared_drive_non_removed_change_without_item_drive_id_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": False,
+                        "fileId": "file-blob-1",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": _SHARED_DRIVE_ID,
+                        "file": _blob_payload(),
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_SHARED_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+def test_shared_drive_change_item_drive_mismatch_fails() -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": False,
+                        "fileId": "file-blob-1",
+                        "time": "2024-01-03T12:00:00Z",
+                        "driveId": _SHARED_DRIVE_ID,
+                        "file": _blob_payload(drive_id="other-drive"),
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError):
+        reader.read_changes_page(
+            scope=_SHARED_SCOPE,
+            page_token=GoogleWorkspacePageToken(value="start"),
+        )
+
+
+# --- Scope revalidation ---
+
+
+def _invalid_constructed_scope() -> GoogleDriveScope:
+    return GoogleDriveScope.model_construct(
+        kind=GoogleDriveScopeKind.SHARED_DRIVE,
+        drive_id=None,
+    )
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        "read_items_page",
+        "read_item",
+        "read_start_page_token",
+        "read_changes_page",
+    ],
+)
+def test_reader_rejects_constructed_scope(operation: str) -> None:
+    transport = _RecordingTransport(responses=[{"files": []}])
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    scope = _invalid_constructed_scope()
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Drive scope"):
+        if operation == "read_items_page":
+            reader.read_items_page(scope=scope)
+        elif operation == "read_item":
+            reader.read_item(scope=scope, file_id="file-1")
+        elif operation == "read_start_page_token":
+            reader.read_start_page_token(scope=scope)
+        else:
+            reader.read_changes_page(
+                scope=scope,
+                page_token=GoogleWorkspacePageToken(value="start"),
+            )
+    assert transport.calls == []
+
+
+def test_item_rejects_constructed_scope() -> None:
+    invalid_scope = GoogleDriveScope.model_construct(
+        kind=GoogleDriveScopeKind.USER,
+        drive_id="unexpected-drive",
+    )
+    with pytest.raises(ValidationError):
+        GoogleDriveItem(
+            remote_id="file-1",
+            scope=invalid_scope,
+            kind=GoogleDriveItemKind.BLOB,
+            name="doc.pdf",
+            mime_type="application/pdf",
+            parent_ids=(),
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            version=1,
+            can_download=True,
+        )
+
+
+def test_change_rejects_constructed_scope() -> None:
+    invalid_scope = GoogleDriveScope.model_construct(
+        kind="invalid",
+        drive_id=None,
+    )
+    with pytest.raises(ValidationError):
+        GoogleDriveChange(
+            file_id="file-1",
+            scope=invalid_scope,
+            removed=True,
+            changed_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+        )
+
+
+def test_scope_canonical_copy_not_same_object() -> None:
+    caller_scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    item = GoogleDriveItem(
+        remote_id="file-1",
+        scope=caller_scope,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=(),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    assert item.scope == caller_scope
+    assert item.scope is not caller_scope
+
+
+# --- Canonical parent IDs ---
+
+
+def test_parent_ids_tuple_trimmed() -> None:
+    item = GoogleDriveItem(
+        remote_id="file-1",
+        scope=_USER_SCOPE,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=("  parent-1  ", "parent-2"),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    assert item.parent_ids == ("parent-1", "parent-2")
+
+
+def test_parent_ids_list_trimmed() -> None:
+    parent_list = ["  parent-1  ", "parent-2"]
+    item = GoogleDriveItem(
+        remote_id="file-1",
+        scope=_USER_SCOPE,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=parent_list,
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    assert item.parent_ids == ("parent-1", "parent-2")
+    assert parent_list == ["  parent-1  ", "parent-2"]
+
+
+def test_parent_ids_duplicate_after_trim_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDriveItem(
+            remote_id="file-1",
+            scope=_USER_SCOPE,
+            kind=GoogleDriveItemKind.BLOB,
+            name="doc.pdf",
+            mime_type="application/pdf",
+            parent_ids=("parent-1", " parent-1 "),
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+            version=1,
+            can_download=True,
+        )
+
+
+# --- MIME and kind integrity ---
+
+
+@pytest.mark.parametrize(
+    ("kind", "mime_type"),
+    [
+        (GoogleDriveItemKind.FOLDER, "application/pdf"),
+        (GoogleDriveItemKind.BLOB, "application/vnd.google-apps.document"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.folder"),
+        (GoogleDriveItemKind.SHORTCUT, "application/pdf"),
+        (GoogleDriveItemKind.OTHER, "application/octet-stream"),
+    ],
+)
+def test_item_kind_mime_mismatch_rejected(
+    kind: GoogleDriveItemKind,
+    mime_type: str,
+) -> None:
+    kwargs: dict[str, object] = {
+        "remote_id": "file-1",
+        "scope": _USER_SCOPE,
+        "kind": kind,
+        "name": "doc",
+        "mime_type": mime_type,
+        "parent_ids": (),
+        "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        "modified_at": datetime(2024, 1, 2, tzinfo=timezone.utc),
+        "version": 1,
+        "can_download": True,
+    }
+    if kind is GoogleDriveItemKind.SHORTCUT:
+        kwargs["shortcut_target_id"] = "target-1"
+        kwargs["shortcut_target_mime_type"] = "application/pdf"
+    with pytest.raises(ValidationError):
+        GoogleDriveItem(**kwargs)
+
+
+# --- Removed changes ---
+
+
+def test_removed_change_with_matching_item_valid() -> None:
+    item = GoogleDriveItem(
+        remote_id="file-removed",
+        scope=_USER_SCOPE,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=(),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    change = GoogleDriveChange(
+        file_id="file-removed",
+        scope=_USER_SCOPE,
+        removed=True,
+        changed_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+        item=item,
+    )
+    assert change.item is item
+
+
+def test_removed_change_item_remote_id_mismatch_rejected() -> None:
+    item = GoogleDriveItem(
+        remote_id="other-id",
+        scope=_USER_SCOPE,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=(),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    with pytest.raises(ValidationError):
+        GoogleDriveChange(
+            file_id="file-removed",
+            scope=_USER_SCOPE,
+            removed=True,
+            changed_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+            item=item,
+        )
+
+
+def test_removed_change_item_scope_mismatch_rejected() -> None:
+    item = GoogleDriveItem(
+        remote_id="file-removed",
+        scope=_USER_SCOPE,
+        kind=GoogleDriveItemKind.BLOB,
+        name="doc.pdf",
+        mime_type="application/pdf",
+        parent_ids=(),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        version=1,
+        can_download=True,
+    )
+    with pytest.raises(ValidationError):
+        GoogleDriveChange(
+            file_id="file-removed",
+            scope=_SHARED_SCOPE,
+            removed=True,
+            changed_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+            item=item,
+        )
+
+
+# --- Strict RFC 3339 ---
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2024-01-01T12:00:00Z",
+        "2024-01-01T12:00:00.123Z",
+        "2024-01-01T12:00:00+02:00",
+        "2024-01-01T12:00:00.123456-05:30",
+    ],
+)
+def test_rfc3339_valid_timestamps_accepted(timestamp: str) -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "drives": [
+                    {
+                        "id": "drive-1",
+                        "name": "Team",
+                        "createdTime": timestamp,
+                        "hidden": False,
+                    },
+                ],
+            },
+            {"files": [_blob_payload()]},
+            {
+                "changes": [
+                    {
+                        "changeType": "file",
+                        "removed": True,
+                        "fileId": "file-1",
+                        "time": timestamp,
+                    },
+                ],
+                "newStartPageToken": "checkpoint",
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    drive_page = reader.list_shared_drives_page()
+    assert drive_page.items[0].created_at.tzinfo is not None
+    item_page = reader.read_items_page(scope=_USER_SCOPE)
+    assert item_page.items[0].created_at.tzinfo is not None
+    change_page = reader.read_changes_page(
+        scope=_USER_SCOPE,
+        page_token=GoogleWorkspacePageToken(value="start"),
+    )
+    assert change_page.changes[0].changed_at.tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2024-01-01 12:00:00Z",
+        "2024-01-01T12:00:00",
+        "2024-01-01T12:00:00+0200",
+        "2024-01-01T12:00:00z",
+        " 2024-01-01T12:00:00Z",
+        "2024-01-01T12:00:00Z ",
+        "not-a-date",
+    ],
+)
+def test_rfc3339_invalid_timestamps_rejected(timestamp: str) -> None:
+    transport = _RecordingTransport(
+        responses=[
+            {
+                "drives": [
+                    {
+                        "id": "drive-1",
+                        "name": "Team",
+                        "createdTime": timestamp,
+                        "hidden": False,
+                    },
+                ],
+            },
+        ]
+    )
+    reader = GoogleDriveKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError, match="unexpected") as exc_info:
+        reader.list_shared_drives_page()
+    assert timestamp not in str(exc_info.value)
