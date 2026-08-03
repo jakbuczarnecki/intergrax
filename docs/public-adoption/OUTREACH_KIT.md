@@ -13,6 +13,9 @@ These drafts are intentionally conservative. They do not create commitments, lic
 Always link readers back to [README.md](../../README.md), [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md), [USE_CASES.md](../../USE_CASES.md), [PARTNERS.md](../../PARTNERS.md), [FAQ.md](../../FAQ.md), and [COLLABORATION.md](../../COLLABORATION.md) for authoritative repository context and permission boundaries.
 For near-term public adoption priorities, point to [ROADMAP.md](../../ROADMAP.md).
 
+Canonical public positioning is defined in [INTERGRAX_PUBLIC_POSITIONING.md](INTERGRAX_PUBLIC_POSITIONING.md).
+All outreach drafts must remain consistent with it.
+
 ---
 
 ## Positioning guardrails
@@ -33,17 +36,19 @@ For near-term public adoption priorities, point to [ROADMAP.md](../../ROADMAP.md
 
 ### One sentence
 
-Intergrax is a source-available Harness AI / Agent OS for governed agent applications: agents decide, the harness executes under policy, Nexus orchestrates, and trace/evidence surfaces make runs inspectable.
+Intergrax helps teams build specialized agent applications without rebuilding the same policy, knowledge, evidence, integration, and execution foundations for every product.
 
 ### Short paragraph
 
-Intergrax is built for governed agent applications, not just demo agents. It focuses on runtime boundaries, policy-controlled tools, orchestration, RAG/memory, trace/evidence, and application hosts. Current public goals are technical review, proof-path feedback, selected integration feedback, and design-partner discovery — not a finished SaaS or open-source framework. [README.md](../../README.md) is the repository overview; [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) gives a time-boxed reviewer path; [USE_CASES.md](../../USE_CASES.md) maps problem/use-case fit; [PARTNERS.md](../../PARTNERS.md) explains design-partner and partner-fit discussion boundaries.
+Delivering a controlled agent application is difficult: teams repeatedly rebuild identity, permissions, tools, knowledge access, policy, trace, evidence, and operational boundaries for every product. Intergrax lets teams focus on the concrete application and user workflow while reusing governed execution, knowledge, evidence, integration, and model boundaries. Under the hood, Intergrax is a reusable Harness AI foundation for governed agent applications. The repository is source-available for technical evaluation, proof-path feedback, and design-partner discovery — not a finished SaaS or commercially validated product. [README.md](../../README.md) is the repository overview; [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) gives a time-boxed reviewer path; [USE_CASES.md](../../USE_CASES.md) maps problem/use-case fit; [PARTNERS.md](../../PARTNERS.md) explains design-partner and partner-fit discussion boundaries.
 
 ---
 
 ## LinkedIn / public post draft
 
-We published a source-available Intergrax repository for technical review of a Harness AI / Agent OS for governed agent applications — where agents decide, the harness executes under policy, Nexus orchestrates, and trace/evidence surfaces make runs inspectable.
+Delivering a controlled agent application is difficult — teams repeatedly rebuild policy, knowledge, evidence, integration, and execution foundations for every product. Intergrax helps teams build specialized agent applications without rebuilding those foundations, so they can focus on the concrete workflow instead.
+
+We published a source-available repository for technical evaluation of that approach. Local Knowledge Workspace is the first concrete product proof and current product-validation program. Under the hood, Intergrax is a reusable Harness AI foundation for governed agent applications.
 
 This is not open source and not a production product claim. It is a structured evaluation surface for architects and platform engineers who care about runtime boundaries, policy-controlled tools, and external verification hooks.
 
@@ -63,9 +68,9 @@ Subject: Intergrax — source-available Harness AI repo — technical review req
 
 Hi [Name],
 
-I maintain Intergrax, a source-available Harness AI / Agent OS for governed agent applications. The public repo is for evaluation and proof-path feedback, not open-source redistribution or production support.
+I maintain Intergrax, which helps teams build specialized agent applications without rebuilding the same policy, knowledge, evidence, integration, and execution foundations for every product. The public repo is for evaluation and proof-path feedback, not open-source redistribution or production support.
 
-Would you skim the README **Start here** section and follow the time-boxed review flow in [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md)? I am especially interested in whether the Harness AI separation (agent decides / harness executes / Nexus orchestrates) reads clearly, and whether trace/evidence surfaces are understandable.
+Would you skim the README **Start here** section and follow the time-boxed review flow in [EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md)? I am especially interested in whether the problem-first positioning reads clearly, whether the Harness AI explanation (governed execution, policy, trace, and evidence) is understandable after the product context, and whether trace/evidence surfaces are inspectable.
 
 If attestation is relevant, see the [BoundaryAttest case study](../case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
 
@@ -119,7 +124,7 @@ Subject: Local Knowledge Workspace alpha — design-partner discovery
 
 Hi [Name],
 
-Intergrax includes a Local Knowledge Workspace alpha direction for product-validation feedback — not a finished local knowledge product or SaaS offer.
+Teams building agent-backed applications repeatedly rebuild the same governance and knowledge foundations for every product. Local Knowledge Workspace (LKW) is Intergrax's first concrete product proof and current product-development program — a Backend Product Alpha / MVP under active development, not a finished local knowledge product or SaaS offer. Real-user and commercial validation are not complete.
 
 Entry points:
 
@@ -152,7 +157,9 @@ Subject: Intergrax — governed agent applications — builder feedback request
 
 Hi [Name],
 
-Intergrax is a source-available Harness AI / Agent OS aimed at governed agent applications: policy-controlled tools, orchestration, trace/evidence, RAG/memory, and Tier-3 application hosts. The public repo supports proof-path evaluation and selected integration feedback — not a drop-in replacement for other agent frameworks or a production-ready claim.
+Where do agent prototypes typically break down? Teams repeatedly rebuild identity, permissions, tools, knowledge access, policy, trace, evidence, and operational boundaries for every new product. Intergrax helps teams build specialized agent applications without rebuilding those foundations, so they can focus on the concrete application and user workflow.
+
+Intergrax is a reusable Harness AI foundation for governed agent applications — policy-controlled tools, trace/evidence, knowledge access, and application hosting. The public repo supports proof-path evaluation and selected integration feedback — not a drop-in replacement for other agent frameworks or a production-ready claim.
 
 If you are building agent-backed applications beyond demos, I would appreciate your read on where prototypes typically break down and whether a governed harness is worth testing in your stack.
 
@@ -175,7 +182,11 @@ Thanks for any concrete feedback.
 | Avoid | Safer alternative |
 |-------|-------------------|
 | open-source agent framework | source-available Harness AI runtime for evaluation |
-| production-ready agent OS | available for proof-path evaluation and design-partner feedback |
+| production-ready / enterprise-ready agent OS | available for proof-path evaluation and design-partner feedback |
+| commercially validated product | source-available for technical evaluation; commercial validation not complete |
+| finished LKW product | Local Knowledge Workspace Backend Product Alpha / MVP under active development |
+| complete integration catalog | selected integration feedback via curated public issues — not every cataloged integration is complete |
+| direct replacement for all agent frameworks | complementary Harness AI foundation with explicit runtime boundaries |
 | certified attestation | technical integration validation via BoundaryAttest POC |
 | compliance-ready | governance-oriented trace/evidence surfaces for review — not compliance certification |
 | secure by default for all deployments | policy-controlled execution model — deployment security remains operator responsibility |
@@ -194,6 +205,7 @@ Thanks for any concrete feedback.
 
 | Document | Purpose |
 |----------|---------|
+| [INTERGRAX_PUBLIC_POSITIONING.md](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical public positioning contract |
 | [../../README.md](../../README.md) | Repository overview and start paths |
 | [../../EVALUATION_GUIDE.md](../../EVALUATION_GUIDE.md) | Time-boxed evaluation guide for reviewers |
 | [../../USE_CASES.md](../../USE_CASES.md) | Use-case map and validation paths |

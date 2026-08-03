@@ -16,13 +16,14 @@ They do not define an open-source contribution model, production-support channel
 
 | Step | Document | Purpose |
 |------|----------|---------|
-| 0 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
-| 1 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
-| 2 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
-| 3 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
-| 4 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
-| 5 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
-| 6 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
+| 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical source for public problem statement, value proposition, Harness AI explanation, LKW role, audience, and public claim boundaries |
+| 1 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
+| 2 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
+| 3 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
+| 4 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
+| 5 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing outreach drafts and positioning guardrails |
+| 6 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) | Strategy and draft rationale for curated public issues |
+| 7 | [curated_public_issues.yml](curated_public_issues.yml) | Single canonical source data for all curated public issue automation |
 
 ## Operational model
 
@@ -163,6 +164,7 @@ For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZAT
 
 ## Related root documents
 
+- [INTERGRAX_PUBLIC_POSITIONING.md](INTERGRAX_PUBLIC_POSITIONING.md)
 - [README.md](../../README.md)
 - [ROADMAP.md](../../ROADMAP.md)
 - [COLLABORATION.md](../../COLLABORATION.md)
