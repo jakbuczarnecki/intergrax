@@ -428,3 +428,98 @@ async def test_page_prepared_receipt_backend_failure_preserves_phase() -> None:
     assert runs.runs[("tenant-1", "binding-1")].phase is (
         KnowledgeReconciliationRunPhase.PAGE_PREPARED
     )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_async_resume_item_completed_inspects_sink_zero_times() -> None:
+    from dataclasses import dataclass, field
+
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeRemoteItemStateReceipt,
+        KnowledgeRemoteItemStateReceiptStatus,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import (
+        InMemoryRemoteItemStateRepository,
+        RecordingSinkReceiptInspector,
+    )
+
+    @dataclass
+    class _CompletedItemInspector(InMemoryRemoteItemStateRepository):
+        inspect_calls: int = 0
+
+        def inspect_delivery_receipt(self, **kwargs):
+            self.inspect_calls += 1
+            return KnowledgeRemoteItemStateReceipt(
+                status=KnowledgeRemoteItemStateReceiptStatus.COMPLETED,
+                delivery_id=kwargs["delivery_id"],
+                prepared_state_mutations_fingerprint=kwargs[
+                    "prepared_state_mutations_fingerprint"
+                ],
+            )
+
+    @dataclass
+    class _FailSinkInspector(RecordingSinkReceiptInspector):
+        inspect_calls: int = 0
+
+        def inspect_receipt(self, **kwargs):
+            self.inspect_calls += 1
+            raise AssertionError("sink receipt must not be inspected")
+
+    operation_id = "op-resume-completed"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    state = _CompletedItemInspector()
+    inspector = _FailSinkInspector()
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator(state=state)
+    coordinator._sink_receipt_inspector = inspector  # type: ignore[attr-defined]
+    coordinator._reconciliation_engine._sink_receipt_inspector = inspector  # type: ignore[attr-defined]
+    prepared = _page_prepared().model_copy(update={"run_id": run_id})
+    recovery = KnowledgeReconciliationRunRecoveryRequired(
+        **prepared.model_dump(
+            exclude={
+                "phase",
+                "prepared_input_cursor",
+                "prepared_input_cursor_fingerprint",
+                "provider_page_fingerprint",
+                "prepared_batch_payload_fingerprint",
+                "prepared_state_mutation_templates",
+                "prepared_state_mutations_fingerprint",
+                "prepared_proposed_checkpoint",
+                "prepared_proposed_checkpoint_fingerprint",
+                "prepared_next_cursor",
+                "prepared_next_cursor_fingerprint",
+                "prepared_page_size",
+                "delivery_id",
+                "has_more",
+                "synthetic_tombstone_remote_ids",
+                "prepared_parent_delivery_id",
+                "remaining_candidate_remote_ids",
+            }
+        ),
+        phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        record_version=3,
+        updated_at=_NOW,
+        recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(prepared),
+    )
+    runs.runs[("tenant-1", "binding-1")] = recovery
+    command = KnowledgeReconciliationRecoveryCommand(
+        kind=KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT,
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_run_id=run_id,
+        expected_run_record_version=3,
+        expected_phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        operator_reason_code="resume_exact",
+    )
+    result = await coordinator.execute_reconciliation_recovery_async(command)
+    assert result.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED
+    assert state.inspect_calls == 1
+    assert inspector.inspect_calls == 0
