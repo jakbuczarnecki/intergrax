@@ -145,3 +145,105 @@ async def test_operation_failure_not_masked_by_lease_release_failure() -> None:
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY
     assert len(lease.release_calls) == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_same_job_retry_after_page_applied_is_idempotent() -> None:
+    reconcile_cp1 = KnowledgeCursor(value="reconcile-cp-1")
+    reconcile_cp2 = KnowledgeCursor(value="reconcile-cp-2")
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import RecordingFacade
+
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True, content_fetch=True
+        ),
+        pages_by_cursor={
+            None: make_page(
+                changes=(make_change(remote_id="item-1"),),
+                has_more=True,
+                next_cursor=reconcile_cp1,
+                proposed_checkpoint=reconcile_cp1,
+            ),
+            "reconcile-cp-1": make_page(
+                changes=(make_change(remote_id="item-2"),),
+                has_more=True,
+                next_cursor=reconcile_cp2,
+                proposed_checkpoint=reconcile_cp2,
+            ),
+            "reconcile-cp-2": make_page(
+                changes=(make_change(remote_id="item-3"),),
+                proposed_checkpoint=KnowledgeCursor(value="final"),
+                has_more=False,
+            ),
+        },
+    )
+    coordinator, _, state, _, runs, sink, _ = _durable_coordinator(facade=facade)
+    operation_id = "op-same-job"
+    first = await coordinator.reconcile_once(
+        binding_id="binding-1", restart=True, operation_id=operation_id
+    )
+    second = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=False,
+        operation_id=operation_id,
+        trigger_delivery_id=first.delivery_id,
+    )
+    run_after_second = runs.runs[("tenant-1", "binding-1")]
+    assert run_after_second.phase is KnowledgeReconciliationRunPhase.COLLECTING
+    assert run_after_second.applied_page_count == 2
+    parent_trigger = first.delivery_id
+    reads_before = len(facade.read_calls)
+    sink_before = len(sink.calls)
+    state_before = len(getattr(state, "states", {}))
+    version_before = run_after_second.record_version
+    retry = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=False,
+        operation_id=operation_id,
+        trigger_delivery_id=parent_trigger,
+    )
+    run_after_retry = runs.runs[("tenant-1", "binding-1")]
+    assert retry.delivery_id == run_after_second.last_applied_delivery_id
+    assert retry.delivery_id == second.delivery_id
+    assert retry.has_more is True
+    assert retry.changes_count == 0
+    assert len(facade.read_calls) == reads_before
+    assert len(sink.calls) == sink_before
+    if hasattr(state, "states"):
+        assert len(state.states) == state_before
+    assert run_after_retry.record_version == version_before
+    assert run_after_retry.applied_page_count == run_after_second.applied_page_count
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_completed_run_retry_returns_final_result_without_mutation() -> None:
+    coordinator, facade, _, _, runs, sink, _ = _durable_coordinator()
+    operation_id = "op-completed-retry"
+    await coordinator.reconcile_once(
+        binding_id="binding-1", restart=True, operation_id=operation_id
+    )
+    completed = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=False,
+        operation_id=operation_id,
+        trigger_delivery_id=runs.runs[
+            ("tenant-1", "binding-1")
+        ].last_applied_delivery_id,
+    )
+    assert completed.has_more is False
+    run = runs.runs[("tenant-1", "binding-1")]
+    assert run.phase is KnowledgeReconciliationRunPhase.COMPLETED
+    reads_before = len(facade.read_calls)
+    parent = run.last_applied_parent_delivery_id
+    if parent is not None:
+        retry = await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=False,
+            operation_id=operation_id,
+            trigger_delivery_id=parent,
+        )
+        assert retry.delivery_id == run.final_delivery_id
+        assert len(facade.read_calls) == reads_before
+        assert len(sink.calls) == len(sink.calls)

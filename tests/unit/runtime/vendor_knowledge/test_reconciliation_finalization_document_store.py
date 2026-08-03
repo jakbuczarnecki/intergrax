@@ -657,6 +657,62 @@ def test_cas_monotonicity_page_prepared_to_collecting() -> None:
 
 
 @pytest.mark.unit
+def test_cas_rejects_prepared_parent_lineage_mismatch() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting().model_copy(
+        update={
+            "applied_page_count": 1,
+            "last_applied_delivery_id": _DELIVERY_B,
+        }
+    )
+    repo.create_initial_run(initial)
+    bad_prepared = _page_prepared(record_version=2).model_copy(
+        update={"prepared_parent_delivery_id": _DELIVERY}
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=initial, replacement=bad_prepared)
+
+
+@pytest.mark.unit
+def test_cas_rejects_applied_parent_lineage_mismatch() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2).model_copy(
+        update={
+            "has_more": True,
+            "prepared_parent_delivery_id": None,
+            "remaining_candidate_remote_ids": ("item-a",),
+            "synthetic_tombstone_remote_ids": (),
+            "prepared_state_mutation_templates": (_template(remote_id="item-a"),),
+            "prepared_next_cursor": _NEXT_CURSOR,
+            "prepared_next_cursor_fingerprint": _NEXT_CURSOR_FP,
+        }
+    )
+    prepared = prepared.model_copy(
+        update={
+            "prepared_state_mutations_fingerprint": canonical_prepared_state_mutations_fingerprint(
+                prepared.prepared_state_mutation_templates
+            ),
+        }
+    )
+    repo.cas_replace(expected=initial, replacement=prepared)
+    bad_collecting = _collecting(record_version=3, remote_ids=()).model_copy(
+        update={
+            "applied_page_count": 1,
+            "last_applied_delivery_id": _DELIVERY,
+            "last_applied_parent_delivery_id": _DELIVERY_B,
+            "current_input_cursor": _NEXT_CURSOR,
+            "current_input_cursor_fingerprint": _NEXT_CURSOR_FP,
+        }
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=prepared, replacement=bad_collecting)
+
+
+@pytest.mark.unit
 def test_recovery_transition_retains_exact_evidence() -> None:
     store = InMemoryDocumentStore()
     repo = DocumentStoreKnowledgeReconciliationRunRepository(store)

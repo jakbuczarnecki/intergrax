@@ -302,6 +302,13 @@ def _validate_reconciliation_monotonicity(
             raise KnowledgeSyncCorruptState(
                 "recovery transition must not change last_applied_delivery_id"
             )
+        if (
+            replacement.last_applied_parent_delivery_id
+            != expected.last_applied_parent_delivery_id
+        ):
+            raise KnowledgeSyncCorruptState(
+                "recovery transition must not change last_applied_parent_delivery_id"
+            )
         if not isinstance(replacement, KnowledgeReconciliationRunRecoveryRequired):
             raise KnowledgeSyncCorruptState(
                 "recovery transition requires recovery evidence"
@@ -341,6 +348,17 @@ def _validate_reconciliation_monotonicity(
             raise KnowledgeSyncCorruptState(
                 "page preparation must not change last_applied_delivery_id"
             )
+        if expected.applied_page_count == 0:
+            if replacement.prepared_parent_delivery_id is not None:
+                raise KnowledgeSyncCorruptState(
+                    "page preparation must not set prepared_parent_delivery_id on first page"
+                )
+        elif (
+            replacement.prepared_parent_delivery_id != expected.last_applied_delivery_id
+        ):
+            raise KnowledgeSyncCorruptState(
+                "page preparation must bind prepared_parent_delivery_id to last applied delivery"
+            )
         if replacement.prepared_input_cursor != expected.current_input_cursor:
             raise KnowledgeSyncCorruptState(
                 "page preparation must bind prepared_input_cursor to collecting cursor"
@@ -373,6 +391,13 @@ def _validate_reconciliation_monotonicity(
             if replacement.last_applied_delivery_id != expected.delivery_id:
                 raise KnowledgeSyncCorruptState(
                     "applied page transition must set last_applied_delivery_id"
+                )
+            if (
+                replacement.last_applied_parent_delivery_id
+                != expected.prepared_parent_delivery_id
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must bind last_applied_parent_delivery_id"
                 )
             if replacement.current_input_cursor != expected.prepared_next_cursor:
                 raise KnowledgeSyncCorruptState(
@@ -409,6 +434,13 @@ def _validate_reconciliation_monotonicity(
             if replacement.last_applied_delivery_id != expected.delivery_id:
                 raise KnowledgeSyncCorruptState(
                     "finalizing transition must set last_applied_delivery_id"
+                )
+            if (
+                replacement.last_applied_parent_delivery_id
+                != expected.prepared_parent_delivery_id
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind last_applied_parent_delivery_id"
                 )
             if replacement.final_delivery_id != expected.delivery_id:
                 raise KnowledgeSyncCorruptState(
@@ -471,6 +503,13 @@ def _validate_reconciliation_monotonicity(
         if replacement.last_applied_delivery_id != expected.last_applied_delivery_id:
             raise KnowledgeSyncCorruptState(
                 "completion must not change last_applied_delivery_id"
+            )
+        if (
+            replacement.last_applied_parent_delivery_id
+            != expected.last_applied_parent_delivery_id
+        ):
+            raise KnowledgeSyncCorruptState(
+                "completion must not change last_applied_parent_delivery_id"
             )
         if (
             replacement.committed_completed_checkpoint
@@ -868,6 +907,17 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
             ) from None
 
 
+def _validate_manifest_physical_identity(
+    document: DocumentRecord,
+    *,
+    expected_partition: str,
+) -> None:
+    if document.partition_key != expected_partition:
+        raise KnowledgeSyncCorruptState("active index manifest partition mismatch")
+    if document.row_key != _ACTIVE_INDEX_MANIFEST_ROW:
+        raise KnowledgeSyncCorruptState("active index manifest row key mismatch")
+
+
 class DocumentStoreKnowledgeRemoteItemStateRepository:
     """Idempotent remote-item state repository with delivery markers."""
 
@@ -950,9 +1000,18 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                     tenant_id=cleaned_tenant,
                     binding_id=cleaned_binding,
                     states=states,
+                    delivery_id=cleaned_delivery,
+                    batch_fingerprint=fingerprint,
+                    prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
                 )
                 return
-            self._write_states(partition_key=partition_key, states=states)
+            self._write_states(
+                partition_key=partition_key,
+                states=states,
+                delivery_id=cleaned_delivery,
+                batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
+            )
             self._complete_marker(
                 existing=existing_marker,
                 tenant_id=cleaned_tenant,
@@ -996,9 +1055,18 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                     tenant_id=cleaned_tenant,
                     binding_id=cleaned_binding,
                     states=states,
+                    delivery_id=cleaned_delivery,
+                    batch_fingerprint=fingerprint,
+                    prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
                 )
                 return
-            self._write_states(partition_key=partition_key, states=states)
+            self._write_states(
+                partition_key=partition_key,
+                states=states,
+                delivery_id=cleaned_delivery,
+                batch_fingerprint=fingerprint,
+                prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
+            )
             self._complete_marker(
                 existing=latest,
                 tenant_id=cleaned_tenant,
@@ -1013,7 +1081,13 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         stored_applying = self._store.get(partition_key, marker_row)
         if stored_applying is None:
             raise KnowledgeSyncCorruptState("delivery marker disappeared")
-        self._write_states(partition_key=partition_key, states=states)
+        self._write_states(
+            partition_key=partition_key,
+            states=states,
+            delivery_id=cleaned_delivery,
+            batch_fingerprint=fingerprint,
+            prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
+        )
         self._complete_marker(
             existing=stored_applying,
             tenant_id=cleaned_tenant,
@@ -1086,6 +1160,9 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         *,
         partition_key: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        delivery_id: str,
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         if not states:
             return
@@ -1101,17 +1178,21 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             tenant_id=sample.tenant_id,
             binding_id=sample.binding_id,
             binding_configuration_version=sample.binding_configuration_version,
+            delivery_id=delivery_id,
+            batch_fingerprint=batch_fingerprint,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
         )
-        try:
-            for state in ordered:
-                self._apply_one_state(partition_key=partition_key, state=state)
-        finally:
-            self._complete_index_mutation(
-                index_partition=index_partition,
-                tenant_id=sample.tenant_id,
-                binding_id=sample.binding_id,
-                binding_configuration_version=sample.binding_configuration_version,
-            )
+        for state in ordered:
+            self._apply_one_state(partition_key=partition_key, state=state)
+        self._complete_index_mutation(
+            index_partition=index_partition,
+            tenant_id=sample.tenant_id,
+            binding_id=sample.binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+            delivery_id=delivery_id,
+            batch_fingerprint=batch_fingerprint,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+        )
 
     def _repair_active_index_for_states(
         self,
@@ -1119,6 +1200,9 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         tenant_id: str,
         binding_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
+        delivery_id: str,
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         if not states:
             return
@@ -1133,17 +1217,21 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             tenant_id=tenant_id,
             binding_id=binding_id,
             binding_configuration_version=sample.binding_configuration_version,
+            delivery_id=delivery_id,
+            batch_fingerprint=batch_fingerprint,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
         )
-        try:
-            for state in states:
-                self._sync_active_index_entry(state=state)
-        finally:
-            self._complete_index_mutation(
-                index_partition=index_partition,
-                tenant_id=tenant_id,
-                binding_id=binding_id,
-                binding_configuration_version=sample.binding_configuration_version,
-            )
+        for state in states:
+            self._sync_active_index_entry(state=state)
+        self._complete_index_mutation(
+            index_partition=index_partition,
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+            delivery_id=delivery_id,
+            batch_fingerprint=batch_fingerprint,
+            prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+        )
 
     def _complete_marker(
         self,
@@ -1201,12 +1289,19 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         states: tuple[KnowledgeRemoteItemState, ...],
     ) -> None:
         seen: set[str] = set()
+        binding_configuration_version: int | None = None
         for state in states:
             if state.tenant_id != tenant_id or state.binding_id != binding_id:
                 raise KnowledgeSyncCorruptState("remote item state identity mismatch")
             if state.last_delivery_id != delivery_id:
                 raise KnowledgeSyncCorruptState(
                     "remote item delivery identity mismatch"
+                )
+            if binding_configuration_version is None:
+                binding_configuration_version = state.binding_configuration_version
+            elif state.binding_configuration_version != binding_configuration_version:
+                raise KnowledgeSyncCorruptState(
+                    "remote item configuration partition mismatch"
                 )
             if state.remote_id in seen:
                 raise KnowledgeSyncCorruptState("duplicate remote item in batch")
@@ -1288,7 +1383,35 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         binding_id: str,
         binding_configuration_version: int,
         completeness_state: str,
+        inflight_delivery_id: str | None = None,
+        inflight_batch_fingerprint: str | None = None,
+        inflight_prepared_state_mutations_fingerprint: str | None = None,
     ) -> DocumentRecord:
+        data: dict[str, Any] = {
+            "schema_version": _ACTIVE_INDEX_SCHEMA,
+            "tenant_id": tenant_id,
+            "binding_id": binding_id,
+            "binding_configuration_version": binding_configuration_version,
+            "completeness_state": completeness_state,
+        }
+        if completeness_state == _COMPLETENESS_DIRTY:
+            if inflight_delivery_id is None or inflight_batch_fingerprint is None:
+                raise KnowledgeSyncCorruptState(
+                    "dirty active index manifest requires inflight mutation identity"
+                )
+            data["inflight_delivery_id"] = _require_sha256_hex(
+                inflight_delivery_id, field_name="inflight_delivery_id"
+            )
+            data["inflight_batch_fingerprint"] = _require_sha256_hex(
+                inflight_batch_fingerprint, field_name="inflight_batch_fingerprint"
+            )
+            if inflight_prepared_state_mutations_fingerprint is not None:
+                data["inflight_prepared_state_mutations_fingerprint"] = (
+                    _require_sha256_hex(
+                        inflight_prepared_state_mutations_fingerprint,
+                        field_name="inflight_prepared_state_mutations_fingerprint",
+                    )
+                )
         return DocumentRecord(
             partition_key=_active_index_partition_key(
                 tenant_id=tenant_id,
@@ -1296,14 +1419,35 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 binding_configuration_version=binding_configuration_version,
             ),
             row_key=_ACTIVE_INDEX_MANIFEST_ROW,
-            data={
-                "schema_version": _ACTIVE_INDEX_SCHEMA,
-                "tenant_id": tenant_id,
-                "binding_id": binding_id,
-                "binding_configuration_version": binding_configuration_version,
-                "completeness_state": completeness_state,
-            },
+            data=data,
         )
+
+    def _validate_manifest_physical_identity(
+        self,
+        document: DocumentRecord,
+        *,
+        expected_partition: str,
+    ) -> None:
+        _validate_manifest_physical_identity(
+            document, expected_partition=expected_partition
+        )
+
+    def _inflight_identity_matches(
+        self,
+        parsed: dict[str, Any],
+        *,
+        delivery_id: str,
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None,
+    ) -> bool:
+        if parsed.get("inflight_delivery_id") != delivery_id:
+            return False
+        if parsed.get("inflight_batch_fingerprint") != batch_fingerprint:
+            return False
+        stored_mutations = parsed.get("inflight_prepared_state_mutations_fingerprint")
+        if prepared_state_mutations_fingerprint is not None:
+            return stored_mutations == prepared_state_mutations_fingerprint
+        return stored_mutations is None
 
     def _parse_manifest(
         self,
@@ -1330,6 +1474,42 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             raise KnowledgeSyncCorruptState(
                 "active index manifest completeness is invalid"
             )
+        self._validate_manifest_physical_identity(
+            document,
+            expected_partition=_active_index_partition_key(
+                tenant_id=expected_tenant,
+                binding_id=expected_binding,
+                binding_configuration_version=expected_configuration_version,
+            ),
+        )
+        inflight_delivery = data.get("inflight_delivery_id")
+        inflight_batch = data.get("inflight_batch_fingerprint")
+        inflight_mutations = data.get("inflight_prepared_state_mutations_fingerprint")
+        if completeness_state == _COMPLETENESS_CLEAN:
+            if (
+                inflight_delivery is not None
+                or inflight_batch is not None
+                or inflight_mutations is not None
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "clean active index manifest must not contain inflight identity"
+                )
+        else:
+            if inflight_delivery is None or inflight_batch is None:
+                raise KnowledgeSyncCorruptState(
+                    "dirty active index manifest requires inflight mutation identity"
+                )
+            _require_sha256_hex(
+                str(inflight_delivery), field_name="inflight_delivery_id"
+            )
+            _require_sha256_hex(
+                str(inflight_batch), field_name="inflight_batch_fingerprint"
+            )
+            if inflight_mutations is not None:
+                _require_sha256_hex(
+                    str(inflight_mutations),
+                    field_name="inflight_prepared_state_mutations_fingerprint",
+                )
         return data
 
     def _legacy_item_rows_exist(
@@ -1350,7 +1530,20 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         tenant_id: str,
         binding_id: str,
         binding_configuration_version: int,
+        delivery_id: str,
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
+        cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
+        cleaned_batch = _require_sha256_hex(
+            batch_fingerprint, field_name="batch_fingerprint"
+        )
+        cleaned_mutations: str | None = None
+        if prepared_state_mutations_fingerprint is not None:
+            cleaned_mutations = _require_sha256_hex(
+                prepared_state_mutations_fingerprint,
+                field_name="prepared_state_mutations_fingerprint",
+            )
         manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
         if manifest is None:
             if self._legacy_item_rows_exist(tenant_id=tenant_id, binding_id=binding_id):
@@ -1362,6 +1555,9 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 binding_id=binding_id,
                 binding_configuration_version=binding_configuration_version,
                 completeness_state=_COMPLETENESS_DIRTY,
+                inflight_delivery_id=cleaned_delivery,
+                inflight_batch_fingerprint=cleaned_batch,
+                inflight_prepared_state_mutations_fingerprint=cleaned_mutations,
             )
             if not self._store.put_if_absent(dirty):
                 manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
@@ -1374,15 +1570,25 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 expected_binding=binding_id,
                 expected_configuration_version=binding_configuration_version,
             )
-            if parsed["completeness_state"] != _COMPLETENESS_CLEAN:
-                raise KnowledgeCandidateInventoryIncomplete(
-                    "active index completeness proof is dirty"
+            if parsed["completeness_state"] == _COMPLETENESS_DIRTY:
+                if self._inflight_identity_matches(
+                    parsed,
+                    delivery_id=cleaned_delivery,
+                    batch_fingerprint=cleaned_batch,
+                    prepared_state_mutations_fingerprint=cleaned_mutations,
+                ):
+                    return
+                raise KnowledgeSyncCorruptState(
+                    "active index mutation identity mismatch"
                 )
             dirty = self._manifest_document(
                 tenant_id=tenant_id,
                 binding_id=binding_id,
                 binding_configuration_version=binding_configuration_version,
                 completeness_state=_COMPLETENESS_DIRTY,
+                inflight_delivery_id=cleaned_delivery,
+                inflight_batch_fingerprint=cleaned_batch,
+                inflight_prepared_state_mutations_fingerprint=cleaned_mutations,
             )
             if not self._store.replace_if_match(expected=manifest, replacement=dirty):
                 raise KnowledgeSyncCorruptState("active index manifest cas conflict")
@@ -1394,17 +1600,13 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         tenant_id: str,
         binding_id: str,
         binding_configuration_version: int,
+        delivery_id: str,
+        batch_fingerprint: str,
+        prepared_state_mutations_fingerprint: str | None = None,
     ) -> None:
         manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
         if manifest is None:
-            clean = self._manifest_document(
-                tenant_id=tenant_id,
-                binding_id=binding_id,
-                binding_configuration_version=binding_configuration_version,
-                completeness_state=_COMPLETENESS_CLEAN,
-            )
-            self._store.put(clean)
-            return
+            raise KnowledgeSyncCorruptState("active index manifest disappeared")
         parsed = self._parse_manifest(
             manifest,
             expected_tenant=tenant_id,
@@ -1413,6 +1615,23 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         )
         if parsed["completeness_state"] != _COMPLETENESS_DIRTY:
             raise KnowledgeSyncCorruptState("active index manifest is not dirty")
+        cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
+        cleaned_batch = _require_sha256_hex(
+            batch_fingerprint, field_name="batch_fingerprint"
+        )
+        cleaned_mutations: str | None = None
+        if prepared_state_mutations_fingerprint is not None:
+            cleaned_mutations = _require_sha256_hex(
+                prepared_state_mutations_fingerprint,
+                field_name="prepared_state_mutations_fingerprint",
+            )
+        if not self._inflight_identity_matches(
+            parsed,
+            delivery_id=cleaned_delivery,
+            batch_fingerprint=cleaned_batch,
+            prepared_state_mutations_fingerprint=cleaned_mutations,
+        ):
+            raise KnowledgeSyncCorruptState("active index mutation identity mismatch")
         clean = self._manifest_document(
             tenant_id=tenant_id,
             binding_id=binding_id,
@@ -1745,6 +1964,8 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
                 )
             return ()
         manifest_data = _data_as_dict(manifest.data)
+        if manifest_data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
+            raise KnowledgeSyncCorruptState("active index manifest schema is invalid")
         if (
             manifest_data.get("tenant_id") != cleaned_tenant
             or manifest_data.get("binding_id") != cleaned_binding
@@ -1752,6 +1973,10 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
             != binding_configuration_version
         ):
             raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
+        _validate_manifest_physical_identity(
+            manifest,
+            expected_partition=index_partition,
+        )
         completeness_state = manifest_data.get("completeness_state")
         if completeness_state == _COMPLETENESS_DIRTY:
             raise KnowledgeCandidateInventoryIncomplete(
@@ -1761,13 +1986,22 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
             raise KnowledgeCandidateInventoryIncomplete(
                 "legacy active inventory lacks completeness proof"
             )
-        result = self._store.query(
-            index_partition, limit=limit + 1, row_key_prefix="active:"
+        inflight_delivery = manifest_data.get("inflight_delivery_id")
+        inflight_batch = manifest_data.get("inflight_batch_fingerprint")
+        inflight_mutations = manifest_data.get(
+            "inflight_prepared_state_mutations_fingerprint"
         )
-        if result.total > limit:
+        if (
+            inflight_delivery is not None
+            or inflight_batch is not None
+            or inflight_mutations is not None
+        ):
             raise KnowledgeSyncCorruptState(
-                "active item index exceeds configured limit"
+                "clean active index manifest must not contain inflight identity"
             )
+        result = self._store.query(
+            index_partition, limit=limit, row_key_prefix="active:"
+        )
         remote_ids: list[str] = []
         seen: set[str] = set()
         for document in result.documents:

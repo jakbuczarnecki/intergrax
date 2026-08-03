@@ -1311,6 +1311,7 @@ class KnowledgeReconciliationRecoveryEvidencePagePrepared(BaseModel):
     prepared_page_size: int = Field(ge=1, le=1000)
     has_more: bool
     delivery_id: str
+    prepared_parent_delivery_id: str | None = None
     remaining_candidate_remote_ids: tuple[str, ...]
     synthetic_tombstone_remote_ids: tuple[str, ...] = ()
     expected_base_completed_checkpoint: KnowledgeSyncCheckpoint | None = None
@@ -1323,9 +1324,12 @@ class KnowledgeReconciliationRecoveryEvidencePagePrepared(BaseModel):
         "prepared_proposed_checkpoint_fingerprint",
         "prepared_next_cursor_fingerprint",
         "delivery_id",
+        "prepared_parent_delivery_id",
     )
     @classmethod
-    def _sha256_fields(cls, value: str, info: ValidationInfo) -> str:
+    def _sha256_fields(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if value is None:
+            return None
         field_name = info.field_name or "field"
         return _require_sha256_hex(value, field_name=field_name)
 
@@ -1530,6 +1534,7 @@ def recovery_evidence_from_run(
             prepared_page_size=run.prepared_page_size,
             has_more=run.has_more,
             delivery_id=run.delivery_id,
+            prepared_parent_delivery_id=run.prepared_parent_delivery_id,
             remaining_candidate_remote_ids=run.remaining_candidate_remote_ids,
             synthetic_tombstone_remote_ids=run.synthetic_tombstone_remote_ids,
             expected_base_completed_checkpoint=run.expected_base_completed_checkpoint,

@@ -241,3 +241,53 @@ def test_stale_recovery_command_rejected() -> None:
         coordinator.execute_reconciliation_recovery(command)
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
     assert "secret" not in exc_info.value.safe_message.lower()
+
+
+@pytest.mark.unit
+def test_sync_resume_exact_rejects_page_prepared_evidence() -> None:
+    coordinator, _, _, _, runs, _, _ = _durable_coordinator()
+    prepared = _page_prepared()
+    recovery = KnowledgeReconciliationRunRecoveryRequired(
+        **prepared.model_dump(
+            exclude={
+                "phase",
+                "record_version",
+                "updated_at",
+                "prepared_input_cursor",
+                "prepared_input_cursor_fingerprint",
+                "provider_page_fingerprint",
+                "prepared_batch_payload_fingerprint",
+                "prepared_state_mutation_templates",
+                "prepared_state_mutations_fingerprint",
+                "prepared_proposed_checkpoint",
+                "prepared_proposed_checkpoint_fingerprint",
+                "prepared_next_cursor",
+                "prepared_next_cursor_fingerprint",
+                "prepared_page_size",
+                "delivery_id",
+                "has_more",
+                "synthetic_tombstone_remote_ids",
+                "prepared_parent_delivery_id",
+                "remaining_candidate_remote_ids",
+            }
+        ),
+        phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        record_version=3,
+        updated_at=_NOW,
+        recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(prepared),
+    )
+    runs.runs[("tenant-1", "binding-1")] = recovery
+    command = KnowledgeReconciliationRecoveryCommand(
+        kind=KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT,
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_run_id="run-1",
+        expected_run_record_version=3,
+        expected_phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        operator_reason_code="resume_exact",
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        coordinator.execute_reconciliation_recovery(command)
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert "async" in exc_info.value.safe_message.lower()

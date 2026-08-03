@@ -206,3 +206,112 @@ def test_completed_replay_repairs_missing_index_row() -> None:
         binding_configuration_version=1,
         limit=10,
     ) == ("item-1",)
+
+
+@pytest.mark.unit
+def test_partial_index_mutation_retains_dirty_until_exact_retry() -> None:
+    class _FailSecondIndexPut(InMemoryDocumentStore):
+        def __init__(self) -> None:
+            super().__init__()
+            self._index_puts = 0
+
+        def put(self, document: DocumentRecord) -> None:
+            if (
+                document.partition_key == _INDEX_PARTITION
+                and document.row_key.startswith("active:")
+            ):
+                self._index_puts += 1
+                if self._index_puts == 2:
+                    raise RuntimeError("simulated index write failure")
+            super().put(document)
+
+    store = _FailSecondIndexPut()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    delivery = "a1" * 32
+    states = (
+        _state(remote_id="item-1", delivery_id=delivery),
+        _state(remote_id="item-2", delivery_id=delivery),
+    )
+    with pytest.raises(RuntimeError, match="simulated index write failure"):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=states,
+        )
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    assert manifest.data["completeness_state"] == "DIRTY"
+    assert manifest.data["inflight_delivery_id"] == delivery
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=states,
+    )
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    assert manifest.data["completeness_state"] == "CLEAN"
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    assert inventory.list_active_remote_ids(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        limit=10,
+    ) == ("item-1", "item-2")
+
+
+@pytest.mark.unit
+def test_foreign_delivery_cannot_take_over_dirty_manifest() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    delivery = "b1" * 32
+    foreign = "c1" * 32
+    states = (_state(remote_id="item-1", delivery_id=delivery),)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=states,
+    )
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    dirty = DocumentRecord(
+        partition_key=_INDEX_PARTITION,
+        row_key="manifest",
+        data={
+            **manifest.data,
+            "completeness_state": "DIRTY",
+            "inflight_delivery_id": delivery,
+            "inflight_batch_fingerprint": "d1" * 32,
+        },
+    )
+    store.put(dirty)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=foreign,
+            states=(_state(remote_id="item-2", delivery_id=foreign),),
+        )
+
+
+@pytest.mark.unit
+def test_mixed_configuration_batch_rejected_before_io() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    delivery = "e1" * 32
+    mixed = (
+        _state(remote_id="item-1", delivery_id=delivery),
+        _state(
+            remote_id="item-2",
+            delivery_id=delivery,
+        ).model_copy(update={"binding_configuration_version": 2}),
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=mixed,
+        )
