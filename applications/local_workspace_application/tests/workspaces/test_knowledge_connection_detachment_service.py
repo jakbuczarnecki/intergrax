@@ -101,18 +101,31 @@ class _CountingRepo(ManagedWorkspaceRepository):
     def __init__(self, store) -> None:
         super().__init__(store)
         self.publication_count = 0
+        self.mutation_preflight_count = 0
     def replace_knowledge_configuration_head_if_match(self, *, expected, replacement):
         if expected.pending_mutation_id and replacement.pending_mutation_id is None and replacement.committed_revision > expected.committed_revision:
             self.publication_count += 1
         return super().replace_knowledge_configuration_head_if_match(expected=expected, replacement=replacement)
+    def get_knowledge_configuration_mutation(self, **kwargs):
+        self.mutation_preflight_count += 1
+        return super().get_knowledge_configuration_mutation(**kwargs)
 
 
-def _build_stack(bindings: _TenantBindingPort | None = None, mutation_ids: list[str] | None = None, counting: bool = False):
+class _GuardedConfigService(WorkspaceKnowledgeConfigurationService):
+    def __init__(self, repo, lookup) -> None:
+        super().__init__(repo, lookup)
+        self.load_count = 0
+    def get_configuration(self, **kwargs):
+        self.load_count += 1
+        return super().get_configuration(**kwargs)
+
+
+def _build_stack(bindings: _TenantBindingPort | None = None, mutation_ids: list[str] | None = None, counting: bool = False, guarded_config: bool = False):
     store = InMemoryDocumentStore()
-    repo = _CountingRepo(store) if counting else ManagedWorkspaceRepository(store)
+    repo = _CountingRepo(store) if counting or guarded_config else ManagedWorkspaceRepository(store)
     repo.put_workspace(_workspace())
     lookup = _FakeWorkspaceLookup({(_TENANT, _WORKSPACE): _workspace()})
-    config_service = WorkspaceKnowledgeConfigurationService(repo, lookup)
+    config_service = _GuardedConfigService(repo, lookup) if guarded_config else WorkspaceKnowledgeConfigurationService(repo, lookup)
     ids = mutation_ids or ["mutation-1", "mutation-2", "mutation-3", "mutation-4", "mutation-5"]
     idx = {"i": 0}
     def _next_id() -> str:
@@ -177,6 +190,14 @@ def _detach_mutation(repo, *, revision, manifest_ids, mutation_id="mutation-deta
 def _owned_rows(repo, mutation_id, revision):
     def _filter(lst):
         return [r for r in lst if r.mutation_id == mutation_id and r.effective_revision == revision]
+    return (_filter(repo.list_knowledge_connection_attachment_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)),
+            _filter(repo.list_knowledge_indexed_source_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)),
+            _filter(repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)))
+
+
+def _all_mutation_owned_rows(repo, mutation_id):
+    def _filter(lst):
+        return [r for r in lst if r.mutation_id == mutation_id]
     return (_filter(repo.list_knowledge_connection_attachment_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)),
             _filter(repo.list_knowledge_indexed_source_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)),
             _filter(repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)))
@@ -455,3 +476,128 @@ def test_ownership_conflict_blocks_cleanup() -> None:
     inspection = _DET_HANDLER.inspect_staged(repository=repo, mutation=mutation)
     assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     assert not _DET_HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
+
+
+@pytest.mark.parametrize("invalid_hash", [
+    None, "", "a" * 63, "a" * 65, "A" * 64, "g" * 64, 123,
+])
+def test_invalid_idempotency_hash_rejected_before_preflight(invalid_hash) -> None:
+    bindings = _TenantBindingPort()
+    attach, detach, repo, _, cfg_svc = _build_stack(bindings=bindings, guarded_config=True, counting=True)
+    rev = _attach(attach)
+    repo.mutation_preflight_count = 0
+    cfg_svc.load_count = 0
+    head_before = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="knowledge_configuration_idempotency_hash_invalid"):
+        detach.detach_connection(_detach_cmd(expected_revision=rev, idempotency_key_hash=invalid_hash))
+    assert repo.mutation_preflight_count == 0
+    assert cfg_svc.load_count == 0
+    assert bindings.call_count == 0
+    assert not any(
+        m.operation is WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION
+        for m in repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    )
+    assert repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE) == head_before
+
+
+def test_corrupt_historical_semantic_identity_rejects_replay() -> None:
+    bindings = _TenantBindingPort({"ksb-primary": _tenant_binding(binding_id="ksb-primary")})
+    attach, detach, repo, _, cfg_svc = _build_stack(bindings=bindings)
+    rev = _attach(attach)
+    first = detach.detach_connection(_detach_cmd(expected_revision=rev))
+    committed = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT, workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION,
+        idempotency_key_hash=_SHA256_B,
+    )
+    assert committed is not None
+    corrupt = committed.model_copy(update={"semantic_identity_hash": "e" * 64, "updated_at": _NOW})
+    repo.replace_knowledge_configuration_mutation_if_match(expected=committed, replacement=corrupt)
+    bindings.call_count = 0
+    cfg_before = cfg_svc.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceConnectionAttachmentError, match="connection_attachment_projection_incomplete"):
+        detach.detach_connection(_detach_cmd(expected_revision=rev))
+    assert bindings.call_count == 0
+    assert cfg_svc.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE) == cfg_before
+    assert repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT, workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION,
+        idempotency_key_hash=_SHA256_B,
+    ) == corrupt
+    assert first.configuration_revision == rev + 1
+
+
+@pytest.mark.parametrize("family", ["attachment", "indexed", "live"])
+def test_wrong_revision_owned_row_blocks_inspection_and_cleanup(family) -> None:
+    attach, _, repo, _, cfg_svc = _build_stack(mutation_ids=["mutation-attach", "mutation-detach"])
+    rev = _attach(attach)
+    mutation, _ = _detach_mutation(repo, revision=rev + 1, manifest_ids={})
+    wrong_revision = rev + 2
+    if family == "attachment":
+        prev = cfg_svc.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE).connection_attachments[0]
+        repo.put_knowledge_connection_attachment_version_if_absent(WorkspaceConnectionAttachment(
+            attachment_id=prev.attachment_id, tenant_id=prev.tenant_id, workspace_id=prev.workspace_id,
+            connection_ref=prev.connection_ref, safe_display_label=prev.safe_display_label,
+            status=WorkspaceConnectionAttachmentStatusV1.DETACHED, mutation_id="mutation-detach",
+            effective_revision=wrong_revision, created_at=prev.created_at, updated_at=_NOW,
+        ))
+    elif family == "indexed":
+        repo.put_knowledge_indexed_source_version_if_absent(
+            _idx_row("idx-wrong", status=WorkspaceIndexedSourceBindingStatusV1.UNAVAILABLE, revision=wrong_revision).model_copy(
+                update={"mutation_id": "mutation-detach"},
+            ),
+        )
+    else:
+        repo.put_knowledge_live_access_version_if_absent(
+            _live_row("live-wrong", status=LiveAccessBindingStatusV1.UNAVAILABLE, revision=wrong_revision).model_copy(
+                update={"mutation_id": "mutation-detach"},
+            ),
+        )
+    inspection = _DET_HANDLER.inspect_staged(repository=repo, mutation=mutation)
+    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    assert not _DET_HANDLER.cleanup_staged(repository=repo, mutation=mutation, inspection=inspection)
+    owned = _all_mutation_owned_rows(repo, "mutation-detach")
+    assert any(r.effective_revision == wrong_revision for rows in owned for r in rows)
+
+
+def test_complete_cascade_plus_future_owned_row_engine_recovery() -> None:
+    bindings = _TenantBindingPort({"ksb-primary": _tenant_binding(binding_id="ksb-primary")})
+    attach, _, repo, engine, cfg_svc = _build_stack(bindings=bindings, mutation_ids=["mutation-attach", "mutation-detach"])
+    rev = _attach(attach)
+    repo.put_knowledge_indexed_source_version_if_absent(
+        _idx_row("idx-active", status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE, ksb_ref="ksb-primary", revision=rev),
+    )
+    repo.put_knowledge_live_access_version_if_absent(
+        _live_row("live-active", status=LiveAccessBindingStatusV1.ACTIVE, revision=rev),
+    )
+    mutation, intent = _detach_mutation(
+        repo, revision=rev + 1,
+        manifest_ids={"indexed": ("idx-active",), "live": ("live-active",)},
+    )
+    _DET_HANDLER.stage(repository=repo, mutation=mutation, target_revision=rev + 1, intent=intent, now=_NOW)
+    repo.put_knowledge_indexed_source_version_if_absent(
+        _idx_row("idx-future", status=WorkspaceIndexedSourceBindingStatusV1.UNAVAILABLE, revision=rev + 2).model_copy(
+            update={"mutation_id": "mutation-detach"},
+        ),
+    )
+    inspection = _DET_HANDLER.inspect_staged(repository=repo, mutation=mutation)
+    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    assert inspection.state is not WorkspaceKnowledgeStageStateV1.COMPLETE_VALID
+    owned_before = _all_mutation_owned_rows(repo, "mutation-detach")
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
+        engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    reloaded = repo.find_knowledge_configuration_mutation_by_id(
+        tenant_id=_TENANT, workspace_id=_WORKSPACE, mutation_id="mutation-detach",
+    )
+    assert reloaded is not None
+    assert reloaded.status is WorkspaceKnowledgeMutationStatusV1.RECOVERY_REQUIRED
+    assert reloaded.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert reloaded.status is not WorkspaceKnowledgeMutationStatusV1.ABORTED
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    assert head.committed_revision == rev
+    assert head.pending_mutation_id == "mutation-detach"
+    assert head.pending_revision == rev + 1
+    owned_after = _all_mutation_owned_rows(repo, "mutation-detach")
+    assert owned_after == owned_before
+    assert any(r.effective_revision == rev + 2 for rows in owned_after for r in rows)

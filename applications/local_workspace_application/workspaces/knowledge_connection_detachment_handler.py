@@ -161,38 +161,72 @@ class DetachConnectionMutationHandler:
 
     def inspect_staged(self, *, repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord) -> WorkspaceKnowledgeStageInspection:
         conflict = WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT)
-        if mutation.target_revision is None:
-            return conflict
-        base = mutation.target_revision - 1
-        owned_att = _owned(repository, mutation, repository.list_knowledge_connection_attachment_versions)
-        owned_idx = _owned(repository, mutation, repository.list_knowledge_indexed_source_versions)
-        owned_live = _owned(repository, mutation, repository.list_knowledge_live_access_versions)
+        owned_att = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_connection_attachment_versions)
+        owned_idx = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_indexed_source_versions)
+        owned_live = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_live_access_versions)
         if not owned_att and not owned_idx and not owned_live:
             return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.ABSENT)
-        if len(owned_att) > 1:
+        if mutation.target_revision is None or _has_wrong_revision_owned_rows(owned_att, owned_idx, owned_live, mutation):
             return conflict
-        staged_att = owned_att[0] if owned_att else None
+        base = mutation.target_revision - 1
+        target_att = _rows_at_target_revision(owned_att, mutation)
+        target_idx = _rows_at_target_revision(owned_idx, mutation)
+        target_live = _rows_at_target_revision(owned_live, mutation)
+        if len(target_att) > 1:
+            return conflict
+        staged_att = target_att[0] if target_att else None
         idx_ids, live_ids = [], []
-        for row in owned_idx:
-            if sum(1 for r in owned_idx if r.indexed_source_binding_id == row.indexed_source_binding_id) > 1 or not _valid_indexed(repository, mutation, row, base):
+        for row in target_idx:
+            if sum(1 for r in target_idx if r.indexed_source_binding_id == row.indexed_source_binding_id) > 1:
+                return conflict
+            if not _valid_indexed(repository, mutation, row, base):
                 return conflict
             idx_ids.append(row.indexed_source_binding_id)
         conn_ref = staged_att.connection_ref if staged_att else ""
-        for row in owned_live:
-            if sum(1 for r in owned_live if r.live_access_binding_id == row.live_access_binding_id) > 1 or not _valid_live(repository, mutation, row, base, conn_ref):
+        for row in target_live:
+            if sum(1 for r in target_live if r.live_access_binding_id == row.live_access_binding_id) > 1:
+                return conflict
+            if not _valid_live(repository, mutation, row, base, conn_ref):
                 return conflict
             live_ids.append(row.live_access_binding_id)
         if staged_att is None or not _valid_attachment(repository, mutation, staged_att, base):
-            return conflict if staged_att else WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED)
-        intent = DetachConnectionMutationIntent(attachment_id=staged_att.attachment_id, connection_ref=staged_att.connection_ref, indexed_source_binding_ids=tuple(idx_ids), live_access_binding_ids=tuple(live_ids))
-        if not _validate_detach_mutation_identity(mutation=mutation, intent=intent, target_revision=None):
-            req = detach_connection_request_hash(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, connection_ref=staged_att.connection_ref)
-            sem = connection_attachment_semantic_identity_hash(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, connection_ref=staged_att.connection_ref)
-            att_id = connection_attachment_id(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, connection_ref=staged_att.connection_ref)
-            if mutation.normalized_request_hash != req or mutation.semantic_identity_hash != sem or staged_att.attachment_id != att_id:
+            if staged_att is not None:
                 return conflict
             return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED)
-        return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.COMPLETE_VALID, result_entity_type=_RESULT_ENTITY_TYPE, result_entity_id=staged_att.attachment_id)
+        intent = DetachConnectionMutationIntent(
+            attachment_id=staged_att.attachment_id,
+            connection_ref=staged_att.connection_ref,
+            indexed_source_binding_ids=tuple(idx_ids),
+            live_access_binding_ids=tuple(live_ids),
+        )
+        if not _validate_detach_mutation_identity(mutation=mutation, intent=intent, target_revision=None):
+            req = detach_connection_request_hash(
+                tenant_id=mutation.tenant_id,
+                workspace_id=mutation.workspace_id,
+                connection_ref=staged_att.connection_ref,
+            )
+            sem = connection_attachment_semantic_identity_hash(
+                tenant_id=mutation.tenant_id,
+                workspace_id=mutation.workspace_id,
+                connection_ref=staged_att.connection_ref,
+            )
+            att_id = connection_attachment_id(
+                tenant_id=mutation.tenant_id,
+                workspace_id=mutation.workspace_id,
+                connection_ref=staged_att.connection_ref,
+            )
+            if (
+                mutation.normalized_request_hash != req
+                or mutation.semantic_identity_hash != sem
+                or staged_att.attachment_id != att_id
+            ):
+                return conflict
+            return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED)
+        return WorkspaceKnowledgeStageInspection(
+            state=WorkspaceKnowledgeStageStateV1.COMPLETE_VALID,
+            result_entity_type=_RESULT_ENTITY_TYPE,
+            result_entity_id=staged_att.attachment_id,
+        )
 
     def cleanup_staged(self, *, repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord, inspection: WorkspaceKnowledgeStageInspection) -> bool:
         if inspection.state is WorkspaceKnowledgeStageStateV1.ABSENT:
@@ -201,17 +235,36 @@ class DetachConnectionMutationHandler:
             return False
         if inspection.state not in (WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED, WorkspaceKnowledgeStageStateV1.COMPLETE_VALID):
             return False
-        base = (mutation.target_revision or 0) - 1
-        for row in _owned(repository, mutation, repository.list_knowledge_live_access_versions):
-            if not _valid_live(repository, mutation, row, base, row.connection_ref) or not _live_mutation_ok(mutation, row.connection_ref) or not repository.delete_knowledge_live_access_version_if_match(row):
+        owned_att = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_connection_attachment_versions)
+        owned_idx = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_indexed_source_versions)
+        owned_live = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_live_access_versions)
+        if _has_wrong_revision_owned_rows(owned_att, owned_idx, owned_live, mutation):
+            return False
+        base = mutation.target_revision - 1
+        target_live = _rows_at_target_revision(owned_live, mutation)
+        target_idx = _rows_at_target_revision(owned_idx, mutation)
+        target_att = _rows_at_target_revision(owned_att, mutation)
+        for row in target_live:
+            if not _valid_live(repository, mutation, row, base, row.connection_ref):
                 return False
-        for row in _owned(repository, mutation, repository.list_knowledge_indexed_source_versions):
-            if not _valid_indexed(repository, mutation, row, base) or not repository.delete_knowledge_indexed_source_version_if_match(row):
+            if not _live_mutation_ok(mutation, row.connection_ref):
                 return False
-        for row in _owned(repository, mutation, repository.list_knowledge_connection_attachment_versions):
-            if not _valid_attachment(repository, mutation, row, base) or not repository.delete_knowledge_connection_attachment_version_if_match(row):
+            if not repository.delete_knowledge_live_access_version_if_match(row):
                 return False
-        return not (_owned(repository, mutation, repository.list_knowledge_connection_attachment_versions) or _owned(repository, mutation, repository.list_knowledge_indexed_source_versions) or _owned(repository, mutation, repository.list_knowledge_live_access_versions))
+        for row in target_idx:
+            if not _valid_indexed(repository, mutation, row, base):
+                return False
+            if not repository.delete_knowledge_indexed_source_version_if_match(row):
+                return False
+        for row in target_att:
+            if not _valid_attachment(repository, mutation, row, base):
+                return False
+            if not repository.delete_knowledge_connection_attachment_version_if_match(row):
+                return False
+        remaining_att = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_connection_attachment_versions)
+        remaining_idx = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_indexed_source_versions)
+        remaining_live = _rows_owned_by_mutation(repository, mutation, repository.list_knowledge_live_access_versions)
+        return not (remaining_att or remaining_idx or remaining_live)
 
 
 def _live_mutation_ok(mutation: WorkspaceKnowledgeMutationRecord, connection_ref: str) -> bool:
@@ -219,8 +272,31 @@ def _live_mutation_ok(mutation: WorkspaceKnowledgeMutationRecord, connection_ref
     return mutation.normalized_request_hash == detach_connection_request_hash(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, connection_ref=ref) and mutation.semantic_identity_hash == connection_attachment_semantic_identity_hash(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id, connection_ref=ref)
 
 
-def _owned(repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord, list_fn: Callable[..., list[Any]]) -> list[Any]:
-    return [v for v in list_fn(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id) if v.mutation_id == mutation.mutation_id and v.effective_revision == mutation.target_revision]
+def _rows_owned_by_mutation(
+    repository: ManagedWorkspaceRepository,
+    mutation: WorkspaceKnowledgeMutationRecord,
+    list_fn: Callable[..., list[Any]],
+) -> list[Any]:
+    versions = list_fn(tenant_id=mutation.tenant_id, workspace_id=mutation.workspace_id)
+    return [row for row in versions if row.mutation_id == mutation.mutation_id]
+
+
+def _rows_at_target_revision(owned_rows: list[Any], mutation: WorkspaceKnowledgeMutationRecord) -> list[Any]:
+    if mutation.target_revision is None:
+        return []
+    return [row for row in owned_rows if row.effective_revision == mutation.target_revision]
+
+
+def _has_wrong_revision_owned_rows(
+    owned_attachment: list[Any],
+    owned_indexed: list[Any],
+    owned_live: list[Any],
+    mutation: WorkspaceKnowledgeMutationRecord,
+) -> bool:
+    if mutation.target_revision is None:
+        return True
+    target = mutation.target_revision
+    return any(row.effective_revision != target for row in owned_attachment + owned_indexed + owned_live)
 
 
 def _select_prev(repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord, base_revision: int, list_fn: Callable[..., list[_T]], id_field: str, entity_id: str) -> _T | None:

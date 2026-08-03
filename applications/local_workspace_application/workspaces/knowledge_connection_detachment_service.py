@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
@@ -30,7 +31,13 @@ from local_workspace_application.workspaces.repository import ManagedWorkspaceRe
 
 _RESULT_TYPE = "connection_attachment"
 _PORT_ERR = "connection_detach_dependency_resolution_failed"
+_IDEMPOTENCY_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 _T = TypeVar("_T")
+
+
+def _validate_idempotency_key_hash(value: object) -> None:
+    if not isinstance(value, str) or _IDEMPOTENCY_HASH_RE.fullmatch(value) is None:
+        raise WorkspaceKnowledgeConfigurationMutationError("knowledge_configuration_idempotency_hash_invalid")
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +82,7 @@ class WorkspaceConnectionDetachmentService:
         self._repository = repository
 
     def detach_connection(self, command: DetachWorkspaceConnectionCommand) -> DetachWorkspaceConnectionResult:
+        _validate_idempotency_key_hash(command.idempotency_key_hash)
         tenant_id, workspace_id = command.tenant_id.strip(), command.workspace_id.strip()
         connection_ref = command.connection_ref.strip()
         if not connection_ref:
@@ -181,6 +189,10 @@ def _live_deps(cfg: WorkspaceKnowledgeConfigurationV1, cref: str) -> tuple[str, 
 
 def _hist_att(repo: ManagedWorkspaceRepository, result: WorkspaceKnowledgeMutationExecutionResult, aid: str, tid: str, wid: str, cref: str) -> WorkspaceConnectionAttachment:
     m = result.mutation
+    if m.normalized_request_hash != detach_connection_request_hash(tenant_id=tid, workspace_id=wid, connection_ref=cref):
+        raise _incomplete()
+    if m.semantic_identity_hash != connection_attachment_semantic_identity_hash(tenant_id=tid, workspace_id=wid, connection_ref=cref):
+        raise _incomplete()
     if m.result_entity_type != _RESULT_TYPE or m.result_entity_id != aid or m.committed_revision != result.configuration_revision:
         raise _incomplete()
     att = _highest(repo.list_knowledge_connection_attachment_versions(tenant_id=tid, workspace_id=wid), field="attachment_id", eid=aid, rev=result.configuration_revision)
