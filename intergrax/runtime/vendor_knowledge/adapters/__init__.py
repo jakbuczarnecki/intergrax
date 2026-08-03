@@ -45,6 +45,15 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_chat import (
     encode_msgraph_teams_chat_scope_id,
     register_msgraph_teams_chat_knowledge_adapter,
 )
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_drive import (
+    GOOGLE_DRIVE_CURSOR_VERSION,
+    GOOGLE_DRIVE_ITEM_METADATA_VERSION,
+    GOOGLE_DRIVE_SHARED_DRIVE_SCOPE_TYPE,
+    GOOGLE_DRIVE_USER_SCOPE_ID,
+    GOOGLE_DRIVE_USER_SCOPE_TYPE,
+    GoogleWorkspaceDriveKnowledgeAdapter,
+    register_google_workspace_drive_knowledge_adapter,
+)
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_CURSOR_VERSION,
     SLACK_CONVERSATION_SCOPE_TYPE,
@@ -55,6 +64,12 @@ from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
 
 __all__ = [
     "ConfluencePagesKnowledgeAdapter",
+    "GOOGLE_DRIVE_CURSOR_VERSION",
+    "GOOGLE_DRIVE_ITEM_METADATA_VERSION",
+    "GOOGLE_DRIVE_SHARED_DRIVE_SCOPE_TYPE",
+    "GOOGLE_DRIVE_USER_SCOPE_ID",
+    "GOOGLE_DRIVE_USER_SCOPE_TYPE",
+    "GoogleWorkspaceDriveKnowledgeAdapter",
     "JiraIssuesKnowledgeAdapter",
     "MSGRAPH_CALENDAR_CURSOR_VERSION",
     "MSGRAPH_CALENDAR_SCOPE_TYPE",
@@ -79,6 +94,7 @@ __all__ = [
     "encode_msgraph_teams_channel_scope_id",
     "encode_msgraph_teams_chat_scope_id",
     "encode_slack_conversation_scope_id",
+    "register_google_workspace_drive_knowledge_adapter",
     "register_confluence_pages_knowledge_adapter",
     "register_jira_issues_knowledge_adapter",
     "register_msgraph_calendar_knowledge_adapter",

@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -28,11 +28,13 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES,
     GoogleDriveContentChanged,
     GoogleDriveContentMode,
+    GoogleDriveContentProfile,
     GoogleDriveContentReader,
     GoogleDriveContentTooLarge,
     GoogleDriveContentUnavailable,
     GoogleDriveFileContent,
     GoogleDriveUnsupportedContent,
+    resolve_google_drive_content_profile,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceApiError,
@@ -760,3 +762,123 @@ def test_blob_effective_limit_enforced() -> None:
         )
     assert transport.binary_calls[0]["max_bytes"] == max_bytes
     assert len(transport.json_calls) == 1
+
+
+def _resolver_item(
+    *,
+    kind: GoogleDriveItemKind,
+    mime_type: str,
+    can_download: bool = True,
+    remote_id: str = "item-1",
+) -> GoogleDriveItem:
+    shortcut_kwargs: dict[str, object] = {}
+    if kind is GoogleDriveItemKind.SHORTCUT:
+        shortcut_kwargs = {
+            "shortcut_target_id": "target-1",
+            "shortcut_target_mime_type": "application/pdf",
+        }
+    return GoogleDriveItem(
+        remote_id=remote_id,
+        scope=_USER_SCOPE,
+        kind=kind,
+        name="Item",
+        mime_type=mime_type,
+        parent_ids=("parent-1",),
+        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        size_bytes=0 if kind is not GoogleDriveItemKind.BLOB else 4,
+        md5_checksum="abcd" if kind is GoogleDriveItemKind.BLOB else None,
+        version=1,
+        can_download=can_download,
+        **shortcut_kwargs,
+    )
+
+
+@pytest.mark.parametrize(
+    ("mime_type", "expected_mime"),
+    [
+        ("application/vnd.google-apps.document", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        ("application/vnd.google-apps.spreadsheet", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        ("application/vnd.google-apps.presentation", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+        ("application/vnd.google-apps.drawing", "application/pdf"),
+        ("application/vnd.google-apps.script", "application/vnd.google-apps.script+json"),
+    ],
+)
+def test_content_profile_resolver_native_exports(mime_type: str, expected_mime: str) -> None:
+    item = _resolver_item(kind=GoogleDriveItemKind.NATIVE_DOCUMENT, mime_type=mime_type)
+    profile = resolve_google_drive_content_profile(item)
+    assert profile == GoogleDriveContentProfile(
+        mode=GoogleDriveContentMode.EXPORT,
+        content_mime_type=expected_mime,
+    )
+
+
+def test_content_profile_resolver_blob() -> None:
+    item = _resolver_item(kind=GoogleDriveItemKind.BLOB, mime_type="application/pdf")
+    profile = resolve_google_drive_content_profile(item)
+    assert profile.mode is GoogleDriveContentMode.BLOB
+    assert profile.content_mime_type == "application/pdf"
+
+
+def test_content_profile_resolver_allows_non_downloadable_supported_blob() -> None:
+    item = _resolver_item(
+        kind=GoogleDriveItemKind.BLOB,
+        mime_type="application/pdf",
+        can_download=False,
+    )
+    profile = resolve_google_drive_content_profile(item)
+    assert profile.mode is GoogleDriveContentMode.BLOB
+
+
+def test_content_profile_reader_rejects_non_downloadable_blob() -> None:
+    payload = _blob_payload(can_download=False)
+    item = _item_from_payload(payload)
+    transport = _DualTransport()
+    with pytest.raises(GoogleDriveContentUnavailable):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+    assert transport.json_calls == []
+    assert transport.binary_calls == []
+
+
+@pytest.mark.parametrize(
+    ("kind", "mime_type"),
+    [
+        (GoogleDriveItemKind.FOLDER, "application/vnd.google-apps.folder"),
+        (GoogleDriveItemKind.SHORTCUT, "application/vnd.google-apps.shortcut"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.form"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.site"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.map"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.fusiontable"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.jam"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.vid"),
+        (GoogleDriveItemKind.NATIVE_DOCUMENT, "application/vnd.google-apps.unknown-type"),
+    ],
+)
+def test_content_profile_resolver_rejects_unsupported(
+    kind: GoogleDriveItemKind,
+    mime_type: str,
+) -> None:
+    item = _resolver_item(kind=kind, mime_type=mime_type)
+    with pytest.raises(GoogleDriveUnsupportedContent):
+        resolve_google_drive_content_profile(item)
+
+
+def test_content_profile_resolver_rejects_model_construct_item() -> None:
+    item = _resolver_item(kind=GoogleDriveItemKind.BLOB, mime_type="application/pdf")
+    snapshot = item.model_dump(mode="python")
+    snapshot["can_download"] = "yes"
+    bad_item = GoogleDriveItem.model_construct(**snapshot)
+    with pytest.raises(IntegrationConfigurationError):
+        resolve_google_drive_content_profile(bad_item)
+
+
+def test_content_profile_resolver_rejects_item_subclass() -> None:
+    class _SubclassItem(GoogleDriveItem):
+        pass
+
+    item = _resolver_item(kind=GoogleDriveItemKind.BLOB, mime_type="application/pdf")
+    snapshot = item.model_dump(mode="python")
+    snapshot["scope"] = GoogleDriveScope(**snapshot["scope"])
+    subclass_item = _SubclassItem(**snapshot)
+    with pytest.raises(IntegrationConfigurationError):
+        resolve_google_drive_content_profile(subclass_item)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 from urllib.parse import quote
@@ -106,6 +107,37 @@ class GoogleDriveUnsupportedContent(IntegrationConfigurationError):
 class GoogleDriveContentMode(StrEnum):
     BLOB = "blob"
     EXPORT = "export"
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleDriveContentProfile:
+    mode: GoogleDriveContentMode
+    content_mime_type: str
+
+
+def resolve_google_drive_content_profile(
+    item: GoogleDriveItem,
+) -> GoogleDriveContentProfile:
+    validated_item = _reconstruct_item(item)
+    if validated_item.kind is GoogleDriveItemKind.FOLDER:
+        raise GoogleDriveUnsupportedContent() from None
+    if validated_item.kind is GoogleDriveItemKind.SHORTCUT:
+        raise GoogleDriveUnsupportedContent() from None
+    if validated_item.kind is GoogleDriveItemKind.OTHER:
+        raise GoogleDriveUnsupportedContent() from None
+    if validated_item.kind is GoogleDriveItemKind.BLOB:
+        _validate_blob_mime_type(validated_item.mime_type)
+        return GoogleDriveContentProfile(
+            mode=GoogleDriveContentMode.BLOB,
+            content_mime_type=validated_item.mime_type,
+        )
+    if validated_item.kind is GoogleDriveItemKind.NATIVE_DOCUMENT:
+        export_mime = _resolve_export_mime(validated_item.mime_type)
+        return GoogleDriveContentProfile(
+            mode=GoogleDriveContentMode.EXPORT,
+            content_mime_type=export_mime,
+        )
+    raise GoogleDriveUnsupportedContent() from None
 
 
 class GoogleDriveFileContent(BaseModel):
@@ -261,21 +293,11 @@ def _copy_and_validate_binary_payload(
 
 
 def _validate_content_item(item: GoogleDriveItem) -> GoogleDriveItem:
-    if item.kind is GoogleDriveItemKind.FOLDER:
-        raise GoogleDriveUnsupportedContent() from None
-    if item.kind is GoogleDriveItemKind.SHORTCUT:
-        raise GoogleDriveUnsupportedContent() from None
-    if item.kind is GoogleDriveItemKind.OTHER:
-        raise GoogleDriveUnsupportedContent() from None
-    if not item.can_download:
+    validated_item = _reconstruct_item(item)
+    resolve_google_drive_content_profile(validated_item)
+    if not validated_item.can_download:
         raise GoogleDriveContentUnavailable() from None
-    if item.kind is GoogleDriveItemKind.BLOB:
-        _validate_blob_mime_type(item.mime_type)
-    elif item.kind is GoogleDriveItemKind.NATIVE_DOCUMENT:
-        _resolve_export_mime(item.mime_type)
-    else:
-        raise GoogleDriveUnsupportedContent() from None
-    return item
+    return validated_item
 
 
 def _revision_fields_match(left: GoogleDriveItem, right: GoogleDriveItem) -> bool:
@@ -357,9 +379,10 @@ class GoogleDriveContentReader:
 
         encoded_id = _encode_file_id(validated_item.remote_id)
 
-        if validated_item.kind is GoogleDriveItemKind.BLOB:
+        profile = resolve_google_drive_content_profile(validated_item)
+        if profile.mode is GoogleDriveContentMode.BLOB:
             mode = GoogleDriveContentMode.BLOB
-            content_mime_type = validated_item.mime_type
+            content_mime_type = profile.content_mime_type
             effective_max_bytes = validated_max_bytes
             try:
                 payload = self._transport.get_bytes(
@@ -379,7 +402,7 @@ class GoogleDriveContentReader:
                 raise
         else:
             mode = GoogleDriveContentMode.EXPORT
-            content_mime_type = _resolve_export_mime(validated_item.mime_type)
+            content_mime_type = profile.content_mime_type
             effective_max_bytes = min(
                 validated_max_bytes,
                 GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES,
