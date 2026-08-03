@@ -5,6 +5,8 @@ This file does **not** duplicate canon content; it routes to the authoritative s
 
 **Audiences:** new developers · Cursor operators · AI coding agents.
 
+Public readers looking for product value, proof paths, evaluation, partnership or license routes should start with [PUBLIC_DOCUMENTATION_MAP.md](PUBLIC_DOCUMENTATION_MAP.md).
+
 ---
 
 ## Quick routing
@@ -12,6 +14,9 @@ This file does **not** duplicate canon content; it routes to the authoritative s
 | You need… | Read |
 |-----------|------|
 | Project overview and quick start | [README.md](../README.md) |
+| **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](PUBLIC_DOCUMENTATION_MAP.md) |
+| **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
+| **Token Optimization main guide** | [features/token_optimization/README.md](features/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/DOCUMENTATION_MAP.md` |
 | Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) |
 | Multi-layer feature docs (cross-layer capabilities) | [features/README.md](features/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
@@ -39,6 +44,8 @@ Domain pair index (22 names): [audit/README.md § Domain index](audit/README.md#
 | Artifact | Role | Not |
 |----------|------|-----|
 | [README.md](../README.md) | Human-facing project intro, maturity snapshot, extended doc index | Full Cursor workflow reference |
+| [PUBLIC_DOCUMENTATION_MAP.md](PUBLIC_DOCUMENTATION_MAP.md) | Public reader navigation — intent routes, proof paths, maturity boundary | Technical domain pairs, Cursor workflow |
+| [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Maintainer-owned public information architecture | Implementation plans, detailed claims |
 | [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) | Navigation only — Szukasz → Czytaj | Canon, plan rows, audit prompts |
 | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) | Sole `docs/` root file; indexes 22 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
 | `docs/architecture/<DOMAIN>.md` | **What** the harness should do (contracts, design) | Implementation tracker |
