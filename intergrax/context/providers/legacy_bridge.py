@@ -33,6 +33,7 @@ from intergrax.context.contracts import (
     ContextFragmentSource,
     content_hash_for_text,
 )
+from intergrax.context.session_history import SessionHistorySnapshotRequiredError
 from intergrax.llm.messages import ChatMessage
 
 PRIOR_OUTPUT_RECORDS_HANDLE = "prior_output_records"
@@ -181,35 +182,18 @@ def fragments_from_session_history(
     max_entries: int = 8,
     include_session_history: bool = True,
 ) -> list[ContextFragment]:
-    """Emit SESSION_HISTORY fragments from chronological chat turns.
+    """Legacy compatibility shim.
 
-    Compatibility helper — canonical ``builtin.session_history`` uses
-    ``SessionHistorySnapshot`` via ``fragments_from_session_history_snapshot``.
+    Non-empty history must use SessionHistorySnapshot.
     """
-    if not include_session_history or not messages:
+    _ = max_entries
+
+    if not include_session_history:
         return []
-    fragments: list[ContextFragment] = []
-    for index, message in enumerate(messages[-max_entries:]):
-        role = attribute_access.optional(message, "role", None) or (
-            message.get("role") if isinstance(message, dict) else "user"
-        )
-        content = attribute_access.optional(message, "content", None)
-        if content is None and isinstance(message, dict):
-            content = message.get("content")
-        text = str(content or "").strip()
-        if not text:
-            continue
-        source_id = f"{role}-{index}"
-        fragments.append(
-            _fragment(
-                fragment_id=f"session-{source_id}",
-                source=ContextFragmentSource.SESSION_HISTORY,
-                source_id=source_id,
-                content=f"{role}: {text}",
-                metadata={"role": str(role), "turn_index": index},
-            )
-        )
-    return fragments
+    if not messages:
+        return []
+
+    raise SessionHistorySnapshotRequiredError()
 
 
 def _chunk_text(ch: Any) -> str:

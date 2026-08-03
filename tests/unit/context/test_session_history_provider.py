@@ -12,7 +12,9 @@ from intergrax.context.providers.builtin import _collect_session_history
 from intergrax.context.providers.legacy_bridge import SESSION_HISTORY_MESSAGES_HANDLE
 from intergrax.context.session_history import (
     SESSION_HISTORY_SNAPSHOT_HANDLE,
+    SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON,
     HandleSessionHistoryProvider,
+    SessionHistorySnapshotRequiredError,
     build_session_history_snapshot,
 )
 from intergrax.context.contracts import ContextAssemblyRequest, ContextBudgetSnapshot, ContextDecisionSnapshot, ContextProviderContext
@@ -89,6 +91,23 @@ def test_canonical_provider_has_no_last_n_slicing() -> None:
     assert "[-max_entries:]" not in source
     assert "[-N:]" not in source
     assert "fragments_from_session_history_snapshot(snapshot)" in source
+    assert "fragments_from_session_history(" not in source
+    assert "max_memory_entries_in_context" not in source
+
+
+@pytest.mark.asyncio
+async def test_raw_legacy_handle_requires_snapshot() -> None:
+    ctx = ContextProviderContext(
+        handles={
+            SESSION_HISTORY_MESSAGES_HANDLE: [
+                ChatMessage(role="user", content="legacy", entry_id="legacy-1"),
+            ],
+        }
+    )
+    with pytest.raises(SessionHistorySnapshotRequiredError) as exc_info:
+        await _collect_session_history(_request(), ctx)
+    assert str(exc_info.value) == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
+    assert exc_info.value.reason == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
 
 
 @pytest.mark.asyncio

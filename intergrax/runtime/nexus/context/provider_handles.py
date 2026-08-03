@@ -125,13 +125,16 @@ def build_graph_provider_handles(
         POLICY_OVERLAY_FRAGMENTS_HANDLE,
         PRIOR_OUTPUT_RECORDS_HANDLE,
         RAG_CHUNKS_HANDLE,
-        SESSION_HISTORY_MESSAGES_HANDLE,
         SHARED_CONTEXT_READS_HANDLE,
         SYSTEM_INSTRUCTIONS_HANDLE,
         TOOL_OUTPUT_BLOCKS_HANDLE,
         WEBSEARCH_BLOCKS_HANDLE,
     )
-    from intergrax.context.session_history import SESSION_HISTORY_SNAPSHOT_HANDLE
+    from intergrax.context.session_history import (
+        SESSION_HISTORY_SNAPSHOT_HANDLE,
+        SessionHistorySnapshot,
+        SessionHistorySnapshotRequiredError,
+    )
 
     handles: dict[str, Any] = {
         "runtime_config": runtime_config,
@@ -152,14 +155,21 @@ def build_graph_provider_handles(
         handles["session_vector_hits"] = vector_hits
     if prior_output_records:
         handles[PRIOR_OUTPUT_RECORDS_HANDLE] = list(prior_output_records)
-    history_messages = session_history_messages
-    if history_messages is None:
-        history_messages = session_history_messages_from_task(task)
-    snapshot = try_build_session_history_snapshot(task, list(history_messages or []))
-    if snapshot is not None:
-        handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
-    elif history_messages:
-        handles[SESSION_HISTORY_MESSAGES_HANDLE] = list(history_messages)
+    direct_snapshot = task.metadata.get(SESSION_HISTORY_SNAPSHOT_METADATA_KEY)
+    if direct_snapshot is not None:
+        if not isinstance(direct_snapshot, SessionHistorySnapshot):
+            raise ValueError("session_history_snapshot must be SessionHistorySnapshot")
+        handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = direct_snapshot
+    else:
+        history_messages = session_history_messages
+        if history_messages is None:
+            history_messages = session_history_messages_from_task(task)
+        if history_messages:
+            snapshot = try_build_session_history_snapshot(task, list(history_messages))
+            if snapshot is not None:
+                handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
+            else:
+                raise SessionHistorySnapshotRequiredError()
     rag_chunks = _list_from_task_metadata(task, RAG_CHUNKS_METADATA_KEY)
     if rag_chunks:
         handles[RAG_CHUNKS_HANDLE] = rag_chunks

@@ -97,6 +97,8 @@ def _task_stub_from_request(request: RuntimeRequest):
             "workspace_files",
             "memory_profile",
             "session_vector_hits",
+            "session_history_snapshot",
+            "session_context_revision_id",
             "session_history_messages",
             "rag_chunks",
             "ltm_entries",
@@ -110,6 +112,7 @@ def _task_stub_from_request(request: RuntimeRequest):
     return Task(
         tenant_id=str(request.tenant_id or "default"),
         user_id=str(request.metadata.get("user_id") or "user"),
+        session_id=request.session_id,
         message=request.message or "",
         context=TaskContext(),
         metadata=metadata,

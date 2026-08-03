@@ -23,6 +23,17 @@ from intergrax.llm.messages import ChatMessage, MessageRole
 
 SESSION_HISTORY_SNAPSHOT_HANDLE = "session_history_snapshot"
 
+SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON = (
+    "session_history_snapshot_required_for_ucl"
+)
+
+
+class SessionHistorySnapshotRequiredError(RuntimeError):
+    reason = SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
+
+    def __init__(self) -> None:
+        super().__init__(self.reason)
+
 
 def _require_non_empty_str(
     value: object,

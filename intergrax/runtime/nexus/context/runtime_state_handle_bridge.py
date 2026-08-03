@@ -7,11 +7,11 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.runtime.nexus.context.context_handle_rows import ltm_entry_row, retrieved_chunk_row
+from intergrax.context.session_history import SessionHistorySnapshotRequiredError
 from intergrax.runtime.nexus.context.provider_handles import (
     ATTACHMENT_SUMMARIES_METADATA_KEY,
     LTM_ENTRIES_METADATA_KEY,
     RAG_CHUNKS_METADATA_KEY,
-    SESSION_HISTORY_MESSAGES_METADATA_KEY,
     SESSION_CONTEXT_REVISION_METADATA_KEY,
     SYSTEM_INSTRUCTIONS_METADATA_KEY,
     TOOL_OUTPUT_BLOCKS_METADATA_KEY,
@@ -49,11 +49,11 @@ def extract_provider_metadata_from_runtime_state(state: RuntimeState) -> dict[st
             from intergrax.context.session_history import SESSION_HISTORY_SNAPSHOT_HANDLE
 
             metadata[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
+            revision_id = state.request.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY)
+            if revision_id:
+                metadata[SESSION_CONTEXT_REVISION_METADATA_KEY] = revision_id
         else:
-            metadata[SESSION_HISTORY_MESSAGES_METADATA_KEY] = list(state.base_history)
-        revision_id = state.request.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY)
-        if revision_id:
-            metadata[SESSION_CONTEXT_REVISION_METADATA_KEY] = revision_id
+            raise SessionHistorySnapshotRequiredError()
 
     vector_hits = state.request.metadata.get("session_vector_hits")
     if isinstance(vector_hits, list) and vector_hits:
