@@ -20,6 +20,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Platform capability audit / architecture stop gate | [Mandatory platform capability audit and architecture stop gate](#mandatory-platform-capability-audit-and-architecture-stop-gate) · [`PRODUCT_FIRST_MVP.md`](../../../docs/plan/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate) |
 | Knowledge Intake / async ingestion (canonical) | [Channel-neutral Knowledge Intake and asynchronous ingestion](#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | Hybrid knowledge access (indexed + live) | [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
+| Hybrid Ask (unified evidence + live execution) | [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md) |
 | What is frontend vs backend | §4 |
 | Solution + trust zones | §5 |
 | Agent roster | §6 |
@@ -581,6 +582,8 @@ LKW is not defined solely by RAG. The target product combines:
 - **Indexed Sources** — durable workspace knowledge ingested through Knowledge Intake;
 - **Live Access Bindings** — workspace-scoped, read-only, allowlisted query-time provider capabilities;
 - **Hybrid Ask** — one grounded answer from normalized indexed and live **Evidence Items** with unified provenance.
+
+**Current vs target Ask:** Today, `WorkspaceAskService` implements **indexed-only** Ask (`local.workspace.search` → `WorkspaceSearchHitV1` → `AskAnswerAssembler`). Hybrid Ask — combining indexed RAG with authorized read-only live provider evidence in one response — is **not implemented**. Target contract: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md) (**READY_FOR_REVIEW**, task `LKW-HYBRID-ASK-ARCH-1`). Implementation block `LKW-HYBRID-ASK-1` is **BLOCKED_ON_ARCH_ACCEPTANCE**.
 
 **Knowledge Intake** introduces or synchronizes durable indexed knowledge. **Live Access Binding** authorizes bounded query-time reads. Live provider results do not automatically become Documents.
 

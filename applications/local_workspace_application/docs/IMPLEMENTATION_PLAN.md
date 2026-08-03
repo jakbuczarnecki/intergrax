@@ -8,6 +8,7 @@
 **Conversation context architecture:** [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md)
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
 **Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
+**Hybrid Ask architecture:** [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md)
 **External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)  
 **Historical full plan:** [`archive/IMPLEMENTATION_PLAN_2026-07-22.md`](archive/IMPLEMENTATION_PLAN_2026-07-22.md)
 
@@ -17,13 +18,15 @@ Current milestone: LKW MVP — Hybrid Knowledge Workspace
 Last accepted implementation:
   LKW-MODEL-RUNTIME-1
   including C1–C4 corrections and evidence v2
+  LKW-KNOWLEDGE-ACCESS-1 — ACCEPTED / CLOSED
 
 Architecture:
   LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1 — ACCEPTED
   LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
+  LKW-HYBRID-ASK-ARCH-1 — READY_FOR_REVIEW
 
-Next implementation:
-  LKW-KNOWLEDGE-ACCESS-1 — NEXT
+Next implementation (blocked):
+  LKW-HYBRID-ASK-1 — BLOCKED_ON_ARCH_ACCEPTANCE
 
 Platform next (vendor knowledge):
   SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
@@ -160,8 +163,9 @@ LKW-LIVE-PLATFORM-PROOF-1
 | Block | One-sentence outcome | Status |
 |---|---|---|
 | `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **ACCEPTED** |
-| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **NEXT** |
-| `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **PLANNED** |
+| `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **ACCEPTED / CLOSED** |
+| `LKW-HYBRID-ASK-ARCH-1` | Unified evidence, query orchestration and read-only live execution contract frozen for review | **READY_FOR_REVIEW** |
+| `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **BLOCKED_ON_ARCH_ACCEPTANCE** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts | **PLANNED** |
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
@@ -364,7 +368,7 @@ Provider switch may require application restart. Conversation LLM and embedding 
 
 **One-sentence outcome:** A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials. All user-managed product configuration that must survive restart is durable; tenant Connections are stored in a platform-owned durable Connection Catalog with `SecretsStore`-owned credentials and runtime registry rehydration.
 
-**Status:** **NEXT** (`1B` is the next internal slice).
+**Status:** **ACCEPTED / CLOSED**.
 
 Expected capabilities: durable tenant Connection catalog with restart-safe rehydration; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
@@ -401,29 +405,44 @@ Expected capabilities: durable tenant Connection catalog with restart-safe rehyd
 
 Do not claim that connector-management actions are already implemented.
 
-### 7.3 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
+### 7.3 `LKW-HYBRID-ASK-ARCH-1` — Hybrid Ask architecture contract
+
+**One-sentence outcome:** Freeze the production-grade architecture and implementation contract for combining indexed RAG evidence with authorized read-only live provider evidence in one grounded Workspace Ask response with unified provenance, strict policy enforcement and no automatic persistence of live result bodies.
+
+**Status:** **READY_FOR_REVIEW**.
+
+Canonical contract: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md).
+
+### 7.4 `LKW-HYBRID-ASK-1` — Hybrid Ask with unified provenance
 
 **One-sentence outcome:** One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance.
 
-**Status:** **PLANNED**.
+**Status:** **BLOCKED_ON_ARCH_ACCEPTANCE** (`LKW-HYBRID-ASK-ARCH-1` must be accepted first).
 
-Microsoft Graph remains an appropriate durable synchronization and exact-read connector proof because its low-level reads and several Vendor Knowledge adapters are implemented.
-
-Jira or Confluence is the preferred first provider-neutral live search/read capability proof because the existing integrations already expose operational search and exact-read methods.
-
-A Microsoft Graph live search capability requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+Architecture: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md). First bounded live provider proof: **Jira** project-scoped issue read (`search_knowledge_issues`, `get_knowledge_issue`). Confluence deferred (inventory listing / arbitrary query paths). Microsoft Graph live search requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
 
 Initial live access is read-only.
 
-**Acceptance gate:** Must prove that indexed evidence and live evidence can be combined; live evidence is **not** automatically persisted; each evidence item retains mode and provenance.
+**Internal decomposition:**
 
-### 7.4 `LKW-CONVERSATIONAL-FRONTEND-1` — Natural-language execution and Slack cutover
+| Slice | Title | Status |
+|-------|-------|--------|
+| `1A` | Unified evidence, provenance, citation and Ask Run V2 contracts | **PLANNED** |
+| `1B` | Query Policy V2 with `hybrid`, effective-policy resolution and Evidence Plan validation | **PLANNED** |
+| `1C` | Provider-neutral Live Capability Executor + first Jira bounded capability | **PLANNED** |
+| `1D` | Knowledge Query Orchestrator (`indexed_only`, `live_only`, `hybrid`) | **PLANNED** |
+| `1E` | `WorkspaceAskService`, Ask repository and HTTP integration | **PLANNED** |
+| `1F` | Bounded hybrid acceptance proof | **PLANNED** |
+
+**Acceptance gate:** Must prove that indexed evidence and live evidence can be combined; live evidence is **not** automatically persisted; each evidence item retains mode and provenance; at least one indexed and one live citation in one grounded answer.
+
+### 7.5 `LKW-CONVERSATIONAL-FRONTEND-1` — Natural-language execution and Slack cutover
 
 **One-sentence outcome:** A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities.
 
 **Status:** **PLANNED**. Internal slices: `CONV-1B` (resolver + executor), `CONV-1C` (Slack mixed-message cutover). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
 
-### 7.5 `LKW-VENDOR-ACCESS-COLLABORATION-1`
+### 7.6 `LKW-VENDOR-ACCESS-COLLABORATION-1`
 
 **One-sentence outcome:** LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts.
 
@@ -454,9 +473,9 @@ A Microsoft Graph live search capability requires a separate bounded contract an
 8. converge at Hybrid Ask.
 ```
 
-The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next task remains `LKW-KNOWLEDGE-ACCESS-1`. Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
+The immediate current platform task in the Slack vertical is complete (`SLACK-KNOWLEDGE-FOUNDATION-1` **DONE**). `LKW-SLACK-CONNECTED-SOURCE-1` is **IN_PROGRESS / CHANGES_REQUIRED** (`LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` — **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction). Next Slack-vertical implementation task is `LKW-CONVERSATION-CONTEXT-1`. Global LKW product next implementation block is `LKW-HYBRID-ASK-1` (**BLOCKED_ON_ARCH_ACCEPTANCE** until `LKW-HYBRID-ASK-ARCH-1` is accepted). Google Workspace knowledge architecture is frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` **READY_FOR_REVIEW**); Google runtime (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) is **PLANNED** and gated on `LKW-SLACK-KNOWLEDGE-PROOF-1` becoming **ACCEPTED** (currently **PLANNED**). Microsoft Graph Teams Chat adapter is **DONE**; Calendar adapter (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **PLANNED** after the first accepted Google Workspace LKW proof.
 
-### 7.6 `LKW-VENDOR-ACCESS-DATA-1`
+### 7.7 `LKW-VENDOR-ACCESS-DATA-1`
 
 **One-sentence outcome:** LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask.
 
@@ -464,13 +483,13 @@ The immediate current platform task in the Slack vertical is complete (`SLACK-KN
 
 **Acceptance gate:** Must state per resource whether it supports durable materialization, RAG indexing, live query, or a documented subset. Do not assume Power BI, Databricks and Atlan should all be copied into RAG.
 
-### 7.7 `LKW-KNOWLEDGE-LIFECYCLE-1`
+### 7.8 `LKW-KNOWLEDGE-LIFECYCLE-1`
 
 **One-sentence outcome:** Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data.
 
 **Status:** **PLANNED**. Consolidates former `1C`, `1D`, `1E` slices (§8–§10).
 
-### 7.8 `LKW-LIVE-PLATFORM-PROOF-1` — Complete demonstrable platform proof
+### 7.9 `LKW-LIVE-PLATFORM-PROOF-1` — Complete demonstrable platform proof
 
 **One-sentence outcome:** A live demonstration shows Slack conversations, Google Docs/Sheets/Calendar (when implemented), Microsoft 365 sources, local files, Web URLs, indexed vendor knowledge, live vendor queries, unified citations and Ollama/vLLM portability in one LKW workspace.
 
@@ -773,17 +792,23 @@ LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1
 HYBRID KNOWLEDGE ACCESS AND LIVE PLATFORM PROOF ROADMAP
 → ACCEPTED
 
+LKW-HYBRID-ASK-ARCH-1
+UNIFIED EVIDENCE, QUERY ORCHESTRATION AND READ-ONLY LIVE EXECUTION
+→ READY_FOR_REVIEW
+
 LAST ACCEPTED IMPLEMENTATION:
 LKW-MODEL-RUNTIME-1
 OLLAMA / vLLM END-TO-END PORTABILITY
 → ACCEPTED (including C1–C4 corrections and evidence v2)
 
-NEXT:
 LKW-KNOWLEDGE-ACCESS-1
 → Connections, Remote Resources, Indexed Sources, Live Access Bindings and Query Policy
+→ ACCEPTED / CLOSED
 
-THEN (functional blocks):
+NEXT (blocked):
 LKW-HYBRID-ASK-1 → RAG + live with unified provenance
+→ BLOCKED_ON_ARCH_ACCEPTANCE
+→ internal slices 1A–1F (see §7.4)
 → LKW-CONVERSATIONAL-FRONTEND-1 (CONV-1B + CONV-1C internal)
 → LKW-VENDOR-ACCESS-COLLABORATION-1
 → LKW-VENDOR-ACCESS-DATA-1
@@ -797,6 +822,10 @@ ARCHITECTURE DOC:
 KNOWLEDGE_ACCESS_ARCHITECTURE.md — indexed/live/hybrid, Connections,
 Live Access Bindings, Workspace Knowledge Configuration, Query Policy,
 Knowledge Query Orchestrator, Evidence Items, MCP boundary, security.
+
+HYBRID_ASK_ARCHITECTURE.md — unified evidence, orchestrator, live executor,
+retention, Ask Run V2, implementation slices 1A–1F.
+→ READY_FOR_REVIEW
 
 Conversational planning (CONV-1A):
 - LLM produces a strict semantic draft (`ConversationInteractionDraft`).
