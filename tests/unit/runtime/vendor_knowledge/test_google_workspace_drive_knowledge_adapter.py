@@ -610,6 +610,54 @@ def _assert_invalid_descriptor_boundary(
         assert secret not in f"{err!r} {err.safe_message}"
 
 
+def _assert_canonical_error_identity(err: VendorKnowledgeError) -> None:
+    assert err.provider_id == GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID
+    assert err.source_kind == GOOGLE_DRIVE_SOURCE_KIND
+
+
+def _assert_invalid_cursor_boundary(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    fake: _FakeGoogleWorkspaceIntegration,
+) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert err.retryable is False
+    _assert_canonical_error_identity(err)
+    assert fake.start_token_calls == []
+    assert fake.inventory_calls == []
+    assert fake.change_calls == []
+    _assert_no_secrets_in_rendered(f"{err!r} {err.safe_message}")
+
+
+def _assert_invalid_scope_boundary(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    fake: _FakeGoogleWorkspaceIntegration,
+) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert err.retryable is False
+    _assert_canonical_error_identity(err)
+    assert fake.start_token_calls == []
+    assert fake.inventory_calls == []
+    assert fake.change_calls == []
+    assert fake.content_calls == []
+    _assert_no_secrets_in_rendered(f"{err!r} {err.safe_message}")
+
+
+def _assert_invalid_provider_response_boundary(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    fake: _FakeGoogleWorkspaceIntegration,
+) -> None:
+    err = exc_info.value
+    assert err.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert err.retryable is False
+    _assert_canonical_error_identity(err)
+    _assert_no_secrets_in_rendered(f"{err!r} {err.safe_message}")
+
+
 async def _fetch_content_invalid_descriptor(
     item: KnowledgeItemDescriptor,
 ) -> pytest.ExceptionInfo[VendorKnowledgeError]:
@@ -627,6 +675,7 @@ async def _fetch_content_invalid_descriptor(
         )
     assert fake.content_calls == []
     _assert_invalid_descriptor_boundary(exc_info)
+    _assert_canonical_error_identity(exc_info.value)
     return exc_info
 
 
@@ -2054,3 +2103,701 @@ async def test_public_objects_do_not_leak_secrets() -> None:
     )
     _assert_no_secrets_in_rendered(repr(err))
     _assert_no_secrets_in_rendered(str(err))
+
+
+class _KnowledgeSourceRefSubclass(KnowledgeSourceRef):
+    pass
+
+
+class _KnowledgeCursorSubclass(KnowledgeCursor):
+    pass
+
+
+class _KnowledgeItemDescriptorSubclass(KnowledgeItemDescriptor):
+    pass
+
+
+class _GoogleDriveItemPageSubclass(GoogleDriveItemPage):
+    pass
+
+
+class _GoogleDriveChangePageSubclass(GoogleDriveChangePage):
+    pass
+
+
+class _GoogleWorkspacePageTokenSubclass(GoogleWorkspacePageToken):
+    pass
+
+
+class _HostileStr(str):
+  def __str__(self) -> str:
+    raise RuntimeError("hostile str")
+
+
+class _HostileDatetime(datetime):
+  def isoformat(self) -> str:
+    raise RuntimeError("hostile datetime")
+
+
+def _valid_changes_cursor_value() -> str:
+    return _changes_cursor().value
+
+
+@pytest.mark.parametrize(
+    "cursor",
+    [
+        KnowledgeCursor(value="!!!!" + _valid_changes_cursor_value(), version=GOOGLE_DRIVE_CURSOR_VERSION),
+        KnowledgeCursor(
+            value=_valid_changes_cursor_value()[:20] + "!!!!" + _valid_changes_cursor_value()[24:],
+            version=GOOGLE_DRIVE_CURSOR_VERSION,
+        ),
+        KnowledgeCursor(value=_valid_changes_cursor_value() + "!!!!", version=GOOGLE_DRIVE_CURSOR_VERSION),
+        KnowledgeCursor(
+            value=_valid_changes_cursor_value() + "=",
+            version=GOOGLE_DRIVE_CURSOR_VERSION,
+        ),
+        KnowledgeCursor(
+            value="A" * 24_577,
+            version=GOOGLE_DRIVE_CURSOR_VERSION,
+        ),
+        KnowledgeCursor.model_construct(version=GOOGLE_DRIVE_CURSOR_VERSION),
+        KnowledgeCursor.model_construct(value=_valid_changes_cursor_value()),
+        _KnowledgeCursorSubclass(value=_valid_changes_cursor_value(), version=GOOGLE_DRIVE_CURSOR_VERSION),
+    ],
+)
+async def test_cursor_malleability_rejected_before_provider_calls(
+    cursor: KnowledgeCursor,
+) -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=cursor,
+            limit=50,
+        )
+    _assert_invalid_cursor_boundary(exc_info, fake=fake)
+
+
+async def test_noncanonical_cursor_json_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    payload = {
+        "schema_version": GOOGLE_DRIVE_CURSOR_VERSION,
+        "scope_kind": "user",
+        "drive_id": None,
+        "phase": "changes",
+        "inventory_page_token": None,
+        "change_page_token": _SECRET_CHANGE,
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(", ", ": ")).encode("utf-8")
+    encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    cursor = KnowledgeCursor(value=encoded, version=GOOGLE_DRIVE_CURSOR_VERSION)
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=cursor,
+            limit=50,
+        )
+    _assert_invalid_cursor_boundary(exc_info, fake=fake)
+
+
+async def test_invalid_start_token_missing_value() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = object.__new__(GoogleWorkspacePageToken)
+    fake = _FakeGoogleWorkspaceIntegration(start_token=bad_token)  # type: ignore[arg-type]
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+    assert len(fake.start_token_calls) == 1
+    assert fake.inventory_calls == []
+
+
+async def test_invalid_start_token_subclass() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = _GoogleWorkspacePageTokenSubclass(value=_SECRET_START)
+    fake = _FakeGoogleWorkspaceIntegration(start_token=bad_token)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+    assert len(fake.start_token_calls) == 1
+    assert fake.inventory_calls == []
+
+
+async def test_invalid_start_token_non_str_value() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = object.__new__(GoogleWorkspacePageToken)
+    object.__setattr__(bad_token, "value", 123)
+    fake = _FakeGoogleWorkspaceIntegration(start_token=bad_token)  # type: ignore[arg-type]
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+    assert len(fake.start_token_calls) == 1
+    assert fake.inventory_calls == []
+
+
+async def test_inventory_page_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = _GoogleDriveItemPageSubclass(items=(_drive_item(),), next_page_token=None)
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])  # type: ignore[list-item]
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_inventory_page_integer_next_token_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = GoogleDriveItemPage.model_construct(
+        items=(_drive_item(),),
+        next_page_token=123,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_inventory_page_string_next_token_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = GoogleDriveItemPage.model_construct(
+        items=(_drive_item(),),
+        next_page_token="token",
+    )
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_inventory_page_nested_item_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+
+    class _ItemSubclass(GoogleDriveItem):
+        pass
+
+    page = GoogleDriveItemPage.model_construct(
+        items=(_ItemSubclass.model_construct(remote_id="x", scope=_USER_SCOPE),),
+        next_page_token=None,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_inventory_page_malformed_nested_item_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = GoogleDriveItemPage.model_construct(
+        items=(GoogleDriveItem.model_construct(remote_id="x"),),
+        next_page_token=None,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_change_page_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = _GoogleDriveChangePageSubclass(
+        changes=(),
+        next_page_token=GoogleWorkspacePageToken(value=_SECRET_CHANGE),
+        new_start_page_token=None,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])  # type: ignore[list-item]
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_change_page_integer_next_token_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = GoogleDriveChangePage.model_construct(
+        changes=(),
+        next_page_token=123,
+        new_start_page_token=None,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_change_page_integer_new_start_token_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    page = GoogleDriveChangePage.model_construct(
+        changes=(),
+        next_page_token=None,
+        new_start_page_token=456,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_change_page_nested_item_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+
+    class _ItemSubclass(GoogleDriveItem):
+        pass
+
+    item = _ItemSubclass.model_construct(remote_id="changed-1", scope=_USER_SCOPE)
+    page = GoogleDriveChangePage.model_construct(
+        changes=(
+            GoogleDriveChange.model_construct(
+                file_id="changed-1",
+                scope=_USER_SCOPE,
+                removed=False,
+                changed_at=_MODIFIED,
+                item=item,
+            ),
+        ),
+        next_page_token=None,
+        new_start_page_token=GoogleWorkspacePageToken(value=_SECRET_NEW_START),
+    )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_change_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+
+    class _ChangeSubclass(GoogleDriveChange):
+        pass
+
+    page = GoogleDriveChangePage.model_construct(
+        changes=(
+            _ChangeSubclass.model_construct(
+                file_id="changed-1",
+                scope=_USER_SCOPE,
+                removed=False,
+                changed_at=_MODIFIED,
+                item=_drive_item(remote_id="changed-1"),
+            ),
+        ),
+        next_page_token=None,
+        new_start_page_token=GoogleWorkspacePageToken(value=_SECRET_NEW_START),
+    )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake)
+
+
+async def test_plain_object_source_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(integration=_integration(fake), source=object())  # type: ignore[arg-type]
+    _assert_invalid_scope_boundary(exc_info, fake=fake)
+
+
+async def test_source_subclass_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(
+            integration=_integration(fake),
+            source=_KnowledgeSourceRefSubclass.model_construct(
+                tenant_id="tenant-1",
+                provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+                scope=KnowledgeSourceScope.model_construct(
+                    remote_scope_id=GOOGLE_DRIVE_USER_SCOPE_ID,
+                    remote_scope_type=GOOGLE_DRIVE_USER_SCOPE_TYPE,
+                    safe_display_name="My Drive",
+                    parameters={},
+                ),
+            ),
+        )
+    _assert_invalid_scope_boundary(exc_info, fake=fake)
+
+
+async def test_source_missing_model_field_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(
+            integration=_integration(fake),
+            source=KnowledgeSourceRef.model_construct(
+                tenant_id="tenant-1",
+                provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            ),
+        )
+    _assert_invalid_scope_boundary(exc_info, fake=fake)
+
+
+async def test_source_malformed_nested_scope_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(
+            integration=_integration(fake),
+            source=KnowledgeSourceRef.model_construct(
+                tenant_id="tenant-1",
+                provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+                scope=KnowledgeSourceScope.model_construct(
+                    remote_scope_id=GOOGLE_DRIVE_USER_SCOPE_ID,
+                    remote_scope_type=GOOGLE_DRIVE_USER_SCOPE_TYPE,
+                ),
+            ),
+        )
+    _assert_invalid_scope_boundary(exc_info, fake=fake)
+
+
+async def test_source_hostile_display_name_rejected() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    source = KnowledgeSourceRef.model_construct(
+        tenant_id="tenant-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+        scope=KnowledgeSourceScope.model_construct(
+            remote_scope_id=GOOGLE_DRIVE_USER_SCOPE_ID,
+            remote_scope_type=GOOGLE_DRIVE_USER_SCOPE_TYPE,
+            safe_display_name=_HostileStr("My Drive"),
+            parameters={},
+        ),
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(integration=_integration(fake), source=source)
+    _assert_invalid_scope_boundary(exc_info, fake=fake)
+    assert "hostile" not in f"{exc_info.value!r} {exc_info.value.safe_message}"
+
+
+async def test_descriptor_subclass_rejected() -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    bad = _KnowledgeItemDescriptorSubclass.model_construct(
+        identity=descriptor.identity,
+        revision=descriptor.revision,
+        title=descriptor.title,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=descriptor.provenance,
+        metadata=descriptor.metadata,
+    )
+    await _fetch_content_invalid_descriptor(bad)
+
+
+async def test_descriptor_missing_nested_field_rejected() -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    bad = KnowledgeItemDescriptor.model_construct(
+        identity=descriptor.identity,
+        revision=descriptor.revision,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=descriptor.provenance,
+        metadata=descriptor.metadata,
+    )
+    await _fetch_content_invalid_descriptor(bad)
+
+
+async def test_descriptor_hostile_created_at_rejected() -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    metadata = dict(descriptor.metadata or {})
+    metadata["created_at"] = _HostileDatetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    bad = KnowledgeItemDescriptor.model_construct(
+        identity=descriptor.identity,
+        revision=descriptor.revision,
+        title=descriptor.title,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=descriptor.provenance,
+        metadata=metadata,
+    )
+    exc_info = await _fetch_content_invalid_descriptor(bad)
+    assert "hostile" not in f"{exc_info.value!r} {exc_info.value.safe_message}"
+
+
+async def test_descriptor_parent_ids_int_rejected() -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    metadata = dict(descriptor.metadata or {})
+    metadata["parent_ids"] = [1]
+    bad = KnowledgeItemDescriptor.model_construct(
+        identity=descriptor.identity,
+        revision=descriptor.revision,
+        title=descriptor.title,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=descriptor.provenance,
+        metadata=metadata,
+    )
+    await _fetch_content_invalid_descriptor(bad)
+
+
+async def test_descriptor_parent_ids_hostile_str_rejected() -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    metadata = dict(descriptor.metadata or {})
+    metadata["parent_ids"] = [_HostileStr("parent-1")]
+    bad = KnowledgeItemDescriptor.model_construct(
+        identity=descriptor.identity,
+        revision=descriptor.revision,
+        title=descriptor.title,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=descriptor.provenance,
+        metadata=metadata,
+    )
+    exc_info = await _fetch_content_invalid_descriptor(bad)
+    assert "hostile" not in f"{exc_info.value!r} {exc_info.value.safe_message}"
+
+
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "logical_key",
+        "etag",
+        "content_hash",
+        "acl_hash",
+        "safe_locator",
+    ],
+)
+async def test_descriptor_fixed_fields_rejected(field_name: str) -> None:
+    descriptor = _descriptor_for_item(_drive_item())
+    identity = descriptor.identity
+    revision = descriptor.revision
+    provenance = descriptor.provenance
+    if field_name == "logical_key":
+        identity = KnowledgeItemIdentity(
+            remote_id=identity.remote_id,
+            parent_remote_id=identity.parent_remote_id,
+            logical_key="fixed",
+        )
+    elif field_name == "etag":
+        revision = KnowledgeItemRevision(
+            version=revision.version,
+            etag="fixed",
+            content_hash=revision.content_hash,
+            acl_hash=revision.acl_hash,
+            updated_at=revision.updated_at,
+        )
+    elif field_name == "content_hash":
+        revision = KnowledgeItemRevision(
+            version=revision.version,
+            etag=revision.etag,
+            content_hash="fixed",
+            acl_hash=revision.acl_hash,
+            updated_at=revision.updated_at,
+        )
+    elif field_name == "acl_hash":
+        revision = KnowledgeItemRevision(
+            version=revision.version,
+            etag=revision.etag,
+            content_hash=revision.content_hash,
+            acl_hash="fixed",
+            updated_at=revision.updated_at,
+        )
+    else:
+        provenance = KnowledgeItemProvenance(
+            provider_id=provenance.provider_id,
+            source_kind=provenance.source_kind,
+            remote_id=provenance.remote_id,
+            web_url=provenance.web_url,
+            safe_locator="fixed",
+        )
+    bad = KnowledgeItemDescriptor(
+        identity=identity,
+        revision=revision,
+        title=descriptor.title,
+        item_type=descriptor.item_type,
+        content_mode=descriptor.content_mode,
+        content_available=descriptor.content_available,
+        provenance=provenance,
+        metadata=descriptor.metadata,
+    )
+    await _fetch_content_invalid_descriptor(bad)
+
+
+async def test_fetch_permissions_malformed_descriptor_invalid_scope() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_permissions(
+            integration=_integration(fake),
+            source=_source(),
+            item=KnowledgeItemDescriptor.model_construct(),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    assert fake.content_calls == []
+    _assert_canonical_error_identity(exc_info.value)
+
+
+async def test_wrong_integration_uses_canonical_identity() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(
+            integration=object(),
+            source=_source(provider_id="jira", source_kind="issues"),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    _assert_canonical_error_identity(exc_info.value)
+
+
+async def test_invalid_scope_uses_canonical_identity() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration()
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.inspect_scope(
+            integration=_integration(fake),
+            source=_source(provider_id="jira", source_kind="issues"),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+    _assert_canonical_error_identity(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    ("returned_item", "content_data"),
+    [
+        (
+            _drive_item(
+                kind=GoogleDriveItemKind.NATIVE_DOCUMENT,
+                mime_type="application/vnd.google-apps.document",
+                size_bytes=0,
+                md5_checksum=None,
+            ),
+            b"exported-docx",
+        ),
+        (_drive_item(mime_type="application/octet-stream"), b"x"),
+        (_drive_item(size_bytes=999), b"x"),
+        (_drive_item(md5_checksum="other"), b"x"),
+        (_drive_item(head_revision_id="other-rev"), b"x"),
+        (_drive_item(can_download=False), b"x"),
+    ],
+)
+async def test_fetch_content_revision_mismatch_rejected(
+    returned_item: GoogleDriveItem,
+    content_data: bytes,
+) -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    requested = _drive_item()
+    returned = returned_item.model_copy(
+        update={
+            "remote_id": requested.remote_id,
+            "modified_at": requested.modified_at,
+            "version": requested.version,
+        }
+    )
+    profile = resolve_google_drive_content_profile(returned)
+    bad_content = GoogleDriveFileContent.model_construct(
+        item=returned,
+        mode=profile.mode,
+        content_mime_type=profile.content_mime_type,
+        data=content_data,
+        size_bytes=len(content_data),
+        content_hash=hashlib.sha256(content_data).hexdigest(),
+    )
+    fake = _FakeGoogleWorkspaceIntegration(
+        content_by_id={
+            requested.remote_id: bad_content,
+        }
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=_descriptor_for_item(requested),
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    _assert_canonical_error_identity(exc_info.value)
+
+
+async def test_fetch_content_tolerates_mutable_metadata() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    requested = _drive_item()
+    returned = _drive_item(
+        name="changed-name",
+        parent_ids=("other-parent",),
+        web_view_link="https://example.com/changed",
+    )
+    fake = _FakeGoogleWorkspaceIntegration(
+        content_by_id={
+            requested.remote_id: _file_content(item=returned, data=b"hello"),
+        }
+    )
+    content = await adapter.fetch_content(
+        integration=_integration(fake),
+        source=_source(),
+        item=_descriptor_for_item(requested),
+    )
+    assert content.binary == b"hello"

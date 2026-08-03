@@ -100,6 +100,8 @@ _INTEGRATION_REQUIRED_MESSAGE = (
 
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _MAX_CURSOR_TOKEN_LEN = 4096
+_MAX_ENCODED_CURSOR_LENGTH = 24_576
+_CURSOR_ALPHABET = re.compile(r"^[A-Za-z0-9_-]+$")
 _PROVIDER_PAGE_LIMIT = 200
 
 _METADATA_KEYS: frozenset[str] = frozenset(
@@ -232,7 +234,7 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         integration: object,
         source: KnowledgeSourceRef,
     ) -> KnowledgeScopeInfo:
-        self._require_google_integration(integration=integration, source=source)
+        self._require_google_integration(integration=integration)
         validated_source = self._validate_source(source)
         return KnowledgeScopeInfo(
             source=validated_source,
@@ -248,10 +250,7 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         cursor: KnowledgeCursor | None,
         limit: int,
     ) -> KnowledgePage:
-        google_integration = self._require_google_integration(
-            integration=integration,
-            source=source,
-        )
+        google_integration = self._require_google_integration(integration=integration)
         validated_source = self._validate_source(source)
         scope = self._source_to_scope(validated_source)
         provider_limit = self._validate_limit(limit)
@@ -284,28 +283,14 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         source: KnowledgeSourceRef,
         item: KnowledgeItemDescriptor,
     ) -> KnowledgeContent:
-        google_integration = self._require_google_integration(
-            integration=integration,
-            source=source,
-        )
+        google_integration = self._require_google_integration(integration=integration)
         validated_source = self._validate_source(source)
         scope = self._source_to_scope(validated_source)
-        try:
-            provider_item = self._descriptor_to_provider_item(
-                item,
-                source=validated_source,
-                scope=scope,
-            )
-        except VendorKnowledgeError:
-            raise
-        except (ValueError, TypeError, AttributeError, ValidationError):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_DESCRIPTOR_MESSAGE,
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            ) from None
+        provider_item = self._descriptor_to_provider_item(
+            item,
+            source=validated_source,
+            scope=scope,
+        )
         result = await self._invoke_integration(
             lambda: google_integration.read_drive_file_content(
                 item=provider_item,
@@ -313,16 +298,7 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             ),
             cursor_in_use=False,
         )
-        try:
-            self._validate_fetched_content(result, provider_item=provider_item)
-        except (ValueError, TypeError, AttributeError, ValidationError):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message=_INVALID_PROVIDER_RESPONSE_MESSAGE,
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            ) from None
+        self._validate_fetched_content(result, provider_item=provider_item)
         return KnowledgeContent(
             mode=KnowledgeContentMode.BINARY,
             binary=result.data,
@@ -337,9 +313,10 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         source: KnowledgeSourceRef,
         item: KnowledgeItemDescriptor,
     ) -> KnowledgePermissions:
-        self._require_google_integration(integration=integration, source=source)
+        self._require_google_integration(integration=integration)
         validated_source = self._validate_source(source)
-        self._validate_item_provenance(item, source=validated_source)
+        reconstructed = self._reconstruct_descriptor(item)
+        self._validate_item_provenance(reconstructed, source=validated_source)
         raise VendorKnowledgeError(
             code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
             safe_message=_UNSUPPORTED_PERMISSIONS_MESSAGE,
@@ -555,45 +532,85 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             has_more=False,
         )
 
+    def _invalid_scope_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+            safe_message=_INVALID_SCOPE_MESSAGE,
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            retryable=False,
+        )
+
+    def _invalid_cursor_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+            safe_message=_INVALID_CURSOR_MESSAGE,
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            retryable=False,
+        )
+
+    def _invalid_provider_response_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+            safe_message=_INVALID_PROVIDER_RESPONSE_MESSAGE,
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            retryable=False,
+        )
+
+    def _invalid_descriptor_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_SCOPE,
+            safe_message=_INVALID_DESCRIPTOR_MESSAGE,
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            retryable=False,
+        )
+
+    def _integration_required_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+            safe_message=_INTEGRATION_REQUIRED_MESSAGE,
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            source_kind=GOOGLE_DRIVE_SOURCE_KIND,
+            retryable=False,
+        )
+
     def _require_google_integration(
         self,
-        *,
         integration: object,
-        source: KnowledgeSourceRef,
     ) -> GoogleWorkspaceCollaborationSuiteIntegration:
         if not isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message=_INTEGRATION_REQUIRED_MESSAGE,
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            )
+            raise self._integration_required_error()
         return integration
 
-    def _reconstruct_source(self, source: KnowledgeSourceRef) -> KnowledgeSourceRef:
-        if type(source) is not KnowledgeSourceRef:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_SCOPE_MESSAGE,
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            )
+    def _reconstruct_source(self, source: object) -> KnowledgeSourceRef:
         try:
+            if type(source) is not KnowledgeSourceRef:
+                raise ValueError("invalid source type")
+            scope_raw = source.scope
+            if type(scope_raw.safe_display_name) is not str:
+                raise ValueError("invalid safe_display_name")
             snapshot = source.model_dump(mode="python")
             scope_data = snapshot.get("scope")
             if isinstance(scope_data, dict):
                 snapshot["scope"] = KnowledgeSourceScope(**scope_data)
             return KnowledgeSourceRef(**snapshot)
-        except (ValueError, TypeError, ValidationError):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_SCOPE_MESSAGE,
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            ) from None
+        except Exception:
+            raise self._invalid_scope_error() from None
+
+    def _copy_page_token(self, value: object) -> GoogleWorkspacePageToken:
+        try:
+            if type(value) is not GoogleWorkspacePageToken:
+                raise ValueError("invalid page token type")
+            token_value = value.value
+            return GoogleWorkspacePageToken(value=token_value)
+        except Exception:
+            raise self._invalid_provider_response_error() from None
+
+    def _page_token_value(self, token: object) -> str:
+        return self._copy_page_token(token).value
 
     def _validate_source(self, source: KnowledgeSourceRef) -> KnowledgeSourceRef:
         reconstructed = self._reconstruct_source(source)
@@ -602,52 +619,24 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             or reconstructed.integration_kind != self.integration_kind
             or reconstructed.source_kind != self.source_kind
         ):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_SCOPE_MESSAGE,
-                provider_id=reconstructed.provider_id,
-                source_kind=reconstructed.source_kind,
-                retryable=False,
-            )
+            raise self._invalid_scope_error()
         scope = reconstructed.scope
+        if type(scope.safe_display_name) is not str:
+            raise self._invalid_scope_error()
         if scope.remote_scope_type not in {
             GOOGLE_DRIVE_USER_SCOPE_TYPE,
             GOOGLE_DRIVE_SHARED_DRIVE_SCOPE_TYPE,
         }:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_SCOPE_MESSAGE,
-                provider_id=reconstructed.provider_id,
-                source_kind=reconstructed.source_kind,
-                retryable=False,
-            )
+            raise self._invalid_scope_error()
         if scope.parameters:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_SCOPE_MESSAGE,
-                provider_id=reconstructed.provider_id,
-                source_kind=reconstructed.source_kind,
-                retryable=False,
-            )
+            raise self._invalid_scope_error()
         if scope.remote_scope_type == GOOGLE_DRIVE_USER_SCOPE_TYPE:
             if scope.remote_scope_id != GOOGLE_DRIVE_USER_SCOPE_ID:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                    safe_message=_INVALID_SCOPE_MESSAGE,
-                    provider_id=reconstructed.provider_id,
-                    source_kind=reconstructed.source_kind,
-                    retryable=False,
-                )
+                raise self._invalid_scope_error()
             try:
                 GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
             except (ValueError, TypeError, ValidationError):
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                    safe_message=_INVALID_SCOPE_MESSAGE,
-                    provider_id=reconstructed.provider_id,
-                    source_kind=reconstructed.source_kind,
-                    retryable=False,
-                ) from None
+                raise self._invalid_scope_error() from None
         else:
             try:
                 GoogleDriveScope(
@@ -655,13 +644,7 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
                     drive_id=scope.remote_scope_id,
                 )
             except (ValueError, TypeError, ValidationError):
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                    safe_message=_INVALID_SCOPE_MESSAGE,
-                    provider_id=reconstructed.provider_id,
-                    source_kind=reconstructed.source_kind,
-                    retryable=False,
-                ) from None
+                raise self._invalid_scope_error() from None
         return reconstructed
 
     def _source_to_scope(self, source: KnowledgeSourceRef) -> GoogleDriveScope:
@@ -703,18 +686,7 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             provenance.provider_id != source.provider_id
             or provenance.source_kind != source.source_kind
         ):
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_SCOPE,
-                safe_message=_INVALID_DESCRIPTOR_MESSAGE,
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            )
-
-    def _page_token_value(self, token: object) -> str:
-        if not isinstance(token, GoogleWorkspacePageToken):
-            raise ValueError("page token must be GoogleWorkspacePageToken")
-        return token.value
+            raise self._invalid_descriptor_error()
 
     def _reconstruct_item_page(
         self,
@@ -722,29 +694,30 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         *,
         scope: GoogleDriveScope,
     ) -> GoogleDriveItemPage:
-        if not isinstance(page, GoogleDriveItemPage):
-            raise ValueError("page must be GoogleDriveItemPage")
         try:
-            snapshot = page.model_dump(mode="python")
-            items_data = snapshot.get("items")
-            if isinstance(items_data, (list, tuple)):
-                rebuilt_items: list[GoogleDriveItem] = []
-                for item_data in items_data:
-                    if isinstance(item_data, dict):
-                        scope_data = item_data.get("scope")
-                        if isinstance(scope_data, dict):
-                            item_data = dict(item_data)
-                            item_data["scope"] = GoogleDriveScope(**scope_data)
-                        rebuilt_items.append(GoogleDriveItem(**item_data))
-                    else:
-                        rebuilt_items.append(item_data)
-                snapshot["items"] = tuple(rebuilt_items)
-            next_token = snapshot.get("next_page_token")
-            if isinstance(next_token, dict):
-                snapshot["next_page_token"] = GoogleWorkspacePageToken(**next_token)
-            elif next_token is not None and not isinstance(next_token, GoogleWorkspacePageToken):
-                snapshot["next_page_token"] = GoogleWorkspacePageToken(value=str(next_token))
-            validated = GoogleDriveItemPage(**snapshot)
+            if type(page) is not GoogleDriveItemPage:
+                raise ValueError("invalid page type")
+            items_raw = page.items
+            if type(items_raw) not in (list, tuple):
+                raise ValueError("invalid items")
+            rebuilt_items: list[GoogleDriveItem] = []
+            for item in items_raw:
+                if type(item) is not GoogleDriveItem:
+                    raise ValueError("invalid item type")
+                item_snapshot = item.model_dump(mode="python")
+                scope_data = item_snapshot.get("scope")
+                if isinstance(scope_data, dict):
+                    item_snapshot["scope"] = GoogleDriveScope(**scope_data)
+                rebuilt_items.append(GoogleDriveItem(**item_snapshot))
+            next_token = None
+            if page.next_page_token is not None:
+                next_token = self._copy_page_token(page.next_page_token)
+            validated = GoogleDriveItemPage(
+                items=tuple(rebuilt_items),
+                next_page_token=next_token,
+            )
+        except VendorKnowledgeError:
+            raise
         except Exception:
             raise ValueError("invalid item page") from None
         seen_remote_ids: set[str] = set()
@@ -762,41 +735,43 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         *,
         scope: GoogleDriveScope,
     ) -> GoogleDriveChangePage:
-        if not isinstance(page, GoogleDriveChangePage):
-            raise ValueError("page must be GoogleDriveChangePage")
         try:
-            snapshot = page.model_dump(mode="python")
-            changes_data = snapshot.get("changes")
-            if isinstance(changes_data, (list, tuple)):
-                rebuilt_changes: list[GoogleDriveChange] = []
-                for change_data in changes_data:
-                    if isinstance(change_data, dict):
-                        change_dict = dict(change_data)
-                        scope_data = change_dict.get("scope")
-                        if isinstance(scope_data, dict):
-                            change_dict["scope"] = GoogleDriveScope(**scope_data)
-                        item_data = change_dict.get("item")
-                        if isinstance(item_data, dict):
-                            item_scope = item_data.get("scope")
-                            if isinstance(item_scope, dict):
-                                item_data = dict(item_data)
-                                item_data["scope"] = GoogleDriveScope(**item_scope)
-                            change_dict["item"] = GoogleDriveItem(**item_data)
-                        rebuilt_changes.append(GoogleDriveChange(**change_dict))
-                    else:
-                        rebuilt_changes.append(change_data)
-                snapshot["changes"] = tuple(rebuilt_changes)
-            next_token = snapshot.get("next_page_token")
-            if isinstance(next_token, dict):
-                snapshot["next_page_token"] = GoogleWorkspacePageToken(**next_token)
-            elif next_token is not None and not isinstance(next_token, GoogleWorkspacePageToken):
-                snapshot["next_page_token"] = GoogleWorkspacePageToken(value=str(next_token))
-            new_start = snapshot.get("new_start_page_token")
-            if isinstance(new_start, dict):
-                snapshot["new_start_page_token"] = GoogleWorkspacePageToken(**new_start)
-            elif new_start is not None and not isinstance(new_start, GoogleWorkspacePageToken):
-                snapshot["new_start_page_token"] = GoogleWorkspacePageToken(value=str(new_start))
-            validated = GoogleDriveChangePage(**snapshot)
+            if type(page) is not GoogleDriveChangePage:
+                raise ValueError("invalid page type")
+            changes_raw = page.changes
+            if type(changes_raw) not in (list, tuple):
+                raise ValueError("invalid changes")
+            rebuilt_changes: list[GoogleDriveChange] = []
+            for change in changes_raw:
+                if type(change) is not GoogleDriveChange:
+                    raise ValueError("invalid change type")
+                change_snapshot = change.model_dump(mode="python")
+                scope_data = change_snapshot.get("scope")
+                if isinstance(scope_data, dict):
+                    change_snapshot["scope"] = GoogleDriveScope(**scope_data)
+                nested_item = change.item
+                if nested_item is not None:
+                    if type(nested_item) is not GoogleDriveItem:
+                        raise ValueError("invalid nested item type")
+                    item_snapshot = nested_item.model_dump(mode="python")
+                    item_scope = item_snapshot.get("scope")
+                    if isinstance(item_scope, dict):
+                        item_snapshot["scope"] = GoogleDriveScope(**item_scope)
+                    change_snapshot["item"] = GoogleDriveItem(**item_snapshot)
+                rebuilt_changes.append(GoogleDriveChange(**change_snapshot))
+            next_token = None
+            if page.next_page_token is not None:
+                next_token = self._copy_page_token(page.next_page_token)
+            new_start = None
+            if page.new_start_page_token is not None:
+                new_start = self._copy_page_token(page.new_start_page_token)
+            validated = GoogleDriveChangePage(
+                changes=tuple(rebuilt_changes),
+                next_page_token=next_token,
+                new_start_page_token=new_start,
+            )
+        except VendorKnowledgeError:
+            raise
         except Exception:
             raise ValueError("invalid change page") from None
         for change in validated.changes:
@@ -917,16 +892,17 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             raise ValueError("timestamp must be timezone-aware")
         return parsed
 
-    def _descriptor_to_provider_item(
-        self,
-        item: KnowledgeItemDescriptor,
-        *,
-        source: KnowledgeSourceRef,
-        scope: GoogleDriveScope,
-    ) -> GoogleDriveItem:
-        if type(item) is not KnowledgeItemDescriptor:
-            raise ValueError("descriptor must be KnowledgeItemDescriptor")
+    def _reconstruct_descriptor(self, item: object) -> KnowledgeItemDescriptor:
         try:
+            if type(item) is not KnowledgeItemDescriptor:
+                raise ValueError("invalid descriptor type")
+            metadata_raw = item.metadata
+            if isinstance(metadata_raw, dict):
+                parent_ids_raw = metadata_raw.get("parent_ids")
+                if type(parent_ids_raw) is list:
+                    for pid in parent_ids_raw:
+                        if type(pid) is not str:
+                            raise ValueError("invalid parent_ids element")
             snapshot = item.model_dump(mode="python")
             identity_data = snapshot.get("identity")
             if isinstance(identity_data, dict):
@@ -937,152 +913,178 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             provenance_data = snapshot.get("provenance")
             if isinstance(provenance_data, dict):
                 snapshot["provenance"] = KnowledgeItemProvenance(**provenance_data)
-            reconstructed = KnowledgeItemDescriptor(**snapshot)
-        except (ValueError, TypeError, ValidationError):
-            raise ValueError("invalid descriptor") from None
+            return KnowledgeItemDescriptor(**snapshot)
+        except Exception:
+            raise self._invalid_descriptor_error() from None
 
-        self._validate_item_provenance(reconstructed, source=source)
-        metadata = reconstructed.metadata
-        if not isinstance(metadata, dict):
-            raise ValueError("invalid metadata")
-        if set(metadata.keys()) != _METADATA_KEYS:
-            raise ValueError("invalid metadata keys")
-        if metadata.get("schema_version") != GOOGLE_DRIVE_ITEM_METADATA_VERSION:
-            raise ValueError("invalid metadata version")
-
-        metadata_scope_kind = metadata.get("scope_kind")
-        if metadata_scope_kind != scope.kind.value:
-            raise ValueError("metadata scope mismatch")
-        metadata_drive_id = metadata.get("drive_id")
-        if scope.kind is GoogleDriveScopeKind.USER:
-            if metadata_drive_id is not None:
-                raise ValueError("metadata drive_id mismatch")
-        else:
-            if metadata_drive_id != scope.drive_id:
-                raise ValueError("metadata drive_id mismatch")
-
-        item_kind_raw = metadata.get("item_kind")
-        if not isinstance(item_kind_raw, str):
-            raise ValueError("invalid item_kind")
+    def _descriptor_to_provider_item(
+        self,
+        item: KnowledgeItemDescriptor,
+        *,
+        source: KnowledgeSourceRef,
+        scope: GoogleDriveScope,
+    ) -> GoogleDriveItem:
         try:
-            item_kind = GoogleDriveItemKind(item_kind_raw)
-        except ValueError:
-            raise ValueError("invalid item_kind") from None
+            reconstructed = self._reconstruct_descriptor(item)
+            self._validate_item_provenance(reconstructed, source=source)
+            if reconstructed.identity.logical_key is not None:
+                raise ValueError("logical_key must be None")
+            if reconstructed.revision.etag is not None:
+                raise ValueError("etag must be None")
+            if reconstructed.revision.content_hash is not None:
+                raise ValueError("content_hash must be None")
+            if reconstructed.revision.acl_hash is not None:
+                raise ValueError("acl_hash must be None")
+            if reconstructed.provenance.safe_locator is not None:
+                raise ValueError("safe_locator must be None")
+            metadata = reconstructed.metadata
+            if not isinstance(metadata, dict):
+                raise ValueError("invalid metadata")
+            if set(metadata.keys()) != _METADATA_KEYS:
+                raise ValueError("invalid metadata keys")
+            if metadata.get("schema_version") != GOOGLE_DRIVE_ITEM_METADATA_VERSION:
+                raise ValueError("invalid metadata version")
 
-        expected_item_type = _ITEM_TYPE_BY_KIND[item_kind]
-        if reconstructed.item_type != expected_item_type:
-            raise ValueError("item type mismatch")
+            metadata_scope_kind = metadata.get("scope_kind")
+            if metadata_scope_kind != scope.kind.value:
+                raise ValueError("metadata scope mismatch")
+            metadata_drive_id = metadata.get("drive_id")
+            if scope.kind is GoogleDriveScopeKind.USER:
+                if metadata_drive_id is not None:
+                    raise ValueError("metadata drive_id mismatch")
+            else:
+                if metadata_drive_id != scope.drive_id:
+                    raise ValueError("metadata drive_id mismatch")
 
-        parent_ids_raw = metadata.get("parent_ids")
-        if not isinstance(parent_ids_raw, list):
-            raise ValueError("invalid parent_ids")
-        parent_ids = tuple(str(pid) for pid in parent_ids_raw)
+            item_kind_raw = metadata.get("item_kind")
+            if type(item_kind_raw) is not str:
+                raise ValueError("invalid item_kind")
+            try:
+                item_kind = GoogleDriveItemKind(item_kind_raw)
+            except ValueError:
+                raise ValueError("invalid item_kind") from None
 
-        expected_parent = self._parent_remote_id(parent_ids)
-        if reconstructed.identity.parent_remote_id != expected_parent:
-            raise ValueError("parent projection mismatch")
+            expected_item_type = _ITEM_TYPE_BY_KIND[item_kind]
+            if reconstructed.item_type != expected_item_type:
+                raise ValueError("item type mismatch")
 
-        created_at = self._parse_metadata_datetime(metadata.get("created_at"))
-        modified_at = self._parse_metadata_datetime(metadata.get("modified_at"))
-        version_raw = reconstructed.revision.version
-        if not isinstance(version_raw, str) or not version_raw.strip():
-            raise ValueError("invalid version")
-        if version_raw != version_raw.strip():
-            raise ValueError("invalid version")
-        try:
-            version = int(version_raw)
-        except ValueError:
-            raise ValueError("invalid version") from None
+            parent_ids_raw = metadata.get("parent_ids")
+            if type(parent_ids_raw) is not list:
+                raise ValueError("invalid parent_ids")
+            for pid in parent_ids_raw:
+                if type(pid) is not str:
+                    raise ValueError("invalid parent_ids element")
+            parent_ids = tuple(parent_ids_raw)
 
-        size_bytes = metadata.get("size_bytes")
-        if size_bytes is not None and type(size_bytes) is not int:
-            raise ValueError("invalid size_bytes")
-        md5_checksum = metadata.get("md5_checksum")
-        if md5_checksum is not None and not isinstance(md5_checksum, str):
-            raise ValueError("invalid md5_checksum")
-        head_revision_id = metadata.get("head_revision_id")
-        if head_revision_id is not None and not isinstance(head_revision_id, str):
-            raise ValueError("invalid head_revision_id")
-        can_download = metadata.get("can_download")
-        if type(can_download) is not bool:
-            raise ValueError("invalid can_download")
-        shortcut_target_id = metadata.get("shortcut_target_id")
-        if shortcut_target_id is not None and not isinstance(shortcut_target_id, str):
-            raise ValueError("invalid shortcut_target_id")
-        shortcut_target_mime_type = metadata.get("shortcut_target_mime_type")
-        if shortcut_target_mime_type is not None and not isinstance(shortcut_target_mime_type, str):
-            raise ValueError("invalid shortcut_target_mime_type")
-        mime_type = metadata.get("mime_type")
-        if not isinstance(mime_type, str):
-            raise ValueError("invalid mime_type")
+            expected_parent = self._parent_remote_id(parent_ids)
+            if reconstructed.identity.parent_remote_id != expected_parent:
+                raise ValueError("parent projection mismatch")
 
-        content_supported = metadata.get("content_supported")
-        if type(content_supported) is not bool:
-            raise ValueError("invalid content_supported")
-        content_transport_mode = metadata.get("content_transport_mode")
-        if content_transport_mode is not None and not isinstance(content_transport_mode, str):
-            raise ValueError("invalid content_transport_mode")
-        content_mime_type_meta = metadata.get("content_mime_type")
-        if content_mime_type_meta is not None and not isinstance(content_mime_type_meta, str):
-            raise ValueError("invalid content_mime_type")
+            created_at = self._parse_metadata_datetime(metadata.get("created_at"))
+            modified_at = self._parse_metadata_datetime(metadata.get("modified_at"))
+            version_raw = reconstructed.revision.version
+            if type(version_raw) is not str or not version_raw.strip():
+                raise ValueError("invalid version")
+            if version_raw != version_raw.strip():
+                raise ValueError("invalid version")
+            try:
+                version = int(version_raw)
+            except ValueError:
+                raise ValueError("invalid version") from None
 
-        provider_item = GoogleDriveItem(
-            remote_id=reconstructed.identity.remote_id,
-            scope=scope,
-            kind=item_kind,
-            name=reconstructed.title,
-            mime_type=mime_type,
-            parent_ids=parent_ids,
-            drive_id=metadata_drive_id,
-            created_at=created_at,
-            modified_at=modified_at,
-            size_bytes=size_bytes,
-            md5_checksum=md5_checksum,
-            version=version,
-            head_revision_id=head_revision_id,
-            web_view_link=reconstructed.provenance.web_url,
-            can_download=can_download,
-            shortcut_target_id=shortcut_target_id,
-            shortcut_target_mime_type=shortcut_target_mime_type,
-        )
+            size_bytes = metadata.get("size_bytes")
+            if size_bytes is not None and type(size_bytes) is not int:
+                raise ValueError("invalid size_bytes")
+            md5_checksum = metadata.get("md5_checksum")
+            if md5_checksum is not None and type(md5_checksum) is not str:
+                raise ValueError("invalid md5_checksum")
+            head_revision_id = metadata.get("head_revision_id")
+            if head_revision_id is not None and type(head_revision_id) is not str:
+                raise ValueError("invalid head_revision_id")
+            can_download = metadata.get("can_download")
+            if type(can_download) is not bool:
+                raise ValueError("invalid can_download")
+            shortcut_target_id = metadata.get("shortcut_target_id")
+            if shortcut_target_id is not None and type(shortcut_target_id) is not str:
+                raise ValueError("invalid shortcut_target_id")
+            shortcut_target_mime_type = metadata.get("shortcut_target_mime_type")
+            if shortcut_target_mime_type is not None and type(shortcut_target_mime_type) is not str:
+                raise ValueError("invalid shortcut_target_mime_type")
+            mime_type = metadata.get("mime_type")
+            if type(mime_type) is not str:
+                raise ValueError("invalid mime_type")
 
-        profile = self._resolve_content_profile(provider_item)
-        if content_supported:
-            if profile is None:
-                raise ValueError("content profile mismatch")
-            if reconstructed.content_mode is not KnowledgeContentMode.BINARY:
-                raise ValueError("content mode mismatch")
-            if reconstructed.content_available != can_download:
-                raise ValueError("content availability mismatch")
-            if content_transport_mode != profile.mode.value:
-                raise ValueError("content transport mode mismatch")
-            if content_mime_type_meta != profile.content_mime_type:
-                raise ValueError("content mime mismatch")
-        else:
-            if profile is not None:
-                raise ValueError("content profile mismatch")
-            if reconstructed.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD:
-                raise ValueError("content mode mismatch")
-            if reconstructed.content_available:
-                raise ValueError("content availability mismatch")
-            if content_transport_mode is not None or content_mime_type_meta is not None:
-                raise ValueError("content profile metadata mismatch")
+            content_supported = metadata.get("content_supported")
+            if type(content_supported) is not bool:
+                raise ValueError("invalid content_supported")
+            content_transport_mode = metadata.get("content_transport_mode")
+            if content_transport_mode is not None and type(content_transport_mode) is not str:
+                raise ValueError("invalid content_transport_mode")
+            content_mime_type_meta = metadata.get("content_mime_type")
+            if content_mime_type_meta is not None and type(content_mime_type_meta) is not str:
+                raise ValueError("invalid content_mime_type")
 
-        if not reconstructed.content_available:
-            raise ValueError("content not available")
+            provider_item = GoogleDriveItem(
+                remote_id=reconstructed.identity.remote_id,
+                scope=scope,
+                kind=item_kind,
+                name=reconstructed.title,
+                mime_type=mime_type,
+                parent_ids=parent_ids,
+                drive_id=metadata_drive_id,
+                created_at=created_at,
+                modified_at=modified_at,
+                size_bytes=size_bytes,
+                md5_checksum=md5_checksum,
+                version=version,
+                head_revision_id=head_revision_id,
+                web_view_link=reconstructed.provenance.web_url,
+                can_download=can_download,
+                shortcut_target_id=shortcut_target_id,
+                shortcut_target_mime_type=shortcut_target_mime_type,
+            )
 
-        if reconstructed.identity.remote_id != provider_item.remote_id:
-            raise ValueError("remote id mismatch")
-        if reconstructed.revision.version != str(provider_item.version):
-            raise ValueError("version mismatch")
-        if reconstructed.revision.updated_at != provider_item.modified_at:
-            raise ValueError("timestamp mismatch")
-        if reconstructed.provenance.remote_id != provider_item.remote_id:
-            raise ValueError("provenance remote id mismatch")
-        if reconstructed.provenance.web_url != provider_item.web_view_link:
-            raise ValueError("web url mismatch")
+            profile = self._resolve_content_profile(provider_item)
+            if content_supported:
+                if profile is None:
+                    raise ValueError("content profile mismatch")
+                if reconstructed.content_mode is not KnowledgeContentMode.BINARY:
+                    raise ValueError("content mode mismatch")
+                if reconstructed.content_available != can_download:
+                    raise ValueError("content availability mismatch")
+                if content_transport_mode != profile.mode.value:
+                    raise ValueError("content transport mode mismatch")
+                if content_mime_type_meta != profile.content_mime_type:
+                    raise ValueError("content mime mismatch")
+            else:
+                if profile is not None:
+                    raise ValueError("content profile mismatch")
+                if reconstructed.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD:
+                    raise ValueError("content mode mismatch")
+                if reconstructed.content_available:
+                    raise ValueError("content availability mismatch")
+                if content_transport_mode is not None or content_mime_type_meta is not None:
+                    raise ValueError("content profile metadata mismatch")
 
-        return provider_item
+            if not reconstructed.content_available:
+                raise ValueError("content not available")
+
+            if reconstructed.identity.remote_id != provider_item.remote_id:
+                raise ValueError("remote id mismatch")
+            if reconstructed.revision.version != str(provider_item.version):
+                raise ValueError("version mismatch")
+            if reconstructed.revision.updated_at != provider_item.modified_at:
+                raise ValueError("timestamp mismatch")
+            if reconstructed.provenance.remote_id != provider_item.remote_id:
+                raise ValueError("provenance remote id mismatch")
+            if reconstructed.provenance.web_url != provider_item.web_view_link:
+                raise ValueError("web url mismatch")
+
+            return provider_item
+        except VendorKnowledgeError:
+            raise
+        except Exception:
+            raise self._invalid_descriptor_error() from None
 
     def _validate_fetched_content(
         self,
@@ -1090,9 +1092,9 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
         *,
         provider_item: GoogleDriveItem,
     ) -> None:
-        if not isinstance(result, GoogleDriveFileContent):
-            raise ValueError("content must be GoogleDriveFileContent")
         try:
+            if type(result) is not GoogleDriveFileContent:
+                raise ValueError("content must be GoogleDriveFileContent")
             snapshot = result.model_dump(mode="python")
             item_data = snapshot.get("item")
             if isinstance(item_data, dict):
@@ -1102,26 +1104,39 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
                     item_data["scope"] = GoogleDriveScope(**scope_data)
                 snapshot["item"] = GoogleDriveItem(**item_data)
             validated = GoogleDriveFileContent(**snapshot)
+            result_item = validated.item
+            if result_item.remote_id != provider_item.remote_id:
+                raise ValueError("remote id mismatch")
+            if result_item.scope != provider_item.scope:
+                raise ValueError("scope mismatch")
+            if result_item.kind != provider_item.kind:
+                raise ValueError("kind mismatch")
+            if result_item.mime_type != provider_item.mime_type:
+                raise ValueError("mime_type mismatch")
+            if result_item.version != provider_item.version:
+                raise ValueError("version mismatch")
+            if result_item.modified_at != provider_item.modified_at:
+                raise ValueError("modified_at mismatch")
+            if result_item.size_bytes != provider_item.size_bytes:
+                raise ValueError("size_bytes mismatch")
+            if result_item.md5_checksum != provider_item.md5_checksum:
+                raise ValueError("md5_checksum mismatch")
+            if result_item.head_revision_id != provider_item.head_revision_id:
+                raise ValueError("head_revision_id mismatch")
+            if result_item.can_download != provider_item.can_download:
+                raise ValueError("can_download mismatch")
+            profile = resolve_google_drive_content_profile(provider_item)
+            if validated.mode != profile.mode:
+                raise ValueError("mode mismatch")
+            if validated.content_mime_type != profile.content_mime_type:
+                raise ValueError("mime mismatch")
+            if validated.size_bytes != len(validated.data):
+                raise ValueError("size mismatch")
+            expected_hash = hashlib.sha256(validated.data).hexdigest()
+            if validated.content_hash != expected_hash:
+                raise ValueError("hash mismatch")
         except Exception:
-            raise ValueError("invalid content result") from None
-        if validated.item.scope != provider_item.scope:
-            raise ValueError("scope mismatch")
-        if validated.item.remote_id != provider_item.remote_id:
-            raise ValueError("remote id mismatch")
-        if validated.item.version != provider_item.version:
-            raise ValueError("version mismatch")
-        if validated.item.modified_at != provider_item.modified_at:
-            raise ValueError("modified_at mismatch")
-        profile = resolve_google_drive_content_profile(provider_item)
-        if validated.mode != profile.mode:
-            raise ValueError("mode mismatch")
-        if validated.content_mime_type != profile.content_mime_type:
-            raise ValueError("mime mismatch")
-        if validated.size_bytes != len(validated.data):
-            raise ValueError("size mismatch")
-        expected_hash = hashlib.sha256(validated.data).hexdigest()
-        if validated.content_hash != expected_hash:
-            raise ValueError("hash mismatch")
+            raise self._invalid_provider_response_error() from None
 
     def _encode_cursor(self, cursor: _GoogleDriveCursor) -> KnowledgeCursor:
         payload = cursor.model_dump()
@@ -1137,58 +1152,49 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
     ) -> _GoogleDriveCursor | None:
         if cursor is None:
             return None
-        if type(cursor) is not KnowledgeCursor:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                safe_message=_INVALID_CURSOR_MESSAGE,
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            )
-        if cursor.version != GOOGLE_DRIVE_CURSOR_VERSION:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                safe_message=_INVALID_CURSOR_MESSAGE,
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            )
         try:
-            padding = "=" * (-len(cursor.value) % 4)
-            raw = base64.urlsafe_b64decode(cursor.value + padding)
+            if type(cursor) is not KnowledgeCursor:
+                raise ValueError("invalid cursor type")
+            snapshot = cursor.model_dump(mode="python")
+            reconstructed_cursor = KnowledgeCursor(**snapshot)
+            outer_value = reconstructed_cursor.value
+            if type(outer_value) is not str:
+                raise ValueError("invalid cursor value type")
+            if not outer_value:
+                raise ValueError("blank cursor value")
+            if outer_value != outer_value.strip():
+                raise ValueError("cursor whitespace")
+            if len(outer_value) > _MAX_ENCODED_CURSOR_LENGTH:
+                raise ValueError("cursor too long")
+            if "=" in outer_value:
+                raise ValueError("cursor padding")
+            if _CURSOR_ALPHABET.fullmatch(outer_value) is None:
+                raise ValueError("cursor alphabet")
+            if reconstructed_cursor.version != GOOGLE_DRIVE_CURSOR_VERSION:
+                raise ValueError("cursor version mismatch")
+            padding = "=" * (-len(outer_value) % 4)
+            raw = base64.b64decode(outer_value + padding, altchars=b"-_", validate=True)
             data = json.loads(raw.decode("utf-8"))
-            if not isinstance(data, dict):
+            if type(data) is not dict:
                 raise ValueError("cursor must be object")
             decoded = _GoogleDriveCursor.model_validate(data)
+            canonical = self._encode_cursor(decoded)
+            if (
+                canonical.value != reconstructed_cursor.value
+                or canonical.version != reconstructed_cursor.version
+            ):
+                raise ValueError("noncanonical cursor")
         except Exception:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                safe_message=_INVALID_CURSOR_MESSAGE,
-                provider_id=self.provider_id,
-                source_kind=self.source_kind,
-                retryable=False,
-            ) from None
+            raise self._invalid_cursor_error() from None
         if decoded.scope_kind == "user":
             if scope.kind is not GoogleDriveScopeKind.USER:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                    safe_message=_INVALID_CURSOR_MESSAGE,
-                    provider_id=self.provider_id,
-                    source_kind=self.source_kind,
-                    retryable=False,
-                )
+                raise self._invalid_cursor_error()
         elif decoded.scope_kind == "shared_drive":
             if (
                 scope.kind is not GoogleDriveScopeKind.SHARED_DRIVE
                 or decoded.drive_id != scope.drive_id
             ):
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                    safe_message=_INVALID_CURSOR_MESSAGE,
-                    provider_id=self.provider_id,
-                    source_kind=self.source_kind,
-                    retryable=False,
-                )
+                raise self._invalid_cursor_error()
         return decoded
 
     def _safe_message_for_code(self, code: VendorKnowledgeErrorCode) -> str:
