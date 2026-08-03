@@ -68,6 +68,11 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
 )
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_source_id,
+    indexed_source_binding_id,
+    workspace_indexed_source_semantic_hash,
+)
 from local_workspace_application.workspaces.connected_source_recovery import (
     ConnectedSourceRecoveryService,
 )
@@ -78,6 +83,7 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
@@ -85,6 +91,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     WorkspaceIndexedSourceBinding,
     WorkspaceIndexedSourceBindingStatusV1,
     WorkspaceKnowledgeMutationOperationV1,
+    WorkspaceKnowledgeMutationOutcomeV1,
+    WorkspaceKnowledgeMutationRecord,
+    WorkspaceKnowledgeMutationStatusV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
@@ -116,9 +125,10 @@ pytestmark = pytest.mark.unit
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
-_SOURCE = "src:connected:test"
 _BINDING = "ksb-test"
-_INDEXED = "idx-test"
+_SOURCE = connected_source_id(_TENANT, _WORKSPACE, _BINDING)
+_INDEXED = indexed_source_binding_id(_TENANT, _WORKSPACE, _BINDING)
+_SEMANTIC = workspace_indexed_source_semantic_hash(_TENANT, _WORKSPACE, _BINDING)
 _OPERATION = "op-test"
 _OPERATION_OTHER = "op-other"
 _DELIVERY = "a" * 64
@@ -245,6 +255,27 @@ def _completed_receipt(*, operation_id: str = _OPERATION) -> ConnectedSourceDeli
     )
 
 
+def _creation_mutation() -> WorkspaceKnowledgeMutationRecord:
+    return WorkspaceKnowledgeMutationRecord(
+        mutation_id="mut-1",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
+        idempotency_key_hash="f" * 64,
+        normalized_request_hash="a" * 64,
+        semantic_identity_hash=_SEMANTIC,
+        target_revision=1,
+        committed_revision=1,
+        status=WorkspaceKnowledgeMutationStatusV1.COMMITTED,
+        outcome=WorkspaceKnowledgeMutationOutcomeV1.APPLIED,
+        result_entity_type="indexed_source_binding",
+        result_entity_id=_INDEXED,
+        created_at=_NOW,
+        updated_at=_NOW,
+        committed_at=_NOW,
+    )
+
+
 def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
     repo.put_workspace(
         Workspace(
@@ -268,7 +299,7 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             audience_eligibility=IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY,
             mutation_id="mut-1",
             effective_revision=1,
-            semantic_identity_hash="a" * 64,
+            semantic_identity_hash=_SEMANTIC,
             created_at=_NOW,
             updated_at=_NOW,
             cached_safe_display_label="#project-orion",
@@ -286,6 +317,7 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             updated_at=_NOW,
         )
     )
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
     repo.put_source(
         WorkspaceSource(
             source_id=_SOURCE,
@@ -354,6 +386,9 @@ def _build_sync_env(
         {
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
             ),
         },
     )
@@ -1016,11 +1051,8 @@ def test_accounting_two_deliveries_aggregate_exact_counters() -> None:
     delivery_b = "b" * 64
     repo.put_connected_source_delivery_receipt(_completed_receipt())
     repo.put_connected_source_delivery_receipt(
-        replace(
-            _completed_receipt(),
-            delivery_id=delivery_b,
-            documents_indexed=2,
-            documents_unchanged=1,
+        _completed_receipt().model_copy(
+            update={"delivery_id": delivery_b, "documents_indexed": 2, "documents_unchanged": 1}
         )
     )
     from local_workspace_application.workspaces.connected_source_models import (
@@ -1534,11 +1566,8 @@ def test_accounting_cas_retry_reloads_aggregate_after_concurrent_insert() -> Non
     delivery_b = "b" * 64
     repo.put_connected_source_delivery_receipt(_completed_receipt())
     repo.put_connected_source_delivery_receipt(
-        replace(
-            _completed_receipt(),
-            delivery_id=delivery_b,
-            documents_indexed=2,
-            documents_unchanged=1,
+        _completed_receipt().model_copy(
+            update={"delivery_id": delivery_b, "documents_indexed": 2, "documents_unchanged": 1}
         )
     )
     from local_workspace_application.workspaces.connected_source_models import (
@@ -1837,6 +1866,9 @@ async def test_indexed_binding_not_found_repairs_source_to_error(tmp_path: Path)
         {
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
             ),
         },
     )

@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
 from local_workspace_application.workspaces.knowledge_access_service import TenantKnowledgeSourceBindingPort
+from local_workspace_application.workspaces.knowledge_configuration_validation import (
+    validate_configuration_idempotency_hash,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     connection_attachment_id, connection_attachment_semantic_identity_hash,
 )
@@ -31,13 +33,11 @@ from local_workspace_application.workspaces.repository import ManagedWorkspaceRe
 
 _RESULT_TYPE = "connection_attachment"
 _PORT_ERR = "connection_detach_dependency_resolution_failed"
-_IDEMPOTENCY_HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 _T = TypeVar("_T")
 
 
 def _validate_idempotency_key_hash(value: object) -> None:
-    if not isinstance(value, str) or _IDEMPOTENCY_HASH_RE.fullmatch(value) is None:
-        raise WorkspaceKnowledgeConfigurationMutationError("knowledge_configuration_idempotency_hash_invalid")
+    validate_configuration_idempotency_hash(value)
 
 
 @dataclass(frozen=True, slots=True)

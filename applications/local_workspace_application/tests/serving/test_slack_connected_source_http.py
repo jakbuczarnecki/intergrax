@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,9 +13,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
     SlackConversationChannelIntegration,
 )
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
@@ -32,6 +29,7 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 )
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
@@ -153,7 +151,10 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         repo,
         service,
         config,
-        {WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler()},
+        {
+            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
+        },
     )
     executor = _FakeExecutor()
     indexing = __import__(
@@ -203,12 +204,38 @@ def api_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         yield client, wiring
 
 
-def _headers(*, if_match: str | None = "WKC/0", idempotency: str = "idem-1") -> dict[str, str]:
+def _headers(*, if_match: str | None = "WKC/0", idempotency: str | None = "idem-1") -> dict[str, str]:
     headers = {"X-Tenant-Id": _TENANT}
     if if_match is not None:
         headers["If-Match"] = if_match
-    headers["Idempotency-Key"] = idempotency
+    if idempotency is not None:
+        headers["Idempotency-Key"] = idempotency
     return headers
+
+
+def _candidate_ref(client) -> str:
+    discovery = client.get(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
+        headers={"X-Tenant-Id": _TENANT},
+        params={"resource_type": "slack_conversation", "limit": 10},
+    )
+    assert discovery.status_code == 200, discovery.text
+    return discovery.json()["items"][0]["opaque_candidate_ref"]
+
+
+def _create_indexed_source(client, *, if_match: str = "WKC/1", idempotency: str = "idem-create"):
+    response = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers=_headers(if_match=if_match, idempotency=idempotency),
+        json={
+            "connection_ref": _CONNECTION,
+            "opaque_candidate_ref": _candidate_ref(client),
+            "root_oldest": "1704067200.000001",
+            "root_latest": "1706745600.000001",
+        },
+    )
+    assert response.status_code == 201, response.text
+    return response
 
 
 def test_discovery_route_returns_signed_candidate(api_client) -> None:
@@ -259,7 +286,7 @@ def test_create_route_requires_preconditions(api_client) -> None:
     assert body["audience_eligibility"] == "personal_only"
     replay = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
-        headers=_headers(if_match="WKC/1", idempotency="idem-1"),
+        headers=_headers(if_match="WKC/2", idempotency="idem-1"),
         json={
             "connection_ref": _CONNECTION,
             "opaque_candidate_ref": candidate,
@@ -267,10 +294,10 @@ def test_create_route_requires_preconditions(api_client) -> None:
             "root_latest": "1706745600.000001",
         },
     )
-    assert replay.status_code in {200, 201}
+    assert replay.status_code == 200, replay.text
     conflict = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
-        headers=_headers(if_match="WKC/1", idempotency="idem-2"),
+        headers=_headers(if_match="WKC/2", idempotency="idem-2"),
         json={
             "connection_ref": _CONNECTION,
             "opaque_candidate_ref": candidate,
@@ -278,4 +305,117 @@ def test_create_route_requires_preconditions(api_client) -> None:
             "root_latest": "1706745600.000001",
         },
     )
-    assert conflict.status_code in {200, 201, 409}
+    assert conflict.status_code == 200, conflict.text
+
+
+def test_delete_active_indexed_source_returns_disabled(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    disabled = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert disabled.status_code == 200, disabled.text
+    assert disabled.json()["status"] == "disabled"
+
+
+def test_delete_already_disabled_returns_200(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    first = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert first.status_code == 200, first.text
+    second = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/3", idempotency="idem-disable-2"),
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["status"] == "disabled"
+
+
+def test_delete_replay_returns_200(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    first = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert first.status_code == 200, first.text
+    replay = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "disabled"
+
+
+def test_post_after_disable_reactivates_same_ids(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    body = created.json()
+    binding_id = body["indexed_source_binding_id"]
+    source_id = body["source_id"]
+    disabled = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert disabled.status_code == 200, disabled.text
+    reactivated = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources",
+        headers=_headers(if_match="WKC/3", idempotency="idem-reactivate"),
+        json={
+            "connection_ref": _CONNECTION,
+            "opaque_candidate_ref": _candidate_ref(client),
+            "root_oldest": "1704067200.000001",
+            "root_latest": "1706745600.000001",
+        },
+    )
+    assert reactivated.status_code == 200, reactivated.text
+    revived = reactivated.json()
+    assert revived["indexed_source_binding_id"] == binding_id
+    assert revived["source_id"] == source_id
+    assert revived["status"] == "active"
+
+
+def test_sync_while_disabled_returns_409(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    disabled = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency="idem-disable"),
+    )
+    assert disabled.status_code == 200, disabled.text
+    sync = client.post(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}/sync",
+        headers={"X-Tenant-Id": _TENANT},
+    )
+    assert sync.status_code == 409, sync.text
+    assert sync.json()["detail"] == "indexed_source_inactive"
+
+
+def test_delete_missing_if_match_returns_428(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    response = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match=None, idempotency="idem-disable"),
+    )
+    assert response.status_code == 428, response.text
+
+
+def test_delete_missing_idempotency_returns_428(api_client) -> None:
+    client, _ = api_client
+    created = _create_indexed_source(client)
+    binding_id = created.json()["indexed_source_binding_id"]
+    response = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/{binding_id}",
+        headers=_headers(if_match="WKC/2", idempotency=None),
+    )
+    assert response.status_code == 428, response.text

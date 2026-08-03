@@ -136,6 +136,7 @@ from local_workspace_application.workspaces.sync_service import ManagedWorkspace
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
     CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
     DetachConnectionMutationHandler,
@@ -387,6 +388,9 @@ def mount_managed_workspace_routes(
         {
             WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: (
                 CreateIndexedSourceMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: (
+                DisableIndexedSourceMutationHandler()
             ),
             WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: (
                 AttachConnectionMutationHandler()

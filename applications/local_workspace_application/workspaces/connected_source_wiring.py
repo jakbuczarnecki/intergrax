@@ -49,6 +49,9 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
 )
+from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+    WorkspaceIndexedSourceLifecycleService,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
 from local_workspace_application.workspaces.sync_runtime import ManagedWorkspaceSyncRuntime
@@ -85,6 +88,7 @@ class ConnectedSourceWiring:
     discovery_service: WorkspaceRemoteResourceDiscoveryService
     tenant_binding_service: WorkspaceConnectedSourceTenantBindingService
     tenant_binding_port: TenantKnowledgeSourceBindingPort
+    indexed_source_lifecycle_service: WorkspaceIndexedSourceLifecycleService
     knowledge_access_service: WorkspaceKnowledgeAccessService
     connected_source_sync_service: ManagedWorkspaceConnectedSourceSyncService
 
@@ -132,6 +136,12 @@ def build_connected_source_wiring(
 
     tenant_binding_service = WorkspaceConnectedSourceTenantBindingService(binding_service_factory)
     tenant_binding_port = _TenantBindingPort(binding_service_factory)
+    indexed_source_lifecycle = WorkspaceIndexedSourceLifecycleService(
+        repository=repository,
+        configuration_service=configuration_service,
+        mutation_engine=mutation_engine,
+        tenant_binding_port=tenant_binding_port,
+    )
 
     def dependencies_factory(tenant_id: str) -> ConnectedSourceSyncDependencies:
         return ConnectedSourceSyncDependencies(
@@ -162,7 +172,7 @@ def build_connected_source_wiring(
     knowledge_access = WorkspaceKnowledgeAccessService(
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
-        mutation_engine=mutation_engine,
+        indexed_source_lifecycle_service=indexed_source_lifecycle,
         workspace_service=workspace_service,
         tenant_binding_port=tenant_binding_port,
         opaque_ref_codec=codec,
@@ -173,6 +183,7 @@ def build_connected_source_wiring(
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
         tenant_binding_port=tenant_binding_port,
+        indexed_source_lifecycle_service=indexed_source_lifecycle,
         knowledge_access_service=knowledge_access,
         connected_source_sync_service=connected_sync,
     )

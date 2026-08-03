@@ -41,6 +41,10 @@ from tests.unit.runtime.vendor_knowledge._fakes import make_descriptor
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryStatus,
 )
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_source_id,
+    indexed_source_binding_id,
+)
 from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
 from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
@@ -52,6 +56,10 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     IndexedSourceSyncModeV1,
     WorkspaceIndexedSourceBinding,
     WorkspaceIndexedSourceBindingStatusV1,
+    WorkspaceKnowledgeMutationOperationV1,
+    WorkspaceKnowledgeMutationOutcomeV1,
+    WorkspaceKnowledgeMutationRecord,
+    WorkspaceKnowledgeMutationStatusV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
@@ -73,9 +81,9 @@ pytestmark = pytest.mark.unit
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
-_SOURCE = "src:connected:test"
 _BINDING = "ksb-test"
-_INDEXED = "idx-test"
+_SOURCE = connected_source_id(_TENANT, _WORKSPACE, _BINDING)
+_INDEXED = indexed_source_binding_id(_TENANT, _WORKSPACE, _BINDING)
 _OPERATION = "op-test"
 _DELIVERY = "a" * 64
 
@@ -94,6 +102,71 @@ def _structured_record(text: str = "marker") -> dict[str, object]:
         "edit_state": {"edited": False},
         "safe_file_inventory": [],
     }
+
+
+def _indexed_binding(
+    *,
+    status: WorkspaceIndexedSourceBindingStatusV1,
+    effective_revision: int,
+    mutation_id: str,
+) -> WorkspaceIndexedSourceBinding:
+    return WorkspaceIndexedSourceBinding(
+        indexed_source_binding_id=_INDEXED,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        knowledge_source_binding_ref=_BINDING,
+        source_id=_SOURCE,
+        sync_mode=IndexedSourceSyncModeV1.FULL,
+        status=status,
+        audience_eligibility=IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY,
+        mutation_id=mutation_id,
+        effective_revision=effective_revision,
+        semantic_identity_hash="a" * 64,
+        created_at=_NOW,
+        updated_at=_NOW,
+        cached_safe_display_label="#project-orion",
+    )
+
+
+def _creation_mutation(**overrides: object) -> WorkspaceKnowledgeMutationRecord:
+    payload = {
+        "mutation_id": "mut-1",
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "operation": WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
+        "idempotency_key_hash": "f" * 64,
+        "normalized_request_hash": "a" * 64,
+        "semantic_identity_hash": "a" * 64,
+        "target_revision": 1,
+        "committed_revision": 1,
+        "status": WorkspaceKnowledgeMutationStatusV1.COMMITTED,
+        "outcome": WorkspaceKnowledgeMutationOutcomeV1.APPLIED,
+        "result_entity_type": "indexed_source_binding",
+        "result_entity_id": _INDEXED,
+        "created_at": _NOW,
+        "updated_at": _NOW,
+        "committed_at": _NOW,
+    }
+    payload.update(overrides)
+    return WorkspaceKnowledgeMutationRecord(**payload)
+
+
+def _bump_head(repo: ManagedWorkspaceRepository, *, committed_revision: int) -> None:
+    head_mod = __import__(
+        "local_workspace_application.workspaces.knowledge_configuration_models",
+        fromlist=["WorkspaceKnowledgeConfigurationHead"],
+    )
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    repo.replace_knowledge_configuration_head_if_match(
+        expected=head,
+        replacement=head_mod.WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=committed_revision,
+            updated_at=_NOW,
+        ),
+    )
 
 
 def _batch(*, envelopes: tuple[KnowledgeSyncEnvelope, ...] = ()) -> KnowledgeSyncBatch:
@@ -223,6 +296,7 @@ def sink_env(tmp_path: Path):
             started_at=_NOW,
         )
     )
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(store)
     binding_repo.create(_TenantBindingPort().get_binding(tenant_id=_TENANT, binding_id=_BINDING))
     config = WorkspaceKnowledgeConfigurationService(repo, _Lookup())
@@ -363,3 +437,66 @@ async def test_temp_file_cleaned_up_after_indexing_failure(sink_env, monkeypatch
         await sink.apply_batch(batch=_batch(envelopes=(_envelope(KnowledgeChangeKind.UPSERT),)))
     assert created
     assert not created[0].exists()
+
+
+@pytest.mark.asyncio
+async def test_reactivated_binding_batch_validation_succeeds(sink_env) -> None:
+    repo, sink, indexing = sink_env
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
+    repo.put_knowledge_indexed_source_version_if_absent(
+        _indexed_binding(
+            status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
+            effective_revision=2,
+            mutation_id="mut-2",
+        )
+    )
+    repo.put_knowledge_indexed_source_version_if_absent(
+        _indexed_binding(
+            status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
+            effective_revision=3,
+            mutation_id="mut-3",
+        )
+    )
+    _bump_head(repo, committed_revision=3)
+    await sink.apply_batch(batch=_batch(envelopes=(_envelope(KnowledgeChangeKind.UPSERT),)))
+    assert indexing.index_one.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_disabled_binding_rejected(sink_env) -> None:
+    repo, sink, _ = sink_env
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
+    repo.put_knowledge_indexed_source_version_if_absent(
+        _indexed_binding(
+            status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
+            effective_revision=2,
+            mutation_id="mut-2",
+        )
+    )
+    _bump_head(repo, committed_revision=2)
+    with pytest.raises(ConnectedSourceSyncSinkError, match="connected_source_indexed_binding_inactive"):
+        await sink.apply_batch(batch=_batch())
+
+
+@pytest.mark.asyncio
+async def test_corrupt_source_origin_rejected(sink_env) -> None:
+    repo, sink, _ = sink_env
+    repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
+    source = repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE)
+    assert source is not None
+    repo.put_source(
+        WorkspaceSource(
+            source_id=source.source_id,
+            workspace_id=source.workspace_id,
+            tenant_id=source.tenant_id,
+            source_type=source.source_type,
+            path=source.path,
+            recursive=source.recursive,
+            status=source.status,
+            created_at=source.created_at,
+            knowledge_configuration_creation_mutation_id="mut-corrupt",
+            knowledge_configuration_visibility_revision=source.knowledge_configuration_visibility_revision,
+        )
+    )
+    with pytest.raises(ConnectedSourceSyncSinkError, match="connected_source_workspace_source_uncommitted"):
+        await sink.apply_batch(batch=_batch())

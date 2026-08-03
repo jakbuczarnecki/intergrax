@@ -44,6 +44,25 @@ class SlackConversationTenantBindingRequest:
     root_latest: str
 
 
+def slack_conversation_tenant_binding_id(
+    request: SlackConversationTenantBindingRequest,
+) -> str:
+    encoded_scope = encode_slack_conversation_scope_id(
+        conversation_id=request.conversation_id,
+        conversation_kind=SlackConversationKind(request.conversation_kind.value),
+        oldest=request.root_oldest,
+        latest=request.root_latest,
+    )
+    return tenant_binding_id(
+        tenant_id=request.tenant_id,
+        connection_ref=request.connection_ref,
+        provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+        integration_kind=IntegrationCategory.CONVERSATION_CHANNEL.value,
+        source_kind=SLACK_CONVERSATION_SOURCE_KIND,
+        encoded_scope=encoded_scope,
+    )
+
+
 class WorkspaceConnectedSourceTenantBindingService:
     def __init__(
         self,
@@ -56,19 +75,12 @@ class WorkspaceConnectedSourceTenantBindingService:
         request: SlackConversationTenantBindingRequest,
     ) -> KnowledgeSourceBinding:
         binding_service = self._binding_service_factory(request.tenant_id)
+        binding_id = slack_conversation_tenant_binding_id(request)
         encoded_scope = encode_slack_conversation_scope_id(
             conversation_id=request.conversation_id,
             conversation_kind=SlackConversationKind(request.conversation_kind.value),
             oldest=request.root_oldest,
             latest=request.root_latest,
-        )
-        binding_id = tenant_binding_id(
-            tenant_id=request.tenant_id,
-            connection_ref=request.connection_ref,
-            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL.value,
-            source_kind=SLACK_CONVERSATION_SOURCE_KIND,
-            encoded_scope=encoded_scope,
         )
         binding = KnowledgeSourceBinding(
             binding_id=binding_id,

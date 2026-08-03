@@ -89,3 +89,33 @@ def semantic_identity_hash(
         workspace_id=workspace_id,
         knowledge_source_binding_ref=knowledge_source_binding_ref,
     )
+
+
+def normalize_disable_indexed_source_request_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    indexed_source_binding_id: str,
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "indexed_source_binding_id": indexed_source_binding_id.strip(),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def semantic_identity_hash_for_disable_indexed_source(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    knowledge_source_binding_ref: str,
+) -> str:
+    return workspace_indexed_source_semantic_hash(
+        tenant_id,
+        workspace_id,
+        knowledge_source_binding_ref,
+    )

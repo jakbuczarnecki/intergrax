@@ -30,6 +30,10 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryStatus,
     ConnectedSourceSyncSinkError,
 )
+from local_workspace_application.workspaces.connected_source_source_projection import (
+    ConnectedSourceOriginValidationError,
+    validate_connected_source_durable_origin,
+)
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingError,
     WorkspaceDocumentIndexingService,
@@ -269,17 +273,19 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             committed_configuration_revision=configuration.configuration_revision,
         ):
             raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
-        if (
-            source.knowledge_configuration_creation_mutation_id is None
-            or source.knowledge_configuration_visibility_revision is None
-        ):
-            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
-        if source.knowledge_configuration_creation_mutation_id != indexed_binding.mutation_id:
-            raise ConnectedSourceSyncSinkError("connected_source_source_binding_mutation_mismatch")
-        if source.knowledge_configuration_visibility_revision != indexed_binding.effective_revision:
-            raise ConnectedSourceSyncSinkError("connected_source_source_binding_revision_mismatch")
-        if source.knowledge_configuration_visibility_revision > configuration.configuration_revision:
-            raise ConnectedSourceSyncSinkError("connected_source_workspace_source_uncommitted")
+        try:
+            validate_connected_source_durable_origin(
+                repository=self._repository,
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                source_id=self._context.source_id,
+                binding=indexed_binding,
+                committed_configuration_revision=configuration.configuration_revision,
+            )
+        except ConnectedSourceOriginValidationError:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_workspace_source_uncommitted"
+            ) from None
 
         operation = self._repository.get_operation(
             tenant_id=self._context.tenant_id,

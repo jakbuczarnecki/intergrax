@@ -6,6 +6,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from local_workspace_application.workspaces.connected_source_ids import connected_source_id
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceIndexedSourceBinding,
+    WorkspaceIndexedSourceBindingStatusV1,
+    WorkspaceKnowledgeMutationOperationV1,
+    WorkspaceKnowledgeMutationOutcomeV1,
+    WorkspaceKnowledgeMutationStatusV1,
+)
 from local_workspace_application.workspaces.models import (
     WorkspaceOperation,
     WorkspaceOperationStatus,
@@ -188,3 +196,106 @@ def repair_connected_source_source_projections_for_tenant(
         ):
             repaired += 1
     return repaired
+
+
+class ConnectedSourceOriginValidationError(Exception):
+    """Raised when a connected Source durable origin cannot be proven."""
+
+
+def validate_connected_source_durable_origin(
+    *,
+    repository: ManagedWorkspaceRepository,
+    tenant_id: str,
+    workspace_id: str,
+    source_id: str,
+    binding: WorkspaceIndexedSourceBinding,
+    committed_configuration_revision: int,
+) -> WorkspaceSource:
+    if binding.tenant_id != tenant_id or binding.workspace_id != workspace_id:
+        raise ConnectedSourceOriginValidationError("tenant_workspace_mismatch")
+    if binding.source_id != source_id:
+        raise ConnectedSourceOriginValidationError("source_id_mismatch")
+    expected_source_id = connected_source_id(
+        tenant_id,
+        workspace_id,
+        binding.knowledge_source_binding_ref,
+    )
+    if source_id != expected_source_id:
+        raise ConnectedSourceOriginValidationError("deterministic_source_id_mismatch")
+
+    source = repository.get_source(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        source_id=source_id,
+    )
+    if source is None:
+        raise ConnectedSourceOriginValidationError("source_missing")
+    if (
+        source.tenant_id != tenant_id
+        or source.workspace_id != workspace_id
+        or source.source_id != source_id
+    ):
+        raise ConnectedSourceOriginValidationError("source_identity_mismatch")
+    if source.source_type is not WorkspaceSourceType.CONNECTED_SOURCE:
+        raise ConnectedSourceOriginValidationError("source_type_mismatch")
+    if source.path != "" or source.recursive is not False:
+        raise ConnectedSourceOriginValidationError("source_shape_mismatch")
+    if source.knowledge_configuration_creation_mutation_id is None:
+        raise ConnectedSourceOriginValidationError("source_creation_mutation_missing")
+    if source.knowledge_configuration_visibility_revision is None:
+        raise ConnectedSourceOriginValidationError("source_visibility_revision_missing")
+    if source.knowledge_configuration_visibility_revision > binding.effective_revision:
+        raise ConnectedSourceOriginValidationError("source_visibility_after_binding")
+    if binding.effective_revision > committed_configuration_revision:
+        raise ConnectedSourceOriginValidationError("binding_revision_after_committed")
+
+    creation_mutation_id = source.knowledge_configuration_creation_mutation_id
+    creation_mutation = repository.find_knowledge_configuration_mutation_by_id(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        mutation_id=creation_mutation_id,
+    )
+    if creation_mutation is None:
+        raise ConnectedSourceOriginValidationError("creation_mutation_missing")
+    if creation_mutation.operation is not WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE:
+        raise ConnectedSourceOriginValidationError("creation_mutation_wrong_operation")
+    if creation_mutation.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED:
+        raise ConnectedSourceOriginValidationError("creation_mutation_not_committed")
+    if creation_mutation.outcome is not WorkspaceKnowledgeMutationOutcomeV1.APPLIED:
+        raise ConnectedSourceOriginValidationError("creation_mutation_wrong_outcome")
+    if creation_mutation.target_revision != creation_mutation.committed_revision:
+        raise ConnectedSourceOriginValidationError("creation_mutation_revision_mismatch")
+    if (
+        creation_mutation.committed_revision
+        != source.knowledge_configuration_visibility_revision
+    ):
+        raise ConnectedSourceOriginValidationError("creation_mutation_visibility_mismatch")
+    if creation_mutation.result_entity_type != "indexed_source_binding":
+        raise ConnectedSourceOriginValidationError("creation_mutation_result_type_mismatch")
+    if creation_mutation.result_entity_id != binding.indexed_source_binding_id:
+        raise ConnectedSourceOriginValidationError("creation_mutation_result_id_mismatch")
+    if creation_mutation.semantic_identity_hash != binding.semantic_identity_hash:
+        raise ConnectedSourceOriginValidationError("creation_mutation_semantic_mismatch")
+
+    origin_revision = source.knowledge_configuration_visibility_revision
+    origin_binding = repository.get_knowledge_indexed_source_version(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        indexed_source_binding_id=binding.indexed_source_binding_id,
+        effective_revision=origin_revision,
+    )
+    if origin_binding is None:
+        raise ConnectedSourceOriginValidationError("origin_binding_missing")
+    if origin_binding.mutation_id != creation_mutation_id:
+        raise ConnectedSourceOriginValidationError("origin_binding_mutation_mismatch")
+    if origin_binding.status is not WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
+        raise ConnectedSourceOriginValidationError("origin_binding_not_active")
+    if origin_binding.indexed_source_binding_id != binding.indexed_source_binding_id:
+        raise ConnectedSourceOriginValidationError("origin_binding_id_mismatch")
+    if origin_binding.knowledge_source_binding_ref != binding.knowledge_source_binding_ref:
+        raise ConnectedSourceOriginValidationError("origin_binding_ref_mismatch")
+    if origin_binding.source_id != binding.source_id:
+        raise ConnectedSourceOriginValidationError("origin_binding_source_mismatch")
+    if origin_binding.semantic_identity_hash != binding.semantic_identity_hash:
+        raise ConnectedSourceOriginValidationError("origin_binding_semantic_mismatch")
+    return source
