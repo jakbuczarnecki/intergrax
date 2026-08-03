@@ -76,10 +76,17 @@ def resolve_context_optimization_policy_from_profile(
     """Map explicit or legacy profile compression controls to canonical UCL policy."""
     explicit_policy = context.optimization_policy
     if explicit_policy is not None:
+        if not isinstance(explicit_policy, ContextOptimizationPolicy):
+            raise ValueError(
+                "optimization_policy must be "
+                "ContextOptimizationPolicy or None"
+            )
+
         if context.semantic_compression_enabled:
             raise LegacyCompressionConfigurationError(
                 LEGACY_EXPLICIT_POLICY_CONFLICT_REASON
             )
+
         return explicit_policy
 
     if not context.semantic_compression_enabled:

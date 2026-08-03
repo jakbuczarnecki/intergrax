@@ -355,3 +355,90 @@ def test_disabled_legacy_compression_ignores_default_history_compression() -> No
     )
 
     assert resolve_context_optimization_policy_from_profile(context) is None
+
+
+def _bridge_context_namespace(**overrides: object) -> SimpleNamespace:
+    base = {
+        "enable_rag": True,
+        "enable_websearch": False,
+        "budget_policy": ContextBudgetPolicy(max_tokens_estimate=9_999),
+        "assembly_options": TaskContextAssemblyOptions(
+            summary_tier=ContextSummaryTier.SUMMARY_ONLY
+        ),
+        "decision": ContextDecisionProfile(max_memory_entries_in_context=12),
+        "drift_monitoring_enabled": False,
+        "drift_alert_threshold": 0.35,
+        "semantic_compression_enabled": False,
+        "default_history_compression": "summarize_oldest",
+        "engine_preset": "default",
+        "engine_ref": None,
+        "context_plugin_ids": [],
+        "optimization_policy": None,
+    }
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+@pytest.mark.parametrize(
+    "malformed_policy",
+    [object(), {"not": "policy"}, "policy"],
+)
+def test_malformed_explicit_policy_rejects_before_runtime_config_mutation(
+    malformed_policy: object,
+) -> None:
+    config = _config_with_sentinels()
+    before = _config_snapshot(config)
+    context = _bridge_context_namespace(optimization_policy=malformed_policy)
+
+    with pytest.raises(ValueError, match="optimization_policy must be"):
+        apply_context_profile_to_runtime_config(config, context)  # type: ignore[arg-type]
+
+    assert _config_snapshot(config) == before
+
+
+def test_malformed_explicit_policy_with_legacy_enabled_raises_value_error() -> None:
+    config = _config_with_sentinels()
+    before = _config_snapshot(config)
+    context = _bridge_context_namespace(
+        optimization_policy=object(),
+        semantic_compression_enabled=True,
+        default_history_compression="summarize_oldest",
+    )
+
+    with pytest.raises(ValueError, match="optimization_policy must be"):
+        apply_context_profile_to_runtime_config(config, context)  # type: ignore[arg-type]
+
+    assert _config_snapshot(config) == before
+
+
+def test_valid_explicit_policy_preserves_identity_through_full_bridge() -> None:
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+    explicit = _canonical_summarize_policy()
+    decision = ContextDecisionProfile(
+        include_session_history=False,
+        prefer_longterm_memory=True,
+        prefer_rag_when_enabled=False,
+        max_memory_entries_in_context=12,
+    )
+    budget = ContextBudgetPolicy(max_chars=8_000, max_tokens_estimate=2_000)
+    assembly = TaskContextAssemblyOptions(summary_tier=ContextSummaryTier.SUMMARY_ONLY)
+    context = ContextProfile(
+        enable_rag=False,
+        enable_websearch=True,
+        budget_policy=budget,
+        decision=decision,
+        assembly_options=assembly,
+        optimization_policy=explicit,
+        semantic_compression_enabled=False,
+    )
+
+    apply_context_profile_to_runtime_config(config, context)
+
+    assert config.metadata[CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY] is explicit
+    assert LEGACY_SEMANTIC_COMPRESSION_METADATA_KEY not in config.metadata
+    assert config.enable_rag is False
+    assert config.enable_websearch is True
+    assert config.context_budget_policy == budget
+    assert config.task_context_assembly_options == assembly
+    assert config.context_decision_profile == decision.model_dump(mode="json")
+    assert config.max_longterm_entries_per_query == 12
