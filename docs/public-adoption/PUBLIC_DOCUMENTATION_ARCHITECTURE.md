@@ -18,7 +18,7 @@ This document is the canonical maintainer-facing contract for Intergrax public d
 
 It does **not** replace:
 
-- `INTERGRAX_PUBLIC_POSITIONING.md`;
+- `INTERGRAX_PUBLIC_POSITIONING.md` — exact first-contact message, product hierarchy, audience value, CTA language, and placement of Harness AI terminology;
 - implementation plans;
 - detailed proof claims;
 - architecture canon;
@@ -204,6 +204,15 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 - LKW proof details remain owned by LKW documentation and the later proof-and-claims document.
 
 Primary public entry: `docs/public-adoption/LKW_PLATFORM_PROOF.md`
+
+**Frozen CTA placement (PX-1):**
+
+- LKW is the primary public product CTA.
+- Token Optimization is the secondary capability CTA.
+- Product trial and platform evaluation are separate routes.
+- The current primary CTA is **See the LKW workflow**.
+- **Try LKW** is gated by PX-3.
+- Root README adoption occurs in PX-2.
 
 ---
 
@@ -430,7 +439,7 @@ Real product screenshots remain deferred until reviewed source images exist.
 
 | Topic | Owner |
 |-------|-------|
-| Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
+| Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` — exact first-contact message, product hierarchy, audience value, CTA language, Harness AI placement |
 | Public use-case fit | `USE_CASES.md` |
 | Public product-validation direction | `ROADMAP.md` |
 | Public value and fit | `WHY_INTERGRAX.md` |

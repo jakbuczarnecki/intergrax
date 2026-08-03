@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-0 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-1 |
+| Current phase | PX-1 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-2 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -124,27 +124,31 @@ The following are **already identified** on the current baseline. They are **not
 
 ## PX-0 — Baseline, audience and success contract
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `9c423d0ff760fa6e574a3977e5c6fd2af2a5a95d`
+
+PX-0 froze: audience contract; success gates; route ownership; PX roadmap; external-validation succession.
 
 **User-visible outcome:** Maintainer contract freezes audiences, experience gates, route ownership, and PX-0 through PX-15 phase structure without changing public reader routes.
 
-**Completion gate:** Immutable baseline SHA recorded; six audiences defined; first-contact targets frozen; LKW/Token Optimization/echo-lab ownership explicit; all phases exist; maintainer ownership synchronized; no public reader route changes; no fictional validation; commit audited and accepted. Document remains READY_FOR_REVIEW until audit acceptance.
+**Completion gate:** Immutable baseline SHA recorded; six audiences defined; first-contact targets frozen; LKW/Token Optimization/echo-lab ownership explicit; all phases exist; maintainer ownership synchronized; no public reader route changes; no fictional validation; commit audited and accepted.
 
 ---
 
 ## PX-1 — Product positioning
 
-**Status:** BLOCKED_ON_PX_0_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Public positioning documents align with product-first hierarchy: LKW primary, Token Optimization secondary, honest maturity.
 
-**Completion gate:** Positioning contract updated and synchronized; no overstated claims; architecture and maintainer index reflect product-first routing.
+**Completion gate:** Positioning contract updated and synchronized; no overstated claims; architecture and maintainer index reflect product-first routing. Completion gate remains unfulfilled until commit audit acceptance.
 
 ---
 
 ## PX-2 — Product-first root README
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_1_ACCEPTANCE
 
 **User-visible outcome:** Root README leads with product value, LKW workflow, and one clear next action before platform depth.
 
