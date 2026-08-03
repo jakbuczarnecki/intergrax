@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Native Knowledge Document Contract — LCI-1A
 
-**Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **READY_FOR_REVIEW**
+**Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **APPROVED**; LCI-1C bridge: **APPROVED**; LCI-1D conformance gate: **READY_FOR_REVIEW**
 **Owner:** RAG (functional) · Tier-0 `intergrax/knowledge/` (neutral shared core)  
 **Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)  
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)  
@@ -509,4 +509,18 @@ Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_de
 | Packaging optionalization | Deferred to LCI-7A (`langchain-core` remains default dependency in LCI-1C) |
 
 **LCI-1B implementation:** APPROVED
-**LCI-1C bridge:** READY_FOR_REVIEW
+**LCI-1C bridge:** APPROVED
+**LCI-1D conformance gate:** READY_FOR_REVIEW
+
+---
+
+## 19. Implementation evidence (LCI-1D)
+
+| Item | Location |
+|------|----------|
+| Conformance checker | `scripts/maintenance/check_knowledge_document_conformance.py` |
+| Public conformance tests | `tests/unit/knowledge/contracts/test_document_conformance.py` |
+| AST gate tests | `tests/unit/architecture/test_knowledge_document_conformance_gate.py` |
+| CI workflow | `.github/workflows/unit-tests.yml` (PR smoke + full governance) |
+| Blocked namespaces | `langchain`, `langchain_*`, `langgraph`, `langgraph_*`, `intergrax.compat` |
+| Proof boundary | Native `KnowledgeDocument` import/serialize proof only; full LangChain-free core installation remains **LCI-7B** |

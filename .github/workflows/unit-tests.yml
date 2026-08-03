@@ -90,6 +90,7 @@ jobs:
           && uv run python scripts/maintenance/check_agents_no_tier3_imports.py
           && uv run python scripts/ci/check_ci_gate_test_purity.py
           && uv run python scripts/maintenance/check_langchain_boundary.py
+          && uv run python scripts/maintenance/check_knowledge_document_conformance.py
 
   gate-tests:
     if: >-
@@ -163,6 +164,7 @@ jobs:
           && uv run python scripts/maintenance/check_agent_registry_bypass.py
           && uv run python scripts/maintenance/check_langgraph_not_required.py
           && uv run python scripts/maintenance/check_langchain_boundary.py
+          && uv run python scripts/maintenance/check_knowledge_document_conformance.py
           && uv run python scripts/maintenance/check_agents_no_tier3_imports.py
           && uv run python scripts/audit/check_docs_domain_pairs.py
           && uv run python scripts/maintenance/check_scaffold_harness_alignment.py

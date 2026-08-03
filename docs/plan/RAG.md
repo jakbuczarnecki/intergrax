@@ -64,7 +64,9 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Task | Priority | Status | Deliverable | Next |
 |------|----------|--------|-------------|------|
-| LCI-1C | P0 | READY_FOR_REVIEW | LangChain Document compatibility bridge | LCI-1D |
+| LCI-1C | P0 | APPROVED | LangChain Document compatibility bridge | LCI-1D — owned by EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE |
+
+After LCI-1D acceptance, RAG resumes roadmap ownership at LCI-2A (not started).
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
 

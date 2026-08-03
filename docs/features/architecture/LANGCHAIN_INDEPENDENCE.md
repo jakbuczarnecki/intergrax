@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** `LCI-1C` — LangChain document compatibility bridge
+**Current active task:** `LCI-1D` — Knowledge document conformance gate
 
 **Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -136,7 +136,7 @@ Provider paths are allowed only when:
 3. Provider maps outward/inward to native Intergrax types at the boundary.
 4. No provider object escapes the provider module.
 
-**Note:** `intergrax/compat/langchain/` provides the isolated LangChain `Document` bridge (`LCI-1C`, **READY_FOR_REVIEW**); canonical native type remains `KnowledgeDocument`; packaging optionalization remains **LCI-7A**.
+**Note:** `intergrax/compat/langchain/` provides the isolated LangChain `Document` bridge (`LCI-1C`, **APPROVED**); canonical native type remains `KnowledgeDocument`; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; full dependency optionalization remains later (**LCI-7A** / **LCI-7B**).
 
 ---
 
@@ -203,7 +203,7 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 
 ## LCI-1A — Native knowledge document contract (summary)
 
-Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **APPROVED**). The canonical native type remains `KnowledgeDocument`; the LangChain bridge exists only under `intergrax/compat/langchain/`; packaging optionalization remains **LCI-7A**.
+Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **APPROVED**). KnowledgeDocument remains canonical; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; full dependency optionalization remains later (**LCI-7A** / **LCI-7B**).
 
 | Decision | Value |
 |----------|-------|

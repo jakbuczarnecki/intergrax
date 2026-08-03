@@ -100,15 +100,25 @@ Load **only** the satellite matching your task or cited gap ID.
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Owner** | Experimentation and Developer Experience |
 | **Checker** | `scripts/maintenance/check_langchain_boundary.py` |
 | **CI** | PR smoke + full governance |
 | **Baseline** | `scripts/maintenance/langchain_boundary_grandfather.json` |
 
+### LCI-1D — Knowledge document conformance gate
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P0 |
+| **Status** | READY_FOR_REVIEW |
+| **Owner** | Experimentation and Developer Experience |
+| **Checker** | `scripts/maintenance/check_knowledge_document_conformance.py` |
+| **Tests** | `tests/unit/knowledge/contracts/test_document_conformance.py`; `tests/unit/architecture/test_knowledge_document_conformance_gate.py` |
+| **CI** | PR smoke + full governance |
+| **Next** | LCI-2A |
 
 
----
 
 ---
 

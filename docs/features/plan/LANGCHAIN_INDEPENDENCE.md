@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-1C
-**Next task after acceptance:** LCI-1D
+**Current task:** LCI-1D
+**Next task after acceptance:** LCI-2A
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -125,7 +125,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Optional from_langchain_document / to_langchain_document behind compat boundary. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-1B |
@@ -141,16 +141,16 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | LCI-1D proves that the native knowledge-document module, its serializers, compatibility-independent conformance tests, and native document public exports can be imported and exercised without langchain* installed. |
 | **Owning domain plan** | docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-1B |
-| **Exact scope** | Conformance test suite for contract, serialization, identity, and metadata; native document module import gate without langchain*; AST/signature checks wired in CI for scope delivered to this point |
+| **Exact scope** | public ABI conformance suite; native AST boundary; blocked-import subprocess proof; CI smoke and full-governance wiring |
 | **Explicit out of scope** | Full pipeline migration; full Intergrax core installation without langchain* (remains LCI-7B) |
-| **Acceptance criteria** | Contract tests pass; serialization round-trip tests pass; identity and metadata conformance tests pass; native document module imports without langchain* installed; AST/signature checks pass for implemented native document surface |
+| **Acceptance criteria** | public models/fields/config validated; serializer signatures validated; source/derivative and metadata proof executed; no langchain*/langgraph*/compat import attempted; checker wired in both CI profiles |
 | **User-visible outcome** | Enforced native document contract hygiene with executed gates |
 
-Full Intergrax core installation without langchain* remains out of scope until LCI-7B.
+LCI-1D is not the full LangChain-free core installation proof. That remains LCI-7B.
 
 ---
 
