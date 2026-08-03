@@ -52,21 +52,7 @@ def build_default_inventory() -> PromptInstructionInventory:
         description="Rules describing how retrieved knowledge must be used by the model.",
     )
 
-    b.add(
-        kind=PromptInstructionKind.CONTEXT_OVERFLOW,
-        module="intergrax.runtime.nexus.context.engine_history_layer",
-        symbol="EngineHistoryLayer",
-        description="Policy describing how context should be reduced when exceeding limits.",
-    )
-
     # === HISTORY & SUMMARIZATION ===
-
-    b.add(
-        kind=PromptInstructionKind.HISTORY_SUMMARY,
-        module="intergrax.runtime.nexus.prompts.history_prompt_builder",
-        symbol="HistoryPromptBuilder",
-        description="Instructions for summarizing conversation history.",
-    )
 
     b.add(
         kind=PromptInstructionKind.HISTORY_SUMMARY,

@@ -13,7 +13,6 @@ from intergrax.runtime.nexus.tracing.history.history_summary import HistorySumma
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.prompts.history_prompt_builder import HistorySummaryPromptBuilder
 from intergrax.runtime.nexus.responses.response_schema import HistoryCompressionStrategy
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.runtime.nexus.session.session_manager import SessionManager
@@ -36,17 +35,10 @@ class HistoryLayer:
         self,
         config: RuntimeConfig,
         session_manager: SessionManager,
-        history_prompt_builder: HistorySummaryPromptBuilder,
     ) -> None:
-        """
-        HistoryLayer encapsulates legacy raw conversation history loading.
-
-        The history_prompt_builder parameter is retained for legacy constructor
-        compatibility only; must not be invoked.
-        """
+        """HistoryLayer encapsulates legacy raw conversation history loading."""
         self._config = config
         self._session_manager = session_manager
-        _ = history_prompt_builder
 
     async def build_base_history(self, state: RuntimeState) -> None:
         """

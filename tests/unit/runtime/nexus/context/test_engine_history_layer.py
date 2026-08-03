@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""CTX-UCL-6A: legacy HistoryLayer fail-closed gate and OFF raw-history load."""
+"""CTX-UCL-6A/6D: legacy HistoryLayer fail-closed gate and OFF raw-history load."""
 
 from __future__ import annotations
 
 import ast
+import inspect
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -17,10 +18,14 @@ from intergrax.runtime.nexus.context.engine_history_layer import (
     HistoryLayer,
     LegacyHistoryCompressionDisabledError,
 )
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import (
     HistoryCompressionStrategy,
     RuntimeRequest,
 )
+from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.session_manager import SessionManager
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -79,19 +84,6 @@ class _FailOnGenerateAdapter:
         raise AssertionError("generate_messages must not be called")
 
 
-@dataclass
-class _RecordingPromptBuilder:
-    calls: int = 0
-
-    def build_history_summary_prompt(self, **_kwargs):
-        self.calls += 1
-        raise AssertionError("history summary prompt builder must not be called")
-
-    def build_history_summary_user_prompt(self, **_kwargs):
-        self.calls += 1
-        raise AssertionError("history summary prompt builder must not be called")
-
-
 def _raw_history() -> list[ChatMessage]:
     return [
         ChatMessage(
@@ -136,15 +128,13 @@ def _history_layer(
     *,
     history: list[ChatMessage],
     strategy: HistoryCompressionStrategy = HistoryCompressionStrategy.OFF,
-) -> tuple[HistoryLayer, _RecordingSessionManager, _RecordingPromptBuilder, _StubRuntimeState]:
+) -> tuple[HistoryLayer, _RecordingSessionManager, _StubRuntimeState]:
     session_manager = _RecordingSessionManager(history=history)
-    prompt_builder = _RecordingPromptBuilder()
     adapter = _FailOnGenerateAdapter()
     config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     layer = HistoryLayer(
         config=config,
         session_manager=session_manager,
-        history_prompt_builder=prompt_builder,
     )
     state = _StubRuntimeState(
         session=_StubSession(tenant_id="tenant-1", id="session-1"),
@@ -160,20 +150,19 @@ def _history_layer(
         base_history=None,
         history_token_count=None,
     )
-    return layer, session_manager, prompt_builder, state
+    return layer, session_manager, state
 
 
 @pytest.mark.asyncio
 async def test_off_loads_full_history_without_transformation() -> None:
     raw_history = _raw_history()
-    layer, session_manager, prompt_builder, state = _history_layer(history=raw_history)
+    layer, session_manager, state = _history_layer(history=raw_history)
 
     await layer.build_base_history(state)
 
     assert len(session_manager.calls) == 1
     assert session_manager.calls[0] == ("tenant-1", "session-1")
     assert _FailOnGenerateAdapter.generate_calls == 0
-    assert prompt_builder.calls == 0
     assert state.trace_calls == 1
 
     assert state.base_history is not None
@@ -208,7 +197,7 @@ async def test_legacy_reduction_strategies_fail_before_side_effects(
     strategy: HistoryCompressionStrategy,
 ) -> None:
     raw_history = _raw_history()
-    layer, session_manager, prompt_builder, state = _history_layer(
+    layer, session_manager, state = _history_layer(
         history=raw_history,
         strategy=strategy,
     )
@@ -222,7 +211,6 @@ async def test_legacy_reduction_strategies_fail_before_side_effects(
     assert exc_info.value.reason == LEGACY_HISTORY_COMPRESSION_DISABLED_REASON
     assert session_manager.calls == []
     assert _FailOnGenerateAdapter.generate_calls == 0
-    assert prompt_builder.calls == 0
     assert state.trace_calls == 0
     assert state.base_history is initial_base_history
     assert state.history_token_count is initial_token_count
@@ -231,7 +219,7 @@ async def test_legacy_reduction_strategies_fail_before_side_effects(
 @pytest.mark.asyncio
 async def test_blocked_strategy_fails_before_session_validation() -> None:
     raw_history = _raw_history()
-    layer, session_manager, prompt_builder, state = _history_layer(
+    layer, session_manager, state = _history_layer(
         history=raw_history,
         strategy=HistoryCompressionStrategy.TRUNCATE_OLDEST,
     )
@@ -246,7 +234,6 @@ async def test_blocked_strategy_fails_before_session_validation() -> None:
     assert exc_info.value.reason == LEGACY_HISTORY_COMPRESSION_DISABLED_REASON
     assert session_manager.calls == []
     assert _FailOnGenerateAdapter.generate_calls == 0
-    assert prompt_builder.calls == 0
     assert state.trace_calls == 0
     assert state.base_history is initial_base_history
     assert state.history_token_count is initial_token_count
@@ -255,7 +242,7 @@ async def test_blocked_strategy_fails_before_session_validation() -> None:
 @pytest.mark.asyncio
 async def test_history_strategy_requires_exact_enum() -> None:
     raw_history = _raw_history()
-    layer, session_manager, prompt_builder, state = _history_layer(history=raw_history)
+    layer, session_manager, state = _history_layer(history=raw_history)
     state.request.history_compression_strategy = "off"  # type: ignore[assignment]
 
     with pytest.raises(TypeError, match="history_compression_strategy must be HistoryCompressionStrategy"):
@@ -263,7 +250,6 @@ async def test_history_strategy_requires_exact_enum() -> None:
 
     assert session_manager.calls == []
     assert _FailOnGenerateAdapter.generate_calls == 0
-    assert prompt_builder.calls == 0
     assert state.trace_calls == 0
 
 
@@ -278,6 +264,8 @@ def test_history_layer_has_no_independent_optimization_path() -> None:
         "history_budget_tokens",
         "reserved_for_output",
         "reserved_for_meta",
+        "history_prompt_builder",
+        "HistorySummaryPromptBuilder",
     ]
     for fragment in banned_fragments:
         assert fragment not in source
@@ -297,18 +285,40 @@ def test_history_layer_has_no_independent_optimization_path() -> None:
             assert node.func.attr != "generate_messages"
 
 
-def test_runtime_context_constructor_contract_remains_compatible() -> None:
-    prompt_builder = _RecordingPromptBuilder()
-    adapter = _FailOnGenerateAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    session_manager = _RecordingSessionManager(history=[])
+def test_history_layer_constructor_has_no_transform_dependencies() -> None:
+    signature = inspect.signature(HistoryLayer.__init__)
+    assert tuple(signature.parameters) == ("self", "config", "session_manager")
 
-    layer = HistoryLayer(
-        config=config,
-        session_manager=session_manager,
-        history_prompt_builder=prompt_builder,
+
+def test_runtime_context_build_does_not_wire_legacy_history_summary(monkeypatch) -> None:
+    resolve_calls: list[str] = []
+
+    from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
+
+    original_resolve = YamlPromptRegistry.resolve_localized
+
+    def tracking_resolve(self, prompt_id, *args, **kwargs):
+        resolve_calls.append(prompt_id)
+        return original_resolve(self, prompt_id, *args, **kwargs)
+
+    monkeypatch.setattr(YamlPromptRegistry, "resolve_localized", tracking_resolve)
+
+    from intergrax.tools.registry import ToolRegistry
+
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        enable_rag=False,
+        enable_websearch=False,
+        tools_mode="off",
+        tool_registry=ToolRegistry(),
     )
+    session_manager = SessionManager(storage=InMemorySessionStorage())
+    ctx = RuntimeContext.build(config=config, session_manager=session_manager)
 
-    assert layer is not None
-    assert prompt_builder.calls == 0
-    assert _FailOnGenerateAdapter.generate_calls == 0
+    assert not hasattr(ctx, "history_prompt_builder")
+    assert ctx.history_layer is not None
+    assert "history_summary" not in resolve_calls
+
+    layer_signature = inspect.signature(HistoryLayer.__init__)
+    assert tuple(layer_signature.parameters) == ("self", "config", "session_manager")
