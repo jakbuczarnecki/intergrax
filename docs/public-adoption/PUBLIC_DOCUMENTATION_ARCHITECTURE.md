@@ -55,11 +55,13 @@ Freeze five layers.
 README.md
 ```
 
+**Status:** implemented in PX-2 — READY_FOR_REVIEW
+
 **Role:**
 
 - first 30 seconds;
 - problem and value;
-- LKW product proof;
+- LKW product workflow;
 - selected platform-capability spotlight;
 - honest maturity;
 - one clear next action;
@@ -203,7 +205,17 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 - LKW does not claim completed commercial or real-user validation.
 - LKW proof details remain owned by LKW documentation and the later proof-and-claims document.
 
-Primary public entry: `docs/public-adoption/LKW_PLATFORM_PROOF.md`
+Primary public entry:
+
+```text
+First-contact LKW workflow:
+README.md#local-knowledge-workspace-lkw
+
+Bounded technical proof:
+docs/public-adoption/LKW_PLATFORM_PROOF.md
+```
+
+The README owns the concise first-contact workflow. The LKW proof remains the authoritative bounded reviewer path. This is not yet the full dedicated product-tour/proof separation planned for PX-5.
 
 **Frozen CTA placement (PX-1):**
 
@@ -212,7 +224,7 @@ Primary public entry: `docs/public-adoption/LKW_PLATFORM_PROOF.md`
 - Product trial and platform evaluation are separate routes.
 - The current primary CTA is **See the LKW workflow**.
 - **Try LKW** is gated by PX-3.
-- Root README adoption occurs in PX-2.
+- Root README adoption is implemented in PX-2 and ready for audit.
 
 ---
 
@@ -297,7 +309,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
-| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-5 |
+| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 READY_FOR_REVIEW |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |

@@ -33,12 +33,12 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-1 — READY_FOR_REVIEW |
+| Current phase | PX-2 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | See the LKW workflow |
 | Future product-trial CTA | Try LKW — only after PX-3 provides an actual supported path |
-| Root README application | PX-2 — not modified by PX-1 |
+| Root README application | APPLIED IN PX-2 — READY_FOR_REVIEW |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -298,6 +298,6 @@ Do not place license or architecture before the concrete product explanation.
 | Detailed proof claims | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
 | Collaboration permissions | `COLLABORATION.md` |
 | Architecture details | Architecture canon |
-| Root README | Consumes this contract in PX-2; not modified by PX-1 |
+| Root README | Consumes this contract in PX-2 and is ready for audit. |
 
 Do not duplicate detailed task statuses or proof tables here.

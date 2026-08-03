@@ -1,6 +1,10 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
-**Prerequisite:** Complete the [README Quick start](../../README.md#quick-start) (lab host, ~5 min) before this platform proof.
+**Prerequisite:** This is a bounded technical reviewer proof, not the simplified product trial.
+
+Start with the [root README](../../README.md) for the product overview, then use the prerequisites and one-command proof entrypoints documented below.
+
+No `lab_application` or `echo.basic` prerequisite is required.
 
 This document is the guided reviewer path for two proof categories:
 
