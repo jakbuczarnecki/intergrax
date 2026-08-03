@@ -559,25 +559,110 @@ def _validate_expected_content_type(value: object) -> str:
         ) from None
 
 
+def _decode_quoted_content_type_value(raw_value: str) -> str:
+    if len(raw_value) < 2 or raw_value[0] != '"' or raw_value[-1] != '"':
+        raise ValueError("content type quoted parameter value is invalid")
+    inner = raw_value[1:-1]
+    if not inner:
+        raise ValueError("content type quoted parameter value must be nonblank")
+    decoded: list[str] = []
+    index = 0
+    while index < len(inner):
+        ch = inner[index]
+        if ch == "\\":
+            if index + 1 >= len(inner):
+                raise ValueError("content type quoted parameter value has dangling escape")
+            escaped = inner[index + 1]
+            if ord(escaped) < 0x20 or ord(escaped) > 0x7E:
+                raise ValueError("content type quoted parameter value contains invalid escape")
+            decoded.append(escaped)
+            index += 2
+            continue
+        if ch == '"':
+            raise ValueError("content type quoted parameter value contains unescaped quote")
+        if ord(ch) < 0x20 or ord(ch) > 0x7E:
+            raise ValueError("content type quoted parameter value contains non-visible ASCII")
+        decoded.append(ch)
+        index += 1
+    return "".join(decoded)
+
+
+def _split_content_type_segments(raw_value: str) -> tuple[str, ...]:
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in raw_value):
+        raise ValueError("content type contains control characters")
+    segments: list[str] = []
+    current: list[str] = []
+    in_quotes = False
+    escaped = False
+    index = 0
+    while index < len(raw_value):
+        ch = raw_value[index]
+        if in_quotes:
+            current.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_quotes = False
+            index += 1
+            continue
+        if ch == '"':
+            in_quotes = True
+            current.append(ch)
+            index += 1
+            continue
+        if ch == ";":
+            segments.append("".join(current))
+            current = []
+            index += 1
+            continue
+        current.append(ch)
+        index += 1
+    if in_quotes or escaped:
+        raise ValueError("content type contains unterminated quoted value")
+    segments.append("".join(current))
+    return tuple(segments)
+
+
+def _split_parameter_name_value(segment: str) -> tuple[str, str]:
+    in_quotes = False
+    escaped = False
+    equals_index = -1
+    for index, ch in enumerate(segment):
+        if in_quotes:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_quotes = False
+            continue
+        if ch == '"':
+            in_quotes = True
+            continue
+        if ch == "=":
+            if equals_index >= 0:
+                raise ValueError("content type parameter must contain exactly one equals sign")
+            equals_index = index
+    if equals_index < 0:
+        raise ValueError("content type parameter must contain exactly one equals sign")
+    if in_quotes or escaped:
+        raise ValueError("content type parameter is invalid")
+    return segment[:equals_index], segment[equals_index + 1 :]
+
+
 def _validate_content_type_parameter(segment: str) -> None:
     cleaned = segment.strip()
     if not cleaned:
         raise ValueError("content type parameter must be nonblank")
-    if cleaned.count("=") != 1:
-        raise ValueError("content type parameter must contain exactly one equals sign")
-    name, value = cleaned.split("=", 1)
+    name, value = _split_parameter_name_value(cleaned)
     if not name or _HTTP_TOKEN_PATTERN.fullmatch(name) is None:
         raise ValueError("content type parameter name is invalid")
     if not value:
         raise ValueError("content type parameter value must be nonblank")
     if value[0] == '"':
-        if len(value) < 2 or value[-1] != '"' or value.count('"') != 2:
-            raise ValueError("content type quoted parameter value is invalid")
-        inner = value[1:-1]
-        if not inner:
-            raise ValueError("content type quoted parameter value must be nonblank")
-        if any(ord(ch) < 32 or ord(ch) == 127 for ch in inner):
-            raise ValueError("content type quoted parameter value contains controls")
+        _decode_quoted_content_type_value(value)
         return
     if _HTTP_TOKEN_PATTERN.fullmatch(value) is None:
         raise ValueError("content type parameter value is invalid")
@@ -677,7 +762,16 @@ def _parse_response_media_type(
             safe_reason="invalid_content_type",
             attempts=attempts,
         )
-    segments = raw_value.split(";")
+    try:
+        segments = _split_content_type_segments(raw_value)
+    except ValueError:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        ) from None
     try:
         base = normalize_google_workspace_media_type(segments[0])
     except (TypeError, ValueError):

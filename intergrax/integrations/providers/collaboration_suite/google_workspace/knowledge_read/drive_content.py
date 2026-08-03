@@ -121,7 +121,10 @@ class GoogleDriveFileContent(BaseModel):
     @field_validator("item", mode="before")
     @classmethod
     def _validate_item(cls, value: object) -> GoogleDriveItem:
-        return _reconstruct_item(value)
+        try:
+            return _reconstruct_item(value)
+        except IntegrationConfigurationError:
+            raise ValueError(_INVALID_ITEM_MESSAGE) from None
 
     @field_validator("content_mime_type", mode="before")
     @classmethod
@@ -221,18 +224,15 @@ def _resolve_export_mime(mime_type: str) -> str:
 def _reconstruct_item(item: object) -> GoogleDriveItem:
     if type(item) is not GoogleDriveItem:
         raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
+
     try:
         snapshot = item.model_dump(mode="python")
         scope_data = snapshot.get("scope")
         if isinstance(scope_data, dict):
             snapshot["scope"] = GoogleDriveScope(**scope_data)
+        return GoogleDriveItem(**snapshot)
     except Exception:
         raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
-    try:
-        validated = GoogleDriveItem(**snapshot)
-    except (ValueError, TypeError, AttributeError, ValidationError):
-        raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
-    return validated
 
 
 def _copy_and_validate_binary_payload(
@@ -243,12 +243,15 @@ def _copy_and_validate_binary_payload(
 ) -> GoogleWorkspaceBinaryPayload:
     if type(payload) is not GoogleWorkspaceBinaryPayload:
         raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None
+
     try:
+        data = payload.data
+        content_type = payload.content_type
         validated = GoogleWorkspaceBinaryPayload(
-            data=payload.data,
-            content_type=payload.content_type,
+            data=data,
+            content_type=content_type,
         )
-    except (TypeError, ValueError):
+    except Exception:
         raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None
     if validated.content_type != expected_content_type:
         raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None

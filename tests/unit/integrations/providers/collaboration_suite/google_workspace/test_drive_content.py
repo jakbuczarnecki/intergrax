@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import pytest
 from pydantic import ValidationError
@@ -456,7 +457,7 @@ def test_safe_errors_do_not_expose_sensitive_values() -> None:
 def test_malformed_content_model_rejected() -> None:
     payload = _blob_payload()
     item = _item_from_payload(payload)
-    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+    with pytest.raises(ValidationError):
         GoogleDriveFileContent(
             item=item,
             mode=GoogleDriveContentMode.BLOB,
@@ -523,7 +524,7 @@ def test_file_content_rejects_model_construct_item() -> None:
     snapshot = item.model_dump(mode="python")
     snapshot["kind"] = GoogleDriveItemKind.NATIVE_DOCUMENT
     bad_item = GoogleDriveItem.model_construct(**snapshot)
-    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+    with pytest.raises(ValidationError):
         GoogleDriveFileContent(
             item=bad_item,
             mode=GoogleDriveContentMode.BLOB,
@@ -543,7 +544,7 @@ def test_file_content_rejects_item_subclass() -> None:
     snapshot = item.model_dump(mode="python")
     snapshot["scope"] = GoogleDriveScope(**snapshot["scope"])
     subclass_item = _SubclassItem(**snapshot)
-    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+    with pytest.raises(ValidationError):
         GoogleDriveFileContent(
             item=subclass_item,
             mode=GoogleDriveContentMode.BLOB,
@@ -600,18 +601,24 @@ def test_file_content_valid_item_stored_as_copy() -> None:
     assert result.item is not item
 
 
+def test_model_construct_item_arbitrary_exception_rejected_before_network() -> None:
+    class _MaliciousDatetime(datetime):
+        def isoformat(self, *args: object, **kwargs: object) -> str:
+            raise RuntimeError("private-item-value")
+
     payload = _blob_payload()
     item = _item_from_payload(payload)
-    result = GoogleDriveFileContent(
-        item=item,
-        mode=GoogleDriveContentMode.BLOB,
-        content_mime_type="application/pdf",
-        data=b"test",
-        size_bytes=4,
-        content_hash=hashlib.sha256(b"test").hexdigest(),
-    )
-    assert result.item == item
-    assert result.item is not item
+    snapshot = item.model_dump(mode="python")
+    snapshot["modified_at"] = _MaliciousDatetime(2024, 1, 2, 12, 0, 0)
+    bad_item = GoogleDriveItem.model_construct(**snapshot)
+    transport = _DualTransport()
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Drive content item") as exc_info:
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=bad_item)
+    message = str(exc_info.value)
+    assert "private-item-value" not in message
+    assert "private-item-value" not in repr(exc_info.value)
+    assert transport.json_calls == []
+    assert transport.binary_calls == []
 
 
 class _WrongBinaryReturnTransport(_DualTransport):
@@ -685,6 +692,34 @@ def test_injected_non_bytes_binary_payload() -> None:
     transport = _DualTransport(json_responses=[payload], binary_responses=[bad_payload])
     with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result"):
         GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+
+
+@pytest.mark.parametrize(
+    ("set_data", "set_content_type"),
+    [
+        (False, True),
+        (True, False),
+        (False, False),
+    ],
+)
+def test_injected_missing_binary_payload_fields(
+    set_data: bool,
+    set_content_type: bool,
+) -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    bad_payload = object.__new__(GoogleWorkspaceBinaryPayload)
+    if set_data:
+        object.__setattr__(bad_payload, "data", b"test")
+    if set_content_type:
+        object.__setattr__(bad_payload, "content_type", "application/pdf")
+    transport = _DualTransport(json_responses=[payload], binary_responses=[bad_payload])
+    with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result") as exc_info:
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+    message = str(exc_info.value)
+    assert "AttributeError" not in message
+    assert len(transport.json_calls) == 1
+    assert len(transport.binary_calls) == 1
 
 
 def test_native_export_effective_limit_enforced() -> None:

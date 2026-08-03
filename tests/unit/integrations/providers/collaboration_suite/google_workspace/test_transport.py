@@ -1502,6 +1502,97 @@ def test_binary_quoted_charset_accepted() -> None:
 
 
 @pytest.mark.parametrize(
+    "content_type",
+    [
+        'text/plain; note="a;b=c"',
+        'text/plain; note="a\\"b"',
+        'text/plain; note="a\\\\b"',
+    ],
+)
+def test_binary_quoted_content_type_parameters_accepted(content_type: str) -> None:
+    executor = _RecordingExecutor(
+        responses=[_FakeResponse(200, headers={"Content-Type": content_type}, content=b"ok")]
+    )
+    transport = _transport(executor)
+    result = transport.get_bytes(
+        source_kind=GoogleWorkspaceSourceKind.DRIVE,
+        relative_path="/files/file-1",
+        params=None,
+        expected_content_type="text/plain",
+        max_bytes=10,
+        range_limited=False,
+    )
+    assert result.data == b"ok"
+
+
+@pytest.mark.parametrize(
+    "content_type",
+    [
+        'text/plain; charset="żółć"',
+        'text/plain; note=""',
+        'text/plain; note="unterminated',
+        'text/plain; note="dangling\\"',
+        'text/plain; note="a"b"',
+    ],
+)
+def test_binary_malformed_quoted_content_type_rejected(content_type: str) -> None:
+    executor = _RecordingExecutor(
+        responses=[_FakeResponse(200, headers={"Content-Type": content_type}, content=b"x")]
+    )
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_bytes(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files/file-1",
+            params=None,
+            expected_content_type="text/plain",
+            max_bytes=10,
+            range_limited=False,
+        )
+    error = exc_info.value
+    assert error.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+    assert error.safe_reason == "invalid_content_type"
+    assert error.status_code == 200
+    assert error.attempts == 1
+    assert content_type not in str(error)
+    assert content_type not in repr(error)
+
+
+def test_binary_retry_malformed_content_type_on_second_attempt() -> None:
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(503, content=b"{}"),
+            _FakeResponse(
+                200,
+                headers={"Content-Type": 'text/plain; charset="żółć"'},
+                content=b"ok",
+            ),
+        ]
+    )
+    sleeps: list[float] = []
+    transport = _transport(executor, policy=policy, sleeper=sleeps, jitter_values=[0.5])
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_bytes(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files/file-1",
+            params=None,
+            expected_content_type="text/plain",
+            max_bytes=10,
+            range_limited=False,
+        )
+    error = exc_info.value
+    assert error.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+    assert error.safe_reason == "invalid_content_type"
+    assert error.status_code == 200
+    assert error.attempts == 2
+    assert len(executor.calls) == 2
+    assert len(sleeps) == 1
+    assert 'charset="żółć"' not in str(error)
+    assert 'charset="żółć"' not in repr(error)
+
+
+@pytest.mark.parametrize(
     ("content_type", "content"),
     [
         ("text/plain;", b"x"),
