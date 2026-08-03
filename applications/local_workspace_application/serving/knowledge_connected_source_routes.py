@@ -4,10 +4,15 @@
 
 from __future__ import annotations
 
-import hashlib
-import re
-
 from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request, Response, status
+
+from local_workspace_application.serving.knowledge_configuration_http import (
+    hash_knowledge_configuration_idempotency_key,
+    map_knowledge_configuration_mutation_error,
+    parse_knowledge_configuration_if_match,
+    require_knowledge_configuration_idempotency_key,
+    resolve_knowledge_configuration_tenant_id,
+)
 
 from local_workspace_application.serving.knowledge_connected_source_schemas import (
     ConnectedIndexedSourceSyncAcceptedV1,
@@ -16,7 +21,6 @@ from local_workspace_application.serving.knowledge_connected_source_schemas impo
     RemoteResourceCandidateResponseV1,
     RemoteResourceDiscoveryResponseV1,
 )
-from intergrax.fastapi_core.context import get_request_context
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceBindingError,
     ConnectedSourceDiscoveryError,
@@ -48,52 +52,6 @@ from local_workspace_application.workspaces.service import ConcurrentSyncError, 
 from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 from local_workspace_application.workspaces.sync_runtime import ManagedWorkspaceSyncRuntime
-
-_IF_MATCH_RE = re.compile(r"^WKC/(\d+)$")
-
-
-def _resolve_tenant_id(request: Request, *, header_tenant_id: str | None) -> str:
-    try:
-        context = get_request_context(request)
-    except RuntimeError:
-        context = None
-    if context is not None and context.tenant_id:
-        return str(context.tenant_id)
-    if header_tenant_id and header_tenant_id.strip():
-        return header_tenant_id.strip()
-    raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail="tenant_id_required",
-    )
-
-
-def _parse_if_match(value: str | None) -> int:
-    if value is None or not value.strip():
-        raise HTTPException(
-            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
-            detail="knowledge_configuration_if_match_required",
-        )
-    match = _IF_MATCH_RE.fullmatch(value.strip())
-    if match is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="knowledge_configuration_if_match_invalid",
-        )
-    return int(match.group(1))
-
-
-def _require_idempotency_key(value: str | None) -> str:
-    if value is None or not value.strip():
-        raise HTTPException(
-            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
-            detail="knowledge_configuration_idempotency_key_required",
-        )
-    return value.strip()
-
-
-def _idempotency_hash(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8")).hexdigest()
-
 
 def _map_discovery_error(exc: ConnectedSourceDiscoveryError) -> HTTPException:
     code = exc.error_code
@@ -233,7 +191,7 @@ def mount_connected_source_knowledge_routes(
         limit: int = Query(default=50, ge=1, le=100),
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> RemoteResourceDiscoveryResponseV1:
-        tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        tenant_id = resolve_knowledge_configuration_tenant_id(request, header_tenant_id=x_tenant_id)
         from local_workspace_application.workspaces.connected_source_models import RemoteResourceTypeV1
 
         try:
@@ -284,9 +242,11 @@ def mount_connected_source_knowledge_routes(
         if_match: str | None = Header(default=None, alias="If-Match"),
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> Response:
-        tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        expected_revision = _parse_if_match(if_match)
-        idem_hash = _idempotency_hash(_require_idempotency_key(idempotency_key))
+        tenant_id = resolve_knowledge_configuration_tenant_id(request, header_tenant_id=x_tenant_id)
+        expected_revision = parse_knowledge_configuration_if_match(if_match)
+        idem_hash = hash_knowledge_configuration_idempotency_key(
+            require_knowledge_configuration_idempotency_key(idempotency_key)
+        )
         try:
             result = await wiring.knowledge_access_service.create_indexed_source_from_candidate(
                 CreateConnectedIndexedSourceRequest(
@@ -309,32 +269,7 @@ def mount_connected_source_knowledge_routes(
                 WorkspaceIndexedSourceLifecycleError(exc.error_code)
             ) from exc
         except WorkspaceKnowledgeConfigurationMutationError as exc:
-            if exc.error_code in {
-                "configuration_revision_conflict",
-                "configuration_idempotency_conflict",
-            }:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=exc.error_code,
-                ) from exc
-            if exc.error_code in {
-                "configuration_recovery_required",
-                "configuration_mutation_cleanup_failed",
-                "configuration_mutation_conditional_write_failed",
-            }:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=exc.error_code,
-                ) from exc
-            if exc.error_code.endswith("_unavailable"):
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=exc.error_code,
-                ) from exc
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=exc.error_code,
-            ) from exc
+            raise map_knowledge_configuration_mutation_error(exc) from exc
 
         binding = _resolve_historical_indexed_binding(
             workspace_service,
@@ -373,9 +308,11 @@ def mount_connected_source_knowledge_routes(
         if_match: str | None = Header(default=None, alias="If-Match"),
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> Response:
-        tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
-        expected_revision = _parse_if_match(if_match)
-        idem_hash = _idempotency_hash(_require_idempotency_key(idempotency_key))
+        tenant_id = resolve_knowledge_configuration_tenant_id(request, header_tenant_id=x_tenant_id)
+        expected_revision = parse_knowledge_configuration_if_match(if_match)
+        idem_hash = hash_knowledge_configuration_idempotency_key(
+            require_knowledge_configuration_idempotency_key(idempotency_key)
+        )
         try:
             result = wiring.indexed_source_lifecycle_service.disable_indexed_source(
                 DisableWorkspaceIndexedSourceCommand(
@@ -389,26 +326,7 @@ def mount_connected_source_knowledge_routes(
         except WorkspaceIndexedSourceLifecycleError as exc:
             raise _map_lifecycle_error(exc) from exc
         except WorkspaceKnowledgeConfigurationMutationError as exc:
-            if exc.error_code in {
-                "configuration_revision_conflict",
-                "configuration_idempotency_conflict",
-            }:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=exc.error_code,
-                ) from exc
-            if exc.error_code in {
-                "configuration_recovery_required",
-                "configuration_mutation_cleanup_failed",
-            }:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=exc.error_code,
-                ) from exc
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=exc.error_code,
-            ) from exc
+            raise map_knowledge_configuration_mutation_error(exc) from exc
 
         binding = _resolve_historical_indexed_binding(
             workspace_service,
@@ -439,7 +357,7 @@ def mount_connected_source_knowledge_routes(
         indexed_source_binding_id: str,
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> ConnectedIndexedSourceSyncAcceptedV1:
-        tenant_id = _resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        tenant_id = resolve_knowledge_configuration_tenant_id(request, header_tenant_id=x_tenant_id)
         binding = _resolve_committed_indexed_binding(
             workspace_service,
             tenant_id=tenant_id,

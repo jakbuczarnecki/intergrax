@@ -13,6 +13,7 @@ from local_workspace_application.workspaces.connected_source_ids import (
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
     IndexedSourceSyncModeV1,
+    KnowledgeAudienceEligibilityV1,
     WorkspaceKnowledgeMutationOperationV1,
 )
 
@@ -119,3 +120,97 @@ def semantic_identity_hash_for_disable_indexed_source(
         workspace_id,
         knowledge_source_binding_ref,
     )
+
+
+def normalize_live_access_capability_set(
+    allowed_capability_ids: tuple[str, ...] | list[str],
+) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for capability_id in allowed_capability_ids:
+        trimmed = capability_id.strip()
+        if not trimmed:
+            raise ValueError("blank_capability_id")
+        if trimmed not in seen:
+            seen.add(trimmed)
+            normalized.append(trimmed)
+    if not normalized:
+        raise ValueError("allowed_capability_ids_required")
+    return tuple(sorted(normalized))
+
+
+def normalize_live_access_remote_resource_id(remote_resource_id: str | None) -> str | None:
+    if remote_resource_id is None:
+        return None
+    trimmed = remote_resource_id.strip()
+    if not trimmed:
+        raise ValueError("blank_remote_resource_id")
+    return trimmed
+
+
+def semantic_identity_hash_for_live_access_binding(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    connection_ref: str,
+    normalized_remote_resource_id: str | None,
+    normalized_capability_set: tuple[str, ...],
+) -> str:
+    payload = _canonical_json(
+        {
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "connection_ref": connection_ref.strip(),
+            "normalized_remote_resource_id": normalized_remote_resource_id,
+            "normalized_capability_set": list(normalized_capability_set),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def live_access_binding_id_from_semantic_hash(semantic_hash: str) -> str:
+    if len(semantic_hash) < 32:
+        raise ValueError("semantic_hash_invalid")
+    return f"live:{semantic_hash[:32]}"
+
+
+def normalize_create_live_access_binding_request_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    connection_ref: str,
+    remote_resource_id: str | None,
+    allowed_capability_ids: tuple[str, ...],
+    audience_eligibility: KnowledgeAudienceEligibilityV1,
+) -> str:
+    normalized_resource_id = normalize_live_access_remote_resource_id(remote_resource_id)
+    normalized_capabilities = normalize_live_access_capability_set(allowed_capability_ids)
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "connection_ref": connection_ref.strip(),
+            "remote_resource_id": normalized_resource_id,
+            "allowed_capability_ids": list(normalized_capabilities),
+            "audience_eligibility": audience_eligibility.value,
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def normalize_disable_live_access_binding_request_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    live_access_binding_id: str,
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "live_access_binding_id": live_access_binding_id.strip(),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()

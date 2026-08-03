@@ -138,6 +138,10 @@ from local_workspace_application.workspaces.knowledge_configuration_handlers imp
     CreateIndexedSourceMutationHandler,
     DisableIndexedSourceMutationHandler,
 )
+from local_workspace_application.workspaces.knowledge_live_access_handlers import (
+    CreateLiveAccessBindingMutationHandler,
+    DisableLiveAccessBindingMutationHandler,
+)
 from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
     DetachConnectionMutationHandler,
 )
@@ -153,7 +157,17 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
 )
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import TenantConnectionPort
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    TenantConnectionPort,
+    TenantLiveCapabilityCatalogPort,
+)
+from local_workspace_application.serving.knowledge_live_access_routes import (
+    mount_knowledge_live_access_routes,
+)
+from local_workspace_application.workspaces.knowledge_live_access_service import (
+    LiveAccessRemoteResourceLookupPort,
+    WorkspaceLiveAccessBindingService,
+)
 from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
     WorkspaceConnectionAttachmentService,
 )
@@ -342,6 +356,8 @@ def mount_managed_workspace_routes(
     connected_source_wiring: ConnectedSourceWiring | None = None,
     shared_slack_integration: Any | None = None,
     tenant_connection_port: TenantConnectionPort | None = None,
+    tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
+    live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -397,6 +413,12 @@ def mount_managed_workspace_routes(
             ),
             WorkspaceKnowledgeMutationOperationV1.DETACH_CONNECTION: (
                 DetachConnectionMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING: (
+                CreateLiveAccessBindingMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING: (
+                DisableLiveAccessBindingMutationHandler()
             ),
         },
     )
@@ -479,6 +501,29 @@ def mount_managed_workspace_routes(
             app,
             attachment_service=connection_attachment_service,
             detachment_service=detachment_service,
+            prefix=prefix,
+        )
+
+    live_access_deps = (
+        tenant_connection_port,
+        tenant_live_capability_catalog,
+        live_access_remote_resource_lookup_port,
+    )
+    if any(dep is not None for dep in live_access_deps):
+        if not all(dep is not None for dep in live_access_deps):
+            raise RuntimeError("live_access_wiring_incomplete")
+        live_access_service = WorkspaceLiveAccessBindingService(
+            repository=repository,
+            configuration_service=configuration_service,
+            mutation_engine=mutation_engine,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
+            remote_resource_lookup_port=live_access_remote_resource_lookup_port,
+        )
+        mount_knowledge_live_access_routes(
+            app,
+            live_access_service=live_access_service,
+            repository=repository,
             prefix=prefix,
         )
 
