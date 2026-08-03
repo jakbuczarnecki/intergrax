@@ -227,10 +227,10 @@ def live_access_binding_stage_manifest_hash(
             "normalized_remote_resource_id": normalized_resource_id,
             "normalized_capability_set": list(normalized_capabilities),
             "audience_eligibility": audience_eligibility.value,
-            "derived_provider_id": derived_provider_id.strip(),
+            "derived_provider_id": derived_provider_id,
             "derived_integration_kind": derived_integration_kind.value,
             "derived_resource_type": derived_resource_type,
-            "derived_safe_display_label": derived_safe_display_label.strip(),
+            "derived_safe_display_label": derived_safe_display_label,
             "expected_status": LiveAccessBindingStatusV1.ACTIVE.value,
         }
     )

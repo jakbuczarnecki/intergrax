@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 
 import pytest
 
+from pydantic import BaseModel, ConfigDict
+
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
@@ -162,7 +164,14 @@ def _resource_descriptor(**overrides: object) -> RemoteResourceDescriptorV1:
 
 
 class _FakeConnectionPort:
+    def __init__(self, *, result: object | None = None) -> None:
+        self._result = result
+        self.call_count = 0
+
     def get_connection(self, *, tenant_id: str, connection_ref: str) -> SafeTenantConnectionV1 | None:
+        self.call_count += 1
+        if self._result is not None:
+            return self._result  # type: ignore[return-value]
         if tenant_id == _TENANT and connection_ref == _CONNECTION:
             return _safe_connection()
         return None
@@ -212,6 +221,7 @@ def _build_stack(
     *,
     catalog: _FakeCatalog | None = None,
     lookup: _FakeResourceLookup | None = None,
+    connection_port: _FakeConnectionPort | None = None,
     mutation_ids: list[str] | None = None,
 ):
     store = InMemoryDocumentStore()
@@ -247,11 +257,12 @@ def _build_stack(
     )
     catalog_impl = catalog or _FakeCatalog((_descriptor(),))
     lookup_impl = lookup
+    connection_impl = connection_port or _FakeConnectionPort()
     service = WorkspaceLiveAccessBindingService(
         repository=repo,
         configuration_service=config,
         mutation_engine=engine,
-        tenant_connection_port=_FakeConnectionPort(),
+        tenant_connection_port=connection_impl,
         capability_catalog=catalog_impl,
         remote_resource_lookup_port=lookup_impl,
     )
@@ -886,3 +897,228 @@ async def test_non_tuple_catalog_rejected() -> None:
     with pytest.raises(WorkspaceLiveAccessBindingError, match="capability_catalog_invalid"):
         await service.create_live_access_binding(_create_cmd(expected_revision=rev))
     assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+
+
+def _manifest_hash_kwargs(**overrides: object) -> dict[str, object]:
+    payload = {
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "live_access_binding_id": _BINDING_ID,
+        "connection_ref": _CONNECTION,
+        "remote_resource_id": None,
+        "allowed_capability_ids": (_CAP_READ,),
+        "audience_eligibility": _AUDIENCE,
+        "derived_provider_id": _PROVIDER,
+        "derived_integration_kind": IntegrationCategory.CONVERSATION_CHANNEL,
+        "derived_resource_type": None,
+        "derived_safe_display_label": "Slack",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_stage_manifest_hash_exact_derived_fields() -> None:
+    canonical = live_access_binding_stage_manifest_hash(**_manifest_hash_kwargs())  # type: ignore[arg-type]
+    provider_space = live_access_binding_stage_manifest_hash(
+        **_manifest_hash_kwargs(derived_provider_id=f"{_PROVIDER} ")  # type: ignore[arg-type]
+    )
+    label_space = live_access_binding_stage_manifest_hash(
+        **_manifest_hash_kwargs(derived_safe_display_label="Slack ")  # type: ignore[arg-type]
+    )
+    assert canonical != provider_space
+    assert canonical != label_space
+
+
+@pytest.mark.parametrize(
+    "field, corrupt_value",
+    [
+        ("derived_provider_id", f"{_PROVIDER} "),
+        ("derived_safe_display_label", "Slack "),
+    ],
+)
+def test_corrupt_staged_whitespace_derived_fields_block_recovery(field: str, corrupt_value: object) -> None:
+    attach, _, repo, _, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
+    rev = _attach(attach)
+    mutation = _create_mutation(repo, revision=rev + 1)
+    intent = _valid_create_intent()
+    _CREATE_HANDLER.stage(
+        repository=repo,
+        mutation=mutation,
+        target_revision=mutation.target_revision,
+        intent=intent,
+        now=_NOW,
+    )
+    staged = repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)[0]
+    repo.delete_knowledge_live_access_version_if_match(staged)
+    repo.put_knowledge_live_access_version_if_absent(
+        staged.model_copy(update={field: corrupt_value, "updated_at": _NOW})
+    )
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
+        engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None and head.pending_mutation_id == mutation.mutation_id
+    reloaded = repo.get_knowledge_configuration_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING,
+        idempotency_key_hash=mutation.idempotency_key_hash,
+    )
+    assert reloaded is not None and reloaded.status is not WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    assert len(repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 1
+
+
+async def _assert_create_blocked(
+    service: WorkspaceLiveAccessBindingService,
+    *,
+    cmd: CreateWorkspaceLiveAccessBindingCommand,
+    error: str,
+    repo: ManagedWorkspaceRepository,
+    catalog: _FakeCatalog,
+    lookup: _FakeResourceLookup | None,
+) -> None:
+    head_before = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match=error):
+        await service.create_live_access_binding(cmd)
+    assert catalog.call_count == 0
+    if lookup is not None:
+        assert lookup.call_count == 0
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+    assert repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE) == head_before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("connection_result", "error"),
+    [
+        (_safe_connection(connection_ref="conn-b"), "connection_unavailable"),
+        (_safe_connection(tenant_id="tenant-b"), "connection_not_found"),
+        (object(), "connection_unavailable"),
+        (
+            SafeTenantConnectionV1.model_construct(
+                connection_ref=_CONNECTION,
+                tenant_id=_TENANT,
+                provider_id=None,
+                integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+                safe_display_name="Slack",
+                administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+                configuration_version=1,
+                connected_principal_ref=None,
+                created_at=_NOW,
+                updated_at=_NOW,
+            ),
+            "connection_unavailable",
+        ),
+        (_safe_connection(provider_id=""), "connection_unavailable"),
+        (_safe_connection(provider_id=f" {_PROVIDER} "), "connection_unavailable"),
+        (_safe_connection(safe_display_name=" Slack "), "connection_unavailable"),
+        (
+            SafeTenantConnectionV1.model_construct(
+                connection_ref=_CONNECTION,
+                tenant_id=_TENANT,
+                provider_id=_PROVIDER,
+                integration_kind="not-a-kind",
+                safe_display_name="Slack",
+                administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+                configuration_version=1,
+                connected_principal_ref=None,
+                created_at=_NOW,
+                updated_at=_NOW,
+            ),
+            "connection_unavailable",
+        ),
+        (
+            _safe_connection(administrative_status=TenantConnectionAdministrativeStatus.DISABLED),
+            "connection_unavailable",
+        ),
+    ],
+)
+async def test_connection_dependency_failures(connection_result: object, error: str) -> None:
+    port = _FakeConnectionPort(result=connection_result)
+    attach, service, repo, catalog, lookup, _ = _build_stack(connection_port=port)
+    rev = _attach(attach)
+    await _assert_create_blocked(
+        service,
+        cmd=_create_cmd(expected_revision=rev),
+        error=error,
+        repo=repo,
+        catalog=catalog,
+        lookup=lookup,
+    )
+
+
+@pytest.mark.asyncio
+async def test_valid_exact_canonical_connection_succeeds() -> None:
+    port = _FakeConnectionPort()
+    attach, service, repo, catalog, _, _ = _build_stack(connection_port=port)
+    rev = _attach(attach)
+    result = await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    assert result.binding.derived_provider_id == _PROVIDER
+    assert port.call_count == 1
+    assert catalog.call_count == 1
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
+class _BrokenDumpModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def model_dump(self, *args: object, **kwargs: object) -> dict[str, object]:
+        raise RuntimeError("serialization failed")
+
+
+@pytest.mark.asyncio
+async def test_broken_connection_serialization_rejected() -> None:
+    broken = _BrokenDumpModel()
+    port = _FakeConnectionPort(result=broken)
+    attach, service, repo, catalog, lookup, _ = _build_stack(connection_port=port)
+    rev = _attach(attach)
+    await _assert_create_blocked(
+        service,
+        cmd=_create_cmd(expected_revision=rev),
+        error="connection_unavailable",
+        repo=repo,
+        catalog=catalog,
+        lookup=lookup,
+    )
+
+
+@pytest.mark.asyncio
+async def test_broken_catalog_serialization_rejected() -> None:
+    broken = _BrokenDumpModel()
+    attach, service, repo, _, _, _ = _build_stack(catalog=_FakeCatalog((broken,)))  # type: ignore[arg-type]
+    rev = _attach(attach)
+    head_before = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="capability_catalog_invalid"):
+        await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+    assert repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE) == head_before
+
+
+@pytest.mark.asyncio
+async def test_broken_remote_resource_serialization_rejected() -> None:
+    catalog = _FakeCatalog(
+        (
+            _descriptor(
+                capability_id=_CAP_RESOURCE,
+                resource_scope_required=True,
+                supported_resource_types=("slack_conversation",),
+            ),
+        )
+    )
+    broken = _BrokenDumpModel()
+    lookup = _FakeResourceLookup(broken)
+    attach, service, repo, _, _, _ = _build_stack(catalog=catalog, lookup=lookup)
+    rev = _attach(attach)
+    head_before = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="remote_resource_lookup_invalid"):
+        await service.create_live_access_binding(
+            _create_cmd(
+                expected_revision=rev,
+                remote_resource_id=_RESOURCE,
+                allowed_capability_ids=(_CAP_RESOURCE,),
+            )
+        )
+    assert repo.list_knowledge_live_access_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE) == []
+    assert repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE) == head_before

@@ -53,16 +53,21 @@ def parse_knowledge_configuration_if_match(value: str | None) -> int:
 
 
 def require_knowledge_configuration_idempotency_key(value: str | None) -> str:
-    if value is None or not value.strip():
+    if value is None:
         raise HTTPException(
             status_code=status.HTTP_428_PRECONDITION_REQUIRED,
             detail="knowledge_configuration_idempotency_key_required",
         )
-    normalized = value.strip()
-    if _IDEMPOTENCY_CONTROL_RE.search(normalized) is not None:
+    if _IDEMPOTENCY_CONTROL_RE.search(value) is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="knowledge_configuration_idempotency_key_invalid",
+        )
+    normalized = value.strip()
+    if not normalized:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="knowledge_configuration_idempotency_key_required",
         )
     return normalized
 

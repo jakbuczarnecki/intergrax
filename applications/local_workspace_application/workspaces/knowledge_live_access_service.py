@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
     RemoteResourceAvailabilityV1,
@@ -160,7 +160,7 @@ def _validate_catalog(descriptors: object, connection: SafeTenantConnectionV1, s
             raise WorkspaceLiveAccessBindingError("capability_catalog_invalid")
         try:
             descriptor = LiveCapabilityDescriptorV1.model_validate(raw.model_dump())
-        except ValidationError:
+        except Exception:
             raise WorkspaceLiveAccessBindingError("capability_catalog_invalid") from None
         if descriptor.provider_id != connection.provider_id or descriptor.integration_kind != connection.integration_kind:
             raise WorkspaceLiveAccessBindingError("capability_catalog_invalid")
@@ -395,14 +395,33 @@ class WorkspaceLiveAccessBindingService:
 
     def _resolve_connection(self, *, tenant_id: str, connection_ref: str) -> SafeTenantConnectionV1:
         try:
-            connection = self._tenant_connection_port.get_connection(
+            raw_connection = self._tenant_connection_port.get_connection(
                 tenant_id=tenant_id, connection_ref=connection_ref,
             )
         except Exception as exc:
             raise WorkspaceLiveAccessBindingError("connection_unavailable") from exc
-        if connection is None or connection.tenant_id != tenant_id:
+        if raw_connection is None:
             raise WorkspaceLiveAccessBindingError("connection_not_found")
+        if not isinstance(raw_connection, BaseModel):
+            raise WorkspaceLiveAccessBindingError("connection_unavailable")
+        try:
+            connection = SafeTenantConnectionV1.model_validate(raw_connection.model_dump())
+        except Exception:
+            raise WorkspaceLiveAccessBindingError("connection_unavailable") from None
+        if connection.tenant_id.strip() != tenant_id:
+            raise WorkspaceLiveAccessBindingError("connection_not_found")
+        if connection.connection_ref.strip() != connection_ref:
+            raise WorkspaceLiveAccessBindingError("connection_unavailable")
         if connection.administrative_status is not TenantConnectionAdministrativeStatus.ACTIVE:
+            raise WorkspaceLiveAccessBindingError("connection_unavailable")
+        if (
+            not connection.provider_id
+            or connection.provider_id != connection.provider_id.strip()
+            or not connection.safe_display_name
+            or connection.safe_display_name != connection.safe_display_name.strip()
+            or connection.tenant_id != connection.tenant_id.strip()
+            or connection.connection_ref != connection.connection_ref.strip()
+        ):
             raise WorkspaceLiveAccessBindingError("connection_unavailable")
         return connection
 
@@ -425,7 +444,7 @@ class WorkspaceLiveAccessBindingService:
             raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid")
         try:
             resource = RemoteResourceDescriptorV1.model_validate(resource.model_dump())
-        except ValidationError:
+        except Exception:
             raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid") from None
         if resource.remote_resource_id.strip() != remote_resource_id.strip():
             raise WorkspaceLiveAccessBindingError("remote_resource_lookup_invalid")

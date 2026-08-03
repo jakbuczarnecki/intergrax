@@ -337,7 +337,19 @@ def test_capability_validation_error_returns_400() -> None:
 
 @pytest.mark.parametrize(
     "bad_key",
-    ["\x00bad", "bad\x1fkey", "bad\x7fkey"],
+    [
+        "\x00bad",
+        "bad\x1fkey",
+        "bad\x7fkey",
+        "\tkey",
+        "\nkey",
+        "\rkey",
+        "\x0bkey",
+        "\x0ckey",
+        "\x1fkey",
+        "key\t",
+        "key\n",
+    ],
 )
 def test_idempotency_key_control_characters_rejected(bad_key: str) -> None:
     with pytest.raises(HTTPException) as exc_info:
@@ -345,6 +357,20 @@ def test_idempotency_key_control_characters_rejected(bad_key: str) -> None:
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "knowledge_configuration_idempotency_key_invalid"
     assert bad_key not in str(exc_info.value.detail)
+
+
+def test_idempotency_key_whitespace_only_returns_428() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        require_knowledge_configuration_idempotency_key("   ")
+    assert exc_info.value.status_code == 428
+    assert exc_info.value.detail == "knowledge_configuration_idempotency_key_required"
+
+
+def test_idempotency_key_missing_returns_428() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        require_knowledge_configuration_idempotency_key(None)
+    assert exc_info.value.status_code == 428
+    assert exc_info.value.detail == "knowledge_configuration_idempotency_key_required"
 
 
 def test_idempotency_key_opaque_accepted_and_hashed() -> None:
