@@ -199,9 +199,9 @@ async def test_off_loads_full_history_without_transformation() -> None:
 @pytest.mark.parametrize(
     "strategy",
     [
-        HistoryCompressionStrategy.TRUNCATE_OLDEST,
-        HistoryCompressionStrategy.SUMMARIZE_OLDEST,
-        HistoryCompressionStrategy.HYBRID,
+        strategy
+        for strategy in HistoryCompressionStrategy
+        if strategy is not HistoryCompressionStrategy.OFF
     ],
 )
 async def test_legacy_reduction_strategies_fail_before_side_effects(
@@ -212,6 +212,30 @@ async def test_legacy_reduction_strategies_fail_before_side_effects(
         history=raw_history,
         strategy=strategy,
     )
+    initial_base_history = state.base_history
+    initial_token_count = state.history_token_count
+
+    with pytest.raises(LegacyHistoryCompressionDisabledError) as exc_info:
+        await layer.build_base_history(state)
+
+    assert str(exc_info.value) == LEGACY_HISTORY_COMPRESSION_DISABLED_REASON
+    assert exc_info.value.reason == LEGACY_HISTORY_COMPRESSION_DISABLED_REASON
+    assert session_manager.calls == []
+    assert _FailOnGenerateAdapter.generate_calls == 0
+    assert prompt_builder.calls == 0
+    assert state.trace_calls == 0
+    assert state.base_history is initial_base_history
+    assert state.history_token_count is initial_token_count
+
+
+@pytest.mark.asyncio
+async def test_blocked_strategy_fails_before_session_validation() -> None:
+    raw_history = _raw_history()
+    layer, session_manager, prompt_builder, state = _history_layer(
+        history=raw_history,
+        strategy=HistoryCompressionStrategy.TRUNCATE_OLDEST,
+    )
+    state.session = None  # type: ignore[assignment]
     initial_base_history = state.base_history
     initial_token_count = state.history_token_count
 
@@ -259,6 +283,15 @@ def test_history_layer_has_no_independent_optimization_path() -> None:
         assert fragment not in source
 
     tree = ast.parse(source)
+    strategy_members = {
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "HistoryCompressionStrategy"
+    }
+    assert strategy_members == {"OFF"}
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             assert node.func.attr != "generate_messages"

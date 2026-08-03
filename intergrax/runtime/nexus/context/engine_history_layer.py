@@ -55,21 +55,23 @@ class HistoryLayer:
 
         Legacy reduction strategies fail closed and must be migrated to UCL.
         """
-        session = state.session
-        assert session is not None, "Session must be set before building history."
-
         strategy = state.request.history_compression_strategy
-        if not isinstance(strategy, HistoryCompressionStrategy):
+        if not isinstance(
+            strategy,
+            HistoryCompressionStrategy,
+        ):
             raise TypeError(
-                "history_compression_strategy must be HistoryCompressionStrategy"
+                "history_compression_strategy must be "
+                "HistoryCompressionStrategy"
             )
 
-        if strategy in (
-            HistoryCompressionStrategy.TRUNCATE_OLDEST,
-            HistoryCompressionStrategy.SUMMARIZE_OLDEST,
-            HistoryCompressionStrategy.HYBRID,
-        ):
+        if strategy is not HistoryCompressionStrategy.OFF:
             raise LegacyHistoryCompressionDisabledError()
+
+        session = state.session
+        assert session is not None, (
+            "Session must be set before building history."
+        )
 
         raw_history: List[ChatMessage] = await self._build_chat_history(session)
 
