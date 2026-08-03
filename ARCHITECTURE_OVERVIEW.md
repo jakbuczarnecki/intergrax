@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Architecture Overview
 
-Explain responsibility boundaries and system flow without requiring internal architecture canon or implementation plans.
+A concise view of how Intergrax separates product workflows, orchestration, agent decisions, governed execution, and evidence.
 
 > [!NOTE]
 > This document explains **responsibility boundaries** and **system flow**. It is **not** the complete architecture canon or a production-readiness claim. Deep technical readers should use the [Technical Documentation Map](docs/DOCUMENTATION_MAP.md).
@@ -64,7 +64,7 @@ This flow describes responsibility boundaries, not every deployment topology or 
 
 ## Responsibility boundaries
 
-Freeze these concepts for public readers:
+The architecture uses five clear responsibility boundaries:
 
 - **Applications** own the concrete product environment.
 - **Orchestration** coordinates work.
@@ -131,3 +131,5 @@ It operates inside the harness execution path alongside policy, protected-region
 | Public proof dashboard | [PROOFS.md](PROOFS.md) |
 | LKW product proof | [LKW_PLATFORM_PROOF.md](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) |
+
+Next: choose an evaluation or building path in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).

@@ -6,13 +6,25 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Build and Evaluate with Intergrax
 
-Choose a bounded evaluation or building path without copying detailed execution guides into another document.
+Choose the right path to evaluate Intergrax, inspect its proof, or begin building a specialized application.
 
 > [!WARNING]
 > **Evaluation does not grant production permission, commercial permission, hosting, or redistribution permission.** [LICENSE](LICENSE) is authoritative.
 
 > [!NOTE]
 > Intergrax is under **active R&D**. Proof paths validate **bounded mechanisms**, not universal production readiness.
+
+---
+
+## At a glance
+
+| Question | Answer |
+| -------- | ------ |
+| **Current stage** | Source-available, active R&D, bounded proof paths |
+| **Best first step** | [README Quick start](README.md#quick-start) |
+| **Primary product proof** | LKW |
+| **Featured platform capability** | Token Optimization |
+| **Permission boundary** | Production/commercial use requires written permission |
 
 ---
 

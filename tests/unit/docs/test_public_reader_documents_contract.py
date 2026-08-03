@@ -37,6 +37,45 @@ _PRIMARY_SENTENCE = (
 
 _READER_PATHS = (WHY_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
 
+_ARCH_OPENING = (
+    "A concise view of how Intergrax separates product workflows, orchestration, "
+    "agent decisions, governed execution, and evidence."
+)
+
+_BUILD_OPENING = (
+    "Choose the right path to evaluate Intergrax, inspect its proof, "
+    "or begin building a specialized application."
+)
+
+_FORBIDDEN_MAINTAINER_PHRASES = (
+    "Freeze these concepts for public readers",
+    "without copying detailed execution guides",
+)
+
+_INSTALL_SEQUENCE = (
+    "git clone https://github.com/jakbuczarnecki/intergrax.git",
+    "cd intergrax",
+    "uv sync --extra dev",
+    "uv run intergrax doctor",
+    "uv run pytest -m gate -q",
+)
+
+_FORBIDDEN_INSTALL_CHAINS = (
+    "git clone https://github.com/jakbuczarnecki/intergrax.git && cd intergrax",
+    "uv sync --extra dev && uv run intergrax doctor",
+)
+
+_EVIDENCE_LIMITATIONS = (
+    "production runtime certification",
+    "security/compliance attestation",
+    "real provider execution",
+    "real LLM evaluation",
+    "billing",
+    "provider pricing",
+    "cloud cost estimation",
+    "product-specific acceptance",
+)
+
 _MERMAID_FENCE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
 _MD_LINK = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 
@@ -309,12 +348,53 @@ def test_architecture_synchronization() -> None:
         assert "implemented" in text.lower()
 
 
+def test_at_a_glance_sections(why_text: str, arch_text: str, build_text: str) -> None:
+    for name, text in (
+        ("WHY", why_text),
+        ("ARCHITECTURE", arch_text),
+        ("BUILD", build_text),
+    ):
+        assert "## At a glance" in text, f"{name} missing At a glance section"
+
+
+def test_public_reader_opening_copy(arch_text: str, build_text: str) -> None:
+    for phrase in _FORBIDDEN_MAINTAINER_PHRASES:
+        assert phrase not in arch_text, f"ARCHITECTURE contains maintainer phrase: {phrase!r}"
+        assert phrase not in build_text, f"BUILD contains maintainer phrase: {phrase!r}"
+
+    assert _ARCH_OPENING in arch_text
+    assert _BUILD_OPENING in build_text
+
+
+def test_readme_install_sequence(readme_text: str) -> None:
+    for chain in _FORBIDDEN_INSTALL_CHAINS:
+        assert chain not in readme_text, f"README chains install commands: {chain!r}"
+
+    lines = readme_text.splitlines()
+    for index, command in enumerate(_INSTALL_SEQUENCE):
+        assert command in lines, f"README missing install line: {command!r}"
+        if index > 0:
+            prev_command = _INSTALL_SEQUENCE[index - 1]
+            prev_idx = lines.index(prev_command)
+            curr_idx = lines.index(command)
+            assert curr_idx == prev_idx + 1, (
+                f"Install commands not consecutive: {prev_command!r} then {command!r}"
+            )
+
+
+def test_evidence_limitations_bulleted(readme_text: str) -> None:
+    for limitation in _EVIDENCE_LIMITATIONS:
+        assert f"- {limitation}" in readme_text, (
+            f"README missing evidence limitation bullet: {limitation!r}"
+        )
+
+
 def test_brevity() -> None:
     limits = {
         WHY_PATH: 240,
         ARCHITECTURE_OVERVIEW_PATH: 280,
         BUILD_PATH: 300,
-        README_PATH: 220,
+        README_PATH: 300,
     }
     for path, max_lines in limits.items():
         count = len(_read(path).splitlines())
