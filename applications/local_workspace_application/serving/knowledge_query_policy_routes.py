@@ -100,6 +100,20 @@ def _map_configuration_service_error(
     )
 
 
+def _map_query_policy_mutation_error(
+    exc: WorkspaceKnowledgeConfigurationMutationError,
+) -> HTTPException:
+    if exc.error_code in {
+        "configuration_projection_unstable",
+        "configuration_projection_invalid",
+    }:
+        return HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=exc.error_code,
+        )
+    return map_knowledge_configuration_mutation_error(exc)
+
+
 def _query_policy_response(
     *,
     workspace_id: str,
@@ -248,8 +262,15 @@ def mount_knowledge_query_policy_routes(
             )
         except WorkspaceQueryPolicyError as exc:
             raise _map_query_policy_error(exc) from exc
+        except WorkspaceKnowledgeConfigurationServiceError as exc:
+            raise _map_configuration_service_error(exc) from exc
+        except (ValidationError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="configuration_projection_invalid",
+            ) from exc
         except WorkspaceKnowledgeConfigurationMutationError as exc:
-            raise map_knowledge_configuration_mutation_error(exc) from exc
+            raise _map_query_policy_mutation_error(exc) from exc
 
         payload = _query_policy_response(
             workspace_id=workspace_id,

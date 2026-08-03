@@ -14,6 +14,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from intergrax.fastapi_core.context import RequestContext
@@ -42,6 +43,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
+    WorkspaceKnowledgeConfigurationMutationError,
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
@@ -713,6 +715,97 @@ def test_put_query_policy_projection_incomplete_returns_503() -> None:
         response = client.put(_put_path(), headers=_headers(), json=_indexed_body())
     assert response.status_code == 503
     assert response.json()["detail"] == "query_policy_projection_incomplete"
+    assert response.json().keys() == {"detail"}
+
+
+def _assert_put_projection_failure_no_side_effects(
+    repo: ManagedWorkspaceRepository,
+    *,
+    before_head: int,
+    before_versions: int,
+    before_mutations: int,
+) -> None:
+    assert _head_revision(repo) == before_head
+    assert (
+        len(repo.list_knowledge_query_policy_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+        == before_versions
+    )
+    assert (
+        len(repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+        == before_mutations
+    )
+
+
+def test_put_configuration_projection_unstable_returns_503() -> None:
+    client, repo, _, config = _build_stack()
+    before_head = _head_revision(repo)
+    before_versions = len(repo.list_knowledge_query_policy_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+    before_mutations = len(repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+    with patch.object(
+        config,
+        "get_configuration",
+        side_effect=WorkspaceKnowledgeConfigurationServiceError("configuration_projection_unstable"),
+    ):
+        response = client.put(_put_path(), headers=_headers(), json=_indexed_body())
+    assert response.status_code == 503
+    assert response.json()["detail"] == "configuration_projection_unstable"
+    assert response.json().keys() == {"detail"}
+    _assert_put_projection_failure_no_side_effects(
+        repo,
+        before_head=before_head,
+        before_versions=before_versions,
+        before_mutations=before_mutations,
+    )
+
+
+@pytest.mark.parametrize(
+    "side_effect",
+    [
+        ValueError("revision_zero_forbids_children"),
+        pytest.param(
+            ValidationError.from_exception_data(
+                "WorkspaceKnowledgeConfigurationV1",
+                [{"type": "missing", "loc": ("query_policy",), "input": {}}],
+            ),
+            id="validation_error",
+        ),
+    ],
+)
+def test_put_configuration_projection_invalid_returns_503(side_effect: Exception) -> None:
+    client, repo, _, config = _build_stack()
+    before_head = _head_revision(repo)
+    before_versions = len(repo.list_knowledge_query_policy_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+    before_mutations = len(repo.list_knowledge_configuration_mutations(tenant_id=_TENANT, workspace_id=_WORKSPACE))
+    with patch.object(config, "get_configuration", side_effect=side_effect):
+        response = client.put(_put_path(), headers=_headers(), json=_indexed_body())
+    assert response.status_code == 503
+    assert response.json()["detail"] == "configuration_projection_invalid"
+    assert response.json().keys() == {"detail"}
+    _assert_put_projection_failure_no_side_effects(
+        repo,
+        before_head=before_head,
+        before_versions=before_versions,
+        before_mutations=before_mutations,
+    )
+
+
+@pytest.mark.parametrize(
+    ("error_code",),
+    [
+        ("configuration_projection_unstable",),
+        ("configuration_projection_invalid",),
+    ],
+)
+def test_put_mutation_projection_integrity_returns_503(error_code: str) -> None:
+    client, _, service, _ = _build_stack()
+    with patch.object(
+        service,
+        "update_query_policy",
+        side_effect=WorkspaceKnowledgeConfigurationMutationError(error_code),
+    ):
+        response = client.put(_put_path(), headers=_headers(), json=_indexed_body())
+    assert response.status_code == 503
+    assert response.json()["detail"] == error_code
     assert response.json().keys() == {"detail"}
 
 
