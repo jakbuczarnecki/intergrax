@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **READY_FOR_REVIEW**; LCI-1C **PLANNED**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-1B
-**Next task after acceptance:** LCI-1C
+**Current task:** LCI-1C
+**Next task after acceptance:** LCI-1D
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -109,7 +109,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Implement native document type and its validation/serialization only. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-1A |
@@ -125,13 +125,13 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Optional from_langchain_document / to_langchain_document behind compat boundary. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-1B |
-| **Exact scope** | intergrax/compat/langchain/ bridge module behind optional extra |
-| **Explicit out of scope** | Making bridge canonical; consumer migration |
-| **Acceptance criteria** | Bridge isolated from core imports; optional extra documented |
+| **Exact scope** | isolated lazy bridge under `intergrax/compat/langchain` |
+| **Explicit out of scope** | Making bridge canonical; consumer migration; packaging optionalization (LCI-7A) |
+| **Acceptance criteria** | bidirectional mapping; no silent data loss; explicit conflict errors; module import without eager `langchain_core` import; missing-dependency error; tests; packaging move deferred to LCI-7A |
 | **User-visible outcome** | Gradual migration path for compatibility callers |
 
 ---

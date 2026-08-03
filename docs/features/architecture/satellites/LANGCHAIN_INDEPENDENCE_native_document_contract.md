@@ -334,11 +334,13 @@ content_hash
 Reserved keys are never valid inside native `KnowledgeDocument.metadata`, regardless of whether their values equal typed fields.
 
 - Native constructor: reserved key present → `ValidationError` (no duplicate allowed even with an identical value).
+- LangChain transport representation: canonical reserved keys are allowed only as controlled transport fields in `LangChain Document.metadata`; the bridge reads them, checks conflicts, removes them from remaining metadata, and maps them to typed `KnowledgeDocument` fields. They must not be interpreted as ordinary native metadata.
 - LangChain bridge (LCI-1C):
   1. Read known typed fields from input metadata.
-  2. Detect conflicts between `Document.id`, aliases, and metadata.
-  3. Remove all processed reserved keys from remaining metadata.
-  4. Pass only remaining JSON-safe data to `KnowledgeDocument.metadata`.
+  2. Detect conflicts between `Document.id`, explicit `document_id`, and metadata `document_id` (exactly one carrier required; multiple carriers forbidden even when values match).
+  3. Resolve `source_id` from `metadata["source_id"]` or legacy `metadata["source"]`; reject when both are present with different values; preserve legacy `source` in remaining metadata when used or when values match.
+  4. Remove all processed reserved keys from remaining metadata.
+  5. Pass only remaining JSON-safe data to `KnowledgeDocument.metadata`.
 
 ---
 
@@ -392,7 +394,7 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain/`). Conversion ru
 | LangChain `Document` | `KnowledgeDocument` | Rule |
 |----------------------|---------------------|------|
 | `page_content` | `content` | Exact value preserved |
-| `id` | `identity.document_id` | Required; missing `id` requires explicit ID passed to bridge |
+| `id` | `identity.document_id` | One carrier required among `Document.id`, explicit `document_id`, or metadata `document_id`; multiple carriers forbidden even when values match |
 | metadata `root_document_id` | `identity.root_document_id` | Absent for source → defaults to `document_id` |
 | metadata `parent_document_id` | `identity.parent_document_id` | Optional; `None` for source |
 | metadata `tenant_id` | `scope.tenant_id` | Required; missing → error |
@@ -416,7 +418,9 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain/`). Conversion ru
 | Missing `document_id` (`id` and metadata) | Error |
 | `Document.id` conflicts with metadata `document_id` | Error |
 | `source_id` vs legacy `source` conflict | Error |
-| Reserved key in metadata (any value, including match with typed field) | Error; bridge strips processed reserved keys before native construction |
+| Multiple `document_id` carriers (`Document.id`, explicit argument, metadata) | Error |
+| Reserved key left in remaining native metadata after transport extraction | Error via native validation |
+| Transport reserved keys in LangChain metadata | Allowed only as controlled transport fields; bridge extracts and removes them before native construction |
 | Non-JSON-safe metadata value | Error |
 | Whitespace-only `page_content` | Error |
 | Random/fallback ID generation | **Forbidden** |
@@ -490,3 +494,19 @@ Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_de
 | Shared validation | `intergrax/knowledge/contracts/validation.py` (reused by Vendor Knowledge models) |
 | Unit tests | `tests/unit/knowledge/contracts/test_document.py` |
 | Consumer migration | Not started (remains LCI-2+ / bridge LCI-1C) |
+
+---
+
+## 18. Implementation evidence (LCI-1C)
+
+| Item | Location |
+|------|----------|
+| Bridge module | `intergrax/compat/langchain/documents.py` |
+| Public import | `from intergrax.compat.langchain import from_langchain_document, to_langchain_document` |
+| Lazy dependency loading | `importlib.import_module("langchain_core.documents")` on conversion only |
+| Missing dependency error | `LangChainCompatibilityUnavailableError` |
+| Unit tests | `tests/unit/compat/langchain/test_documents.py` |
+| Packaging optionalization | Deferred to LCI-7A (`langchain-core` remains default dependency in LCI-1C) |
+
+**LCI-1B implementation:** APPROVED
+**LCI-1C bridge:** READY_FOR_REVIEW
