@@ -32,7 +32,7 @@ They do not define an open-source contribution model, production-support channel
 
 ```text
 Role: Exact first-contact message, product hierarchy, audience value and CTA language
-Status: ACTIVE — PX-1 READY_FOR_REVIEW
+Status: ACTIVE — applied to root README in PX-2 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -40,7 +40,7 @@ Public-reader route: no
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-1 READY_FOR_REVIEW
+Status: ACTIVE — PX-2 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -59,9 +59,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-0 ACCEPTED / CLOSED
-Current phase: PX-1 READY_FOR_REVIEW
-Next after acceptance: PX-2
+Previous phase: PX-1 ACCEPTED / CLOSED
+Current phase: PX-2 READY_FOR_REVIEW
+Next after acceptance: PX-3
 External sessions: NOT_STARTED
 ```
 

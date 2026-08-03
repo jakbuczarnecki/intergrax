@@ -20,7 +20,7 @@ Production use, commercial use, hosted services, redistribution, and commercial 
 |------|------------|------|
 | 5 minutes | [README.md](README.md) + [FAQ.md](FAQ.md) | Understand what Intergrax is and is not |
 | 15 minutes | [WHY_INTERGRAX.md](WHY_INTERGRAX.md) + [USE_CASES.md](USE_CASES.md) + [ROADMAP.md](ROADMAP.md) | Understand problem, fit and direction |
-| 30 minutes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [README.md](README.md) quick start + [PROOFS.md](PROOFS.md) | Inspect or run a bounded technical path |
+| 30 minutes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [PROOFS.md](PROOFS.md) | Choose a bounded builder or technical evaluation path |
 | 45–60 minutes | Choose LKW Platform Proof, Token Optimization guide, architecture review or partner/pilot review | Deep evaluation of one surface |
 
 ---
@@ -86,8 +86,10 @@ Goal: test whether the local evaluation path is understandable and reproducible.
 Start from:
 
 - [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — route selection and prerequisites.
-- [README.md](README.md) — quick start commands.
+- [README.md](README.md) — product overview and LKW workflow.
 - [PROOFS.md](PROOFS.md) — current proof status and claim boundaries.
+
+A simplified public LKW trial is not yet claimed available. Use the bounded builder or technical evaluation paths documented in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
 
 Typical local flow:
 
