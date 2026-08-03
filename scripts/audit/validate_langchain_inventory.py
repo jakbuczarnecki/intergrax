@@ -290,7 +290,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 161, f"expected 161 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 170, f"expected 170 unique inventory IDs, got {len(ids)}"
 
     keys = [(r["path"], r["line"], r["symbol"]) for r in rows]
     dupes = [k for k, c in Counter(keys).items() if c > 1]
@@ -300,7 +300,7 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("total detailed inventory rows") == 161
+    assert summary.get("total detailed inventory rows") == 170
     assert summary.get("unclassified occurrences") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
@@ -348,7 +348,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("161 unique inventory IDs")
+    print("170 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

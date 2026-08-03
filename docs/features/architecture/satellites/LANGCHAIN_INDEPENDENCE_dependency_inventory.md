@@ -29,21 +29,21 @@ Use, modification, or distribution without written permission is prohibited.
 | Metric | Count |
 |--------|------:|
 | direct production/runtime imports | 91 |
-| direct test imports | 58 |
+| direct test imports | 67 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 9 |
 | generated lock rows | 1 |
 | core contract leaks | 15 |
-| core implementation dependencies | 38 |
-| provider-bound dependencies | 26 |
+| core implementation dependencies | 39 |
+| provider-bound dependencies | 25 |
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
-| test-only | 58 |
+| test-only | 67 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| **total detailed inventory rows** | **161** |
+| **total detailed inventory rows** | **170** |
 
 ## C. Detailed inventory table
 
@@ -146,6 +146,14 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0108 | `langchain_core.documents` | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
 | LCI-INV-0109 | `langchain_core.documents` | `tests/integration/applications/test_memory_vector_ltm_wiring.py` | 19 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
 | LCI-INV-0110 | `langchain_core.documents` | `tests/integration/rag/answers/test_rag_answer_pipeline.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
+| LCI-INV-0111 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_audio_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0112 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_doc_smart_document_handler.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0113 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_document_handlers_framework.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0114 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_excel_smart_document_handler.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0115 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_html_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0116 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0117 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_text_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
+| LCI-INV-0118 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
 | LCI-INV-0119 | `langchain_core.documents` | `tests/integration/rag/document_splitters/test_chunking_integration.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2D | verified import |
 | LCI-INV-0120 | `langchain_core.documents` | `tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
 | LCI-INV-0121 | `langchain_core.documents` | `tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
@@ -162,6 +170,7 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0132 | `langchain_core.documents` | `tests/unit/rag/document_loaders/metadata/test_metadata_pipeline.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
 | LCI-INV-0133 | `langchain_core.documents` | `tests/unit/rag/document_loaders/normalizers/test_normalizer_pipeline.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
 | LCI-INV-0134 | `langchain_core.documents` | `tests/unit/rag/document_loaders/normalizers/test_whitespace_normalizer.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
+| LCI-INV-0137 | `langchain_core.documents` | `tests/unit/rag/document_loaders/parsers/test_parser_pipeline.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Handler compatibility tests migrate to KnowledgeDocument in LCI-2B; LangChain-specific compatibility tests remain under LCI-7C. | LCI-2B | verified import |
 | LCI-INV-0138 | `langchain_core.documents` | `tests/unit/rag/document_loaders/test_document_loader.py` | 12 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2B | verified import |
 | LCI-INV-0139 | `langchain_core.documents` | `tests/unit/rag/document_loaders/test_documents_loader_filesystem.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2B | verified import |
 | LCI-INV-0140 | `langchain_core.documents` | `tests/unit/rag/embedding/test_embedding_manager.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
@@ -247,7 +256,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | Document/messages ABI leak | 92 | 69 | 1 | 162 | yes | compat extra only | LCI-7A |
+| langchain-core | Document/messages ABI leak | 79 | 67 | 1 | 147 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
@@ -267,10 +276,10 @@ Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import h
 
 | Metric | Value |
 |--------|------:|
-| production imports scanned | 104 |
+| production imports scanned | 91 |
 | allowed-zone imports | 24 |
-| guarded imports | 80 |
-| grandfather entries | 80 |
+| guarded imports | 67 |
+| grandfather entries | 67 |
 | new forbidden imports | 0 |
 | stale grandfather entries | 0 |
 | register path | `scripts/maintenance/langchain_boundary_grandfather.json` |
