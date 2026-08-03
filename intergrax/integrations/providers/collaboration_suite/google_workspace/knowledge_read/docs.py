@@ -105,8 +105,12 @@ _TABLE_CELL_ALLOWED_KEYS = frozenset(
         "endIndex",
         "content",
         "tableCellStyle",
+        "suggestedInsertionIds",
+        "suggestedDeletionIds",
+        "suggestedTableCellStyleChanges",
     }
 )
+_PERSON_FORBIDDEN_TOP_LEVEL_KEYS = frozenset({"email", "name"})
 
 class GoogleDocsNamedStyleType(StrEnum):
     NORMAL_TEXT = "NORMAL_TEXT"
@@ -232,6 +236,24 @@ def _require_exact_list(value: object) -> list[object]:
     return value
 
 
+def _require_present_exact_dict(
+    mapping: dict[str, object],
+    key: str,
+) -> dict[str, object]:
+    if key not in mapping:
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    return _require_exact_dict(mapping[key])
+
+
+def _require_present_exact_list(
+    mapping: dict[str, object],
+    key: str,
+) -> list[object]:
+    if key not in mapping:
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    return _require_exact_list(mapping[key])
+
+
 def _require_exact_int(value: object) -> int:
     if isinstance(value, bool) or type(value) is not int:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
@@ -247,10 +269,39 @@ def _require_positive_int(value: object) -> int:
     return validated
 
 
-def _parse_optional_positive_int(value: object, default: int = 1) -> int:
-    if value is None:
+def _parse_optional_positive_int_in_style(
+    style: dict[str, object],
+    key: str,
+    *,
+    default: int = 1,
+) -> int:
+    if key not in style:
         return default
-    return _require_positive_int(value)
+    return _require_positive_int(style[key])
+
+
+def _validate_table_cell_ignored_fields(cell_mapping: dict[str, object]) -> None:
+    if "suggestedInsertionIds" in cell_mapping:
+        _require_exact_list(cell_mapping["suggestedInsertionIds"])
+    if "suggestedDeletionIds" in cell_mapping:
+        _require_exact_list(cell_mapping["suggestedDeletionIds"])
+    if "suggestedTableCellStyleChanges" in cell_mapping:
+        _require_exact_dict(cell_mapping["suggestedTableCellStyleChanges"])
+
+
+def _validate_unique_resource_id_tuple(value: object) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, tuple):
+        items = value
+    elif isinstance(value, list):
+        items = value
+    else:
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    validated = tuple(_validate_resource_identifier(item) for item in items)
+    if len(validated) != len(set(validated)):
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+    return validated
 
 
 def _validate_index_range(
@@ -321,12 +372,11 @@ def _validate_preserved_bounded_text(
 
 
 def _parse_table_cell_spans(cell_mapping: dict[str, object]) -> tuple[int, int]:
-    style_value = cell_mapping.get("tableCellStyle")
-    if style_value is None:
+    if "tableCellStyle" not in cell_mapping:
         return 1, 1
-    style = _require_exact_dict(style_value)
-    row_span = _parse_optional_positive_int(style.get("rowSpan"))
-    column_span = _parse_optional_positive_int(style.get("columnSpan"))
+    style = _require_exact_dict(cell_mapping["tableCellStyle"])
+    row_span = _parse_optional_positive_int_in_style(style, "rowSpan")
+    column_span = _parse_optional_positive_int_in_style(style, "columnSpan")
     return row_span, column_span
 
 
@@ -447,9 +497,47 @@ class GoogleDocsInlineElement(BaseModel):
     def _validate_indexes(cls, value: object) -> int:
         return _require_exact_int(value)
 
+    @field_validator("reference_id", mode="before")
+    @classmethod
+    def _validate_reference_id(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return _validate_resource_identifier(value)
+
+    @field_validator("text", mode="before")
+    @classmethod
+    def _validate_text_field(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if type(value) is not str:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        if len(value) > _MAX_TEXT_FIELD_LENGTH:
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        return value
+
+    @field_validator("auxiliary_text", mode="before")
+    @classmethod
+    def _validate_auxiliary_text_field(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return _validate_exact_nonblank_bounded_field(value, max_length=_MAX_TEXT_FIELD_LENGTH)
+
+    @field_validator("mime_type", mode="before")
+    @classmethod
+    def _validate_mime_type_field(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return normalize_google_workspace_media_type(value)
+
     @model_validator(mode="after")
     def _validate_invariants(self) -> GoogleDocsInlineElement:
         _validate_index_range(self.start_index, self.end_index)
+        if self.text is not None:
+            if self.kind is GoogleDocsInlineKind.TEXT_RUN:
+                if _UNSAFE_TEXT_CONTROL.search(self.text):
+                    raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            elif not self.text.strip() or _ASCII_CONTROL.search(self.text):
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         if self.kind is GoogleDocsInlineKind.TEXT_RUN:
             if (
                 self.text is None
@@ -595,7 +683,7 @@ class GoogleDocsTableRow(BaseModel):
     def _validate_row_invariants(self) -> GoogleDocsTableRow:
         _validate_index_range(self.start_index, self.end_index)
         if not self.cells:
-            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            return self
         cell_ranges = [(cell.start_index, cell.end_index) for cell in self.cells]
         for cell_start, cell_end in cell_ranges:
             _validate_index_range(
@@ -606,6 +694,49 @@ class GoogleDocsTableRow(BaseModel):
             )
         _validate_monotonic_ranges(cell_ranges)
         return self
+
+
+def _validate_table_grid(
+    *,
+    rows: int,
+    columns: int,
+    table_rows: tuple[GoogleDocsTableRow, ...],
+) -> None:
+    active_spans = [0] * columns
+
+    for row_index, row in enumerate(table_rows):
+        occupied = [active_spans[column] > 0 for column in range(columns)]
+        column = 0
+
+        for cell in row.cells:
+            while column < columns and occupied[column]:
+                column += 1
+
+            if column + cell.column_span > columns:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+
+            for span_column in range(column, column + cell.column_span):
+                if occupied[span_column]:
+                    raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+
+            if row_index + cell.row_span > rows:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+
+            for span_column in range(column, column + cell.column_span):
+                occupied[span_column] = True
+                active_spans[span_column] = max(active_spans[span_column], cell.row_span)
+
+            column += cell.column_span
+
+        if not all(occupied):
+            raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+
+        for span_column in range(columns):
+            if active_spans[span_column] > 0:
+                active_spans[span_column] -= 1
+
+    if any(remaining > 0 for remaining in active_spans):
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
 
 
 class GoogleDocsTable(BaseModel):
@@ -626,12 +757,7 @@ class GoogleDocsTable(BaseModel):
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         row_ranges = [(row.start_index, row.end_index) for row in self.table_rows]
         _validate_monotonic_ranges(row_ranges)
-        for row in self.table_rows:
-            if len(row.cells) > self.columns:
-                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-            column_span_sum = sum(cell.column_span for cell in row.cells)
-            if column_span_sum != self.columns:
-                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+        _validate_table_grid(rows=self.rows, columns=self.columns, table_rows=self.table_rows)
         return self
 
 
@@ -675,6 +801,13 @@ class GoogleDocsSegment(BaseModel):
     kind: GoogleDocsSegmentKind
     segment_id: str | None = Field(default=None, repr=False)
     blocks: tuple[GoogleDocsBlock, ...]
+
+    @field_validator("segment_id", mode="before")
+    @classmethod
+    def _validate_segment_id(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        return _validate_resource_identifier(value)
 
     @model_validator(mode="after")
     def _validate_segment_invariants(self) -> GoogleDocsSegment:
@@ -720,6 +853,11 @@ class GoogleDocsTab(BaseModel):
     @classmethod
     def _validate_int_fields(cls, value: object) -> int:
         return _require_exact_int(value)
+
+    @field_validator("list_ids", "inline_object_ids", "positioned_object_ids", mode="before")
+    @classmethod
+    def _validate_tab_resource_id_tuples(cls, value: object) -> tuple[str, ...]:
+        return _validate_unique_resource_id_tuple(value)
 
     @model_validator(mode="after")
     def _validate_tab_invariants(self) -> GoogleDocsTab:
@@ -805,6 +943,17 @@ class GoogleDocsDocument(BaseModel):
         for indexes in siblings_by_parent.values():
             if indexes != list(range(len(indexes))):
                 raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+
+        ancestry_stack: list[str] = []
+        for tab in self.tabs:
+            target_depth = tab.nesting_level
+            while len(ancestry_stack) > target_depth:
+                ancestry_stack.pop()
+            if tab.parent_tab_id is not None:
+                if not ancestry_stack or ancestry_stack[-1] != tab.parent_tab_id:
+                    raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
+            ancestry_stack.append(tab.tab_id)
+
         return self
 
 
@@ -933,6 +1082,9 @@ def _parse_inline_element(
 
     if union_key == "person":
         person = _require_exact_dict(mapping["person"])
+        for forbidden_key in _PERSON_FORBIDDEN_TOP_LEVEL_KEYS:
+            if forbidden_key in person:
+                raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
         person_id = _validate_resource_identifier(person.get("personId"))
         properties = _require_exact_dict(person.get("personProperties"))
         email = _validate_preserved_bounded_text(
@@ -1062,7 +1214,7 @@ def _parse_paragraph(
     inline_object_ids: frozenset[str],
 ) -> GoogleDocsParagraph:
     elements = _parse_paragraph_elements(
-        mapping.get("elements", []),
+        _require_present_exact_list(mapping, "elements"),
         budget,
         parent_start=parent_start,
         parent_end=parent_end,
@@ -1188,15 +1340,15 @@ def _parse_blocks(
                     row_ranges.append((row_start, row_end))
 
                     raw_cells = _require_exact_list(row_mapping.get("tableCells"))
-                    if not raw_cells or len(raw_cells) > columns:
+                    if len(raw_cells) > columns:
                         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
 
                     cell_ranges: list[tuple[int, int]] = []
                     parsed_cells: list[GoogleDocsTableCell] = []
-                    column_span_sum = 0
                     for raw_cell in raw_cells:
                         cell_mapping = _require_exact_dict(raw_cell)
                         _reject_unknown_top_level_fields(cell_mapping, _TABLE_CELL_ALLOWED_KEYS)
+                        _validate_table_cell_ignored_fields(cell_mapping)
                         cell_start = _require_exact_int(cell_mapping.get("startIndex"))
                         cell_end = _require_exact_int(cell_mapping.get("endIndex"))
                         _validate_index_range(
@@ -1207,9 +1359,8 @@ def _parse_blocks(
                         )
                         cell_ranges.append((cell_start, cell_end))
                         row_span, column_span = _parse_table_cell_spans(cell_mapping)
-                        column_span_sum += column_span
                         cell_blocks = _parse_blocks(
-                            cell_mapping.get("content", []),
+                            _require_present_exact_list(cell_mapping, "content"),
                             budget,
                             parent_start=cell_start,
                             parent_end=cell_end,
@@ -1229,8 +1380,6 @@ def _parse_blocks(
                             )
                         )
                     _validate_monotonic_ranges(cell_ranges)
-                    if column_span_sum != columns:
-                        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
                     parsed_rows.append(
                         _safe_construct(
                             GoogleDocsTableRow,
@@ -1241,11 +1390,13 @@ def _parse_blocks(
                     )
                 _validate_monotonic_ranges(row_ranges)
 
+                table_rows_tuple = tuple(parsed_rows)
+                _validate_table_grid(rows=rows, columns=columns, table_rows=table_rows_tuple)
                 table = _safe_construct(
                     GoogleDocsTable,
                     rows=rows,
                     columns=columns,
-                    table_rows=tuple(parsed_rows),
+                    table_rows=table_rows_tuple,
                 )
                 blocks.append(
                     _safe_construct(
@@ -1269,7 +1420,7 @@ def _parse_blocks(
             elif union_key == "tableOfContents":
                 toc_mapping = _require_exact_dict(item["tableOfContents"])
                 children = _parse_blocks(
-                    toc_mapping.get("content", []),
+                    _require_present_exact_list(toc_mapping, "content"),
                     budget,
                     parent_start=start_index,
                     parent_end=end_index,
@@ -1309,7 +1460,7 @@ def _parse_mapped_segment(
     if resource_id != map_key:
         raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
     blocks = _parse_blocks(
-        mapping.get("content", []),
+        _require_present_exact_list(mapping, "content"),
         budget,
         list_ids=list_ids,
         inline_object_ids=inline_object_ids,
@@ -1335,7 +1486,7 @@ def _parse_body_segment(
 ) -> GoogleDocsSegment:
     budget.add_segment()
     blocks = _parse_blocks(
-        mapping.get("content", []),
+        _require_present_exact_list(mapping, "content"),
         budget,
         list_ids=list_ids,
         inline_object_ids=inline_object_ids,

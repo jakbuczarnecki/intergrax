@@ -1364,6 +1364,566 @@ def test_footnote_number_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -
         reader.read_document(document_id=_DOCUMENT_ID)
 
 
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_document(document_id=_DOCUMENT_ID)
+
+
+def test_person_top_level_email_with_person_properties_rejected() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "person": {
+                        "personId": "person-1",
+                        "email": "wrong@example.com",
+                        "personProperties": {
+                            "email": "correct@example.com",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+    _read_with_body_mutation(body)
+
+
+@pytest.mark.parametrize(
+    "style_mutation",
+    [
+        {"tableCellStyle": None},
+        {"tableCellStyle": {"rowSpan": None}},
+        {"tableCellStyle": {"columnSpan": None}},
+        {"tableCellStyle": {"rowSpan": True}},
+        {"tableCellStyle": {"columnSpan": "2"}},
+    ],
+)
+def test_malformed_table_cell_span_values_rejected(style_mutation: dict[str, object]) -> None:
+    cell: dict[str, object] = {
+        "startIndex": 1,
+        "endIndex": 10,
+        "content": [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+    }
+    cell.update(style_mutation)
+    body = [
+        {
+            "startIndex": 1,
+            "endIndex": 10,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 1,
+                        "endIndex": 10,
+                        "tableCells": [cell],
+                    },
+                ],
+            },
+        },
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_table_cell_documented_suggestion_fields_accepted() -> None:
+    body = [
+        {
+            "startIndex": 1,
+            "endIndex": 10,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 1,
+                        "endIndex": 10,
+                        "tableCells": [
+                            {
+                                "startIndex": 1,
+                                "endIndex": 10,
+                                "content": [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                                "suggestedInsertionIds": [],
+                                "suggestedDeletionIds": [],
+                                "suggestedTableCellStyleChanges": {},
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    table = document.tabs[0].segments[0].blocks[0].table
+    assert table.rows == 1
+    assert table.columns == 1
+
+
+def _table_payload(rows: list[dict[str, object]], *, row_count: int, column_count: int) -> list[dict[str, object]]:
+    return [
+        {
+            "startIndex": 1,
+            "endIndex": 100,
+            "table": {
+                "rows": row_count,
+                "columns": column_count,
+                "tableRows": rows,
+            },
+        },
+    ]
+
+
+def test_table_grid_ordinary_2x2_success() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(1, 25, [_paragraph_block(1, 5, [_text_run("A", 1, 2)])]),
+                    _table_cell(25, 50, [_paragraph_block(25, 30, [_text_run("B", 25, 26)])]),
+                ],
+            },
+            {
+                "startIndex": 50,
+                "endIndex": 100,
+                "tableCells": [
+                    _table_cell(50, 75, [_paragraph_block(50, 55, [_text_run("C", 50, 51)])]),
+                    _table_cell(75, 100, [_paragraph_block(75, 80, [_text_run("D", 75, 76)])]),
+                ],
+            },
+        ],
+        row_count=2,
+        column_count=2,
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    table = document.tabs[0].segments[0].blocks[0].table
+    assert table.rows == 2
+    assert table.columns == 2
+
+
+def test_table_grid_horizontal_merge_success() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        50,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        column_span=2,
+                    ),
+                ],
+            },
+        ],
+        row_count=1,
+        column_count=2,
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    assert document.tabs[0].segments[0].blocks[0].table.table_rows[0].cells[0].column_span == 2
+
+
+def test_table_grid_vertical_merge_success() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 49,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        24,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        row_span=2,
+                    ),
+                    _table_cell(25, 49, [_paragraph_block(25, 30, [_text_run("B", 25, 26)])]),
+                ],
+            },
+            {
+                "startIndex": 50,
+                "endIndex": 99,
+                "tableCells": [
+                    _table_cell(50, 99, [_paragraph_block(50, 55, [_text_run("C", 50, 51)])]),
+                ],
+            },
+        ],
+        row_count=2,
+        column_count=2,
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    table = document.tabs[0].segments[0].blocks[0].table
+    assert table.table_rows[0].cells[0].row_span == 2
+    assert len(table.table_rows[1].cells) == 1
+
+
+def test_table_grid_combined_merge_success() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 49,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        24,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        row_span=2,
+                        column_span=2,
+                    ),
+                    _table_cell(25, 49, [_paragraph_block(25, 30, [_text_run("B", 25, 26)])]),
+                ],
+            },
+            {
+                "startIndex": 50,
+                "endIndex": 99,
+                "tableCells": [
+                    _table_cell(50, 99, [_paragraph_block(50, 55, [_text_run("C", 50, 51)])]),
+                ],
+            },
+        ],
+        row_count=2,
+        column_count=3,
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    table = document.tabs[0].segments[0].blocks[0].table
+    assert table.table_rows[0].cells[0].row_span == 2
+    assert table.table_rows[0].cells[0].column_span == 2
+
+
+def test_table_grid_row_span_overflow_rejected() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 49,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        49,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        row_span=3,
+                    ),
+                ],
+            },
+            {
+                "startIndex": 50,
+                "endIndex": 99,
+                "tableCells": [],
+            },
+        ],
+        row_count=2,
+        column_count=1,
+    )
+    _read_with_body_mutation(body)
+
+
+def test_table_grid_column_span_overflow_rejected() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        50,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        column_span=3,
+                    ),
+                ],
+            },
+        ],
+        row_count=1,
+        column_count=2,
+    )
+    _read_with_body_mutation(body)
+
+
+def test_table_grid_overlap_rejected() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(
+                        1,
+                        25,
+                        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                        column_span=2,
+                    ),
+                    _table_cell(25, 50, [_paragraph_block(25, 30, [_text_run("B", 25, 26)])]),
+                ],
+            },
+        ],
+        row_count=1,
+        column_count=2,
+    )
+    _read_with_body_mutation(body)
+
+
+def test_table_grid_uncovered_cell_rejected() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(1, 50, [_paragraph_block(1, 5, [_text_run("A", 1, 2)])]),
+                ],
+            },
+        ],
+        row_count=1,
+        column_count=2,
+    )
+    _read_with_body_mutation(body)
+
+
+def test_table_grid_too_many_cell_heads_rejected() -> None:
+    body = _table_payload(
+        [
+            {
+                "startIndex": 1,
+                "endIndex": 50,
+                "tableCells": [
+                    _table_cell(1, 17, [_paragraph_block(1, 5, [_text_run("A", 1, 2)])]),
+                    _table_cell(17, 34, [_paragraph_block(17, 22, [_text_run("B", 17, 18)])]),
+                    _table_cell(34, 50, [_paragraph_block(34, 39, [_text_run("C", 34, 35)])]),
+                ],
+            },
+        ],
+        row_count=1,
+        column_count=2,
+    )
+    _read_with_body_mutation(body)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        {"body": {"content": None}},
+        {"body": {}},
+        {"headers": {"header-1": {"headerId": "header-1"}}},
+        {"footers": {"footer-1": {"footerId": "footer-1"}}},
+        {"footnotes": {"fn-1": {"footnoteId": "fn-1"}}},
+    ],
+)
+def test_missing_required_segment_content_rejected(mutation: dict[str, object]) -> None:
+    document_tab = _document_tab([_paragraph_block(1, 5, [_text_run("A", 1, 2)])])
+    document_tab.update(mutation)
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_missing_paragraph_elements_rejected() -> None:
+    body = [{"startIndex": 1, "endIndex": 5, "paragraph": {}}]
+    _read_with_body_mutation(body)
+
+
+def test_missing_table_cell_content_rejected() -> None:
+    body = [
+        {
+            "startIndex": 1,
+            "endIndex": 10,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 1,
+                        "endIndex": 10,
+                        "tableCells": [
+                            {
+                                "startIndex": 1,
+                                "endIndex": 10,
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_missing_toc_content_rejected() -> None:
+    body = [{"startIndex": 1, "endIndex": 5, "tableOfContents": {}}]
+    _read_with_body_mutation(body)
+
+
+def test_explicit_empty_content_collections_accepted() -> None:
+    body = [
+        {"startIndex": 1, "endIndex": 5, "paragraph": {"elements": []}},
+        {
+            "startIndex": 5,
+            "endIndex": 15,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 5,
+                        "endIndex": 15,
+                        "tableCells": [
+                            {
+                                "startIndex": 5,
+                                "endIndex": 15,
+                                "content": [],
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    blocks = document.tabs[0].segments[0].blocks
+    assert blocks[0].paragraph.elements == ()
+    assert blocks[1].table.table_rows[0].cells[0].blocks == ()
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"reference_id": "   "},
+        {"reference_id": "bad\x00id"},
+        {"text": "x" * 4097},
+        {"text": "bad\x00"},
+        {"auxiliary_text": "   "},
+    ],
+)
+def test_inline_element_direct_malformed_construction_rejected(kwargs: dict[str, object]) -> None:
+    base: dict[str, object] = {
+        "reference_id": "person-1",
+        "text": "User",
+        "auxiliary_text": "a@example.com",
+    }
+    base.update(kwargs)
+    with pytest.raises(ValidationError):
+        _inline(GoogleDocsInlineKind.PERSON, **base)
+
+
+def test_inline_element_invalid_mime_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _inline(
+            GoogleDocsInlineKind.RICH_LINK,
+            reference_id="rich-1",
+            text="Title",
+            mime_type="not-a-mime",
+        )
+
+
+def test_inline_element_blank_person_email_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _inline(
+            GoogleDocsInlineKind.PERSON,
+            reference_id="person-1",
+            text="User",
+            auxiliary_text="   ",
+        )
+
+
+def test_tab_duplicate_list_ids_rejected() -> None:
+    body = GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=())
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            list_ids=("list-1", "list-1"),
+            segments=(body,),
+        )
+
+
+def test_tab_duplicate_inline_object_ids_rejected() -> None:
+    body = GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=())
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            inline_object_ids=("inline-1", "inline-1"),
+            segments=(body,),
+        )
+
+
+def test_tab_duplicate_positioned_object_ids_rejected() -> None:
+    body = GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=())
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            positioned_object_ids=("pos-1", "pos-1"),
+            segments=(body,),
+        )
+
+
+def test_segment_malformed_segment_id_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsSegment(
+            kind=GoogleDocsSegmentKind.HEADER,
+            segment_id="   ",
+            blocks=(),
+        )
+
+
+def test_document_closed_subtree_return_rejected() -> None:
+    root_a = GoogleDocsTab.model_construct(
+        tab_id="root-a",
+        title="Root A",
+        parent_tab_id=None,
+        index=0,
+        nesting_level=0,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    root_b = GoogleDocsTab.model_construct(
+        tab_id="root-b",
+        title="Root B",
+        parent_tab_id=None,
+        index=1,
+        nesting_level=0,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    child_of_root_a = GoogleDocsTab.model_construct(
+        tab_id="child-a",
+        title="Child A",
+        parent_tab_id="root-a",
+        index=0,
+        nesting_level=1,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsDocument(
+            document_id=_DOCUMENT_ID,
+            title=_DOCUMENT_TITLE,
+            suggestions_view_mode="PREVIEW_WITHOUT_SUGGESTIONS",
+            tabs=(root_a, root_b, child_of_root_a),
+        )
+
+
 # --- Integration delegation ---
 
 
