@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from langchain_core.documents import Document
 
-from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.llm.messages import AttachmentRef
+from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
+from intergrax.rag.document_loaders.documents_loader import DocumentsLoader
+from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
+from intergrax.rag.document_loaders.pipeline.normalizer_pipeline import NormalizerPipeline
+from intergrax.rag.document_loaders.registry.document_handler_registry import DocumentHandlerRegistry
 from intergrax.runtime.nexus.ingestion.attachments import AttachmentResolver
 from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
 
@@ -22,14 +29,36 @@ class _Resolver(AttachmentResolver):
         return self._path
 
 
-class _TrackingLoader:
-    def __init__(self, docs: list[KnowledgeDocument]) -> None:
-        self.docs = docs
-        self.kwargs: dict[str, object] = {}
+class _PassthroughParser(BaseDocumentParser):
+    @classmethod
+    def parser_id(cls) -> str:
+        return "tests.passthrough"
 
-    def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
-        self.kwargs = dict(kwargs)
-        return self.docs
+    def is_available(self) -> bool:
+        return True
+
+    def load(self, source: str):
+        return [
+            ParsedDocumentFragment(
+                text="hello",
+                metadata=build_loader_metadata(
+                    source=source,
+                    parser=self.parser_id(),
+                    position=0,
+                ),
+            )
+        ]
+
+
+class _PassthroughHandler(BaseDocumentHandler):
+    def supports(self, source: str) -> bool:
+        return True
+
+    def confidence(self, source: str) -> float:
+        return 1.0
+
+    def build_parsers(self):
+        return [_PassthroughParser()]
 
 
 class _LangChainSplitter:
@@ -52,33 +81,18 @@ class _NoopVectorstore:
 
 
 @pytest.mark.asyncio
-async def test_attachment_ingestion_passes_tenant_and_workspace_namespace(tmp_path: Path) -> None:
+async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path: Path) -> None:
     attachment_path = tmp_path / "note.txt"
     attachment_path.write_text("hello", encoding="utf-8")
 
-    native_doc = KnowledgeDocument.model_validate(
-        {
-            "schema_version": 1,
-            "identity": {
-                "document_id": "docid1234567890ab",
-                "root_document_id": "docid1234567890ab",
-            },
-            "scope": {"tenant_id": "tenant.test", "namespace": "workspace-1"},
-            "content": "hello",
-            "metadata": {
-                "source": str(attachment_path),
-                "parser": "tests.dummy",
-                "position": 0,
-            },
-            "provenance": {
-                "source_kind": "file",
-                "source_id": str(attachment_path),
-                "provider_id": "tests.dummy",
-            },
-        }
-    )
+    registry = DocumentHandlerRegistry()
+    registry.register(_PassthroughHandler())
 
-    loader = _TrackingLoader([native_doc])
+    loader = DocumentsLoader(
+        registry=registry,
+        normalizer_pipeline=NormalizerPipeline(normalizers=[]),
+        metadata_pipeline=MetadataPipeline(providers=[]),
+    )
     splitter = _LangChainSplitter()
 
     service = AttachmentIngestionService(
@@ -100,8 +114,23 @@ async def test_attachment_ingestion_passes_tenant_and_workspace_namespace(tmp_pa
     )
 
     assert result[0].num_chunks == 1
-    assert loader.kwargs["tenant_id"] == "tenant.test"
-    assert loader.kwargs["namespace"] == "workspace-1"
+    assert result[0].metadata.get("reason") != "ingestion_failed"
     assert splitter.received is not None
     assert isinstance(splitter.received[0], Document)
     assert splitter.received[0].page_content == "hello"
+
+    loaded = loader.load_document(
+        str(attachment_path),
+        tenant_id="tenant.test",
+        namespace="workspace-1",
+        use_default_metadata=False,
+        call_custom_metadata=lambda doc, source: {
+            "attachment_id": attachment.id,
+            "session_id": "sess-1",
+            "user_id": "user-1",
+            "workspace_id": "workspace-1",
+        },
+    )
+    assert loaded[0].scope.tenant_id == "tenant.test"
+    assert loaded[0].scope.namespace == "workspace-1"
+    assert "tenant_id" not in loaded[0].metadata

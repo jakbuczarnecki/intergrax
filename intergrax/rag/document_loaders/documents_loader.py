@@ -16,6 +16,9 @@ from pydantic import ValidationError
 from intergrax.compat.langchain import from_langchain_document, to_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.knowledge.contracts.validation import JsonValue, knowledge_metadata_to_plain
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    copy_parser_runtime_state,
+)
 from intergrax.rag.document_loaders.contracts.base_document_loader import (
     BaseDocumentsLoader,
     MetadataCallback,
@@ -37,22 +40,35 @@ def _merge_custom_metadata(
     }
     payload = document.model_dump(mode="python")
     payload["metadata"] = merged
-    return KnowledgeDocument.model_validate(payload)
+    validated = KnowledgeDocument.model_validate(payload)
+    return copy_parser_runtime_state(document, validated)
 
 
 def _roundtrip_knowledge_document(
     original: KnowledgeDocument,
     langchain_doc: object,
 ) -> KnowledgeDocument:
-    converted = from_langchain_document(
-        langchain_doc,
-        document_id=original.identity.document_id,
-    )
+    if getattr(langchain_doc, "id", None) is None:
+        converted = from_langchain_document(
+            langchain_doc,
+            document_id=original.identity.document_id,
+        )
+    else:
+        converted = from_langchain_document(langchain_doc)
+
+    if converted.identity.document_id != original.identity.document_id:
+        raise ValueError(
+            "document_id mismatch after normalization: "
+            f"expected {original.identity.document_id!r}, "
+            f"got {converted.identity.document_id!r}"
+        )
+
     payload = converted.model_dump(mode="python")
     payload["identity"] = original.identity.model_dump()
     payload["scope"] = original.scope.model_dump()
     payload["provenance"] = original.provenance.model_dump()
-    return KnowledgeDocument.model_validate(payload)
+    validated = KnowledgeDocument.model_validate(payload)
+    return copy_parser_runtime_state(original, validated)
 
 
 class DocumentsLoader(BaseDocumentsLoader):

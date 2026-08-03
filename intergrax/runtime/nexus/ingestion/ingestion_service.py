@@ -28,10 +28,12 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 
-from intergrax.compat.langchain import to_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.llm.messages import AttachmentRef
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    to_legacy_rag_document,
+)
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -353,7 +355,6 @@ class AttachmentIngestionService:
             "attachment_type": attachment.type,
             "session_id": session_id,
             "user_id": user_id,
-            "tenant_id": tenant_id,
             "workspace_id": workspace_id,
         }
         if attachment.metadata:
@@ -381,7 +382,7 @@ class AttachmentIngestionService:
             call_custom_metadata=_metadata_callback,
         )
 
-        docs: List[Document] = [to_langchain_document(doc) for doc in native_docs]
+        docs: List[Document] = [to_legacy_rag_document(doc) for doc in native_docs]
 
         if docs and self._trace_writer is not None:
             from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY

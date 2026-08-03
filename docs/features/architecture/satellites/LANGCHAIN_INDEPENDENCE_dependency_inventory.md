@@ -29,7 +29,7 @@ Use, modification, or distribution without written permission is prohibited.
 | Metric | Count |
 |--------|------:|
 | direct production/runtime imports | 88 |
-| direct test imports | 0 |
+| direct test imports | 58 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 9 |
@@ -40,10 +40,10 @@ Use, modification, or distribution without written permission is prohibited.
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
-| test-only | 56 |
+| test-only | 58 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 156 |
+| total detailed inventory rows | 158 |
 
 ## C. Detailed inventory table
 
@@ -143,6 +143,8 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0108 | `langchain_core.documents` | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
 | LCI-INV-0109 | `langchain_core.documents` | `tests/integration/applications/test_memory_vector_ltm_wiring.py` | 19 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
 | LCI-INV-0110 | `langchain_core.documents` | `tests/integration/rag/answers/test_rag_answer_pipeline.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
+| LCI-INV-0116 | langchain_core.documents | 	ests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py | 10 | Document | TEST / test | test-only | TEST_ONLY | test only | Legacy modality path retains LangChain Document fixtures until LCI-4D migration. | LCI-4D | verified import |
+| LCI-INV-0118 | langchain_core.documents | 	ests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py | 10 | Document | TEST / test | test-only | TEST_ONLY | test only | Legacy modality path retains LangChain Document fixtures until LCI-4D migration. | LCI-4D | verified import |
 | LCI-INV-0119 | `langchain_core.documents` | `tests/integration/rag/document_splitters/test_chunking_integration.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2D | verified import |
 | LCI-INV-0120 | `langchain_core.documents` | `tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
 | LCI-INV-0121 | `langchain_core.documents` | `tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
@@ -242,7 +244,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | langchain-core | pyproject.toml + runtime imports | 86 | 0 | 0 | 86 |
+| langchain-core | Document/messages ABI leak | 76 | 58 | 1 | 135 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
@@ -262,10 +264,10 @@ Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import h
 
 | Metric | Value |
 |--------|------:|
-| production imports scanned | 91 |
+| production imports scanned | 88 |
 | allowed-zone imports | 24 |
-| guarded imports | 67 |
-| grandfather entries | 67 |
+| guarded imports | 64 |
+| grandfather entries | 64 |
 | new forbidden imports | 0 |
 | stale grandfather entries | 0 |
 | register path | `scripts/maintenance/langchain_boundary_grandfather.json` |

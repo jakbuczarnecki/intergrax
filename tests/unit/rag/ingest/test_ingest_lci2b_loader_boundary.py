@@ -9,6 +9,10 @@ import pytest
 from langchain_core.documents import Document
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    attach_parser_native_handle,
+)
+from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 
 
@@ -116,3 +120,61 @@ def test_ingest_pipeline_converts_native_docs_before_splitter(tmp_path: Path) ->
     assert len(splitter.received) == 1
     assert isinstance(splitter.received[0], Document)
     assert splitter.received[0].page_content == "hello"
+
+
+def test_ingest_pipeline_legacy_conversion_includes_document_id_and_handle(tmp_path: Path) -> None:
+    source = tmp_path / "sample.txt"
+    source.write_text("hello", encoding="utf-8")
+
+    handle = object()
+    native_doc = attach_parser_native_handle(
+        KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": "docid1234567890ab",
+                    "root_document_id": "docid1234567890ab",
+                },
+                "scope": {"tenant_id": "tenant.test"},
+                "content": "hello",
+                "metadata": {
+                    "source": str(source),
+                    "parser": "tests.dummy",
+                    "position": 0,
+                },
+                "provenance": {
+                    "source_kind": "file",
+                    "source_id": str(source),
+                    "provider_id": "tests.dummy",
+                },
+            }
+        ),
+        handle,
+    )
+
+    class _NativeLoader:
+        def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+            return [native_doc]
+
+    splitter = _LangChainSplitter()
+
+    pipeline = IngestPipeline(
+        loader=_NativeLoader(),
+        splitter=splitter,
+        embedding_manager=_NoopEmbedding(),
+        vectorstore=_NoopVectorstore(),
+    )
+
+    result = pipeline.run(
+        IngestRequest(
+            source_path=str(source),
+            base_metadata={"tenant_id": "tenant.test"},
+        )
+    )
+
+    assert result.used is True
+    assert splitter.received is not None
+    legacy_meta = splitter.received[0].metadata
+    assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
+    assert legacy_meta[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in native_doc.metadata

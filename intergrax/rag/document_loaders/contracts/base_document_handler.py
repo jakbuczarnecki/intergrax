@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from typing import List, Sequence
 from urllib.parse import urlparse
@@ -17,10 +16,11 @@ from intergrax.knowledge.contracts import (
 from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS, SCHEMA_VERSION
 from intergrax.knowledge.contracts.validation import JsonValue
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    attach_parser_native_handle,
+)
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import ParserPipeline
-
-logger = logging.getLogger(__name__)
 
 
 def _resolve_source_kind(source: str) -> str:
@@ -54,12 +54,7 @@ def _fragment_to_knowledge_document(
     if not isinstance(parser_value, str) or not parser_value:
         raise ValueError("fragment metadata must include a non-empty parser")
 
-    if fragment.native_handle is not None:
-        logger.debug(
-            "document parser native handle discarded at KnowledgeDocument boundary"
-        )
-
-    return KnowledgeDocument.model_validate(
+    document = KnowledgeDocument.model_validate(
         {
             "schema_version": SCHEMA_VERSION,
             "identity": {
@@ -81,6 +76,9 @@ def _fragment_to_knowledge_document(
             },
         }
     )
+    if fragment.native_handle is not None:
+        document = attach_parser_native_handle(document, fragment.native_handle)
+    return document
 
 
 class BaseDocumentHandler(ABC):

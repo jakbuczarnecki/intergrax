@@ -7,9 +7,9 @@ Use, modification, or distribution without written permission is prohibited.
 # Native Knowledge Document Contract — LCI-1A
 
 **Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **APPROVED**; LCI-1C bridge: **APPROVED**; LCI-1D conformance gate: **READY_FOR_REVIEW**
-**Owner:** RAG (functional) · Tier-0 `intergrax/knowledge/` (neutral shared core)  
-**Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)  
-**Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)  
+**Owner:** RAG (functional) · Tier-0 `intergrax/knowledge/` (neutral shared core)
+**Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
+**Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
 **Anchor domain architecture:** [`../../../architecture/RAG.md`](../../../architecture/RAG.md)
 
 ---
@@ -23,7 +23,7 @@ This satellite is the **source of truth** for the canonical Intergrax knowledge 
 - Modality text normalization outputs
 - Integration fetch → RAG-ready normalization
 
-**In scope (LCI-1A):** architecture, field contract, invariants, mappings, acceptance checklist.  
+**In scope (LCI-1A):** architecture, field contract, invariants, mappings, acceptance checklist.
 **Out of scope:** Python implementation (`LCI-1B`), LangChain bridge (`LCI-1C`), conformance CI (`LCI-1D`), consumer migration (`LCI-2A` onward).
 
 ---
@@ -520,7 +520,7 @@ Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_de
 
 **LCI-1B implementation:** APPROVED
 **LCI-1C bridge:** APPROVED
-**LCI-1D conformance gate:** READY_FOR_REVIEW
+**LCI-1D conformance gate:** APPROVED
 
 ---
 
@@ -550,5 +550,7 @@ ParsedDocumentFragment
 - Parser fragments do not carry tenant scope; the handler receives typed KnowledgeDocumentScope.
 - Fragment document_id is deterministic per normalized source + position.
 - Parser
-ative_handle is parser-local ephemeral provider state and is not part of the RAG-ready ABI; it is discarded at the KnowledgeDocument boundary with a debug log.
+ative_handle is **RAG-local**, **private**, **non-ABI**, **non-serialized**, **temporary** runtime state carried on a loader-local KnowledgeDocument subclass via Pydantic PrivateAttr; it is not written to public metadata, model_dump, or dump_knowledge_document.
+- Legacy chunkers receive
+ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D — native chunking migration**).
 - DocumentsLoader applies a temporary normalization/metadata LangChain bridge (removed in LCI-2C).

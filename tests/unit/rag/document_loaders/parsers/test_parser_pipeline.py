@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-import logging
-
 import pytest
 from typing import Sequence
 
@@ -13,6 +11,10 @@ from intergrax.integrations.contracts.document_parser import ParsedDocumentFragm
 from intergrax.knowledge.contracts import (
     KnowledgeDocument,
     KnowledgeDocumentScope,
+)
+from intergrax.knowledge.contracts.document import dump_knowledge_document
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    to_legacy_rag_document,
 )
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
@@ -252,7 +254,7 @@ def test_handler_rejects_reserved_parser_metadata():
         _fragment_to_knowledge_document(fragment, source="file", scope=_SCOPE)
 
 
-def test_handler_discards_native_handle_without_leaking(caplog: pytest.LogCaptureFixture):
+def test_handler_attaches_native_handle_as_private_runtime_state():
 
     handle = {"doc": 1}
     fragment = ParsedDocumentFragment(
@@ -262,16 +264,18 @@ def test_handler_discards_native_handle_without_leaking(caplog: pytest.LogCaptur
     )
     handler = _BridgeHandler([_DummyParser(fragments=[fragment])])
 
-    with caplog.at_level(logging.DEBUG):
-        docs = handler.load("file", scope=_SCOPE)
+    docs = handler.load("file", scope=_SCOPE)
 
+    assert isinstance(docs[0], KnowledgeDocument)
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META not in docs[0].metadata
-    assert str(handle) not in caplog.text
-    assert repr(handle) not in caplog.text
-    assert any(
-        "document parser native handle discarded at KnowledgeDocument boundary" in record.message
-        for record in caplog.records
-    )
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in docs[0].model_dump()
+    dumped = dump_knowledge_document(docs[0]).decode("utf-8")
+    assert '"_docling_document"' not in dumped
+
+    legacy = to_legacy_rag_document(docs[0])
+    assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
+    assert legacy.metadata[DocumentMetadataKey.DOCUMENT_ID.value] == docs[0].identity.document_id
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in docs[0].metadata
 
 
 def test_handler_preserves_trace_metadata():
