@@ -22,9 +22,13 @@ from intergrax.runtime.vendor_knowledge.errors import (
 )
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeAdapterCapabilities,
+    KnowledgeChange,
     KnowledgeChangeKind,
+    KnowledgeContent,
     KnowledgeCursor,
+    KnowledgeItemDescriptor,
     KnowledgePage,
+    KnowledgePermissions,
     KnowledgeScopeInfo,
     KnowledgeSourceRef,
 )
@@ -209,6 +213,20 @@ class VendorKnowledgeReconciliationEngine:
         )
         loaded_checkpoint = self._read_checkpoint(binding_id=binding.binding_id)
         existing_run = self._read_run(binding_id=binding.binding_id)
+        if (
+            loaded_checkpoint is not None
+            and loaded_checkpoint.binding_configuration_version
+            != binding.configuration_version
+            and existing_run is None
+            and not restart
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                safe_message="Knowledge reconciliation requires restart after binding configuration change",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
         run = self._resolve_run_for_invocation(
             existing_run=existing_run,
             run_id=run_id,
@@ -233,6 +251,7 @@ class VendorKnowledgeReconciliationEngine:
                 binding=binding,
                 source=source,
                 page_size=page_size,
+                trigger_delivery_id=trigger_delivery_id,
             )
         if run.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED:
             assert isinstance(run, KnowledgeReconciliationRunPagePrepared)
@@ -261,6 +280,20 @@ class VendorKnowledgeReconciliationEngine:
         self,
         command: KnowledgeReconciliationRecoveryCommand,
     ) -> KnowledgeReconciliationRun:
+        return self._execute_recovery_command_sync(command)
+
+    async def execute_recovery_command_async(
+        self,
+        command: KnowledgeReconciliationRecoveryCommand,
+    ) -> KnowledgeReconciliationRun:
+        if command.kind is KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT:
+            return await self._resume_exact_async(command)
+        return self._execute_recovery_command_sync(command)
+
+    def _execute_recovery_command_sync(
+        self,
+        command: KnowledgeReconciliationRecoveryCommand,
+    ) -> KnowledgeReconciliationRun:
         run = self._read_run(binding_id=command.binding_id)
         if run is None:
             raise VendorKnowledgeError(
@@ -282,86 +315,7 @@ class VendorKnowledgeReconciliationEngine:
             )
         now = self._utc_clock()
         if command.kind is KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT:
-            if not isinstance(run, KnowledgeReconciliationRunRecoveryRequired):
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                    safe_message="Knowledge reconciliation resume requires recovery state",
-                    retryable=False,
-                )
-            evidence = run.recovery_evidence
-            replacement: KnowledgeReconciliationRun
-            if isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceCollecting):
-                replacement = KnowledgeReconciliationRunCollecting(
-                    **run.model_dump(
-                        exclude={
-                            "phase",
-                            "recovery_reason_code",
-                            "recovery_evidence",
-                            "record_version",
-                            "updated_at",
-                        }
-                    ),
-                    phase=KnowledgeReconciliationRunPhase.COLLECTING,
-                    current_input_cursor=evidence.current_input_cursor,
-                    current_input_cursor_fingerprint=evidence.current_input_cursor_fingerprint,
-                    remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
-                    **_advance_fields(run, updated_at=now),
-                )
-            elif isinstance(
-                evidence, KnowledgeReconciliationRecoveryEvidencePagePrepared
-            ):
-                replacement = KnowledgeReconciliationRunPagePrepared(
-                    **run.model_dump(
-                        exclude={
-                            "phase",
-                            "recovery_reason_code",
-                            "recovery_evidence",
-                            "record_version",
-                            "updated_at",
-                        }
-                    ),
-                    phase=KnowledgeReconciliationRunPhase.PAGE_PREPARED,
-                    prepared_input_cursor=evidence.prepared_input_cursor,
-                    prepared_input_cursor_fingerprint=evidence.prepared_input_cursor_fingerprint,
-                    provider_page_fingerprint=evidence.provider_page_fingerprint,
-                    prepared_batch_payload_fingerprint=evidence.prepared_batch_payload_fingerprint,
-                    prepared_state_mutation_templates=evidence.prepared_state_mutation_templates,
-                    prepared_state_mutations_fingerprint=evidence.prepared_state_mutations_fingerprint,
-                    prepared_proposed_checkpoint=evidence.prepared_proposed_checkpoint,
-                    prepared_proposed_checkpoint_fingerprint=evidence.prepared_proposed_checkpoint_fingerprint,
-                    prepared_next_cursor=evidence.prepared_next_cursor,
-                    prepared_next_cursor_fingerprint=evidence.prepared_next_cursor_fingerprint,
-                    prepared_page_size=evidence.prepared_page_size,
-                    has_more=evidence.has_more,
-                    delivery_id=evidence.delivery_id,
-                    remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
-                    synthetic_tombstone_remote_ids=evidence.synthetic_tombstone_remote_ids,
-                    **_advance_fields(run, updated_at=now),
-                )
-            else:
-                assert isinstance(
-                    evidence, KnowledgeReconciliationRecoveryEvidenceFinalizing
-                )
-                replacement = KnowledgeReconciliationRunFinalizing(
-                    **run.model_dump(
-                        exclude={
-                            "phase",
-                            "recovery_reason_code",
-                            "recovery_evidence",
-                            "record_version",
-                            "updated_at",
-                        }
-                    ),
-                    phase=KnowledgeReconciliationRunPhase.FINALIZING,
-                    intended_final_completed_checkpoint=evidence.intended_final_completed_checkpoint,
-                    intended_final_checkpoint_fingerprint=evidence.intended_final_checkpoint_fingerprint,
-                    expected_previous_completed_checkpoint=evidence.expected_previous_completed_checkpoint,
-                    final_delivery_id=evidence.final_delivery_id,
-                    prepared_batch_payload_fingerprint=evidence.prepared_batch_payload_fingerprint,
-                    **_advance_fields(run, updated_at=now),
-                )
-            self._cas_recovery(expected=run, replacement=replacement)
-            return replacement
+            return self._resume_exact_sync(run=run, now=now)
         if (
             command.kind
             is KnowledgeReconciliationRecoveryCommandKind.FINALIZE_ALREADY_COMMITTED
@@ -413,6 +367,8 @@ class VendorKnowledgeReconciliationEngine:
             replacement = run.model_copy(
                 update={
                     "recovery_reason_code": command.operator_reason_code,
+                    "machine_recovery_reason_code": run.machine_recovery_reason_code
+                    or run.recovery_reason_code,
                     **_advance_fields(run, updated_at=now),
                 }
             )
@@ -435,6 +391,7 @@ class VendorKnowledgeReconciliationEngine:
         binding: KnowledgeSourceBinding,
         source: KnowledgeSourceRef,
         page_size: int,
+        trigger_delivery_id: str | None,
     ) -> KnowledgeSyncRunResult:
         if run.binding_configuration_version != binding.configuration_version:
             return await self._enter_recovery(
@@ -443,6 +400,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_CURSOR,
                 safe_message="Knowledge reconciliation binding configuration is stale",
+                retryable=False,
             )
         try:
             scope_info = await self._facade.inspect_source(source=source)
@@ -488,6 +446,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation final page is missing checkpoint",
+                retryable=False,
             )
         envelopes = await self._materialize_envelopes(
             page=page,
@@ -589,6 +548,7 @@ class VendorKnowledgeReconciliationEngine:
             prepared_page_size=page_size,
             has_more=page.has_more,
             delivery_id=delivery_id,
+            prepared_parent_delivery_id=trigger_delivery_id,
             remaining_candidate_remote_ids=remaining_tuple,
             synthetic_tombstone_remote_ids=synthetic_ids,
             **_advance_fields(run, updated_at=now),
@@ -599,6 +559,7 @@ class VendorKnowledgeReconciliationEngine:
             binding=binding,
             source=source,
             page_size=page_size,
+            trusted_envelopes=tuple(envelopes),
         )
 
     async def _process_page_prepared(
@@ -608,6 +569,7 @@ class VendorKnowledgeReconciliationEngine:
         binding: KnowledgeSourceBinding,
         source: KnowledgeSourceRef,
         page_size: int,
+        trusted_envelopes: tuple[KnowledgeSyncEnvelope, ...] | None = None,
     ) -> KnowledgeSyncRunResult:
         if run.binding_configuration_version != binding.configuration_version:
             return await self._enter_recovery(
@@ -616,6 +578,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_CURSOR,
                 safe_message="Knowledge reconciliation binding configuration is stale",
+                retryable=False,
             )
         item_receipt = self._inspect_item_receipt(run=run)
         if item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.COMPLETED:
@@ -639,6 +602,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation item state receipt conflict",
+                retryable=False,
             )
         sink_receipt = self._inspect_sink_receipt(run=run)
         if sink_receipt.status is KnowledgeSyncSinkReceiptStatus.UNKNOWN:
@@ -648,6 +612,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
                 safe_message="Knowledge delivery outcome requires recovery",
+                retryable=False,
             )
         if sink_receipt.status is KnowledgeSyncSinkReceiptStatus.CONFLICT:
             return await self._enter_recovery(
@@ -656,6 +621,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation sink receipt conflict",
+                retryable=False,
             )
         if sink_receipt.status is KnowledgeSyncSinkReceiptStatus.APPLIED:
             states = self._states_from_templates(
@@ -673,34 +639,40 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation item state receipt is inconsistent",
+                retryable=False,
             )
-        reproduced = await self._reproduce_prepared_page(
-            run=run,
-            binding=binding,
-            source=source,
-            page_size=run.prepared_page_size,
-        )
-        if reproduced is None:
-            return await self._enter_recovery(
+        if trusted_envelopes is not None:
+            envelopes = trusted_envelopes
+        else:
+            reproduced = await self._reproduce_prepared_page(
                 run=run,
-                reason_code="provider_page_mismatch",
+                binding=binding,
                 source=source,
-                error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message="Knowledge reconciliation prepared page no longer matches provider",
+                page_size=run.prepared_page_size,
             )
-        envelopes, templates, provider_fp, batch_fp, mutations_fp = reproduced
-        if (
-            provider_fp != run.provider_page_fingerprint
-            or batch_fp != run.prepared_batch_payload_fingerprint
-            or mutations_fp != run.prepared_state_mutations_fingerprint
-        ):
-            return await self._enter_recovery(
-                run=run,
-                reason_code="prepared_fingerprint_mismatch",
-                source=source,
-                error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                safe_message="Knowledge reconciliation prepared page no longer matches provider",
-            )
+            if reproduced is None:
+                return await self._enter_recovery(
+                    run=run,
+                    reason_code="provider_page_mismatch",
+                    source=source,
+                    error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Knowledge reconciliation prepared page no longer matches provider",
+                    retryable=False,
+                )
+            envelopes, _templates, provider_fp, batch_fp, mutations_fp = reproduced
+            if (
+                provider_fp != run.provider_page_fingerprint
+                or batch_fp != run.prepared_batch_payload_fingerprint
+                or mutations_fp != run.prepared_state_mutations_fingerprint
+            ):
+                return await self._enter_recovery(
+                    run=run,
+                    reason_code="prepared_fingerprint_mismatch",
+                    source=source,
+                    error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Knowledge reconciliation prepared page no longer matches provider",
+                    retryable=False,
+                )
         batch = KnowledgeSyncBatch(
             tenant_id=self._tenant_id,
             binding_id=binding.binding_id,
@@ -725,6 +697,15 @@ class VendorKnowledgeReconciliationEngine:
         binding: KnowledgeSourceBinding,
         source: KnowledgeSourceRef,
     ) -> KnowledgeSyncRunResult:
+        if run.binding_configuration_version != binding.configuration_version:
+            return await self._enter_recovery(
+                run=run,
+                reason_code="binding_configuration_mismatch",
+                source=source,
+                error_code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                safe_message="Knowledge reconciliation binding configuration is stale",
+                retryable=False,
+            )
         current = self._read_checkpoint(binding_id=binding.binding_id)
         intended = run.intended_final_completed_checkpoint
         expected_previous = run.expected_previous_completed_checkpoint
@@ -749,6 +730,7 @@ class VendorKnowledgeReconciliationEngine:
                 source=source,
                 error_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation checkpoint diverged from expected state",
+                retryable=False,
             )
         now = self._utc_clock()
         completed = KnowledgeReconciliationRunCompleted(
@@ -776,7 +758,7 @@ class VendorKnowledgeReconciliationEngine:
             checkpoint_advanced=True,
             has_more=False,
             delivery_id=run.final_delivery_id,
-            envelopes_count=0,
+            templates=(),
         )
 
     async def _transition_applied_page(
@@ -811,11 +793,14 @@ class VendorKnowledgeReconciliationEngine:
                         "updated_at",
                         "applied_page_count",
                         "last_applied_delivery_id",
+                        "last_applied_parent_delivery_id",
+                        "prepared_parent_delivery_id",
                     }
                 ),
                 phase=KnowledgeReconciliationRunPhase.COLLECTING,
                 applied_page_count=run.applied_page_count + 1,
                 last_applied_delivery_id=run.delivery_id,
+                last_applied_parent_delivery_id=run.prepared_parent_delivery_id,
                 current_input_cursor=run.prepared_next_cursor,
                 current_input_cursor_fingerprint=run.prepared_next_cursor_fingerprint,
                 remaining_candidate_remote_ids=run.remaining_candidate_remote_ids,
@@ -828,7 +813,7 @@ class VendorKnowledgeReconciliationEngine:
                 checkpoint_advanced=False,
                 has_more=True,
                 delivery_id=run.delivery_id,
-                envelopes_count=len(run.prepared_state_mutation_templates),
+                templates=run.prepared_state_mutation_templates,
             )
         intended_checkpoint = KnowledgeSyncCheckpoint(
             tenant_id=self._tenant_id,
@@ -859,11 +844,14 @@ class VendorKnowledgeReconciliationEngine:
                     "updated_at",
                     "applied_page_count",
                     "last_applied_delivery_id",
+                    "last_applied_parent_delivery_id",
+                    "prepared_parent_delivery_id",
                 }
             ),
             phase=KnowledgeReconciliationRunPhase.FINALIZING,
             applied_page_count=run.applied_page_count + 1,
             last_applied_delivery_id=run.delivery_id,
+            last_applied_parent_delivery_id=run.prepared_parent_delivery_id,
             intended_final_completed_checkpoint=intended_checkpoint,
             intended_final_checkpoint_fingerprint=knowledge_sync_checkpoint_fingerprint_sha256(
                 intended_checkpoint
@@ -902,8 +890,24 @@ class VendorKnowledgeReconciliationEngine:
                 cursor=run.prepared_input_cursor,
                 limit=page_size,
             )
+        except VendorKnowledgeError:
+            raise
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation provider state is corrupt",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            ) from None
         except Exception:
-            return None
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation provider reproduction failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None
         self._validate_page(
             page=page, input_cursor=run.prepared_input_cursor, source=source
         )
@@ -1002,14 +1006,12 @@ class VendorKnowledgeReconciliationEngine:
                     retryable=False,
                 )
             if existing_run.phase in _ACTIVE_RUN_PHASES:
-                raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
-                    safe_message="Knowledge reconciliation cannot restart while another run is active",
-                    provider_id=source.provider_id,
-                    source_kind=source.source_kind,
-                    retryable=False,
+                self._abort_pristine(
+                    run=existing_run,
+                    operator_reason_code="restart_supersede",
+                    now=self._utc_clock(),
                 )
-            if trigger_delivery_id is not None:
+            elif trigger_delivery_id is not None:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.INVALID_CURSOR,
                     safe_message="Knowledge reconciliation continuation is stale",
@@ -1043,15 +1045,14 @@ class VendorKnowledgeReconciliationEngine:
         run: KnowledgeReconciliationRun,
         trigger_delivery_id: str,
     ) -> bool:
+        if isinstance(run, KnowledgeReconciliationRunPagePrepared):
+            if run.prepared_parent_delivery_id == trigger_delivery_id:
+                return True
         if run.last_applied_delivery_id == trigger_delivery_id:
             return True
-        if (
-            run.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED
-            and isinstance(run, KnowledgeReconciliationRunPagePrepared)
-            and run.last_applied_delivery_id == trigger_delivery_id
-            and run.delivery_id != trigger_delivery_id
-        ):
-            return True
+        if isinstance(run, KnowledgeReconciliationRunFinalizing):
+            if run.final_delivery_id == trigger_delivery_id:
+                return True
         return False
 
     def _create_initial_run(
@@ -1135,6 +1136,299 @@ class VendorKnowledgeReconciliationEngine:
             return existing  # type: ignore[return-value]
         return collecting
 
+    def _resume_exact_sync(
+        self,
+        *,
+        run: KnowledgeReconciliationRun,
+        now: datetime,
+    ) -> KnowledgeReconciliationRun:
+        if not isinstance(run, KnowledgeReconciliationRunRecoveryRequired):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation resume requires recovery state",
+                retryable=False,
+            )
+        replacement = self._build_resume_replacement(run=run, now=now)
+        self._cas_recovery(expected=run, replacement=replacement)
+        return replacement
+
+    async def _resume_exact_async(
+        self,
+        command: KnowledgeReconciliationRecoveryCommand,
+    ) -> KnowledgeReconciliationRun:
+        run = self._read_run(binding_id=command.binding_id)
+        if run is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation run was not found",
+                retryable=False,
+            )
+        if (
+            run.run_id != command.expected_run_id
+            or run.record_version != command.expected_run_record_version
+            or run.phase != command.expected_phase
+            or run.tenant_id != command.tenant_id
+            or run.binding_id != command.binding_id
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation recovery command is stale",
+                retryable=False,
+            )
+        if not isinstance(run, KnowledgeReconciliationRunRecoveryRequired):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation resume requires recovery state",
+                retryable=False,
+            )
+        evidence = run.recovery_evidence
+        if isinstance(evidence, KnowledgeReconciliationRecoveryEvidencePagePrepared):
+            binding, source = self._load_binding_and_source(binding_id=run.binding_id)
+            if run.binding_configuration_version != binding.configuration_version:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                    safe_message="Knowledge reconciliation binding configuration is stale",
+                    retryable=False,
+                )
+            prepared = KnowledgeReconciliationRunPagePrepared(
+                **run.model_dump(
+                    exclude={
+                        "phase",
+                        "recovery_reason_code",
+                        "machine_recovery_reason_code",
+                        "recovery_evidence",
+                        "record_version",
+                        "updated_at",
+                    }
+                ),
+                phase=KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+                prepared_input_cursor=evidence.prepared_input_cursor,
+                prepared_input_cursor_fingerprint=evidence.prepared_input_cursor_fingerprint,
+                provider_page_fingerprint=evidence.provider_page_fingerprint,
+                prepared_batch_payload_fingerprint=evidence.prepared_batch_payload_fingerprint,
+                prepared_state_mutation_templates=evidence.prepared_state_mutation_templates,
+                prepared_state_mutations_fingerprint=evidence.prepared_state_mutations_fingerprint,
+                prepared_proposed_checkpoint=evidence.prepared_proposed_checkpoint,
+                prepared_proposed_checkpoint_fingerprint=evidence.prepared_proposed_checkpoint_fingerprint,
+                prepared_next_cursor=evidence.prepared_next_cursor,
+                prepared_next_cursor_fingerprint=evidence.prepared_next_cursor_fingerprint,
+                prepared_page_size=evidence.prepared_page_size,
+                has_more=evidence.has_more,
+                delivery_id=evidence.delivery_id,
+                remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
+                synthetic_tombstone_remote_ids=evidence.synthetic_tombstone_remote_ids,
+                **_advance_fields(run, updated_at=self._utc_clock()),
+            )
+            item_receipt = self._inspect_item_receipt(run=prepared)
+            sink_receipt = self._inspect_sink_receipt(run=prepared)
+            if (
+                item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.ABSENT
+                and sink_receipt.status is KnowledgeSyncSinkReceiptStatus.ABSENT
+            ):
+                reproduced = await self._reproduce_prepared_page(
+                    run=prepared,
+                    binding=binding,
+                    source=source,
+                    page_size=prepared.prepared_page_size,
+                )
+                if reproduced is None:
+                    raise VendorKnowledgeError(
+                        code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                        safe_message="Knowledge reconciliation prepared page no longer matches provider",
+                        retryable=False,
+                    )
+                _, _, provider_fp, batch_fp, mutations_fp = reproduced
+                if (
+                    provider_fp != prepared.provider_page_fingerprint
+                    or batch_fp != prepared.prepared_batch_payload_fingerprint
+                    or mutations_fp != prepared.prepared_state_mutations_fingerprint
+                ):
+                    raise VendorKnowledgeError(
+                        code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                        safe_message="Knowledge reconciliation prepared page no longer matches provider",
+                        retryable=False,
+                    )
+            self._prove_page_prepared_resume(run=run, prepared_evidence=evidence)
+        now = self._utc_clock()
+        replacement = self._build_resume_replacement(run=run, now=now)
+        self._cas_recovery(expected=run, replacement=replacement)
+        return replacement
+
+    def _build_resume_replacement(
+        self,
+        *,
+        run: KnowledgeReconciliationRunRecoveryRequired,
+        now: datetime,
+    ) -> KnowledgeReconciliationRun:
+        evidence = run.recovery_evidence
+        binding, _source = self._load_binding_and_source(binding_id=run.binding_id)
+        if run.binding_configuration_version != binding.configuration_version:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                safe_message="Knowledge reconciliation binding configuration is stale",
+                retryable=False,
+            )
+        current_checkpoint = self._read_checkpoint(binding_id=run.binding_id)
+        if current_checkpoint != run.expected_base_completed_checkpoint:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation checkpoint does not match recovery evidence",
+                retryable=False,
+            )
+        if isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceCollecting):
+            return KnowledgeReconciliationRunCollecting(
+                **run.model_dump(
+                    exclude={
+                        "phase",
+                        "recovery_reason_code",
+                        "machine_recovery_reason_code",
+                        "recovery_evidence",
+                        "record_version",
+                        "updated_at",
+                    }
+                ),
+                phase=KnowledgeReconciliationRunPhase.COLLECTING,
+                current_input_cursor=evidence.current_input_cursor,
+                current_input_cursor_fingerprint=evidence.current_input_cursor_fingerprint,
+                remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
+                **_advance_fields(run, updated_at=now),
+            )
+        if isinstance(evidence, KnowledgeReconciliationRecoveryEvidencePagePrepared):
+            self._prove_page_prepared_resume(run=run, prepared_evidence=evidence)
+            return KnowledgeReconciliationRunPagePrepared(
+                **run.model_dump(
+                    exclude={
+                        "phase",
+                        "recovery_reason_code",
+                        "machine_recovery_reason_code",
+                        "recovery_evidence",
+                        "record_version",
+                        "updated_at",
+                    }
+                ),
+                phase=KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+                prepared_input_cursor=evidence.prepared_input_cursor,
+                prepared_input_cursor_fingerprint=evidence.prepared_input_cursor_fingerprint,
+                provider_page_fingerprint=evidence.provider_page_fingerprint,
+                prepared_batch_payload_fingerprint=evidence.prepared_batch_payload_fingerprint,
+                prepared_state_mutation_templates=evidence.prepared_state_mutation_templates,
+                prepared_state_mutations_fingerprint=evidence.prepared_state_mutations_fingerprint,
+                prepared_proposed_checkpoint=evidence.prepared_proposed_checkpoint,
+                prepared_proposed_checkpoint_fingerprint=evidence.prepared_proposed_checkpoint_fingerprint,
+                prepared_next_cursor=evidence.prepared_next_cursor,
+                prepared_next_cursor_fingerprint=evidence.prepared_next_cursor_fingerprint,
+                prepared_page_size=evidence.prepared_page_size,
+                has_more=evidence.has_more,
+                delivery_id=evidence.delivery_id,
+                remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
+                synthetic_tombstone_remote_ids=evidence.synthetic_tombstone_remote_ids,
+                **_advance_fields(run, updated_at=now),
+            )
+        assert isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceFinalizing)
+        if current_checkpoint not in {
+            evidence.expected_previous_completed_checkpoint,
+            evidence.intended_final_completed_checkpoint,
+        }:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation checkpoint does not match finalizing evidence",
+                retryable=False,
+            )
+        return KnowledgeReconciliationRunFinalizing(
+            **run.model_dump(
+                exclude={
+                    "phase",
+                    "recovery_reason_code",
+                    "machine_recovery_reason_code",
+                    "recovery_evidence",
+                    "record_version",
+                    "updated_at",
+                }
+            ),
+            phase=KnowledgeReconciliationRunPhase.FINALIZING,
+            intended_final_completed_checkpoint=evidence.intended_final_completed_checkpoint,
+            intended_final_checkpoint_fingerprint=evidence.intended_final_checkpoint_fingerprint,
+            expected_previous_completed_checkpoint=evidence.expected_previous_completed_checkpoint,
+            final_delivery_id=evidence.final_delivery_id,
+            prepared_batch_payload_fingerprint=evidence.prepared_batch_payload_fingerprint,
+            **_advance_fields(run, updated_at=now),
+        )
+
+    def _prove_page_prepared_resume(
+        self,
+        *,
+        run: KnowledgeReconciliationRunRecoveryRequired,
+        prepared_evidence: KnowledgeReconciliationRecoveryEvidencePagePrepared,
+    ) -> None:
+        prepared = KnowledgeReconciliationRunPagePrepared(
+            tenant_id=run.tenant_id,
+            binding_id=run.binding_id,
+            binding_configuration_version=run.binding_configuration_version,
+            provider_id=run.provider_id,
+            source_kind=run.source_kind,
+            run_id=run.run_id,
+            record_version=run.record_version,
+            created_at=run.created_at,
+            updated_at=run.updated_at,
+            applied_page_count=run.applied_page_count,
+            last_applied_delivery_id=run.last_applied_delivery_id,
+            last_applied_parent_delivery_id=run.last_applied_parent_delivery_id,
+            expected_base_completed_checkpoint=run.expected_base_completed_checkpoint,
+            prepared_input_cursor=prepared_evidence.prepared_input_cursor,
+            prepared_input_cursor_fingerprint=prepared_evidence.prepared_input_cursor_fingerprint,
+            provider_page_fingerprint=prepared_evidence.provider_page_fingerprint,
+            prepared_batch_payload_fingerprint=prepared_evidence.prepared_batch_payload_fingerprint,
+            prepared_state_mutation_templates=prepared_evidence.prepared_state_mutation_templates,
+            prepared_state_mutations_fingerprint=prepared_evidence.prepared_state_mutations_fingerprint,
+            prepared_proposed_checkpoint=prepared_evidence.prepared_proposed_checkpoint,
+            prepared_proposed_checkpoint_fingerprint=prepared_evidence.prepared_proposed_checkpoint_fingerprint,
+            prepared_next_cursor=prepared_evidence.prepared_next_cursor,
+            prepared_next_cursor_fingerprint=prepared_evidence.prepared_next_cursor_fingerprint,
+            prepared_page_size=prepared_evidence.prepared_page_size,
+            has_more=prepared_evidence.has_more,
+            delivery_id=prepared_evidence.delivery_id,
+            remaining_candidate_remote_ids=prepared_evidence.remaining_candidate_remote_ids,
+            synthetic_tombstone_remote_ids=prepared_evidence.synthetic_tombstone_remote_ids,
+        )
+        item_receipt = self._inspect_item_receipt(run=prepared)
+        if item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.CONFLICT:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation item state receipt conflict",
+                retryable=False,
+            )
+        sink_receipt = self._inspect_sink_receipt(run=prepared)
+        if sink_receipt.status is KnowledgeSyncSinkReceiptStatus.UNKNOWN:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge delivery outcome requires recovery",
+                retryable=False,
+            )
+        if sink_receipt.status is KnowledgeSyncSinkReceiptStatus.CONFLICT:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation sink receipt conflict",
+                retryable=False,
+            )
+        allowed = (
+            item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.COMPLETED
+            or item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.APPLYING
+            or (
+                sink_receipt.status is KnowledgeSyncSinkReceiptStatus.APPLIED
+                and item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.ABSENT
+            )
+            or (
+                sink_receipt.status is KnowledgeSyncSinkReceiptStatus.ABSENT
+                and item_receipt.status is KnowledgeRemoteItemStateReceiptStatus.ABSENT
+            )
+        )
+        if not allowed:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation page resume proof failed",
+                retryable=False,
+            )
+
     def _abort_pristine(
         self,
         *,
@@ -1198,6 +1492,7 @@ class VendorKnowledgeReconciliationEngine:
                     "delivery_id",
                     "has_more",
                     "synthetic_tombstone_remote_ids",
+                    "prepared_parent_delivery_id",
                     "intended_final_completed_checkpoint",
                     "intended_final_checkpoint_fingerprint",
                     "expected_previous_completed_checkpoint",
@@ -1223,12 +1518,43 @@ class VendorKnowledgeReconciliationEngine:
         source: KnowledgeSourceRef,
         error_code: VendorKnowledgeErrorCode,
         safe_message: str,
+        retryable: bool,
     ) -> KnowledgeSyncRunResult:
         now = self._utc_clock()
+        exclude_fields = {
+            "phase",
+            "record_version",
+            "updated_at",
+            "candidate_inventory_continuation_token",
+            "current_input_cursor",
+            "current_input_cursor_fingerprint",
+            "remaining_candidate_remote_ids",
+            "prepared_input_cursor",
+            "prepared_input_cursor_fingerprint",
+            "provider_page_fingerprint",
+            "prepared_batch_payload_fingerprint",
+            "prepared_state_mutation_templates",
+            "prepared_state_mutations_fingerprint",
+            "prepared_proposed_checkpoint",
+            "prepared_proposed_checkpoint_fingerprint",
+            "prepared_next_cursor",
+            "prepared_next_cursor_fingerprint",
+            "prepared_page_size",
+            "delivery_id",
+            "has_more",
+            "synthetic_tombstone_remote_ids",
+            "prepared_parent_delivery_id",
+            "intended_final_completed_checkpoint",
+            "intended_final_checkpoint_fingerprint",
+            "expected_previous_completed_checkpoint",
+            "final_delivery_id",
+            "prepared_batch_payload_fingerprint",
+        }
         recovery = KnowledgeReconciliationRunRecoveryRequired(
-            **run.model_dump(exclude={"phase", "record_version", "updated_at"}),
+            **run.model_dump(exclude=exclude_fields),
             phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
             recovery_reason_code=reason_code,
+            machine_recovery_reason_code=reason_code,
             recovery_evidence=recovery_evidence_from_run(run),
             **_advance_fields(run, updated_at=now),
         )
@@ -1238,7 +1564,7 @@ class VendorKnowledgeReconciliationEngine:
             safe_message=safe_message,
             provider_id=source.provider_id,
             source_kind=source.source_kind,
-            retryable=error_code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+            retryable=retryable,
         )
 
     def _inspect_sink_receipt(self, *, run: KnowledgeReconciliationRunPagePrepared):
@@ -1389,17 +1715,23 @@ class VendorKnowledgeReconciliationEngine:
         checkpoint_advanced: bool,
         has_more: bool,
         delivery_id: str,
-        envelopes_count: int,
+        templates: tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...],
     ) -> KnowledgeSyncRunResult:
+        active_count = sum(
+            1
+            for template in templates
+            if template.resulting_status is KnowledgeRemoteItemStatus.ACTIVE
+        )
+        tombstone_count = len(templates) - active_count
         return KnowledgeSyncRunResult(
             status=KnowledgeSyncRunStatus.COMPLETED,
             mode=KnowledgeSyncMode.RECONCILIATION,
             tenant_id=self._tenant_id,
             binding_id=binding.binding_id,
             delivery_id=delivery_id,
-            changes_count=envelopes_count,
-            active_count=0,
-            tombstone_count=0,
+            changes_count=len(templates),
+            active_count=active_count,
+            tombstone_count=tombstone_count,
             checkpoint_advanced=checkpoint_advanced,
             has_more=has_more,
             retryable=False,
@@ -1440,19 +1772,46 @@ class VendorKnowledgeReconciliationEngine:
     def _load_binding_and_source(
         self, *, binding_id: str
     ) -> tuple[KnowledgeSourceBinding, KnowledgeSourceRef]:
-        binding = self._binding_service.get(binding_id)
-        source = self._binding_service.resolve_source(binding_id)
+        try:
+            binding = self._binding_service.get(binding_id)
+            source = self._binding_service.resolve_source(binding_id)
+        except VendorKnowledgeError:
+            raise
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge source binding lookup failed",
+                retryable=True,
+            ) from None
         if binding.tenant_id != self._tenant_id or source.tenant_id != self._tenant_id:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.TENANT_MISMATCH,
                 safe_message="Knowledge source binding tenant does not match coordinator tenant",
                 retryable=False,
             )
+        if binding.binding_id != binding_id:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source binding identity is inconsistent",
+                retryable=False,
+            )
+        if (
+            source.provider_id != binding.provider_id
+            or source.integration_kind != binding.integration_kind
+            or source.source_kind != binding.source_kind
+            or source.connection_ref != binding.connection_ref
+            or source.scope != binding.scope
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Resolved knowledge source does not match binding",
+                retryable=False,
+            )
         return binding, source
 
     def _read_checkpoint(self, *, binding_id: str) -> KnowledgeSyncCheckpoint | None:
         try:
-            return self._checkpoint_repository.get(
+            checkpoint = self._checkpoint_repository.get(
                 tenant_id=self._tenant_id,
                 binding_id=binding_id,
             )
@@ -1462,6 +1821,16 @@ class VendorKnowledgeReconciliationEngine:
                 safe_message="Knowledge sync checkpoint state is corrupt",
                 retryable=False,
             ) from None
+        if checkpoint is not None and (
+            checkpoint.tenant_id != self._tenant_id
+            or checkpoint.binding_id != binding_id
+        ):
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge sync checkpoint identity is inconsistent",
+                retryable=False,
+            )
+        return checkpoint
 
     def _read_run(self, *, binding_id: str) -> KnowledgeReconciliationRun | None:
         try:
@@ -1502,6 +1871,25 @@ class VendorKnowledgeReconciliationEngine:
         input_cursor: KnowledgeCursor | None,
         source: KnowledgeSourceRef,
     ) -> None:
+        seen_remote_ids: set[str] = set()
+        for change in page.changes:
+            if change.remote_id in seen_remote_ids:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Knowledge page contains duplicate remote item identifiers",
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
+            seen_remote_ids.add(change.remote_id)
+            if change.kind in _ACTIVE_CHANGE_KINDS and change.descriptor is None:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message="Active knowledge change is missing a descriptor",
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
         if page.has_more:
             if page.next_cursor is None or page.proposed_checkpoint is None:
                 raise VendorKnowledgeError(
@@ -1524,6 +1912,17 @@ class VendorKnowledgeReconciliationEngine:
                     source_kind=source.source_kind,
                     retryable=False,
                 )
+            if input_cursor is not None and page.proposed_checkpoint == input_cursor:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                    safe_message=(
+                        "Knowledge page proposed checkpoint must advance when more "
+                        "pages remain"
+                    ),
+                    provider_id=source.provider_id,
+                    source_kind=source.source_kind,
+                    retryable=False,
+                )
 
     async def _materialize_envelopes(
         self,
@@ -1535,41 +1934,112 @@ class VendorKnowledgeReconciliationEngine:
         envelopes: list[KnowledgeSyncEnvelope] = []
         capabilities = scope_info.capabilities
         for change in page.changes:
-            if change.kind in _TOMBSTONE_CHANGE_KINDS:
-                envelopes.append(
-                    KnowledgeSyncEnvelope(
-                        change_kind=change.kind,
-                        remote_id=change.remote_id,
-                        descriptor=change.descriptor,
-                    )
+            envelopes.append(
+                await self._materialize_envelope(
+                    change=change,
+                    source=source,
+                    content_fetch=capabilities.content_fetch,
+                    permissions_enabled=capabilities.permissions,
                 )
-                continue
-            descriptor = change.descriptor
-            if descriptor is None:
+            )
+        return envelopes
+
+    async def _materialize_envelope(
+        self,
+        *,
+        change: KnowledgeChange,
+        source: KnowledgeSourceRef,
+        content_fetch: bool,
+        permissions_enabled: bool,
+    ) -> KnowledgeSyncEnvelope:
+        if change.kind in _TOMBSTONE_CHANGE_KINDS:
+            return KnowledgeSyncEnvelope(
+                change_kind=change.kind,
+                remote_id=change.remote_id,
+                descriptor=change.descriptor,
+                content=None,
+                permissions=None,
+            )
+        descriptor = change.descriptor
+        if descriptor is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Active knowledge change is missing a descriptor",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+        content = None
+        permissions = None
+        if change.kind is KnowledgeChangeKind.UPSERT:
+            if descriptor.content_available and content_fetch:
+                content = await self._fetch_content(source=source, item=descriptor)
+            if permissions_enabled:
+                permissions = await self._fetch_permissions(
+                    source=source, item=descriptor
+                )
+        elif change.kind is KnowledgeChangeKind.METADATA_CHANGED:
+            pass
+        elif change.kind is KnowledgeChangeKind.PERMISSIONS_CHANGED:
+            if not permissions_enabled:
                 raise VendorKnowledgeError(
-                    code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
-                    safe_message="Active knowledge change is missing a descriptor",
+                    code=VendorKnowledgeErrorCode.UNSUPPORTED_CAPABILITY,
+                    safe_message="Permissions changes require permissions capability",
                     provider_id=source.provider_id,
                     source_kind=source.source_kind,
                     retryable=False,
                 )
-            content = None
-            permissions = None
-            if (
-                change.kind is KnowledgeChangeKind.UPSERT
-                and descriptor.content_available
-            ):
-                if capabilities.content_fetch:
-                    content = await self._facade.fetch_content(
-                        source=source, item=descriptor
-                    )
-            envelopes.append(
-                KnowledgeSyncEnvelope(
-                    change_kind=change.kind,
-                    remote_id=change.remote_id,
-                    descriptor=descriptor,
-                    content=content,
-                    permissions=permissions,
-                )
+            permissions = await self._fetch_permissions(source=source, item=descriptor)
+        else:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Unsupported knowledge change kind",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
             )
-        return envelopes
+        return KnowledgeSyncEnvelope(
+            change_kind=change.kind,
+            remote_id=change.remote_id,
+            descriptor=descriptor,
+            content=content,
+            permissions=permissions,
+        )
+
+    async def _fetch_content(
+        self,
+        *,
+        source: KnowledgeSourceRef,
+        item: KnowledgeItemDescriptor,
+    ) -> KnowledgeContent:
+        try:
+            return await self._facade.fetch_content(source=source, item=item)
+        except VendorKnowledgeError:
+            raise
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge content fetch failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None
+
+    async def _fetch_permissions(
+        self,
+        *,
+        source: KnowledgeSourceRef,
+        item: KnowledgeItemDescriptor,
+    ) -> KnowledgePermissions:
+        try:
+            return await self._facade.fetch_permissions(source=source, item=item)
+        except VendorKnowledgeError:
+            raise
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge permissions fetch failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None

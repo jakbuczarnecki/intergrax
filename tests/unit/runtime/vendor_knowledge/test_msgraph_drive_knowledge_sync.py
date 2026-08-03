@@ -12,7 +12,9 @@ from typing import Any
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
@@ -33,11 +35,19 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_drive import (
     MSGRAPH_DRIVE_SCOPE_TYPE,
     register_msgraph_drive_knowledge_adapter,
 )
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContentMode,
+    KnowledgeSourceScope,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -50,6 +60,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -130,15 +141,24 @@ class _DriveFakeCollaborationSuite(CollaborationSuite):
         self._reconcile_pages = [
             _page(
                 items=(
-                    _item(remote_id="file-1", kind=MsGraphDriveItemKind.FILE, name="A.pdf"),
-                    _item(remote_id="folder-1", kind=MsGraphDriveItemKind.FOLDER, name="Docs", c_tag=None),
+                    _item(
+                        remote_id="file-1", kind=MsGraphDriveItemKind.FILE, name="A.pdf"
+                    ),
+                    _item(
+                        remote_id="folder-1",
+                        kind=MsGraphDriveItemKind.FOLDER,
+                        name="Docs",
+                        c_tag=None,
+                    ),
                 ),
                 continuation_kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
                 url=_NEXT_URL,
             ),
             _page(
                 items=(
-                    _item(remote_id="file-2", kind=MsGraphDriveItemKind.FILE, name="B.pdf"),
+                    _item(
+                        remote_id="file-2", kind=MsGraphDriveItemKind.FILE, name="B.pdf"
+                    ),
                 ),
                 continuation_kind=MsGraphKnowledgeContinuationKind.DELTA,
                 url=_DELTA_URL,
@@ -146,8 +166,16 @@ class _DriveFakeCollaborationSuite(CollaborationSuite):
         ]
         self._incremental_page = _page(
             items=(
-                _item(remote_id="file-2", kind=MsGraphDriveItemKind.FILE, name="B-updated.pdf"),
-                _item(remote_id="file-3", kind=MsGraphDriveItemKind.DELETED, name="ignored"),
+                _item(
+                    remote_id="file-2",
+                    kind=MsGraphDriveItemKind.FILE,
+                    name="B-updated.pdf",
+                ),
+                _item(
+                    remote_id="file-3",
+                    kind=MsGraphDriveItemKind.DELETED,
+                    name="ignored",
+                ),
             ),
             continuation_kind=MsGraphKnowledgeContinuationKind.DELTA,
             url=_INCREMENTAL_DELTA_URL,
@@ -167,7 +195,10 @@ class _DriveFakeCollaborationSuite(CollaborationSuite):
         self.delta_calls.append(
             {"drive_id": drive_id, "continuation": continuation, "limit": limit}
         )
-        if continuation is not None and continuation.kind == MsGraphKnowledgeContinuationKind.DELTA:
+        if (
+            continuation is not None
+            and continuation.kind == MsGraphKnowledgeContinuationKind.DELTA
+        ):
             if continuation.url == _DELTA_URL:
                 return self._incremental_page
         if not self._reconcile_pages:
@@ -187,7 +218,9 @@ class _DriveFakeCollaborationSuite(CollaborationSuite):
     def send_mail(self, user_id: str, *, subject: str, body: str, to):
         raise NotImplementedError
 
-    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+    def list_calendar_events(
+        self, user_id: str, *, start: str, end: str, limit: int = 50
+    ):
         raise NotImplementedError
 
     def get_user(self, user_id: str):
@@ -237,7 +270,9 @@ def _assert_no_secrets(blob: str) -> None:
 
 
 def _build_coordinator(fake: _DriveFakeCollaborationSuite):
-    integration = Ms365GraphCollaborationSuiteIntegration.from_client(fake, enabled=True)
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        fake, enabled=True
+    )
     registry = KnowledgeAdapterRegistry()
     register_msgraph_drive_knowledge_adapter(registry)
     facade = VendorKnowledgeFacadeService(
@@ -277,18 +312,32 @@ def _build_coordinator(fake: _DriveFakeCollaborationSuite):
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
     return coordinator, sink, checkpoint_repo, state_repo, fake
 
 
 @pytest.mark.asyncio
-async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental() -> None:
+async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental() -> (
+    None
+):
     coordinator, sink, checkpoint_repo, state_repo, fake = _build_coordinator(
         _DriveFakeCollaborationSuite()
     )
 
-    first = await coordinator.reconcile_once(binding_id="msgraph-drive-binding", restart=True)
-    second = await coordinator.reconcile_once(binding_id="msgraph-drive-binding", restart=False)
+    first = await coordinator.reconcile_once(
+        binding_id="msgraph-drive-binding",
+        restart=True,
+        operation_id="msgraph-drive-recon",
+    )
+    second = await coordinator.reconcile_once(
+        binding_id="msgraph-drive-binding",
+        restart=False,
+        operation_id="msgraph-drive-recon",
+        trigger_delivery_id=first.delivery_id,
+    )
 
     assert first.status is KnowledgeSyncRunStatus.COMPLETED
     assert second.status is KnowledgeSyncRunStatus.COMPLETED
@@ -318,7 +367,9 @@ async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental()
     assert len(file_envelopes) == 2
     assert len(folder_envelopes) == 1
 
-    checkpoint = checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-drive-binding")
+    checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1", binding_id="msgraph-drive-binding"
+    )
     assert checkpoint is not None
     assert checkpoint.cursor is not None
     assert checkpoint.cursor.version == MSGRAPH_DRIVE_CURSOR_VERSION
@@ -326,7 +377,10 @@ async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental()
 
     assert fake.delta_calls[0]["continuation"] is None
     assert fake.delta_calls[1]["continuation"] is not None
-    assert fake.delta_calls[1]["continuation"].kind == MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert (
+        fake.delta_calls[1]["continuation"].kind
+        == MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    )
 
     for remote_id in ("file-1", "file-2", "folder-1"):
         state = state_repo.get(
@@ -339,7 +393,10 @@ async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental()
     incremental = await coordinator.sync_once(binding_id="msgraph-drive-binding")
     assert incremental.status is KnowledgeSyncRunStatus.COMPLETED
     assert fake.delta_calls[-1]["continuation"] is not None
-    assert fake.delta_calls[-1]["continuation"].kind == MsGraphKnowledgeContinuationKind.DELTA
+    assert (
+        fake.delta_calls[-1]["continuation"].kind
+        == MsGraphKnowledgeContinuationKind.DELTA
+    )
     assert fake.delta_calls[-1]["continuation"].url == _DELTA_URL
 
     incremental_batch = sink.calls[-1]
@@ -347,7 +404,9 @@ async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental()
     assert "upsert" in kinds
     assert "deleted" in kinds
     deleted_envelope = next(
-        envelope for envelope in incremental_batch.envelopes if envelope.change_kind.value == "deleted"
+        envelope
+        for envelope in incremental_batch.envelopes
+        if envelope.change_kind.value == "deleted"
     )
     assert deleted_envelope.content is None
     assert deleted_envelope.descriptor is None
@@ -360,7 +419,9 @@ async def test_msgraph_drive_facade_coordinator_reconciliation_and_incremental()
     assert deleted_state is not None
     assert deleted_state.status is KnowledgeRemoteItemStatus.DELETED
 
-    updated_checkpoint = checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-drive-binding")
+    updated_checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1", binding_id="msgraph-drive-binding"
+    )
     assert updated_checkpoint is not None
     assert updated_checkpoint.cursor is not None
     assert updated_checkpoint.cursor.version == MSGRAPH_DRIVE_CURSOR_VERSION

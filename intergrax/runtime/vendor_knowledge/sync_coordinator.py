@@ -43,6 +43,7 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncSinkReceiptInspector,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRun,
     KnowledgeReconciliationRecoveryCommand,
     KnowledgeReconciliationRunPhase,
     KnowledgeRemoteItemState,
@@ -189,16 +190,20 @@ class VendorKnowledgeSyncCoordinator:
         self._item_state_repository = item_state_repository
         self._sink = sink
         self._lease_ttl_seconds = int(lease_ttl_seconds)
+        self._reconciliation_run_repository = reconciliation_run_repository
+        self._candidate_inventory_repository = candidate_inventory_repository
+        resolved_inspector = sink_receipt_inspector
+        if resolved_inspector is None and isinstance(
+            sink, KnowledgeSyncSinkReceiptInspector
+        ):
+            resolved_inspector = sink
+        self._sink_receipt_inspector = resolved_inspector
         self._reconciliation_engine: VendorKnowledgeReconciliationEngine | None = None
         if (
             reconciliation_run_repository is not None
             and candidate_inventory_repository is not None
+            and resolved_inspector is not None
         ):
-            resolved_inspector = sink_receipt_inspector
-            if resolved_inspector is None and isinstance(
-                sink, KnowledgeSyncSinkReceiptInspector
-            ):
-                resolved_inspector = sink
             self._reconciliation_engine = VendorKnowledgeReconciliationEngine(
                 tenant_id=self._tenant_id,
                 binding_service=binding_service,
@@ -233,24 +238,24 @@ class VendorKnowledgeSyncCoordinator:
         operation_id: str | None = None,
         trigger_delivery_id: str | None = None,
     ) -> KnowledgeSyncRunResult:
-        if self._reconciliation_engine is None:
-            return await self._run_once(
-                binding_id=binding_id,
-                page_size=page_size,
-                mode=KnowledgeSyncMode.RECONCILIATION,
-                restart=restart,
+        cleaned_binding_id = _require_non_empty(binding_id, field_name="binding_id")
+        config_error = self._reconciliation_configuration_error()
+        if config_error is not None:
+            raise config_error
+        if operation_id is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge reconciliation operation_id is required",
+                retryable=False,
             )
-        cleaned_operation = _require_non_empty(
-            operation_id or binding_id,
-            field_name="operation_id",
-        )
-        lease = self._acquire_lease(binding_id=binding_id)
+        cleaned_operation = _require_non_empty(operation_id, field_name="operation_id")
+        lease = self._acquire_lease(binding_id=cleaned_binding_id)
         if lease is None:
             return KnowledgeSyncRunResult(
                 status=KnowledgeSyncRunStatus.LEASE_BUSY,
                 mode=KnowledgeSyncMode.RECONCILIATION,
                 tenant_id=self._tenant_id,
-                binding_id=binding_id,
+                binding_id=cleaned_binding_id,
                 delivery_id=None,
                 changes_count=0,
                 active_count=0,
@@ -259,29 +264,79 @@ class VendorKnowledgeSyncCoordinator:
                 has_more=False,
                 retryable=True,
             )
+        operation_error: BaseException | None = None
+        result: KnowledgeSyncRunResult | None = None
         try:
             assert self._reconciliation_engine is not None
-            return await self._reconciliation_engine.reconcile_page(
-                binding_id=binding_id,
+            result = await self._reconciliation_engine.reconcile_page(
+                binding_id=cleaned_binding_id,
                 operation_id=cleaned_operation,
                 page_size=page_size,
                 restart=restart,
                 trigger_delivery_id=trigger_delivery_id,
             )
+        except BaseException as exc:
+            operation_error = exc
         finally:
-            self._release_lease(lease)
+            release_error: BaseException | None = None
+            try:
+                self._release_lease(lease)
+            except BaseException as exc:
+                release_error = exc
+
+        if operation_error is not None:
+            raise operation_error
+        if release_error is not None:
+            if isinstance(release_error, VendorKnowledgeError):
+                raise release_error
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Failed to release knowledge source lease",
+                retryable=True,
+            ) from None
+        assert result is not None
+        return result
+
+    def _reconciliation_configuration_error(self) -> VendorKnowledgeError | None:
+        if self._reconciliation_run_repository is None:
+            return VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge reconciliation run repository is not configured",
+                retryable=False,
+            )
+        if self._candidate_inventory_repository is None:
+            return VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge reconciliation candidate inventory is not configured",
+                retryable=False,
+            )
+        if self._sink_receipt_inspector is None:
+            return VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge reconciliation receipt inspection is not configured",
+                retryable=False,
+            )
+        return None
 
     def execute_reconciliation_recovery(
         self,
         command: KnowledgeReconciliationRecoveryCommand,
-    ) -> None:
-        if self._reconciliation_engine is None:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
-                safe_message="Knowledge reconciliation recovery is not configured",
-                retryable=False,
-            )
-        self._reconciliation_engine.execute_recovery_command(command)
+    ) -> KnowledgeReconciliationRun:
+        config_error = self._reconciliation_configuration_error()
+        if config_error is not None:
+            raise config_error
+        assert self._reconciliation_engine is not None
+        return self._reconciliation_engine.execute_recovery_command(command)
+
+    async def execute_reconciliation_recovery_async(
+        self,
+        command: KnowledgeReconciliationRecoveryCommand,
+    ) -> KnowledgeReconciliationRun:
+        config_error = self._reconciliation_configuration_error()
+        if config_error is not None:
+            raise config_error
+        assert self._reconciliation_engine is not None
+        return await self._reconciliation_engine.execute_recovery_command_async(command)
 
     async def _run_once(
         self,

@@ -14,7 +14,9 @@ from urllib.parse import quote
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.collaboration_suite import CollaborationSuite
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
@@ -43,12 +45,23 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_channel impor
     encode_msgraph_teams_channel_scope_id,
     register_msgraph_teams_channel_knowledge_adapter,
 )
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContentMode,
+    KnowledgeSourceScope,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -56,11 +69,12 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemStatus,
-    KnowledgeSyncRunStatus,
 )
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconcile_until_complete,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -254,9 +268,7 @@ class _TeamsChannelFakeCollaborationSuite(CollaborationSuite):
                 continuation_url=_ROOT_NEXT_URL,
             ),
             _root_page(
-                items=(
-                    _deleted_root(remote_id=_ROOT_2, revision=_ETAG_ROOT_2),
-                ),
+                items=(_deleted_root(remote_id=_ROOT_2, revision=_ETAG_ROOT_2),),
             ),
         ]
         self._reply_pages = {
@@ -275,9 +287,7 @@ class _TeamsChannelFakeCollaborationSuite(CollaborationSuite):
                     continuation_url=_REPLY_NEXT_URL,
                 ),
                 _reply_page(
-                    items=(
-                        _deleted_reply(remote_id=_REPLY_2, revision=_ETAG_REPLY_2),
-                    ),
+                    items=(_deleted_reply(remote_id=_REPLY_2, revision=_ETAG_REPLY_2),),
                     root_message_remote_id=_ROOT_1,
                     root_message_revision=_ETAG_ROOT_1,
                 ),
@@ -390,7 +400,9 @@ class _TeamsChannelFakeCollaborationSuite(CollaborationSuite):
     def send_mail(self, user_id: str, *, subject: str, body: str, to):
         raise NotImplementedError
 
-    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+    def list_calendar_events(
+        self, user_id: str, *, start: str, end: str, limit: int = 50
+    ):
         raise NotImplementedError
 
     def get_user(self, user_id: str):
@@ -491,24 +503,21 @@ def _build_coordinator(fake: _TeamsChannelFakeCollaborationSuite):
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
     return coordinator, sink, checkpoint_repo, state_repo, fake
 
 
-async def _reconcile_until_complete(coordinator: VendorKnowledgeSyncCoordinator) -> list:
-    results = []
-    restart = True
-    while True:
-        result = await coordinator.reconcile_once(
-            binding_id="msgraph-teams-channel-binding",
-            restart=restart,
-        )
-        results.append(result)
-        assert result.status is KnowledgeSyncRunStatus.COMPLETED
-        if not result.has_more:
-            break
-        restart = False
-    return results
+async def _reconcile_until_complete(
+    coordinator: VendorKnowledgeSyncCoordinator,
+) -> list:
+    return await durable_reconcile_until_complete(
+        coordinator,
+        binding_id="msgraph-teams-channel-binding",
+        operation_id="msgraph-teams-channel-recon",
+    )
 
 
 @pytest.mark.asyncio
@@ -561,15 +570,21 @@ async def test_msgraph_teams_channel_facade_coordinator_reconciliation() -> None
     assert traversal == [
         ("root", "Root one"),
         ("reply", "Reply one"),
-        ("deleted", _encode_message_remote_id(
-            message_remote_id=_REPLY_2,
-            message_kind="reply",
-            thread_root_remote_id=_ROOT_1,
-        )),
-        ("deleted", _encode_message_remote_id(
-            message_remote_id=_ROOT_2,
-            message_kind="root",
-        )),
+        (
+            "deleted",
+            _encode_message_remote_id(
+                message_remote_id=_REPLY_2,
+                message_kind="reply",
+                thread_root_remote_id=_ROOT_1,
+            ),
+        ),
+        (
+            "deleted",
+            _encode_message_remote_id(
+                message_remote_id=_ROOT_2,
+                message_kind="root",
+            ),
+        ),
     ]
 
     checkpoint = checkpoint_repo.get(
@@ -615,6 +630,7 @@ async def test_msgraph_teams_channel_facade_coordinator_reconciliation() -> None
     restart_result = await coordinator.reconcile_once(
         binding_id="msgraph-teams-channel-binding",
         restart=True,
+        operation_id="msgraph-teams-channel-incremental",
     )
     assert restart_result.has_more is True
     assert fake.root_calls[-1]["continuation"] is None

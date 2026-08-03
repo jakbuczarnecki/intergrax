@@ -13,11 +13,19 @@ from urllib.parse import urlparse
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import _ConfluenceWikiKnowledge
-from intergrax.integrations.providers.wiki_knowledge.confluence.client import ConfluenceRestClient
-from intergrax.integrations.providers.wiki_knowledge.confluence.config import ConfluenceIntegrationConfig
+from intergrax.integrations.providers.wiki_knowledge.confluence.adapter import (
+    _ConfluenceWikiKnowledge,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.client import (
+    ConfluenceRestClient,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.config import (
+    ConfluenceIntegrationConfig,
+)
 from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
     ConfluenceWikiKnowledgeIntegration,
 )
@@ -27,15 +35,23 @@ from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read i
 from intergrax.runtime.vendor_knowledge.adapters.confluence_pages import (
     register_confluence_pages_knowledge_adapter,
 )
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContentMode,
+    KnowledgeSourceScope,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -45,6 +61,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatu
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -96,7 +113,9 @@ class _ConfluenceHttpFake:
     def __init__(self) -> None:
         self.get_calls: list[dict[str, Any]] = []
 
-    def get(self, url: str, *, params: dict[str, Any] | None = None) -> _FakeHttpResponse:
+    def get(
+        self, url: str, *, params: dict[str, Any] | None = None
+    ) -> _FakeHttpResponse:
         self.get_calls.append({"url": url, "params": params})
         parsed = urlparse(url)
         path = parsed.path
@@ -168,8 +187,12 @@ def _assert_no_secrets(blob: str) -> None:
 def _assert_envelope_safe(envelope) -> None:
     blob = _public_blob(
         {
-            "descriptor": envelope.descriptor.model_dump(mode="json") if envelope.descriptor else None,
-            "content": envelope.content.model_dump(mode="json") if envelope.content else None,
+            "descriptor": envelope.descriptor.model_dump(mode="json")
+            if envelope.descriptor
+            else None,
+            "content": envelope.content.model_dump(mode="json")
+            if envelope.content
+            else None,
         }
     )
     _assert_no_secrets(blob)
@@ -226,10 +249,20 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
 
-    first = await coordinator.reconcile_once(binding_id="confluence-binding", restart=True)
-    second = await coordinator.reconcile_once(binding_id="confluence-binding", restart=False)
+    first = await coordinator.reconcile_once(
+        binding_id="confluence-binding", restart=True, operation_id="confluence-recon"
+    )
+    second = await coordinator.reconcile_once(
+        binding_id="confluence-binding",
+        restart=False,
+        operation_id="confluence-recon",
+        trigger_delivery_id=first.delivery_id,
+    )
 
     assert first.status is KnowledgeSyncRunStatus.COMPLETED
     assert second.status is KnowledgeSyncRunStatus.COMPLETED
@@ -246,7 +279,10 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
         assert envelope.content is not None
         assert envelope.content.mode is KnowledgeContentMode.RICH_TEXT
         assert envelope.content.rich_text is not None
-        assert envelope.content.mime_type == "application/vnd.atlassian.confluence.storage+xml"
+        assert (
+            envelope.content.mime_type
+            == "application/vnd.atlassian.confluence.storage+xml"
+        )
         assert envelope.content.rich_text.startswith("<h1>")
         assert "<p>Page " in envelope.content.rich_text
         descriptor = envelope.descriptor
@@ -275,7 +311,9 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
         remote_ids.add(state.remote_id)
     assert remote_ids == {"20001", "20002"}
 
-    checkpoint = checkpoint_repo.get(tenant_id="tenant-1", binding_id="confluence-binding")
+    checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1", binding_id="confluence-binding"
+    )
     assert checkpoint is not None
     assert checkpoint.cursor is not None
     assert checkpoint.cursor.version == "confluence.pages.cursor.v1"
@@ -289,13 +327,20 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
     )
     assert busy_lease is not None
 
-    list_calls = [call for call in http.get_calls if call["url"].endswith(f"/spaces/{_SPACE_ID}/pages")]
+    list_calls = [
+        call
+        for call in http.get_calls
+        if call["url"].endswith(f"/spaces/{_SPACE_ID}/pages")
+    ]
     assert len(list_calls) == 2
     assert "cursor" not in (list_calls[0]["params"] or {})
     assert list_calls[1]["params"]["cursor"] == _PAGE_TOKEN
 
     content_calls = [call for call in http.get_calls if "/pages/" in call["url"]]
-    assert {call["url"].split("/pages/")[-1] for call in content_calls} == {"20001", "20002"}
+    assert {call["url"].split("/pages/")[-1] for call in content_calls} == {
+        "20001",
+        "20002",
+    }
 
     public_proof = _public_blob(
         {
@@ -314,7 +359,9 @@ async def test_confluence_facade_coordinator_reconciliation_proof() -> None:
 
 
 class _ConfluenceHttpFakeWrongSpace:
-    def get(self, url: str, *, params: dict[str, Any] | None = None) -> _FakeHttpResponse:
+    def get(
+        self, url: str, *, params: dict[str, Any] | None = None
+    ) -> _FakeHttpResponse:
         if url.endswith(f"/spaces/{_SPACE_ID}/pages"):
             return _FakeHttpResponse(
                 _payload={
@@ -368,20 +415,30 @@ async def test_confluence_coordinator_rejects_cross_space_first_page() -> None:
         status=KnowledgeSourceBindingStatus.ACTIVE,
         configuration_version=1,
     )
+    state_repo = DocumentStoreKnowledgeRemoteItemStateRepository(document_store)
     coordinator = VendorKnowledgeSyncCoordinator(
         tenant_id="tenant-1",
         owner_id="owner-1",
         binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
         facade=facade,
         lease_repository=DocumentStoreKnowledgeSourceLeaseRepository(document_store),
-        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(document_store),
-        item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
+        checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(
+            document_store
+        ),
+        item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
 
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        await coordinator.reconcile_once(binding_id="confluence-binding", restart=True)
+        await coordinator.reconcile_once(
+            binding_id="confluence-binding",
+            restart=True,
+            operation_id="confluence-recon-error",
+        )
 
     assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
     assert exc_info.value.retryable is False

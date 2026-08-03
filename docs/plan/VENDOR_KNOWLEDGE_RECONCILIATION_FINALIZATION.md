@@ -948,19 +948,19 @@ Review-fix contracts for durable base checkpoint retention, exact recovery evide
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 Frozen phase immutability, exact successful-path transition binding, final-page tombstone completeness, recovery evidence self-validation, generic recovery exit blocking, configurable remote-ID policy separation, strict v1/v2 marker parsing and single durable wrapper builder.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-3`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED`
 
 Exact delivery-marker payload identity binding, final synthetic tombstone template closure, immutable supersession audit pointer, and FINALIZING/COMPLETED configuration-version self-validation.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED`
 
 Coordinator integration:
 
@@ -970,6 +970,12 @@ Coordinator integration:
 - receipt-driven retry decision table (§9);
 - exactly-once applied-page transition (`applied_page_count` increment boundary);
 - cursor movement between phases;
+
+### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1`
+
+**Status:** `READY_FOR_REVIEW`
+
+Durable continuation lineage, fail-closed configuration, truthful active-index completeness, proof-bound recovery, exact error mapping, binding/source validation, binary fingerprinting, truthful result counts, and failure-window proofs.
 - synthetic source-scoped tombstones on final page only;
 - incremental-sync blocking while active run exists;
 - `FINALIZING` idempotency (§10);
@@ -999,13 +1005,13 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` | `ACCEPTED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `ACCEPTED` through `REVIEW-FIX-3` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2` | `ACCEPTED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-3` | `ACCEPTED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `READY_FOR_REVIEW` |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending `1B` acceptance |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1` | `READY_FOR_REVIEW` |
+| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending `1B` Review Fix 1 acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` | `PLANNED` |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |
 

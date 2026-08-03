@@ -15,9 +15,13 @@ from urllib.parse import quote
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import GraphRestClient
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.client import (
+    GraphRestClient,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.config import (
     DEFAULT_GRAPH_BASE_URL,
     Ms365GraphIntegrationConfig,
@@ -42,12 +46,23 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
     encode_msgraph_mail_folder_scope_id,
     register_msgraph_mail_knowledge_adapter,
 )
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContentMode,
+    KnowledgeSourceScope,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -60,6 +75,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -260,7 +276,10 @@ class _MailFakeCollaborationSuite(GraphRestClient):
                 "limit": limit,
             }
         )
-        if continuation is not None and continuation.kind == MsGraphKnowledgeContinuationKind.DELTA:
+        if (
+            continuation is not None
+            and continuation.kind == MsGraphKnowledgeContinuationKind.DELTA
+        ):
             if continuation.url == _DELTA_URL:
                 return self._incremental_page
         if not self._reconcile_pages:
@@ -317,7 +336,9 @@ class _MailFakeCollaborationSuite(GraphRestClient):
     def send_mail(self, user_id: str, *, subject: str, body: str, to):
         raise NotImplementedError
 
-    def list_calendar_events(self, user_id: str, *, start: str, end: str, limit: int = 50):
+    def list_calendar_events(
+        self, user_id: str, *, start: str, end: str, limit: int = 50
+    ):
         raise NotImplementedError
 
     def get_user(self, user_id: str):
@@ -371,7 +392,9 @@ def _assert_no_secrets(blob: str) -> None:
 
 
 def _build_coordinator(fake: _MailFakeCollaborationSuite):
-    integration = Ms365GraphCollaborationSuiteIntegration.from_client(fake, enabled=True)
+    integration = Ms365GraphCollaborationSuiteIntegration.from_client(
+        fake, enabled=True
+    )
     registry = KnowledgeAdapterRegistry()
     register_msgraph_mail_knowledge_adapter(registry)
     facade = VendorKnowledgeFacadeService(
@@ -414,6 +437,9 @@ def _build_coordinator(fake: _MailFakeCollaborationSuite):
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
     return coordinator, sink, checkpoint_repo, state_repo, fake
 
@@ -424,8 +450,17 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
         _MailFakeCollaborationSuite()
     )
 
-    first = await coordinator.reconcile_once(binding_id="msgraph-mail-binding", restart=True)
-    second = await coordinator.reconcile_once(binding_id="msgraph-mail-binding", restart=False)
+    first = await coordinator.reconcile_once(
+        binding_id="msgraph-mail-binding",
+        restart=True,
+        operation_id="msgraph-mail-recon",
+    )
+    second = await coordinator.reconcile_once(
+        binding_id="msgraph-mail-binding",
+        restart=False,
+        operation_id="msgraph-mail-recon",
+        trigger_delivery_id=first.delivery_id,
+    )
 
     assert first.status is KnowledgeSyncRunStatus.COMPLETED
     assert second.status is KnowledgeSyncRunStatus.COMPLETED
@@ -450,7 +485,9 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
 
     assert len(message_envelopes) == 3
 
-    checkpoint = checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-mail-binding")
+    checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1", binding_id="msgraph-mail-binding"
+    )
     assert checkpoint is not None
     assert checkpoint.cursor is not None
     assert checkpoint.cursor.version == MSGRAPH_MAIL_CURSOR_VERSION
@@ -458,7 +495,10 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
 
     assert fake.delta_calls[0]["continuation"] is None
     assert fake.delta_calls[1]["continuation"] is not None
-    assert fake.delta_calls[1]["continuation"].kind == MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    assert (
+        fake.delta_calls[1]["continuation"].kind
+        == MsGraphKnowledgeContinuationKind.NEXT_PAGE
+    )
     assert fake.attachment_calls == []
 
     for message_id in ("msg-a", "msg-b", "msg-c"):
@@ -472,7 +512,10 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
     incremental = await coordinator.sync_once(binding_id="msgraph-mail-binding")
     assert incremental.status is KnowledgeSyncRunStatus.COMPLETED
     assert fake.delta_calls[-1]["continuation"] is not None
-    assert fake.delta_calls[-1]["continuation"].kind == MsGraphKnowledgeContinuationKind.DELTA
+    assert (
+        fake.delta_calls[-1]["continuation"].kind
+        == MsGraphKnowledgeContinuationKind.DELTA
+    )
     assert fake.delta_calls[-1]["continuation"].url == _DELTA_URL
     assert fake.attachment_calls == []
 
@@ -481,7 +524,9 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
     assert "upsert" in kinds
     assert "deleted" in kinds
     deleted_envelope = next(
-        envelope for envelope in incremental_batch.envelopes if envelope.change_kind.value == "deleted"
+        envelope
+        for envelope in incremental_batch.envelopes
+        if envelope.change_kind.value == "deleted"
     )
     assert deleted_envelope.content is None
     assert deleted_envelope.descriptor is None
@@ -494,7 +539,9 @@ async def test_msgraph_mail_facade_coordinator_reconciliation_and_incremental() 
     assert deleted_state is not None
     assert deleted_state.status is KnowledgeRemoteItemStatus.DELETED
 
-    updated_checkpoint = checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-mail-binding")
+    updated_checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1", binding_id="msgraph-mail-binding"
+    )
     assert updated_checkpoint is not None
     assert updated_checkpoint.cursor is not None
     assert updated_checkpoint.cursor.version == MSGRAPH_MAIL_CURSOR_VERSION
@@ -517,11 +564,18 @@ async def test_msgraph_mail_sink_failure_does_not_commit_checkpoint_or_state() -
     )
     sink.fail_times = 1
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        await coordinator.reconcile_once(binding_id="msgraph-mail-binding", restart=True)
+        await coordinator.reconcile_once(
+            binding_id="msgraph-mail-binding",
+            restart=True,
+            operation_id="msgraph-mail-recon-restart",
+        )
     assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
     assert len(sink.calls) == 1
     assert sink.durable_delivery_ids == []
-    assert checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-mail-binding") is None
+    assert (
+        checkpoint_repo.get(tenant_id="tenant-1", binding_id="msgraph-mail-binding")
+        is None
+    )
     for message_id in ("msg-a", "msg-b", "msg-c"):
         assert (
             state_repo.get(

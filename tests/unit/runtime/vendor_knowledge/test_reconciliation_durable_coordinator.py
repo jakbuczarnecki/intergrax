@@ -139,7 +139,7 @@ async def test_durable_reconciliation_two_page_flow() -> None:
     )
     assert second.has_more is False
     assert second.checkpoint_advanced is True
-    assert len(facade_rec.read_calls) == 4
+    assert len(facade_rec.read_calls) == 2
     assert len(sink.calls) == 2
     assert len(checkpoint.commit_calls) == 1
     assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == final_cp

@@ -626,3 +626,77 @@ class InMemoryReconciliationRunRepository:
         if current != expected:
             raise KnowledgeReconciliationRunConflict("cas conflict")
         self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+
+def durable_reconciliation_coordinator_kwargs(
+    *,
+    state_repository: InMemoryRemoteItemStateRepository,
+    document_store: object | None = None,
+) -> dict[str, object]:
+    if document_store is not None:
+        from intergrax.runtime.vendor_knowledge.sync_document_store import (
+            DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
+            DocumentStoreKnowledgeReconciliationRunRepository,
+        )
+
+        candidate_inventory_repository = (
+            DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(
+                document_store  # type: ignore[arg-type]
+            )
+        )
+        reconciliation_run_repository = (
+            DocumentStoreKnowledgeReconciliationRunRepository(
+                document_store  # type: ignore[arg-type]
+            )
+        )
+    else:
+        candidate_inventory_repository = InMemoryCandidateInventoryRepository(
+            state_repository=state_repository
+        )
+        reconciliation_run_repository = InMemoryReconciliationRunRepository()
+    return {
+        "reconciliation_run_repository": reconciliation_run_repository,
+        "candidate_inventory_repository": candidate_inventory_repository,
+        "sink_receipt_inspector": RecordingSinkReceiptInspector(),
+    }
+
+
+async def durable_reconcile_once(
+    coordinator: object,
+    *,
+    binding_id: str,
+    operation_id: str,
+    restart: bool,
+    trigger_delivery_id: str | None = None,
+) -> object:
+    return await coordinator.reconcile_once(  # type: ignore[attr-defined]
+        binding_id=binding_id,
+        restart=restart,
+        operation_id=operation_id,
+        trigger_delivery_id=trigger_delivery_id,
+    )
+
+
+async def durable_reconcile_until_complete(
+    coordinator: object,
+    *,
+    binding_id: str,
+    operation_id: str,
+) -> list[object]:
+    results: list[object] = []
+    restart = True
+    trigger: str | None = None
+    while True:
+        result = await durable_reconcile_once(
+            coordinator,
+            binding_id=binding_id,
+            operation_id=operation_id,
+            restart=restart,
+            trigger_delivery_id=trigger,
+        )
+        results.append(result)
+        if not result.has_more:  # type: ignore[attr-defined]
+            break
+        restart = False
+        trigger = result.delivery_id  # type: ignore[attr-defined]
+    return results

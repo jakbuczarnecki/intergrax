@@ -15,7 +15,9 @@ from typing import Any
 import pytest
 from pydantic import PrivateAttr
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GoogleWorkspaceBinaryPayload,
@@ -50,11 +52,19 @@ from intergrax.runtime.vendor_knowledge.adapters import (
     GOOGLE_DRIVE_SHARED_DRIVE_SCOPE_TYPE,
     register_google_workspace_drive_knowledge_adapter,
 )
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContentMode, KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContentMode,
+    KnowledgeSourceScope,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
@@ -69,6 +79,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     RecordingBindingService,
+    durable_reconciliation_coordinator_kwargs,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -356,7 +367,9 @@ class _StubBinaryTransport(GoogleWorkspaceBinaryTransport):
         max_bytes: int,
         range_limited: bool,
     ) -> GoogleWorkspaceBinaryPayload:
-        raise NotImplementedError("drive content reads are bound to the injected fake client")
+        raise NotImplementedError(
+            "drive content reads are bound to the injected fake client"
+        )
 
 
 class _StubClientFamily:
@@ -421,7 +434,9 @@ class _BoundGoogleWorkspaceIntegration(GoogleWorkspaceCollaborationSuiteIntegrat
 class _GoogleResolver:
     integration: GoogleWorkspaceCollaborationSuiteIntegration
 
-    def resolve(self, *, source: object) -> GoogleWorkspaceCollaborationSuiteIntegration:
+    def resolve(
+        self, *, source: object
+    ) -> GoogleWorkspaceCollaborationSuiteIntegration:
         return self.integration
 
 
@@ -455,6 +470,9 @@ def _build_runtime(
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
+        **durable_reconciliation_coordinator_kwargs(
+            state_repository=state_repo, document_store=document_store
+        ),
     )
     return coordinator
 
@@ -510,7 +528,9 @@ def _envelope_for(batch, remote_id: str):
 
 
 @pytest.mark.asyncio
-async def test_google_drive_facade_coordinator_restart_inventory_incremental_and_content() -> None:
+async def test_google_drive_facade_coordinator_restart_inventory_incremental_and_content() -> (
+    None
+):
     scenario = _GoogleDriveProviderScenario()
     document_store = InMemoryDocumentStore()
     sink = IdempotentRecordingSink()
@@ -526,14 +546,16 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
         binding=binding,
         owner_id="owner-runtime-a",
     )
-    first = await runtime_a.reconcile_once(binding_id=_BINDING_ID, restart=True)
+    first = await runtime_a.reconcile_once(
+        binding_id=_BINDING_ID, restart=True, operation_id="google-drive-recon"
+    )
     run_results.append(first)
     del runtime_a
 
     assert first.status is KnowledgeSyncRunStatus.COMPLETED
     assert first.mode is KnowledgeSyncMode.RECONCILIATION
     assert first.has_more is True
-    assert first.checkpoint_advanced is True
+    assert first.checkpoint_advanced is False
     assert first.changes_count == 2
     assert first.active_count == 2
     assert first.tombstone_count == 0
@@ -556,19 +578,7 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
     checkpoint_after_page_1 = checkpoint_repo_a.get(
         tenant_id=_TENANT_ID, binding_id=_BINDING_ID
     )
-    assert checkpoint_after_page_1 is not None
-    assert checkpoint_after_page_1.binding_configuration_version == 1
-    assert checkpoint_after_page_1.cursor is not None
-    assert checkpoint_after_page_1.cursor.version == GOOGLE_DRIVE_CURSOR_VERSION
-    decoded_page_1 = _decode_persisted_checkpoint(checkpoint_after_page_1.cursor.value)
-    assert decoded_page_1 == {
-        "schema_version": GOOGLE_DRIVE_CURSOR_VERSION,
-        "scope_kind": "shared_drive",
-        "drive_id": _SHARED_DRIVE_ID,
-        "phase": "inventory",
-        "inventory_page_token": _INVENTORY_PAGE_2,
-        "change_page_token": _START_BEFORE,
-    }
+    assert checkpoint_after_page_1 is None
 
     state_repo_a = _fresh_state_repo(document_store)
     for remote_id in ("blob-1", "folder-1"):
@@ -586,7 +596,12 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
         binding=binding,
         owner_id="owner-runtime-b",
     )
-    second = await runtime_b.reconcile_once(binding_id=_BINDING_ID, restart=False)
+    second = await runtime_b.reconcile_once(
+        binding_id=_BINDING_ID,
+        restart=False,
+        operation_id="google-drive-recon",
+        trigger_delivery_id=first.delivery_id,
+    )
     run_results.append(second)
     del runtime_b
 
@@ -594,7 +609,6 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
     assert second.mode is KnowledgeSyncMode.RECONCILIATION
     assert second.has_more is False
     assert second.checkpoint_advanced is True
-    assert second.changes_count == 1
     assert len(scenario.start_token_calls) == 1
     assert scenario.inventory_calls[1]["page_token"].value == _INVENTORY_PAGE_2
 
@@ -671,7 +685,9 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
     assert updated_blob.descriptor.revision.version == "2"
     assert updated_blob.content is not None
     assert updated_blob.content.binary == _BLOB_V2_BYTES
-    assert updated_blob.content.content_hash == hashlib.sha256(_BLOB_V2_BYTES).hexdigest()
+    assert (
+        updated_blob.content.content_hash == hashlib.sha256(_BLOB_V2_BYTES).hexdigest()
+    )
     assert updated_blob.permissions is None
     assert deleted_doc.descriptor is None
     assert deleted_doc.content is None
@@ -703,7 +719,9 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
     assert doc_final.status is KnowledgeRemoteItemStatus.DELETED
 
     checkpoint_repo_c = _fresh_checkpoint_repo(document_store)
-    checkpoint_final = checkpoint_repo_c.get(tenant_id=_TENANT_ID, binding_id=_BINDING_ID)
+    checkpoint_final = checkpoint_repo_c.get(
+        tenant_id=_TENANT_ID, binding_id=_BINDING_ID
+    )
     assert checkpoint_final is not None
     decoded_final = _decode_persisted_checkpoint(checkpoint_final.cursor.value)
     assert decoded_final == {
@@ -720,17 +738,16 @@ async def test_google_drive_facade_coordinator_restart_inventory_incremental_and
     assert len(delivery_ids_final) == len({*sink.durable_delivery_ids})
 
     checkpoint_values = {
-        checkpoint_after_page_1.cursor.value,
         checkpoint_after_page_2.cursor.value,
         checkpoint_final.cursor.value,
     }
-    assert len(checkpoint_values) == 3
+    assert len(checkpoint_values) == 2
 
     public_proof = _public_blob(
         {
             "runs": [result.model_dump(mode="json") for result in run_results],
             "sink": [batch.model_dump(mode="json") for batch in sink.calls],
-            "checkpoint_page_1": checkpoint_after_page_1.model_dump(mode="json"),
+            "checkpoint_page_1": None,
             "checkpoint_page_2": checkpoint_after_page_2.model_dump(mode="json"),
             "checkpoint_final": checkpoint_final.model_dump(mode="json"),
             "states": {

@@ -67,6 +67,8 @@ _ACTIVE_INDEX_PARTITION_PREFIX = "vendor_knowledge.active_item_index.v1"
 _RECONCILIATION_RUN_PARTITION_PREFIX = "vendor_knowledge.reconciliation_run.v1"
 _ACTIVE_INDEX_MANIFEST_ROW = "manifest"
 _ACTIVE_INDEX_SCHEMA = "vendor_knowledge.active_item_index.v1"
+_COMPLETENESS_CLEAN = "CLEAN"
+_COMPLETENESS_DIRTY = "DIRTY"
 
 _MAX_LEASE_ACQUIRE_ATTEMPTS = 4
 _MARKER_STATUS_APPLYING = "applying"
@@ -944,6 +946,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
             )
             if marker["status"] == _MARKER_STATUS_COMPLETED:
+                self._repair_active_index_for_states(
+                    tenant_id=cleaned_tenant,
+                    binding_id=cleaned_binding,
+                    states=states,
+                )
                 return
             self._write_states(partition_key=partition_key, states=states)
             self._complete_marker(
@@ -985,6 +992,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 prepared_state_mutations_fingerprint=cleaned_mutations_fingerprint,
             )
             if marker["status"] == _MARKER_STATUS_COMPLETED:
+                self._repair_active_index_for_states(
+                    tenant_id=cleaned_tenant,
+                    binding_id=cleaned_binding,
+                    states=states,
+                )
                 return
             self._write_states(partition_key=partition_key, states=states)
             self._complete_marker(
@@ -1075,9 +1087,63 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         partition_key: str,
         states: tuple[KnowledgeRemoteItemState, ...],
     ) -> None:
+        if not states:
+            return
         ordered = tuple(sorted(states, key=lambda state: state.remote_id))
-        for state in ordered:
-            self._apply_one_state(partition_key=partition_key, state=state)
+        sample = ordered[0]
+        index_partition = _active_index_partition_key(
+            tenant_id=sample.tenant_id,
+            binding_id=sample.binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+        )
+        self._begin_index_mutation(
+            index_partition=index_partition,
+            tenant_id=sample.tenant_id,
+            binding_id=sample.binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+        )
+        try:
+            for state in ordered:
+                self._apply_one_state(partition_key=partition_key, state=state)
+        finally:
+            self._complete_index_mutation(
+                index_partition=index_partition,
+                tenant_id=sample.tenant_id,
+                binding_id=sample.binding_id,
+                binding_configuration_version=sample.binding_configuration_version,
+            )
+
+    def _repair_active_index_for_states(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        states: tuple[KnowledgeRemoteItemState, ...],
+    ) -> None:
+        if not states:
+            return
+        sample = states[0]
+        index_partition = _active_index_partition_key(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+        )
+        self._begin_index_mutation(
+            index_partition=index_partition,
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            binding_configuration_version=sample.binding_configuration_version,
+        )
+        try:
+            for state in states:
+                self._sync_active_index_entry(state=state)
+        finally:
+            self._complete_index_mutation(
+                index_partition=index_partition,
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                binding_configuration_version=sample.binding_configuration_version,
+            )
 
     def _complete_marker(
         self,
@@ -1210,22 +1276,151 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             )
             _reject_secret_fields(document.data, kind="active item index")
             self._store.put(document)
-            manifest = DocumentRecord(
-                partition_key=partition_key,
-                row_key=_ACTIVE_INDEX_MANIFEST_ROW,
-                data={
-                    "schema_version": _ACTIVE_INDEX_SCHEMA,
-                    "tenant_id": state.tenant_id,
-                    "binding_id": state.binding_id,
-                    "binding_configuration_version": state.binding_configuration_version,
-                    "completeness_proof": "active_index_v1",
-                },
-            )
-            self._store.put(manifest)
             return
         existing = self._store.get(partition_key, row_key)
         if existing is not None:
             self._store.delete(partition_key, row_key)
+
+    def _manifest_document(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        completeness_state: str,
+    ) -> DocumentRecord:
+        return DocumentRecord(
+            partition_key=_active_index_partition_key(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                binding_configuration_version=binding_configuration_version,
+            ),
+            row_key=_ACTIVE_INDEX_MANIFEST_ROW,
+            data={
+                "schema_version": _ACTIVE_INDEX_SCHEMA,
+                "tenant_id": tenant_id,
+                "binding_id": binding_id,
+                "binding_configuration_version": binding_configuration_version,
+                "completeness_state": completeness_state,
+            },
+        )
+
+    def _parse_manifest(
+        self,
+        document: DocumentRecord,
+        *,
+        expected_tenant: str,
+        expected_binding: str,
+        expected_configuration_version: int,
+    ) -> dict[str, Any]:
+        data = _data_as_dict(document.data)
+        if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
+            raise KnowledgeSyncCorruptState("active index manifest schema is invalid")
+        tenant_id = data.get("tenant_id")
+        binding_id = data.get("binding_id")
+        config_version = data.get("binding_configuration_version")
+        completeness_state = data.get("completeness_state")
+        if tenant_id != expected_tenant or binding_id != expected_binding:
+            raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
+        if config_version != expected_configuration_version:
+            raise KnowledgeSyncCorruptState(
+                "active index manifest binding_configuration_version is invalid"
+            )
+        if completeness_state not in {_COMPLETENESS_CLEAN, _COMPLETENESS_DIRTY}:
+            raise KnowledgeSyncCorruptState(
+                "active index manifest completeness is invalid"
+            )
+        return data
+
+    def _legacy_item_rows_exist(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> bool:
+        item_partition = _item_partition_key(tenant_id=tenant_id, binding_id=binding_id)
+        return bool(
+            self._store.query(item_partition, limit=1, row_key_prefix="item:").documents
+        )
+
+    def _begin_index_mutation(
+        self,
+        *,
+        index_partition: str,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+    ) -> None:
+        manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
+        if manifest is None:
+            if self._legacy_item_rows_exist(tenant_id=tenant_id, binding_id=binding_id):
+                raise KnowledgeCandidateInventoryIncomplete(
+                    "legacy active inventory lacks completeness proof"
+                )
+            dirty = self._manifest_document(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                binding_configuration_version=binding_configuration_version,
+                completeness_state=_COMPLETENESS_DIRTY,
+            )
+            if not self._store.put_if_absent(dirty):
+                manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
+                if manifest is None:
+                    raise KnowledgeSyncCorruptState("active index manifest disappeared")
+        if manifest is not None:
+            parsed = self._parse_manifest(
+                manifest,
+                expected_tenant=tenant_id,
+                expected_binding=binding_id,
+                expected_configuration_version=binding_configuration_version,
+            )
+            if parsed["completeness_state"] != _COMPLETENESS_CLEAN:
+                raise KnowledgeCandidateInventoryIncomplete(
+                    "active index completeness proof is dirty"
+                )
+            dirty = self._manifest_document(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                binding_configuration_version=binding_configuration_version,
+                completeness_state=_COMPLETENESS_DIRTY,
+            )
+            if not self._store.replace_if_match(expected=manifest, replacement=dirty):
+                raise KnowledgeSyncCorruptState("active index manifest cas conflict")
+
+    def _complete_index_mutation(
+        self,
+        *,
+        index_partition: str,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+    ) -> None:
+        manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
+        if manifest is None:
+            clean = self._manifest_document(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                binding_configuration_version=binding_configuration_version,
+                completeness_state=_COMPLETENESS_CLEAN,
+            )
+            self._store.put(clean)
+            return
+        parsed = self._parse_manifest(
+            manifest,
+            expected_tenant=tenant_id,
+            expected_binding=binding_id,
+            expected_configuration_version=binding_configuration_version,
+        )
+        if parsed["completeness_state"] != _COMPLETENESS_DIRTY:
+            raise KnowledgeSyncCorruptState("active index manifest is not dirty")
+        clean = self._manifest_document(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            binding_configuration_version=binding_configuration_version,
+            completeness_state=_COMPLETENESS_CLEAN,
+        )
+        if not self._store.replace_if_match(expected=manifest, replacement=clean):
+            raise KnowledgeSyncCorruptState("active index manifest cas conflict")
 
     def _state_document(
         self,
@@ -1549,22 +1744,78 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
                     "legacy active inventory lacks completeness proof"
                 )
             return ()
+        manifest_data = _data_as_dict(manifest.data)
+        if (
+            manifest_data.get("tenant_id") != cleaned_tenant
+            or manifest_data.get("binding_id") != cleaned_binding
+            or manifest_data.get("binding_configuration_version")
+            != binding_configuration_version
+        ):
+            raise KnowledgeSyncCorruptState("active index manifest identity is invalid")
+        completeness_state = manifest_data.get("completeness_state")
+        if completeness_state == _COMPLETENESS_DIRTY:
+            raise KnowledgeCandidateInventoryIncomplete(
+                "active index completeness proof is dirty"
+            )
+        if completeness_state != _COMPLETENESS_CLEAN:
+            raise KnowledgeCandidateInventoryIncomplete(
+                "legacy active inventory lacks completeness proof"
+            )
         result = self._store.query(
-            index_partition, limit=limit, row_key_prefix="active:"
+            index_partition, limit=limit + 1, row_key_prefix="active:"
         )
+        if result.total > limit:
+            raise KnowledgeSyncCorruptState(
+                "active item index exceeds configured limit"
+            )
         remote_ids: list[str] = []
+        seen: set[str] = set()
         for document in result.documents:
             data = _data_as_dict(document.data)
             _reject_secret_fields(data, kind="active item index")
             if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
                 raise KnowledgeSyncCorruptState("active item index schema is invalid")
+            if document.row_key != _active_index_row_key(
+                str(data.get("remote_id", ""))
+            ):
+                raise KnowledgeSyncCorruptState("active item index row key mismatch")
             remote_id = data.get("remote_id")
             if not isinstance(remote_id, str) or not remote_id.strip():
                 raise KnowledgeSyncCorruptState(
                     "active item index remote_id is invalid"
                 )
-            remote_ids.append(remote_id.strip())
-        return tuple(sorted(set(remote_ids)))
+            cleaned_remote = remote_id.strip()
+            if cleaned_remote in seen:
+                raise KnowledgeSyncCorruptState("active item index contains duplicates")
+            seen.add(cleaned_remote)
+            item_state = self._store.get(
+                item_partition,
+                _item_row_key(cleaned_remote),
+            )
+            if item_state is None:
+                raise KnowledgeSyncCorruptState(
+                    "active item index points to missing state"
+                )
+            parsed_state, _version = DocumentStoreKnowledgeRemoteItemStateRepository(
+                self._store
+            )._parse_state(
+                item_state,
+                expected_tenant=cleaned_tenant,
+                expected_binding=cleaned_binding,
+            )
+            if parsed_state.status is not KnowledgeRemoteItemStatus.ACTIVE:
+                raise KnowledgeSyncCorruptState(
+                    "active item index points to non-active state"
+                )
+            if (
+                parsed_state.binding_configuration_version
+                != binding_configuration_version
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "active item index configuration version mismatch"
+                )
+            remote_ids.append(cleaned_remote)
+        return tuple(sorted(remote_ids))
 
 
 class DocumentStoreKnowledgeReconciliationRunRepository:

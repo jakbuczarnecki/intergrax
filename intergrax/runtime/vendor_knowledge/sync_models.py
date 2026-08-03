@@ -24,6 +24,7 @@ from pydantic import (
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeChangeKind,
     KnowledgeContent,
+    KnowledgeContentMode,
     KnowledgeCursor,
     KnowledgeItemDescriptor,
     KnowledgeItemRevision,
@@ -173,6 +174,13 @@ def knowledge_content_fingerprint_payload(
             "mode": content.mode.value,
             "mime_type": content.mime_type,
             "content_hash": content.content_hash,
+            "structured_schema": None,
+        }
+    if content.mode is KnowledgeContentMode.BINARY and content.binary is not None:
+        return {
+            "mode": content.mode.value,
+            "mime_type": content.mime_type,
+            "content_hash": hashlib.sha256(content.binary).hexdigest(),
             "structured_schema": None,
         }
     structured_schema = None
@@ -948,6 +956,7 @@ def _validate_applied_page_evidence(
     *,
     applied_page_count: int,
     last_applied_delivery_id: str | None,
+    last_applied_parent_delivery_id: str | None,
 ) -> None:
     if applied_page_count == 0 and last_applied_delivery_id is not None:
         raise ValueError(
@@ -956,6 +965,10 @@ def _validate_applied_page_evidence(
     if applied_page_count > 0 and last_applied_delivery_id is None:
         raise ValueError(
             "last_applied_delivery_id is required when applied_page_count is positive"
+        )
+    if applied_page_count == 0 and last_applied_parent_delivery_id is not None:
+        raise ValueError(
+            "last_applied_parent_delivery_id must be null when applied_page_count is zero"
         )
 
 
@@ -973,6 +986,7 @@ class _ReconciliationRunIdentity(BaseModel):
     updated_at: datetime
     applied_page_count: int = Field(default=0, ge=0)
     last_applied_delivery_id: str | None = None
+    last_applied_parent_delivery_id: str | None = None
     superseded_run_id: str | None = None
     expected_base_completed_checkpoint: KnowledgeSyncCheckpoint | None = None
 
@@ -991,12 +1005,15 @@ class _ReconciliationRunIdentity(BaseModel):
         field_name = info.field_name or "field"
         return _require_non_empty(value, field_name=field_name)
 
-    @field_validator("last_applied_delivery_id")
+    @field_validator("last_applied_delivery_id", "last_applied_parent_delivery_id")
     @classmethod
-    def _optional_delivery_id(cls, value: str | None) -> str | None:
+    def _optional_delivery_id(
+        cls, value: str | None, info: ValidationInfo
+    ) -> str | None:
         if value is None:
             return None
-        return _require_sha256_hex(value, field_name="last_applied_delivery_id")
+        field_name = info.field_name or "field"
+        return _require_sha256_hex(value, field_name=field_name)
 
     @field_validator("created_at", "updated_at")
     @classmethod
@@ -1009,6 +1026,7 @@ class _ReconciliationRunIdentity(BaseModel):
         _validate_applied_page_evidence(
             applied_page_count=self.applied_page_count,
             last_applied_delivery_id=self.last_applied_delivery_id,
+            last_applied_parent_delivery_id=self.last_applied_parent_delivery_id,
         )
         _validate_base_completed_checkpoint(
             self.expected_base_completed_checkpoint,
@@ -1076,6 +1094,7 @@ class KnowledgeReconciliationRunPagePrepared(_ReconciliationRunIdentity):
     prepared_page_size: int = Field(ge=1, le=1000)
     has_more: bool
     delivery_id: str
+    prepared_parent_delivery_id: str | None = None
     remaining_candidate_remote_ids: tuple[str, ...]
     synthetic_tombstone_remote_ids: tuple[str, ...] = ()
 
@@ -1087,9 +1106,12 @@ class KnowledgeReconciliationRunPagePrepared(_ReconciliationRunIdentity):
         "prepared_proposed_checkpoint_fingerprint",
         "prepared_next_cursor_fingerprint",
         "delivery_id",
+        "prepared_parent_delivery_id",
     )
     @classmethod
-    def _sha256_fields(cls, value: str, info: ValidationInfo) -> str:
+    def _sha256_fields(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if value is None:
+            return None
         field_name = info.field_name or "field"
         return _require_sha256_hex(value, field_name=field_name)
 
@@ -1527,6 +1549,7 @@ class KnowledgeReconciliationRunRecoveryRequired(_ReconciliationRunIdentity):
         KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
     )
     recovery_reason_code: str
+    machine_recovery_reason_code: str | None = None
     recovery_evidence: KnowledgeReconciliationRecoveryEvidence
 
     @field_validator("recovery_reason_code")

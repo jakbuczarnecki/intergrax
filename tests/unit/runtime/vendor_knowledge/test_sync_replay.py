@@ -13,15 +13,20 @@ from intergrax.runtime.vendor_knowledge.errors import (
 )
 from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor
 from intergrax.runtime.vendor_knowledge.sync_contracts import KnowledgeSyncCorruptState
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncCheckpoint
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
+    InMemoryCandidateInventoryRepository,
     InMemoryCheckpointRepository,
     InMemoryLeaseRepository,
+    InMemoryReconciliationRunRepository,
     InMemoryRemoteItemStateRepository,
     RecordingBindingService,
     RecordingFacade,
+    RecordingSinkReceiptInspector,
     make_binding,
     make_change,
     make_page,
@@ -36,6 +41,7 @@ def _build(
     checkpoint=None,
     state=None,
     sink=None,
+    durable: bool = False,
 ) -> tuple[
     VendorKnowledgeSyncCoordinator,
     RecordingFacade,
@@ -51,17 +57,28 @@ def _build(
     checkpoint = checkpoint or InMemoryCheckpointRepository()
     state = state or InMemoryRemoteItemStateRepository()
     sink = sink or IdempotentRecordingSink()
-    coordinator = VendorKnowledgeSyncCoordinator(
-        tenant_id="tenant-1",
-        owner_id="owner-1",
-        binding_service=RecordingBindingService(binding=resolved_binding),  # type: ignore[arg-type]
-        facade=facade,
-        lease_repository=lease,
-        checkpoint_repository=checkpoint,
-        item_state_repository=state,
-        sink=sink,
-        lease_ttl_seconds=30,
-    )
+    coordinator_kwargs: dict[str, object] = {
+        "tenant_id": "tenant-1",
+        "owner_id": "owner-1",
+        "binding_service": RecordingBindingService(binding=resolved_binding),
+        "facade": facade,
+        "lease_repository": lease,
+        "checkpoint_repository": checkpoint,
+        "item_state_repository": state,
+        "sink": sink,
+        "lease_ttl_seconds": 30,
+    }
+    if durable:
+        coordinator_kwargs.update(
+            {
+                "reconciliation_run_repository": InMemoryReconciliationRunRepository(),
+                "candidate_inventory_repository": InMemoryCandidateInventoryRepository(
+                    state_repository=state
+                ),
+                "sink_receipt_inspector": RecordingSinkReceiptInspector(),
+            }
+        )
+    coordinator = VendorKnowledgeSyncCoordinator(**coordinator_kwargs)  # type: ignore[arg-type]
     return coordinator, facade, checkpoint, state, sink
 
 
@@ -305,9 +322,7 @@ async def test_corrupt_state_maps_to_invalid_provider_response(port: str) -> Non
     else:
         checkpoint.commit_error = corrupt
 
-    coordinator, *_ = _build(
-        lease=lease, checkpoint=checkpoint, state=state, sink=sink
-    )
+    coordinator, *_ = _build(lease=lease, checkpoint=checkpoint, state=state, sink=sink)
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.sync_once(binding_id="binding-1")
     error = exc_info.value
@@ -381,8 +396,9 @@ async def test_reconciliation_cas_uses_loaded_checkpoint_expectation() -> None:
                 proposed_checkpoint=KnowledgeCursor(value="new-cursor")
             )
         ),
+        durable=True,
     )
-    await coordinator.reconcile_once(binding_id="binding-1")
+    await coordinator.reconcile_once(binding_id="binding-1", operation_id="op-1")
     assert checkpoint.commit_calls[0]["expected_previous"] == previous
 
 
@@ -390,7 +406,9 @@ async def test_reconciliation_cas_uses_loaded_checkpoint_expectation() -> None:
 @pytest.mark.asyncio
 async def test_document_store_replay_after_state_crash_before_marker() -> None:
     """Sink accepted delivery; state batch interrupted; replay completes without duplicates."""
-    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.integrations._shared.in_memory_document_store import (
+        InMemoryDocumentStore,
+    )
     from intergrax.runtime.vendor_knowledge.sync_document_store import (
         DocumentStoreKnowledgeRemoteItemStateRepository,
         DocumentStoreKnowledgeSourceLeaseRepository,
@@ -413,7 +431,9 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
                 remote_id=remote_id,
             )
 
-        def apply_batch(self, *, tenant_id: str, binding_id: str, delivery_id: str, states):
+        def apply_batch(
+            self, *, tenant_id: str, binding_id: str, delivery_id: str, states
+        ):
             if not self._failed:
                 self._failed = True
                 if states:
@@ -460,7 +480,9 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
     assert sink.calls[0].delivery_id == result.delivery_id
     assert checkpoint.get(tenant_id="tenant-1", binding_id="binding-1") is not None
     assert (
-        inner_state.get(tenant_id="tenant-1", binding_id="binding-1", remote_id="item-2")
+        inner_state.get(
+            tenant_id="tenant-1", binding_id="binding-1", remote_id="item-2"
+        )
         is not None
     )
 
@@ -469,7 +491,9 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
 @pytest.mark.asyncio
 async def test_document_store_replay_after_checkpoint_crash() -> None:
     """States+marker durable; checkpoint commit fails once; replay commits checkpoint."""
-    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.integrations._shared.in_memory_document_store import (
+        InMemoryDocumentStore,
+    )
     from intergrax.runtime.vendor_knowledge.sync_document_store import (
         DocumentStoreKnowledgeRemoteItemStateRepository,
         DocumentStoreKnowledgeSourceLeaseRepository,
@@ -511,12 +535,16 @@ async def test_document_store_replay_after_checkpoint_crash() -> None:
     assert result.status.value == "completed"
     assert result.checkpoint_advanced is True
     assert len(sink.durable_delivery_ids) == 1
-    assert inner_checkpoint.get(tenant_id="tenant-1", binding_id="binding-1") is not None
+    assert (
+        inner_checkpoint.get(tenant_id="tenant-1", binding_id="binding-1") is not None
+    )
 
 
 @pytest.mark.unit
 def test_document_store_stale_checkpoint_and_lease_token() -> None:
-    from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+    from intergrax.integrations._shared.in_memory_document_store import (
+        InMemoryDocumentStore,
+    )
     from intergrax.runtime.vendor_knowledge.sync_contracts import (
         KnowledgeSyncCheckpointConflict,
     )
