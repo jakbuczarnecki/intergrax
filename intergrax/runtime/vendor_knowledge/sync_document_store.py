@@ -24,6 +24,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeCandidateInventoryIncomplete,
     KnowledgeReconciliationRunConflict,
     KnowledgeSyncCheckpointConflict,
     KnowledgeSyncCorruptState,
@@ -31,6 +32,7 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationLimitPolicy,
     KnowledgeReconciliationRun,
+    KnowledgeReconciliationRunAborted,
     KnowledgeReconciliationRunCollecting,
     KnowledgeReconciliationRunCompleted,
     KnowledgeReconciliationRunFinalizing,
@@ -40,6 +42,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStateReceipt,
     KnowledgeRemoteItemStateReceiptStatus,
+    KnowledgeRemoteItemStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncCheckpoint,
     _reconciliation_run_durable_document_payload,
@@ -60,7 +63,10 @@ _RECONCILIATION_RUN_SCHEMA = "vendor_knowledge.reconciliation_run.v1"
 _LEASE_PARTITION_PREFIX = "vendor_knowledge.source_lease.v1"
 _CHECKPOINT_PARTITION_PREFIX = "vendor_knowledge.sync_checkpoint.v1"
 _ITEM_PARTITION_PREFIX = "vendor_knowledge.remote_item.v1"
+_ACTIVE_INDEX_PARTITION_PREFIX = "vendor_knowledge.active_item_index.v1"
 _RECONCILIATION_RUN_PARTITION_PREFIX = "vendor_knowledge.reconciliation_run.v1"
+_ACTIVE_INDEX_MANIFEST_ROW = "manifest"
+_ACTIVE_INDEX_SCHEMA = "vendor_knowledge.active_item_index.v1"
 
 _MAX_LEASE_ACQUIRE_ATTEMPTS = 4
 _MARKER_STATUS_APPLYING = "applying"
@@ -170,6 +176,26 @@ def _reconciliation_run_partition_key(tenant_id: str) -> str:
 
 def _reconciliation_run_row_key(binding_id: str) -> str:
     return f"binding:{_require_non_empty(binding_id, field_name='binding_id')}"
+
+
+def _active_index_partition_key(
+    *,
+    tenant_id: str,
+    binding_id: str,
+    binding_configuration_version: int,
+) -> str:
+    return (
+        f"{_ACTIVE_INDEX_PARTITION_PREFIX}:"
+        f"{_require_non_empty(tenant_id, field_name='tenant_id')}:"
+        f"{_require_non_empty(binding_id, field_name='binding_id')}:"
+        f"v{int(binding_configuration_version)}"
+    )
+
+
+def _active_index_row_key(remote_id: str) -> str:
+    cleaned = _require_non_empty(remote_id, field_name="remote_id")
+    digest = hashlib.sha256(cleaned.encode("utf-8")).hexdigest()
+    return f"active:{digest}"
 
 
 def _configuration_limit_error(safe_message: str) -> VendorKnowledgeError:
@@ -1135,6 +1161,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             ),
         )
         if self._store.put_if_absent(candidate):
+            self._sync_active_index_entry(state=state)
             return
         existing = self._store.get(partition_key, row_key)
         if existing is None:
@@ -1146,6 +1173,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         )
         if current.last_delivery_id == state.last_delivery_id:
             if current == state:
+                self._sync_active_index_entry(state=state)
                 return
             raise KnowledgeSyncCorruptState(
                 "remote item state conflict for identical delivery"
@@ -1159,6 +1187,45 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         )
         if not self._store.replace_if_match(expected=existing, replacement=replacement):
             raise KnowledgeSyncCorruptState("remote item state cas conflict")
+        self._sync_active_index_entry(state=state)
+
+    def _sync_active_index_entry(self, *, state: KnowledgeRemoteItemState) -> None:
+        partition_key = _active_index_partition_key(
+            tenant_id=state.tenant_id,
+            binding_id=state.binding_id,
+            binding_configuration_version=state.binding_configuration_version,
+        )
+        row_key = _active_index_row_key(state.remote_id)
+        if state.status is KnowledgeRemoteItemStatus.ACTIVE:
+            document = DocumentRecord(
+                partition_key=partition_key,
+                row_key=row_key,
+                data={
+                    "schema_version": _ACTIVE_INDEX_SCHEMA,
+                    "tenant_id": state.tenant_id,
+                    "binding_id": state.binding_id,
+                    "binding_configuration_version": state.binding_configuration_version,
+                    "remote_id": state.remote_id,
+                },
+            )
+            _reject_secret_fields(document.data, kind="active item index")
+            self._store.put(document)
+            manifest = DocumentRecord(
+                partition_key=partition_key,
+                row_key=_ACTIVE_INDEX_MANIFEST_ROW,
+                data={
+                    "schema_version": _ACTIVE_INDEX_SCHEMA,
+                    "tenant_id": state.tenant_id,
+                    "binding_id": state.binding_id,
+                    "binding_configuration_version": state.binding_configuration_version,
+                    "completeness_proof": "active_index_v1",
+                },
+            )
+            self._store.put(manifest)
+            return
+        existing = self._store.get(partition_key, row_key)
+        if existing is not None:
+            self._store.delete(partition_key, row_key)
 
     def _state_document(
         self,
@@ -1409,6 +1476,97 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             ) from None
 
 
+_ALLOWED_RECOVERY_CAS_TRANSITIONS: frozenset[
+    tuple[KnowledgeReconciliationRunPhase, KnowledgeReconciliationRunPhase]
+] = frozenset(
+    {
+        (
+            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+            KnowledgeReconciliationRunPhase.COLLECTING,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+            KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+            KnowledgeReconciliationRunPhase.FINALIZING,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.COLLECTING,
+            KnowledgeReconciliationRunPhase.ABORTED,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+            KnowledgeReconciliationRunPhase.ABORTED,
+        ),
+        (
+            KnowledgeReconciliationRunPhase.FINALIZING,
+            KnowledgeReconciliationRunPhase.COMPLETED,
+        ),
+    }
+)
+
+
+class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
+    """Active-only candidate inventory backed by a maintained index."""
+
+    def __init__(self, document_store: DocumentStore) -> None:
+        self._store = _require_conditional_document_store(document_store)
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if limit < 1:
+            raise ValueError("limit must be positive")
+        cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
+        index_partition = _active_index_partition_key(
+            tenant_id=cleaned_tenant,
+            binding_id=cleaned_binding,
+            binding_configuration_version=binding_configuration_version,
+        )
+        manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
+        item_partition = _item_partition_key(
+            tenant_id=cleaned_tenant,
+            binding_id=cleaned_binding,
+        )
+        legacy_probe = self._store.query(
+            item_partition, limit=1, row_key_prefix="item:"
+        )
+        if manifest is None:
+            if legacy_probe.documents:
+                raise KnowledgeCandidateInventoryIncomplete(
+                    "legacy active inventory lacks completeness proof"
+                )
+            return ()
+        result = self._store.query(
+            index_partition, limit=limit, row_key_prefix="active:"
+        )
+        remote_ids: list[str] = []
+        for document in result.documents:
+            data = _data_as_dict(document.data)
+            _reject_secret_fields(data, kind="active item index")
+            if data.get("schema_version") != _ACTIVE_INDEX_SCHEMA:
+                raise KnowledgeSyncCorruptState("active item index schema is invalid")
+            remote_id = data.get("remote_id")
+            if not isinstance(remote_id, str) or not remote_id.strip():
+                raise KnowledgeSyncCorruptState(
+                    "active item index remote_id is invalid"
+                )
+            remote_ids.append(remote_id.strip())
+        return tuple(sorted(set(remote_ids)))
+
+
 class DocumentStoreKnowledgeReconciliationRunRepository:
     """CAS reconciliation-run repository backed by ConditionalDocumentStore."""
 
@@ -1592,6 +1750,63 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
             raise KnowledgeReconciliationRunConflict(
                 "reconciliation run supersede conflict"
             )
+
+    def cas_recovery(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None:
+        self._validate_run_identity_keys(expected)
+        self._validate_run_identity_keys(replacement)
+        _validate_reconciliation_identity_unchanged(
+            expected=expected, replacement=replacement
+        )
+        if replacement.record_version != expected.record_version + 1:
+            raise KnowledgeSyncCorruptState(
+                "reconciliation run record_version must increment by one"
+            )
+        if (expected.phase, replacement.phase) not in _ALLOWED_RECOVERY_CAS_TRANSITIONS:
+            raise KnowledgeSyncCorruptState(
+                "reconciliation recovery transition is invalid"
+            )
+        if replacement.phase is KnowledgeReconciliationRunPhase.ABORTED:
+            if not isinstance(replacement, KnowledgeReconciliationRunAborted):
+                raise KnowledgeSyncCorruptState("abort replacement must be ABORTED")
+        if replacement.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+            if not isinstance(replacement, KnowledgeReconciliationRunRecoveryRequired):
+                raise KnowledgeSyncCorruptState(
+                    "repair replacement must retain recovery_required"
+                )
+            if expected.phase is not KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+                raise KnowledgeSyncCorruptState(
+                    "repair replacement requires recovery_required origin"
+                )
+            if replacement.recovery_evidence != expected.recovery_evidence:
+                raise KnowledgeSyncCorruptState(
+                    "repair replacement must retain recovery evidence"
+                )
+        try:
+            _validate_reconciliation_policy(replacement, policy=self._policy)
+        except ValueError as exc:
+            raise _configuration_limit_error(str(exc)) from exc
+        partition_key = _reconciliation_run_partition_key(expected.tenant_id)
+        row_key = _reconciliation_run_row_key(expected.binding_id)
+        current = self._store.get(partition_key, row_key)
+        if current is None:
+            raise KnowledgeReconciliationRunConflict("reconciliation run cas conflict")
+        parsed = self._parse_run(
+            current,
+            expected_tenant=expected.tenant_id,
+            expected_binding=expected.binding_id,
+        )
+        if parsed != expected:
+            raise KnowledgeReconciliationRunConflict("reconciliation run cas conflict")
+        replacement_doc = self._to_document(replacement)
+        if not self._store.replace_if_match(
+            expected=current, replacement=replacement_doc
+        ):
+            raise KnowledgeReconciliationRunConflict("reconciliation run cas conflict")
 
     def _validate_run_identity_keys(self, run: KnowledgeReconciliationRun) -> None:
         _require_non_empty(run.tenant_id, field_name="tenant_id")

@@ -152,6 +152,7 @@ def _page_prepared(*, has_more: bool = True) -> KnowledgeReconciliationRunPagePr
         prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
         prepared_next_cursor_fingerprint=next_cursor_fp,
         prepared_next_cursor=next_cursor,
+        prepared_page_size=100,
         has_more=has_more,
         delivery_id=_DELIVERY,
         remaining_candidate_remote_ids=("item-c",) if has_more else ("item-z",),
@@ -882,6 +883,7 @@ def test_final_page_requires_exact_tombstone_equality() -> None:
         prepared_state_mutations_fingerprint=mutations_fp,
         prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
         prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+        prepared_page_size=100,
         has_more=False,
         delivery_id=_DELIVERY,
     )
@@ -1046,6 +1048,7 @@ def test_final_page_empty_candidates_and_templates_accepted() -> None:
         ),
         prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
         prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+        prepared_page_size=100,
         has_more=False,
         delivery_id=_DELIVERY,
         remaining_candidate_remote_ids=(),

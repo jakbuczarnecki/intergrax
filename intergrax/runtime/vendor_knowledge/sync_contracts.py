@@ -30,6 +30,26 @@ class KnowledgeReconciliationRunConflict(Exception):
     """Optimistic reconciliation-run compare-and-set conflict."""
 
 
+class KnowledgeCandidateInventoryIncomplete(Exception):
+    """Active candidate inventory cannot be proven complete for reconciliation."""
+
+
+@runtime_checkable
+class KnowledgeReconciliationCandidateInventoryRepository(Protocol):
+    """Provider-neutral active candidate inventory port."""
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        """Return unique UTF-8 ascending active remote IDs up to ``limit``."""
+        ...
+
+
 @runtime_checkable
 class KnowledgeSourceLeaseRepository(Protocol):
     """Source-level lease port independent of later queue task claims."""
@@ -138,6 +158,13 @@ class KnowledgeReconciliationRunRepository(Protocol):
     ) -> None: ...
 
     def cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None: ...
+
+    def cas_recovery(
         self,
         *,
         expected: KnowledgeReconciliationRun,

@@ -32,14 +32,19 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeSourceRef,
 )
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeReconciliationCandidateInventoryRepository,
+    KnowledgeReconciliationRunRepository,
     KnowledgeRemoteItemStateRepository,
     KnowledgeSourceLeaseRepository,
     KnowledgeSyncCheckpointConflict,
     KnowledgeSyncCheckpointRepository,
     KnowledgeSyncCorruptState,
     KnowledgeSyncSink,
+    KnowledgeSyncSinkReceiptInspector,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRecoveryCommand,
+    KnowledgeReconciliationRunPhase,
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStatus,
     KnowledgeSourceLeaseToken,
@@ -49,6 +54,18 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncMode,
     KnowledgeSyncRunResult,
     KnowledgeSyncRunStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+    VendorKnowledgeReconciliationEngine,
+)
+
+_ACTIVE_RECONCILIATION_PHASES: frozenset[KnowledgeReconciliationRunPhase] = frozenset(
+    {
+        KnowledgeReconciliationRunPhase.COLLECTING,
+        KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+        KnowledgeReconciliationRunPhase.FINALIZING,
+        KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+    }
 )
 
 _ACTIVE_CHANGE_KINDS: frozenset[KnowledgeChangeKind] = frozenset(
@@ -122,7 +139,9 @@ def _build_delivery_id(
                 "kind": change.kind.value,
                 "remote_id": change.remote_id,
                 "revision": _revision_fingerprint(
-                    change.descriptor.revision if change.descriptor is not None else None
+                    change.descriptor.revision
+                    if change.descriptor is not None
+                    else None
                 ),
             }
             for change in page.changes
@@ -152,6 +171,12 @@ class VendorKnowledgeSyncCoordinator:
         item_state_repository: KnowledgeRemoteItemStateRepository,
         sink: KnowledgeSyncSink,
         lease_ttl_seconds: int,
+        reconciliation_run_repository: KnowledgeReconciliationRunRepository
+        | None = None,
+        candidate_inventory_repository: (
+            KnowledgeReconciliationCandidateInventoryRepository | None
+        ) = None,
+        sink_receipt_inspector: KnowledgeSyncSinkReceiptInspector | None = None,
     ) -> None:
         self._tenant_id = _require_non_empty(tenant_id, field_name="tenant_id")
         self._owner_id = _require_non_empty(owner_id, field_name="owner_id")
@@ -164,6 +189,27 @@ class VendorKnowledgeSyncCoordinator:
         self._item_state_repository = item_state_repository
         self._sink = sink
         self._lease_ttl_seconds = int(lease_ttl_seconds)
+        self._reconciliation_engine: VendorKnowledgeReconciliationEngine | None = None
+        if (
+            reconciliation_run_repository is not None
+            and candidate_inventory_repository is not None
+        ):
+            resolved_inspector = sink_receipt_inspector
+            if resolved_inspector is None and isinstance(
+                sink, KnowledgeSyncSinkReceiptInspector
+            ):
+                resolved_inspector = sink
+            self._reconciliation_engine = VendorKnowledgeReconciliationEngine(
+                tenant_id=self._tenant_id,
+                binding_service=binding_service,
+                facade=facade,
+                reconciliation_run_repository=reconciliation_run_repository,
+                candidate_inventory_repository=candidate_inventory_repository,
+                checkpoint_repository=checkpoint_repository,
+                item_state_repository=item_state_repository,
+                sink=sink,
+                sink_receipt_inspector=resolved_inspector,
+            )
 
     async def sync_once(
         self,
@@ -184,13 +230,58 @@ class VendorKnowledgeSyncCoordinator:
         binding_id: str,
         page_size: int = 100,
         restart: bool = True,
+        operation_id: str | None = None,
+        trigger_delivery_id: str | None = None,
     ) -> KnowledgeSyncRunResult:
-        return await self._run_once(
-            binding_id=binding_id,
-            page_size=page_size,
-            mode=KnowledgeSyncMode.RECONCILIATION,
-            restart=restart,
+        if self._reconciliation_engine is None:
+            return await self._run_once(
+                binding_id=binding_id,
+                page_size=page_size,
+                mode=KnowledgeSyncMode.RECONCILIATION,
+                restart=restart,
+            )
+        cleaned_operation = _require_non_empty(
+            operation_id or binding_id,
+            field_name="operation_id",
         )
+        lease = self._acquire_lease(binding_id=binding_id)
+        if lease is None:
+            return KnowledgeSyncRunResult(
+                status=KnowledgeSyncRunStatus.LEASE_BUSY,
+                mode=KnowledgeSyncMode.RECONCILIATION,
+                tenant_id=self._tenant_id,
+                binding_id=binding_id,
+                delivery_id=None,
+                changes_count=0,
+                active_count=0,
+                tombstone_count=0,
+                checkpoint_advanced=False,
+                has_more=False,
+                retryable=True,
+            )
+        try:
+            assert self._reconciliation_engine is not None
+            return await self._reconciliation_engine.reconcile_page(
+                binding_id=binding_id,
+                operation_id=cleaned_operation,
+                page_size=page_size,
+                restart=restart,
+                trigger_delivery_id=trigger_delivery_id,
+            )
+        finally:
+            self._release_lease(lease)
+
+    def execute_reconciliation_recovery(
+        self,
+        command: KnowledgeReconciliationRecoveryCommand,
+    ) -> None:
+        if self._reconciliation_engine is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message="Knowledge reconciliation recovery is not configured",
+                retryable=False,
+            )
+        self._reconciliation_engine.execute_recovery_command(command)
 
     async def _run_once(
         self,
@@ -203,6 +294,10 @@ class VendorKnowledgeSyncCoordinator:
         cleaned_binding_id = _require_non_empty(binding_id, field_name="binding_id")
         if page_size < 1 or page_size > 1000:
             raise ValueError("page_size must be in range 1..1000")
+        if mode is KnowledgeSyncMode.INCREMENTAL:
+            self._block_incremental_for_active_reconciliation(
+                binding_id=cleaned_binding_id
+            )
 
         lease = self._acquire_lease(binding_id=cleaned_binding_id)
         if lease is None:
@@ -250,6 +345,19 @@ class VendorKnowledgeSyncCoordinator:
             ) from None
         assert result is not None
         return result
+
+    def _block_incremental_for_active_reconciliation(self, *, binding_id: str) -> None:
+        if self._reconciliation_engine is None:
+            return
+        if not self._reconciliation_engine.has_active_run(binding_id=binding_id):
+            return
+        raise VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+            safe_message=(
+                "Incremental knowledge sync is blocked while reconciliation is active"
+            ),
+            retryable=False,
+        )
 
     def _acquire_lease(self, *, binding_id: str) -> KnowledgeSourceLeaseToken | None:
         try:
@@ -395,7 +503,9 @@ class VendorKnowledgeSyncCoordinator:
             1 for envelope in envelopes if envelope.change_kind in _ACTIVE_CHANGE_KINDS
         )
         tombstone_count = sum(
-            1 for envelope in envelopes if envelope.change_kind in _TOMBSTONE_CHANGE_KINDS
+            1
+            for envelope in envelopes
+            if envelope.change_kind in _TOMBSTONE_CHANGE_KINDS
         )
         return KnowledgeSyncRunResult(
             status=KnowledgeSyncRunStatus.COMPLETED,
@@ -523,7 +633,10 @@ class VendorKnowledgeSyncCoordinator:
             return loaded_checkpoint.cursor
         if loaded_checkpoint is None:
             return None
-        if loaded_checkpoint.binding_configuration_version != binding.configuration_version:
+        if (
+            loaded_checkpoint.binding_configuration_version
+            != binding.configuration_version
+        ):
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.INVALID_CURSOR,
                 safe_message=(
@@ -629,10 +742,7 @@ class VendorKnowledgeSyncCoordinator:
                     source_kind=source.source_kind,
                     retryable=False,
                 )
-            if (
-                input_cursor is not None
-                and page.proposed_checkpoint == input_cursor
-            ):
+            if input_cursor is not None and page.proposed_checkpoint == input_cursor:
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                     safe_message=(
@@ -698,7 +808,9 @@ class VendorKnowledgeSyncCoordinator:
             if descriptor.content_available and content_fetch:
                 content = await self._fetch_content(source=source, item=descriptor)
             if permissions_enabled:
-                permissions = await self._fetch_permissions(source=source, item=descriptor)
+                permissions = await self._fetch_permissions(
+                    source=source, item=descriptor
+                )
         elif change.kind is KnowledgeChangeKind.METADATA_CHANGED:
             pass
         elif change.kind is KnowledgeChangeKind.PERMISSIONS_CHANGED:

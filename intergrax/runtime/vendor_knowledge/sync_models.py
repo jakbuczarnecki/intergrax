@@ -124,6 +124,201 @@ def canonical_prepared_state_mutations_fingerprint(
     return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
 
 
+def knowledge_item_revision_fingerprint_payload(
+    revision: KnowledgeItemRevision | None,
+) -> dict[str, Any]:
+    if revision is None:
+        return {
+            "version": None,
+            "etag": None,
+            "content_hash": None,
+            "acl_hash": None,
+            "updated_at": None,
+        }
+    return {
+        "version": revision.version,
+        "etag": revision.etag,
+        "content_hash": revision.content_hash,
+        "acl_hash": revision.acl_hash,
+        "updated_at": (
+            revision.updated_at.isoformat() if revision.updated_at is not None else None
+        ),
+    }
+
+
+def knowledge_descriptor_fingerprint_payload(
+    descriptor: KnowledgeItemDescriptor | None,
+) -> dict[str, Any] | None:
+    if descriptor is None:
+        return None
+    return {
+        "identity": descriptor.identity.model_dump(mode="json"),
+        "revision": knowledge_item_revision_fingerprint_payload(descriptor.revision),
+        "item_type": descriptor.item_type,
+        "title": descriptor.title,
+        "content_mode": descriptor.content_mode.value,
+        "content_available": descriptor.content_available,
+        "metadata": descriptor.metadata,
+        "provenance": descriptor.provenance.model_dump(mode="json"),
+    }
+
+
+def knowledge_content_fingerprint_payload(
+    content: KnowledgeContent | None,
+) -> dict[str, Any] | None:
+    if content is None:
+        return None
+    if content.content_hash:
+        return {
+            "mode": content.mode.value,
+            "mime_type": content.mime_type,
+            "content_hash": content.content_hash,
+            "structured_schema": None,
+        }
+    structured_schema = None
+    if content.structured_record is not None:
+        structured_schema = content.structured_record.get("schema")
+    return {
+        "mode": content.mode.value,
+        "mime_type": content.mime_type,
+        "content_hash": None,
+        "structured_schema": structured_schema,
+        "canonical_payload": content.model_dump(mode="json", exclude={"binary"}),
+    }
+
+
+def knowledge_permissions_fingerprint_payload(
+    permissions: KnowledgePermissions | None,
+) -> dict[str, Any] | None:
+    if permissions is None:
+        return None
+    if permissions.acl_version:
+        return {
+            "visibility": permissions.visibility.value,
+            "acl_version": permissions.acl_version,
+            "inherited": permissions.inherited,
+        }
+    return permissions.model_dump(mode="json")
+
+
+def reconciliation_envelope_fingerprint_payload(
+    envelope: "KnowledgeSyncEnvelope",
+) -> dict[str, Any]:
+    semantic = None
+    if envelope.reconciliation_semantic is not None:
+        semantic = envelope.reconciliation_semantic.value
+    return {
+        "change_kind": envelope.change_kind.value,
+        "remote_id": envelope.remote_id,
+        "reconciliation_semantic": semantic,
+        "descriptor": knowledge_descriptor_fingerprint_payload(envelope.descriptor),
+        "content": knowledge_content_fingerprint_payload(envelope.content),
+        "permissions": knowledge_permissions_fingerprint_payload(envelope.permissions),
+    }
+
+
+def reconciliation_provider_page_fingerprint(
+    *,
+    input_cursor_fingerprint: str,
+    has_more: bool,
+    proposed_checkpoint_fingerprint: str,
+    next_cursor_fingerprint: str,
+    changes: tuple[tuple[str, KnowledgeChangeKind, KnowledgeItemRevision | None], ...],
+) -> str:
+    ordered_changes = sorted(changes, key=lambda item: item[0])
+    payload = {
+        "input_cursor_fingerprint": input_cursor_fingerprint,
+        "has_more": has_more,
+        "proposed_checkpoint_fingerprint": proposed_checkpoint_fingerprint,
+        "next_cursor_fingerprint": next_cursor_fingerprint,
+        "changes": [
+            {
+                "remote_id": remote_id,
+                "change_kind": change_kind.value,
+                "revision": knowledge_item_revision_fingerprint_payload(revision),
+            }
+            for remote_id, change_kind, revision in ordered_changes
+        ],
+    }
+    return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+
+
+def reconciliation_prepared_batch_payload_fingerprint(
+    *,
+    tenant_id: str,
+    binding_id: str,
+    binding_configuration_version: int,
+    mode: KnowledgeSyncMode,
+    run_id: str,
+    source: KnowledgeSourceRef,
+    has_more: bool,
+    envelopes: tuple["KnowledgeSyncEnvelope", ...],
+    prepared_state_mutations_fingerprint: str,
+    provider_page_fingerprint: str,
+    input_cursor_fingerprint: str,
+    proposed_checkpoint_fingerprint: str,
+    next_cursor_fingerprint: str,
+) -> str:
+    ordered_envelopes = tuple(
+        sorted(envelopes, key=lambda envelope: envelope.remote_id)
+    )
+    payload = {
+        "tenant_id": tenant_id,
+        "binding_id": binding_id,
+        "binding_configuration_version": binding_configuration_version,
+        "mode": mode.value,
+        "run_id": run_id,
+        "source": {
+            "provider_id": source.provider_id,
+            "integration_kind": source.integration_kind.value,
+            "source_kind": source.source_kind,
+            "connection_ref": source.connection_ref,
+            "scope": source.scope.model_dump(mode="json"),
+        },
+        "has_more": has_more,
+        "envelopes": [
+            reconciliation_envelope_fingerprint_payload(envelope)
+            for envelope in ordered_envelopes
+        ],
+        "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+        "provider_page_fingerprint": provider_page_fingerprint,
+        "input_cursor_fingerprint": input_cursor_fingerprint,
+        "proposed_checkpoint_fingerprint": proposed_checkpoint_fingerprint,
+        "next_cursor_fingerprint": next_cursor_fingerprint,
+    }
+    return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+
+
+def reconciliation_delivery_id(
+    *,
+    tenant_id: str,
+    binding_id: str,
+    binding_configuration_version: int,
+    mode: KnowledgeSyncMode,
+    run_id: str,
+    provider_page_fingerprint: str,
+    prepared_batch_payload_fingerprint: str,
+    prepared_state_mutations_fingerprint: str,
+    input_cursor_fingerprint: str,
+    proposed_checkpoint_fingerprint: str,
+    next_cursor_fingerprint: str,
+) -> str:
+    payload = {
+        "tenant_id": tenant_id,
+        "binding_id": binding_id,
+        "binding_configuration_version": binding_configuration_version,
+        "mode": mode.value,
+        "run_id": run_id,
+        "provider_page_fingerprint": provider_page_fingerprint,
+        "prepared_batch_payload_fingerprint": prepared_batch_payload_fingerprint,
+        "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+        "input_cursor_fingerprint": input_cursor_fingerprint,
+        "proposed_checkpoint_fingerprint": proposed_checkpoint_fingerprint,
+        "next_cursor_fingerprint": next_cursor_fingerprint,
+    }
+    return hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+
+
 class KnowledgeSyncMode(StrEnum):
     INCREMENTAL = "incremental"
     RECONCILIATION = "reconciliation"
@@ -223,6 +418,7 @@ class KnowledgeSyncEnvelope(BaseModel):
     descriptor: KnowledgeItemDescriptor | None = None
     content: KnowledgeContent | None = None
     permissions: KnowledgePermissions | None = None
+    reconciliation_semantic: KnowledgeReconciliationMutationSemantic | None = None
 
     @field_validator("remote_id")
     @classmethod
@@ -245,7 +441,15 @@ class KnowledgeSyncEnvelope(BaseModel):
                 raise ValueError("tombstone envelopes must not include content")
             if self.permissions is not None:
                 raise ValueError("tombstone envelopes must not include permissions")
+            if self.reconciliation_semantic is not None and self.descriptor is not None:
+                raise ValueError(
+                    "synthetic reconciliation tombstone must not include descriptor"
+                )
             return self
+        if self.reconciliation_semantic is not None:
+            raise ValueError(
+                "reconciliation semantic marker is allowed only for tombstone envelopes"
+            )
         if self.content is not None and self.descriptor is not None:
             if self.content.mode is not self.descriptor.content_mode:
                 raise ValueError("content.mode must match descriptor.content_mode")
@@ -869,6 +1073,7 @@ class KnowledgeReconciliationRunPagePrepared(_ReconciliationRunIdentity):
     prepared_proposed_checkpoint_fingerprint: str
     prepared_next_cursor: KnowledgeCursor | None = Field(default=None, repr=False)
     prepared_next_cursor_fingerprint: str
+    prepared_page_size: int = Field(ge=1, le=1000)
     has_more: bool
     delivery_id: str
     remaining_candidate_remote_ids: tuple[str, ...]
@@ -1081,6 +1286,7 @@ class KnowledgeReconciliationRecoveryEvidencePagePrepared(BaseModel):
     prepared_proposed_checkpoint_fingerprint: str
     prepared_next_cursor: KnowledgeCursor | None = Field(default=None, repr=False)
     prepared_next_cursor_fingerprint: str
+    prepared_page_size: int = Field(ge=1, le=1000)
     has_more: bool
     delivery_id: str
     remaining_candidate_remote_ids: tuple[str, ...]
@@ -1299,6 +1505,7 @@ def recovery_evidence_from_run(
             prepared_proposed_checkpoint_fingerprint=run.prepared_proposed_checkpoint_fingerprint,
             prepared_next_cursor=run.prepared_next_cursor,
             prepared_next_cursor_fingerprint=run.prepared_next_cursor_fingerprint,
+            prepared_page_size=run.prepared_page_size,
             has_more=run.has_more,
             delivery_id=run.delivery_id,
             remaining_candidate_remote_ids=run.remaining_candidate_remote_ids,

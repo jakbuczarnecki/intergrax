@@ -23,9 +23,16 @@ from intergrax.queueing.providers.document_store import (
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBindingService
 from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
-from intergrax.runtime.vendor_knowledge.sync_contracts import KnowledgeSyncSink
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeSyncSink,
+    KnowledgeSyncSinkReceiptInspector,
+)
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
+    DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
+    DocumentStoreKnowledgeReconciliationRunRepository,
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
     DocumentStoreKnowledgeSyncCheckpointRepository,
@@ -135,6 +142,10 @@ class VendorKnowledgeSyncRuntime:
     lease_repository: DocumentStoreKnowledgeSourceLeaseRepository
     checkpoint_repository: DocumentStoreKnowledgeSyncCheckpointRepository
     item_state_repository: DocumentStoreKnowledgeRemoteItemStateRepository
+    reconciliation_run_repository: DocumentStoreKnowledgeReconciliationRunRepository
+    candidate_inventory_repository: (
+        DocumentStoreKnowledgeReconciliationCandidateInventoryRepository
+    )
     _main_loop: asyncio.AbstractEventLoop | None = field(default=None, repr=False)
     _started: bool = field(default=False, repr=False)
 
@@ -173,8 +184,21 @@ def build_vendor_knowledge_sync_runtime(
         )
 
     lease_repository = DocumentStoreKnowledgeSourceLeaseRepository(document_store)
-    checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
-    item_state_repository = DocumentStoreKnowledgeRemoteItemStateRepository(document_store)
+    checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(
+        document_store
+    )
+    item_state_repository = DocumentStoreKnowledgeRemoteItemStateRepository(
+        document_store
+    )
+    reconciliation_run_repository = DocumentStoreKnowledgeReconciliationRunRepository(
+        document_store
+    )
+    candidate_inventory_repository = (
+        DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(document_store)
+    )
+    sink_receipt_inspector = (
+        sink if isinstance(sink, KnowledgeSyncSinkReceiptInspector) else None
+    )
 
     coordinator = VendorKnowledgeSyncCoordinator(
         tenant_id=tenant_id,
@@ -186,6 +210,9 @@ def build_vendor_knowledge_sync_runtime(
         item_state_repository=item_state_repository,
         sink=sink,
         lease_ttl_seconds=lease_ttl_seconds,
+        reconciliation_run_repository=reconciliation_run_repository,
+        candidate_inventory_repository=candidate_inventory_repository,
+        sink_receipt_inspector=sink_receipt_inspector,
     )
 
     task_queue = _TenantVendorKnowledgeTaskQueue(
@@ -247,6 +274,8 @@ def build_vendor_knowledge_sync_runtime(
         lease_repository=lease_repository,
         checkpoint_repository=checkpoint_repository,
         item_state_repository=item_state_repository,
+        reconciliation_run_repository=reconciliation_run_repository,
+        candidate_inventory_repository=candidate_inventory_repository,
     )
     runtime_holder["runtime"] = runtime
     return runtime

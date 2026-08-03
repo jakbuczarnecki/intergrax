@@ -33,13 +33,18 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeVisibility,
 )
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
+    KnowledgeReconciliationRunConflict,
     KnowledgeSyncCheckpointConflict,
     KnowledgeSyncCorruptState,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRun,
+    KnowledgeReconciliationRunCollecting,
+    KnowledgeReconciliationRunPhase,
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStateReceipt,
     KnowledgeRemoteItemStateReceiptStatus,
+    KnowledgeRemoteItemStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncBatch,
     KnowledgeSyncCheckpoint,
@@ -527,3 +532,97 @@ def shared_order(
     checkpoint_repo: InMemoryCheckpointRepository,
 ) -> list[str]:
     return [*sink.order, *state_repo.order, *checkpoint_repo.order]
+
+
+@dataclass
+class InMemoryCandidateInventoryRepository:
+    state_repository: InMemoryRemoteItemStateRepository
+    force_incomplete: bool = False
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if self.force_incomplete:
+            from intergrax.runtime.vendor_knowledge.sync_contracts import (
+                KnowledgeCandidateInventoryIncomplete,
+            )
+
+            raise KnowledgeCandidateInventoryIncomplete("forced incomplete inventory")
+        active: list[str] = []
+        for state in self.state_repository.states.values():
+            if (
+                state.tenant_id == tenant_id
+                and state.binding_id == binding_id
+                and state.binding_configuration_version == binding_configuration_version
+                and state.status is KnowledgeRemoteItemStatus.ACTIVE
+            ):
+                active.append(state.remote_id)
+        ordered = tuple(sorted(set(active)))
+        if len(ordered) > limit:
+            return ordered[:limit]
+        return ordered
+
+
+@dataclass
+class InMemoryReconciliationRunRepository:
+    runs: dict[tuple[str, str], KnowledgeReconciliationRun] = field(
+        default_factory=dict
+    )
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeReconciliationRun | None:
+        return self.runs.get((tenant_id, binding_id))
+
+    def create_initial_run(self, run: KnowledgeReconciliationRun) -> None:
+        key = (run.tenant_id, run.binding_id)
+        if key in self.runs:
+            raise KnowledgeReconciliationRunConflict("create conflict")
+        if run.phase is not KnowledgeReconciliationRunPhase.COLLECTING:
+            raise KnowledgeSyncCorruptState("initial run must be collecting")
+        self.runs[key] = run
+
+    def cas_replace(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None:
+        if expected.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+            raise KnowledgeSyncCorruptState(
+                "recovery_required run cannot exit through generic cas_replace"
+            )
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("cas conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+    def cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRunCollecting,
+    ) -> None:
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("supersede conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement
+
+    def cas_recovery(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None:
+        current = self.runs.get((expected.tenant_id, expected.binding_id))
+        if current != expected:
+            raise KnowledgeReconciliationRunConflict("cas conflict")
+        self.runs[(expected.tenant_id, expected.binding_id)] = replacement

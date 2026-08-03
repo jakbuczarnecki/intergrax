@@ -13,7 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_jobs import (
     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
     VendorKnowledgeSyncJob,
@@ -196,6 +198,8 @@ def _run_coordinator(
             binding_id=job.binding_id,
             page_size=job.page_size,
             restart=job.restart,
+            operation_id=job.operation_id,
+            trigger_delivery_id=job.trigger_delivery_id,
         )
     main_loop = main_loop_provider() if main_loop_provider is not None else None
     if main_loop is not None and main_loop.is_running():
