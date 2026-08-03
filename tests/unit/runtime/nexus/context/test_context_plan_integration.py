@@ -24,6 +24,8 @@ from intergrax.context.contracts import (
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
+    SESSION_HISTORY_CONTEXT_SCOPE_HANDLE,
+    SESSION_HISTORY_REVISION_HANDLE,
     SESSION_HISTORY_SNAPSHOT_HANDLE,
     build_session_history_snapshot,
 )
@@ -257,7 +259,7 @@ async def test_engine_attaches_context_plan() -> None:
     config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     snapshot = build_session_history_snapshot(
-        tenant_id="tenant",
+        tenant_id="tenant1",
         context_scope_id="scope",
         revision_id="rev",
         messages=[ChatMessage(role="user", content="hello", entry_id="m1")],
@@ -279,6 +281,8 @@ async def test_engine_attaches_context_plan() -> None:
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="short prompt", entry_id="current")],
             SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
         },
     )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
@@ -324,7 +328,7 @@ async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages
     config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     snapshot = build_session_history_snapshot(
-        tenant_id="tenant",
+        tenant_id="tenant1",
         context_scope_id="scope",
         revision_id="rev",
         messages=[ChatMessage(role="user", content="history", entry_id="m1")],
@@ -350,6 +354,8 @@ async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages
             "runtime_config": config,
             "messages": base_messages,
             SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
         },
     )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
@@ -493,7 +499,7 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
     engine = DefaultNexusContextEngine(registry=registry)
     history = [ChatMessage(role="user", content="history " * 80, entry_id="m1")]
     snapshot = build_session_history_snapshot(
-        tenant_id="tenant",
+        tenant_id="tenant1",
         context_scope_id="scope",
         revision_id="rev",
         messages=history,
@@ -518,6 +524,8 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],
             SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: snapshot.context_scope_id,
+            SESSION_HISTORY_REVISION_HANDLE: snapshot.revision_id,
             "context_optimization_policy": _optimization_policy(),
             NEXUS_UCL_RUNTIME_HANDLE: runtime,
         },

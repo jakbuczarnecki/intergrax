@@ -33,7 +33,10 @@ from intergrax.context.contracts import (
     ContextFragmentSource,
     content_hash_for_text,
 )
-from intergrax.context.session_history import SessionHistorySnapshotRequiredError
+from intergrax.context.session_history import (
+    SessionHistorySnapshotRequiredError,
+    require_session_history_messages,
+)
 from intergrax.llm.messages import ChatMessage
 
 PRIOR_OUTPUT_RECORDS_HANDLE = "prior_output_records"
@@ -190,9 +193,12 @@ def fragments_from_session_history(
 
     if not include_session_history:
         return []
-    if not messages:
+    if messages is None or messages == []:
         return []
 
+    validated = require_session_history_messages(messages)
+    if not validated:
+        return []
     raise SessionHistorySnapshotRequiredError()
 
 

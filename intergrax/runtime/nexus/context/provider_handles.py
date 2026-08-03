@@ -10,6 +10,8 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.task.task import Task
 
+from intergrax.context.session_history import SessionHistorySnapshotRequiredError
+
 SESSION_HISTORY_SNAPSHOT_METADATA_KEY = "session_history_snapshot"
 SESSION_CONTEXT_REVISION_METADATA_KEY = "session_context_revision_id"
 
@@ -34,10 +36,27 @@ def workspace_files_from_task(task: Task) -> dict[str, str]:
 
 def session_history_messages_from_task(task: Task) -> list[Any]:
     """Read session history turns from task metadata when present."""
-    raw = task.metadata.get(SESSION_HISTORY_MESSAGES_METADATA_KEY)
-    if not isinstance(raw, list) or not raw:
-        return []
-    return list(raw)
+    from intergrax.context.session_history import require_session_history_messages
+
+    return require_session_history_messages(
+        task.metadata.get(SESSION_HISTORY_MESSAGES_METADATA_KEY),
+        field_name="session_history_messages",
+    )
+
+
+def _require_non_empty_task_string(value: object) -> str:
+    if type(value) is not str or not value or value != value.strip():
+        raise SessionHistorySnapshotRequiredError()
+    return value
+
+
+def _session_history_binding_inputs(task: Task) -> tuple[str, str, str]:
+    tenant_id = _require_non_empty_task_string(task.tenant_id)
+    session_id = _require_non_empty_task_string(task.session_id)
+    revision_id = _require_non_empty_task_string(
+        task.metadata.get(SESSION_CONTEXT_REVISION_METADATA_KEY)
+    )
+    return tenant_id, session_id, revision_id
 
 
 def try_build_session_history_snapshot(
@@ -131,9 +150,13 @@ def build_graph_provider_handles(
         WEBSEARCH_BLOCKS_HANDLE,
     )
     from intergrax.context.session_history import (
+        SESSION_HISTORY_CONTEXT_SCOPE_HANDLE,
+        SESSION_HISTORY_REVISION_HANDLE,
         SESSION_HISTORY_SNAPSHOT_HANDLE,
         SessionHistorySnapshot,
-        SessionHistorySnapshotRequiredError,
+        build_session_history_snapshot,
+        require_session_history_messages,
+        validate_session_history_snapshot_binding,
     )
 
     handles: dict[str, Any] = {
@@ -157,19 +180,43 @@ def build_graph_provider_handles(
         handles[PRIOR_OUTPUT_RECORDS_HANDLE] = list(prior_output_records)
     direct_snapshot = task.metadata.get(SESSION_HISTORY_SNAPSHOT_METADATA_KEY)
     if direct_snapshot is not None:
-        if not isinstance(direct_snapshot, SessionHistorySnapshot):
+        if type(direct_snapshot) is not SessionHistorySnapshot:
             raise ValueError("session_history_snapshot must be SessionHistorySnapshot")
+        tenant_id, session_id, revision_id = _session_history_binding_inputs(task)
+        validate_session_history_snapshot_binding(
+            direct_snapshot,
+            expected_tenant_id=tenant_id,
+            expected_context_scope_id=session_id,
+            expected_revision_id=revision_id,
+        )
         handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = direct_snapshot
+        handles[SESSION_HISTORY_CONTEXT_SCOPE_HANDLE] = session_id
+        handles[SESSION_HISTORY_REVISION_HANDLE] = revision_id
     else:
-        history_messages = session_history_messages
-        if history_messages is None:
-            history_messages = session_history_messages_from_task(task)
+        if session_history_messages is None:
+            history_messages = require_session_history_messages(
+                task.metadata.get(SESSION_HISTORY_MESSAGES_METADATA_KEY),
+                field_name="session_history_messages",
+            )
+        else:
+            history_messages = require_session_history_messages(session_history_messages)
         if history_messages:
-            snapshot = try_build_session_history_snapshot(task, list(history_messages))
-            if snapshot is not None:
-                handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
-            else:
-                raise SessionHistorySnapshotRequiredError()
+            tenant_id, session_id, revision_id = _session_history_binding_inputs(task)
+            snapshot = build_session_history_snapshot(
+                tenant_id=tenant_id,
+                context_scope_id=session_id,
+                revision_id=revision_id,
+                messages=history_messages,
+            )
+            validate_session_history_snapshot_binding(
+                snapshot,
+                expected_tenant_id=tenant_id,
+                expected_context_scope_id=session_id,
+                expected_revision_id=revision_id,
+            )
+            handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = snapshot
+            handles[SESSION_HISTORY_CONTEXT_SCOPE_HANDLE] = session_id
+            handles[SESSION_HISTORY_REVISION_HANDLE] = revision_id
     rag_chunks = _list_from_task_metadata(task, RAG_CHUNKS_METADATA_KEY)
     if rag_chunks:
         handles[RAG_CHUNKS_HANDLE] = rag_chunks

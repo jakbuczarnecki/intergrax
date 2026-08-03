@@ -39,6 +39,7 @@ from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
     SessionHistorySnapshotRequiredError,
     fragments_from_session_history_snapshot,
+    require_session_history_messages,
 )
 from intergrax.context.registry import ContextPluginRegistry
 
@@ -96,9 +97,8 @@ async def _collect_session_history(
         return fragments_from_session_history_snapshot(snapshot)
 
     raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
-    if raw is None:
-        return []
-    if not isinstance(raw, list) or not raw:
+    messages = require_session_history_messages(raw)
+    if not messages:
         return []
     raise SessionHistorySnapshotRequiredError()
 

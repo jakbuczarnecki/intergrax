@@ -80,7 +80,11 @@ class DefaultContextRanker:
         signals = [
             ContextChunkSignal(
                 chunk_id=fragment.fragment_id,
-                content_hash=fragment.content_hash,
+                content_hash=(
+                    f"{fragment.source_id}:{fragment.content_hash}"
+                    if fragment.source is ContextFragmentSource.SESSION_HISTORY
+                    else fragment.content_hash
+                ),
                 relevance_score=fragment.relevance_score,
                 freshness_score=fragment.freshness_score,
                 confidence_score=fragment.confidence_score,

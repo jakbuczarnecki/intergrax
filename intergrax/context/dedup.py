@@ -4,7 +4,15 @@
 
 from __future__ import annotations
 
-from intergrax.context.contracts import ContextFragment
+from intergrax.context.contracts import ContextFragment, ContextFragmentSource
+
+
+def _dedup_identity_key(fragment: ContextFragment) -> str:
+    if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+        return (
+            f"session_history:{fragment.source_id}:{fragment.content_hash or ''}"
+        )
+    return fragment.content_hash or fragment.fragment_id
 
 
 def dedup_fragments_by_hash(
@@ -15,7 +23,7 @@ def dedup_fragments_by_hash(
     kept: list[ContextFragment] = []
     dropped: list[tuple[ContextFragment, str]] = []
     for fragment in fragments:
-        key = fragment.content_hash or fragment.fragment_id
+        key = _dedup_identity_key(fragment)
         if key in seen:
             dropped.append((fragment, "duplicate_content_hash"))
             continue

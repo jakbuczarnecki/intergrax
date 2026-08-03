@@ -4,8 +4,26 @@
 
 from __future__ import annotations
 
-from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment
+from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment, ContextFragmentSource
+from intergrax.context.session_history import session_history_chat_message_from_fragment
 from intergrax.llm.messages import ChatMessage
+
+
+def _is_canonical_session_history_fragment(fragment: ContextFragment) -> bool:
+    if fragment.source is not ContextFragmentSource.SESSION_HISTORY:
+        return False
+    metadata = fragment.metadata
+    message_id = metadata.get("message_id")
+    if not isinstance(message_id, str) or not message_id.strip():
+        return False
+    if fragment.source_id != message_id:
+        return False
+    if metadata.get("role") not in {"system", "user", "assistant", "tool"}:
+        return False
+    if not isinstance(metadata.get("sequence"), int):
+        return False
+    content_hash = metadata.get("content_hash")
+    return isinstance(content_hash, str) and fragment.content_hash == content_hash
 
 
 def _last_user_index(messages: list[ChatMessage]) -> int:
@@ -24,13 +42,19 @@ class DefaultContextFormatter:
         request: ContextAssemblyRequest,
     ) -> list[ChatMessage]:
         _ = request
-        return [
-            ChatMessage(
-                role="system",
-                content=f"[context:{fragment.source.value}:{fragment.source_id}] {fragment.content}",
+        formatted: list[ChatMessage] = []
+        for fragment in fragments:
+            if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+                if _is_canonical_session_history_fragment(fragment):
+                    formatted.append(session_history_chat_message_from_fragment(fragment))
+                    continue
+            formatted.append(
+                ChatMessage(
+                    role="system",
+                    content=f"[context:{fragment.source.value}:{fragment.source_id}] {fragment.content}",
+                )
             )
-            for fragment in fragments
-        ]
+        return formatted
 
 
 def merge_fragment_messages(

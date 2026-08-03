@@ -50,19 +50,16 @@ def graph_messages_from_text(message: str) -> list[ChatMessage]:
 
 
 def text_from_assembled_messages(messages: tuple[ChatMessage, ...]) -> str:
-    """Extract agent-facing text — context injection blocks plus final user turn."""
+    """Extract agent-facing text — context injection blocks plus session turns."""
     if not messages:
         return ""
-    context_blocks: list[str] = []
-    user_tail = ""
+    blocks: list[str] = []
     for message in messages:
         content = message.content or ""
+        if not content:
+            continue
         if message.role == "system" and content.startswith("[context:"):
-            context_blocks.append(content)
-        elif message.role == "user":
-            user_tail = content
-    if not context_blocks:
-        return messages[-1].content or ""
-    if user_tail:
-        return "\n\n".join([*context_blocks, user_tail])
-    return "\n\n".join(context_blocks)
+            blocks.append(content)
+        else:
+            blocks.append(content)
+    return "\n\n".join(blocks)

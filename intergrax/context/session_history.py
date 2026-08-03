@@ -22,9 +22,15 @@ from intergrax.context.contracts import (
 from intergrax.llm.messages import ChatMessage, MessageRole
 
 SESSION_HISTORY_SNAPSHOT_HANDLE = "session_history_snapshot"
+SESSION_HISTORY_CONTEXT_SCOPE_HANDLE = "session_history_context_scope_id"
+SESSION_HISTORY_REVISION_HANDLE = "session_history_revision_id"
 
 SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON = (
     "session_history_snapshot_required_for_ucl"
+)
+
+SESSION_HISTORY_SNAPSHOT_BINDING_REASON = (
+    "session_history_snapshot_binding_mismatch"
 )
 
 
@@ -33,6 +39,59 @@ class SessionHistorySnapshotRequiredError(RuntimeError):
 
     def __init__(self) -> None:
         super().__init__(self.reason)
+
+
+class SessionHistorySnapshotBindingError(RuntimeError):
+    reason = SESSION_HISTORY_SNAPSHOT_BINDING_REASON
+
+    def __init__(self) -> None:
+        super().__init__(self.reason)
+
+
+def _require_binding_non_empty_str(value: object) -> str:
+    if type(value) is not str or not value or value != value.strip():
+        raise SessionHistorySnapshotBindingError()
+    return value
+
+
+def validate_session_history_snapshot_binding(
+    snapshot: SessionHistorySnapshot,
+    *,
+    expected_tenant_id: str,
+    expected_context_scope_id: str,
+    expected_revision_id: str,
+) -> SessionHistorySnapshot:
+    if type(snapshot) is not SessionHistorySnapshot:
+        raise SessionHistorySnapshotBindingError()
+    tenant_id = _require_binding_non_empty_str(expected_tenant_id)
+    context_scope_id = _require_binding_non_empty_str(expected_context_scope_id)
+    revision_id = _require_binding_non_empty_str(expected_revision_id)
+    if snapshot.tenant_id != tenant_id:
+        raise SessionHistorySnapshotBindingError()
+    if snapshot.context_scope_id != context_scope_id:
+        raise SessionHistorySnapshotBindingError()
+    if snapshot.revision_id != revision_id:
+        raise SessionHistorySnapshotBindingError()
+    return snapshot
+
+
+def require_session_history_messages(
+    raw: object,
+    *,
+    field_name: str = "session_history_messages",
+) -> list[ChatMessage]:
+    if raw is None:
+        return []
+    if raw == []:
+        return []
+    if type(raw) is not list:
+        raise ValueError(f"{field_name} must be a list of ChatMessage")
+    messages: list[ChatMessage] = []
+    for item in raw:
+        if type(item) is not ChatMessage:
+            raise ValueError(f"{field_name} must contain only ChatMessage instances")
+        messages.append(item)
+    return messages
 
 
 def _require_non_empty_str(
@@ -315,18 +374,18 @@ def fragments_from_session_history_snapshot(
     """Convert structured snapshot entries into CE fragments (canonical path)."""
     fragments: list[ContextFragment] = []
     for message in snapshot.messages:
+        thawed_tool_calls = [_thaw_json_value(call) for call in message.tool_calls]
         metadata: dict[str, Any] = {
             "message_id": message.message_id,
             "sequence": message.sequence,
             "role": message.role,
+            "name": message.name,
+            "tool_call_id": message.tool_call_id,
+            "tool_calls": thawed_tool_calls,
             "content_hash": message.content_hash,
             "context_scope_id": snapshot.context_scope_id,
             "revision_id": snapshot.revision_id,
         }
-        if message.tool_call_id:
-            metadata["tool_call_id"] = message.tool_call_id
-        if message.ordered_tool_call_ids:
-            metadata["tool_call_ids"] = list(message.ordered_tool_call_ids)
         fragments.append(
             ContextFragment(
                 fragment_id=f"session-{message.message_id}",
@@ -343,6 +402,53 @@ def fragments_from_session_history_snapshot(
             )
         )
     return fragments
+
+
+def session_history_chat_message_from_fragment(
+    fragment: ContextFragment,
+) -> ChatMessage:
+    if fragment.source is not ContextFragmentSource.SESSION_HISTORY:
+        raise ValueError("fragment must be session history")
+    metadata = fragment.metadata
+    message_id = metadata.get("message_id")
+    if not isinstance(message_id, str) or not message_id.strip():
+        raise ValueError("session history fragment metadata missing message_id")
+    if fragment.source_id != message_id:
+        raise ValueError("session history fragment source_id must match message_id")
+    content_hash = metadata.get("content_hash")
+    if not isinstance(content_hash, str) or fragment.content_hash != content_hash:
+        raise ValueError("session history fragment content_hash mismatch")
+    sequence = metadata.get("sequence")
+    role = metadata.get("role")
+    if role not in {"system", "user", "assistant", "tool"}:
+        raise ValueError("session history fragment metadata missing role")
+    name = metadata.get("name")
+    if name is not None and (type(name) is not str or not name.strip()):
+        raise ValueError("session history fragment metadata name is invalid")
+    tool_call_id = metadata.get("tool_call_id")
+    if tool_call_id is not None and (type(tool_call_id) is not str or not tool_call_id.strip()):
+        raise ValueError("session history fragment metadata tool_call_id is invalid")
+    raw_tool_calls = metadata.get("tool_calls", [])
+    if raw_tool_calls is None:
+        raw_tool_calls = []
+    if type(raw_tool_calls) is not list:
+        raise ValueError("session history fragment metadata tool_calls must be a list")
+    tool_calls: list[dict[str, Any]] = []
+    for item in raw_tool_calls:
+        if not isinstance(item, dict):
+            raise ValueError("session history fragment metadata tool_calls must be dict rows")
+        tool_calls.append(dict(item))
+    history_message = SessionHistoryMessage(
+        message_id=message_id,
+        sequence=_require_int(sequence, "sequence"),
+        role=role,
+        content=fragment.content,
+        name=name,
+        tool_call_id=tool_call_id,
+        tool_calls=tuple(tool_calls),
+        content_hash=content_hash,
+    )
+    return session_history_message_to_chat_message(history_message)
 
 
 class HandleSessionHistoryProvider:
@@ -366,7 +472,18 @@ class HandleSessionHistoryProvider:
             raise ValueError(
                 f"handle {SESSION_HISTORY_SNAPSHOT_HANDLE!r} must be SessionHistorySnapshot"
             )
-        return raw
+        expected_scope = ctx.handles.get(SESSION_HISTORY_CONTEXT_SCOPE_HANDLE)
+        expected_revision = ctx.handles.get(SESSION_HISTORY_REVISION_HANDLE)
+        if type(expected_scope) is not str or not expected_scope.strip():
+            raise SessionHistorySnapshotBindingError()
+        if type(expected_revision) is not str or not expected_revision.strip():
+            raise SessionHistorySnapshotBindingError()
+        return validate_session_history_snapshot_binding(
+            raw,
+            expected_tenant_id=request.tenant_id,
+            expected_context_scope_id=expected_scope,
+            expected_revision_id=expected_revision,
+        )
 
     async def collect(
         self,
