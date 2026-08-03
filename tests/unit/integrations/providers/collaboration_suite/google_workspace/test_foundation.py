@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.bundl
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
+    GoogleWorkspaceBinaryPayload,
     GoogleWorkspaceClientFamily,
     GoogleWorkspaceSourceKind,
     copy_google_workspace_credential_material,
@@ -1110,3 +1112,178 @@ def test_existing_public_exports_remain_present_with_drive_symbols() -> None:
     assert "GoogleWorkspaceCollaborationSuiteIntegration" in public_names
     assert "GoogleWorkspacePageToken" in public_names
     assert "GoogleDriveKnowledgeReader" in public_names
+    assert "GoogleDriveContentReader" in public_names
+    assert "GoogleWorkspaceBinaryTransport" in public_names
+
+
+# --- Drive content foundation delegation ---
+
+
+class _DualDriveTransport:
+    def __init__(self) -> None:
+        self.json_calls: list[dict[str, object]] = []
+        self.binary_calls: list[dict[str, object]] = []
+
+    def get_json(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None = None,
+        headers: Mapping[str, str] | None = None,
+    ) -> dict[str, object]:
+        self.json_calls.append(
+            {"relative_path": relative_path, "params": dict(params or {})}
+        )
+        if relative_path == "/drives":
+            return {"drives": []}
+        if relative_path.startswith("/files/") and not relative_path.endswith("/export"):
+            return {
+                "id": "file-blob-1",
+                "name": "report.pdf",
+                "mimeType": "application/pdf",
+                "parents": ["parent-1"],
+                "createdTime": "2024-01-01T12:00:00Z",
+                "modifiedTime": "2024-01-02T12:00:00Z",
+                "size": "4",
+                "md5Checksum": hashlib.md5(b"test", usedforsecurity=False).hexdigest(),
+                "version": "5",
+                "headRevisionId": "head-rev-1",
+                "trashed": False,
+                "capabilities": {"canDownload": True},
+            }
+        return {}
+
+    def get_bytes(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None,
+        expected_content_type: str,
+        max_bytes: int,
+        range_limited: bool,
+    ) -> GoogleWorkspaceBinaryPayload:
+        self.binary_calls.append({"relative_path": relative_path})
+        return GoogleWorkspaceBinaryPayload(data=b"test", content_type=expected_content_type)
+
+
+@dataclass(frozen=True, slots=True)
+class _DualDriveClientFamily:
+    _transport: _DualDriveTransport
+
+    @property
+    def transport(self) -> _DualDriveTransport:
+        return self._transport
+
+
+def test_disabled_integration_blocks_drive_content() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveItem,
+        GoogleDriveItemKind,
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=False,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=_SpyCredentialResolver(),
+        client_factory=_SpyClientFactory(),
+    )
+    item = GoogleDriveItem(
+        remote_id="file-blob-1",
+        scope=GoogleDriveScope(kind=GoogleDriveScopeKind.USER),
+        kind=GoogleDriveItemKind.BLOB,
+        name="report.pdf",
+        mime_type="application/pdf",
+        parent_ids=("parent-1",),
+        created_at=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, 12, 0, tzinfo=timezone.utc),
+        size_bytes=4,
+        md5_checksum="abcd",
+        version=5,
+        head_revision_id="head-rev-1",
+        can_download=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match="disabled"):
+        integration.read_drive_file_content(item=item)
+
+
+def test_first_content_request_materializes_family_once() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveKnowledgeReader,
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+
+    transport = _DualDriveTransport()
+    family = _DualDriveClientFamily(_transport=transport)
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.compose(
+        config=GoogleWorkspaceCollaborationSuiteIntegrationConfig(
+            enabled=True,
+            credential_ref="refs/google-workspace",
+        ),
+        credential_resolver=_SpyCredentialResolver(),
+        client_factory=_SpyClientFactory(),
+    )
+    integration._client_family = family  # type: ignore[assignment]
+    scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    item = GoogleDriveKnowledgeReader(transport=transport).read_item(
+        scope=scope,
+        file_id="file-blob-1",
+    )
+    integration.read_drive_file_content(item=item)
+    integration.read_drive_file_content(item=item)
+    assert len(transport.binary_calls) == 2
+    assert len([c for c in transport.json_calls if c["relative_path"].startswith("/files/")]) == 5
+
+
+def test_json_only_injected_family_still_serves_metadata_but_not_content() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
+        GoogleDriveItem,
+        GoogleDriveItemKind,
+        GoogleDriveScope,
+        GoogleDriveScopeKind,
+    )
+
+    transport = _DriveRecordingTransport()
+    family = _DriveFakeClientFamily(_transport=transport)
+    integration = GoogleWorkspaceCollaborationSuiteIntegration.from_client(
+        family,  # type: ignore[arg-type]
+        enabled=True,
+    )
+    scope = GoogleDriveScope(kind=GoogleDriveScopeKind.USER)
+    integration.list_drive_shared_drives_page()
+    item = GoogleDriveItem(
+        remote_id="file-blob-1",
+        scope=scope,
+        kind=GoogleDriveItemKind.BLOB,
+        name="report.pdf",
+        mime_type="application/pdf",
+        parent_ids=("parent-1",),
+        created_at=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+        modified_at=datetime(2024, 1, 2, 12, 0, tzinfo=timezone.utc),
+        size_bytes=4,
+        md5_checksum="abcd",
+        version=5,
+        head_revision_id="head-rev-1",
+        can_download=True,
+    )
+    with pytest.raises(IntegrationConfigurationError, match="binary content"):
+        integration.read_drive_file_content(item=item)
+
+
+def test_lazy_drive_content_exports_resolve() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive_content import (
+        GoogleDriveContentReader,
+    )
+
+    assert google_workspace.GoogleDriveContentReader is GoogleDriveContentReader
+    assert google_workspace.GoogleWorkspaceBinaryPayload is not None

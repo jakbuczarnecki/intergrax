@@ -8,22 +8,35 @@ from __future__ import annotations
 import json
 import math
 import random
-from collections.abc import Mapping
+import re
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from enum import StrEnum
 from time import sleep
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
+    GoogleWorkspaceBinaryPayload,
     GoogleWorkspaceHttpResponse,
     GoogleWorkspaceRequestExecutor,
     GoogleWorkspaceSourceKind,
 )
 
+_T = TypeVar("_T")
+
 _MAX_PAGE_TOKEN_LENGTH = 4096
 _MAX_SAFE_REASON_LENGTH = 128
+_MAX_EXPECTED_CONTENT_TYPE_LENGTH = 255
+_ABSOLUTE_BINARY_MAX_BYTES = 104_857_600
+
+_MEDIA_TYPE_PATTERN = re.compile(
+    r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
+)
+_CONTENT_RANGE_PATTERN = re.compile(
+    r"^bytes 0-(\d+)/(\d+)$"
+)
 
 _FORBIDDEN_QUERY_PARAM_NAMES = frozenset(
     {
@@ -76,6 +89,7 @@ class GoogleWorkspaceErrorKind(StrEnum):
     TEMPORARY = "temporary"
     MALFORMED_RESPONSE = "malformed_response"
     UNEXPECTED_REDIRECT = "unexpected_redirect"
+    PAYLOAD_TOO_LARGE = "payload_too_large"
 
 
 _ERROR_CODE_BY_KIND: dict[GoogleWorkspaceErrorKind, str] = {
@@ -87,6 +101,7 @@ _ERROR_CODE_BY_KIND: dict[GoogleWorkspaceErrorKind, str] = {
     GoogleWorkspaceErrorKind.TEMPORARY: "GOOGLE_WORKSPACE_TEMPORARY_FAILURE",
     GoogleWorkspaceErrorKind.MALFORMED_RESPONSE: "GOOGLE_WORKSPACE_MALFORMED_RESPONSE",
     GoogleWorkspaceErrorKind.UNEXPECTED_REDIRECT: "GOOGLE_WORKSPACE_UNEXPECTED_REDIRECT",
+    GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE: "GOOGLE_WORKSPACE_PAYLOAD_TOO_LARGE",
 }
 
 _RETRYABLE_KINDS = frozenset(
@@ -452,6 +467,8 @@ def _validate_response_shape(
     *,
     policy: GoogleWorkspaceRetryPolicy,
     attempts: int,
+    success_max_bytes: int,
+    binary_success: bool,
 ) -> tuple[int, dict[str, str], bytes]:
     try:
         status_code = response.status_code
@@ -500,7 +517,19 @@ def _validate_response_shape(
             safe_reason="invalid_response_content",
             attempts=attempts,
         )
-    if len(content) > policy.max_response_bytes:
+    if 200 <= status_code <= 299:
+        content_limit = success_max_bytes
+    else:
+        content_limit = policy.max_response_bytes
+    if len(content) > content_limit:
+        if 200 <= status_code <= 299 and binary_success:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="payload_too_large",
+                attempts=attempts,
+            )
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
             status_code=status_code,
@@ -509,6 +538,338 @@ def _validate_response_shape(
             attempts=attempts,
         )
     return status_code, headers, content
+
+
+def _validate_expected_content_type(value: object) -> str:
+    if type(value) is not str:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    if not value or value != value.strip():
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    if any(ord(ch) < 32 for ch in value):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    if "," in value or "*" in value or ";" in value:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    if len(value) > _MAX_EXPECTED_CONTENT_TYPE_LENGTH:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    normalized = value.lower()
+    if not _MEDIA_TYPE_PATTERN.fullmatch(normalized):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_expected_content_type",
+            attempts=0,
+        )
+    return normalized
+
+
+def _validate_binary_max_bytes(value: object) -> int:
+    if type(value) is not int:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_max_bytes",
+            attempts=0,
+        )
+    if not 1 <= value <= _ABSOLUTE_BINARY_MAX_BYTES:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_max_bytes",
+            attempts=0,
+        )
+    return value
+
+
+def _validate_range_mode(value: object) -> bool:
+    if type(value) is not bool:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_range_mode",
+            attempts=0,
+        )
+    return value
+
+
+def _build_binary_request_headers(
+    *,
+    expected_content_type: str,
+    max_bytes: int,
+    range_limited: bool,
+) -> dict[str, str]:
+    headers = {"Accept": expected_content_type}
+    if range_limited:
+        headers["Range"] = f"bytes=0-{max_bytes}"
+    return headers
+
+
+def _extract_unique_response_header(
+    headers: Mapping[str, str],
+    canonical_name: str,
+    *,
+    status_code: int,
+    attempts: int,
+    safe_reason: str,
+) -> str | None:
+    matched_key: str | None = None
+    matched_value: str | None = None
+    folded_target = canonical_name.casefold()
+    for key, value in headers.items():
+        if key.casefold() != folded_target:
+            continue
+        if matched_key is not None and matched_key != key:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason=safe_reason,
+                attempts=attempts,
+            )
+        matched_key = key
+        matched_value = value
+    return matched_value
+
+
+def _parse_response_media_type(
+    raw_value: str,
+    *,
+    expected_content_type: str,
+    status_code: int,
+    attempts: int,
+) -> str:
+    base = raw_value.split(";", 1)[0].strip().lower()
+    if not base or not _MEDIA_TYPE_PATTERN.fullmatch(base):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        )
+    if base != expected_content_type:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        )
+    return base
+
+
+def _validate_optional_content_length(
+    headers: Mapping[str, str],
+    *,
+    content: bytes,
+    status_code: int,
+    attempts: int,
+) -> None:
+    raw_value = _extract_unique_response_header(
+        headers,
+        "Content-Length",
+        status_code=status_code,
+        attempts=attempts,
+        safe_reason="invalid_content_length",
+    )
+    if raw_value is None:
+        return
+    if not raw_value or any(ch.isspace() for ch in raw_value):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_length",
+            attempts=attempts,
+        )
+    if raw_value[0] in {"+", "-"} or not raw_value.isdigit():
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_length",
+            attempts=attempts,
+        )
+    parsed = int(raw_value)
+    if parsed != len(content):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_length",
+            attempts=attempts,
+        )
+
+
+def _decode_success_binary(
+    *,
+    status_code: int,
+    headers: Mapping[str, str],
+    content: bytes,
+    attempts: int,
+    expected_content_type: str,
+    max_bytes: int,
+    range_limited: bool,
+) -> GoogleWorkspaceBinaryPayload:
+    raw_content_type = _extract_unique_response_header(
+        headers,
+        "Content-Type",
+        status_code=status_code,
+        attempts=attempts,
+        safe_reason="invalid_content_type",
+    )
+    if raw_content_type is None:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        )
+    content_type = _parse_response_media_type(
+        raw_content_type,
+        expected_content_type=expected_content_type,
+        status_code=status_code,
+        attempts=attempts,
+    )
+    _validate_optional_content_length(
+        headers,
+        content=content,
+        status_code=status_code,
+        attempts=attempts,
+    )
+
+    if not range_limited:
+        if status_code == 206:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="unexpected_partial_content",
+                attempts=attempts,
+            )
+        if status_code != 200:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="unexpected_binary_status",
+                attempts=attempts,
+            )
+        if len(content) > max_bytes:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="payload_too_large",
+                attempts=attempts,
+            )
+        return GoogleWorkspaceBinaryPayload(data=content, content_type=content_type)
+
+    if status_code == 200:
+        if len(content) > max_bytes:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="payload_too_large",
+                attempts=attempts,
+            )
+        return GoogleWorkspaceBinaryPayload(data=content, content_type=content_type)
+
+    if status_code == 206:
+        raw_range = _extract_unique_response_header(
+            headers,
+            "Content-Range",
+            status_code=status_code,
+            attempts=attempts,
+            safe_reason="invalid_content_range",
+        )
+        if raw_range is None:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_range",
+                attempts=attempts,
+            )
+        match = _CONTENT_RANGE_PATTERN.fullmatch(raw_range.strip())
+        if match is None:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_range",
+                attempts=attempts,
+            )
+        end = int(match.group(1))
+        total = int(match.group(2))
+        if end + 1 != len(content):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_range",
+                attempts=attempts,
+            )
+        if total < len(content):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_range",
+                attempts=attempts,
+            )
+        if total > max_bytes or len(content) > max_bytes:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="payload_too_large",
+                attempts=attempts,
+            )
+        return GoogleWorkspaceBinaryPayload(data=content, content_type=content_type)
+
+    raise GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+        status_code=status_code,
+        retry_after_seconds=None,
+        safe_reason="unexpected_binary_status",
+        attempts=attempts,
+    )
 
 
 def _extract_safe_reason(content: bytes) -> str:
@@ -717,6 +1078,87 @@ def parse_google_workspace_collection_page(
     return GoogleWorkspaceCollectionPage(items=tuple(items), next_page_token=next_token)
 
 
+def _execute_get_with_retry(
+    transport: GoogleWorkspaceHttpTransport,
+    *,
+    url: str,
+    query_params: dict[str, object] | None,
+    request_headers: dict[str, str],
+    success_max_bytes: int,
+    binary_success: bool,
+    decode_success: Callable[[int, dict[str, str], bytes, int], _T],
+) -> _T:
+    policy = transport._retry_policy
+    last_error: GoogleWorkspaceApiError | None = None
+
+    for attempt in range(1, policy.max_attempts + 1):
+        try:
+            response = transport._executor.get(
+                url=url,
+                params=query_params,
+                headers=request_headers,
+                timeout_seconds=policy.request_timeout_seconds,
+            )
+        except GoogleWorkspaceApiError:
+            raise
+        except Exception:
+            last_error = GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.TEMPORARY,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="executor_failure",
+                attempts=attempt,
+            )
+        else:
+            status_code, response_headers, content = _validate_response_shape(
+                response,
+                policy=policy,
+                attempts=attempt,
+                success_max_bytes=success_max_bytes,
+                binary_success=binary_success,
+            )
+            if 200 <= status_code <= 299:
+                return decode_success(status_code, response_headers, content, attempt)
+            last_error = _api_error_from_response(
+                status_code=status_code,
+                headers=response_headers,
+                content=content,
+                attempts=attempt,
+                policy=policy,
+            )
+
+        if last_error is None or not last_error.retryable or attempt >= policy.max_attempts:
+            if last_error is not None:
+                raise last_error
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.TEMPORARY,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="unknown_failure",
+                attempts=attempt,
+            )
+
+        delay = last_error.retry_after_seconds
+        if delay is None:
+            delay = _compute_backoff_seconds(
+                attempt_index=attempt,
+                policy=policy,
+                jitter_source=transport._jitter_source,
+                attempts=attempt,
+            )
+        transport._sleeper(delay)
+
+    if last_error is not None:
+        raise last_error
+    raise GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.TEMPORARY,
+        status_code=None,
+        retry_after_seconds=None,
+        safe_reason="unknown_failure",
+        attempts=policy.max_attempts,
+    )
+
+
 class GoogleWorkspaceHttpTransport:
     """Bounded GET transport with retry ownership and safe provider error mapping."""
 
@@ -746,73 +1188,76 @@ class GoogleWorkspaceHttpTransport:
         request_headers = _copy_headers(headers)
         url = _build_service_url(source_kind=source_kind, relative_path=validated_path)
         policy = self._retry_policy
-        last_error: GoogleWorkspaceApiError | None = None
 
-        for attempt in range(1, policy.max_attempts + 1):
-            try:
-                response = self._executor.get(
-                    url=url,
-                    params=query_params,
-                    headers=request_headers,
-                    timeout_seconds=policy.request_timeout_seconds,
-                )
-            except GoogleWorkspaceApiError:
-                raise
-            except Exception:
-                last_error = GoogleWorkspaceApiError(
-                    kind=GoogleWorkspaceErrorKind.TEMPORARY,
-                    status_code=None,
-                    retry_after_seconds=None,
-                    safe_reason="executor_failure",
-                    attempts=attempt,
-                )
-            else:
-                status_code, response_headers, content = _validate_response_shape(
-                    response,
-                    policy=policy,
-                    attempts=attempt,
-                )
-                if 200 <= status_code <= 299:
-                    return _decode_success_json(
-                        content,
-                        status_code=status_code,
-                        attempts=attempt,
-                    )
-                last_error = _api_error_from_response(
-                    status_code=status_code,
-                    headers=response_headers,
-                    content=content,
-                    attempts=attempt,
-                    policy=policy,
-                )
+        def _decode_json(
+            status_code: int,
+            _headers: dict[str, str],
+            content: bytes,
+            attempts: int,
+        ) -> dict[str, object]:
+            return _decode_success_json(
+                content,
+                status_code=status_code,
+                attempts=attempts,
+            )
 
-            if last_error is None or not last_error.retryable or attempt >= policy.max_attempts:
-                if last_error is not None:
-                    raise last_error
-                raise GoogleWorkspaceApiError(
-                    kind=GoogleWorkspaceErrorKind.TEMPORARY,
-                    status_code=None,
-                    retry_after_seconds=None,
-                    safe_reason="unknown_failure",
-                    attempts=attempt,
-                )
+        return _execute_get_with_retry(
+            self,
+            url=url,
+            query_params=query_params,
+            request_headers=request_headers,
+            success_max_bytes=policy.max_response_bytes,
+            binary_success=False,
+            decode_success=_decode_json,
+        )
 
-            delay = last_error.retry_after_seconds
-            if delay is None:
-                delay = _compute_backoff_seconds(
-                    attempt_index=attempt,
-                    policy=policy,
-                    jitter_source=self._jitter_source,
-                    attempts=attempt,
-                )
-            self._sleeper(delay)
+    def get_bytes(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None,
+        expected_content_type: str,
+        max_bytes: int,
+        range_limited: bool,
+    ) -> GoogleWorkspaceBinaryPayload:
+        validated_path = _validate_relative_path(relative_path)
+        query_params = _copy_params(params)
+        validated_content_type = _validate_expected_content_type(expected_content_type)
+        validated_max_bytes = _validate_binary_max_bytes(max_bytes)
+        validated_range_mode = _validate_range_mode(range_limited)
+        request_headers = _build_binary_request_headers(
+            expected_content_type=validated_content_type,
+            max_bytes=validated_max_bytes,
+            range_limited=validated_range_mode,
+        )
+        url = _build_service_url(source_kind=source_kind, relative_path=validated_path)
+        success_limit = (
+            validated_max_bytes + 1 if validated_range_mode else validated_max_bytes
+        )
 
-        if last_error is not None:
-            raise last_error
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.TEMPORARY,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="unknown_failure",
-            attempts=policy.max_attempts,
+        def _decode_binary(
+            status_code: int,
+            response_headers: dict[str, str],
+            content: bytes,
+            attempts: int,
+        ) -> GoogleWorkspaceBinaryPayload:
+            return _decode_success_binary(
+                status_code=status_code,
+                headers=response_headers,
+                content=content,
+                attempts=attempts,
+                expected_content_type=validated_content_type,
+                max_bytes=validated_max_bytes,
+                range_limited=validated_range_mode,
+            )
+
+        return _execute_get_with_retry(
+            self,
+            url=url,
+            query_params=query_params,
+            request_headers=request_headers,
+            success_max_bytes=success_limit,
+            binary_success=True,
+            decode_success=_decode_binary,
         )

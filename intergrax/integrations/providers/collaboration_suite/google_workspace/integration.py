@@ -20,6 +20,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.confi
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS,
+    GoogleWorkspaceBinaryTransport,
     GoogleWorkspaceClientFactory,
     GoogleWorkspaceClientFamily,
     GoogleWorkspaceCredentialResolver,
@@ -34,6 +35,11 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDriveKnowledgeReader,
     GoogleDriveScope,
     GoogleDriveSharedDrivePage,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive_content import (
+    DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES,
+    GoogleDriveContentReader,
+    GoogleDriveFileContent,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspacePageToken,
@@ -60,6 +66,9 @@ _INVALID_FACTORY_FAMILY_MESSAGE = (
 )
 _INVALID_INJECTED_FAMILY_MESSAGE = (
     "Google Workspace injected client does not expose a valid client family"
+)
+_BINARY_TRANSPORT_REQUIRED_MESSAGE = (
+    "Google Workspace transport does not support binary content"
 )
 
 GoogleWorkspaceCollaborationSuiteClient = CollaborationSuite
@@ -197,6 +206,24 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
     def _drive_reader(self) -> GoogleDriveKnowledgeReader:
         family = self.require_client_family()
         return GoogleDriveKnowledgeReader(transport=family.transport)
+
+    def _drive_content_reader(self) -> GoogleDriveContentReader:
+        family = self.require_client_family()
+        transport = family.transport
+        if not isinstance(transport, GoogleWorkspaceBinaryTransport):
+            raise IntegrationConfigurationError(_BINARY_TRANSPORT_REQUIRED_MESSAGE)
+        return GoogleDriveContentReader(transport=transport)
+
+    def read_drive_file_content(
+        self,
+        *,
+        item: GoogleDriveItem,
+        max_bytes: int = DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES,
+    ) -> GoogleDriveFileContent:
+        return self._drive_content_reader().read_drive_file_content(
+            item=item,
+            max_bytes=max_bytes,
+        )
 
     def list_drive_shared_drives_page(
         self,

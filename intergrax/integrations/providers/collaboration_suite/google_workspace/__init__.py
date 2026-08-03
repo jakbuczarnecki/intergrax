@@ -4,12 +4,22 @@
 from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
+    "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
     "DefaultGoogleWorkspaceClientFactory",
+    "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+    "GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES",
     "GOOGLE_DRIVE_SOURCE_KIND",
     "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
     "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
     "GoogleDriveChange",
     "GoogleDriveChangePage",
+    "GoogleDriveContentChanged",
+    "GoogleDriveContentMode",
+    "GoogleDriveContentReadClient",
+    "GoogleDriveContentReader",
+    "GoogleDriveContentTooLarge",
+    "GoogleDriveContentUnavailable",
+    "GoogleDriveFileContent",
     "GoogleDriveItem",
     "GoogleDriveItemKind",
     "GoogleDriveItemPage",
@@ -19,7 +29,10 @@ __all__ = [
     "GoogleDriveScopeKind",
     "GoogleDriveSharedDrive",
     "GoogleDriveSharedDrivePage",
+    "GoogleDriveUnsupportedContent",
     "GoogleWorkspaceApiError",
+    "GoogleWorkspaceBinaryPayload",
+    "GoogleWorkspaceBinaryTransport",
     "GoogleWorkspaceClientFactory",
     "GoogleWorkspaceClientFamily",
     "GoogleWorkspaceCollectionPage",
@@ -42,9 +55,19 @@ __all__ = [
 
 _DRIVE_EXPORTS = frozenset(
     {
+        "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+        "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
+        "GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES",
         "GOOGLE_DRIVE_SOURCE_KIND",
         "GoogleDriveChange",
         "GoogleDriveChangePage",
+        "GoogleDriveContentChanged",
+        "GoogleDriveContentMode",
+        "GoogleDriveContentReadClient",
+        "GoogleDriveContentReader",
+        "GoogleDriveContentTooLarge",
+        "GoogleDriveContentUnavailable",
+        "GoogleDriveFileContent",
         "GoogleDriveItem",
         "GoogleDriveItemKind",
         "GoogleDriveItemPage",
@@ -54,6 +77,7 @@ _DRIVE_EXPORTS = frozenset(
         "GoogleDriveScopeKind",
         "GoogleDriveSharedDrive",
         "GoogleDriveSharedDrivePage",
+        "GoogleDriveUnsupportedContent",
     }
 )
 
@@ -70,6 +94,8 @@ _FOUNDATION_EXPORTS = frozenset(
         "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID",
         "GOOGLE_WORKSPACE_SUPPORTED_SOURCE_KINDS",
         "GoogleWorkspaceApiError",
+        "GoogleWorkspaceBinaryPayload",
+        "GoogleWorkspaceBinaryTransport",
         "GoogleWorkspaceClientFactory",
         "GoogleWorkspaceClientFamily",
         "GoogleWorkspaceCollectionPage",
@@ -147,6 +173,8 @@ def __getattr__(name: str):
             "GoogleWorkspaceRequestExecutorFactory",
             "GoogleWorkspaceSourceKind",
             "GoogleWorkspaceTransport",
+            "GoogleWorkspaceBinaryPayload",
+            "GoogleWorkspaceBinaryTransport",
         }:
             from intergrax.integrations.providers.collaboration_suite.google_workspace import (
                 contracts as _contracts,

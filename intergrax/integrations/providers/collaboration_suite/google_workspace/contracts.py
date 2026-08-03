@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Mapping, Protocol, runtime_checkable
 
@@ -105,6 +106,29 @@ class GoogleWorkspaceTransport(Protocol):
         headers: Mapping[str, str] | None = None,
     ) -> dict[str, object]:
         """Issue a bounded GET request and return decoded JSON object payload."""
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleWorkspaceBinaryPayload:
+    data: bytes = field(repr=False)
+    content_type: str
+
+
+@runtime_checkable
+class GoogleWorkspaceBinaryTransport(Protocol):
+    """Bounded binary GET capability for Google Workspace provider APIs."""
+
+    def get_bytes(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None,
+        expected_content_type: str,
+        max_bytes: int,
+        range_limited: bool,
+    ) -> GoogleWorkspaceBinaryPayload:
+        """Issue a bounded GET request and return validated binary payload."""
 
 
 @runtime_checkable
