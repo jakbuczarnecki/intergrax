@@ -3,6 +3,26 @@
 
 """Google Workspace provider-specific knowledge-read surfaces."""
 
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GOOGLE_DOCS_NATIVE_MIME_TYPE,
+    GOOGLE_DOCS_SOURCE_KIND,
+    GoogleDocsBlock,
+    GoogleDocsBlockKind,
+    GoogleDocsBullet,
+    GoogleDocsDocument,
+    GoogleDocsInlineElement,
+    GoogleDocsInlineKind,
+    GoogleDocsKnowledgeReadClient,
+    GoogleDocsKnowledgeReader,
+    GoogleDocsNamedStyleType,
+    GoogleDocsParagraph,
+    GoogleDocsSegment,
+    GoogleDocsSegmentKind,
+    GoogleDocsTab,
+    GoogleDocsTable,
+    GoogleDocsTableCell,
+    GoogleDocsTableRow,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
     GOOGLE_DRIVE_SOURCE_KIND,
     GoogleDriveChange,
@@ -32,6 +52,24 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
 )
 
 __all__ = [
+    "GOOGLE_DOCS_NATIVE_MIME_TYPE",
+    "GOOGLE_DOCS_SOURCE_KIND",
+    "GoogleDocsBlock",
+    "GoogleDocsBlockKind",
+    "GoogleDocsBullet",
+    "GoogleDocsDocument",
+    "GoogleDocsInlineElement",
+    "GoogleDocsInlineKind",
+    "GoogleDocsKnowledgeReadClient",
+    "GoogleDocsKnowledgeReader",
+    "GoogleDocsNamedStyleType",
+    "GoogleDocsParagraph",
+    "GoogleDocsSegment",
+    "GoogleDocsSegmentKind",
+    "GoogleDocsTab",
+    "GoogleDocsTable",
+    "GoogleDocsTableCell",
+    "GoogleDocsTableRow",
     "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
     "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
     "GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES",

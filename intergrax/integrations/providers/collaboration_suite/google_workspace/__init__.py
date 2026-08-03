@@ -4,6 +4,24 @@
 from intergrax.utils.lazy_export import export_from_bundle
 
 __all__ = [
+    "GOOGLE_DOCS_NATIVE_MIME_TYPE",
+    "GOOGLE_DOCS_SOURCE_KIND",
+    "GoogleDocsBlock",
+    "GoogleDocsBlockKind",
+    "GoogleDocsBullet",
+    "GoogleDocsDocument",
+    "GoogleDocsInlineElement",
+    "GoogleDocsInlineKind",
+    "GoogleDocsKnowledgeReadClient",
+    "GoogleDocsKnowledgeReader",
+    "GoogleDocsNamedStyleType",
+    "GoogleDocsParagraph",
+    "GoogleDocsSegment",
+    "GoogleDocsSegmentKind",
+    "GoogleDocsTab",
+    "GoogleDocsTable",
+    "GoogleDocsTableCell",
+    "GoogleDocsTableRow",
     "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
     "DefaultGoogleWorkspaceClientFactory",
     "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
@@ -52,6 +70,29 @@ __all__ = [
     "parse_google_workspace_collection_page",
     "register_google_workspace_integration",
 ]
+
+_DOCS_EXPORTS = frozenset(
+    {
+        "GOOGLE_DOCS_NATIVE_MIME_TYPE",
+        "GOOGLE_DOCS_SOURCE_KIND",
+        "GoogleDocsBlock",
+        "GoogleDocsBlockKind",
+        "GoogleDocsBullet",
+        "GoogleDocsDocument",
+        "GoogleDocsInlineElement",
+        "GoogleDocsInlineKind",
+        "GoogleDocsKnowledgeReadClient",
+        "GoogleDocsKnowledgeReader",
+        "GoogleDocsNamedStyleType",
+        "GoogleDocsParagraph",
+        "GoogleDocsSegment",
+        "GoogleDocsSegmentKind",
+        "GoogleDocsTab",
+        "GoogleDocsTable",
+        "GoogleDocsTableCell",
+        "GoogleDocsTableRow",
+    }
+)
 
 _DRIVE_EXPORTS = frozenset(
     {
@@ -146,6 +187,12 @@ def __getattr__(name: str):
         )
 
         return export_from_bundle(_transport, name, _FOUNDATION_EXPORTS)
+    if name in _DOCS_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _DOCS_EXPORTS)
     if name in _DRIVE_EXPORTS:
         from intergrax.integrations.providers.collaboration_suite.google_workspace import (
             knowledge_read as _knowledge_read,

@@ -28,6 +28,10 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceTransport,
     copy_google_workspace_credential_material,
 )
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GoogleDocsDocument,
+    GoogleDocsKnowledgeReader,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
     GoogleDriveChangePage,
     GoogleDriveItem,
@@ -207,12 +211,23 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         family = self.require_client_family()
         return GoogleDriveKnowledgeReader(transport=family.transport)
 
+    def _docs_reader(self) -> GoogleDocsKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleDocsKnowledgeReader(transport=family.transport)
+
     def _drive_content_reader(self) -> GoogleDriveContentReader:
         family = self.require_client_family()
         transport = family.transport
         if not isinstance(transport, GoogleWorkspaceBinaryTransport):
             raise IntegrationConfigurationError(_BINARY_TRANSPORT_REQUIRED_MESSAGE)
         return GoogleDriveContentReader(transport=transport)
+
+    def read_docs_document(
+        self,
+        *,
+        document_id: str,
+    ) -> GoogleDocsDocument:
+        return self._docs_reader().read_document(document_id=document_id)
 
     def read_drive_file_content(
         self,
