@@ -12,7 +12,9 @@ This document defines safe, bounded, non-marketing wording for public-facing ref
 
 **Main engine guide:** [`../features/token_optimization/README.md`](../features/token_optimization/README.md)
 
-**README promotion gate:** main README Token Optimization promotion (badge, savings numbers, proof links) is allowed only after **TOKEN-10H** when a checked-in proof has passed **TOKEN-10G** hard gates and been independently audited.
+**Public proof dashboard:** [`../../PROOFS.md`](../../PROOFS.md)
+
+**README promotion gate:** performance badges, savings numbers, and broad proof-result promotion require **TOKEN-10G** hard gates and **TOKEN-10H** completion. Neutral capability discovery (name, qualified status, main-guide link) is allowed before TOKEN-10H — see § README discovery and promotion boundary.
 
 ---
 
@@ -40,7 +42,7 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 
 ### Remaining roadmap
 
-- **CTX-UCL** — Unified Context Lifecycle architecture draft defines reusable optimization artifacts, reuse-before-create lifecycle, non-recursive internal optimization calls, and single-flight reusable artifact creation; runtime implementation has not started ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
+- **CTX-UCL** — Unified Context Lifecycle: architecture accepted/closed through CTX-UCL-ARCH-1-R4-R1; runtime contracts CTX-UCL-1 through CTX-UCL-4 **accepted/closed**; CTX-UCL-5 **ready for review**; CTX-UCL-6 and CTX-UCL-CLOSEOUT-1 **not started** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
 - **TOKEN-10E** — policy-governed durable compaction integration profile documented; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed; runtime not implemented.
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
@@ -62,7 +64,7 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
-- Unified Context Lifecycle architecture draft defines reusable optimization artifacts, reuse-before-create lifecycle, non-recursive internal optimization calls, single-flight reusable artifact creation, and integration boundary for session revision and durable compaction (runtime not yet available; ready for review — **CTX-UCL-ARCH-1-R4**).
+- Unified Context Lifecycle contracts and reference repository are implemented through CTX-UCL-4; CTX-UCL-5 Nexus integration proof is ready for review; durable production adapter and closeout remain planned (runtime not complete for production claims).
 - TOKEN-10E in-cache compaction integration profile and safety boundary are documented (runtime implementation not yet available; blocked until CTX-UCL-CLOSEOUT-1).
 
 ---
@@ -221,3 +223,31 @@ Before publishing any numeric claim:
 - Does the wording imply that in-cache compaction is already implemented?
 - Does the wording describe TOKEN-10D sub-phases as incomplete while TOKEN-10D overall is accepted/closed?
 - Does the wording conflate unknown cache state with a cache miss, reported zero with unknown, or global provider metrics with per-request cache evidence?
+
+---
+
+## README discovery and promotion boundary
+
+### Neutral discovery allowed now
+
+Allowed before **TOKEN-10H**:
+
+- a neutral Token Optimization capability name;
+- classification as a featured platform capability;
+- a link to the main guide ([`../features/token_optimization/README.md`](../features/token_optimization/README.md));
+- non-numeric descriptions of implemented mechanisms;
+- explicit bounded-proof wording;
+- qualified current status with link to [`../../PROOFS.md`](../../PROOFS.md).
+
+### Performance promotion remains gated
+
+Still requires **TOKEN-10G** hard gates and **TOKEN-10H** completion:
+
+- savings percentages;
+- performance badges;
+- universal cost claims;
+- broad proof-result promotion;
+- claims of universal proof completion;
+- production-proven savings.
+
+Do not weaken the forbidden wording in § Forbidden wording above.

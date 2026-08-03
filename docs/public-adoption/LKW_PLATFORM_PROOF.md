@@ -27,6 +27,37 @@ Markdown is execution and inspection guidance.
 
 A reviewer should not need to inspect raw Docker output or infer what to check from long logs.
 
+**Public proof dashboard:** [`PROOFS.md`](../../PROOFS.md)
+
+---
+
+## At a glance
+
+| | |
+|---|---|
+| **Role** | Primary product proof |
+| **Product status** | Backend Product Alpha / MVP |
+| **Current proof scope** | Bounded Tier-3 application and platform behavior |
+| **Primary evidence** | Core Platform Proof claims, certification matrix, ProofReceipt documents in MongoDB |
+| **Does not prove** | Complete Hybrid Ask, complete vendor portfolio, real-user validation, commercial validation, or finished SaaS |
+
+> [!NOTE]
+> A **bounded platform proof** validates specific platform and application mechanisms in documented environments. It is **not** product completion, commercial readiness, or universal production certification.
+
+### Reviewer proof flow
+
+```mermaid
+flowchart LR
+    A[Start environment] --> B[Attach or ingest knowledge]
+    B --> C[Worker processing]
+    C --> D[Persisted index]
+    D --> E[Search or proof action]
+    E --> F[ProofReceipt]
+    F --> G[Inspect evidence]
+```
+
+This flow reflects workflows supported by the existing Core Platform Proof. Optional OS interaction proofs and planned live platform proof extend but do not replace this bounded path.
+
 ---
 
 ## Core platform claims

@@ -8,6 +8,33 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Central guide for the Token Optimization platform capability: deterministic optimization layers, policy-governed routing, protected-region safety, receipts, cache-stable prompt assembly, and reproducible proofs.
 
+**Public proof dashboard:** [`PROOFS.md`](../../../PROOFS.md)
+
+---
+
+## At a glance
+
+| | |
+|---|---|
+| **Role** | Featured platform-capability proof |
+| **Implemented foundation** | Deterministic pipeline, approved-configuration routing, protected regions, receipts/fallback, cache-stable assembly, exact-send integrity, cache-aware execution |
+| **Bounded proof** | Named vLLM prefix-cache proof environment (documented version, model, workload) |
+| **Partial work** | Unified Context Lifecycle — CTX-UCL-1 through CTX-UCL-4 accepted/closed; CTX-UCL-5 ready for review |
+| **Planned work** | CTX-UCL-6, CTX-UCL-CLOSEOUT-1, durable in-cache compaction (TOKEN-10E), universal proof harness (TOKEN-10F), hard gates (TOKEN-10G), public promotion (TOKEN-10H) |
+| **Claim boundary** | No universal or production-proven savings; performance promotion gated by TOKEN-10G and TOKEN-10H |
+
+### Engine lifecycle
+
+```mermaid
+flowchart LR
+    A[Request and policy] --> B[Approved configuration]
+    B --> C[Cache-aware decision]
+    C --> D[Deterministic layers]
+    D --> E[Protected-region validation]
+    E --> F[Accepted result or fallback]
+    F --> G[Receipts and observability]
+```
+
 ---
 
 ## Documentation map
@@ -65,9 +92,9 @@ input
 | ----- | -------------------------- |
 | **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware runtime (TOKEN-10D), vLLM proof runner |
 | **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
-| **Live-certified** | Not claimed for TOKEN-10C alone; universal proof packaging still planned |
-| **Planned** | TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
-| **Public-proof-gated** | README promotion and broad public savings claims require TOKEN-10G + TOKEN-10H |
+| **Partial** | Unified Context Lifecycle runtime — CTX-UCL-1 through CTX-UCL-4 accepted/closed; CTX-UCL-5 ready for review; closeout and durable compaction not complete |
+| **Planned** | CTX-UCL-6, CTX-UCL-CLOSEOUT-1, TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
+| **Public-proof-gated** | Performance badges, savings numbers, and broad proof promotion require TOKEN-10G + TOKEN-10H; neutral README discovery allowed before TOKEN-10H |
 
 **Phase snapshot (authoritative detail in [plan](../plan/TOKEN_OPTIMIZATION.md)):**
 
@@ -79,10 +106,13 @@ input
 | TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Accepted / Closed |
 | TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3 | Accepted / Closed |
 | TOKEN-10D | Accepted / Closed |
-| TOKEN-10E | Architecture Defined / Ready for Review (runtime not started) |
+| TOKEN-10E | Architecture Defined / Ready for Review (runtime not started; blocked until CTX-UCL-CLOSEOUT-1) |
 | TOKEN-10F | Planned |
 | TOKEN-10G | Planned |
 | TOKEN-10H | Planned |
+| CTX-UCL-5 | Ready for Review |
+| CTX-UCL-6 | Not started (blocked pending CTX-UCL-5 acceptance) |
+| CTX-UCL-CLOSEOUT-1 | Not started |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
 TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.
@@ -545,8 +575,8 @@ Expected: terminal summary with `final status: PASS` and reports under `build/pr
 ### What requires additional proof
 
 - Reproducible universal platform proof (TOKEN-10F/10G).
-- Public README promotion (TOKEN-10H).
-- Cache-aware orchestration gate between router and pipeline (TOKEN-10D).
+- Public performance promotion (TOKEN-10H).
+- Durable in-cache compaction (TOKEN-10E; blocked until UCL closeout).
 - Real-customer workload savings.
 
 ### What must not be claimed

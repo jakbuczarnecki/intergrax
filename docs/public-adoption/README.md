@@ -18,7 +18,8 @@ They do not define an open-source contribution model, production-support channel
 |------|----------|---------|
 | 0 | [Intergrax Public Positioning](INTERGRAX_PUBLIC_POSITIONING.md) | Canonical source for public problem statement, value proposition, Harness AI explanation, LKW role, audience, and public claim boundaries |
 | 1 | [Public Documentation Architecture](PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Canonical maintainer contract for public documentation layers, reader-intent routing, and proof classification |
-| 2 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
+| 2 | [Public Proof and Claims Model](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) | Canonical status vocabulary, evidence requirements, claim qualification, and proof promotion rules |
+| 3 | [Public Launch Checklist](PUBLIC_LAUNCH_CHECKLIST.md) | Maintainer checklist before public posts, reviewer requests or design-partner outreach |
 | 3 | [Public Issue Index](PUBLIC_ISSUE_INDEX.md) | Active curated public issue map and recommended evaluation paths |
 | 4 | [Public Discussion Issue Expansion](PUBLIC_DISCUSSION_ISSUE_EXPANSION.md) | Active architecture, product-validation, and deep technical discussion issue waves |
 | 5 | [Maintainer Triage Playbook](MAINTAINER_TRIAGE_PLAYBOOK.md) | Maintainer handling rules, close/keep-open criteria, escalation rules, and response templates |
@@ -31,6 +32,10 @@ They do not define an open-source contribution model, production-support channel
 Normal readers should start with the public documentation map:
 
 [Intergrax Public Documentation Map](../PUBLIC_DOCUMENTATION_MAP.md)
+
+**Public proof dashboard:** [`PROOFS.md`](../../PROOFS.md) — reader-facing proof status and verification paths.
+
+**Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
 

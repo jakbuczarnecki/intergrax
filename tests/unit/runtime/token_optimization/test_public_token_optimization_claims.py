@@ -13,11 +13,21 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _CLAIMS_DOC = _REPO_ROOT / "docs" / "public-adoption" / "TOKEN_OPTIMIZATION_CLAIMS.md"
+_PROOFS_DOC = _REPO_ROOT / "PROOFS.md"
 _PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
 _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+_TOKEN_OPT_README = _REPO_ROOT / "docs" / "features" / "token_optimization" / "README.md"
 _TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
 _UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
 _UCL_ADR = _REPO_ROOT / "docs" / "adr" / "entries" / "2026-08-01" / "ADR-UCL-001.md"
+
+_CANONICAL_STATUS_LABELS = (
+    "IMPLEMENTED",
+    "BOUNDED PROOF",
+    "PARTIAL",
+    "PLANNED",
+    "NOT CLAIMABLE",
+)
 
 _PERCENT_PATTERN = re.compile(r"\d+\s*%")
 _FORBIDDEN_CONTEXT_MARKERS = (
@@ -128,6 +138,73 @@ def _line_is_forbidden_example_context(line: str) -> bool:
 
 def test_claim_guardrail_doc_exists() -> None:
     assert _CLAIMS_DOC.is_file()
+
+
+def test_proofs_doc_exists() -> None:
+    assert _PROOFS_DOC.is_file()
+
+
+@pytest.mark.parametrize("label", _CANONICAL_STATUS_LABELS)
+def test_proofs_doc_contains_all_canonical_status_labels(label: str) -> None:
+    content = _read_public_doc(_PROOFS_DOC)
+    assert label in content
+
+
+def test_proofs_doc_links_to_lkw_platform_proof() -> None:
+    content = _read_public_doc(_PROOFS_DOC)
+    assert "LKW_PLATFORM_PROOF.md" in content
+
+
+def test_proofs_doc_links_to_token_optimization_readme() -> None:
+    content = _read_public_doc(_PROOFS_DOC)
+    assert "features/token_optimization/README.md" in content
+
+
+def test_proofs_doc_links_to_token_optimization_claims() -> None:
+    content = _read_public_doc(_PROOFS_DOC)
+    assert "TOKEN_OPTIMIZATION_CLAIMS.md" in content
+
+
+def test_proofs_doc_does_not_contain_unqualified_numeric_percentage_claims() -> None:
+    content = _read_public_doc(_PROOFS_DOC)
+    offenders: list[str] = []
+    for line in content.splitlines():
+        if not _PERCENT_PATTERN.search(line):
+            continue
+        if _line_is_forbidden_example_context(line):
+            continue
+        offenders.append(line.strip())
+    assert offenders == [], f"Unqualified percentage claims found in PROOFS.md: {offenders}"
+
+
+def test_proofs_doc_states_real_user_and_commercial_validation_incomplete() -> None:
+    content = _read_public_doc(_PROOFS_DOC).lower()
+    assert "real-user" in content or "real user" in content
+    assert "commercial validation" in content
+    assert "incomplete" in content or "not currently claim" in content
+
+
+def test_lkw_platform_proof_links_to_proofs_doc() -> None:
+    content = _read_public_doc(_LKW_PLATFORM_PROOF)
+    assert "PROOFS.md" in content
+
+
+def test_token_optimization_readme_links_to_proofs_doc() -> None:
+    content = _read_public_doc(_TOKEN_OPT_README)
+    assert "PROOFS.md" in content
+
+
+def test_claims_doc_contains_neutral_discovery_vs_performance_promotion_boundary() -> None:
+    content = _read_claims_doc()
+    assert "## README discovery and promotion boundary" in content
+    assert "Neutral discovery allowed now" in content
+    assert "Performance promotion remains gated" in content
+
+
+def test_claims_doc_mentions_token_10g_and_10h_performance_gates() -> None:
+    content = _read_claims_doc()
+    assert "TOKEN-10G" in content
+    assert "TOKEN-10H" in content
 
 
 def test_ucl_adr_has_no_utf8_bom() -> None:

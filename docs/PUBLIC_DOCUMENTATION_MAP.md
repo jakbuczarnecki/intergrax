@@ -21,6 +21,7 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
 | Check use-case fit | [Use Cases](../USE_CASES.md) |
 | Discuss a pilot or partnership | [Partners](../PARTNERS.md) |
+| Check current proof status | [Intergrax Proofs](../PROOFS.md) |
 | Understand license and collaboration | [Collaboration](../COLLABORATION.md) · [LICENSE](../LICENSE) |
 | Perform deep technical review | [Technical Documentation Map](DOCUMENTATION_MAP.md) |
 
@@ -62,6 +63,9 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [Token Optimization guide](features/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Token Optimization claim guardrails](public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) | Safe public wording boundaries |
 | [Public positioning](public-adoption/INTERGRAX_PUBLIC_POSITIONING.md) | Canonical public problem, value, and claim boundaries |
+| [Intergrax Proofs](../PROOFS.md) | Public proof dashboard — status legend and verification paths |
+
+**Proof status legend:** see [Intergrax Proofs](../PROOFS.md#status-legend) (✅ IMPLEMENTED · 🧪 BOUNDED PROOF · 🟡 PARTIAL · 🗓️ PLANNED · ⛔ NOT CLAIMABLE).
 
 ---
 
@@ -71,7 +75,6 @@ The following reader-intent documents are **planned** and will be created in lat
 
 ```text
 WHY_INTERGRAX.md
-PROOFS.md
 ARCHITECTURE_OVERVIEW.md
 BUILD_WITH_INTERGRAX.md
 PARTNERS_AND_PILOTS.md
@@ -94,4 +97,4 @@ Developers, architects, Cursor operators, and deep technical reviewers should us
 - LKW is **Backend Product Alpha / MVP**.
 - Token Optimization has **implemented mechanisms** and **bounded proof paths**.
 - Real-user and commercial validation are **incomplete**.
-- Detailed claims will be audited in the next program task (**PUBLIC-DOCS-COMMERCIALIZATION-4 — PROOF-AND-CLAIMS-MODEL**).
+- Proof status and claim boundaries: [Intergrax Proofs](../PROOFS.md).

@@ -91,7 +91,7 @@ ROADMAP.md
 | Document | Responsibility | Status |
 |----------|----------------|--------|
 | `WHY_INTERGRAX.md` | Problem, value, and audience without tier jargon | planned |
-| `PROOFS.md` | Consolidated public proof status and claim boundaries | planned |
+| `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | planned |
 | `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | planned |
 | `PARTNERS_AND_PILOTS.md` | Design-partner and pilot workflow (successor to split partner docs) | planned |
@@ -159,7 +159,7 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
 | Review high-level architecture | current Harness Narrative in root README; future `ARCHITECTURE_OVERVIEW.md` |
 | Run a bounded evaluation | `EVALUATION_GUIDE.md` |
-| Check current proof status | future `PROOFS.md` |
+| Check current proof status | `PROOFS.md` — root proof dashboard |
 | Discuss a pilot or design-partner workflow | `PARTNERS.md`, later `PARTNERS_AND_PILOTS.md` |
 | Check permission boundaries | `COLLABORATION.md` and `LICENSE` |
 | Perform deep technical review | `docs/DOCUMENTATION_MAP.md` |
@@ -244,19 +244,14 @@ Featured platform capability
 
 or an equivalent neutral heading.
 
-The final wording and any proof links in root README remain gated by the next task:
+The final wording and any proof links in root README remain governed by `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` § README discovery versus performance promotion and `TOKEN_OPTIMIZATION_CLAIMS.md` § README discovery and promotion boundary.
 
-```text
-PUBLIC-DOCS-COMMERCIALIZATION-4
-PROOF-AND-CLAIMS-MODEL
-```
+**Resolved rule (frozen):**
 
-**Recorded conflict:**
+- **Neutral discovery** (capability name, qualified status, main-guide link) is allowed before TOKEN-10H when no numeric savings or universal performance claims are used.
+- **Performance promotion** (badges, percentages, universal savings, production-proven claims) remains gated by TOKEN-10G hard gates and TOKEN-10H completion.
 
-- current root README already links and promotes Token Optimization (Quick start path, evaluation table, badges);
-- current `TOKEN_OPTIMIZATION_CLAIMS.md` contains a TOKEN-10G / TOKEN-10H promotion gate: main README Token Optimization promotion is allowed only after TOKEN-10H when a checked-in proof has passed TOKEN-10G hard gates and been independently audited.
-
-Point 4 must reconcile this before the new README is implemented. Do not resolve the gate by silently weakening it in earlier tasks.
+Current root README may still contain pre-reconciliation promotion language; the future README rewrite must align with the frozen rule. Do not weaken the performance gate.
 
 ---
 
@@ -264,7 +259,8 @@ Point 4 must reconcile this before the new README is implemented. Do not resolve
 
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
-| `README.md` | Landing, mixed technical index | Layer 1 landing only | root README rewrite | PUBLIC-DOCS-COMMERCIALIZATION-4 + README task |
+| `README.md` | Landing, mixed technical index | Layer 1 landing only | root README rewrite | future README task (proof model frozen) |
+| `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `EVALUATION_GUIDE.md` | Bounded evaluation paths | Reader-intent evaluation | `BUILD_WITH_INTERGRAX.md` (partial merge) | future commercialization |
 | `USE_CASES.md` | Use-case map | Reader-intent fit check | `WHY_INTERGRAX.md` / use-case section | future commercialization |
 | `PARTNERS.md` | Partner brief | Reader-intent partnership | `PARTNERS_AND_PILOTS.md` | future commercialization |
@@ -276,7 +272,7 @@ Point 4 must reconcile this before the new README is implemented. Do not resolve
 | `docs/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/DOCUMENTATION_MAP.md` | stable |
 | `docs/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/public-adoption/` | stable (this task) |
 
-Planned documents (`WHY_INTERGRAX.md`, `PROOFS.md`, `ARCHITECTURE_OVERVIEW.md`, `BUILD_WITH_INTERGRAX.md`, `PARTNERS_AND_PILOTS.md`, `LICENSE_FAQ.md`) are **not** marked as implemented.
+`PROOFS.md` is **implemented** (root proof dashboard). Planned documents (`WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, `BUILD_WITH_INTERGRAX.md`, `PARTNERS_AND_PILOTS.md`, `LICENSE_FAQ.md`) are **not** marked as implemented.
 
 ---
 
@@ -295,17 +291,94 @@ Planned documents (`WHY_INTERGRAX.md`, `PROOFS.md`, `ARCHITECTURE_OVERVIEW.md`, 
 
 ---
 
+## Visual presentation standard
+
+Public documentation is a product surface. Correct information presented as an unreadable wall of text is not sufficient.
+
+### First-screen rule
+
+Every major reader-facing document should show within its first visible section:
+
+- what the document is for;
+- current scope or maturity;
+- one primary next action;
+- a visual summary when the concept benefits from one.
+
+### Visual hierarchy
+
+Use:
+
+- one clear H1;
+- a short introductory sentence;
+- an at-a-glance block;
+- sections arranged by reader questions;
+- short paragraphs;
+- tables only when comparison is useful;
+- callouts for limitations and warnings.
+
+### Diagrams
+
+Use GitHub-native Mermaid for:
+
+- architecture;
+- workflows;
+- evidence flows;
+- responsibility boundaries;
+- state transitions.
+
+Primary diagrams must:
+
+- use short labels;
+- avoid excessive nodes;
+- remain legible in GitHub light and dark mode;
+- avoid custom color styling that breaks dark mode;
+- be explained in text immediately after the diagram.
+
+ASCII diagrams may remain in deep technical documents, but new primary public diagrams should use Mermaid.
+
+### Images and screenshots
+
+Future root README and major product documents should use real visual assets when available.
+
+Rules:
+
+- use real product screenshots or intentionally designed neutral illustrations;
+- never fabricate product UI;
+- provide descriptive alt text;
+- store future public assets under `docs/assets/public/`;
+- use PNG or WebP for screenshots and SVG for designed diagrams where appropriate;
+- compress assets reasonably;
+- avoid screenshots containing credentials, private data, or local absolute paths.
+
+No binary image asset is required until a reviewed source screenshot is supplied.
+
+### Minimum future root README visual set
+
+Freeze the future requirement:
+
+1. one hero product visual;
+2. one LKW user-workflow diagram;
+3. one simplified Intergrax architecture diagram;
+4. one compact proof/status presentation;
+5. one Token Optimization capability spotlight.
+
+The README must not become a gallery. Every visual must explain something.
+
+---
+
 ## 9. Source-of-truth boundaries
 
 | Topic | Owner |
 |-------|-------|
 | Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
 | Public documentation architecture | this document |
+| Public proof and claims model | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
+| Public proof dashboard | `PROOFS.md` |
 | Public reader navigation | `docs/PUBLIC_DOCUMENTATION_MAP.md` |
 | Technical/developer navigation | `docs/DOCUMENTATION_MAP.md` |
 | Token Optimization technical guide | `docs/features/token_optimization/README.md` |
 | Token Optimization claim boundaries | `TOKEN_OPTIMIZATION_CLAIMS.md` |
-| Detailed proof status | later proof-and-claims document |
+| Detailed proof status | `PROOFS.md` + `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
 | Product implementation status | owning implementation plans |
 | License rights | `LICENSE` |
 | Collaboration permissions | `COLLABORATION.md` |
