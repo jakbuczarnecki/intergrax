@@ -942,13 +942,19 @@ Contracts and durable repositories:
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED`
 
 Review-fix contracts for durable base checkpoint retention, exact recovery evidence, real v2 item-state receipt binding, remote-ID byte limits, ordered mutation templates and full durable prepared-record measurement.
 
+### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2`
+
+**Status:** `READY_FOR_REVIEW`
+
+Frozen phase immutability, exact successful-path transition binding, final-page tombstone completeness, recovery evidence self-validation, generic recovery exit blocking, configurable remote-ID policy separation, strict v1/v2 marker parsing and single durable wrapper builder.
+
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B`
 
-**Status:** `PLANNED` — next after `1A-REVIEW-FIX-1` acceptance.
+**Status:** `PLANNED` — blocked pending `1A-REVIEW-FIX-2` acceptance.
 
 Coordinator integration:
 
@@ -987,8 +993,9 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-2` | `ACCEPTED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `READY_FOR_REVIEW` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` — blocked pending `1A-REVIEW-FIX-1` acceptance |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2` | `READY_FOR_REVIEW` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `PLANNED` — blocked pending `1A-REVIEW-FIX-2` acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |

@@ -50,6 +50,8 @@ _NOW = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
 _DELIVERY = "a" * 64
 _FINGERPRINT = "b" * 64
 _NULL_CURSOR_FP = knowledge_cursor_fingerprint_sha256(None)
+_NEXT_CURSOR = KnowledgeCursor(value="next", version="v1")
+_NEXT_CURSOR_FP = knowledge_cursor_fingerprint_sha256(_NEXT_CURSOR)
 
 
 def _checkpoint(*, value: str = "cursor-1") -> KnowledgeSyncCheckpoint:
@@ -130,7 +132,7 @@ def _page_prepared(
         prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
         has_more=False,
         delivery_id=_DELIVERY,
-        remaining_candidate_remote_ids=(),
+        remaining_candidate_remote_ids=("item-z",),
         synthetic_tombstone_remote_ids=("item-z",),
     )
 
@@ -416,10 +418,34 @@ def test_policy_overflow_leaves_prior_run_unchanged() -> None:
     repo = DocumentStoreKnowledgeReconciliationRunRepository(store, policy=policy)
     initial = _collecting(remote_ids=("item-a",))
     repo.create_initial_run(initial)
-    overflow = _collecting(remote_ids=("item-a", "item-b"))
-    overflow = overflow.model_copy(update={"record_version": 2})
+    templates = (_template(),)
+    overflow_prepared = KnowledgeReconciliationRunPagePrepared(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=2,
+        created_at=_NOW,
+        updated_at=_NOW,
+        prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+        provider_page_fingerprint=_FINGERPRINT,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+        prepared_state_mutation_templates=templates,
+        prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+            templates
+        ),
+        prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+        prepared_next_cursor_fingerprint=_NEXT_CURSOR_FP,
+        prepared_next_cursor=_NEXT_CURSOR,
+        has_more=True,
+        delivery_id=_DELIVERY,
+        remaining_candidate_remote_ids=("item-a", "item-b"),
+        synthetic_tombstone_remote_ids=(),
+    )
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        repo.cas_replace(expected=initial, replacement=overflow)
+        repo.cas_replace(expected=initial, replacement=overflow_prepared)
     assert exc_info.value.code.value == "configuration_error"
     assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == initial
 
@@ -743,11 +769,34 @@ def test_remote_id_overflow_leaves_prior_run_unchanged() -> None:
     repo = DocumentStoreKnowledgeReconciliationRunRepository(store, policy=policy)
     initial = _collecting(remote_ids=("abcd",))
     repo.create_initial_run(initial)
-    overflow = _collecting(remote_ids=("abcde",)).model_copy(
-        update={"record_version": 2}
+    templates = (_template(),)
+    overflow_prepared = KnowledgeReconciliationRunPagePrepared(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=2,
+        created_at=_NOW,
+        updated_at=_NOW,
+        prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+        provider_page_fingerprint=_FINGERPRINT,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+        prepared_state_mutation_templates=templates,
+        prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+            templates
+        ),
+        prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+        prepared_next_cursor_fingerprint=_NEXT_CURSOR_FP,
+        prepared_next_cursor=_NEXT_CURSOR,
+        has_more=True,
+        delivery_id=_DELIVERY,
+        remaining_candidate_remote_ids=("abcde",),
+        synthetic_tombstone_remote_ids=(),
     )
     with pytest.raises(VendorKnowledgeError) as exc_info:
-        repo.cas_replace(expected=initial, replacement=overflow)
+        repo.cas_replace(expected=initial, replacement=overflow_prepared)
     assert exc_info.value.code.value == "configuration_error"
     assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == initial
 
@@ -769,3 +818,184 @@ def test_prepared_wrapper_limit_rejects_run_only_fit() -> None:
     repo.create_initial_run(initial)
     with pytest.raises(VendorKnowledgeError):
         repo.cas_replace(expected=initial, replacement=prepared)
+
+
+def _recovery_run_from_prepared(
+    prepared: KnowledgeReconciliationRunPagePrepared,
+) -> KnowledgeReconciliationRunRecoveryRequired:
+    return KnowledgeReconciliationRunRecoveryRequired(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=prepared.record_version + 1,
+        created_at=_NOW,
+        updated_at=_NOW,
+        applied_page_count=prepared.applied_page_count,
+        last_applied_delivery_id=prepared.last_applied_delivery_id,
+        recovery_reason_code="provider_page_mismatch",
+        recovery_evidence=recovery_evidence_from_run(prepared),
+    )
+
+
+@pytest.mark.unit
+def test_same_phase_collecting_replacement_rejected() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    replacement = initial.model_copy(update={"record_version": 2})
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=initial, replacement=replacement)
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == initial
+
+
+@pytest.mark.unit
+def test_same_phase_page_prepared_replacement_rejected() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2)
+    repo.cas_replace(expected=initial, replacement=prepared)
+    replacement = prepared.model_copy(
+        update={"record_version": 3, "delivery_id": "c" * 64}
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=prepared, replacement=replacement)
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == prepared
+
+
+@pytest.mark.unit
+def test_collecting_to_page_prepared_cursor_binding_required() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting().model_copy(
+        update={
+            "current_input_cursor": _NEXT_CURSOR,
+            "current_input_cursor_fingerprint": _NEXT_CURSOR_FP,
+        }
+    )
+    repo.create_initial_run(initial)
+    templates = (_template(),)
+    bad_prepared = KnowledgeReconciliationRunPagePrepared(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=2,
+        created_at=_NOW,
+        updated_at=_NOW,
+        prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+        provider_page_fingerprint=_FINGERPRINT,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+        prepared_state_mutation_templates=templates,
+        prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+            templates
+        ),
+        prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+        prepared_next_cursor_fingerprint=_NEXT_CURSOR_FP,
+        prepared_next_cursor=_NEXT_CURSOR,
+        has_more=True,
+        delivery_id=_DELIVERY,
+        remaining_candidate_remote_ids=("item-a",),
+        synthetic_tombstone_remote_ids=(),
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(expected=initial, replacement=bad_prepared)
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == initial
+
+
+@pytest.mark.unit
+def test_recovery_required_exit_blocked() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    initial = _collecting()
+    repo.create_initial_run(initial)
+    prepared = _page_prepared(record_version=2)
+    repo.cas_replace(expected=initial, replacement=prepared)
+    recovery = _recovery_run_from_prepared(prepared)
+    repo.cas_replace(expected=prepared, replacement=recovery)
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.cas_replace(
+            expected=recovery,
+            replacement=_collecting(record_version=recovery.record_version + 1),
+        )
+    assert repo.get(tenant_id="tenant-1", binding_id="binding-1") == recovery
+
+
+@pytest.mark.unit
+def test_marker_uppercase_fingerprint_rejected() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
+    store.put(
+        DocumentRecord(
+            partition_key=partition,
+            row_key=f"delivery:{_DELIVERY}",
+            data={
+                "schema_version": "vendor_knowledge.delivery_marker.v2",
+                "tenant_id": "tenant-1",
+                "binding_id": "binding-1",
+                "delivery_id": _DELIVERY,
+                "batch_fingerprint": _FINGERPRINT.upper(),
+                "prepared_state_mutations_fingerprint": _FINGERPRINT,
+                "status": "completed",
+                "record_version": "rv-1",
+            },
+        )
+    )
+    with pytest.raises(KnowledgeSyncCorruptState) as exc_info:
+        repo.inspect_delivery_receipt(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=_DELIVERY,
+            prepared_state_mutations_fingerprint=_FINGERPRINT,
+        )
+    assert _FINGERPRINT not in str(exc_info.value)
+    assert _DELIVERY not in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_corrupt_recovery_evidence_rejected_on_load() -> None:
+    store = InMemoryDocumentStore()
+    repo = DocumentStoreKnowledgeReconciliationRunRepository(store)
+    prepared = _page_prepared(record_version=1)
+    evidence = recovery_evidence_from_run(prepared).model_dump(mode="json")
+    evidence["expected_base_completed_checkpoint"] = _checkpoint(
+        value="foreign-base"
+    ).model_dump(mode="json")
+    run_payload = {
+        "phase": "recovery_required",
+        "tenant_id": "tenant-1",
+        "binding_id": "binding-1",
+        "binding_configuration_version": 1,
+        "provider_id": "example",
+        "source_kind": "issues",
+        "run_id": "run-1",
+        "record_version": 1,
+        "created_at": _NOW.isoformat(),
+        "updated_at": _NOW.isoformat(),
+        "recovery_reason_code": "provider_page_mismatch",
+        "recovery_evidence": evidence,
+        "expected_base_completed_checkpoint": None,
+    }
+    store.put(
+        DocumentRecord(
+            partition_key="vendor_knowledge.reconciliation_run.v1:tenant-1",
+            row_key="binding:binding-1",
+            data={
+                "schema_version": "vendor_knowledge.reconciliation_run.v1",
+                "tenant_id": "tenant-1",
+                "binding_id": "binding-1",
+                "record_version": 1,
+                "run": run_payload,
+            },
+        )
+    )
+    with pytest.raises(KnowledgeSyncCorruptState):
+        repo.get(tenant_id="tenant-1", binding_id="binding-1")

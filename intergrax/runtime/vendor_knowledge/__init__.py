@@ -123,7 +123,6 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     canonical_prepared_state_mutations_fingerprint,
     knowledge_cursor_fingerprint_sha256,
     knowledge_sync_checkpoint_fingerprint_sha256,
-    reconciliation_run_durable_document_bytes,
     recovery_evidence_from_run,
 )
 from intergrax.runtime.vendor_knowledge.sync_runtime import (
@@ -252,7 +251,6 @@ __all__ = [
     "canonical_prepared_state_mutations_fingerprint",
     "knowledge_cursor_fingerprint_sha256",
     "knowledge_sync_checkpoint_fingerprint_sha256",
-    "reconciliation_run_durable_document_bytes",
     "recovery_evidence_from_run",
     "KnowledgeVisibility",
     "LiveCapabilityDescriptorV1",

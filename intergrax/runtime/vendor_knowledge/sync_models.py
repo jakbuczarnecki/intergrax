@@ -986,6 +986,26 @@ class KnowledgeReconciliationRunCompleted(_ReconciliationRunIdentity):
         return self
 
 
+def _validate_checkpoint_matches_run_identity(
+    checkpoint: KnowledgeSyncCheckpoint | None,
+    *,
+    tenant_id: str,
+    binding_id: str,
+    binding_configuration_version: int | None = None,
+) -> None:
+    if checkpoint is None:
+        return
+    if checkpoint.tenant_id != tenant_id or checkpoint.binding_id != binding_id:
+        raise ValueError("recovery evidence checkpoint identity mismatch")
+    if (
+        binding_configuration_version is not None
+        and checkpoint.binding_configuration_version != binding_configuration_version
+    ):
+        raise ValueError(
+            "recovery evidence checkpoint binding_configuration_version mismatch"
+        )
+
+
 class KnowledgeReconciliationRecoveryEvidenceCollecting(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -1001,6 +1021,17 @@ class KnowledgeReconciliationRecoveryEvidenceCollecting(BaseModel):
     @classmethod
     def _fingerprint(cls, value: str) -> str:
         return _require_sha256_hex(value, field_name="current_input_cursor_fingerprint")
+
+    @field_validator("remaining_candidate_remote_ids")
+    @classmethod
+    def _candidate_ids(cls, value: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+        if not value:
+            return ()
+        return _validate_remote_id_tuple(
+            value,
+            field_name="remaining_candidate_remote_ids",
+            allow_empty=False,
+        )
 
     @model_validator(mode="after")
     def _cursor_pair(self) -> KnowledgeReconciliationRecoveryEvidenceCollecting:
@@ -1061,31 +1092,14 @@ class KnowledgeReconciliationRecoveryEvidencePagePrepared(BaseModel):
     ) -> tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...]:
         return tuple(value)
 
-    @model_validator(mode="after")
-    def _page_prepared_evidence_rules(
-        self,
-    ) -> KnowledgeReconciliationRecoveryEvidencePagePrepared:
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_input_cursor,
-            fingerprint=self.prepared_input_cursor_fingerprint,
-            field_prefix="prepared_input",
+    @field_validator("remaining_candidate_remote_ids", "synthetic_tombstone_remote_ids")
+    @classmethod
+    def _remote_id_tuples(cls, value: tuple[str, ...] | list[str]) -> tuple[str, ...]:
+        return _validate_remote_id_tuple(
+            value,
+            field_name="remote_id_tuple",
+            allow_empty=True,
         )
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_proposed_checkpoint,
-            fingerprint=self.prepared_proposed_checkpoint_fingerprint,
-            field_prefix="prepared_proposed_checkpoint",
-        )
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_next_cursor,
-            fingerprint=self.prepared_next_cursor_fingerprint,
-            field_prefix="prepared_next",
-        )
-        expected_mutations = canonical_prepared_state_mutations_fingerprint(
-            self.prepared_state_mutation_templates
-        )
-        if self.prepared_state_mutations_fingerprint != expected_mutations:
-            raise ValueError("prepared_state_mutations_fingerprint mismatch")
-        return self
 
 
 class KnowledgeReconciliationRecoveryEvidenceFinalizing(BaseModel):
@@ -1140,6 +1154,109 @@ KnowledgeReconciliationRecoveryEvidence = Annotated[
 ]
 
 
+def _validate_recovery_evidence_collecting_structural(
+    evidence: KnowledgeReconciliationRecoveryEvidenceCollecting,
+) -> None:
+    _validate_cursor_fingerprint_pair(
+        cursor=evidence.current_input_cursor,
+        fingerprint=evidence.current_input_cursor_fingerprint,
+        field_prefix="current_input",
+    )
+    if evidence.remaining_candidate_remote_ids:
+        _validate_remote_id_tuple(
+            evidence.remaining_candidate_remote_ids,
+            field_name="remaining_candidate_remote_ids",
+            allow_empty=False,
+        )
+
+
+def _validate_recovery_evidence_page_prepared_structural(
+    evidence: KnowledgeReconciliationRecoveryEvidencePagePrepared,
+    *,
+    binding_configuration_version: int,
+) -> None:
+    _validate_page_prepared_structural(
+        prepared_input_cursor=evidence.prepared_input_cursor,
+        prepared_input_cursor_fingerprint=evidence.prepared_input_cursor_fingerprint,
+        prepared_proposed_checkpoint=evidence.prepared_proposed_checkpoint,
+        prepared_proposed_checkpoint_fingerprint=evidence.prepared_proposed_checkpoint_fingerprint,
+        prepared_next_cursor=evidence.prepared_next_cursor,
+        prepared_next_cursor_fingerprint=evidence.prepared_next_cursor_fingerprint,
+        prepared_state_mutation_templates=evidence.prepared_state_mutation_templates,
+        prepared_state_mutations_fingerprint=evidence.prepared_state_mutations_fingerprint,
+        has_more=evidence.has_more,
+        remaining_candidate_remote_ids=evidence.remaining_candidate_remote_ids,
+        synthetic_tombstone_remote_ids=evidence.synthetic_tombstone_remote_ids,
+        binding_configuration_version=binding_configuration_version,
+    )
+
+
+def _validate_recovery_evidence_finalizing_structural(
+    evidence: KnowledgeReconciliationRecoveryEvidenceFinalizing,
+    *,
+    tenant_id: str,
+    binding_id: str,
+    binding_configuration_version: int,
+) -> None:
+    expected = knowledge_sync_checkpoint_fingerprint_sha256(
+        evidence.intended_final_completed_checkpoint
+    )
+    if evidence.intended_final_checkpoint_fingerprint != expected:
+        raise ValueError("intended_final_checkpoint_fingerprint mismatch")
+    _validate_checkpoint_matches_run_identity(
+        evidence.intended_final_completed_checkpoint,
+        tenant_id=tenant_id,
+        binding_id=binding_id,
+        binding_configuration_version=binding_configuration_version,
+    )
+    _validate_checkpoint_matches_run_identity(
+        evidence.expected_previous_completed_checkpoint,
+        tenant_id=tenant_id,
+        binding_id=binding_id,
+    )
+    if (
+        evidence.expected_previous_completed_checkpoint
+        != evidence.expected_base_completed_checkpoint
+    ):
+        raise ValueError(
+            "expected_previous_completed_checkpoint must equal durable base checkpoint"
+        )
+
+
+def validate_recovery_required_run(
+    run: "KnowledgeReconciliationRunRecoveryRequired",
+) -> None:
+    evidence = run.recovery_evidence
+    if (
+        evidence.expected_base_completed_checkpoint
+        != run.expected_base_completed_checkpoint
+    ):
+        raise ValueError("recovery evidence base checkpoint mismatch")
+    _validate_checkpoint_matches_run_identity(
+        evidence.expected_base_completed_checkpoint,
+        tenant_id=run.tenant_id,
+        binding_id=run.binding_id,
+    )
+    if isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceCollecting):
+        _validate_recovery_evidence_collecting_structural(evidence)
+        return
+    if isinstance(evidence, KnowledgeReconciliationRecoveryEvidencePagePrepared):
+        _validate_recovery_evidence_page_prepared_structural(
+            evidence,
+            binding_configuration_version=run.binding_configuration_version,
+        )
+        return
+    if isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceFinalizing):
+        _validate_recovery_evidence_finalizing_structural(
+            evidence,
+            tenant_id=run.tenant_id,
+            binding_id=run.binding_id,
+            binding_configuration_version=run.binding_configuration_version,
+        )
+        return
+    raise ValueError("recovery evidence origin phase is unsupported")
+
+
 def recovery_evidence_from_run(
     run: KnowledgeReconciliationRunCollecting
     | KnowledgeReconciliationRunPagePrepared
@@ -1191,6 +1308,13 @@ class KnowledgeReconciliationRunRecoveryRequired(_ReconciliationRunIdentity):
     @classmethod
     def _safe_recovery_reason_code(cls, value: str) -> str:
         return _require_operator_reason_code(value, field_name="recovery_reason_code")
+
+    @model_validator(mode="after")
+    def _recovery_evidence_consistency(
+        self,
+    ) -> KnowledgeReconciliationRunRecoveryRequired:
+        validate_recovery_required_run(self)
+        return self
 
 
 class KnowledgeReconciliationRunAborted(_ReconciliationRunIdentity):
@@ -1262,6 +1386,10 @@ def validate_reconciliation_prepared_intent(
     *,
     policy: KnowledgeReconciliationLimitPolicy,
 ) -> None:
+    validate_reconciliation_candidate_inventory(
+        run.remaining_candidate_remote_ids,
+        policy=policy,
+    )
     if (
         len(run.prepared_state_mutation_templates)
         > policy.max_reconciliation_prepared_state_mutation_count
@@ -1272,6 +1400,7 @@ def validate_reconciliation_prepared_intent(
         binding_configuration_version=run.binding_configuration_version,
         has_more=run.has_more,
         synthetic_tombstone_remote_ids=run.synthetic_tombstone_remote_ids,
+        remaining_candidate_remote_ids=run.remaining_candidate_remote_ids,
         policy=policy,
     )
     for remote_id in run.synthetic_tombstone_remote_ids:

@@ -127,6 +127,8 @@ def _page_prepared(*, has_more: bool = True) -> KnowledgeReconciliationRunPagePr
         )
         synthetic_ids = ("item-z",)
     mutations_fp = canonical_prepared_state_mutations_fingerprint(templates)
+    next_cursor = _CURSOR if has_more else None
+    next_cursor_fp = _CURSOR_FP if has_more else _NULL_CURSOR_FP
     return KnowledgeReconciliationRunPagePrepared(
         tenant_id="tenant-1",
         binding_id="binding-1",
@@ -144,11 +146,11 @@ def _page_prepared(*, has_more: bool = True) -> KnowledgeReconciliationRunPagePr
         prepared_state_mutation_templates=templates,
         prepared_state_mutations_fingerprint=mutations_fp,
         prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
-        prepared_next_cursor_fingerprint=_CURSOR_FP,
-        prepared_next_cursor=_CURSOR,
+        prepared_next_cursor_fingerprint=next_cursor_fp,
+        prepared_next_cursor=next_cursor,
         has_more=has_more,
         delivery_id=_DELIVERY,
-        remaining_candidate_remote_ids=("item-c",),
+        remaining_candidate_remote_ids=("item-c",) if has_more else ("item-z",),
         synthetic_tombstone_remote_ids=synthetic_ids,
     )
 
@@ -209,6 +211,7 @@ def test_all_reconciliation_phases_validate() -> None:
         updated_at=_NOW,
         applied_page_count=1,
         last_applied_delivery_id=_DELIVERY,
+        expected_base_completed_checkpoint=checkpoint,
         recovery_reason_code="provider_page_mismatch",
         recovery_evidence=recovery_evidence_from_run(finalizing),
     )
@@ -845,4 +848,112 @@ def test_prepared_intent_measures_complete_durable_wrapper() -> None:
             policy=KnowledgeReconciliationLimitPolicy(
                 max_reconciliation_prepared_intent_payload_bytes=len(wrapper) - 1
             ),
+        )
+
+
+@pytest.mark.unit
+def test_final_page_requires_exact_tombstone_equality() -> None:
+    templates = (
+        _template("item-a"),
+        _template("item-z", synthetic_tombstone=True),
+    )
+    mutations_fp = canonical_prepared_state_mutations_fingerprint(templates)
+    base = dict(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-1",
+        record_version=2,
+        created_at=_NOW,
+        updated_at=_NOW,
+        prepared_input_cursor_fingerprint=_NULL_CURSOR_FP,
+        provider_page_fingerprint=_FINGERPRINT,
+        prepared_batch_payload_fingerprint=_FINGERPRINT,
+        prepared_state_mutation_templates=templates,
+        prepared_state_mutations_fingerprint=mutations_fp,
+        prepared_proposed_checkpoint_fingerprint=_NULL_CURSOR_FP,
+        prepared_next_cursor_fingerprint=_NULL_CURSOR_FP,
+        has_more=False,
+        delivery_id=_DELIVERY,
+    )
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            **base,
+            remaining_candidate_remote_ids=("item-z",),
+            synthetic_tombstone_remote_ids=(),
+        )
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            **base,
+            remaining_candidate_remote_ids=("item-z", "item-y"),
+            synthetic_tombstone_remote_ids=("item-z",),
+        )
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunPagePrepared(
+            **base,
+            remaining_candidate_remote_ids=("item-z",),
+            synthetic_tombstone_remote_ids=("item-z", "item-y"),
+        )
+    empty_templates = (_template("item-a"),)
+    empty_mutations_fp = canonical_prepared_state_mutations_fingerprint(empty_templates)
+    empty_base = {
+        **base,
+        "prepared_state_mutation_templates": empty_templates,
+        "prepared_state_mutations_fingerprint": empty_mutations_fp,
+    }
+    accepted = KnowledgeReconciliationRunPagePrepared(
+        **empty_base,
+        remaining_candidate_remote_ids=(),
+        synthetic_tombstone_remote_ids=(),
+    )
+    assert accepted.synthetic_tombstone_remote_ids == ()
+    accepted_final = KnowledgeReconciliationRunPagePrepared(
+        **base,
+        remaining_candidate_remote_ids=("item-z",),
+        synthetic_tombstone_remote_ids=("item-z",),
+    )
+    assert accepted_final.remaining_candidate_remote_ids == ("item-z",)
+
+
+@pytest.mark.unit
+def test_custom_remote_id_policy_above_default() -> None:
+    large_id = "x" * 3000
+    assert len(large_id.encode("utf-8")) > 2048
+    policy = KnowledgeReconciliationLimitPolicy(max_reconciliation_remote_id_bytes=4096)
+    validate_reconciliation_candidate_inventory((large_id,), policy=policy)
+    default_policy = KnowledgeReconciliationLimitPolicy()
+    with pytest.raises(ValueError):
+        validate_reconciliation_candidate_inventory((large_id,), policy=default_policy)
+    exact_policy = KnowledgeReconciliationLimitPolicy(
+        max_reconciliation_remote_id_bytes=2048
+    )
+    exact_id = "y" * 2048
+    validate_reconciliation_candidate_inventory((exact_id,), policy=exact_policy)
+    below_policy = KnowledgeReconciliationLimitPolicy(
+        max_reconciliation_remote_id_bytes=8
+    )
+    with pytest.raises(ValueError):
+        validate_reconciliation_candidate_inventory(("123456789",), policy=below_policy)
+
+
+@pytest.mark.unit
+def test_recovery_evidence_self_validation_rejects_mismatched_base() -> None:
+    prepared = _page_prepared(has_more=False)
+    evidence = recovery_evidence_from_run(prepared)
+    with pytest.raises(ValidationError):
+        KnowledgeReconciliationRunRecoveryRequired(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            binding_configuration_version=1,
+            provider_id="example",
+            source_kind="issues",
+            run_id="run-1",
+            record_version=3,
+            created_at=_NOW,
+            updated_at=_NOW,
+            recovery_reason_code="provider_page_mismatch",
+            recovery_evidence=evidence,
+            expected_base_completed_checkpoint=_checkpoint(),
         )

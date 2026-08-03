@@ -32,6 +32,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeReconciliationLimitPolicy,
     KnowledgeReconciliationRun,
     KnowledgeReconciliationRunCollecting,
+    KnowledgeReconciliationRunCompleted,
     KnowledgeReconciliationRunFinalizing,
     KnowledgeReconciliationRunPagePrepared,
     KnowledgeReconciliationRunPhase,
@@ -41,10 +42,12 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemStateReceiptStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncCheckpoint,
+    _reconciliation_run_durable_document_payload,
     parse_knowledge_reconciliation_run,
     recovery_evidence_from_run,
     validate_reconciliation_candidate_inventory,
     validate_reconciliation_prepared_intent,
+    validate_recovery_required_run,
 )
 
 _LEASE_SCHEMA = "vendor_knowledge.source_lease.v1"
@@ -199,10 +202,6 @@ _ALLOWED_RECONCILIATION_TRANSITIONS: frozenset[
             KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
         ),
         (
-            KnowledgeReconciliationRunPhase.COLLECTING,
-            KnowledgeReconciliationRunPhase.ABORTED,
-        ),
-        (
             KnowledgeReconciliationRunPhase.PAGE_PREPARED,
             KnowledgeReconciliationRunPhase.COLLECTING,
         ),
@@ -221,22 +220,6 @@ _ALLOWED_RECONCILIATION_TRANSITIONS: frozenset[
         (
             KnowledgeReconciliationRunPhase.FINALIZING,
             KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
-        ),
-        (
-            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
-            KnowledgeReconciliationRunPhase.COLLECTING,
-        ),
-        (
-            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
-            KnowledgeReconciliationRunPhase.FINALIZING,
-        ),
-        (
-            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
-            KnowledgeReconciliationRunPhase.COMPLETED,
-        ),
-        (
-            KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
-            KnowledgeReconciliationRunPhase.ABORTED,
         ),
     }
 )
@@ -313,6 +296,14 @@ def _validate_reconciliation_monotonicity(
         expected.phase is KnowledgeReconciliationRunPhase.COLLECTING
         and replacement.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED
     ):
+        if not isinstance(expected, KnowledgeReconciliationRunCollecting):
+            raise KnowledgeSyncCorruptState(
+                "page preparation requires collecting origin phase"
+            )
+        if not isinstance(replacement, KnowledgeReconciliationRunPagePrepared):
+            raise KnowledgeSyncCorruptState(
+                "page preparation requires page_prepared replacement"
+            )
         if replacement.applied_page_count != expected.applied_page_count:
             raise KnowledgeSyncCorruptState(
                 "page preparation must not change applied_page_count"
@@ -321,15 +312,31 @@ def _validate_reconciliation_monotonicity(
             raise KnowledgeSyncCorruptState(
                 "page preparation must not change last_applied_delivery_id"
             )
+        if replacement.prepared_input_cursor != expected.current_input_cursor:
+            raise KnowledgeSyncCorruptState(
+                "page preparation must bind prepared_input_cursor to collecting cursor"
+            )
+        if (
+            replacement.prepared_input_cursor_fingerprint
+            != expected.current_input_cursor_fingerprint
+        ):
+            raise KnowledgeSyncCorruptState(
+                "page preparation must bind prepared_input_cursor_fingerprint"
+            )
         return
 
     if expected.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED and isinstance(
         expected, KnowledgeReconciliationRunPagePrepared
     ):
-        if replacement.phase in {
-            KnowledgeReconciliationRunPhase.COLLECTING,
-            KnowledgeReconciliationRunPhase.FINALIZING,
-        }:
+        if replacement.phase is KnowledgeReconciliationRunPhase.COLLECTING:
+            if not expected.has_more:
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition requires prepared has_more"
+                )
+            if not isinstance(replacement, KnowledgeReconciliationRunCollecting):
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition requires collecting replacement"
+                )
             if replacement.applied_page_count != expected.applied_page_count + 1:
                 raise KnowledgeSyncCorruptState(
                     "applied page transition must increment applied_page_count exactly once"
@@ -338,12 +345,96 @@ def _validate_reconciliation_monotonicity(
                 raise KnowledgeSyncCorruptState(
                     "applied page transition must set last_applied_delivery_id"
                 )
+            if replacement.current_input_cursor != expected.prepared_next_cursor:
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must bind current_input_cursor"
+                )
+            if (
+                replacement.current_input_cursor_fingerprint
+                != expected.prepared_next_cursor_fingerprint
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must bind current_input_cursor_fingerprint"
+                )
+            if (
+                replacement.remaining_candidate_remote_ids
+                != expected.remaining_candidate_remote_ids
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "applied page transition must retain remaining_candidate_remote_ids"
+                )
+            return
+        if replacement.phase is KnowledgeReconciliationRunPhase.FINALIZING:
+            if expected.has_more:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition requires final prepared page"
+                )
+            if not isinstance(replacement, KnowledgeReconciliationRunFinalizing):
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition requires finalizing replacement"
+                )
+            if replacement.applied_page_count != expected.applied_page_count + 1:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must increment applied_page_count exactly once"
+                )
+            if replacement.last_applied_delivery_id != expected.delivery_id:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must set last_applied_delivery_id"
+                )
+            if replacement.final_delivery_id != expected.delivery_id:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind final_delivery_id"
+                )
+            if (
+                replacement.prepared_batch_payload_fingerprint
+                != expected.prepared_batch_payload_fingerprint
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must retain prepared_batch_payload_fingerprint"
+                )
+            if expected.prepared_proposed_checkpoint is None:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition requires prepared_proposed_checkpoint"
+                )
+            intended = replacement.intended_final_completed_checkpoint
+            if intended.cursor != expected.prepared_proposed_checkpoint:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind intended final checkpoint cursor"
+                )
+            if intended.tenant_id != expected.tenant_id:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind intended final checkpoint tenant"
+                )
+            if intended.binding_id != expected.binding_id:
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind intended final checkpoint binding"
+                )
+            if (
+                intended.binding_configuration_version
+                != expected.binding_configuration_version
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind intended final checkpoint configuration version"
+                )
+            if (
+                replacement.expected_previous_completed_checkpoint
+                != expected.expected_base_completed_checkpoint
+            ):
+                raise KnowledgeSyncCorruptState(
+                    "finalizing transition must bind expected_previous_completed_checkpoint"
+                )
         return
 
     if (
         expected.phase is KnowledgeReconciliationRunPhase.FINALIZING
         and replacement.phase is KnowledgeReconciliationRunPhase.COMPLETED
     ):
+        if not isinstance(expected, KnowledgeReconciliationRunFinalizing):
+            raise KnowledgeSyncCorruptState(
+                "completion requires finalizing origin phase"
+            )
+        if not isinstance(replacement, KnowledgeReconciliationRunCompleted):
+            raise KnowledgeSyncCorruptState("completion requires completed replacement")
         if replacement.applied_page_count != expected.applied_page_count:
             raise KnowledgeSyncCorruptState(
                 "completion must not change applied_page_count"
@@ -351,6 +442,22 @@ def _validate_reconciliation_monotonicity(
         if replacement.last_applied_delivery_id != expected.last_applied_delivery_id:
             raise KnowledgeSyncCorruptState(
                 "completion must not change last_applied_delivery_id"
+            )
+        if (
+            replacement.committed_completed_checkpoint
+            != expected.intended_final_completed_checkpoint
+        ):
+            raise KnowledgeSyncCorruptState(
+                "completion must commit intended final checkpoint"
+            )
+        if replacement.final_delivery_id != expected.final_delivery_id:
+            raise KnowledgeSyncCorruptState("completion must retain final_delivery_id")
+        if (
+            replacement.committed_completed_checkpoint.binding_configuration_version
+            != expected.binding_configuration_version
+        ):
+            raise KnowledgeSyncCorruptState(
+                "completion must retain binding_configuration_version"
             )
 
 
@@ -360,10 +467,20 @@ def _validate_reconciliation_transition(
     replacement: KnowledgeReconciliationRun,
 ) -> None:
     if expected.phase == replacement.phase:
-        return
+        raise KnowledgeSyncCorruptState(
+            "reconciliation run same-phase replacement is forbidden"
+        )
     if (expected.phase, replacement.phase) not in _ALLOWED_RECONCILIATION_TRANSITIONS:
         raise KnowledgeSyncCorruptState(
             "reconciliation run phase transition is invalid"
+        )
+    if expected.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
+        raise KnowledgeSyncCorruptState(
+            "recovery_required run cannot exit through generic cas_replace"
+        )
+    if replacement.phase is KnowledgeReconciliationRunPhase.ABORTED:
+        raise KnowledgeSyncCorruptState(
+            "aborted transition requires explicit recovery boundary"
         )
 
 
@@ -1212,10 +1329,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 raise KnowledgeSyncCorruptState(
                     "delivery marker binding identity is invalid"
                 )
-            if (
-                not isinstance(delivery_id, str)
-                or delivery_id.strip() != expected_delivery
-            ):
+            if not isinstance(delivery_id, str) or not delivery_id.strip():
+                raise KnowledgeSyncCorruptState(
+                    "delivery marker delivery identity is invalid"
+                )
+            if _SHA256_HEX_RE.fullmatch(str(delivery_id).strip()) is None:
                 raise KnowledgeSyncCorruptState(
                     "delivery marker delivery identity is invalid"
                 )
@@ -1231,6 +1349,10 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 raise KnowledgeSyncCorruptState(
                     "delivery marker fingerprint is invalid"
                 )
+            if _SHA256_HEX_RE.fullmatch(str(fingerprint).strip()) is None:
+                raise KnowledgeSyncCorruptState(
+                    "delivery marker fingerprint is invalid"
+                )
             if status not in {_MARKER_STATUS_APPLYING, _MARKER_STATUS_COMPLETED}:
                 raise KnowledgeSyncCorruptState("delivery marker status is invalid")
             if not isinstance(record_version, str) or not record_version.strip():
@@ -1238,13 +1360,18 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                     "delivery marker record version is invalid"
                 )
             mutations_fingerprint = data.get("prepared_state_mutations_fingerprint")
-            if mutations_fingerprint is not None and (
-                not isinstance(mutations_fingerprint, str)
-                or not mutations_fingerprint.strip()
-            ):
-                raise KnowledgeSyncCorruptState(
-                    "delivery marker prepared_state_mutations_fingerprint is invalid"
-                )
+            if mutations_fingerprint is not None:
+                if (
+                    not isinstance(mutations_fingerprint, str)
+                    or not mutations_fingerprint.strip()
+                ):
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker prepared_state_mutations_fingerprint is invalid"
+                    )
+                if _SHA256_HEX_RE.fullmatch(str(mutations_fingerprint).strip()) is None:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker prepared_state_mutations_fingerprint is invalid"
+                    )
             if (
                 data.get("schema_version") == _DELIVERY_MARKER_SCHEMA_V2
                 and mutations_fingerprint is None
@@ -1451,13 +1578,7 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         _require_non_empty(run.binding_id, field_name="binding_id")
 
     def _to_document(self, run: KnowledgeReconciliationRun) -> DocumentRecord:
-        data = {
-            "schema_version": _RECONCILIATION_RUN_SCHEMA,
-            "tenant_id": run.tenant_id,
-            "binding_id": run.binding_id,
-            "record_version": run.record_version,
-            "run": run.model_dump(mode="json"),
-        }
+        data = _reconciliation_run_durable_document_payload(run)
         _reject_secret_fields(data, kind="reconciliation run")
         nested = data["run"]
         if isinstance(nested, Mapping):
@@ -1522,6 +1643,13 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
                 raise KnowledgeSyncCorruptState(
                     "reconciliation run record version mismatch"
                 )
+            if isinstance(run, KnowledgeReconciliationRunRecoveryRequired):
+                try:
+                    validate_recovery_required_run(run)
+                except ValueError:
+                    raise KnowledgeSyncCorruptState(
+                        "reconciliation run recovery evidence is invalid"
+                    ) from None
             return run
         except KnowledgeSyncCorruptState:
             raise
