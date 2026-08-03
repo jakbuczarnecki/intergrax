@@ -255,6 +255,7 @@ def _validate_reconciliation_identity_unchanged(
         != replacement.binding_configuration_version
         or expected.expected_base_completed_checkpoint
         != replacement.expected_base_completed_checkpoint
+        or expected.superseded_run_id != replacement.superseded_run_id
     ):
         raise KnowledgeSyncCorruptState("reconciliation run immutable identity changed")
 
@@ -884,7 +885,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
     ) -> None:
         cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
-        cleaned_delivery = _require_non_empty(delivery_id, field_name="delivery_id")
+        cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
         cleaned_mutations_fingerprint: str | None = None
         if prepared_state_mutations_fingerprint is not None:
             cleaned_mutations_fingerprint = _require_sha256_hex(
@@ -994,7 +995,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
     ) -> KnowledgeRemoteItemStateReceipt:
         cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
-        cleaned_delivery = _require_non_empty(delivery_id, field_name="delivery_id")
+        cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
         cleaned_fingerprint = _require_non_empty(
             prepared_state_mutations_fingerprint,
             field_name="prepared_state_mutations_fingerprint",
@@ -1090,6 +1091,12 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         if marker["batch_fingerprint"] != batch_fingerprint:
             raise KnowledgeSyncCorruptState("delivery marker fingerprint mismatch")
         if marker["status"] == _MARKER_STATUS_COMPLETED:
+            stored_mutations = marker.get("prepared_state_mutations_fingerprint")
+            if prepared_state_mutations_fingerprint is not None:
+                if stored_mutations != prepared_state_mutations_fingerprint:
+                    raise KnowledgeSyncCorruptState(
+                        "delivery marker prepared_state_mutations_fingerprint mismatch"
+                    )
             return
         raise KnowledgeSyncCorruptState("delivery marker cas conflict")
 
@@ -1333,7 +1340,12 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
                 raise KnowledgeSyncCorruptState(
                     "delivery marker delivery identity is invalid"
                 )
-            if _SHA256_HEX_RE.fullmatch(str(delivery_id).strip()) is None:
+            cleaned_delivery = str(delivery_id).strip()
+            if _SHA256_HEX_RE.fullmatch(cleaned_delivery) is None:
+                raise KnowledgeSyncCorruptState(
+                    "delivery marker delivery identity is invalid"
+                )
+            if cleaned_delivery != expected_delivery:
                 raise KnowledgeSyncCorruptState(
                     "delivery marker delivery identity is invalid"
                 )
@@ -1512,6 +1524,14 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
     ) -> None:
+        if replacement.tenant_id != expected.tenant_id:
+            raise KnowledgeSyncCorruptState(
+                "superseding replacement tenant identity mismatch"
+            )
+        if replacement.binding_id != expected.binding_id:
+            raise KnowledgeSyncCorruptState(
+                "superseding replacement binding identity mismatch"
+            )
         if expected.phase not in {
             KnowledgeReconciliationRunPhase.COMPLETED,
             KnowledgeReconciliationRunPhase.ABORTED,

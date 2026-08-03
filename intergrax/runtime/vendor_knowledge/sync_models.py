@@ -580,10 +580,18 @@ def _validate_mutation_templates_structural(
 ) -> None:
     if not templates:
         if has_more:
+            if synthetic_tombstone_remote_ids:
+                raise ValueError(
+                    "synthetic tombstones are forbidden on non-final prepared pages"
+                )
             return
         if synthetic_tombstone_remote_ids != remaining_candidate_remote_ids:
             raise ValueError(
                 "final page synthetic tombstones must equal remaining candidates"
+            )
+        if synthetic_tombstone_remote_ids:
+            raise ValueError(
+                "final page requires mutation templates for synthetic tombstones"
             )
         return
     ordered = tuple(sorted(templates, key=lambda template: template.remote_id))
@@ -961,6 +969,11 @@ class KnowledgeReconciliationRunFinalizing(_ReconciliationRunIdentity):
             raise ValueError(
                 "expected_previous_completed_checkpoint must equal durable base checkpoint"
             )
+        if (
+            self.intended_final_completed_checkpoint.binding_configuration_version
+            != self.binding_configuration_version
+        ):
+            raise ValueError("intended final checkpoint configuration version mismatch")
         return self
 
 
@@ -983,6 +996,11 @@ class KnowledgeReconciliationRunCompleted(_ReconciliationRunIdentity):
             or self.committed_completed_checkpoint.binding_id != self.binding_id
         ):
             raise ValueError("committed checkpoint identity mismatch")
+        if (
+            self.committed_completed_checkpoint.binding_configuration_version
+            != self.binding_configuration_version
+        ):
+            raise ValueError("committed checkpoint configuration version mismatch")
         return self
 
 
