@@ -148,6 +148,15 @@ _FORBIDDEN_LEAK_KEYS = frozenset(
         "authorization",
     }
 )
+_ATTACHMENT_FORBIDDEN_VALUES = (
+    _SECRET,
+    _CREDENTIAL_REF,
+    _PROVIDER,
+    IntegrationCategory.ISSUE_TRACKER.value,
+    "issues",
+    "project-proof",
+)
+_INDEXED_FORBIDDEN_VALUES = _ATTACHMENT_FORBIDDEN_VALUES
 
 
 class _RecordingSecretsStore:
@@ -169,9 +178,9 @@ class _RecordingSecretsStore:
 
 
 class _CountingFactory:
-    def __init__(self, *, integration: object | None = None) -> None:
+    def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
-        self._integration = integration
+        self.instances: list[object] = []
 
     def create_integration(
         self,
@@ -195,12 +204,55 @@ class _CountingFactory:
                 "secret_free_config": secret_free_config,
             }
         )
-        if self._integration is not None:
-            return self._integration
-        return FakeIntegration(
+        integration = FakeIntegration(
             provider_id=provider_id,
             integration_kind=integration_kind.value,
         )
+        self.instances.append(integration)
+        return integration
+
+
+@dataclass
+class _RegistrationAttempt:
+    tenant_id: str
+    connection_ref: str
+    provider_id: str
+    integration_kind: IntegrationCategory
+    integration: object
+
+
+class _RecordingKnowledgeConnectionRegistry(KnowledgeConnectionRegistry):
+    def __init__(self) -> None:
+        super().__init__()
+        self.attempts: list[_RegistrationAttempt] = []
+        self.successful_registrations: int = 0
+
+    def register(
+        self,
+        *,
+        tenant_id: str,
+        connection_ref: str,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        integration: object,
+    ) -> None:
+        self.attempts.append(
+            _RegistrationAttempt(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                provider_id=provider_id,
+                integration_kind=integration_kind,
+                integration=integration,
+            )
+        )
+        super().register(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            integration=integration,
+        )
+        self.successful_registrations += 1
 
 
 class _FailingFallbackResolver:
@@ -250,7 +302,7 @@ class ProofContext:
     connection_repo: DocumentStoreTenantConnectionRepository
     binding_repo: DocumentStoreKnowledgeSourceBindingRepository
     workspace_repo: ManagedWorkspaceRepository
-    registry: KnowledgeConnectionRegistry
+    registry: _RecordingKnowledgeConnectionRegistry
     secrets: _RecordingSecretsStore
     factory: _CountingFactory
     fallback: _FailingFallbackResolver
@@ -327,33 +379,40 @@ def _persist_durable_pre_restart(store: InMemoryDocumentStore) -> None:
     binding_repo.create(_tenant_binding())
 
 
-def _assert_registry_unregistered(registry: KnowledgeConnectionRegistry) -> None:
+def _assert_registry_unregistered(
+    registry: KnowledgeConnectionRegistry,
+    *,
+    connection_ref: str,
+    provider_id: str = _PROVIDER,
+    integration_kind: IntegrationCategory = IntegrationCategory.ISSUE_TRACKER,
+) -> None:
     with pytest.raises(VendorKnowledgeError) as exc_info:
         registry.resolve(
             tenant_id=_TENANT,
-            connection_ref=_CONNECTION,
-            provider_id=_PROVIDER,
-            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            connection_ref=connection_ref,
+            provider_id=provider_id,
+            integration_kind=integration_kind,
         )
     assert exc_info.value.code is VendorKnowledgeErrorCode.INTEGRATION_NOT_FOUND
 
 
-def _assert_single_registry_registration(registry: KnowledgeConnectionRegistry, integration: object) -> None:
-    resolved = registry.resolve(
+def _assert_construction_and_registration(ctx: ProofContext) -> None:
+    assert len(ctx.factory.calls) == 1
+    assert len(ctx.factory.instances) == 1
+    assert len(ctx.registry.attempts) == 1
+    assert ctx.registry.successful_registrations == 1
+    reconstructed_integration = ctx.factory.instances[0]
+    attempt = ctx.registry.attempts[0]
+    assert attempt.tenant_id == _TENANT
+    assert attempt.connection_ref == _CONNECTION
+    assert attempt.integration is reconstructed_integration
+    resolved = ctx.registry.resolve(
         tenant_id=_TENANT,
         connection_ref=_CONNECTION,
         provider_id=_PROVIDER,
         integration_kind=IntegrationCategory.ISSUE_TRACKER,
     )
-    assert resolved is integration
-    with pytest.raises(ValueError, match="already registered"):
-        registry.register(
-            tenant_id=_TENANT,
-            connection_ref=_CONNECTION,
-            provider_id=_PROVIDER,
-            integration_kind=IntegrationCategory.ISSUE_TRACKER,
-            integration=FakeIntegration(),
-        )
+    assert resolved is reconstructed_integration
 
 
 def _build_proof_context(
@@ -362,7 +421,6 @@ def _build_proof_context(
     persist: bool = True,
     workspaces: tuple[str, ...] = (_WORKSPACE,),
     secrets: _RecordingSecretsStore | None = None,
-    integration: object | None = None,
 ) -> ProofContext:
     shared_store = store or InMemoryDocumentStore()
     if persist:
@@ -374,13 +432,9 @@ def _build_proof_context(
     for workspace_id in workspaces:
         workspace_repo.put_workspace(_workspace(workspace_id))
 
-    registry = KnowledgeConnectionRegistry()
+    registry = _RecordingKnowledgeConnectionRegistry()
     secrets_store = secrets or _RecordingSecretsStore()
-    reconstructed = integration or FakeIntegration(
-        provider_id=_PROVIDER,
-        integration_kind=IntegrationCategory.ISSUE_TRACKER.value,
-    )
-    factory = _CountingFactory(integration=reconstructed)
+    factory = _CountingFactory()
     rehydrator = TenantConnectionRehydrator(
         repository=connection_repo,
         secrets_store=secrets_store,
@@ -388,7 +442,7 @@ def _build_proof_context(
         connection_registry=registry,
     )
 
-    _assert_registry_unregistered(registry)
+    _assert_registry_unregistered(registry, connection_ref=_CONNECTION)
     rehydration_results = rehydrator.rehydrate_tenant(tenant_id=_TENANT)
     assert len(rehydration_results) == 1
     assert rehydration_results[0].status is TenantConnectionRehydrationStatus.REGISTERED
@@ -396,7 +450,13 @@ def _build_proof_context(
     assert len(secrets_store.calls) == 1
     assert secrets_store.calls[0] == _CREDENTIAL_REF
     assert len(factory.calls) == 1
-    _assert_single_registry_registration(registry, reconstructed)
+    assert len(factory.instances) == 1
+    reconstructed = factory.instances[0]
+    assert len(registry.attempts) == 1
+    assert registry.successful_registrations == 1
+    assert registry.attempts[0].tenant_id == _TENANT
+    assert registry.attempts[0].connection_ref == _CONNECTION
+    assert registry.attempts[0].integration is reconstructed
 
     durable = connection_repo.get(tenant_id=_TENANT, connection_ref=_CONNECTION)
     assert durable is not None
@@ -594,8 +654,17 @@ def _assert_cardinality(ctx: ProofContext, *, configuration_revision: int) -> No
     assert attached[0].connection_ref == _CONNECTION
     assert indexed[0].knowledge_source_binding_ref == _BINDING_REF
     assert live[0].connection_ref == _CONNECTION
-    assert len(ctx.factory.calls) == 1
-    _assert_single_registry_registration(ctx.registry, ctx.reconstructed_integration)
+    _assert_construction_and_registration(ctx)
+
+
+def _assert_forbidden_values_absent(
+    payload: str,
+    *,
+    forbidden: tuple[str, ...],
+    label: str,
+) -> None:
+    for value in forbidden:
+        assert value not in payload, f"{label} leaked forbidden value: {value}"
 
 
 def _serialized_contains_forbidden(payload: str, *, forbidden: frozenset[str]) -> list[str]:
@@ -632,6 +701,7 @@ def _assert_leak_scan(ctx: ProofContext) -> None:
 
     attachment = configuration.connection_attachments[0]
     attachment_dump = attachment.model_dump()
+    attachment_serialized = json.dumps(attachment_dump, sort_keys=True, default=str)
     for forbidden in (
         "provider_id",
         "integration_kind",
@@ -641,9 +711,15 @@ def _assert_leak_scan(ctx: ProofContext) -> None:
         "credential_ref",
     ):
         assert forbidden not in attachment_dump
+    _assert_forbidden_values_absent(
+        attachment_serialized,
+        forbidden=_ATTACHMENT_FORBIDDEN_VALUES,
+        label="attachment",
+    )
 
     indexed = configuration.indexed_sources[0]
     indexed_dump = indexed.model_dump()
+    indexed_serialized = json.dumps(indexed_dump, sort_keys=True, default=str)
     for forbidden in (
         "connection_ref",
         "provider_id",
@@ -654,6 +730,18 @@ def _assert_leak_scan(ctx: ProofContext) -> None:
         "credential_ref",
     ):
         assert forbidden not in indexed_dump
+    _assert_forbidden_values_absent(
+        indexed_serialized,
+        forbidden=_INDEXED_FORBIDDEN_VALUES,
+        label="indexed_binding",
+    )
+
+    source_serialized = json.dumps(source.model_dump(mode="json"), sort_keys=True)
+    _assert_forbidden_values_absent(
+        source_serialized,
+        forbidden=_INDEXED_FORBIDDEN_VALUES,
+        label="workspace_source",
+    )
 
     live = configuration.live_access_bindings[0]
     live_dump = live.model_dump()
@@ -693,16 +781,15 @@ async def test_durable_connection_is_rehydrated_once_and_reused_by_indexed_and_l
 
     await _run_indexed_probe(ctx)
     _run_live_probe(ctx)
-    assert len(ctx.factory.calls) == 1
     assert len(ctx.fallback.calls) == 0
-    _assert_single_registry_registration(ctx.registry, ctx.reconstructed_integration)
+    _assert_construction_and_registration(ctx)
     _assert_leak_scan(ctx)
 
 
 async def test_disabling_indexed_source_does_not_disable_live_access() -> None:
     ctx = _build_proof_context()
     revision = await _seed_active_bindings(ctx)
-    disabled = ctx.indexed_lifecycle.disable_indexed_source(
+    ctx.indexed_lifecycle.disable_indexed_source(
         DisableWorkspaceIndexedSourceCommand(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
@@ -713,17 +800,25 @@ async def test_disabling_indexed_source_does_not_disable_live_access() -> None:
     )
     configuration = ctx.config_service.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert configuration is not None
-    assert disabled.binding.status is WorkspaceIndexedSourceBindingStatusV1.DISABLED
-    active_live = [
+    assert configuration.configuration_revision == revision + 1
+    indexed_bindings = [
+        binding
+        for binding in configuration.indexed_sources
+        if binding.indexed_source_binding_id == _INDEXED_BINDING_ID
+    ]
+    assert len(indexed_bindings) == 1
+    assert indexed_bindings[0].status is WorkspaceIndexedSourceBindingStatusV1.DISABLED
+    live_bindings = [
         binding
         for binding in configuration.live_access_bindings
-        if binding.status is LiveAccessBindingStatusV1.ACTIVE
+        if binding.live_access_binding_id == _LIVE_BINDING_ID
     ]
-    assert len(active_live) == 1
+    assert len(live_bindings) == 1
+    assert live_bindings[0].status is LiveAccessBindingStatusV1.ACTIVE
 
     live_integration = _run_live_probe(ctx)
     assert live_integration is ctx.reconstructed_integration
-    assert len(ctx.factory.calls) == 1
+    _assert_construction_and_registration(ctx)
 
     durable_connection = ctx.connection_repo.get(tenant_id=_TENANT, connection_ref=_CONNECTION)
     assert durable_connection is not None
@@ -736,7 +831,7 @@ async def test_disabling_indexed_source_does_not_disable_live_access() -> None:
 async def test_disabling_live_access_does_not_disable_indexed_source() -> None:
     ctx = _build_proof_context()
     revision = await _seed_active_bindings(ctx)
-    disabled = ctx.live_service.disable_live_access_binding(
+    ctx.live_service.disable_live_access_binding(
         DisableWorkspaceLiveAccessBindingCommand(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
@@ -747,17 +842,25 @@ async def test_disabling_live_access_does_not_disable_indexed_source() -> None:
     )
     configuration = ctx.config_service.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert configuration is not None
-    assert disabled.binding.status is LiveAccessBindingStatusV1.DISABLED
-    active_indexed = [
+    assert configuration.configuration_revision == revision + 1
+    live_bindings = [
+        binding
+        for binding in configuration.live_access_bindings
+        if binding.live_access_binding_id == _LIVE_BINDING_ID
+    ]
+    assert len(live_bindings) == 1
+    assert live_bindings[0].status is LiveAccessBindingStatusV1.DISABLED
+    indexed_bindings = [
         binding
         for binding in configuration.indexed_sources
-        if binding.status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+        if binding.indexed_source_binding_id == _INDEXED_BINDING_ID
     ]
-    assert len(active_indexed) == 1
+    assert len(indexed_bindings) == 1
+    assert indexed_bindings[0].status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
 
     indexed_integration = await _run_indexed_probe(ctx)
     assert indexed_integration is ctx.reconstructed_integration
-    assert len(ctx.factory.calls) == 1
+    _assert_construction_and_registration(ctx)
 
 
 def test_cross_workspace_live_binding_attempt_returns_404() -> None:
@@ -789,10 +892,11 @@ def test_cross_workspace_live_binding_attempt_returns_404() -> None:
         json={"connection_ref": _CONNECTION, "allowed_capability_ids": [_CAP_READ]},
     )
     assert response.status_code == 404
-    assert response.json()["detail"] == "connection_not_attached"
+    assert response.json() == {"detail": "connection_not_attached"}
     assert _SECRET not in response.text
     assert _CREDENTIAL_REF not in response.text
-    assert _PROVIDER not in response.json()
+    assert _PROVIDER not in response.text
+    _assert_construction_and_registration(ctx)
 
     other_configuration = ctx.config_service.get_configuration(
         tenant_id=_TENANT,
@@ -817,7 +921,7 @@ def test_missing_secret_keeps_durable_connection_and_skips_runtime_registration(
     )
 
     restarted_repo = DocumentStoreTenantConnectionRepository(store)
-    registry = KnowledgeConnectionRegistry()
+    registry = _RecordingKnowledgeConnectionRegistry()
     secrets = _RecordingSecretsStore(secret=None)
     factory = _CountingFactory()
     rehydrator = TenantConnectionRehydrator(
@@ -826,13 +930,17 @@ def test_missing_secret_keeps_durable_connection_and_skips_runtime_registration(
         integration_factory=factory,
         connection_registry=registry,
     )
-    _assert_registry_unregistered(registry)
+    _assert_registry_unregistered(registry, connection_ref="conn-missing")
     results = rehydrator.rehydrate_tenant(tenant_id=_TENANT)
     assert len(results) == 1
     assert results[0].status is TenantConnectionRehydrationStatus.UNAVAILABLE
     assert results[0].error_code == "tenant_connection_secret_unavailable"
+    assert secrets.calls == [missing_ref]
     assert factory.calls == []
-    _assert_registry_unregistered(registry)
+    assert factory.instances == []
+    assert registry.attempts == []
+    assert registry.successful_registrations == 0
+    _assert_registry_unregistered(registry, connection_ref="conn-missing")
 
     durable = restarted_repo.get(tenant_id=_TENANT, connection_ref="conn-missing")
     assert durable is not None
