@@ -53,34 +53,95 @@ _H1_BY_PATH = {
     OUTREACH_KIT_PATH: "# Intergrax Outreach Kit",
 }
 
-_FORBIDDEN_COMPLETION_CLAIMS = (
-    "external validation is complete",
-    "validated by external users",
-    "real-user validation is complete",
-    "commercial validation is complete",
-    "commercially validated",
-    "intergrax is commercially validated",
-    "intergrax is production-ready",
-    "product validated",
-    "production ready",
-    "production-ready",
-    "usability certified",
-)
+def _does_not_mean_list_pattern(claim: str) -> re.Pattern[str]:
+    return re.compile(rf"\bdoes not mean:[^.!?]*\b{claim}\b")
 
-_NEGATION_MARKERS = (
-    "not ",
-    "does not",
-    "do not",
-    "no ",
-    "incomplete",
-    "remain",
-    "without",
-    "does not mean",
-    "not constitute",
-    "not a ",
-    "not complete",
-    "not_started",
-    "not started",
+
+_FORBIDDEN_CLAIM_RULES: tuple[tuple[re.Pattern[str], tuple[re.Pattern[str], ...]], ...] = (
+    (
+        re.compile(r"\bexternal validation is complete\b"),
+        (
+            re.compile(r"\bexternal validation is not complete\b"),
+            re.compile(r"\bdoes not mean external validation is complete\b"),
+            re.compile(r"\bdoes not constitute external validation\b"),
+            re.compile(r"\bno completed external validation\b"),
+            _does_not_mean_list_pattern(r"external validation is complete"),
+        ),
+    ),
+    (
+        re.compile(r"\bvalidated by external users\b"),
+        (
+            re.compile(r"\bnot validated by external users\b"),
+            _does_not_mean_list_pattern(r"validated by external users"),
+        ),
+    ),
+    (
+        re.compile(r"\breal user validation is complete\b"),
+        (
+            re.compile(r"\breal user validation is not complete\b"),
+            re.compile(r"\breal user validation remains incomplete\b"),
+            _does_not_mean_list_pattern(r"real user validation is complete"),
+        ),
+    ),
+    (
+        re.compile(r"\breal user validation complete\b"),
+        (
+            re.compile(r"\breal user validation is not complete\b"),
+            re.compile(r"\breal user validation remains incomplete\b"),
+            _does_not_mean_list_pattern(r"real user validation complete"),
+        ),
+    ),
+    (
+        re.compile(r"\bcommercial validation is complete\b"),
+        (
+            re.compile(r"\bcommercial validation is incomplete\b"),
+            re.compile(r"\bcommercial validation remains incomplete\b"),
+            _does_not_mean_list_pattern(r"commercial validation is complete"),
+        ),
+    ),
+    (
+        re.compile(r"\bcommercially validated\b"),
+        (
+            re.compile(r"\bnot commercially validated\b"),
+            _does_not_mean_list_pattern(r"commercially validated"),
+        ),
+    ),
+    (
+        re.compile(r"\bintergrax is commercially validated\b"),
+        (
+            re.compile(r"\bintergrax is not commercially validated\b"),
+            _does_not_mean_list_pattern(r"intergrax is commercially validated"),
+        ),
+    ),
+    (
+        re.compile(r"\bintergrax is production ready\b"),
+        (
+            re.compile(r"\bintergrax is not production ready\b"),
+            _does_not_mean_list_pattern(r"intergrax is production ready"),
+        ),
+    ),
+    (
+        re.compile(r"\bproduction ready\b"),
+        (
+            re.compile(r"\bnot production ready\b"),
+            re.compile(r"\bwithout claiming production readiness\b"),
+            _does_not_mean_list_pattern(r"production ready"),
+        ),
+    ),
+    (
+        re.compile(r"\bproduct validated\b"),
+        (
+            re.compile(r"\bnot product validated\b"),
+            _does_not_mean_list_pattern(r"product validated"),
+        ),
+    ),
+    (
+        re.compile(r"\busability certified\b"),
+        (
+            re.compile(r"\bnot usability certified\b"),
+            _does_not_mean_list_pattern(r"usability certified"),
+        ),
+    ),
 )
 
 _STALE_PHRASES = (
@@ -292,15 +353,26 @@ def _extract_h2_section(text: str, heading: str) -> str:
     return text[match.start() :]
 
 
+def _span_covered(span: tuple[int, int], covered: list[tuple[int, int]]) -> bool:
+    start, end = span
+    return any(c_start <= start and c_end >= end for c_start, c_end in covered)
+
+
 def _assert_no_positive_forbidden_claim(text: str, path_name: str) -> None:
     for unit in _claim_units(text):
         normalized_unit = _normalize_claims_text(unit)
-        for phrase in _FORBIDDEN_COMPLETION_CLAIMS:
-            if phrase not in normalized_unit:
-                continue
-            assert any(marker in normalized_unit for marker in _NEGATION_MARKERS), (
-                f"{path_name}: positive forbidden claim {phrase!r} in unit: {unit!r}"
-            )
+        for positive_re, negative_res in _FORBIDDEN_CLAIM_RULES:
+            covered = [
+                match.span()
+                for negative_re in negative_res
+                for match in negative_re.finditer(normalized_unit)
+            ]
+            for match in positive_re.finditer(normalized_unit):
+                if not _span_covered(match.span(), covered):
+                    raise AssertionError(
+                        f"{path_name}: positive forbidden claim "
+                        f"{match.group()!r} in unit: {unit!r}"
+                    )
 
 
 def _through_at_a_glance(text: str) -> str:
@@ -632,3 +704,62 @@ def test_brevity() -> None:
 def test_reader_documents_remain_untouched() -> None:
     for link in ("README.md", "COLLABORATION.md", "LICENSE"):
         assert link in _read(README_PATH)
+
+
+_POSITIVE_FORBIDDEN_CLAIM_MUTATIONS = (
+    "Intergrax is commercially validated.",
+    "Intergrax is production-ready.",
+    "Intergrax is production ready.",
+    "External validation is complete.",
+    "Real-user validation is complete.",
+    "Product validated.",
+    "Usability certified.",
+    "Intergrax remains commercially validated.",
+    "Without doubt, Intergrax is production-ready.",
+    "There is no ambiguity: external validation is complete.",
+    "No reviewer objected, and Intergrax is product validated.",
+    "The project remains production ready.",
+)
+
+_LEGITIMATE_NEGATIVE_CLAIM_MUTATIONS = (
+    "Commercial validation is incomplete.",
+    "Intergrax is not production-ready.",
+    "Intergrax is not production ready.",
+    "External validation is not complete.",
+    "Real-user validation remains incomplete.",
+    "Creating this protocol does not mean external validation is complete.",
+    "A protocol does not constitute external validation.",
+    "The review proceeds without claiming production readiness.",
+    "No completed external validation is claimed.",
+)
+
+_MIXED_FORBIDDEN_CLAIM_MUTATIONS = (
+    "External validation is not complete. Intergrax is production-ready.",
+    "- Commercial validation is incomplete, but Intergrax is production-ready.",
+)
+
+_MIXED_ALLOWED_CLAIM_MUTATIONS = (
+    "| Production status | Intergrax is not production-ready |",
+)
+
+
+@pytest.mark.parametrize("text", _POSITIVE_FORBIDDEN_CLAIM_MUTATIONS)
+def test_positive_forbidden_claim_mutations_raise(text: str) -> None:
+    with pytest.raises(AssertionError):
+        _assert_no_positive_forbidden_claim(text, "mutation")
+
+
+@pytest.mark.parametrize("text", _LEGITIMATE_NEGATIVE_CLAIM_MUTATIONS)
+def test_legitimate_negative_claim_mutations_pass(text: str) -> None:
+    _assert_no_positive_forbidden_claim(text, "mutation")
+
+
+@pytest.mark.parametrize("text", _MIXED_FORBIDDEN_CLAIM_MUTATIONS)
+def test_mixed_forbidden_claim_mutations_raise(text: str) -> None:
+    with pytest.raises(AssertionError):
+        _assert_no_positive_forbidden_claim(text, "mutation")
+
+
+@pytest.mark.parametrize("text", _MIXED_ALLOWED_CLAIM_MUTATIONS)
+def test_mixed_allowed_claim_mutations_pass(text: str) -> None:
+    _assert_no_positive_forbidden_claim(text, "mutation")
