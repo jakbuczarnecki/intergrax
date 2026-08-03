@@ -316,7 +316,13 @@ External validation requires real independent sessions recorded against a pinned
 
 Documentation comprehension validation is not product validation, real-user validation, commercial validation, security review, legal review or production-readiness proof.
 
-Point 9 of the public-documentation commercialization roadmap is not complete until real external-reader sessions (9B) and findings review (9C) are done.
+The previous planned 9B and 9C execution steps are paused and superseded by PX-13 and PX-14 of `PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`.
+
+PX-13 owns real external comprehension and trial sessions.
+
+PX-14 owns findings, corrections and required reruns.
+
+The historical names 9B and 9C do not define an additional active execution path.
 
 ---
 

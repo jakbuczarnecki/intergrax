@@ -266,14 +266,72 @@ def test_roadmap_no_fabricated_validation(roadmap_text: str) -> None:
     assert "No result may be created before real sessions" in px14
 
 
+_EXTERNAL_VALIDATION_SECTION_HEADING = "External-validation boundary"
+
+_EXTERNAL_VALIDATION_REQUIRED_TOKENS = (
+    "PX-13",
+    "PX-14",
+    "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md",
+    "paused",
+    "superseded",
+    "historical",
+)
+
+_STALE_ACTIVE_9B_9C_PATTERNS = (
+    re.compile(r"not complete until real external-reader sessions\s*\(\s*9B\s*\)", re.I),
+    re.compile(r"not complete until.*9B.*9C", re.I),
+    re.compile(r"Point 9.*not complete until.*9B", re.I),
+)
+
+_ACTIVE_LEGACY_9B_9C_PATTERNS = (
+    re.compile(r"9B and 9C remain the active", re.I),
+    re.compile(r"9B and 9C are the active", re.I),
+    re.compile(r"complete 9B and 9C", re.I),
+    re.compile(r"then complete 9B", re.I),
+    re.compile(r"active external-validation phases", re.I),
+)
+
+_HISTORICAL_9B_9C_QUALIFIERS = ("paused", "superseded", "historical", "replaced")
+
+
+def _validate_external_validation_boundary_section(section: str) -> None:
+    lowered = section.lower()
+    for token in _EXTERNAL_VALIDATION_REQUIRED_TOKENS:
+        assert token.lower() in lowered, f"Missing required token: {token}"
+    assert re.search(
+        r"not define an additional active execution path",
+        section,
+        re.IGNORECASE,
+    ), "Missing additional-active-path negation"
+    assert re.search(r"PX-13.*owns", section, re.IGNORECASE | re.DOTALL), (
+        "PX-13 must own real external sessions"
+    )
+    assert re.search(r"PX-14.*owns", section, re.IGNORECASE | re.DOTALL), (
+        "PX-14 must own findings, corrections and reruns"
+    )
+    for pattern in _STALE_ACTIVE_9B_9C_PATTERNS:
+        assert not pattern.search(section), f"Stale active 9B/9C rule found: {pattern.pattern}"
+    for pattern in _ACTIVE_LEGACY_9B_9C_PATTERNS:
+        assert not pattern.search(section), (
+            f"Active legacy 9B/9C wording found: {pattern.pattern}"
+        )
+    for sentence in re.split(r"(?<=[.!?])\s+", section):
+        if not re.search(r"\b9[BC]\b", sentence):
+            continue
+        sentence_lower = sentence.lower()
+        assert any(
+            qualifier in sentence_lower for qualifier in _HISTORICAL_9B_9C_QUALIFIERS
+        ), f"9B/9C mention lacks historical qualifier: {sentence!r}"
+
+
 def test_architecture_synchronization() -> None:
     text = _read(ARCHITECTURE_PATH)
     assert "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md" in text
     assert "Layer 5 maintainer control" in text
     assert "docs/PUBLIC_DOCUMENTATION_MAP.md" in text
     assert re.search(r"must\s+\*{0,2}not\*{0,2}\s+be\s+added", text, re.IGNORECASE)
-    assert "PX-13" in text and "PX-14" in text
-    assert "9B" in text and "9C" in text
+    section = _extract_h2_section(text, _EXTERNAL_VALIDATION_SECTION_HEADING)
+    _validate_external_validation_boundary_section(section)
 
 
 def test_maintainer_index_synchronization() -> None:
@@ -319,3 +377,40 @@ def test_positive_forbidden_claim_mutations_raise(text: str) -> None:
 @pytest.mark.parametrize("text", _LEGITIMATE_NEGATIVE_CLAIM_MUTATIONS)
 def test_legitimate_negative_claim_mutations_pass(text: str) -> None:
     _assert_no_positive_forbidden_claim(text, "mutation")
+
+
+_NEGATIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS = (
+    "Point 9 is not complete until 9B and 9C are done.",
+    "Run PX-13 and PX-14, then complete 9B and 9C.",
+    "9B and 9C remain the active external-validation phases.",
+)
+
+_POSITIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS = (
+    "Historical 9B and 9C are paused and superseded by PX-13 and PX-14.",
+    (
+        "PX-13 and PX-14 are the active phases; historical 9B and 9C do not "
+        "define an additional active path."
+    ),
+)
+
+
+@pytest.mark.parametrize("text", _NEGATIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS)
+def test_external_validation_boundary_negative_mutations_raise(text: str) -> None:
+    section = f"## {_EXTERNAL_VALIDATION_SECTION_HEADING}\n\n{text}"
+    with pytest.raises(AssertionError):
+        _validate_external_validation_boundary_section(section)
+
+
+@pytest.mark.parametrize("text", _POSITIVE_EXTERNAL_VALIDATION_BOUNDARY_MUTATIONS)
+def test_external_validation_boundary_positive_mutations_pass(text: str) -> None:
+    section = (
+        f"## {_EXTERNAL_VALIDATION_SECTION_HEADING}\n\n"
+        f"The previous planned 9B and 9C execution steps are paused and "
+        f"superseded by PX-13 and PX-14 of PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md.\n\n"
+        f"{text}\n\n"
+        "PX-13 owns real external comprehension and trial sessions.\n\n"
+        "PX-14 owns findings, corrections and required reruns.\n\n"
+        "The historical names 9B and 9C do not define an additional active "
+        "execution path.\n"
+    )
+    _validate_external_validation_boundary_section(section)
