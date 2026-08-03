@@ -152,7 +152,7 @@ PX-0 froze: audience contract; success gates; route ownership; PX roadmap; exter
 
 **User-visible outcome:** Root README leads with product value, LKW workflow, and one clear next action before platform depth.
 
-**Completion gate:** README contract tests pass; LKW is primary CTA; echo/lab are not primary Quick Start; limitations remain visible.
+**Completion gate:** README receives a scoped editorial and factual audit; LKW is the primary CTA; echo/lab are not the primary Quick Start; limitations remain visible; the result is later verified in real external-reader sessions.
 
 ---
 
@@ -222,7 +222,7 @@ PX-0 froze: audience contract; success gates; route ownership; PX roadmap; exter
 
 **User-visible outcome:** Public documents remove maintainer task IDs and internal vocabulary from normal reader paths.
 
-**Completion gate:** Contract tests confirm cleanup on targeted reader documents; maintainer controls retain task references where appropriate.
+**Completion gate:** A scoped cross-document review confirms that targeted public-reader documents no longer expose maintainer task IDs or unnecessary internal vocabulary. Maintainer controls may retain those identifiers where needed.
 
 ---
 
@@ -246,13 +246,13 @@ PX-0 froze: audience contract; success gates; route ownership; PX roadmap; exter
 
 ---
 
-## PX-12 — Product-experience contract tests
+## PX-12 — Editorial consistency and readiness review
 
 **Status:** WAITING
 
-**User-visible outcome:** Automated contracts guard audience, gates, route ownership, and phase status.
+**User-visible outcome:** The complete public journey receives a final human editorial, factual and cross-document consistency review before external sessions.
 
-**Completion gate:** Contract test suite covers roadmap and synchronized maintainer documents; focused documentation contracts pass.
+**Completion gate:** The main reader paths are manually reviewed against the positioning, proof-status and roadmap sources of truth; links and commands are checked using normal repository tooling where appropriate; no Python copywriting tests, regex wording contracts or mutation tests are introduced.
 
 ---
 
