@@ -5,11 +5,35 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Mapping, Protocol, runtime_checkable
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+
+_MAX_MEDIA_TYPE_LENGTH = 255
+_MEDIA_TYPE_PATTERN = re.compile(
+    r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
+)
+
+
+def normalize_google_workspace_media_type(value: object) -> str:
+    """Validate and canonicalize one base media type without parameters."""
+    if type(value) is not str:
+        raise TypeError("media type must be a string")
+    if not value or value != value.strip():
+        raise ValueError("media type must be nonblank without surrounding whitespace")
+    if len(value) > _MAX_MEDIA_TYPE_LENGTH:
+        raise ValueError("media type exceeds maximum length")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+        raise ValueError("media type contains control characters")
+    if "," in value or "*" in value or ";" in value:
+        raise ValueError("media type must not contain comma, wildcard, or parameters")
+    normalized = value.lower()
+    if not _MEDIA_TYPE_PATTERN.fullmatch(normalized):
+        raise ValueError("media type syntax is invalid")
+    return normalized
 
 _INVALID_CREDENTIAL_MATERIAL_MESSAGE = "Google Workspace credential material is invalid"
 
@@ -112,6 +136,13 @@ class GoogleWorkspaceTransport(Protocol):
 class GoogleWorkspaceBinaryPayload:
     data: bytes = field(repr=False)
     content_type: str
+
+    def __post_init__(self) -> None:
+        if type(self.data) is not bytes:
+            raise TypeError("binary payload data must be bytes")
+        canonical = normalize_google_workspace_media_type(self.content_type)
+        if canonical != self.content_type:
+            object.__setattr__(self, "content_type", canonical)
 
 
 @runtime_checkable

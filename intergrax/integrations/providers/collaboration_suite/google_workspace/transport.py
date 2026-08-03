@@ -22,21 +22,19 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceHttpResponse,
     GoogleWorkspaceRequestExecutor,
     GoogleWorkspaceSourceKind,
+    normalize_google_workspace_media_type,
 )
 
 _T = TypeVar("_T")
 
 _MAX_PAGE_TOKEN_LENGTH = 4096
 _MAX_SAFE_REASON_LENGTH = 128
-_MAX_EXPECTED_CONTENT_TYPE_LENGTH = 255
 _ABSOLUTE_BINARY_MAX_BYTES = 104_857_600
 
-_MEDIA_TYPE_PATTERN = re.compile(
-    r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
-)
 _CONTENT_RANGE_PATTERN = re.compile(
     r"^bytes 0-(\d+)/(\d+)$"
 )
+_HTTP_TOKEN_PATTERN = re.compile(r"^[a-zA-Z0-9!#$%&'*+.^_`|~-]+$")
 
 _FORBIDDEN_QUERY_PARAM_NAMES = frozenset(
     {
@@ -549,48 +547,40 @@ def _validate_expected_content_type(value: object) -> str:
             safe_reason="invalid_expected_content_type",
             attempts=0,
         )
-    if not value or value != value.strip():
+    try:
+        return normalize_google_workspace_media_type(value)
+    except (TypeError, ValueError):
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
             status_code=None,
             retry_after_seconds=None,
             safe_reason="invalid_expected_content_type",
             attempts=0,
-        )
-    if any(ord(ch) < 32 for ch in value):
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="invalid_expected_content_type",
-            attempts=0,
-        )
-    if "," in value or "*" in value or ";" in value:
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="invalid_expected_content_type",
-            attempts=0,
-        )
-    if len(value) > _MAX_EXPECTED_CONTENT_TYPE_LENGTH:
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="invalid_expected_content_type",
-            attempts=0,
-        )
-    normalized = value.lower()
-    if not _MEDIA_TYPE_PATTERN.fullmatch(normalized):
-        raise GoogleWorkspaceApiError(
-            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
-            status_code=None,
-            retry_after_seconds=None,
-            safe_reason="invalid_expected_content_type",
-            attempts=0,
-        )
-    return normalized
+        ) from None
+
+
+def _validate_content_type_parameter(segment: str) -> None:
+    cleaned = segment.strip()
+    if not cleaned:
+        raise ValueError("content type parameter must be nonblank")
+    if cleaned.count("=") != 1:
+        raise ValueError("content type parameter must contain exactly one equals sign")
+    name, value = cleaned.split("=", 1)
+    if not name or _HTTP_TOKEN_PATTERN.fullmatch(name) is None:
+        raise ValueError("content type parameter name is invalid")
+    if not value:
+        raise ValueError("content type parameter value must be nonblank")
+    if value[0] == '"':
+        if len(value) < 2 or value[-1] != '"' or value.count('"') != 2:
+            raise ValueError("content type quoted parameter value is invalid")
+        inner = value[1:-1]
+        if not inner:
+            raise ValueError("content type quoted parameter value must be nonblank")
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in inner):
+            raise ValueError("content type quoted parameter value contains controls")
+        return
+    if _HTTP_TOKEN_PATTERN.fullmatch(value) is None:
+        raise ValueError("content type parameter value is invalid")
 
 
 def _validate_binary_max_bytes(value: object) -> int:
@@ -671,8 +661,7 @@ def _parse_response_media_type(
     status_code: int,
     attempts: int,
 ) -> str:
-    base = raw_value.split(";", 1)[0].strip().lower()
-    if not base or not _MEDIA_TYPE_PATTERN.fullmatch(base):
+    if type(raw_value) is not str:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
             status_code=status_code,
@@ -680,6 +669,25 @@ def _parse_response_media_type(
             safe_reason="invalid_content_type",
             attempts=attempts,
         )
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in raw_value):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        )
+    segments = raw_value.split(";")
+    try:
+        base = normalize_google_workspace_media_type(segments[0])
+    except (TypeError, ValueError):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_content_type",
+            attempts=attempts,
+        ) from None
     if base != expected_content_type:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
@@ -688,6 +696,17 @@ def _parse_response_media_type(
             safe_reason="invalid_content_type",
             attempts=attempts,
         )
+    for parameter_segment in segments[1:]:
+        try:
+            _validate_content_type_parameter(parameter_segment)
+        except ValueError:
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_type",
+                attempts=attempts,
+            ) from None
     return base
 
 
@@ -859,6 +878,14 @@ def _decode_success_binary(
                 status_code=status_code,
                 retry_after_seconds=None,
                 safe_reason="payload_too_large",
+                attempts=attempts,
+            )
+        if total != len(content):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="invalid_content_range",
                 attempts=attempts,
             )
         return GoogleWorkspaceBinaryPayload(data=content, content_type=content_type)

@@ -10,13 +10,14 @@ from dataclasses import dataclass, field
 import pytest
 from pydantic import ValidationError
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import IntegrationConfigurationError, IntegrationDependencyError
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GoogleWorkspaceBinaryPayload,
     GoogleWorkspaceSourceKind,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
     GoogleDriveItem,
+    GoogleDriveItemKind,
     GoogleDriveKnowledgeReader,
     GoogleDriveScope,
     GoogleDriveScopeKind,
@@ -464,3 +465,263 @@ def test_malformed_content_model_rejected() -> None:
             size_bytes=99,
             content_hash=hashlib.sha256(b"abc").hexdigest(),
         )
+
+
+def test_valid_item_is_copied_not_identical() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    transport = _DualTransport(
+        json_responses=[payload, payload],
+        binary_responses=[GoogleWorkspaceBinaryPayload(data=b"test", content_type="application/pdf")],
+    )
+    result = GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+    assert result.item == item
+    assert result.item is not item
+
+
+@pytest.mark.parametrize(
+    ("construct_kwargs",),
+    [
+        ({"kind": GoogleDriveItemKind.BLOB, "mime_type": "application/vnd.google-apps.document"},),
+        ({"scope": {"kind": GoogleDriveScopeKind.SHARED_DRIVE}},),
+        ({"can_download": "yes"},),
+        ({"version": None},),
+    ],
+)
+def test_model_construct_item_rejected_before_network(construct_kwargs: dict[str, object]) -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    snapshot = item.model_dump(mode="python")
+    snapshot.update(construct_kwargs)
+    bad_item = GoogleDriveItem.model_construct(**snapshot)
+    transport = _DualTransport()
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Drive content item"):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=bad_item)
+    assert transport.json_calls == []
+    assert transport.binary_calls == []
+
+
+def test_item_subclass_rejected_before_network() -> None:
+    class _SubclassItem(GoogleDriveItem):
+        pass
+
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    snapshot = item.model_dump(mode="python")
+    snapshot["scope"] = GoogleDriveScope(**snapshot["scope"])
+    subclass_item = _SubclassItem(**snapshot)
+    transport = _DualTransport()
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Drive content item"):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=subclass_item)
+    assert transport.json_calls == []
+    assert transport.binary_calls == []
+
+
+def test_file_content_rejects_model_construct_item() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    snapshot = item.model_dump(mode="python")
+    snapshot["kind"] = GoogleDriveItemKind.NATIVE_DOCUMENT
+    bad_item = GoogleDriveItem.model_construct(**snapshot)
+    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+        GoogleDriveFileContent(
+            item=bad_item,
+            mode=GoogleDriveContentMode.BLOB,
+            content_mime_type="application/pdf",
+            data=b"test",
+            size_bytes=4,
+            content_hash=hashlib.sha256(b"test").hexdigest(),
+        )
+
+
+def test_file_content_rejects_item_subclass() -> None:
+    class _SubclassItem(GoogleDriveItem):
+        pass
+
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    snapshot = item.model_dump(mode="python")
+    snapshot["scope"] = GoogleDriveScope(**snapshot["scope"])
+    subclass_item = _SubclassItem(**snapshot)
+    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+        GoogleDriveFileContent(
+            item=subclass_item,
+            mode=GoogleDriveContentMode.BLOB,
+            content_mime_type="application/pdf",
+            data=b"test",
+            size_bytes=4,
+            content_hash=hashlib.sha256(b"test").hexdigest(),
+        )
+
+
+@pytest.mark.parametrize(
+    "content_mime_type",
+    ["application/pdf; charset=utf-8", "text/*", "application/pdf,"],
+)
+def test_file_content_rejects_malformed_content_mime(content_mime_type: str) -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    with pytest.raises((ValidationError, IntegrationConfigurationError)):
+        GoogleDriveFileContent(
+            item=item,
+            mode=GoogleDriveContentMode.BLOB,
+            content_mime_type=content_mime_type,
+            data=b"test",
+            size_bytes=4,
+            content_hash=hashlib.sha256(b"test").hexdigest(),
+        )
+
+def test_file_content_uppercase_content_mime_canonicalized() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    result = GoogleDriveFileContent(
+        item=item,
+        mode=GoogleDriveContentMode.BLOB,
+        content_mime_type="APPLICATION/PDF",
+        data=b"test",
+        size_bytes=4,
+        content_hash=hashlib.sha256(b"test").hexdigest(),
+    )
+    assert result.content_mime_type == "application/pdf"
+
+
+def test_file_content_valid_item_stored_as_copy() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    result = GoogleDriveFileContent(
+        item=item,
+        mode=GoogleDriveContentMode.BLOB,
+        content_mime_type="application/pdf",
+        data=b"test",
+        size_bytes=4,
+        content_hash=hashlib.sha256(b"test").hexdigest(),
+    )
+    assert result.item == item
+    assert result.item is not item
+
+
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    result = GoogleDriveFileContent(
+        item=item,
+        mode=GoogleDriveContentMode.BLOB,
+        content_mime_type="application/pdf",
+        data=b"test",
+        size_bytes=4,
+        content_hash=hashlib.sha256(b"test").hexdigest(),
+    )
+    assert result.item == item
+    assert result.item is not item
+
+
+class _WrongBinaryReturnTransport(_DualTransport):
+    def get_bytes(
+        self,
+        *,
+        source_kind: GoogleWorkspaceSourceKind,
+        relative_path: str,
+        params: Mapping[str, object] | None,
+        expected_content_type: str,
+        max_bytes: int,
+        range_limited: bool,
+    ) -> object:
+        self.binary_calls.append(
+            {
+                "source_kind": source_kind,
+                "relative_path": relative_path,
+                "params": dict(params or {}),
+                "expected_content_type": expected_content_type,
+                "max_bytes": max_bytes,
+                "range_limited": range_limited,
+            }
+        )
+        return "not-a-payload"
+
+
+def test_injected_wrong_binary_return_type() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    transport = _WrongBinaryReturnTransport(
+        json_responses=[payload],
+        binary_responses=[GoogleWorkspaceBinaryPayload(data=b"test", content_type="application/pdf")],
+    )
+    with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result"):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+    assert len(transport.json_calls) == 1
+    assert transport.binary_calls
+
+
+def test_injected_wrong_payload_content_type() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    transport = _DualTransport(
+        json_responses=[payload],
+        binary_responses=[GoogleWorkspaceBinaryPayload(data=b"test", content_type="text/plain")],
+    )
+    with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result") as exc_info:
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+    message = str(exc_info.value)
+    assert "text/plain" not in message
+    assert "test" not in message
+
+
+def test_injected_malformed_binary_payload() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    bad_payload = object.__new__(GoogleWorkspaceBinaryPayload)
+    object.__setattr__(bad_payload, "data", b"test")
+    object.__setattr__(bad_payload, "content_type", "text/plain; charset=utf-8")
+    transport = _DualTransport(json_responses=[payload], binary_responses=[bad_payload])
+    with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result"):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+
+
+def test_injected_non_bytes_binary_payload() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    bad_payload = object.__new__(GoogleWorkspaceBinaryPayload)
+    object.__setattr__(bad_payload, "data", "not-bytes")
+    object.__setattr__(bad_payload, "content_type", "application/pdf")
+    transport = _DualTransport(json_responses=[payload], binary_responses=[bad_payload])
+    with pytest.raises(IntegrationDependencyError, match="invalid Google Drive binary content result"):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(item=item)
+
+
+def test_native_export_effective_limit_enforced() -> None:
+    native_payload = _native_payload("application/vnd.google-apps.document")
+    item = _item_from_payload(native_payload)
+    oversized = b"x" * (GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES + 1)
+    transport = _DualTransport(
+        json_responses=[native_payload],
+        binary_responses=[
+            GoogleWorkspaceBinaryPayload(
+                data=oversized,
+                content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        ],
+    )
+    with pytest.raises(GoogleDriveContentTooLarge):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(
+            item=item,
+            max_bytes=DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES,
+        )
+    assert transport.binary_calls[0]["max_bytes"] == GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES
+    assert len(transport.json_calls) == 1
+
+
+def test_blob_effective_limit_enforced() -> None:
+    payload = _blob_payload()
+    item = _item_from_payload(payload)
+    max_bytes = 1024
+    oversized = b"x" * (max_bytes + 1)
+    transport = _DualTransport(
+        json_responses=[payload],
+        binary_responses=[GoogleWorkspaceBinaryPayload(data=oversized, content_type="application/pdf")],
+    )
+    with pytest.raises(GoogleDriveContentTooLarge):
+        GoogleDriveContentReader(transport=transport).read_drive_file_content(
+            item=item,
+            max_bytes=max_bytes,
+        )
+    assert transport.binary_calls[0]["max_bytes"] == max_bytes
+    assert len(transport.json_calls) == 1

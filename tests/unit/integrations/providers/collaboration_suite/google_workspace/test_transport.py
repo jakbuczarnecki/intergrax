@@ -1436,3 +1436,120 @@ def test_binary_executor_exception_maps_to_temporary() -> None:
         )
     assert exc_info.value.kind is GoogleWorkspaceErrorKind.TEMPORARY
     assert "network secret" not in str(exc_info.value)
+
+
+# --- Binary payload self-validation ---
+
+
+def test_binary_payload_valid_construction() -> None:
+    payload = GoogleWorkspaceBinaryPayload(data=b"abc", content_type="application/pdf")
+    assert payload.data == b"abc"
+    assert payload.content_type == "application/pdf"
+
+
+def test_binary_payload_uppercase_content_type_canonicalized() -> None:
+    payload = GoogleWorkspaceBinaryPayload(data=b"x", content_type="APPLICATION/PDF")
+    assert payload.content_type == "application/pdf"
+
+
+def test_binary_payload_str_data_rejected() -> None:
+    with pytest.raises(TypeError):
+        GoogleWorkspaceBinaryPayload(data="abc", content_type="text/plain")  # type: ignore[arg-type]
+
+
+def test_binary_payload_bytearray_rejected() -> None:
+    with pytest.raises(TypeError):
+        GoogleWorkspaceBinaryPayload(data=bytearray(b"abc"), content_type="text/plain")  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "content_type",
+    [
+        "",
+        "text/plain; charset=utf-8",
+        "text/*",
+        "text/plain,application/json",
+        " text/plain",
+        "text/plain ",
+        "text/\x00plain",
+    ],
+)
+def test_binary_payload_invalid_content_type_rejected(content_type: str) -> None:
+    with pytest.raises(ValueError):
+        GoogleWorkspaceBinaryPayload(data=b"x", content_type=content_type)
+
+
+def test_binary_quoted_charset_accepted() -> None:
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(
+                200,
+                headers={"Content-Type": 'text/plain; charset="utf-8"'},
+                content=b"ok",
+            )
+        ]
+    )
+    transport = _transport(executor)
+    result = transport.get_bytes(
+        source_kind=GoogleWorkspaceSourceKind.DRIVE,
+        relative_path="/files/file-1",
+        params=None,
+        expected_content_type="text/plain",
+        max_bytes=10,
+        range_limited=False,
+    )
+    assert result.data == b"ok"
+
+
+@pytest.mark.parametrize(
+    ("content_type", "content"),
+    [
+        ("text/plain;", b"x"),
+        ("text/plain; broken", b"x"),
+        ("text/plain; =value", b"x"),
+        ("text/plain; charset=", b"x"),
+        ('text/plain; charset="unterminated', b"x"),
+        ("text/plain;\r\nInjected: value", b"x"),
+    ],
+)
+def test_binary_malformed_content_type_parameters_rejected(
+    content_type: str,
+    content: bytes,
+) -> None:
+    executor = _RecordingExecutor(
+        responses=[_FakeResponse(200, headers={"Content-Type": content_type}, content=content)]
+    )
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_bytes(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files/file-1",
+            params=None,
+            expected_content_type="text/plain",
+            max_bytes=10,
+            range_limited=False,
+        )
+    assert exc_info.value.safe_reason == "invalid_content_type"
+
+
+def test_binary_206_incomplete_total_within_limit_rejected() -> None:
+    executor = _RecordingExecutor(
+        responses=[
+            _FakeResponse(
+                206,
+                headers={"Content-Type": "text/plain", "Content-Range": "bytes 0-4/10"},
+                content=b"12345",
+            )
+        ]
+    )
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_bytes(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files/file-1",
+            params=None,
+            expected_content_type="text/plain",
+            max_bytes=10,
+            range_limited=True,
+        )
+    assert exc_info.value.safe_reason == "invalid_content_range"

@@ -18,14 +18,17 @@ from intergrax.integrations.contracts.base import (
     IntegrationDependencyError,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
+    GoogleWorkspaceBinaryPayload,
     GoogleWorkspaceBinaryTransport,
     GoogleWorkspaceSourceKind,
     GoogleWorkspaceTransport,
+    normalize_google_workspace_media_type,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
     GoogleDriveItem,
     GoogleDriveItemKind,
     GoogleDriveKnowledgeReader,
+    GoogleDriveScope,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceApiError,
@@ -38,12 +41,10 @@ GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES = 10 * 1024 * 1024
 
 _STRICT_MODEL_CONFIG = ConfigDict(extra="forbid", frozen=True, strict=True)
 _CONTENT_HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
-_MEDIA_TYPE_PATTERN = re.compile(
-    r"^[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+$"
-)
 
 _INVALID_ITEM_MESSAGE = "invalid Google Drive content item"
 _INVALID_MAX_BYTES_MESSAGE = "invalid Google Drive content max_bytes"
+_INVALID_BINARY_RESULT_MESSAGE = "invalid Google Drive binary content result"
 _BINARY_TRANSPORT_REQUIRED_MESSAGE = (
     "Google Workspace transport does not support binary content"
 )
@@ -117,6 +118,21 @@ class GoogleDriveFileContent(BaseModel):
     size_bytes: int
     content_hash: str = Field(repr=False)
 
+    @field_validator("item", mode="before")
+    @classmethod
+    def _validate_item(cls, value: object) -> GoogleDriveItem:
+        return _reconstruct_item(value)
+
+    @field_validator("content_mime_type", mode="before")
+    @classmethod
+    def _validate_content_mime_type(cls, value: object) -> str:
+        if type(value) is not str:
+            raise ValueError(_INVALID_ITEM_MESSAGE)
+        try:
+            return normalize_google_workspace_media_type(value)
+        except (TypeError, ValueError):
+            raise ValueError(_INVALID_ITEM_MESSAGE) from None
+
     @field_validator("data", mode="before")
     @classmethod
     def _validate_data(cls, value: object) -> bytes:
@@ -185,7 +201,9 @@ def _validate_max_bytes(max_bytes: object) -> int:
 
 
 def _validate_blob_mime_type(mime_type: str) -> None:
-    if not _MEDIA_TYPE_PATTERN.fullmatch(mime_type):
+    try:
+        normalize_google_workspace_media_type(mime_type)
+    except (TypeError, ValueError):
         raise GoogleDriveUnsupportedContent() from None
 
 
@@ -201,12 +219,42 @@ def _resolve_export_mime(mime_type: str) -> str:
 
 
 def _reconstruct_item(item: object) -> GoogleDriveItem:
-    if not isinstance(item, GoogleDriveItem):
+    if type(item) is not GoogleDriveItem:
         raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
     try:
-        return item.model_copy(deep=True)
+        snapshot = item.model_dump(mode="python")
+        scope_data = snapshot.get("scope")
+        if isinstance(scope_data, dict):
+            snapshot["scope"] = GoogleDriveScope(**scope_data)
+    except Exception:
+        raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
+    try:
+        validated = GoogleDriveItem(**snapshot)
     except (ValueError, TypeError, AttributeError, ValidationError):
         raise IntegrationConfigurationError(_INVALID_ITEM_MESSAGE) from None
+    return validated
+
+
+def _copy_and_validate_binary_payload(
+    payload: object,
+    *,
+    expected_content_type: str,
+    effective_max_bytes: int,
+) -> GoogleWorkspaceBinaryPayload:
+    if type(payload) is not GoogleWorkspaceBinaryPayload:
+        raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None
+    try:
+        validated = GoogleWorkspaceBinaryPayload(
+            data=payload.data,
+            content_type=payload.content_type,
+        )
+    except (TypeError, ValueError):
+        raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None
+    if validated.content_type != expected_content_type:
+        raise IntegrationDependencyError(_INVALID_BINARY_RESULT_MESSAGE) from None
+    if len(validated.data) > effective_max_bytes:
+        raise GoogleDriveContentTooLarge() from None
+    return validated
 
 
 def _validate_content_item(item: GoogleDriveItem) -> GoogleDriveItem:
@@ -309,6 +357,7 @@ class GoogleDriveContentReader:
         if validated_item.kind is GoogleDriveItemKind.BLOB:
             mode = GoogleDriveContentMode.BLOB
             content_mime_type = validated_item.mime_type
+            effective_max_bytes = validated_max_bytes
             try:
                 payload = self._transport.get_bytes(
                     source_kind=GoogleWorkspaceSourceKind.DRIVE,
@@ -318,7 +367,7 @@ class GoogleDriveContentReader:
                         "supportsAllDrives": True,
                     },
                     expected_content_type=content_mime_type,
-                    max_bytes=validated_max_bytes,
+                    max_bytes=effective_max_bytes,
                     range_limited=True,
                 )
             except GoogleWorkspaceApiError as exc:
@@ -328,20 +377,29 @@ class GoogleDriveContentReader:
         else:
             mode = GoogleDriveContentMode.EXPORT
             content_mime_type = _resolve_export_mime(validated_item.mime_type)
-            effective_max = min(validated_max_bytes, GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES)
+            effective_max_bytes = min(
+                validated_max_bytes,
+                GOOGLE_DRIVE_NATIVE_EXPORT_MAX_BYTES,
+            )
             try:
                 payload = self._transport.get_bytes(
                     source_kind=GoogleWorkspaceSourceKind.DRIVE,
                     relative_path=f"/files/{encoded_id}/export",
                     params={"mimeType": content_mime_type},
                     expected_content_type=content_mime_type,
-                    max_bytes=effective_max,
+                    max_bytes=effective_max_bytes,
                     range_limited=False,
                 )
             except GoogleWorkspaceApiError as exc:
                 if exc.kind is GoogleWorkspaceErrorKind.PAYLOAD_TOO_LARGE:
                     raise GoogleDriveContentTooLarge() from None
                 raise
+
+        payload = _copy_and_validate_binary_payload(
+            payload,
+            expected_content_type=content_mime_type,
+            effective_max_bytes=effective_max_bytes,
+        )
 
         metadata_after = self._metadata_reader.read_item(
             scope=validated_item.scope,
@@ -350,8 +408,6 @@ class GoogleDriveContentReader:
         _verify_revision_match(metadata_after, expected=metadata_before)
 
         data = payload.data
-        if len(data) > validated_max_bytes:
-            raise GoogleDriveContentTooLarge() from None
         if mode is GoogleDriveContentMode.BLOB:
             if metadata_before.size_bytes is not None and metadata_before.size_bytes != len(data):
                 raise GoogleDriveContentChanged() from None
