@@ -259,7 +259,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
-| `README.md` | Landing, mixed technical index | Layer 1 landing only | root README rewrite | future README task (proof model frozen) |
+| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-5 |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `EVALUATION_GUIDE.md` | Bounded evaluation paths | Reader-intent evaluation | `BUILD_WITH_INTERGRAX.md` (partial merge) | future commercialization |
 | `USE_CASES.md` | Use-case map | Reader-intent fit check | `WHY_INTERGRAX.md` / use-case section | future commercialization |
@@ -363,6 +363,16 @@ Freeze the future requirement:
 5. one Token Optimization capability spotlight.
 
 The README must not become a gallery. Every visual must explain something.
+
+**Delivered in the root README redesign:**
+
+- light/dark neutral hero illustration;
+- LKW user-workflow Mermaid diagram;
+- simplified Intergrax architecture Mermaid diagram;
+- compact proof/status section;
+- Token Optimization capability spotlight and Mermaid diagram.
+
+Real product screenshots remain deferred until reviewed source images exist.
 
 ---
 
