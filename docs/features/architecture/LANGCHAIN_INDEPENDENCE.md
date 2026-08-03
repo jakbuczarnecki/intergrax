@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** `LCI-1A` — Native knowledge document contract architecture
+**Current active task:** `LCI-1B` — Native knowledge document contract implementation
 
 **Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -203,7 +203,7 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 
 ## LCI-1A — Native knowledge document contract (summary)
 
-Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**).
+Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **READY_FOR_REVIEW**).
 
 | Decision | Value |
 |----------|-------|

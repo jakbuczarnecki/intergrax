@@ -64,7 +64,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Task | Priority | Status | Deliverable | Next |
 |------|----------|--------|-------------|------|
-| LCI-1A | P0 | READY_FOR_REVIEW | Native knowledge document architecture (`KnowledgeDocument`) | LCI-1B |
+| LCI-1B | P0 | READY_FOR_REVIEW | native KnowledgeDocument implementation | LCI-1C |
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
 

@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Native Knowledge Document Contract — LCI-1A
 
-**Status:** READY_FOR_REVIEW  
+**Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **READY_FOR_REVIEW**
 **Owner:** RAG (functional) · Tier-0 `intergrax/knowledge/` (neutral shared core)  
 **Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)  
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)  
@@ -477,3 +477,16 @@ Per [`LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](LANGCHAIN_INDEPENDENCE_de
 - [x] Reserved metadata always rejected (including duplicate canonical values)
 - [x] Finite JSON numbers and deterministic serialization requirements documented
 - [x] Shared validation component reuse decision documented
+
+---
+
+## 17. Implementation evidence (LCI-1B)
+
+| Item | Location |
+|------|----------|
+| Native models | `intergrax/knowledge/contracts/document.py` |
+| Public import | `from intergrax.knowledge.contracts import KnowledgeDocument` |
+| Serializer API | `dump_knowledge_document` / `load_knowledge_document` in `intergrax/knowledge/contracts/document.py` |
+| Shared validation | `intergrax/knowledge/contracts/validation.py` (reused by Vendor Knowledge models) |
+| Unit tests | `tests/unit/knowledge/contracts/test_document.py` |
+| Consumer migration | Not started (remains LCI-2+ / bridge LCI-1C) |
