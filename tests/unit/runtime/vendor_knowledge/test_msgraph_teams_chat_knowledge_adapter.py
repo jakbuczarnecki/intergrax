@@ -1554,6 +1554,5 @@ def test_production_and_tests_have_no_getattr_setattr_hasattr() -> None:
     root = Path(__file__).resolve().parents[4]
     target = root / "intergrax/runtime/vendor_knowledge/adapters/ms365_graph_teams_chat.py"
     text = target.read_text(encoding="utf-8")
-    assert "getattr(" not in text
-    assert "setattr(" not in text
-    assert "hasattr(" not in text
+    for forbidden_name in ("getattr", "setattr", "hasattr"):
+        assert f"{forbidden_name}(" not in text
