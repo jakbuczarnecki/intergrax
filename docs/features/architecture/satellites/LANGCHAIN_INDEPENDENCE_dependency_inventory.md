@@ -28,22 +28,22 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 104 |
-| direct test imports | 69 |
+| direct production/runtime imports | 91 |
+| direct test imports | 58 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 9 |
 | generated lock rows | 1 |
-| core contract leaks | 16 |
-| core implementation dependencies | 50 |
+| core contract leaks | 15 |
+| core implementation dependencies | 38 |
 | provider-bound dependencies | 26 |
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
-| test-only | 69 |
+| test-only | 58 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| **total detailed inventory rows** | **185** |
+| **total detailed inventory rows** | **161** |
 
 ## C. Detailed inventory table
 
@@ -88,26 +88,13 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0037 | `langchain_core.documents` | `intergrax/rag/document_loaders/contracts/base_document_handler.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2B | verified import |
 | LCI-INV-0038 | `langchain_core.documents` | `intergrax/rag/document_loaders/contracts/base_document_loader.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2B | verified import |
 | LCI-INV-0039 | `langchain_core.documents` | `intergrax/rag/document_loaders/contracts/base_document_normalizer.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2C | verified import |
-| LCI-INV-0040 | `langchain_core.documents` | `intergrax/rag/document_loaders/contracts/base_document_parser.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2A | verified import |
 | LCI-INV-0041 | `langchain_core.documents` | `intergrax/rag/document_loaders/contracts/metadata_provider.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2C | verified import |
 | LCI-INV-0042 | `langchain_core.documents` | `intergrax/rag/document_loaders/documents_loader.py` | 12 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2B | verified import |
-| LCI-INV-0043 | `langchain_core.documents` | `intergrax/rag/document_loaders/integration/catalog_parser.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2B | verified import |
 | LCI-INV-0044 | `langchain_core.documents` | `intergrax/rag/document_loaders/metadata/default_metadata_provider.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2C | verified import |
 | LCI-INV-0045 | `langchain_core.documents` | `intergrax/rag/document_loaders/normalizers/whitespace_normalizer.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2C | verified import |
-| LCI-INV-0046 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/audio_smart_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0047 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/doc_smart_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0048 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/docling_local_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0049 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/docling_server_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0050 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/excel_smart_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0051 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/html_smart_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0052 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/image_smart_parser.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
-| LCI-INV-0053 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/pdf_smart_parser.py` | 8 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
 | LCI-INV-0054 | `langchain_community.document_loaders` | `intergrax/rag/document_loaders/parsers/text_smart_parser.py` | 9 | `TextLoader` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5A | verified import |
-| LCI-INV-0055 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/text_smart_parser.py` | 10 | `Document` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-2A | verified import |
-| LCI-INV-0056 | `langchain_core.documents` | `intergrax/rag/document_loaders/parsers/video_smart_parser.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2A | verified import |
 | LCI-INV-0057 | `langchain_core.documents` | `intergrax/rag/document_loaders/pipeline/metadata_pipeline.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2C | verified import |
 | LCI-INV-0058 | `langchain_core.documents` | `intergrax/rag/document_loaders/pipeline/normalizer_pipeline.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2C | verified import |
-| LCI-INV-0059 | `langchain_core.documents` | `intergrax/rag/document_loaders/pipeline/parser_pipeline.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2C | verified import |
 | LCI-INV-0060 | `langchain_core.documents` | `intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D | verified import |
 | LCI-INV-0061 | `langchain_core.documents` | `intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D | verified import |
 | LCI-INV-0062 | `langchain_core.documents` | `intergrax/rag/document_splitters/documents_splitter.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
@@ -159,14 +146,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0108 | `langchain_core.documents` | `tests/e2e/rag/test_rag_full_runtime_e2e.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
 | LCI-INV-0109 | `langchain_core.documents` | `tests/integration/applications/test_memory_vector_ltm_wiring.py` | 19 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
 | LCI-INV-0110 | `langchain_core.documents` | `tests/integration/rag/answers/test_rag_answer_pipeline.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4D | verified import |
-| LCI-INV-0111 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_audio_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0112 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_doc_smart_document_handler.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0113 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_document_handlers_framework.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0114 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_excel_smart_document_handler.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0115 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_html_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0116 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_image_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0117 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_text_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0118 | `langchain_core.documents` | `tests/integration/rag/document_loaders/parsers/test_video_smart_document_handler.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
 | LCI-INV-0119 | `langchain_core.documents` | `tests/integration/rag/document_splitters/test_chunking_integration.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2D | verified import |
 | LCI-INV-0120 | `langchain_core.documents` | `tests/integration/rag/embedding/test_hf_embedding_pipeline_integration.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
 | LCI-INV-0121 | `langchain_core.documents` | `tests/integration/rag/embedding/test_ollama_embedding_pipeline_integration.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |
@@ -183,9 +162,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0132 | `langchain_core.documents` | `tests/unit/rag/document_loaders/metadata/test_metadata_pipeline.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
 | LCI-INV-0133 | `langchain_core.documents` | `tests/unit/rag/document_loaders/normalizers/test_normalizer_pipeline.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
 | LCI-INV-0134 | `langchain_core.documents` | `tests/unit/rag/document_loaders/normalizers/test_whitespace_normalizer.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2C | verified import |
-| LCI-INV-0135 | `langchain_core.documents` | `tests/unit/rag/document_loaders/parsers/test_docling_local_parser.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0136 | `langchain_core.documents` | `tests/unit/rag/document_loaders/parsers/test_docling_server_parser.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
-| LCI-INV-0137 | `langchain_core.documents` | `tests/unit/rag/document_loaders/parsers/test_parser_pipeline.py` | 10 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2A | verified import |
 | LCI-INV-0138 | `langchain_core.documents` | `tests/unit/rag/document_loaders/test_document_loader.py` | 12 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2B | verified import |
 | LCI-INV-0139 | `langchain_core.documents` | `tests/unit/rag/document_loaders/test_documents_loader_filesystem.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2B | verified import |
 | LCI-INV-0140 | `langchain_core.documents` | `tests/unit/rag/embedding/test_embedding_manager.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3A | verified import |

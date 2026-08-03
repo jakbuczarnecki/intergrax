@@ -31,7 +31,6 @@ ROADMAP_TASKS = {
 
 SEMANTIC_PATH_TASKS: dict[str, str] = {
     "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/document_loaders/contracts/base_document_parser.py": "LCI-2A",
     "intergrax/rag/document_loaders/contracts/base_document_handler.py": "LCI-2B",
     "intergrax/rag/document_loaders/contracts/base_document_loader.py": "LCI-2B",
     "intergrax/rag/document_loaders/contracts/base_document_normalizer.py": "LCI-2C",
@@ -52,7 +51,6 @@ SEMANTIC_PATH_TASKS: dict[str, str] = {
 
 SEMANTIC_PATH_SYMBOL_TASKS: dict[tuple[str, str], str] = {
     ("intergrax/rag/document_loaders/parsers/text_smart_parser.py", "TextLoader"): "LCI-5A",
-    ("intergrax/rag/document_loaders/parsers/text_smart_parser.py", "Document"): "LCI-2A",
 }
 
 SEMANTIC_TEST_TASKS: dict[str, str] = {
@@ -292,7 +290,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 185, f"expected 185 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 161, f"expected 161 unique inventory IDs, got {len(ids)}"
 
     keys = [(r["path"], r["line"], r["symbol"]) for r in rows]
     dupes = [k for k, c in Counter(keys).items() if c > 1]
@@ -302,7 +300,7 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("total detailed inventory rows") == 185
+    assert summary.get("total detailed inventory rows") == 161
     assert summary.get("unclassified occurrences") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
@@ -350,7 +348,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("185 unique inventory IDs")
+    print("161 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

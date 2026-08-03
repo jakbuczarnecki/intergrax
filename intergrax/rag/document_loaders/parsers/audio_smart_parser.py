@@ -5,10 +5,8 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
 from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
 
@@ -37,16 +35,6 @@ class AudioSmartParser(BaseDocumentParser):
     def is_available(self) -> bool:
         return resolve_document_parser("whisper", **self._options).is_available()
 
-    def load(self, source: str) -> Sequence[Document]:
+    def load(self, source: str) -> Sequence[ParsedDocumentFragment]:
         backend = resolve_document_parser("whisper", **self._options)
-        docs = CatalogDocumentParser(backend).load(source)
-        result: list[Document] = []
-        for i, doc in enumerate(docs):
-            metadata = build_loader_metadata(
-                source=source,
-                parser=self.parser_id(),
-                position=i,
-            )
-            metadata.update(doc.metadata or {})
-            result.append(Document(page_content=doc.page_content, metadata=metadata))
-        return result
+        return CatalogDocumentParser(backend).load(source)

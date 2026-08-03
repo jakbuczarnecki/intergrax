@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-1D
-**Next task after acceptance:** LCI-2A
+**Current task:** LCI-2A
+**Next task after acceptance:** LCI-2B
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -141,7 +141,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | LCI-1D proves that the native knowledge-document module, its serializers, compatibility-independent conformance tests, and native document public exports can be imported and exercised without langchain* installed. |
 | **Owning domain plan** | docs/plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-1B |
@@ -159,14 +159,17 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Parser contracts stop returning LangChain Document. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/INTEGRATIONS.md |
 | **Dependencies** | LCI-1D |
 | **Exact scope** | document_loaders/contracts parsers; integration parser bridges |
 | **Explicit out of scope** | Loaders, normalization, chunking, ingest |
-| **Acceptance criteria** | Parser contracts and parser implementations emit native documents; parser unit tests green |
+| **Acceptance criteria** | Parser contracts and parser implementations emit `ParsedDocumentFragment`; parser unit tests green |
 | **User-visible outcome** | Parsed output is native at parser boundary |
+| **Canonical parser-stage output** | `ParsedDocumentFragment` |
+| **KnowledgeDocument construction** | deferred to scoped handler/loader boundary in LCI-2B |
+| **Temporary compatibility** | `BaseDocumentHandler` maps fragments to LangChain `Document` until LCI-2B |
 
 ---
 

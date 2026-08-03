@@ -111,12 +111,12 @@ Load **only** the satellite matching your task or cited gap ID.
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Owner** | Experimentation and Developer Experience |
 | **Checker** | `scripts/maintenance/check_knowledge_document_conformance.py` |
 | **Tests** | `tests/unit/knowledge/contracts/test_document_conformance.py`; `tests/unit/architecture/test_knowledge_document_conformance_gate.py` |
 | **CI** | PR smoke + full governance |
-| **Next** | LCI-2A |
+| **Next ownership** | RAG / INTEGRATIONS — LCI-2A |
 
 
 

@@ -3,7 +3,6 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 import pytest
-from langchain_core.documents import Document
 
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
@@ -44,21 +43,21 @@ def mock_docling_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_docling_local_parser_returns_document(mock_docling_backend: None) -> None:
+def test_docling_local_parser_returns_fragment(mock_docling_backend: None) -> None:
     parser = DoclingLocalParser()
-    docs = parser.load("test.pdf")
+    fragments = parser.load("test.pdf")
 
-    assert len(docs) == 1
-    assert isinstance(docs[0], Document)
-    assert "Test document" in docs[0].page_content
+    assert len(fragments) == 1
+    assert isinstance(fragments[0], ParsedDocumentFragment)
+    assert "Test document" in fragments[0].text
 
 
 def test_docling_local_parser_sets_metadata(mock_docling_backend: None) -> None:
     parser = DoclingLocalParser()
-    docs = parser.load("test.pdf")
-    metadata = docs[0].metadata
+    fragments = parser.load("test.pdf")
+    metadata = fragments[0].metadata
 
-    assert metadata["parser"] == parser.parser_id()
+    assert metadata["parser"] == "docling.local"
     assert metadata["position"] == 0
     assert metadata["source"] == "test.pdf"
 
@@ -69,19 +68,19 @@ def test_docling_local_parser_handles_empty_text(monkeypatch: pytest.MonkeyPatch
         lambda slug, mode="local": _FakeDoclingBackend(text=""),
     )
     parser = DoclingLocalParser()
-    docs = parser.load("test.pdf")
+    fragments = parser.load("test.pdf")
 
-    assert len(docs) == 1
-    assert docs[0].page_content == ""
+    assert len(fragments) == 1
+    assert fragments[0].text == ""
 
 
 def test_docling_local_parser_multiple_calls(mock_docling_backend: None) -> None:
     parser = DoclingLocalParser()
-    docs1 = parser.load("a.pdf")
-    docs2 = parser.load("b.pdf")
+    fragments1 = parser.load("a.pdf")
+    fragments2 = parser.load("b.pdf")
 
-    assert docs1[0].metadata["source"] == "a.pdf"
-    assert docs2[0].metadata["source"] == "b.pdf"
+    assert fragments1[0].metadata["source"] == "a.pdf"
+    assert fragments2[0].metadata["source"] == "b.pdf"
 
 
 def test_docling_local_parser_is_available() -> None:

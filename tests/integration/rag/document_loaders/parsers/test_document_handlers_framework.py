@@ -3,7 +3,6 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-import sys
 
 import pytest
 from pathlib import Path

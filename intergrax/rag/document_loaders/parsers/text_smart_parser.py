@@ -7,10 +7,10 @@ from __future__ import annotations
 from typing import Sequence
 
 from langchain_community.document_loaders import TextLoader
-from langchain_core.documents import Document
+
+from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
-
 
 
 class TextLoaderParser(BaseDocumentParser):
@@ -22,7 +22,7 @@ class TextLoaderParser(BaseDocumentParser):
     def is_available(self) -> bool:
         return True
 
-    def load(self, source: str) -> Sequence[Document]:
+    def load(self, source: str) -> Sequence[ParsedDocumentFragment]:
 
         loader = TextLoader(
             source,
@@ -31,7 +31,7 @@ class TextLoaderParser(BaseDocumentParser):
 
         docs = loader.load()
 
-        result: list[Document] = []
+        result: list[ParsedDocumentFragment] = []
 
         for i, d in enumerate(docs):
 
@@ -44,8 +44,8 @@ class TextLoaderParser(BaseDocumentParser):
             metadata.update(d.metadata or {})
 
             result.append(
-                Document(
-                    page_content=d.page_content,
+                ParsedDocumentFragment(
+                    text=d.page_content,
                     metadata=metadata,
                 )
             )

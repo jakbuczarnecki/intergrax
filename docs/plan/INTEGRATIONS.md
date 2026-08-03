@@ -12,6 +12,19 @@
 
 ---
 
+## Active cross-feature work — LangChain Independence
+
+### LCI-2A — Document parser boundary migration
+
+| Field | Value |
+|-------|-------|
+| **Status** | READY_FOR_REVIEW |
+| **Integration contract reused** | `ParsedDocumentFragment` |
+| **Provider internals changed** | no |
+| **Provider optionalization** | deferred to LCI-5A / LCI-5C |
+
+---
+
 ## Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (INTEGRATIONS plan).

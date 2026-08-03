@@ -129,15 +129,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0040",
-      "path": "intergrax/rag/document_loaders/contracts/base_document_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0041",
       "path": "intergrax/rag/document_loaders/contracts/metadata_provider.py",
       "kind": "from",
@@ -149,15 +140,6 @@
     {
       "inventory_id": "LCI-INV-0042",
       "path": "intergrax/rag/document_loaders/documents_loader.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0043",
-      "path": "intergrax/rag/document_loaders/integration/catalog_parser.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [
@@ -183,102 +165,12 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0046",
-      "path": "intergrax/rag/document_loaders/parsers/audio_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0047",
-      "path": "intergrax/rag/document_loaders/parsers/doc_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0048",
-      "path": "intergrax/rag/document_loaders/parsers/docling_local_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0049",
-      "path": "intergrax/rag/document_loaders/parsers/docling_server_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0050",
-      "path": "intergrax/rag/document_loaders/parsers/excel_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0051",
-      "path": "intergrax/rag/document_loaders/parsers/html_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0052",
-      "path": "intergrax/rag/document_loaders/parsers/image_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0053",
-      "path": "intergrax/rag/document_loaders/parsers/pdf_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0054",
       "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
       "kind": "from",
       "module": "langchain_community.document_loaders",
       "names": [
         "TextLoader"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0055",
-      "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0056",
-      "path": "intergrax/rag/document_loaders/parsers/video_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
       ]
     },
     {
@@ -293,15 +185,6 @@
     {
       "inventory_id": "LCI-INV-0058",
       "path": "intergrax/rag/document_loaders/pipeline/normalizer_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0059",
-      "path": "intergrax/rag/document_loaders/pipeline/parser_pipeline.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

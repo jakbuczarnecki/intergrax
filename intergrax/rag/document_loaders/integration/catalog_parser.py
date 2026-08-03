@@ -7,11 +7,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from langchain_core.documents import Document
-
-from intergrax.integrations.contracts.document_parser import DocumentParser
+from intergrax.integrations.contracts.document_parser import (
+    DocumentParser,
+    ParsedDocumentFragment,
+)
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
-from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
 
 
@@ -31,10 +31,10 @@ class CatalogDocumentParser(BaseDocumentParser):
     def is_available(self) -> bool:
         return self._backend.is_available()
 
-    def load(self, source: str) -> Sequence[Document]:
+    def load(self, source: str) -> Sequence[ParsedDocumentFragment]:
         fragments = self._backend.parse_file(source)
         parser_id = self._backend.parser_id()
-        documents: list[Document] = []
+        result: list[ParsedDocumentFragment] = []
         for index, fragment in enumerate(fragments):
             metadata = build_loader_metadata(
                 source=source,
@@ -42,9 +42,11 @@ class CatalogDocumentParser(BaseDocumentParser):
                 position=index,
             )
             metadata.update(fragment.metadata)
-            if fragment.native_handle is not None:
-                metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META] = fragment.native_handle
-            documents.append(
-                Document(page_content=fragment.text, metadata=metadata)
+            result.append(
+                ParsedDocumentFragment(
+                    text=fragment.text,
+                    metadata=metadata,
+                    native_handle=fragment.native_handle,
+                )
             )
-        return documents
+        return result

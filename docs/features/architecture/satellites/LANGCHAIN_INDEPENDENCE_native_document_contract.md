@@ -28,6 +28,16 @@ This satellite is the **source of truth** for the canonical Intergrax knowledge 
 
 ---
 
+## Parser-stage transition boundary (LCI-2A)
+
+`	ext
+provider parser -> ParsedDocumentFragment -> scoped loader/handler -> KnowledgeDocument
+`
+
+ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI — no authoritative tenant, namespace, or document scope — so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
+
+---
+
 ## 2. Location decision
 
 | Aspect | Decision |

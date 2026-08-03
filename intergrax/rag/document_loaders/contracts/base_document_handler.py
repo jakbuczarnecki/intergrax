@@ -10,6 +10,7 @@ from typing import List, Sequence
 from langchain_core.documents import Document
 
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
+from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import ParserPipeline
 
 
@@ -49,23 +50,6 @@ class BaseDocumentHandler(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load(self, source: str) -> Sequence[Document]:
-        """
-        Load documents from the given source.
-
-        Parameters
-        ----------
-        source : str
-            Source URI.
-
-        Returns
-        -------
-        Sequence[Document]
-        """
-        raise NotImplementedError
-
-
-    @abstractmethod
     def build_parsers(self) -> List[BaseDocumentParser]:
         """
         Return ordered list of parsers.
@@ -74,13 +58,24 @@ class BaseDocumentHandler(ABC):
         """
         raise NotImplementedError
 
-
     def load(self, source: str) -> Sequence[Document]:
         """
-        Execute parser pipeline.
+        Execute parser pipeline and map fragments to LangChain documents.
         """
         parsers = self.build_parsers()
 
         pipeline = ParserPipeline(parsers)
 
-        return pipeline.parse(source)
+        fragments = pipeline.parse(source)
+
+        # Temporary LCI-2A compatibility bridge.
+        # Removed when handlers/loaders construct KnowledgeDocument in LCI-2B.
+        documents: list[Document] = []
+        for fragment in fragments:
+            metadata = dict(fragment.metadata or {})
+            if fragment.native_handle is not None:
+                metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META] = fragment.native_handle
+            documents.append(
+                Document(page_content=fragment.text, metadata=metadata)
+            )
+        return documents
