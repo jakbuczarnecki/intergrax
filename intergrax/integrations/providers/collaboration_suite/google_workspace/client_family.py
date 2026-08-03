@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
     GoogleWorkspaceClientFamily,
+    GoogleWorkspaceRequestExecutor,
     GoogleWorkspaceRequestExecutorFactory,
     GoogleWorkspaceTransport,
 )
@@ -18,6 +19,9 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.trans
     GoogleWorkspaceHttpTransport,
     GoogleWorkspaceRetryPolicy,
 )
+
+_EXECUTOR_FACTORY_FAILURE_MESSAGE = "Google Workspace request executor could not be created"
+_INVALID_EXECUTOR_MESSAGE = "Google Workspace request executor is invalid"
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,19 +56,15 @@ class DefaultGoogleWorkspaceClientFactory:
         *,
         credential_material: Mapping[str, str],
     ) -> GoogleWorkspaceClientFamily:
-        if not isinstance(credential_material, Mapping) or not credential_material:
-            raise ValueError("credential_material must be a non-empty mapping")
         material_copy = dict(credential_material)
         try:
             executor = self._executor_factory.create_request_executor(
                 credential_material=material_copy,
             )
-        except (IntegrationDependencyError, ValueError):
-            raise
         except Exception:
-            raise IntegrationDependencyError(
-                "Google Workspace client family could not be created",
-            ) from None
+            raise IntegrationDependencyError(_EXECUTOR_FACTORY_FAILURE_MESSAGE) from None
+        if not isinstance(executor, GoogleWorkspaceRequestExecutor):
+            raise IntegrationDependencyError(_INVALID_EXECUTOR_MESSAGE)
         transport = GoogleWorkspaceHttpTransport(
             executor=executor,
             retry_policy=self._retry_policy,

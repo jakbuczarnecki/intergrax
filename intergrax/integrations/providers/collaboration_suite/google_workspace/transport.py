@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import json
+import math
 import random
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -96,6 +97,20 @@ _RETRYABLE_KINDS = frozenset(
 )
 
 
+def _require_exact_int(value: object, field_name: str) -> int:
+    if type(value) is not int:
+        raise ValueError(f"{field_name} must be an int")
+    return value
+
+
+def _require_finite_number(value: object, field_name: str) -> int | float:
+    if isinstance(value, bool) or type(value) not in (int, float):
+        raise ValueError(f"{field_name} must be a finite int or float")
+    if not math.isfinite(value):
+        raise ValueError(f"{field_name} must be a finite int or float")
+    return value
+
+
 class GoogleWorkspaceApiError(Exception):
     """Safe provider error without response body, URL query or credential material."""
 
@@ -131,6 +146,12 @@ class GoogleWorkspaceRetryPolicy:
     max_response_bytes: int = 4_194_304
 
     def __post_init__(self) -> None:
+        _require_exact_int(self.max_attempts, "max_attempts")
+        _require_exact_int(self.max_response_bytes, "max_response_bytes")
+        _require_finite_number(self.request_timeout_seconds, "request_timeout_seconds")
+        _require_finite_number(self.base_backoff_seconds, "base_backoff_seconds")
+        _require_finite_number(self.max_backoff_seconds, "max_backoff_seconds")
+        _require_finite_number(self.max_retry_after_seconds, "max_retry_after_seconds")
         if not 1 <= self.max_attempts <= 5:
             raise ValueError("max_attempts must be between 1 and 5")
         if not 0 < self.request_timeout_seconds <= 120:
@@ -262,6 +283,14 @@ def _copy_params(params: Mapping[str, object] | None) -> dict[str, object] | Non
         return None
     copied = dict(params)
     for name in copied:
+        if not isinstance(name, str):
+            raise GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=None,
+                retry_after_seconds=None,
+                safe_reason="invalid_query_parameter",
+                attempts=0,
+            )
         if name.casefold() in _FORBIDDEN_QUERY_PARAM_NAMES:
             raise GoogleWorkspaceApiError(
                 kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
@@ -277,6 +306,14 @@ def _copy_headers(headers: Mapping[str, str] | None) -> dict[str, str]:
     copied: dict[str, str] = {}
     if headers is not None:
         for name, value in headers.items():
+            if not isinstance(name, str) or not isinstance(value, str):
+                raise GoogleWorkspaceApiError(
+                    kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                    status_code=None,
+                    retry_after_seconds=None,
+                    safe_reason="invalid_header",
+                    attempts=0,
+                )
             if name.casefold() in _FORBIDDEN_HEADER_NAMES:
                 raise GoogleWorkspaceApiError(
                     kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
@@ -295,6 +332,14 @@ def _build_service_url(
     source_kind: GoogleWorkspaceSourceKind,
     relative_path: str,
 ) -> str:
+    if not isinstance(source_kind, GoogleWorkspaceSourceKind):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_source_kind",
+            attempts=0,
+        )
     root = _SERVICE_ROOTS[source_kind]
     return f"{root}{relative_path}"
 
@@ -328,7 +373,16 @@ def _validate_response_shape(
     policy: GoogleWorkspaceRetryPolicy,
     attempts: int,
 ) -> tuple[int, dict[str, str], bytes]:
-    status_code = response.status_code
+    try:
+        status_code = response.status_code
+    except Exception:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_status_code",
+            attempts=attempts,
+        ) from None
     if type(status_code) is not int or status_code < 100 or status_code > 599:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
@@ -337,8 +391,27 @@ def _validate_response_shape(
             safe_reason="invalid_status_code",
             attempts=attempts,
         )
-    headers = _normalize_header_mapping(response.headers)
-    content = response.content
+    try:
+        raw_headers = response.headers
+    except Exception:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_response_headers",
+            attempts=attempts,
+        ) from None
+    headers = _normalize_header_mapping(raw_headers)
+    try:
+        content = response.content
+    except Exception:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="invalid_response_content",
+            attempts=attempts,
+        ) from None
     if type(content) is not bytes:
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
@@ -360,8 +433,8 @@ def _validate_response_shape(
 
 def _extract_safe_reason(content: bytes) -> str:
     try:
-        payload = json.loads(content)
-    except json.JSONDecodeError:
+        payload = json.loads(content.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return ""
     if not isinstance(payload, dict):
         return ""
@@ -449,8 +522,8 @@ def _parse_retry_after(
 
 def _decode_success_json(content: bytes, *, status_code: int, attempts: int) -> dict[str, object]:
     try:
-        payload = json.loads(content)
-    except json.JSONDecodeError:
+        payload = json.loads(content.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         raise GoogleWorkspaceApiError(
             kind=GoogleWorkspaceErrorKind.MALFORMED_RESPONSE,
             status_code=status_code,
@@ -469,18 +542,50 @@ def _decode_success_json(content: bytes, *, status_code: int, attempts: int) -> 
     return payload
 
 
+def _validate_jitter_value(value: object, *, attempts: int) -> float:
+    if isinstance(value, bool) or type(value) not in (int, float):
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.TEMPORARY,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_jitter_source",
+            attempts=attempts,
+        )
+    if not math.isfinite(value) or value < 0.0 or value >= 1.0:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.TEMPORARY,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_jitter_source",
+            attempts=attempts,
+        )
+    return float(value)
+
+
 def _compute_backoff_seconds(
     *,
     attempt_index: int,
     policy: GoogleWorkspaceRetryPolicy,
     jitter_source: _JitterSource,
+    attempts: int,
 ) -> float:
+    try:
+        jitter = jitter_source()
+    except Exception:
+        raise GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.TEMPORARY,
+            status_code=None,
+            retry_after_seconds=None,
+            safe_reason="invalid_jitter_source",
+            attempts=attempts,
+        ) from None
+    validated_jitter = _validate_jitter_value(jitter, attempts=attempts)
     exponent = max(0, attempt_index - 1)
     raw = min(
         policy.base_backoff_seconds * (2**exponent),
         policy.max_backoff_seconds,
     )
-    return raw * jitter_source()
+    return min(raw * validated_jitter, policy.max_backoff_seconds)
 
 
 def _api_error_from_response(
@@ -618,6 +723,7 @@ class GoogleWorkspaceHttpTransport:
                     attempt_index=attempt,
                     policy=policy,
                     jitter_source=self._jitter_source,
+                    attempts=attempt,
                 )
             self._sleeper(delay)
 

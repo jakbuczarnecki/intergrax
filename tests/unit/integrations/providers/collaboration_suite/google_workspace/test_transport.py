@@ -452,3 +452,235 @@ def test_parse_collection_page_preserves_item_order() -> None:
 def test_parse_collection_page_malformed_rejected(payload: object, items_field: str) -> None:
     with pytest.raises((ValueError, TypeError)):
         parse_google_workspace_collection_page(payload, items_field=items_field)
+
+
+class _MissingStatusResponse:
+    headers: dict[str, str] = {}
+    content = b"{}"
+
+    def json(self) -> object:
+        return {}
+
+
+class _RaisingStatusResponse:
+    @property
+    def status_code(self) -> int:
+        raise RuntimeError("status secret failure")
+
+    headers: dict[str, str] = {}
+    content = b"{}"
+
+    def json(self) -> object:
+        return {}
+
+
+class _MissingHeadersResponse:
+    status_code = 200
+    content = b"{}"
+
+    def json(self) -> object:
+        return {}
+
+
+class _RaisingHeadersResponse:
+    status_code = 200
+    content = b"{}"
+
+    @property
+    def headers(self) -> dict[str, str]:
+        raise RuntimeError("headers secret failure")
+
+    def json(self) -> object:
+        return {}
+
+
+class _MissingContentResponse:
+    status_code = 200
+    headers: dict[str, str] = {}
+
+    def json(self) -> object:
+        return {}
+
+
+class _RaisingContentResponse:
+    status_code = 200
+    headers: dict[str, str] = {}
+
+    @property
+    def content(self) -> bytes:
+        raise RuntimeError("content secret failure")
+
+    def json(self) -> object:
+        return {}
+
+
+@pytest.mark.parametrize(
+    ("response", "secret_message"),
+    [
+        (_MissingStatusResponse(), None),
+        (_RaisingStatusResponse(), "status secret failure"),
+        (_MissingHeadersResponse(), None),
+        (_RaisingHeadersResponse(), "headers secret failure"),
+        (_MissingContentResponse(), None),
+        (_RaisingContentResponse(), "content secret failure"),
+    ],
+)
+def test_malformed_response_object_boundaries(
+    response: object,
+    secret_message: str | None,
+) -> None:
+    executor = _RecordingExecutor()
+    executor.responses.append(response)  # type: ignore[arg-type]
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+    if secret_message is not None:
+        assert secret_message not in str(exc_info.value)
+
+
+def test_successful_2xx_invalid_utf_becomes_malformed_response() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(200, content=b"\xff\xfe")])
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.MALFORMED_RESPONSE
+    assert exc_info.value.safe_reason == "invalid_json"
+    assert b"\xff" not in str(exc_info.value).encode()
+
+
+def test_error_response_invalid_utf_classified_by_http_status() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(401, content=b"\xff\xfe")])
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=1)
+    transport = _transport(executor, policy=policy)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.AUTHENTICATION
+    assert b"\xff" not in str(exc_info.value).encode()
+    assert repr(exc_info.value).find("\\xff") == -1
+
+
+@pytest.mark.parametrize(
+    "policy_kwargs",
+    [
+        {"max_attempts": True},
+        {"max_response_bytes": True},
+        {"request_timeout_seconds": True},
+        {"request_timeout_seconds": float("nan")},
+        {"base_backoff_seconds": float("inf")},
+        {"max_backoff_seconds": float("-inf")},
+    ],
+)
+def test_retry_policy_rejects_invalid_numeric_types(policy_kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        GoogleWorkspaceRetryPolicy(**policy_kwargs)  # type: ignore[arg-type]
+
+
+def test_retry_policy_valid_boundary_values_preserved() -> None:
+    policy = GoogleWorkspaceRetryPolicy(
+        max_attempts=5,
+        max_response_bytes=16_777_216,
+        request_timeout_seconds=120,
+        base_backoff_seconds=10,
+        max_backoff_seconds=60,
+        max_retry_after_seconds=120,
+    )
+    assert policy.max_attempts == 5
+    assert policy.max_response_bytes == 16_777_216
+
+
+@pytest.mark.parametrize(
+    "invalid_jitter",
+    [-0.1, 1.0, 2.0, float("nan"), float("inf"), True, "0.5", None],
+)
+def test_invalid_jitter_values_fail_without_sleep_or_retry(
+    invalid_jitter: object,
+) -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(503, content=b"{}")])
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    sleeps: list[float] = []
+
+    def _bad_jitter() -> object:
+        return invalid_jitter
+
+    transport = GoogleWorkspaceHttpTransport(
+        executor=executor,
+        retry_policy=policy,
+        sleeper=lambda seconds: sleeps.append(seconds),
+        jitter_source=_bad_jitter,  # type: ignore[arg-type]
+    )
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.safe_reason == "invalid_jitter_source"
+    assert len(executor.calls) == 1
+    assert sleeps == []
+
+
+def test_jitter_exception_is_sanitized_without_sleep_or_retry() -> None:
+    executor = _RecordingExecutor(responses=[_FakeResponse(503, content=b"{}")])
+    policy = GoogleWorkspaceRetryPolicy(max_attempts=3)
+    sleeps: list[float] = []
+
+    def _raising_jitter() -> float:
+        raise RuntimeError("secret jitter message")
+
+    transport = GoogleWorkspaceHttpTransport(
+        executor=executor,
+        retry_policy=policy,
+        sleeper=lambda seconds: sleeps.append(seconds),
+        jitter_source=_raising_jitter,
+    )
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind=GoogleWorkspaceSourceKind.DRIVE, relative_path="/files")
+    assert exc_info.value.safe_reason == "invalid_jitter_source"
+    assert "secret jitter message" not in str(exc_info.value)
+    assert len(executor.calls) == 1
+    assert sleeps == []
+
+
+def test_invalid_source_kind_does_not_raise_key_error() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(source_kind="drive", relative_path="/files")  # type: ignore[arg-type]
+    assert exc_info.value.kind is GoogleWorkspaceErrorKind.INVALID_REQUEST
+    assert executor.calls == []
+
+
+def test_non_string_query_parameter_key_fails_safely() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            params={1: "value"},  # type: ignore[dict-item]
+        )
+    assert exc_info.value.safe_reason == "invalid_query_parameter"
+    assert executor.calls == []
+
+
+def test_non_string_header_name_fails_safely() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers={1: "safe"},  # type: ignore[dict-item]
+        )
+    assert exc_info.value.safe_reason == "invalid_header"
+    assert executor.calls == []
+
+
+def test_non_string_header_value_fails_safely() -> None:
+    executor = _RecordingExecutor()
+    transport = _transport(executor)
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.DRIVE,
+            relative_path="/files",
+            headers={"X-Custom": 123},  # type: ignore[dict-item]
+        )
+    assert exc_info.value.safe_reason == "invalid_header"
+    assert executor.calls == []

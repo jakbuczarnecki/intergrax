@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Mapping
 
 from pydantic import PrivateAttr
 
@@ -24,6 +25,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.contr
     GoogleWorkspaceClientFamily,
     GoogleWorkspaceCredentialResolver,
     GoogleWorkspaceSourceKind,
+    GoogleWorkspaceTransport,
 )
 from intergrax.runtime.integrations.categories._base import (
     _CONNECT_READ_WRITE_HEALTH,
@@ -39,7 +41,53 @@ from intergrax.runtime.integrations.contracts import (
 
 GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID = "google_workspace"
 
+_DISABLED_INTEGRATION_MESSAGE = "Google Workspace integration is disabled"
+_CREDENTIAL_RESOLUTION_FAILURE_MESSAGE = "Google Workspace credential resolution failed"
+_INVALID_CREDENTIAL_MATERIAL_MESSAGE = "Google Workspace credential material is invalid"
+_CLIENT_FACTORY_FAILURE_MESSAGE = "Google Workspace client family could not be created"
+_INVALID_FACTORY_FAMILY_MESSAGE = (
+    "Google Workspace client factory returned an invalid client family"
+)
+_INVALID_INJECTED_FAMILY_MESSAGE = (
+    "Google Workspace injected client does not expose a valid client family"
+)
+
 GoogleWorkspaceCollaborationSuiteClient = CollaborationSuite
+
+
+def _validate_credential_material(material: object) -> dict[str, str]:
+    if not isinstance(material, Mapping) or not material:
+        raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+    copied: dict[str, str] = {}
+    for key, value in material.items():
+        if not isinstance(key, str) or not key.strip():
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        if not isinstance(value, str):
+            raise IntegrationConfigurationError(_INVALID_CREDENTIAL_MATERIAL_MESSAGE)
+        copied[key] = value
+    return copied
+
+
+def _validate_client_family(
+    family: object,
+    *,
+    injected: bool,
+) -> GoogleWorkspaceClientFamily:
+    if not isinstance(family, GoogleWorkspaceClientFamily):
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE)
+    try:
+        transport = family.transport
+    except Exception:
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE) from None
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE) from None
+    if not isinstance(transport, GoogleWorkspaceTransport):
+        if injected:
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
+        raise IntegrationConfigurationError(_INVALID_FACTORY_FAMILY_MESSAGE)
+    return family
 
 
 class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegrationContract):
@@ -96,6 +144,9 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
 
     def require_client_family(self) -> GoogleWorkspaceClientFamily:
         """Materialize and cache the shared client family on first successful request."""
+        if not self.config.enabled:
+            raise IntegrationConfigurationError(_DISABLED_INTEGRATION_MESSAGE)
+
         if (
             self.config.composition_mode
             == GoogleWorkspaceCollaborationSuiteCompositionMode.INJECTED_CLIENT
@@ -107,11 +158,8 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
                     "in injected_client composition mode",
                 )
             if isinstance(client, GoogleWorkspaceClientFamily):
-                return client
-            raise IntegrationConfigurationError(
-                f"{type(self).__name__} injected client does not expose a Google Workspace "
-                "client family",
-            )
+                return _validate_client_family(client, injected=True)
+            raise IntegrationConfigurationError(_INVALID_INJECTED_FAMILY_MESSAGE)
 
         cached = self._client_family
         if cached is not None:
@@ -132,32 +180,29 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
                 )
 
             try:
-                credential_material = resolver.resolve_credential(self.config.credential_ref)
+                resolved_material = resolver.resolve_credential(self.config.credential_ref)
+            except Exception:
+                raise IntegrationConfigurationError(
+                    _CREDENTIAL_RESOLUTION_FAILURE_MESSAGE,
+                ) from None
+
+            try:
+                credential_material = _validate_credential_material(resolved_material)
             except IntegrationConfigurationError:
                 raise
             except Exception:
                 raise IntegrationConfigurationError(
-                    f"{type(self).__name__} could not resolve configured credential reference",
+                    _INVALID_CREDENTIAL_MATERIAL_MESSAGE,
                 ) from None
 
             try:
                 family = factory.create_client_family(credential_material=credential_material)
-            except IntegrationDependencyError:
-                raise
-            except IntegrationConfigurationError:
-                raise
             except Exception:
-                raise IntegrationDependencyError(
-                    f"{type(self).__name__} could not create Google Workspace client family",
-                ) from None
+                raise IntegrationDependencyError(_CLIENT_FACTORY_FAILURE_MESSAGE) from None
 
-            if not isinstance(family, GoogleWorkspaceClientFamily):
-                raise IntegrationConfigurationError(
-                    f"{type(self).__name__} client factory returned an invalid client family",
-                )
-
-            self._client_family = family
-            return family
+            validated_family = _validate_client_family(family, injected=False)
+            self._client_family = validated_family
+            return validated_family
 
     def check_health(self) -> PlatformIntegrationHealth:
         if not self.config.enabled:
