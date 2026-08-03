@@ -77,12 +77,6 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 
 ---
 
-## Planned public structure
-
-No additional reader-intent document splits are currently planned.
-
----
-
 ## Technical documentation
 
 Developers, architects, Cursor operators, and deep technical reviewers should use the technical map — not this public map:

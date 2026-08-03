@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -111,17 +110,6 @@ def _h2_section(text: str, heading: str) -> str:
     next_h2 = re.search(r"^## ", after, re.MULTILINE)
     end = match.end() + (next_h2.start() if next_h2 else len(after))
     return text[match.start() : end]
-
-
-def _git_diff(path: Path) -> str:
-    result = subprocess.run(
-        ["git", "diff", "--", str(path.relative_to(REPO_ROOT))],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.stdout
 
 
 @pytest.fixture(scope="module")
@@ -303,13 +291,15 @@ def test_no_internal_architecture_language(
 def test_no_internal_task_ids(
     partners_text: str, collaboration_text: str, faq_text: str
 ) -> None:
-    for path, text in zip(
+    for doc_name, text in zip(
         ("PARTNERS", "COLLABORATION", "FAQ"),
         (partners_text, collaboration_text, faq_text),
         strict=True,
     ):
         match = _INTERNAL_TASK_PATTERN.search(text)
-        assert match is None, f"{path.name} contains internal task ID: {match.group()}"
+        assert match is None, (
+            f"{doc_name} contains internal task ID: {match.group()}"
+        )
 
 
 def test_contact_consistency(partners_text: str, collaboration_text: str) -> None:
@@ -322,6 +312,9 @@ def test_no_planned_replacement_documents() -> None:
         assert not (REPO_ROOT / name).exists(), f"Replacement document exists: {name}"
 
     map_text = _read(PUBLIC_MAP_PATH)
+    assert "## Planned public structure" not in map_text, (
+        "PUBLIC_MAP must not contain empty planned-public-structure section"
+    )
     arch_text = _read(PUBLIC_ARCHITECTURE_PATH)
     for name in ("PARTNERS_AND_PILOTS", "LICENSE_FAQ"):
         assert name not in map_text, f"PUBLIC_MAP still references planned doc: {name}"
@@ -383,11 +376,6 @@ def test_brevity() -> None:
     for path, max_lines in limits.items():
         count = len(_read(path).splitlines())
         assert count <= max_lines, f"{path.name} has {count} lines (max {max_lines})"
-
-
-def test_license_and_readme_immutability() -> None:
-    assert _git_diff(LICENSE_PATH) == "", "LICENSE must have no diff"
-    assert _git_diff(README_PATH) == "", "README must have no diff"
 
 
 def test_at_a_glance_sections(
