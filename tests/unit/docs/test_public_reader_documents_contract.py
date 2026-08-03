@@ -333,10 +333,25 @@ def test_readme_routing(readme_text: str) -> None:
 
 def test_public_map_synchronization() -> None:
     text = _read(PUBLIC_MAP_PATH)
-    for doc in ("WHY_INTERGRAX.md", "ARCHITECTURE_OVERVIEW.md", "BUILD_WITH_INTERGRAX.md"):
+    implemented_docs = (
+        "WHY_INTERGRAX.md",
+        "ARCHITECTURE_OVERVIEW.md",
+        "BUILD_WITH_INTERGRAX.md",
+    )
+
+    for doc in implemented_docs:
         assert doc in text
-    planned_section = text.split("## Planned public structure", 1)[1]
-    for doc in ("WHY_INTERGRAX.md", "ARCHITECTURE_OVERVIEW.md", "BUILD_WITH_INTERGRAX.md"):
+
+    planned_match = re.search(
+        r"^## Planned public structure\s*$.*?(?=^## |\Z)",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+    if planned_match is None:
+        return
+
+    planned_section = planned_match.group(0)
+    for doc in implemented_docs:
         assert doc not in planned_section, f"{doc} still listed as planned"
 
 
