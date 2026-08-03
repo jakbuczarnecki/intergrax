@@ -57,7 +57,7 @@ Knowledge is distributed across private files, Web sources and organizational sy
 
 Verify: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [PROOFS.md](PROOFS.md)
 
-Do not claim completed Hybrid Ask or complete live provider access.
+Hybrid Ask and complete live provider access are not currently available.
 
 ## Current bounded-fit use cases
 
@@ -90,22 +90,22 @@ See [ROADMAP.md](ROADMAP.md) for outcome-gated direction.
 | Specialized application requiring policy and evidence | **Reasonable technical evaluation** | Shared foundations exist; your product still needs its own validation | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Multiple agent applications sharing foundations | **Reasonable technical evaluation** | Reusable mechanisms with bounded evidence; not a finished platform product | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
 | Full multi-provider live assistant needed immediately | **Not a fit today** | Live provider access and Hybrid Ask remain incomplete | [ROADMAP.md](ROADMAP.md) |
+| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask remains incomplete | [ROADMAP.md](ROADMAP.md) |
+| Governed Google Workspace knowledge inside LKW | **Planned fit** | The first bounded Google Workspace LKW proof is not complete | [ROADMAP.md](ROADMAP.md) |
 | Generic chatbot prototype | **Not a fit today** | Intergrax targets governed applications, not quick chat demos | Another approach may fit better |
 | Finished no-code SaaS offering | **Not a fit today** | No finished hosted product; active R&D | [PARTNERS.md](PARTNERS.md) for authorized discussions |
 | Unrestricted open-source framework | **Not a fit today** | Source-available under evaluation license, not unrestricted OSS | [LICENSE](LICENSE) |
 
-**Planned fit** applies to multi-source Hybrid Ask and Google Workspace knowledge — see validation section above.
-
 ## What Intergrax does not currently offer
 
 - No finished hosted SaaS
-- Complete Hybrid Ask
-- Complete multi-provider live access
-- Universal production certification
-- Compliance certification
-- Unrestricted open-source rights
-- Universal token or cost reduction
-- Automatic acceptance of every proposed use case
+- No complete Hybrid Ask
+- No complete multi-provider live access
+- No universal production certification
+- No compliance certification
+- No unrestricted open-source rights
+- No universal token or cost reduction
+- No automatic acceptance of every proposed use case
 
 ## Define a useful evaluation
 

@@ -139,11 +139,73 @@ def _normalize(text: str) -> str:
     return re.sub(r"[*_`]", "", text).lower()
 
 
-def _before_first_h3(text: str) -> str:
-    match = re.search(r"^### ", text, re.MULTILINE)
-    if match:
-        return text[: match.start()]
-    return text
+def _through_at_a_glance(text: str) -> str:
+    """Return document start through complete ``## At a glance`` section."""
+    at_glance = re.search(r"^## At a glance\s*$", text, re.MULTILINE)
+    if not at_glance:
+        raise AssertionError("Missing ## At a glance section")
+    after_at_glance = text[at_glance.end() :]
+    next_h2 = re.search(r"^## ", after_at_glance, re.MULTILINE)
+    if not next_h2:
+        raise AssertionError("Missing H2 section after ## At a glance")
+    return text[: at_glance.end() + next_h2.start()]
+
+
+def _h2_section(text: str, heading: str) -> str:
+    """Extract content from an H2 heading through the next H2 or EOF."""
+    pattern = re.compile(rf"^{re.escape(heading)}\s*$", re.MULTILINE)
+    match = pattern.search(text)
+    if not match:
+        raise AssertionError(f"Missing section: {heading}")
+    after = text[match.end() :]
+    next_h2 = re.search(r"^## ", after, re.MULTILINE)
+    end = match.end() + (next_h2.start() if next_h2 else len(after))
+    return text[match.start() : end]
+
+
+def _fit_matrix_section(text: str) -> str:
+    return _h2_section(text, "## Fit matrix")
+
+
+_READER_HYBRID_BOUNDARY = (
+    "Hybrid Ask and complete live provider access are not currently available."
+)
+
+_FORBIDDEN_READER_MAINTAINER_PHRASES = (
+    "Do not claim",
+    "must not claim",
+    "maintainer",
+    "public wording",
+)
+
+_ROADMAP_NEGATIVE_BULLETS = (
+    "No finished hosted SaaS",
+    "No claim that Hybrid Ask is complete",
+    "No claim of a complete provider catalog",
+    "No completed real-user validation",
+    "No completed commercial validation",
+    "No claim of universal production readiness",
+    "No universal token-savings claim",
+    "No fixed release-date commitment",
+)
+
+_USE_CASES_NEGATIVE_BULLETS = (
+    "No finished hosted SaaS",
+    "No complete Hybrid Ask",
+    "No complete multi-provider live access",
+    "No universal production certification",
+    "No compliance certification",
+    "No unrestricted open-source rights",
+    "No universal token or cost reduction",
+    "No automatic acceptance of every proposed use case",
+)
+
+_PUBLIC_MAP_FORBIDDEN_TIER_TERMS = (
+    "Tier-0",
+    "Tier-1",
+    "Tier-2",
+    "Tier-3",
+)
 
 
 @pytest.fixture(scope="module")
@@ -174,12 +236,12 @@ def test_required_h1_titles(roadmap_text: str, use_cases_text: str) -> None:
 
 def test_first_screen_contract(roadmap_text: str, use_cases_text: str) -> None:
     for text in (roadmap_text, use_cases_text):
-        early = _before_first_h3(text)
+        early = _through_at_a_glance(text)
         early_norm = _normalize(early)
         for phrase in ("source-available", "active r&d", "partial"):
             assert phrase in early_norm, f"Missing first-screen phrase {phrase!r}"
 
-    roadmap_early = _normalize(_before_first_h3(roadmap_text))
+    roadmap_early = _normalize(_through_at_a_glance(roadmap_text))
     for phrase in (
         "outcome-gated",
         "not a release-date commitment",
@@ -188,7 +250,7 @@ def test_first_screen_contract(roadmap_text: str, use_cases_text: str) -> None:
     ):
         assert phrase in roadmap_early, f"ROADMAP missing boundary phrase: {phrase}"
 
-    use_cases_early = _normalize(_before_first_h3(use_cases_text))
+    use_cases_early = _normalize(_through_at_a_glance(use_cases_text))
     assert "primary product proof" in use_cases_early
     assert "backend product alpha / mvp" in use_cases_early
 
@@ -246,11 +308,39 @@ def test_use_case_classifications(use_cases_text: str) -> None:
         "Featured platform-capability proof",
         "Strongest current fit",
         "Reasonable technical evaluation",
-        "Planned fit",
         "Not a fit today",
     )
     for phrase in required:
         assert phrase in use_cases_text, f"USE_CASES missing classification: {phrase}"
+
+    fit_matrix = _fit_matrix_section(use_cases_text)
+    assert fit_matrix.count("**Planned fit**") >= 2, (
+        "Fit matrix must contain at least two **Planned fit** rows"
+    )
+    assert "Multi-source" in fit_matrix, "Fit matrix missing multi-source planned scenario"
+    assert "Google Workspace" in fit_matrix, "Fit matrix missing Google Workspace planned scenario"
+
+
+def test_reader_facing_copy(use_cases_text: str) -> None:
+    for phrase in _FORBIDDEN_READER_MAINTAINER_PHRASES:
+        assert phrase not in use_cases_text, (
+            f"USE_CASES contains maintainer-style phrase: {phrase!r}"
+        )
+    assert _READER_HYBRID_BOUNDARY in use_cases_text, (
+        "USE_CASES missing reader-facing Hybrid Ask boundary sentence"
+    )
+
+
+def test_explicit_negative_lists(roadmap_text: str, use_cases_text: str) -> None:
+    roadmap_negatives = _h2_section(roadmap_text, "## What is not promised")
+    for bullet in _ROADMAP_NEGATIVE_BULLETS:
+        assert bullet in roadmap_negatives, f"ROADMAP missing negative bullet: {bullet!r}"
+
+    use_cases_negatives = _h2_section(
+        use_cases_text, "## What Intergrax does not currently offer"
+    )
+    for bullet in _USE_CASES_NEGATIVE_BULLETS:
+        assert bullet in use_cases_negatives, f"USE_CASES missing negative bullet: {bullet!r}"
 
 
 def test_claim_boundaries(roadmap_text: str, use_cases_text: str) -> None:
@@ -316,6 +406,8 @@ def test_public_map_synchronization() -> None:
     assert "use cases" in map_norm
     assert "roadmap" in map_norm
     assert "planned validation and not-fit" in map_norm or "outcome-gated" in map_norm
+    for term in _PUBLIC_MAP_FORBIDDEN_TIER_TERMS:
+        assert term not in text, f"PUBLIC_DOCUMENTATION_MAP contains internal tier term: {term!r}"
 
 
 def test_architecture_synchronization() -> None:

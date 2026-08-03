@@ -103,13 +103,13 @@ Not every direction above will be pursued. Demand and evidence gate each decisio
 ## What is not promised
 
 - No finished hosted SaaS
-- Completed Hybrid Ask
-- Complete provider catalog
-- Completed real-user validation
-- Completed commercial validation
-- Universal production readiness
-- Universal token savings
-- Fixed release dates
+- No claim that Hybrid Ask is complete
+- No claim of a complete provider catalog
+- No completed real-user validation
+- No completed commercial validation
+- No claim of universal production readiness
+- No universal token-savings claim
+- No fixed release-date commitment
 
 ## Follow progress
 

@@ -36,7 +36,7 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 
 **Primary product proof**
 
-Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) demonstrates how a real Tier-3 application uses and pressures the reusable Intergrax foundation — RAG, observability, background ingest, proof receipts, and application hosting — in a guided reviewer path.
+Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) demonstrates how a real application workflow uses and pressures the reusable Intergrax foundation — RAG, observability, background ingest, proof receipts, and application hosting — in a guided reviewer path.
 
 ### Token Optimization Engine
 
