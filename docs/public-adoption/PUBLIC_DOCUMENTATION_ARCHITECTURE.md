@@ -82,6 +82,7 @@ WHY_INTERGRAX.md
 PROOFS.md
 ARCHITECTURE_OVERVIEW.md
 BUILD_WITH_INTERGRAX.md
+USE_CASES.md
 PARTNERS_AND_PILOTS.md
 FAQ.md
 LICENSE_FAQ.md
@@ -94,10 +95,11 @@ ROADMAP.md
 | `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `PARTNERS_AND_PILOTS.md` | Design-partner and pilot workflow (successor to split partner docs) | planned |
 | `FAQ.md` | Common external questions | exists — root `FAQ.md` |
 | `LICENSE_FAQ.md` | License and permission FAQ without full legal text | planned |
-| `ROADMAP.md` | Public product-validation program and adoption priorities | exists — root `ROADMAP.md` |
+| `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
 
@@ -155,6 +157,8 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Reader intent | Primary destination |
 |-------------|---------------------|
 | Understand the problem and value | `WHY_INTERGRAX.md` |
+| Check use-case fit | `USE_CASES.md` |
+| Understand product-validation direction | `ROADMAP.md` |
 | See a real product workflow | LKW Platform Proof — `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
 | Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
@@ -266,10 +270,10 @@ Current root README may still contain pre-reconciliation promotion language; the
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `EVALUATION_GUIDE.md` | Bounded evaluation paths | Detailed bounded execution companion | `EVALUATION_GUIDE.md` | stable — route selection owned by `BUILD_WITH_INTERGRAX.md` |
-| `USE_CASES.md` | Use-case map | Reader-intent fit check | `WHY_INTERGRAX.md` / use-case section | future commercialization |
+| `USE_CASES.md` | Public use-case map | Layer 2 public use-case fit map | `USE_CASES.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `PARTNERS.md` | Partner brief | Reader-intent partnership | `PARTNERS_AND_PILOTS.md` | future commercialization |
 | `FAQ.md` | External FAQ | Reader-intent FAQ | `FAQ.md` (retain) | stable |
-| `ROADMAP.md` | Public program roadmap | Reader-intent roadmap | `ROADMAP.md` (retain) | stable |
+| `ROADMAP.md` | Public product-validation roadmap | Layer 2 outcome-gated public roadmap | `ROADMAP.md` | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `COLLABORATION.md` | Collaboration permissions | Permission boundary | `COLLABORATION.md` + `LICENSE_FAQ.md` | future commercialization |
 | `docs/public-adoption/LKW_PLATFORM_PROOF.md` | LKW guided proof | Primary product proof | LKW proof docs | stable |
 | `docs/features/token_optimization/README.md` | Token Optimization guide | Featured platform-capability proof entry | Token Optimization docs | stable (this task) |
@@ -385,6 +389,8 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Topic | Owner |
 |-------|-------|
 | Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
+| Public use-case fit | `USE_CASES.md` |
+| Public product-validation direction | `ROADMAP.md` |
 | Public value and fit | `WHY_INTERGRAX.md` |
 | Public architecture overview | `ARCHITECTURE_OVERVIEW.md` |
 | Evaluation and building route selection | `BUILD_WITH_INTERGRAX.md` |

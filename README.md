@@ -242,6 +242,8 @@ Artifacts land under `build/evidence/`.
 | ---- | ---------- |
 | Understand why Intergrax exists | [WHY_INTERGRAX.md](WHY_INTERGRAX.md) |
 | See the public architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Explore concrete use cases | [USE_CASES.md](USE_CASES.md) |
+| See the public roadmap | [ROADMAP.md](ROADMAP.md) |
 | Build or evaluate with Intergrax | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | See a real product proof | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Explore Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) |
