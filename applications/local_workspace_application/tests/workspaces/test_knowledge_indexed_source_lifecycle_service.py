@@ -102,33 +102,24 @@ _DISABLE_HANDLER = DisableIndexedSourceMutationHandler()
 
 class _FakeConnectionPort:
     def get_connection(self, *, tenant_id: str, connection_ref: str) -> SafeTenantConnectionV1 | None:
-        refs = {_CONNECTION, _CONNECTION_OTHER, _CONNECTION_THIRD}
-        if tenant_id == _TENANT and connection_ref in refs:
+        if tenant_id == _TENANT and connection_ref in {_CONNECTION, _CONNECTION_OTHER, _CONNECTION_THIRD}:
             return SafeTenantConnectionV1(
-                connection_ref=connection_ref,
-                tenant_id=_TENANT,
-                provider_id="provider.slack",
-                integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-                safe_display_name="Slack",
-                administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
-                configuration_version=1,
-                connected_principal_ref=None,
-                created_at=_NOW,
-                updated_at=_NOW,
+                connection_ref=connection_ref, tenant_id=_TENANT, provider_id="provider.slack",
+                integration_kind=IntegrationCategory.CONVERSATION_CHANNEL, safe_display_name="Slack",
+                administrative_status=TenantConnectionAdministrativeStatus.ACTIVE, configuration_version=1,
+                connected_principal_ref=None, created_at=_NOW, updated_at=_NOW,
             )
         return None
 
     def list_connections(self, *, tenant_id: str, limit: int = 100, administrative_status=None):
-        return tuple(
-            self.get_connection(tenant_id=tenant_id, connection_ref=ref)
-            for ref in (_CONNECTION, _CONNECTION_OTHER, _CONNECTION_THIRD)
-        )
+        return tuple(self.get_connection(tenant_id=tenant_id, connection_ref=ref) for ref in (
+            _CONNECTION, _CONNECTION_OTHER, _CONNECTION_THIRD,
+        ))
 
 
 class _TenantBindingPort:
     def __init__(self, *, fail: bool = False) -> None:
-        self._fail = fail
-        self.call_count = 0
+        self._fail, self.call_count = fail, 0
 
     def get_binding(self, *, tenant_id: str, binding_id: str):
         self.call_count += 1
@@ -137,32 +128,21 @@ class _TenantBindingPort:
         if tenant_id != _TENANT or binding_id != _KSB_REF:
             return None
         return KnowledgeSourceBinding(
-            binding_id=_KSB_REF,
-            tenant_id=_TENANT,
-            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            binding_id=_KSB_REF, tenant_id=_TENANT, provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
             integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-            source_kind=SLACK_CONVERSATION_SOURCE_KIND,
-            connection_ref=_CONNECTION,
-            safe_display_name="Slack Binding",
+            source_kind=SLACK_CONVERSATION_SOURCE_KIND, connection_ref=_CONNECTION, safe_display_name="Slack Binding",
             scope=KnowledgeSourceScope(
-                remote_scope_id="scope",
-                remote_scope_type="slack_conversation",
-                safe_display_name="Slack Binding",
-                parameters={},
+                remote_scope_id="scope", remote_scope_type="slack_conversation",
+                safe_display_name="Slack Binding", parameters={},
             ),
-            status=KnowledgeSourceBindingStatus.ACTIVE,
-            configuration_version=1,
+            status=KnowledgeSourceBindingStatus.ACTIVE, configuration_version=1,
         )
 
 
 def _workspace() -> Workspace:
     return Workspace(
-        workspace_id=_WORKSPACE,
-        tenant_id=_TENANT,
-        name="Workspace",
-        status=WorkspaceStatus.ACTIVE,
-        created_at=_NOW,
-        updated_at=_NOW,
+        workspace_id=_WORKSPACE, tenant_id=_TENANT, name="Workspace", status=WorkspaceStatus.ACTIVE,
+        created_at=_NOW, updated_at=_NOW,
     )
 
 
@@ -180,29 +160,20 @@ def _build_stack(*, port: _TenantBindingPort | None = None, mutation_ids: list[s
         idx["i"] = min(idx["i"] + 1, len(ids) - 1)
         return value
 
+    handlers = {
+        WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: AttachConnectionMutationHandler(),
+        WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
+        WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
+    }
     engine = WorkspaceKnowledgeConfigurationMutationEngine(
-        repo,
-        lookup,
-        config,
-        {
-            WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: AttachConnectionMutationHandler(),
-            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
-            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
-        },
-        clock=lambda: _NOW,
-        mutation_id_factory=_next_id,
+        repo, lookup, config, handlers, clock=lambda: _NOW, mutation_id_factory=_next_id,
     )
     attach = WorkspaceConnectionAttachmentService(
-        connection_port=_FakeConnectionPort(),
-        configuration_service=config,
-        mutation_engine=engine,
+        connection_port=_FakeConnectionPort(), configuration_service=config, mutation_engine=engine,
     )
     binding_port = port or _TenantBindingPort()
     lifecycle = WorkspaceIndexedSourceLifecycleService(
-        repository=repo,
-        configuration_service=config,
-        mutation_engine=engine,
-        tenant_binding_port=binding_port,
+        repository=repo, configuration_service=config, mutation_engine=engine, tenant_binding_port=binding_port,
     )
     return attach, lifecycle, repo, binding_port, engine
 
@@ -221,12 +192,8 @@ def _attach(attach_svc, *, rev: int = 0) -> int:
 
 def _activate_cmd(**overrides: object) -> ActivateWorkspaceIndexedSourceCommand:
     payload = {
-        "tenant_id": _TENANT,
-        "workspace_id": _WORKSPACE,
-        "knowledge_source_binding_ref": _KSB_REF,
-        "expected_revision": 1,
-        "idempotency_key_hash": _SHA256_A,
-        "sync_mode": _SYNC,
+        "tenant_id": _TENANT, "workspace_id": _WORKSPACE, "knowledge_source_binding_ref": _KSB_REF,
+        "expected_revision": 1, "idempotency_key_hash": _SHA256_A, "sync_mode": _SYNC,
         "audience_eligibility": _AUDIENCE,
     }
     payload.update(overrides)
@@ -235,11 +202,8 @@ def _activate_cmd(**overrides: object) -> ActivateWorkspaceIndexedSourceCommand:
 
 def _disable_cmd(**overrides: object) -> DisableWorkspaceIndexedSourceCommand:
     payload = {
-        "tenant_id": _TENANT,
-        "workspace_id": _WORKSPACE,
-        "indexed_source_binding_id": _BINDING_ID,
-        "expected_revision": 2,
-        "idempotency_key_hash": _SHA256_C,
+        "tenant_id": _TENANT, "workspace_id": _WORKSPACE, "indexed_source_binding_id": _BINDING_ID,
+        "expected_revision": 2, "idempotency_key_hash": _SHA256_C,
     }
     payload.update(overrides)
     return DisableWorkspaceIndexedSourceCommand(**payload)
@@ -400,101 +364,67 @@ def _pending_head(repo, *, revision: int, mutation_id: str) -> None:
 
 def _create_intent(**overrides: object) -> CreateIndexedSourceMutationIntent:
     payload = {
-        "knowledge_source_binding_ref": _KSB_REF,
-        "sync_mode": _SYNC,
-        "audience_eligibility": _AUDIENCE,
-        "cached_safe_display_label": "Slack Binding",
+        "knowledge_source_binding_ref": _KSB_REF, "sync_mode": _SYNC,
+        "audience_eligibility": _AUDIENCE, "cached_safe_display_label": "Slack Binding",
     }
     payload.update(overrides)
     return CreateIndexedSourceMutationIntent(**payload)
 
 
 def _create_mutation(
-    repo,
-    *,
-    revision: int,
-    mutation_id: str = "mutation-create",
-    idem: str = _SHA256_A,
+    repo, *, revision: int, mutation_id: str = "mutation-create", idem: str = _SHA256_A,
     intent: CreateIndexedSourceMutationIntent | None = None,
 ) -> tuple[WorkspaceKnowledgeMutationRecord, CreateIndexedSourceMutationIntent]:
     intent = intent or _create_intent()
     binding_ref = intent.knowledge_source_binding_ref.strip()
     req = normalize_create_indexed_source_request_hash(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        knowledge_source_binding_ref=binding_ref,
-        sync_mode=intent.sync_mode,
-        audience_eligibility=intent.audience_eligibility,
+        tenant_id=_TENANT, workspace_id=_WORKSPACE, knowledge_source_binding_ref=binding_ref,
+        sync_mode=intent.sync_mode, audience_eligibility=intent.audience_eligibility,
     )
     sem = semantic_identity_hash_for_create_indexed_source(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        knowledge_source_binding_ref=binding_ref,
+        tenant_id=_TENANT, workspace_id=_WORKSPACE, knowledge_source_binding_ref=binding_ref,
     )
     mutation = WorkspaceKnowledgeMutationRecord(
-        mutation_id=mutation_id,
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE,
-        idempotency_key_hash=idem,
-        normalized_request_hash=req,
-        semantic_identity_hash=sem,
-        target_revision=revision,
-        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
-        result_entity_type="indexed_source_binding",
+        mutation_id=mutation_id, tenant_id=_TENANT, workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE, idempotency_key_hash=idem,
+        normalized_request_hash=req, semantic_identity_hash=sem, target_revision=revision,
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED, result_entity_type="indexed_source_binding",
         result_entity_id=indexed_source_binding_id(_TENANT, _WORKSPACE, binding_ref),
-        created_at=_NOW,
-        updated_at=_NOW,
+        created_at=_NOW, updated_at=_NOW,
     )
     repo.put_knowledge_configuration_mutation_if_absent(mutation)
     _pending_head(repo, revision=revision, mutation_id=mutation_id)
     return mutation, intent
 
 
+def _stage_create(repo, mutation, intent) -> None:
+    _CREATE_HANDLER.stage(
+        repository=repo, mutation=mutation, target_revision=mutation.target_revision, intent=intent, now=_NOW,
+    )
+
+
 def _connected_source_row(
-    *,
-    source_id: str = _SOURCE_ID,
-    mutation_id: str,
-    revision: int,
+    *, source_id: str = _SOURCE_ID, mutation_id: str, revision: int,
     status: WorkspaceSourceStatus = WorkspaceSourceStatus.REGISTERED,
 ) -> WorkspaceSource:
     return WorkspaceSource(
-        source_id=source_id,
-        workspace_id=_WORKSPACE,
-        tenant_id=_TENANT,
-        source_type=WorkspaceSourceType.CONNECTED_SOURCE,
-        path="",
-        recursive=False,
-        status=status,
-        created_at=_NOW,
-        knowledge_configuration_creation_mutation_id=mutation_id,
+        source_id=source_id, workspace_id=_WORKSPACE, tenant_id=_TENANT,
+        source_type=WorkspaceSourceType.CONNECTED_SOURCE, path="", recursive=False, status=status,
+        created_at=_NOW, knowledge_configuration_creation_mutation_id=mutation_id,
         knowledge_configuration_visibility_revision=revision,
     )
 
 
 def _binding_row(
-    *,
-    binding_id: str = _BINDING_ID,
-    source_id: str = _SOURCE_ID,
-    mutation_id: str,
-    revision: int,
+    *, binding_id: str = _BINDING_ID, source_id: str = _SOURCE_ID, mutation_id: str, revision: int,
     status: WorkspaceIndexedSourceBindingStatusV1 = WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
 ) -> WorkspaceIndexedSourceBinding:
     semantic = workspace_indexed_source_semantic_hash(_TENANT, _WORKSPACE, _KSB_REF)
     return WorkspaceIndexedSourceBinding(
-        indexed_source_binding_id=binding_id,
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        knowledge_source_binding_ref=_KSB_REF,
-        source_id=source_id,
-        sync_mode=_SYNC,
-        status=status,
-        audience_eligibility=_AUDIENCE,
-        mutation_id=mutation_id,
-        effective_revision=revision,
-        semantic_identity_hash=semantic,
-        created_at=_NOW,
-        updated_at=_NOW,
+        indexed_source_binding_id=binding_id, tenant_id=_TENANT, workspace_id=_WORKSPACE,
+        knowledge_source_binding_ref=_KSB_REF, source_id=source_id, sync_mode=_SYNC, status=status,
+        audience_eligibility=_AUDIENCE, mutation_id=mutation_id, effective_revision=revision,
+        semantic_identity_hash=semantic, created_at=_NOW, updated_at=_NOW,
         cached_safe_display_label="Slack Binding",
     )
 
@@ -513,28 +443,19 @@ def test_revision_gap_disable_and_reactivation() -> None:
     assert disabled.binding.status is WorkspaceIndexedSourceBindingStatusV1.DISABLED
     assert disabled.binding.effective_revision == disable_revision
     assert repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE_ID) == source_before
-    second_unrelated_revision = _attach_third(
-        attach, rev=disable_revision, idempotency_key_hash="f" * 64,
-    )
+    second_unrelated_revision = _attach_third(attach, rev=disable_revision, idempotency_key_hash="f" * 64)
     reactivated = lifecycle.activate_indexed_source(
-        _activate_cmd(
-            expected_revision=second_unrelated_revision,
-            idempotency_key_hash=_SHA256_E,
-        )
+        _activate_cmd(expected_revision=second_unrelated_revision, idempotency_key_hash=_SHA256_E)
     )
     reactivate_revision = reactivated.configuration_revision
     assert reactivated.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
-    assert reactivated.binding.indexed_source_binding_id == _BINDING_ID
-    assert reactivated.binding.source_id == _SOURCE_ID
+    assert reactivated.binding.indexed_source_binding_id == _BINDING_ID and reactivated.binding.source_id == _SOURCE_ID
     assert reactivated.binding.status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
     assert reactivated.binding.effective_revision == reactivate_revision
-    initial_commit_revision = create_revision + 1
-    assert (
-        first_unrelated_revision,
-        disable_revision,
-        second_unrelated_revision,
-        reactivate_revision,
-    ) == tuple(initial_commit_revision + offset for offset in (1, 2, 3, 4))
+    base = create_revision + 1
+    assert (first_unrelated_revision, disable_revision, second_unrelated_revision, reactivate_revision) == tuple(
+        base + offset for offset in (1, 2, 3, 4)
+    )
     assert repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE_ID) == source_before
 
 
@@ -566,26 +487,19 @@ def test_disable_replay_skips_configuration_load() -> None:
 def test_future_owned_binding_row_is_ownership_conflict() -> None:
     attach, _, repo, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
-    mutation, intent = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
+    mutation, _ = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
     repo.put_source_if_absent(_connected_source_row(mutation_id=mutation.mutation_id, revision=rev + 1))
-    repo.put_knowledge_indexed_source_version_if_absent(
-        _binding_row(mutation_id=mutation.mutation_id, revision=rev + 1)
+    repo.put_knowledge_indexed_source_version_if_absent(_binding_row(mutation_id=mutation.mutation_id, revision=rev + 1))
+    repo.put_knowledge_indexed_source_version_if_absent(_binding_row(mutation_id=mutation.mutation_id, revision=rev + 2))
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     )
-    repo.put_knowledge_indexed_source_version_if_absent(
-        _binding_row(mutation_id=mutation.mutation_id, revision=rev + 2)
-    )
-    inspection = _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
         engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
-    assert head is not None
-    assert head.committed_revision == rev
-    assert head.pending_mutation_id == "mutation-create"
+    assert head is not None and head.committed_revision == rev and head.pending_mutation_id == "mutation-create"
     assert len([
-        b for b in repo.list_knowledge_indexed_source_versions(
-            tenant_id=_TENANT, workspace_id=_WORKSPACE,
-        )
+        b for b in repo.list_knowledge_indexed_source_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)
         if b.mutation_id == mutation.mutation_id and b.effective_revision == rev + 2
     ]) == 1
 
@@ -595,32 +509,25 @@ def test_source_only_partial_recovery_aborts() -> None:
     rev = _attach(attach)
     mutation, _ = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
     repo.put_source_if_absent(_connected_source_row(mutation_id=mutation.mutation_id, revision=rev + 1))
-    inspection = _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
+    )
     recovery = engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
-    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.ABORTED
     head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
-    assert head is not None
-    assert head.committed_revision == rev
-    assert head.pending_mutation_id is None
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.ABORTED
+    assert head is not None and head.committed_revision == rev and head.pending_mutation_id is None
     assert repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE_ID) is None
 
 
 def test_binding_only_partial_recovery_aborts() -> None:
     attach, _, repo, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
-    other_source = _connected_source_row(
-        source_id="src:connected:other",
-        mutation_id="other-mutation",
-        revision=rev,
-    )
-    repo.put_source_if_absent(other_source)
+    repo.put_source_if_absent(_connected_source_row(source_id="src:connected:other", mutation_id="other-mutation", revision=rev))
     mutation, _ = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
-    repo.put_knowledge_indexed_source_version_if_absent(
-        _binding_row(mutation_id=mutation.mutation_id, revision=rev + 1)
+    repo.put_knowledge_indexed_source_version_if_absent(_binding_row(mutation_id=mutation.mutation_id, revision=rev + 1))
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
     )
-    inspection = _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.INCOMPLETE_OWNED
     recovery = engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.ABORTED
     assert repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id="src:connected:other") is not None
@@ -631,14 +538,10 @@ def test_corrupt_source_only_partial_stays_recovery_required() -> None:
     rev = _attach(attach)
     mutation, _ = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
     wrong_id = f"src:connected:{'1' * 32}"
-    corrupt = _connected_source_row(
-        source_id=wrong_id,
-        mutation_id=mutation.mutation_id,
-        revision=rev + 1,
+    repo.put_source_if_absent(_connected_source_row(source_id=wrong_id, mutation_id=mutation.mutation_id, revision=rev + 1))
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     )
-    repo.put_source_if_absent(corrupt)
-    inspection = _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
         engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=wrong_id) is not None
@@ -648,11 +551,10 @@ def test_wrong_revision_source_stays_recovery_required() -> None:
     attach, _, repo, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
     mutation, _ = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
-    repo.put_source_if_absent(
-        _connected_source_row(mutation_id=mutation.mutation_id, revision=rev + 2)
+    repo.put_source_if_absent(_connected_source_row(mutation_id=mutation.mutation_id, revision=rev + 2))
+    assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
+        WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     )
-    inspection = _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation)
-    assert inspection.state is WorkspaceKnowledgeStageStateV1.OWNERSHIP_CONFLICT
     with pytest.raises(WorkspaceKnowledgeConfigurationMutationError, match="configuration_recovery_required"):
         engine.recover_workspace_knowledge_mutation(tenant_id=_TENANT, workspace_id=_WORKSPACE)
 
@@ -663,8 +565,7 @@ _CORRUPT_INITIAL_CASES = [
     ({"source_id": f"src:connected:{'2' * 32}"}, None), ({"created_at": datetime(2024, 1, 1, tzinfo=UTC)}, None),
     ({"updated_at": datetime(2024, 1, 2, tzinfo=UTC)}, None), (None, {"source_id": f"src:connected:{'3' * 32}"}),
     (None, {"tenant_id": "tenant-other"}), (None, {"workspace_id": "workspace-other"}),
-    (None, {"status": WorkspaceSourceStatus.READY}), (None, {"status": WorkspaceSourceStatus.ERROR}),
-    (None, {"last_sync_at": _NOW}), (None, {"source_type": WorkspaceSourceType.WEB_RESOURCE}),
+    (None, {"source_type": WorkspaceSourceType.WEB_RESOURCE}), (None, {"path": "/bad"}), (None, {"recursive": True}),
     (None, {"created_at": datetime(2024, 1, 1, tzinfo=UTC)}),
 ]
 
@@ -680,8 +581,7 @@ def _patch_store_field(repo, *, partition: str, row_key: str, updates: dict) -> 
 def _disable_mutation(repo, *, revision: int, mutation_id: str = "mutation-disable") -> WorkspaceKnowledgeMutationRecord:
     mutation = WorkspaceKnowledgeMutationRecord(
         mutation_id=mutation_id, tenant_id=_TENANT, workspace_id=_WORKSPACE,
-        operation=WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE,
-        idempotency_key_hash=_SHA256_C,
+        operation=WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE, idempotency_key_hash=_SHA256_C,
         normalized_request_hash=normalize_disable_indexed_source_request_hash(
             tenant_id=_TENANT, workspace_id=_WORKSPACE, indexed_source_binding_id=_BINDING_ID,
         ),
@@ -718,9 +618,7 @@ def _replace_owned_source(repo, mutation, **updates) -> None:
     )
     row_key = f"{_WORKSPACE}:{source.source_id}"
     if {"tenant_id", "workspace_id", "source_type"} & updates.keys():
-        _patch_store_field(
-            repo, partition=f"lkw.managed_workspace:{_TENANT}:source", row_key=row_key, updates=updates,
-        )
+        _patch_store_field(repo, partition=f"lkw.managed_workspace:{_TENANT}:source", row_key=row_key, updates=updates)
         return
     repo.delete_source_if_match(source)
     repo.put_source_if_absent(source.model_copy(update=updates))
@@ -745,14 +643,31 @@ def test_corrupt_initial_complete_stage_blocks_recovery(binding_updates, source_
     attach, _, repo, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
     mutation, intent = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
-    _CREATE_HANDLER.stage(
-        repository=repo, mutation=mutation, target_revision=mutation.target_revision, intent=intent, now=_NOW,
-    )
+    _stage_create(repo, mutation, intent)
     if binding_updates:
         _replace_owned_binding(repo, mutation, **binding_updates)
     if source_updates:
         _replace_owned_source(repo, mutation, **source_updates)
     _assert_corrupt_initial_recovery_blocked(repo, engine, mutation, committed_revision=rev)
+    if binding_updates is None and source_updates and set(source_updates) <= {
+        "source_id", "source_type", "path", "recursive",
+    }:
+        wrong_id = source_updates.get("source_id", _SOURCE_ID)
+        assert repo.document_store.get(
+            f"lkw.managed_workspace:{_TENANT}:source", f"{_WORKSPACE}:{wrong_id}",
+        ) is not None
+        assert repo.document_store.get(
+            f"lkw.managed_workspace:{_TENANT}:knowledge_configuration_indexed_source",
+            f"{_WORKSPACE}:{_BINDING_ID}:rev:{rev + 1:020d}",
+        ) is not None
+    if binding_updates == {"status": WorkspaceIndexedSourceBindingStatusV1.DISABLED}:
+        assert repo.document_store.get(
+            f"lkw.managed_workspace:{_TENANT}:knowledge_configuration_indexed_source",
+            f"{_WORKSPACE}:{_BINDING_ID}:rev:{rev + 1:020d}",
+        ) is not None
+        assert repo.document_store.get(
+            f"lkw.managed_workspace:{_TENANT}:source", f"{_WORKSPACE}:{_SOURCE_ID}",
+        ) is not None
 
 
 def test_complete_reactivation_recovery_commits() -> None:
@@ -762,12 +677,8 @@ def test_complete_reactivation_recovery_commits() -> None:
     rev = _seed_active(lifecycle, attach)
     reactivate_rev = lifecycle.disable_indexed_source(_disable_cmd(expected_revision=rev)).configuration_revision + 1
     source_before = repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE_ID)
-    mutation, intent = _create_mutation(
-        repo, revision=reactivate_rev, mutation_id="mutation-reactivate", idem=_SHA256_E,
-    )
-    _CREATE_HANDLER.stage(
-        repository=repo, mutation=mutation, target_revision=reactivate_rev, intent=intent, now=_NOW,
-    )
+    mutation, intent = _create_mutation(repo, revision=reactivate_rev, mutation_id="mutation-reactivate", idem=_SHA256_E)
+    _stage_create(repo, mutation, intent)
     assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
         WorkspaceKnowledgeStageStateV1.COMPLETE_VALID
     )
@@ -821,13 +732,14 @@ def test_complete_disable_recovery_commits() -> None:
     assert head.committed_revision == disable_rev and head.pending_mutation_id is None
 
 
-def test_complete_initial_recovery_commits() -> None:
+@pytest.mark.parametrize("source_status", [WorkspaceSourceStatus.REGISTERED, WorkspaceSourceStatus.READY])
+def test_complete_initial_recovery_commits(source_status: WorkspaceSourceStatus) -> None:
     attach, _, repo, _, engine = _build_stack(mutation_ids=["mutation-attach", "mutation-create"])
     rev = _attach(attach)
     mutation, intent = _create_mutation(repo, revision=rev + 1, mutation_id="mutation-create")
-    _CREATE_HANDLER.stage(
-        repository=repo, mutation=mutation, target_revision=rev + 1, intent=intent, now=_NOW,
-    )
+    _stage_create(repo, mutation, intent)
+    if source_status is not WorkspaceSourceStatus.REGISTERED:
+        _replace_owned_source(repo, mutation, status=source_status)
     assert _CREATE_HANDLER.inspect_staged(repository=repo, mutation=mutation).state is (
         WorkspaceKnowledgeStageStateV1.COMPLETE_VALID
     )
@@ -844,54 +756,33 @@ def test_complete_initial_recovery_commits() -> None:
     assert binding.status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
     assert binding.semantic_identity_hash == mutation.semantic_identity_hash
     assert binding.indexed_source_binding_id == _BINDING_ID and binding.source_id == _SOURCE_ID
-    assert source is not None and source.status is WorkspaceSourceStatus.REGISTERED and source.last_sync_at is None
+    assert source is not None and source.source_type is WorkspaceSourceType.CONNECTED_SOURCE
+    assert source.path == "" and source.recursive is False and source.last_sync_at is None
+    assert source.knowledge_configuration_creation_mutation_id == mutation.mutation_id
+    assert source.knowledge_configuration_visibility_revision == mutation.target_revision
+    assert source.status is source_status
 
 
 def test_source_origin_validator_accepts_and_rejects() -> None:
     attach, lifecycle, repo, _, _ = _build_stack()
     rev = _attach(attach)
     lifecycle.activate_indexed_source(_activate_cmd(expected_revision=rev))
-    binding = repo.list_knowledge_indexed_source_versions(
-        tenant_id=_TENANT, workspace_id=_WORKSPACE,
-    )[0]
-    validate_connected_source_durable_origin(
-        repository=repo,
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        source_id=_SOURCE_ID,
-        binding=binding,
-        committed_configuration_revision=rev + 1,
-    )
+    binding = repo.list_knowledge_indexed_source_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)[0]
+
+    def _validate(source_id: str, *, committed_revision: int, binding_row=binding) -> None:
+        validate_connected_source_durable_origin(
+            repository=repo, tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=source_id,
+            binding=binding_row, committed_configuration_revision=committed_revision,
+        )
+
+    _validate(_SOURCE_ID, committed_revision=rev + 1)
     lifecycle.disable_indexed_source(_disable_cmd(expected_revision=rev + 1))
-    reactivated = lifecycle.activate_indexed_source(
-        _activate_cmd(expected_revision=rev + 2, idempotency_key_hash=_SHA256_E)
-    )
-    validate_connected_source_durable_origin(
-        repository=repo,
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        source_id=_SOURCE_ID,
-        binding=reactivated.binding,
-        committed_configuration_revision=rev + 3,
-    )
+    reactivated = lifecycle.activate_indexed_source(_activate_cmd(expected_revision=rev + 2, idempotency_key_hash=_SHA256_E))
+    _validate(_SOURCE_ID, committed_revision=rev + 3, binding_row=reactivated.binding)
     with pytest.raises(ConnectedSourceOriginValidationError, match="source_id_mismatch"):
-        validate_connected_source_durable_origin(
-            repository=repo,
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-            source_id="src:connected:wrong",
-            binding=reactivated.binding,
-            committed_configuration_revision=rev + 3,
-        )
+        _validate("src:connected:wrong", committed_revision=rev + 3, binding_row=reactivated.binding)
     with pytest.raises(ConnectedSourceOriginValidationError, match="binding_revision_after_committed"):
-        validate_connected_source_durable_origin(
-            repository=repo,
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-            source_id=_SOURCE_ID,
-            binding=reactivated.binding,
-            committed_configuration_revision=0,
-        )
+        _validate(_SOURCE_ID, committed_revision=0, binding_row=reactivated.binding)
 
 
 def test_indexed_source_id_from_semantic_hash_matches_canonical() -> None:
