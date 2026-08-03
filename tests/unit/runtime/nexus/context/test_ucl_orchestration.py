@@ -1232,6 +1232,317 @@ async def test_non_contiguous_target_fails_before_repository_access() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("history_source_refs", "compile_history_refs"),
+    [
+        (("m0", "m1"), ("m0",)),
+        (("m1", "m0"), ("m0", "m1")),
+    ],
+    ids=["missing_ref", "reversed_refs"],
+)
+async def test_partial_multi_message_group_fails_before_repository_access(
+    history_source_refs: tuple[str, ...],
+    compile_history_refs: tuple[str, ...],
+) -> None:
+    group_history = ContextSourceGroup(
+        group_id="group-history",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=history_source_refs,
+        source_content_hash="hash-history",
+        token_estimate=80,
+        compressible=True,
+        required=False,
+        protected=False,
+    )
+    group_current = ContextSourceGroup(
+        group_id="group-current",
+        source=ContextFragmentSource.SESSION_HISTORY,
+        source_refs=("current",),
+        source_content_hash="hash-current",
+        token_estimate=10,
+        required=True,
+        protected=True,
+    )
+    lookup_inputs = ContextArtifactLookupInputs(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=hashlib.sha256("hash-history".encode("utf-8")).hexdigest(),
+        compression_target=__import__(
+            "intergrax.runtime.context_lifecycle.contracts",
+            fromlist=["ArtifactCompressionTarget"],
+        ).ArtifactCompressionTarget(target_tokens=18),
+        lossiness_profile="lossy",
+        source_refs=history_source_refs,
+    )
+    artifact_requirement = ContextArtifactRequirement(
+        lookup_inputs=lookup_inputs,
+        source_group_ids=("group-history",),
+        allowed_strategy_ids=(STRATEGY_ID,),
+        minimum_preservation=__import__(
+            "intergrax.context.planning",
+            fromlist=["ContextMinimumPreservationRequirements"],
+        ).ContextMinimumPreservationRequirements(
+            preserve_message_order=True,
+            preserve_roles=True,
+            preserve_message_ids=True,
+            preserve_tool_call_links=True,
+            preserve_recent_tail_messages=0,
+            required_group_ids=("group-current",),
+            protected_group_ids=("group-current",),
+        ),
+    )
+    context_plan = ContextPlan(
+        execution_scope=ModelCallExecutionScope.PRIMARY_MODEL_CALL,
+        budget_class=ContextBudgetClass.PRIMARY_MODEL_INPUT,
+        resolved_global_budget_tokens=20,
+        estimated_total_tokens=90,
+        source_groups=(group_history, group_current),
+        source_allocations=(
+            ContextSourceBudgetAllocation(
+                source=ContextFragmentSource.SESSION_HISTORY,
+                allocated_tokens=90,
+                selected_group_ids=("group-history", "group-current"),
+                excluded_group_ids=(),
+            ),
+        ),
+        selected_group_ids=("group-history", "group-current"),
+        excluded_group_ids=(),
+        required_group_ids=("group-current",),
+        protected_group_ids=("group-current",),
+        compressible_group_ids=("group-history",),
+        droppable_group_ids=(),
+        trim_safe_group_ids=(),
+        optimization_required=True,
+        artifact_requirement=artifact_requirement,
+        final_validation_requirements=("respect_resolved_global_budget",),
+    )
+    history_by_ref = {
+        "m0": "history part zero " * 20,
+        "m1": "history part one " * 20,
+    }
+    fragments = tuple(
+        ContextFragment(
+            fragment_id=f"frag-{source_ref}",
+            source=ContextFragmentSource.SESSION_HISTORY,
+            source_id="session",
+            content=history_by_ref[source_ref],
+            token_estimate=40,
+            relevance_score=0.5,
+            freshness_score=0.5,
+            confidence_score=0.5,
+            mandatory=False,
+            metadata={"message_id": source_ref},
+        )
+        for source_ref in compile_history_refs
+    )
+    formatter = DefaultContextFormatter()
+    request = _request()
+    fragment_messages = formatter.format(fragments, request)
+    messages_for_compile = [
+        *fragment_messages,
+        ChatMessage(role="user", content="current", entry_id="current"),
+    ]
+    snapshot = build_session_history_snapshot(
+        tenant_id="tenant",
+        context_scope_id="scope",
+        revision_id="rev-1",
+        messages=[
+            ChatMessage(role="user", content=history_by_ref[source_ref], entry_id=source_ref)
+            for source_ref in history_source_refs
+        ],
+    )
+    repo = _SpyOptimizationArtifactRepository()
+    id_calls, id_factory = _artifact_id_call_counter()
+    model_calls = [0]
+    runtime = NexusUCLRuntimeDependencies(
+        repository=repo,
+        message_sequence_executor=MessageSequenceArtifactExecutor(
+            preflight=lambda _call: None,
+            invoke_model=lambda _call: (model_calls.__setitem__(0, model_calls[0] + 1) or LLMAdapterResponse(content="x")),
+            count_tokens=_count_tokens,
+        ),
+        strategy_versions={STRATEGY_ID: STRATEGY_VERSION},
+        artifact_id_factory=id_factory,
+    )
+    with pytest.raises(NexusUCLExecutionError) as exc_info:
+        await resolve_ucl_context_plan(
+            **_resolve_kwargs(
+                request=request,
+                context_plan=context_plan,
+                snapshot=snapshot,
+                messages_for_compile=messages_for_compile,
+                fragment_messages=fragment_messages,
+                fragments=fragments,
+                optimization_policy=_optimization_policy(),
+                runtime=runtime,
+            )
+        )
+    assert exc_info.value.reason == NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED.value
+    assert repo.lookup_calls == 0
+    assert repo.reservation_calls == 0
+    assert model_calls[0] == 0
+    assert id_calls[0] == 0
+
+
+def _ucl_replacement_messages(messages: Sequence[ChatMessage]) -> list[ChatMessage]:
+    return [message for message in messages if message.entry_id.startswith("ucl-artifact-")]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "persistence",
+    [
+        EphemeralArtifactPersistencePolicy.DO_NOT_PERSIST,
+        EphemeralArtifactPersistencePolicy.PERSIST_AFTER_HUMAN_REVIEW,
+    ],
+)
+async def test_non_persist_flow_has_no_persistent_artifact_identity(
+    persistence: EphemeralArtifactPersistencePolicy,
+) -> None:
+    long_history = ["ephemeral history " * 30]
+    if persistence is EphemeralArtifactPersistencePolicy.PERSIST_AFTER_HUMAN_REVIEW:
+        policy = ContextOptimizationPolicy(
+            policy_version="policy.v1",
+            validation_contract_version="validation.v1",
+            enabled=True,
+            mode=ContextOptimizationMode.EPHEMERAL_ASSEMBLY,
+            allow_lossy=True,
+            allow_llm_summarization=True,
+            allow_artifact_reuse=True,
+            allowed_artifact_types=(OptimizationArtifactType.MESSAGE_SEQUENCE,),
+            allowed_strategy_ids=(STRATEGY_ID,),
+            require_human_review=True,
+            ephemeral_artifact_persistence=persistence,
+        )
+    else:
+        policy = _optimization_policy(persistence=persistence)
+    (
+        request,
+        context_plan,
+        snapshot,
+        messages_for_compile,
+        fragment_messages,
+        fragments,
+        _policy,
+    ) = _plan_fixture(
+        history_contents=long_history,
+        resolved_budget=20,
+        optimization_policy=policy,
+    )
+    repo = _SpyOptimizationArtifactRepository()
+    id_calls, id_factory = _artifact_id_call_counter()
+    runtime, model_calls, _ = _runtime(repository=repo, artifact_ids=[])
+    runtime = NexusUCLRuntimeDependencies(
+        repository=repo,
+        message_sequence_executor=runtime.message_sequence_executor,
+        strategy_versions={STRATEGY_ID: STRATEGY_VERSION},
+        artifact_id_factory=id_factory,
+        wait_timeout_seconds=runtime.wait_timeout_seconds,
+    )
+    resolution = await resolve_ucl_context_plan(
+        **_resolve_kwargs(
+            request=request,
+            context_plan=context_plan,
+            snapshot=snapshot,
+            messages_for_compile=messages_for_compile,
+            fragment_messages=fragment_messages,
+            fragments=fragments,
+            optimization_policy=policy,
+            runtime=runtime,
+        )
+    )
+    assert resolution.decision is ContextOptimizationDecision.CREATE_ARTIFACT
+    assert resolution.artifact_reference is None
+    assert repo.store_calls == 0
+    assert repo.release_calls == 1
+    assert id_calls[0] == 0
+    assert model_calls[0] == 1
+    replacements = _ucl_replacement_messages(resolution.messages)
+    assert len(replacements) == 1
+    assert "artifact_id" not in replacements[0].metadata
+    synthetic_fragments = [
+        fragment
+        for fragment in resolution.fragments_included
+        if fragment.fragment_id.startswith("ucl-artifact-")
+    ]
+    assert len(synthetic_fragments) == 1
+    assert resolution.artifact_lookup_key_hash is not None
+    assert synthetic_fragments[0].source_id == resolution.artifact_lookup_key_hash
+    requirement = context_plan.artifact_requirement
+    assert requirement is not None
+    lookup_key = ArtifactLookupKey(
+        tenant_id=requirement.lookup_inputs.tenant_id,
+        context_scope_id=requirement.lookup_inputs.context_scope_id,
+        artifact_type=requirement.lookup_inputs.artifact_type,
+        source_content_hash=requirement.lookup_inputs.source_content_hash,
+        compression_target=requirement.lookup_inputs.compression_target,
+        lossiness_profile=requirement.lookup_inputs.lossiness_profile,
+        source_refs=requirement.lookup_inputs.source_refs,
+        strategy_id=STRATEGY_ID,
+        strategy_version=STRATEGY_VERSION,
+        policy_version=policy.policy_version,
+        validation_contract_version=policy.validation_contract_version,
+    )
+    assert repo.lookup(lookup_key) is None
+
+
+@pytest.mark.asyncio
+async def test_persisted_flow_exposes_persisted_artifact_identity() -> None:
+    long_history = ["history block " * 30]
+    (
+        request,
+        context_plan,
+        snapshot,
+        messages_for_compile,
+        fragment_messages,
+        fragments,
+        policy,
+    ) = _plan_fixture(
+        history_contents=long_history,
+        resolved_budget=20,
+        optimization_policy=_optimization_policy(),
+    )
+    repo = _SpyOptimizationArtifactRepository()
+    id_calls, id_factory = _artifact_id_call_counter()
+    runtime, model_calls, _ = _runtime(repository=repo, artifact_ids=[])
+    runtime = NexusUCLRuntimeDependencies(
+        repository=repo,
+        message_sequence_executor=runtime.message_sequence_executor,
+        strategy_versions={STRATEGY_ID: STRATEGY_VERSION},
+        artifact_id_factory=id_factory,
+        wait_timeout_seconds=runtime.wait_timeout_seconds,
+    )
+    resolution = await resolve_ucl_context_plan(
+        **_resolve_kwargs(
+            request=request,
+            context_plan=context_plan,
+            snapshot=snapshot,
+            messages_for_compile=messages_for_compile,
+            fragment_messages=fragment_messages,
+            fragments=fragments,
+            optimization_policy=policy,
+            runtime=runtime,
+        )
+    )
+    assert resolution.decision is ContextOptimizationDecision.CREATE_ARTIFACT
+    assert model_calls[0] == 1
+    assert id_calls[0] == 1
+    assert repo.store_calls == 1
+    assert resolution.artifact_reference is not None
+    replacements = _ucl_replacement_messages(resolution.messages)
+    assert len(replacements) == 1
+    assert replacements[0].metadata.get("artifact_id") == resolution.artifact_reference.artifact_id
+    synthetic_fragments = [
+        fragment
+        for fragment in resolution.fragments_included
+        if fragment.fragment_id.startswith("ucl-artifact-")
+    ]
+    assert len(synthetic_fragments) == 1
+    assert synthetic_fragments[0].source_id == resolution.artifact_reference.artifact_id
+
+
+@pytest.mark.asyncio
 async def test_missing_target_message_fails_before_repository_access() -> None:
     long_history = ["history block " * 30]
     (

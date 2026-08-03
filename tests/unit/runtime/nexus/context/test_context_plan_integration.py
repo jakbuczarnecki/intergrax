@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -24,17 +25,18 @@ from intergrax.context.session_history import (
     build_session_history_snapshot,
 )
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.context_lifecycle.contracts import (
+    ContextOptimizationDecision,
     ContextOptimizationMode,
     ContextOptimizationPolicy,
     EphemeralArtifactPersistencePolicy,
     OptimizationArtifactType,
 )
 from intergrax.runtime.context_lifecycle.in_memory_repository import InMemoryOptimizationArtifactRepository
+from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
@@ -46,6 +48,14 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import Messa
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
+
+
+@dataclass(slots=True)
+class _RuntimeConfigStub:
+    llm_adapter: LLMAdapter
+    production_mode: bool = False
+    context_budget_policy: ContextBudgetPolicy | None = None
+    context_decision_profile: dict[str, Any] | None = None
 
 
 class _SmallWindowAdapter(LLMAdapter):
@@ -64,7 +74,7 @@ class _SmallWindowAdapter(LLMAdapter):
 @pytest.mark.asyncio
 async def test_engine_attaches_context_plan() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     snapshot = build_session_history_snapshot(
         tenant_id="tenant",
@@ -99,7 +109,7 @@ async def test_engine_attaches_context_plan() -> None:
 @pytest.mark.asyncio
 async def test_engine_plan_total_includes_actual_base_messages() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     long_user = "x" * 400
     request = ContextAssemblyRequest(
@@ -131,7 +141,7 @@ async def test_engine_plan_total_includes_actual_base_messages() -> None:
 @pytest.mark.asyncio
 async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     snapshot = build_session_history_snapshot(
         tenant_id="tenant",
@@ -174,7 +184,7 @@ async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages
 @pytest.mark.asyncio
 async def test_long_required_current_user_message_is_not_reported_as_zero_token_plan() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     long_user = "required " * 200
     request = ContextAssemblyRequest(
@@ -290,7 +300,14 @@ def _optimization_policy() -> ContextOptimizationPolicy:
 @pytest.mark.asyncio
 async def test_engine_ucl_runtime_create_then_reuse() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(
+        llm_adapter=adapter,
+        production_mode=False,
+        context_budget_policy=ContextBudgetPolicy(
+            max_tokens_estimate=80,
+            max_chars=16_000,
+        ),
+    )
     registry = ContextPluginRegistry()
     registry.add_provider(HandleSessionHistoryProvider())
     engine = DefaultNexusContextEngine(registry=registry)
@@ -331,17 +348,34 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
         provider_ctx=provider_ctx,
     )
     assert first.context_plan is not None
-    assert first.context_plan.optimization_required
+    assert first.context_plan.optimization_required is True
     assert model_calls[0] == 1
+    first_replacements = [
+        message for message in first.messages if message.entry_id.startswith("ucl-artifact-")
+    ]
+    second_replacements = [
+        message for message in second.messages if message.entry_id.startswith("ucl-artifact-")
+    ]
+    assert len(first_replacements) == 1
+    assert len(second_replacements) == 1
+    assert (
+        first_replacements[0].metadata["optimization_decision"]
+        == ContextOptimizationDecision.CREATE_ARTIFACT.value
+    )
+    assert (
+        second_replacements[0].metadata["optimization_decision"]
+        == ContextOptimizationDecision.REUSE_ARTIFACT.value
+    )
     assert any("engine integration summary" in (message.content or "") for message in first.messages)
     assert any("engine integration summary" in (message.content or "") for message in second.messages)
+    assert not any("history " * 10 in (message.content or "") for message in first.messages)
     assert not any("history " * 10 in (message.content or "") for message in second.messages)
 
 
 @pytest.mark.asyncio
 async def test_engine_detects_structural_tool_linkage_mutation() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     planned_message = ChatMessage(
         role="assistant",
@@ -354,6 +388,13 @@ async def test_engine_detects_structural_tool_linkage_mutation() -> None:
         content="call tool",
         entry_id="assistant-1",
         tool_calls=[{"id": "call-2", "type": "function", "function": {"name": "lookup", "arguments": "{}"}}],
+    )
+    assert compute_model_facing_messages_hash([planned_message]) != compute_model_facing_messages_hash(
+        [mutated_message]
+    )
+    resolved_budget = engine._compiler.resolve_global_input_budget(
+        config,
+        max_output_tokens=None,
     )
     request = ContextAssemblyRequest(
         trace_id="t1",
@@ -379,7 +420,7 @@ async def test_engine_detects_structural_tool_linkage_mutation() -> None:
         {
             "messages": [mutated_message],
             "total_tokens": 1,
-            "budget_tokens": 100,
+            "budget_tokens": resolved_budget,
             "degradation_steps": (),
         },
     )()
@@ -394,7 +435,7 @@ async def test_engine_detects_structural_tool_linkage_mutation() -> None:
 @pytest.mark.asyncio
 async def test_engine_validation_failure_skips_preflight() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     request = ContextAssemblyRequest(
         trace_id="t1",
@@ -433,7 +474,7 @@ async def test_engine_validation_failure_skips_preflight() -> None:
 @pytest.mark.asyncio
 async def test_engine_compile_mutation_raises_ucl_final_compile_mutated_plan() -> None:
     adapter = _SmallWindowAdapter()
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     request = ContextAssemblyRequest(
         trace_id="t1",

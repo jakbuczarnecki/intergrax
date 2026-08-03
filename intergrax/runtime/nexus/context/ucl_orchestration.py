@@ -480,50 +480,58 @@ async def resolve_ucl_context_plan(
             execution_result.artifact_content_hash,
             lookup_key=lookup_key,
         )
-        artifact_id = _allocate_artifact_id(runtime.artifact_id_factory)
-
-        metadata = ReusableOptimizationArtifact(
-            artifact_id=artifact_id,
-            lookup_key=lookup_key,
-            artifact_content_hash=execution_result.artifact_content_hash,
-            created_at=execution_result.receipt.created_at,
-            created_by_executor="message_sequence_artifact_executor.v1",
-            validation=execution_result.validation,
-            receipt_ref=execution_result.receipt.receipt_id,
-            safe_metadata={
-                "parent_operation_id": execution_result.receipt.parent_operation_id,
-                "internal_operation_id": execution_result.receipt.internal_operation_id,
-                "source_ref_count": execution_result.receipt.source_ref_count,
-                "input_tokens": execution_result.receipt.input_tokens,
-                "output_tokens": execution_result.receipt.output_tokens,
-                "target_tokens": execution_result.receipt.target_tokens,
-            },
-        )
-        stored = StoredOptimizationArtifact(
-            metadata=metadata,
-            payload=execution_result.payload,
-            media_type=execution_result.media_type,
-            encoding=execution_result.encoding,
-        )
-
-        resolution = _materialize_artifact_messages(
-            prepared=prepared_materialization,
-            decision=ContextOptimizationDecision.CREATE_ARTIFACT,
-            lookup_hash=lookup_hash,
-            summary=summary,
-            artifact_content_hash=artifact_content_hash,
-            artifact_id=artifact_id,
-            count_tokens=count_tokens,
-        )
-
         persistence = optimization_policy.ephemeral_artifact_persistence
-        if persistence in _PERSIST_POLICIES:
+        should_persist = persistence in _PERSIST_POLICIES
+
+        if should_persist:
+            artifact_id = _allocate_artifact_id(runtime.artifact_id_factory)
+            metadata = ReusableOptimizationArtifact(
+                artifact_id=artifact_id,
+                lookup_key=lookup_key,
+                artifact_content_hash=execution_result.artifact_content_hash,
+                created_at=execution_result.receipt.created_at,
+                created_by_executor="message_sequence_artifact_executor.v1",
+                validation=execution_result.validation,
+                receipt_ref=execution_result.receipt.receipt_id,
+                safe_metadata={
+                    "parent_operation_id": execution_result.receipt.parent_operation_id,
+                    "internal_operation_id": execution_result.receipt.internal_operation_id,
+                    "source_ref_count": execution_result.receipt.source_ref_count,
+                    "input_tokens": execution_result.receipt.input_tokens,
+                    "output_tokens": execution_result.receipt.output_tokens,
+                    "target_tokens": execution_result.receipt.target_tokens,
+                },
+            )
+            stored = StoredOptimizationArtifact(
+                metadata=metadata,
+                payload=execution_result.payload,
+                media_type=execution_result.media_type,
+                encoding=execution_result.encoding,
+            )
+            resolution = _materialize_artifact_messages(
+                prepared=prepared_materialization,
+                decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+                lookup_hash=lookup_hash,
+                summary=summary,
+                artifact_content_hash=artifact_content_hash,
+                artifact_id=artifact_id,
+                count_tokens=count_tokens,
+            )
             artifact_reference = await asyncio.to_thread(
                 repository.store_validated_artifact,
                 reservation=coordination.reservation,
                 artifact=stored,
             )
         else:
+            resolution = _materialize_artifact_messages(
+                prepared=prepared_materialization,
+                decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+                lookup_hash=lookup_hash,
+                summary=summary,
+                artifact_content_hash=artifact_content_hash,
+                artifact_id=None,
+                count_tokens=count_tokens,
+            )
             released = await asyncio.to_thread(
                 repository.release_creation_reservation,
                 reservation=coordination.reservation,
@@ -642,6 +650,7 @@ def _materialize_plan_mapping(
     }
     plan_group_ids = {group.group_id for group in context_plan.source_groups}
     message_group_ids: list[str] = []
+    present_source_refs_by_group_id: dict[str, list[str]] = {}
     seen_group_order: list[str] = []
     seen_group_set: set[str] = set()
 
@@ -662,10 +671,15 @@ def _materialize_plan_mapping(
         group_id = group_id_by_source_ref.get(source_ref)
         if group_id is None or group_id not in plan_group_ids:
             raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+        present_source_refs_by_group_id.setdefault(group_id, []).append(source_ref)
         message_group_ids.append(group_id)
         if group_id not in seen_group_set:
             seen_group_order.append(group_id)
             seen_group_set.add(group_id)
+
+    for group in context_plan.source_groups:
+        if tuple(present_source_refs_by_group_id.get(group.group_id, ())) != group.source_refs:
+            raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 
     expected_order = [group.group_id for group in context_plan.source_groups]
     if seen_group_order != expected_order:
