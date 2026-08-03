@@ -22,7 +22,6 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | Explore Token Optimization | [Token Optimization Engine](features/token_optimization/README.md) |
 | Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
 | Check use-case fit | [Use Cases](../USE_CASES.md) |
-| See where the product-validation program is heading | [Roadmap](../ROADMAP.md) |
 | Discuss a pilot or partnership | [Partners](../PARTNERS.md) |
 | Check current proof status | [Intergrax Proofs](../PROOFS.md) |
 | Understand license and collaboration | [Collaboration](../COLLABORATION.md) · [LICENSE](../LICENSE) |
@@ -59,10 +58,10 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
 | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Evaluation and building route selection |
 | [Evaluation Guide](../EVALUATION_GUIDE.md) | Bounded 5–60 minute evaluation paths |
-| [Use Cases](../USE_CASES.md) | Concrete fit map: current strongest use case, bounded fits, planned validation and not-fit boundaries |
+| [Use Cases](../USE_CASES.md) | Problem-area map for fit assessment |
 | [Partners](../PARTNERS.md) | Design-partner and pilot discovery brief |
 | [FAQ](../FAQ.md) | Common external questions |
-| [Roadmap](../ROADMAP.md) | Outcome-gated product-validation direction: now, next and later without implementation task IDs |
+| [Roadmap](../ROADMAP.md) | Public product-validation program and adoption priorities |
 | [Collaboration](../COLLABORATION.md) | Permitted evaluation and contribution boundaries |
 | [LICENSE](../LICENSE) | Legal evaluation and collaboration terms |
 | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
