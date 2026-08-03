@@ -12,6 +12,10 @@ from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     indexed_source_binding_id,
 )
+from local_workspace_application.workspaces.connected_source_source_projection import (
+    ConnectedSourceOriginValidationError,
+    validate_connected_source_durable_origin,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationIntent,
     DisableIndexedSourceMutationIntent,
@@ -128,6 +132,20 @@ def _resolve_historical_binding(
         raise _incomplete()
     if binding.indexed_source_binding_id != binding_id or binding.source_id != source_id:
         raise _incomplete()
+    if not binding.knowledge_source_binding_ref.strip():
+        raise _incomplete()
+    if binding.semantic_identity_hash != semantic_hash:
+        raise _incomplete()
+    expected_binding_id = indexed_source_binding_id(
+        tenant_id, workspace_id, binding.knowledge_source_binding_ref,
+    )
+    expected_source_id = connected_source_id(
+        tenant_id, workspace_id, binding.knowledge_source_binding_ref,
+    )
+    if binding.indexed_source_binding_id != expected_binding_id:
+        raise _incomplete()
+    if binding.source_id != expected_source_id:
+        raise _incomplete()
     if binding.status is not expected_status:
         raise _incomplete()
     if mutation.outcome is WorkspaceKnowledgeMutationOutcomeV1.APPLIED:
@@ -142,6 +160,18 @@ def _resolve_historical_binding(
             raise _incomplete()
     else:
         raise _incomplete()
+    if expected_status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE:
+        try:
+            validate_connected_source_durable_origin(
+                repository=repository,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                binding=binding,
+                committed_configuration_revision=result.configuration_revision,
+            )
+        except ConnectedSourceOriginValidationError:
+            raise _incomplete() from None
     return binding
 
 def _validate_tenant_binding(port: TenantKnowledgeSourceBindingPort, *, tenant_id: str, binding_id: str):
@@ -315,14 +345,63 @@ class WorkspaceIndexedSourceLifecycleService:
         )
         if existing is not None and existing.normalized_request_hash != request_hash:
             raise WorkspaceKnowledgeConfigurationMutationError("configuration_idempotency_conflict")
-        configuration = self._configuration_service.get_configuration(tenant_id=tenant_id, workspace_id=workspace_id)
+        if (
+            existing is not None
+            and existing.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+        ):
+            result = self._mutation_engine.execute(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                operation=WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE,
+                expected_revision=command.expected_revision,
+                idempotency_key_hash=command.idempotency_key_hash,
+                normalized_request_hash=request_hash,
+                semantic_identity_hash=existing.semantic_identity_hash,
+                intent=DisableIndexedSourceMutationIntent(
+                    indexed_source_binding_id=binding_id,
+                    knowledge_source_binding_ref="",
+                ),
+            )
+            if result.disposition is not WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY:
+                raise _incomplete()
+            historical = _highest_binding(
+                self._repository.list_knowledge_indexed_source_versions(
+                    tenant_id=tenant_id, workspace_id=workspace_id,
+                ),
+                binding_id=binding_id,
+                revision=result.configuration_revision,
+            )
+            if historical is None:
+                raise _incomplete()
+            binding_ref = historical.knowledge_source_binding_ref.strip()
+            semantic_hash = semantic_identity_hash_for_disable_indexed_source(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                knowledge_source_binding_ref=binding_ref,
+            )
+            source_id = connected_source_id(tenant_id, workspace_id, binding_ref)
+            binding = _resolve_historical_binding(
+                self._repository, result=result, tenant_id=tenant_id, workspace_id=workspace_id,
+                binding_id=binding_id, source_id=source_id, request_hash=request_hash,
+                semantic_hash=semantic_hash,
+                expected_status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
+            )
+            return _lifecycle_result(result, binding=binding, created_new_source=False)
+        configuration = self._configuration_service.get_configuration(
+            tenant_id=tenant_id, workspace_id=workspace_id,
+        )
         if configuration is None:
             raise WorkspaceIndexedSourceLifecycleError("workspace_not_found")
-        current = next((b for b in configuration.indexed_sources if b.indexed_source_binding_id == binding_id), None)
+        current = next(
+            (b for b in configuration.indexed_sources if b.indexed_source_binding_id == binding_id),
+            None,
+        )
         if current is None:
             raise WorkspaceIndexedSourceLifecycleError("indexed_source_not_found")
         semantic_hash = semantic_identity_hash_for_disable_indexed_source(
-            tenant_id=tenant_id, workspace_id=workspace_id, knowledge_source_binding_ref=current.knowledge_source_binding_ref
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            knowledge_source_binding_ref=current.knowledge_source_binding_ref,
         )
         source_id = connected_source_id(tenant_id, workspace_id, current.knowledge_source_binding_ref)
         result = self._mutation_engine.execute(
@@ -338,20 +417,9 @@ class WorkspaceIndexedSourceLifecycleService:
                 knowledge_source_binding_ref=current.knowledge_source_binding_ref,
             ),
         )
-        if (
-            existing is not None
-            and existing.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
-            and result.disposition is not WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
-        ):
-            raise _incomplete()
         binding = _resolve_historical_binding(
-            self._repository,
-            result=result,
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            binding_id=binding_id,
-            source_id=source_id,
-            request_hash=request_hash,
+            self._repository, result=result, tenant_id=tenant_id, workspace_id=workspace_id,
+            binding_id=binding_id, source_id=source_id, request_hash=request_hash,
             semantic_hash=semantic_hash,
             expected_status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
         )

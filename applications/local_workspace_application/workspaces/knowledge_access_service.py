@@ -206,23 +206,20 @@ class WorkspaceKnowledgeAccessService:
         except ConnectedSourceBindingError as exc:
             raise ConnectedSourceDiscoveryError(exc.error_code) from exc
         if tenant_binding.binding_id != expected_binding_id:
-            raise ConnectedSourceBindingError("knowledge_source_binding_invalid")
+            raise WorkspaceIndexedSourceLifecycleError("knowledge_source_binding_invalid")
 
-        try:
-            lifecycle_result = self._lifecycle.activate_indexed_source(
-                ActivateWorkspaceIndexedSourceCommand(
-                    tenant_id=request.tenant_id,
-                    workspace_id=request.workspace_id,
-                    knowledge_source_binding_ref=tenant_binding.binding_id,
-                    expected_revision=request.expected_revision,
-                    idempotency_key_hash=request.idempotency_key_hash,
-                    sync_mode=sync_mode,
-                    audience_eligibility=audience_eligibility,
-                    cached_safe_display_label=safe_label,
-                )
+        lifecycle_result = self._lifecycle.activate_indexed_source(
+            ActivateWorkspaceIndexedSourceCommand(
+                tenant_id=request.tenant_id,
+                workspace_id=request.workspace_id,
+                knowledge_source_binding_ref=tenant_binding.binding_id,
+                expected_revision=request.expected_revision,
+                idempotency_key_hash=request.idempotency_key_hash,
+                sync_mode=sync_mode,
+                audience_eligibility=audience_eligibility,
+                cached_safe_display_label=safe_label,
             )
-        except WorkspaceIndexedSourceLifecycleError as exc:
-            raise ConnectedSourceDiscoveryError(exc.error_code) from exc
+        )
 
         source_id = connected_source_id(
             request.tenant_id,

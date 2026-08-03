@@ -34,6 +34,20 @@ def connected_source_id(
     return f"src:connected:{_sha256_hex(payload)[:32]}"
 
 
+def indexed_source_binding_id_from_semantic_hash(value: str) -> str:
+    digest = value.strip()
+    if _SHA256_HEX_RE.fullmatch(digest) is None:
+        raise ValueError("semantic_identity_hash_invalid")
+    return f"idx:{digest[:32]}"
+
+
+def connected_source_id_from_semantic_hash(value: str) -> str:
+    digest = value.strip()
+    if _SHA256_HEX_RE.fullmatch(digest) is None:
+        raise ValueError("semantic_identity_hash_invalid")
+    return f"src:connected:{digest[:32]}"
+
+
 def indexed_source_binding_id(
     tenant_id: str,
     workspace_id: str,

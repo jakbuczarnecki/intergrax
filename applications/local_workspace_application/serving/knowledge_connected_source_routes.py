@@ -302,7 +302,14 @@ def mount_connected_source_knowledge_routes(
             )
         except ConnectedSourceDiscoveryError as exc:
             raise _map_discovery_error(exc) from exc
+        except WorkspaceIndexedSourceLifecycleError as exc:
+            raise _map_lifecycle_error(exc) from exc
         except ConnectedSourceBindingError as exc:
+            if exc.error_code == "knowledge_source_binding_invalid":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=exc.error_code,
+                ) from exc
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=exc.error_code,
