@@ -34,9 +34,16 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDocsSegmentKind,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GoogleDocsBlock,
     GoogleDocsBullet,
     GoogleDocsDocument,
+    GoogleDocsInlineElement,
     GoogleDocsParagraph,
+    GoogleDocsSegment,
+    GoogleDocsTable,
+    GoogleDocsTableCell,
+    GoogleDocsTableRow,
+    GoogleDocsTab,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceApiError,
@@ -153,10 +160,31 @@ def _document_payload(
     return payload
 
 
+def _table_cell(
+    start: int,
+    end: int,
+    content: list[dict[str, object]],
+    *,
+    row_span: int = 1,
+    column_span: int = 1,
+) -> dict[str, object]:
+    cell: dict[str, object] = {
+        "startIndex": start,
+        "endIndex": end,
+        "content": content,
+    }
+    if row_span != 1 or column_span != 1:
+        cell["tableCellStyle"] = {"rowSpan": row_span, "columnSpan": column_span}
+    return cell
+
+
 def _assert_safe_dependency_error(exc_info: pytest.ExceptionInfo[IntegrationDependencyError]) -> None:
     assert exc_info.value.__cause__ is None
     message = str(exc_info.value)
     assert message in {_UNEXPECTED_MESSAGE, _REQUEST_FAILED_MESSAGE}
+    assert "user@example.com" not in message
+    assert "https://example.com" not in message
+    assert "person-1" not in message
 
 
 def _reader_with_payload(payload: dict[str, object]) -> tuple[GoogleDocsKnowledgeReader, _RecordingTransport]:
@@ -306,11 +334,7 @@ def test_structural_blocks_and_tables() -> None:
                     "startIndex": 30,
                     "endIndex": 35,
                     "tableCells": [
-                        {
-                            "startIndex": 30,
-                            "endIndex": 35,
-                            "content": nested_table_cell_content,
-                        },
+                        _table_cell(30, 35, nested_table_cell_content),
                     ],
                 },
             ],
@@ -327,16 +351,16 @@ def test_structural_blocks_and_tables() -> None:
                     "startIndex": 30,
                     "endIndex": 40,
                     "tableCells": [
-                        {"startIndex": 30, "endIndex": 35, "columnSpan": 2, "content": [nested_table]},
-                        {"startIndex": 35, "endIndex": 40, "content": [_paragraph_block(35, 38, [_text_run("X", 35, 36)])]},
+                        _table_cell(30, 35, [nested_table], column_span=2),
+                        _table_cell(35, 40, [_paragraph_block(35, 38, [_text_run("X", 35, 36)])]),
                     ],
                 },
                 {
                     "startIndex": 40,
                     "endIndex": 50,
                     "tableCells": [
-                        {"startIndex": 40, "endIndex": 45, "content": [_paragraph_block(40, 43, [_text_run("Y", 40, 41)])]},
-                        {"startIndex": 45, "endIndex": 48, "columnSpan": 2, "content": [_paragraph_block(45, 47, [_text_run("Z", 45, 46)])]},
+                        _table_cell(40, 45, [_paragraph_block(40, 43, [_text_run("Y", 40, 41)])]),
+                        _table_cell(45, 48, [_paragraph_block(45, 47, [_text_run("Z", 45, 46)])], column_span=2),
                     ],
                 },
             ],
@@ -385,7 +409,13 @@ def test_all_inline_kinds() -> None:
         {
             "startIndex": 27,
             "endIndex": 28,
-            "person": {"personId": "person-1", "email": "user@example.com", "name": "User Name"},
+            "person": {
+                "personId": "person-1",
+                "personProperties": {
+                    "name": "User Name",
+                    "email": "user@example.com",
+                },
+            },
         },
         {
             "startIndex": 28,
@@ -402,7 +432,7 @@ def test_all_inline_kinds() -> None:
         {
             "startIndex": 29,
             "endIndex": 30,
-            "date": {
+            "dateElement": {
                 "dateId": "date-1",
                 "dateElementProperties": {
                     "displayText": "Jan 1",
@@ -442,10 +472,35 @@ def test_all_inline_kinds() -> None:
     assert inline[4].reference_id == "fn-1"
     assert inline[7].reference_id == "inline-1"
     assert inline[8].text == "User Name"
+    assert inline[8].auxiliary_text == "user@example.com"
     assert inline[9].text == "Example"
     assert inline[9].mime_type == "text/html"
     assert inline[10].auxiliary_text == "2024-01-01T00:00:00Z"
+    rich_link_dump = inline[9].model_dump()
+    rich_link_repr = repr(inline[9])
+    assert "https://example.com/secret" not in rich_link_dump.values()
+    assert "https://example.com/secret" not in rich_link_repr
     assert document.tabs[0].segments[0].blocks[0].paragraph.positioned_object_ids == ("pos-1",)
+
+
+def test_person_without_name_falls_back_to_email() -> None:
+    elements = [
+        {
+            "startIndex": 1,
+            "endIndex": 2,
+            "person": {
+                "personId": "person-2",
+                "personProperties": {"email": "only@example.com"},
+            },
+        },
+    ]
+    body = [_paragraph_block(1, 3, elements)]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    person = document.tabs[0].segments[0].blocks[0].paragraph.elements[0]
+    assert person.text == "only@example.com"
+    assert person.auxiliary_text == "only@example.com"
 
 
 def test_sensitive_fields_hidden_from_repr_and_frozen() -> None:
@@ -673,6 +728,640 @@ def test_hostile_document_id_strip_rejected() -> None:
     with pytest.raises(IntegrationConfigurationError, match=_INVALID_ID_MESSAGE):
         reader.read_document(document_id=_HostileString(" doc-1 "))  # type: ignore[arg-type]
     assert transport.calls == []
+
+
+def _minimal_success_payload() -> dict[str, object]:
+    return _document_payload(
+        tabs=[_tab("tab-1", "Main", 0, 0, _document_tab([_paragraph_block(1, 5, [_text_run("A", 1, 2)])]))],
+    )
+
+
+def _read_with_mutation(mutation: dict[str, object]) -> None:
+    payload = _minimal_success_payload()
+    payload.update(mutation)
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def _read_with_body_mutation(body: list[dict[str, object]]) -> None:
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_legacy_date_key_rejected() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "date": {
+                        "dateId": "date-1",
+                        "dateElementProperties": {
+                            "displayText": "Jan 1",
+                            "timestamp": "2024-01-01T00:00:00Z",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_date_element_parsed_successfully() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "dateElement": {
+                        "dateId": "date-1",
+                        "dateElementProperties": {
+                            "displayText": "Jan 1",
+                            "timestamp": "2024-01-01T00:00:00Z",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    document = reader.read_document(document_id=_DOCUMENT_ID)
+    date_elem = document.tabs[0].segments[0].blocks[0].paragraph.elements[0]
+    assert date_elem.kind is GoogleDocsInlineKind.DATE
+    assert date_elem.text == "Jan 1"
+
+
+@pytest.mark.parametrize(
+    "person_payload",
+    [
+        {"personId": "person-1", "email": "user@example.com", "name": "User"},
+        {"personId": "person-1", "name": "User", "email": "user@example.com"},
+    ],
+)
+def test_person_top_level_properties_rejected(person_payload: dict[str, object]) -> None:
+    body = [_paragraph_block(1, 5, [{"startIndex": 1, "endIndex": 2, "person": person_payload}])]
+    _read_with_body_mutation(body)
+
+
+def test_missing_person_properties_rejected() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [{"startIndex": 1, "endIndex": 2, "person": {"personId": "person-1"}}],
+        ),
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_missing_person_email_rejected() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "person": {
+                        "personId": "person-1",
+                        "personProperties": {"name": "User"},
+                    },
+                },
+            ],
+        ),
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_noncanonical_top_level_cell_column_span_rejected() -> None:
+    body = [
+        {
+            "startIndex": 1,
+            "endIndex": 10,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 1,
+                        "endIndex": 10,
+                        "tableCells": [
+                            {
+                                "startIndex": 1,
+                                "endIndex": 10,
+                                "columnSpan": 1,
+                                "content": [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_malformed_table_cell_style_rejected() -> None:
+    body = [
+        {
+            "startIndex": 1,
+            "endIndex": 10,
+            "table": {
+                "rows": 1,
+                "columns": 1,
+                "tableRows": [
+                    {
+                        "startIndex": 1,
+                        "endIndex": 10,
+                        "tableCells": [
+                            {
+                                "startIndex": 1,
+                                "endIndex": 10,
+                                "tableCellStyle": "bad",
+                                "content": [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+                            },
+                        ],
+                    },
+                ],
+            },
+        },
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_missing_text_run_content_rejected() -> None:
+    body = [_paragraph_block(1, 5, [{"startIndex": 1, "endIndex": 2, "textRun": {}}])]
+    _read_with_body_mutation(body)
+
+
+@pytest.mark.parametrize(
+    "marker_payload",
+    [
+        {"pageBreak": None},
+        {"pageBreak": "broken"},
+        {"equation": []},
+    ],
+)
+def test_marker_union_non_dict_rejected(marker_payload: dict[str, object]) -> None:
+    element = {"startIndex": 1, "endIndex": 2}
+    element.update(marker_payload)
+    _read_with_body_mutation([_paragraph_block(1, 5, [element])])
+
+
+def test_section_break_non_dict_rejected() -> None:
+    body = [{"startIndex": 1, "endIndex": 2, "sectionBreak": 123}]
+    _read_with_body_mutation(body)
+
+
+def test_known_union_plus_unknown_top_level_field_rejected() -> None:
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [{"startIndex": 1, "endIndex": 2, "textRun": {"content": "x"}, "unknownFuture": {}}],
+        ),
+    ]
+    _read_with_body_mutation(body)
+
+
+def test_root_parent_tab_id_integer_rejected() -> None:
+    tab = _tab("tab-1", "Main", 0, 0, _document_tab([_paragraph_block(1, 5, [_text_run("A", 1, 2)])]))
+    tab["tabProperties"]["parentTabId"] = 1
+    payload = _document_payload(tabs=[tab])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_root_parent_tab_id_whitespace_rejected() -> None:
+    tab = _tab("tab-1", "Main", 0, 0, _document_tab([_paragraph_block(1, 5, [_text_run("A", 1, 2)])]))
+    tab["tabProperties"]["parentTabId"] = "   "
+    payload = _document_payload(tabs=[tab])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_whitespace_only_document_title_rejected() -> None:
+    _read_with_mutation({"title": "   "})
+
+
+def test_list_map_value_non_dict_rejected() -> None:
+    document_tab = _document_tab(
+        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+        lists={"list-1": "bad"},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_inline_object_map_value_non_dict_rejected() -> None:
+    document_tab = _document_tab(
+        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+        inlineObjects={"inline-1": []},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_positioned_object_map_value_non_dict_rejected() -> None:
+    document_tab = _document_tab(
+        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+        positionedObjects={"pos-1": 123},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_duplicate_canonical_map_ids_rejected() -> None:
+    document_tab = _document_tab(
+        [_paragraph_block(1, 5, [_text_run("A", 1, 2)])],
+        lists={"list-1": {"listProperties": {}}, " list-1 ": {"listProperties": {}}},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+class _HostileMapping(dict[str, object]):
+    def keys(self):  # type: ignore[no-untyped-def]
+        raise RuntimeError("hostile keys")
+
+
+class _HostileValue(str):
+    def __eq__(self, other: object) -> bool:
+        raise RuntimeError("hostile compare")
+
+
+def test_hostile_provider_dict_raises_runtime_error() -> None:
+    transport = _RecordingTransport(responses=[_HostileMapping({"documentId": _DOCUMENT_ID})])
+    reader = GoogleDocsKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_hostile_provider_value_raises_runtime_error() -> None:
+    payload = _minimal_success_payload()
+    payload["title"] = _HostileValue("Title")
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_document(document_id=_DOCUMENT_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def _inline(kind: GoogleDocsInlineKind, **kwargs: object) -> GoogleDocsInlineElement:
+    defaults: dict[str, object] = {
+        "start_index": 1,
+        "end_index": 2,
+        "text": None,
+        "reference_id": None,
+        "auxiliary_text": None,
+        "mime_type": None,
+    }
+    defaults.update(kwargs)
+    return GoogleDocsInlineElement(kind=kind, **defaults)  # type: ignore[arg-type]
+
+
+def test_inline_element_extra_optional_field_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _inline(GoogleDocsInlineKind.TEXT_RUN, text="x", reference_id="bad")
+
+
+def test_table_cell_start_not_less_than_end_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleDocsTableCell(start_index=5, end_index=5, row_span=1, column_span=1, blocks=())
+
+
+def test_table_cell_child_outside_range_rejected() -> None:
+    block = GoogleDocsBlock.model_construct(
+        kind=GoogleDocsBlockKind.PARAGRAPH,
+        start_index=10,
+        end_index=12,
+        paragraph=GoogleDocsParagraph(elements=()),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsTableCell(start_index=1, end_index=8, row_span=1, column_span=1, blocks=(block,))
+
+
+def test_table_row_overlapping_cells_rejected() -> None:
+    cell_a = GoogleDocsTableCell.model_construct(
+        start_index=1, end_index=5, row_span=1, column_span=1, blocks=()
+    )
+    cell_b = GoogleDocsTableCell.model_construct(
+        start_index=3, end_index=7, row_span=1, column_span=1, blocks=()
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsTableRow(start_index=1, end_index=8, cells=(cell_a, cell_b))
+
+
+def test_table_incorrect_column_span_sum_rejected() -> None:
+    row = GoogleDocsTableRow.model_construct(
+        start_index=1,
+        end_index=10,
+        cells=(
+            GoogleDocsTableCell.model_construct(
+                start_index=1, end_index=5, row_span=1, column_span=1, blocks=()
+            ),
+            GoogleDocsTableCell.model_construct(
+                start_index=5, end_index=10, row_span=1, column_span=1, blocks=()
+            ),
+        ),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsTable(rows=1, columns=3, table_rows=(row,))
+
+
+def test_segment_overlapping_blocks_rejected() -> None:
+    block_a = GoogleDocsBlock.model_construct(
+        kind=GoogleDocsBlockKind.PARAGRAPH,
+        start_index=1,
+        end_index=5,
+        paragraph=GoogleDocsParagraph(elements=()),
+    )
+    block_b = GoogleDocsBlock.model_construct(
+        kind=GoogleDocsBlockKind.PARAGRAPH,
+        start_index=4,
+        end_index=8,
+        paragraph=GoogleDocsParagraph(elements=()),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=(block_a, block_b))
+
+
+def test_tab_segment_order_footer_before_header_rejected() -> None:
+    body = GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=())
+    footer = GoogleDocsSegment(
+        kind=GoogleDocsSegmentKind.FOOTER,
+        segment_id="footer-1",
+        blocks=(),
+    )
+    header = GoogleDocsSegment(
+        kind=GoogleDocsSegmentKind.HEADER,
+        segment_id="header-1",
+        blocks=(),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsTab(
+            tab_id="tab-1",
+            title="Main",
+            index=0,
+            nesting_level=0,
+            segments=(body, footer, header),
+        )
+
+
+def test_document_child_before_parent_rejected() -> None:
+    child = GoogleDocsTab.model_construct(
+        tab_id="child",
+        title="Child",
+        parent_tab_id="parent",
+        index=0,
+        nesting_level=1,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsDocument(
+            document_id=_DOCUMENT_ID,
+            title=_DOCUMENT_TITLE,
+            suggestions_view_mode="PREVIEW_WITHOUT_SUGGESTIONS",
+            tabs=(child,),
+        )
+
+
+def test_document_wrong_child_nesting_level_rejected() -> None:
+    root = GoogleDocsTab.model_construct(
+        tab_id="root",
+        title="Root",
+        parent_tab_id=None,
+        index=0,
+        nesting_level=0,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    child = GoogleDocsTab.model_construct(
+        tab_id="child",
+        title="Child",
+        parent_tab_id="root",
+        index=0,
+        nesting_level=3,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsDocument(
+            document_id=_DOCUMENT_ID,
+            title=_DOCUMENT_TITLE,
+            suggestions_view_mode="PREVIEW_WITHOUT_SUGGESTIONS",
+            tabs=(root, child),
+        )
+
+
+def test_document_duplicate_sibling_index_rejected() -> None:
+    tab_a = GoogleDocsTab.model_construct(
+        tab_id="tab-a",
+        title="A",
+        parent_tab_id=None,
+        index=0,
+        nesting_level=0,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    tab_b = GoogleDocsTab.model_construct(
+        tab_id="tab-b",
+        title="B",
+        parent_tab_id=None,
+        index=0,
+        nesting_level=0,
+        segments=(GoogleDocsSegment.model_construct(kind=GoogleDocsSegmentKind.BODY, blocks=()),),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsDocument(
+            document_id=_DOCUMENT_ID,
+            title=_DOCUMENT_TITLE,
+            suggestions_view_mode="PREVIEW_WITHOUT_SUGGESTIONS",
+            tabs=(tab_a, tab_b),
+        )
+
+
+def test_model_construct_nested_object_cannot_survive_normal_constructor() -> None:
+    malformed_block = GoogleDocsBlock.model_construct(
+        kind=GoogleDocsBlockKind.PARAGRAPH,
+        start_index=10,
+        end_index=5,
+        paragraph=GoogleDocsParagraph(elements=()),
+    )
+    with pytest.raises(ValidationError):
+        GoogleDocsSegment(kind=GoogleDocsSegmentKind.BODY, blocks=(malformed_block,))
+
+
+def _inline_rich_payload() -> list[dict[str, object]]:
+    return [
+        _paragraph_block(
+            1,
+            40,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "person": {
+                        "personId": "person-1",
+                        "personProperties": {"name": "A", "email": "a@example.com"},
+                    },
+                },
+                {
+                    "startIndex": 2,
+                    "endIndex": 3,
+                    "richLink": {
+                        "richLinkId": "rich-1",
+                        "richLinkProperties": {
+                            "title": "Link",
+                            "uri": "https://example.com",
+                        },
+                    },
+                },
+                {
+                    "startIndex": 3,
+                    "endIndex": 4,
+                    "dateElement": {
+                        "dateId": "date-1",
+                        "dateElementProperties": {
+                            "displayText": "D",
+                            "timestamp": "2024-01-01T00:00:00Z",
+                        },
+                    },
+                },
+                {
+                    "startIndex": 4,
+                    "endIndex": 5,
+                    "footnoteReference": {"footnoteId": "fn-1", "footnoteNumber": "9"},
+                },
+            ],
+        ),
+    ]
+
+
+def test_person_fields_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import docs as docs_module
+
+    monkeypatch.setattr(docs_module, "_MAX_TEXT_CHARS", 5)
+    document_tab = _document_tab(
+        _inline_rich_payload(),
+        footnotes={"fn-1": {"footnoteId": "fn-1", "content": [_paragraph_block(1, 5, [_text_run("F", 1, 2)])]}},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_document(document_id=_DOCUMENT_ID)
+
+
+def test_rich_link_title_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import docs as docs_module
+
+    monkeypatch.setattr(docs_module, "_MAX_TEXT_CHARS", 3)
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "richLink": {
+                        "richLinkId": "rich-1",
+                        "richLinkProperties": {
+                            "title": "long",
+                            "uri": "https://example.com",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_document(document_id=_DOCUMENT_ID)
+
+
+def test_date_display_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import docs as docs_module
+
+    monkeypatch.setattr(docs_module, "_MAX_TEXT_CHARS", 3)
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "dateElement": {
+                        "dateId": "date-1",
+                        "dateElementProperties": {
+                            "displayText": "long",
+                            "timestamp": "2024-01-01T00:00:00Z",
+                        },
+                    },
+                },
+            ],
+        ),
+    ]
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, _document_tab(body))])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_document(document_id=_DOCUMENT_ID)
+
+
+def test_footnote_number_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import docs as docs_module
+
+    monkeypatch.setattr(docs_module, "_MAX_TEXT_CHARS", 1)
+    body = [
+        _paragraph_block(
+            1,
+            5,
+            [
+                {
+                    "startIndex": 1,
+                    "endIndex": 2,
+                    "footnoteReference": {"footnoteId": "fn-1", "footnoteNumber": "12"},
+                },
+            ],
+        ),
+    ]
+    document_tab = _document_tab(
+        body,
+        footnotes={"fn-1": {"footnoteId": "fn-1", "content": [_paragraph_block(1, 5, [_text_run("F", 1, 2)])]}},
+    )
+    payload = _document_payload(tabs=[_tab("tab-1", "Main", 0, 0, document_tab)])
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_document(document_id=_DOCUMENT_ID)
 
 
 # --- Integration delegation ---
