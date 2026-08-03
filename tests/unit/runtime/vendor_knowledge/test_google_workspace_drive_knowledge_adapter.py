@@ -288,6 +288,21 @@ def _encode_cursor(payload: dict[str, Any]) -> KnowledgeCursor:
     return KnowledgeCursor(value=encoded, version=GOOGLE_DRIVE_CURSOR_VERSION)
 
 
+def _decode_drive_cursor_payload(cursor: KnowledgeCursor) -> dict[str, Any]:
+    padding = "=" * (-len(cursor.value) % 4)
+    raw = base64.urlsafe_b64decode(cursor.value + padding)
+    return json.loads(raw.decode("utf-8"))
+
+
+def _bypass_page_token(value: str) -> GoogleWorkspacePageToken:
+    token = object.__new__(GoogleWorkspacePageToken)
+    object.__setattr__(token, "value", value)
+    return token
+
+
+_OVER_4097_PAGE_TOKEN = "x" * 4097
+
+
 def _changes_cursor(
     *,
     scope_kind: str = "user",
@@ -650,12 +665,16 @@ def _assert_invalid_provider_response_boundary(
     exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
     *,
     fake: _FakeGoogleWorkspaceIntegration,
+    secret: str | None = None,
 ) -> None:
     err = exc_info.value
     assert err.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
     assert err.retryable is False
+    assert err.__cause__ is None
     _assert_canonical_error_identity(err)
     _assert_no_secrets_in_rendered(f"{err!r} {err.safe_message}")
+    if secret is not None:
+        assert secret not in f"{err!r} {err.safe_message}"
 
 
 async def _fetch_content_invalid_descriptor(
@@ -2250,6 +2269,202 @@ async def test_invalid_start_token_non_str_value() -> None:
         )
     _assert_invalid_provider_response_boundary(exc_info, fake=fake)
     assert len(fake.start_token_calls) == 1
+    assert fake.inventory_calls == []
+    assert fake.change_calls == []
+
+
+@pytest.mark.parametrize(
+    ("token_value", "factory"),
+    [
+        (" token ", lambda value: GoogleWorkspacePageToken(value=value)),
+        ("\ttoken\t", lambda value: GoogleWorkspacePageToken(value=value)),
+        ("token\x7f", _bypass_page_token),
+        (_OVER_4097_PAGE_TOKEN, _bypass_page_token),
+    ],
+)
+async def test_invalid_start_token_value_rejected(
+    token_value: str,
+    factory: Any,
+) -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = factory(token_value)
+    fake = _FakeGoogleWorkspaceIntegration(start_token=bad_token)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake, secret=token_value)
+    assert len(fake.start_token_calls) == 1
+    assert fake.inventory_calls == []
+    assert fake.change_calls == []
+
+
+async def test_valid_start_token_preserved_in_final_checkpoint() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration(
+        inventory_pages=[_item_page(items=(_drive_item(),))],
+    )
+    page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(),
+        cursor=None,
+        limit=50,
+    )
+    assert page.proposed_checkpoint is not None
+    payload = _decode_drive_cursor_payload(page.proposed_checkpoint)
+    assert payload["change_page_token"] == _SECRET_START
+    assert payload["phase"] == "changes"
+    assert payload["inventory_page_token"] is None
+
+
+async def test_valid_inventory_next_token_preserved_in_continuation_cursor() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration(
+        inventory_pages=[
+            _item_page(items=(_drive_item(),), next_page_token=_SECRET_INVENTORY),
+        ],
+    )
+    page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(),
+        cursor=None,
+        limit=50,
+    )
+    assert page.next_cursor is not None
+    payload = _decode_drive_cursor_payload(page.next_cursor)
+    assert payload["inventory_page_token"] == _SECRET_INVENTORY
+    assert payload["change_page_token"] == _SECRET_START
+    assert payload["phase"] == "inventory"
+
+
+async def test_valid_change_next_token_preserved_in_continuation_cursor() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration(
+        change_pages=[
+            _change_page(
+                changes=(
+                    _drive_change(
+                        file_id="changed-1",
+                        item=_drive_item(remote_id="changed-1"),
+                    ),
+                ),
+                next_page_token=_SECRET_CHANGE,
+            ),
+        ],
+    )
+    page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(),
+        cursor=_changes_cursor(change_page_token=_SECRET_START),
+        limit=50,
+    )
+    assert page.next_cursor is not None
+    payload = _decode_drive_cursor_payload(page.next_cursor)
+    assert payload["change_page_token"] == _SECRET_CHANGE
+    assert payload["phase"] == "changes"
+
+
+async def test_valid_new_start_token_preserved_in_final_checkpoint() -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    fake = _FakeGoogleWorkspaceIntegration(
+        change_pages=[_change_page(changes=(), new_start_page_token=_SECRET_NEW_START)],
+    )
+    page = await adapter.read_page(
+        integration=_integration(fake),
+        source=_source(),
+        cursor=_changes_cursor(),
+        limit=50,
+    )
+    assert page.proposed_checkpoint is not None
+    payload = _decode_drive_cursor_payload(page.proposed_checkpoint)
+    assert payload["change_page_token"] == _SECRET_NEW_START
+    assert payload["phase"] == "changes"
+
+
+@pytest.mark.parametrize(
+    ("token_value", "factory"),
+    [
+        (f" {_SECRET_INVENTORY} ", lambda value: GoogleWorkspacePageToken(value=value)),
+        (f"{_SECRET_INVENTORY}\x7f", _bypass_page_token),
+        (_OVER_4097_PAGE_TOKEN, _bypass_page_token),
+    ],
+)
+async def test_inventory_page_invalid_next_token_rejected(
+    token_value: str,
+    factory: Any,
+) -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = factory(token_value)
+    page = GoogleDriveItemPage(
+        items=(_drive_item(),),
+        next_page_token=bad_token,
+    )
+    fake = _FakeGoogleWorkspaceIntegration(inventory_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=None,
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake, secret=token_value)
+    assert len(fake.start_token_calls) == 1
+    assert len(fake.inventory_calls) == 1
+    assert fake.change_calls == []
+
+
+@pytest.mark.parametrize(
+    ("field_name", "token_value", "factory"),
+    [
+        (
+            "next_page_token",
+            f" {_SECRET_CHANGE} ",
+            lambda value: GoogleWorkspacePageToken(value=value),
+        ),
+        ("next_page_token", f"{_SECRET_CHANGE}\x7f", _bypass_page_token),
+        ("next_page_token", _OVER_4097_PAGE_TOKEN, _bypass_page_token),
+        (
+            "new_start_page_token",
+            f" {_SECRET_NEW_START} ",
+            lambda value: GoogleWorkspacePageToken(value=value),
+        ),
+        ("new_start_page_token", f"{_SECRET_NEW_START}\x7f", _bypass_page_token),
+        ("new_start_page_token", _OVER_4097_PAGE_TOKEN, _bypass_page_token),
+    ],
+)
+async def test_change_page_invalid_token_rejected(
+    field_name: str,
+    token_value: str,
+    factory: Any,
+) -> None:
+    adapter = GoogleWorkspaceDriveKnowledgeAdapter()
+    bad_token = factory(token_value)
+    if field_name == "next_page_token":
+        page = GoogleDriveChangePage.model_construct(
+            changes=(),
+            next_page_token=bad_token,
+            new_start_page_token=None,
+        )
+    else:
+        page = GoogleDriveChangePage.model_construct(
+            changes=(),
+            next_page_token=None,
+            new_start_page_token=bad_token,
+        )
+    fake = _FakeGoogleWorkspaceIntegration(change_pages=[page])
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.read_page(
+            integration=_integration(fake),
+            source=_source(),
+            cursor=_changes_cursor(),
+            limit=50,
+        )
+    _assert_invalid_provider_response_boundary(exc_info, fake=fake, secret=token_value)
+    assert len(fake.change_calls) == 1
+    assert fake.start_token_calls == []
     assert fake.inventory_calls == []
 
 

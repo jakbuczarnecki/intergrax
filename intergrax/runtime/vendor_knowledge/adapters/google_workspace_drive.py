@@ -605,7 +605,8 @@ class GoogleWorkspaceDriveKnowledgeAdapter:
             if type(value) is not GoogleWorkspacePageToken:
                 raise ValueError("invalid page token type")
             token_value = value.value
-            return GoogleWorkspacePageToken(value=token_value)
+            validated_value = _validate_cursor_token(token_value)
+            return GoogleWorkspacePageToken(value=validated_value)
         except Exception:
             raise self._invalid_provider_response_error() from None
 
