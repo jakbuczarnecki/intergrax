@@ -154,6 +154,7 @@ def _build_client(
                     configuration_service=config_service,
                     mutation_engine=engine,
                     tenant_binding_port=_EmptyBindingPort(),
+                    repository=repo,
                 )
                 if with_detach
                 else None
@@ -415,6 +416,29 @@ def test_delete_recovery_required(client_bundle) -> None:
     response = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-other"))
     assert response.status_code == 503
     assert response.json()["detail"] == "configuration_recovery_required"
+
+
+def test_delete_historical_replay_after_newer_attachment(client_bundle) -> None:
+    client, repo, _ = client_bundle
+    client.put(_path(), headers=_headers())
+    first = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    assert first.status_code == 200
+    orig_rev, orig_eff = first.json()["configuration_revision"], first.json()["effective_revision"]
+    from local_workspace_application.workspaces.knowledge_configuration_models import WorkspaceConnectionAttachment, WorkspaceConnectionAttachmentStatusV1
+    cfg_head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    att = repo.get_knowledge_connection_attachment_version(tenant_id=_TENANT, workspace_id=_WORKSPACE, attachment_id=first.json()["attachment_id"], effective_revision=orig_eff)
+    repo.put_knowledge_connection_attachment_version_if_absent(WorkspaceConnectionAttachment(
+        attachment_id=att.attachment_id, tenant_id=att.tenant_id, workspace_id=att.workspace_id,
+        connection_ref=att.connection_ref, safe_display_label=att.safe_display_label,
+        status=WorkspaceConnectionAttachmentStatusV1.ATTACHED, mutation_id="mutation-reattach",
+        effective_revision=orig_rev + 1, created_at=att.created_at, updated_at=_NOW))
+    repo.replace_knowledge_configuration_head_if_match(expected=cfg_head, replacement=cfg_head.model_copy(
+        update={"committed_revision": orig_rev + 1, "updated_at": _NOW}))
+    replay = client.delete(_path(), headers=_headers(if_match="WKC/1", idempotency="detach-1"))
+    assert replay.status_code == 200
+    payload = replay.json()
+    assert payload["status"] == "detached" and payload["configuration_revision"] == orig_rev
+    assert payload["effective_revision"] == orig_eff
 
 
 def test_delete_cross_tenant_attachment_lookup() -> None:

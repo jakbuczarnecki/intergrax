@@ -468,6 +468,7 @@ def mount_managed_workspace_routes(
                 configuration_service=configuration_service,
                 mutation_engine=mutation_engine,
                 tenant_binding_port=connected_wiring.tenant_binding_port,
+                repository=repository,
             )
         app.state.lkw_connection_attachment_service = connection_attachment_service
         mount_knowledge_connection_attachment_routes(
