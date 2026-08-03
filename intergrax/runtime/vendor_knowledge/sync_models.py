@@ -570,15 +570,21 @@ def _validate_remote_id_tuple(
     return tuple(sorted(normalized))
 
 
-def _validate_mutation_templates(
+def _validate_mutation_templates_structural(
     templates: tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...],
     *,
     binding_configuration_version: int,
     has_more: bool,
     synthetic_tombstone_remote_ids: tuple[str, ...],
-    policy: KnowledgeReconciliationLimitPolicy,
+    remaining_candidate_remote_ids: tuple[str, ...] = (),
 ) -> None:
     if not templates:
+        if has_more:
+            return
+        if synthetic_tombstone_remote_ids != remaining_candidate_remote_ids:
+            raise ValueError(
+                "final page synthetic tombstones must equal remaining candidates"
+            )
         return
     ordered = tuple(sorted(templates, key=lambda template: template.remote_id))
     if templates != ordered:
@@ -595,11 +601,6 @@ def _validate_mutation_templates(
             raise ValueError(
                 "prepared state mutation template binding_configuration_version mismatch"
             )
-        _validate_remote_id_byte_length(
-            template.remote_id,
-            policy=policy,
-            field_name="prepared_state_mutation_templates",
-        )
         if (
             template.reconciliation_semantic
             is KnowledgeReconciliationMutationSemantic.ABSENT_FROM_COMPLETED_SYNCHRONIZED_SOURCE_INVENTORY
@@ -619,19 +620,103 @@ def _validate_mutation_templates(
         raise ValueError(
             "synthetic tombstone templates must match synthetic tombstone IDs"
         )
+    if synthetic_tombstone_remote_ids != remaining_candidate_remote_ids:
+        raise ValueError(
+            "final page synthetic tombstones must equal remaining candidates"
+        )
 
 
-def reconciliation_run_durable_document_bytes(
+def _validate_mutation_templates(
+    templates: tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...],
+    *,
+    binding_configuration_version: int,
+    has_more: bool,
+    synthetic_tombstone_remote_ids: tuple[str, ...],
+    remaining_candidate_remote_ids: tuple[str, ...] = (),
+    policy: KnowledgeReconciliationLimitPolicy,
+) -> None:
+    _validate_mutation_templates_structural(
+        templates,
+        binding_configuration_version=binding_configuration_version,
+        has_more=has_more,
+        synthetic_tombstone_remote_ids=synthetic_tombstone_remote_ids,
+        remaining_candidate_remote_ids=remaining_candidate_remote_ids,
+    )
+    for template in templates:
+        _validate_remote_id_byte_length(
+            template.remote_id,
+            policy=policy,
+            field_name="prepared_state_mutation_templates",
+        )
+
+
+def _validate_page_prepared_structural(
+    *,
+    prepared_input_cursor: KnowledgeCursor | None,
+    prepared_input_cursor_fingerprint: str,
+    prepared_proposed_checkpoint: KnowledgeCursor | None,
+    prepared_proposed_checkpoint_fingerprint: str,
+    prepared_next_cursor: KnowledgeCursor | None,
+    prepared_next_cursor_fingerprint: str,
+    prepared_state_mutation_templates: tuple[
+        KnowledgeReconciliationPreparedStateMutationTemplate, ...
+    ],
+    prepared_state_mutations_fingerprint: str,
+    has_more: bool,
+    remaining_candidate_remote_ids: tuple[str, ...],
+    synthetic_tombstone_remote_ids: tuple[str, ...],
+    binding_configuration_version: int,
+) -> None:
+    _validate_cursor_fingerprint_pair(
+        cursor=prepared_input_cursor,
+        fingerprint=prepared_input_cursor_fingerprint,
+        field_prefix="prepared_input",
+    )
+    _validate_cursor_fingerprint_pair(
+        cursor=prepared_proposed_checkpoint,
+        fingerprint=prepared_proposed_checkpoint_fingerprint,
+        field_prefix="prepared_proposed_checkpoint",
+    )
+    _validate_cursor_fingerprint_pair(
+        cursor=prepared_next_cursor,
+        fingerprint=prepared_next_cursor_fingerprint,
+        field_prefix="prepared_next",
+    )
+    expected_mutations = canonical_prepared_state_mutations_fingerprint(
+        prepared_state_mutation_templates
+    )
+    if prepared_state_mutations_fingerprint != expected_mutations:
+        raise ValueError("prepared_state_mutations_fingerprint mismatch")
+    if has_more:
+        if prepared_next_cursor is None:
+            raise ValueError("has_more requires prepared_next_cursor")
+    elif prepared_next_cursor is not None:
+        raise ValueError("final page must not retain prepared_next_cursor")
+    _validate_mutation_templates_structural(
+        prepared_state_mutation_templates,
+        binding_configuration_version=binding_configuration_version,
+        has_more=has_more,
+        synthetic_tombstone_remote_ids=synthetic_tombstone_remote_ids,
+        remaining_candidate_remote_ids=remaining_candidate_remote_ids,
+    )
+
+
+def _reconciliation_run_durable_document_payload(
     run: "KnowledgeReconciliationRun",
-) -> bytes:
-    payload = {
+) -> dict[str, Any]:
+    return {
         "schema_version": _RECONCILIATION_RUN_SCHEMA,
         "tenant_id": run.tenant_id,
         "binding_id": run.binding_id,
         "record_version": run.record_version,
         "run": run.model_dump(mode="json"),
     }
-    return _canonical_json_bytes(payload)
+
+
+def reconciliation_run_durable_document_bytes(
+    run: "KnowledgeReconciliationRun",
+) -> bytes:
+    return _canonical_json_bytes(_reconciliation_run_durable_document_payload(run))
 
 
 def _validate_cursor_fingerprint_pair(
@@ -815,41 +900,20 @@ class KnowledgeReconciliationRunPagePrepared(_ReconciliationRunIdentity):
 
     @model_validator(mode="after")
     def _page_prepared_rules(self) -> KnowledgeReconciliationRunPagePrepared:
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_input_cursor,
-            fingerprint=self.prepared_input_cursor_fingerprint,
-            field_prefix="prepared_input",
-        )
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_proposed_checkpoint,
-            fingerprint=self.prepared_proposed_checkpoint_fingerprint,
-            field_prefix="prepared_proposed_checkpoint",
-        )
-        _validate_cursor_fingerprint_pair(
-            cursor=self.prepared_next_cursor,
-            fingerprint=self.prepared_next_cursor_fingerprint,
-            field_prefix="prepared_next",
-        )
-        expected_mutations = canonical_prepared_state_mutations_fingerprint(
-            self.prepared_state_mutation_templates
-        )
-        if self.prepared_state_mutations_fingerprint != expected_mutations:
-            raise ValueError("prepared_state_mutations_fingerprint mismatch")
-        _validate_mutation_templates(
-            self.prepared_state_mutation_templates,
-            binding_configuration_version=self.binding_configuration_version,
+        _validate_page_prepared_structural(
+            prepared_input_cursor=self.prepared_input_cursor,
+            prepared_input_cursor_fingerprint=self.prepared_input_cursor_fingerprint,
+            prepared_proposed_checkpoint=self.prepared_proposed_checkpoint,
+            prepared_proposed_checkpoint_fingerprint=self.prepared_proposed_checkpoint_fingerprint,
+            prepared_next_cursor=self.prepared_next_cursor,
+            prepared_next_cursor_fingerprint=self.prepared_next_cursor_fingerprint,
+            prepared_state_mutation_templates=self.prepared_state_mutation_templates,
+            prepared_state_mutations_fingerprint=self.prepared_state_mutations_fingerprint,
             has_more=self.has_more,
+            remaining_candidate_remote_ids=self.remaining_candidate_remote_ids,
             synthetic_tombstone_remote_ids=self.synthetic_tombstone_remote_ids,
-            policy=KnowledgeReconciliationLimitPolicy(),
+            binding_configuration_version=self.binding_configuration_version,
         )
-        if self.has_more and self.synthetic_tombstone_remote_ids:
-            raise ValueError(
-                "synthetic tombstones are forbidden on non-final prepared pages"
-            )
-        if not self.has_more and self.synthetic_tombstone_remote_ids != tuple(
-            sorted(self.synthetic_tombstone_remote_ids)
-        ):
-            raise ValueError("synthetic tombstone remote IDs must be sorted and unique")
         return self
 
 

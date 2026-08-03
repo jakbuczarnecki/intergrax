@@ -4,7 +4,7 @@ import pytest
 
 from echo.echo_agent import EchoAgent
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.uaep import supports_uaep
+from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.llm.messages import (
     build_model_input_messages_envelope,
