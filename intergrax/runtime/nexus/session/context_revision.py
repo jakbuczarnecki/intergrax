@@ -40,8 +40,8 @@ class SessionContextRevisionActivationError(RuntimeError):
 
 
 def _text(value: object, field_name: str) -> str:
-    if type(value) is not str or not value:
-        raise ValueError(f"{field_name} must be non-empty")
+    if type(value) is not str or not value or value != value.strip():
+        raise ValueError(f"{field_name} must be a non-empty trimmed string")
     return value
 
 
@@ -222,6 +222,8 @@ class SQLiteSessionContextRevisionStore:
         self._lock = threading.RLock()
         self._clock = clock or (lambda: datetime.now(UTC))
         self._manifest_id_factory = manifest_id_factory or (lambda: str(uuid.uuid4()))
+        self._before_cas_hook: Callable[[], None] | None = None
+        self._commit_hook: Callable[[], None] | None = None
         self._closed = False
         self._initialize_schema()
 
@@ -374,27 +376,26 @@ class SQLiteSessionContextRevisionStore:
                 if manifest.parent_revision != pointer.active_revision:
                     raise SessionContextRevisionActivationError("MANIFEST_PARENT_CONFLICT")
                 self._insert_manifest(manifest)
-                updated = self._connection.execute(
-                    """
-                    UPDATE active_context_revision_pointers
-                    SET active_revision = ?,
-                        active_artifact_id = ?,
-                        updated_at = ?,
-                        state_version = state_version + 1
-                    WHERE tenant_id = ? AND context_scope_id = ?
-                      AND active_revision = ?
-                    """,
-                    (
-                        manifest.revision,
-                        manifest.artifact_id,
-                        now.isoformat(),
-                        tenant_id,
-                        context_scope_id,
-                        expected_active_revision,
-                    ),
-                ).rowcount
+                if self._before_cas_hook is not None:
+                    self._before_cas_hook()
+                updated = self._cas_active_pointer(
+                    tenant_id=tenant_id,
+                    context_scope_id=context_scope_id,
+                    expected_active_revision=expected_active_revision,
+                    manifest=manifest,
+                    updated_at=now,
+                )
                 if updated != 1:
-                    raise SessionContextRevisionActivationError("STALE_CONTEXT_REVISION")
+                    self._rollback()
+                    return self._stale_result(
+                        pointer=pointer,
+                        artifact_id=artifact_id,
+                        artifact_content_hash=artifact_content_hash,
+                        lineage_reference=lineage_reference,
+                        creation_receipt_reference=creation_receipt_reference,
+                        rollback_source_reference=rollback_source_reference,
+                        operation_id=operation_id,
+                    )
                 self._commit()
                 return self._result_from_revision(
                     manifest,
@@ -455,6 +456,8 @@ class SQLiteSessionContextRevisionStore:
         self._connection.execute("BEGIN IMMEDIATE")
 
     def _commit(self) -> None:
+        if self._commit_hook is not None:
+            self._commit_hook()
         self._connection.commit()
 
     def _rollback(self) -> None:
@@ -527,6 +530,35 @@ class SQLiteSessionContextRevisionStore:
             ),
         )
 
+    def _cas_active_pointer(
+        self,
+        *,
+        tenant_id: str,
+        context_scope_id: str,
+        expected_active_revision: int,
+        manifest: SessionContextRevision,
+        updated_at: datetime,
+    ) -> int:
+        return self._connection.execute(
+            """
+            UPDATE active_context_revision_pointers
+            SET active_revision = ?,
+                active_artifact_id = ?,
+                updated_at = ?,
+                state_version = state_version + 1
+            WHERE tenant_id = ? AND context_scope_id = ?
+              AND active_revision = ?
+            """,
+            (
+                manifest.revision,
+                manifest.artifact_id,
+                updated_at.isoformat(),
+                tenant_id,
+                context_scope_id,
+                expected_active_revision,
+            ),
+        ).rowcount
+
     @staticmethod
     def _pointer_from_row(row: tuple[object, ...]) -> ActiveContextRevisionPointer:
         return ActiveContextRevisionPointer(
@@ -582,6 +614,33 @@ class SQLiteSessionContextRevisionStore:
             idempotent_replay=idempotent_replay,
         )
 
+    def _stale_result(
+        self,
+        *,
+        pointer: ActiveContextRevisionPointer,
+        artifact_id: str,
+        artifact_content_hash: str,
+        lineage_reference: str,
+        creation_receipt_reference: str,
+        rollback_source_reference: str,
+        operation_id: str,
+    ) -> SessionContextRevisionActivationResult:
+        return SessionContextRevisionActivationResult(
+            status=SessionContextRevisionActivationStatus.STALE_CONTEXT_REVISION,
+            tenant_id=pointer.tenant_id,
+            context_scope_id=pointer.context_scope_id,
+            previous_revision=pointer.active_revision,
+            active_revision=pointer.active_revision,
+            revision_manifest_id="none",
+            artifact_id=artifact_id,
+            artifact_content_hash=artifact_content_hash,
+            lineage_reference=lineage_reference,
+            creation_receipt_reference=creation_receipt_reference,
+            rollback_source_reference=rollback_source_reference,
+            operation_id=operation_id,
+            activated_at=self._now(),
+        )
+
 
 class SessionContextRevisionActivationService:
     """Memory/Session owner of validated-artifact activation; no executor/model dependency."""
@@ -595,6 +654,13 @@ class SessionContextRevisionActivationService:
     ) -> None:
         if not isinstance(repository, OptimizationArtifactRepository):
             raise ValueError("repository must implement OptimizationArtifactRepository")
+        capabilities = repository.capabilities
+        if (
+            capabilities.durable is not True
+            or capabilities.shared_across_processes is not True
+            or capabilities.reference_only is not False
+        ):
+            raise ValueError("activation requires a durable shared artifact repository")
         self._repository = repository
         self._revision_store = revision_store
         self._clock = clock or (lambda: datetime.now(UTC))

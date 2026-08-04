@@ -5,20 +5,26 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from intergrax.runtime.context_lifecycle import SQLiteOptimizationArtifactRepository
+from intergrax.runtime.context_lifecycle import (
+    InMemoryOptimizationArtifactRepository,
+    SQLiteOptimizationArtifactRepository,
+)
 from intergrax.runtime.nexus.session.context_revision import (
     SQLiteSessionContextRevisionStore,
     SessionContextRevisionActivationError,
     SessionContextRevisionActivationRequest,
     SessionContextRevisionActivationService,
     SessionContextRevisionActivationStatus,
+    _text,
 )
+from tests.unit.runtime.token_optimization import test_durable_compaction_candidate as candidate_helpers
 from tests.unit.runtime.token_optimization.test_durable_compaction_validation import (
     _compiler,
     _messages,
@@ -88,6 +94,126 @@ def _prepared(tmp_path: Path):
         expected_active_revision=4,
     )
     return service, revision_store, durable_repository, request
+
+
+def _build_secondary_outcome(
+    *,
+    operation_id: str,
+    artifact_id: str,
+    context_scope_id: str = "context-1",
+):
+    source_repository = InMemoryOptimizationArtifactRepository()
+    snapshot = candidate_helpers._snapshot(suffix=operation_id)
+    if context_scope_id != "context-1":
+        source_identity = replace(
+            snapshot.source_identity,
+            context_scope_id=context_scope_id,
+            artifact_lookup_key=replace(
+                snapshot.source_identity.artifact_lookup_key,
+                context_scope_id=context_scope_id,
+            ),
+        )
+        snapshot = replace(snapshot, source_identity=source_identity)
+    request = candidate_helpers._request(
+        operation_id=operation_id,
+        snapshot=snapshot,
+    )
+    executor, _ = candidate_helpers._executor()
+    builder = candidate_helpers.DurableCompactionCandidateBuilder(
+        repository=source_repository,
+        message_sequence_executor=executor,
+        artifact_id_factory=lambda: artifact_id,
+        wait_timeout_seconds=0.0,
+    )
+    result = builder.build(request)
+    outcome = _compiler(source_repository).compile(
+        _validation_request(request, result)
+    )
+    stored = source_repository.resolve(outcome.candidate.artifact_reference)
+    assert stored is not None
+    source_repository.close()
+    return request, outcome, stored
+
+
+def _persist_artifact(
+    db_path: str,
+    *,
+    request: object,
+    stored: object,
+    owner_operation_id: str,
+) -> None:
+    repository = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    reservation = repository.try_acquire_creation_reservation(
+        request.snapshot.source_identity.artifact_lookup_key,
+        owner_operation_id=owner_operation_id,
+        lease_seconds=60,
+    )
+    assert reservation.reservation is not None
+    repository.store_validated_artifact(
+        reservation=reservation.reservation,
+        artifact=stored,
+    )
+    repository.close()
+
+
+def _seed_pointer(db_path: str, context_scope_id: str) -> None:
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO active_context_revision_pointers (
+                tenant_id, context_scope_id, active_revision,
+                active_artifact_id, updated_at, state_version
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "tenant-1",
+                context_scope_id,
+                4,
+                "prior-artifact",
+                _NOW.isoformat(),
+                4,
+            ),
+        )
+        connection.commit()
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    (
+        ("tenant_id", " tenant-1"),
+        ("context_scope_id", "context-1 "),
+        ("operation_id", " operation-1"),
+        ("rollback_source_reference", "revision://x "),
+    ),
+)
+def test_durable_identifiers_reject_surrounding_whitespace(
+    field_name: str,
+    value: str,
+) -> None:
+    with pytest.raises(ValueError, match=field_name):
+        _text(value, field_name)
+
+
+def test_activation_requires_durable_shared_repository(tmp_path: Path) -> None:
+    service, store, repository, request = _prepared(tmp_path)
+    assert repository.capabilities.durable is True
+    assert repository.capabilities.shared_across_processes is True
+    assert repository.capabilities.reference_only is False
+
+    in_memory = InMemoryOptimizationArtifactRepository()
+    with pytest.raises(
+        ValueError,
+        match="activation requires a durable shared artifact repository",
+    ):
+        SessionContextRevisionActivationService(
+            repository=in_memory,
+            revision_store=store,
+            clock=lambda: _NOW,
+        )
+    in_memory.close()
+    repository.close()
+    store.close()
+    assert isinstance(service, SessionContextRevisionActivationService)
 
 
 def test_passed_outcome_activates_immutable_manifest_and_pointer(tmp_path: Path) -> None:
@@ -206,6 +332,282 @@ def test_manifest_insert_failure_rolls_back_pointer(tmp_path: Path, monkeypatch:
     ) is None
     repository.close()
     store.close()
+
+
+def test_cas_failure_after_manifest_insert_rolls_back(
+    tmp_path: Path,
+) -> None:
+    service, store, repository, request = _prepared(tmp_path)
+
+    def fail_before_cas() -> None:
+        raise RuntimeError("injected CAS failure")
+
+    store._before_cas_hook = fail_before_cas
+    with pytest.raises(RuntimeError, match="injected CAS failure"):
+        service.activate(request)
+    assert (
+        store.get_active_pointer(
+            tenant_id="tenant-1",
+            context_scope_id="context-1",
+        ).active_revision
+        == 4
+    )
+    assert store.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ) is None
+    repository.close()
+    store.close()
+
+
+def test_rowcount_cas_conflict_returns_typed_stale_result(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, store, repository, request = _prepared(tmp_path)
+    monkeypatch.setattr(store, "_cas_active_pointer", lambda **_: 0)
+
+    result = service.activate(request)
+
+    assert result.status is SessionContextRevisionActivationStatus.STALE_CONTEXT_REVISION
+    assert result.idempotent_replay is False
+    assert (
+        store.get_active_pointer(
+            tenant_id="tenant-1",
+            context_scope_id="context-1",
+        ).active_revision
+        == 4
+    )
+    assert store.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ) is None
+    repository.close()
+    store.close()
+
+
+def test_commit_failure_rolls_back_and_allows_reopen_retry(tmp_path: Path) -> None:
+    service, store, repository, request = _prepared(tmp_path)
+
+    def fail_commit() -> None:
+        raise RuntimeError("injected commit failure")
+
+    store._commit_hook = fail_commit
+    with pytest.raises(RuntimeError, match="injected commit failure"):
+        service.activate(request)
+    repository.close()
+    store.close()
+
+    db_path = str(tmp_path / "activation.sqlite")
+    reopened_repository = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    reopened_store = SQLiteSessionContextRevisionStore(db_path, clock=lambda: _NOW)
+    reopened_service = SessionContextRevisionActivationService(
+        repository=reopened_repository,
+        revision_store=reopened_store,
+        clock=lambda: _NOW,
+    )
+    assert (
+        reopened_store.get_active_pointer(
+            tenant_id="tenant-1",
+            context_scope_id="context-1",
+        ).active_revision
+        == 4
+    )
+    assert reopened_store.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ) is None
+    result = reopened_service.activate(request)
+
+    assert result.status is SessionContextRevisionActivationStatus.ACTIVATED
+    assert (
+        reopened_store.get_active_pointer(
+            tenant_id="tenant-1",
+            context_scope_id="context-1",
+        ).active_revision
+        == 5
+    )
+    assert reopened_store.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ) is not None
+    reopened_repository.close()
+    reopened_store.close()
+
+
+def test_same_context_concurrent_activations_have_one_winner(
+    tmp_path: Path,
+) -> None:
+    first_service, first_store, first_repository, first_request = _prepared(tmp_path)
+    db_path = str(tmp_path / "activation.sqlite")
+    second_request, second_outcome, second_stored = _build_secondary_outcome(
+        operation_id="operation-2",
+        artifact_id="artifact-2",
+    )
+    _persist_artifact(
+        db_path,
+        request=second_request,
+        stored=second_stored,
+        owner_operation_id="artifact-operation-2",
+    )
+    first_repository.close()
+    first_store.close()
+
+    repository_one = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    repository_two = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    store_one = SQLiteSessionContextRevisionStore(db_path, clock=lambda: _NOW)
+    store_two = SQLiteSessionContextRevisionStore(db_path, clock=lambda: _NOW)
+    service_one = SessionContextRevisionActivationService(
+        repository=repository_one,
+        revision_store=store_one,
+        clock=lambda: _NOW,
+    )
+    service_two = SessionContextRevisionActivationService(
+        repository=repository_two,
+        revision_store=store_two,
+        clock=lambda: _NOW,
+    )
+    second_request = SessionContextRevisionActivationRequest(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        operation_id=second_request.operation_id,
+        outcome=second_outcome,
+        expected_active_revision=4,
+    )
+    start = threading.Barrier(3)
+    results: list[object] = []
+    errors: list[BaseException] = []
+    result_lock = threading.Lock()
+
+    def run(service: SessionContextRevisionActivationService, request: object) -> None:
+        start.wait()
+        try:
+            result = service.activate(request)
+            with result_lock:
+                results.append(result)
+        except BaseException as exc:
+            with result_lock:
+                errors.append(exc)
+
+    threads = (
+        threading.Thread(target=run, args=(service_one, first_request)),
+        threading.Thread(target=run, args=(service_two, second_request)),
+    )
+    for thread in threads:
+        thread.start()
+    start.wait()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert all(not thread.is_alive() for thread in threads)
+    assert errors == []
+    assert [result.status for result in results].count(
+        SessionContextRevisionActivationStatus.ACTIVATED
+    ) == 1
+    assert [result.status for result in results].count(
+        SessionContextRevisionActivationStatus.STALE_CONTEXT_REVISION
+    ) == 1
+    winner = next(
+        result
+        for result in results
+        if result.status is SessionContextRevisionActivationStatus.ACTIVATED
+    )
+    pointer = store_one.get_active_pointer(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+    )
+    assert pointer.active_revision == 5
+    assert pointer.active_artifact_id == winner.artifact_id
+    assert store_one.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ).artifact_id == winner.artifact_id
+    assert store_one.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=6,
+    ) is None
+    repository_one.close()
+    repository_two.close()
+    store_one.close()
+    store_two.close()
+
+
+def test_different_context_activations_are_isolated(tmp_path: Path) -> None:
+    first_service, first_store, first_repository, first_request = _prepared(tmp_path)
+    db_path = str(tmp_path / "activation.sqlite")
+    second_request, second_outcome, second_stored = _build_secondary_outcome(
+        operation_id="operation-2",
+        artifact_id="artifact-2",
+        context_scope_id="context-2",
+    )
+    _persist_artifact(
+        db_path,
+        request=second_request,
+        stored=second_stored,
+        owner_operation_id="artifact-operation-2",
+    )
+    _seed_pointer(db_path, "context-2")
+    first_repository.close()
+    first_store.close()
+
+    repository_one = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    repository_two = SQLiteOptimizationArtifactRepository(db_path, clock=lambda: _NOW)
+    store_one = SQLiteSessionContextRevisionStore(db_path, clock=lambda: _NOW)
+    store_two = SQLiteSessionContextRevisionStore(db_path, clock=lambda: _NOW)
+    service_one = SessionContextRevisionActivationService(
+        repository=repository_one,
+        revision_store=store_one,
+        clock=lambda: _NOW,
+    )
+    service_two = SessionContextRevisionActivationService(
+        repository=repository_two,
+        revision_store=store_two,
+        clock=lambda: _NOW,
+    )
+    second_request = SessionContextRevisionActivationRequest(
+        tenant_id="tenant-1",
+        context_scope_id="context-2",
+        operation_id=second_request.operation_id,
+        outcome=second_outcome,
+        expected_active_revision=4,
+    )
+
+    first_result = service_one.activate(first_request)
+    second_result = service_two.activate(second_request)
+
+    assert first_result.status is SessionContextRevisionActivationStatus.ACTIVATED
+    assert second_result.status is SessionContextRevisionActivationStatus.ACTIVATED
+    first_pointer = store_one.get_active_pointer(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+    )
+    second_pointer = store_two.get_active_pointer(
+        tenant_id="tenant-1",
+        context_scope_id="context-2",
+    )
+    assert first_pointer.active_artifact_id == first_result.artifact_id
+    assert second_pointer.active_artifact_id == second_result.artifact_id
+    assert first_pointer.active_artifact_id != second_pointer.active_artifact_id
+    assert store_one.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-1",
+        revision=5,
+    ).artifact_id == first_result.artifact_id
+    assert store_two.get_revision(
+        tenant_id="tenant-1",
+        context_scope_id="context-2",
+        revision=5,
+    ).artifact_id == second_result.artifact_id
+    repository_one.close()
+    repository_two.close()
+    store_one.close()
+    store_two.close()
 
 
 def test_invalid_outcome_and_tenant_scope_fail_closed(tmp_path: Path) -> None:
