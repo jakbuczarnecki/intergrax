@@ -26,7 +26,7 @@ Architecture:
   LKW-HYBRID-ASK-ARCH-1 — ACCEPTED / CLOSED
 
 Next implementation:
-  LKW-HYBRID-ASK-1 — IN_PROGRESS
+  LKW-HYBRID-ASK-1 — ACCEPTED / CLOSED
     LKW-HYBRID-ASK-1A — ACCEPTED / CLOSED
     LKW-HYBRID-ASK-1B — ACCEPTED / CLOSED
     LKW-HYBRID-ASK-1C — READY_FOR_REVIEW
@@ -47,6 +47,7 @@ Slack Knowledge vertical next:
   → LKW-GOOGLE-WORKSPACE-PROOF-1
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
+LKW-CONVERSATIONAL-INTERACTION-1B → BLOCKED only until LKW-CONVERSATION-CONTEXT-1B3 acceptance
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable platform proof
 ```
 
@@ -177,7 +178,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `LKW-MODEL-RUNTIME-1` | The same LKW workflows run on Ollama or vLLM through configuration, and both runtimes pass planner, tool-calling and grounded-Ask proof gates | **ACCEPTED** |
 | `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **ACCEPTED / CLOSED** |
 | `LKW-HYBRID-ASK-ARCH-1` | Unified evidence, query orchestration and read-only live execution contract | **ACCEPTED / CLOSED** |
-| `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **IN_PROGRESS** |
+| `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **ACCEPTED / CLOSED** |
 | `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts | **PLANNED** |
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
@@ -206,6 +207,7 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `LKW-CONVERSATION-CONTEXT-1A` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B2` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1B3` | **READY_FOR_REVIEW** |
 | `LKW-CONVERSATION-CONTEXT-1C` | **PLANNED** / next after acceptance |
 
 **Required dependency (implementation tracks):**
