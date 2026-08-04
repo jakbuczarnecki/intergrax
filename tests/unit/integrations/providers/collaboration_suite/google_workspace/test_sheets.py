@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
@@ -34,7 +35,13 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleSheetsSheetType,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.sheets import (
+    GoogleSheetsCell,
+    GoogleSheetsCellError,
     GoogleSheetsCellValue,
+    GoogleSheetsGridData,
+    GoogleSheetsGridRange,
+    GoogleSheetsNamedRange,
+    GoogleSheetsRow,
     GoogleSheetsSheet,
     GoogleSheetsSpreadsheet,
     _GOOGLE_SHEETS_SPREADSHEET_FIELDS,
@@ -128,6 +135,50 @@ def _grid_sheet_payload(
             "rightToLeft": True,
         },
     }
+    if data is not None:
+        sheet["data"] = data
+    if merges is not None:
+        sheet["merges"] = merges
+    return sheet
+
+
+def _grid_sheet_payload_with_options(
+    *,
+    sheet_id: int = 100,
+    title: str = "GridSheet",
+    index: int = 0,
+    row_count: int = 10,
+    column_count: int = 10,
+    data: list[dict[str, object]] | None = None,
+    merges: list[dict[str, object]] | None = None,
+    sheet_type_null: bool = False,
+    hidden_null: bool = False,
+    rtl_null: bool = False,
+) -> dict[str, object]:
+    properties: dict[str, object] = {
+        "sheetId": sheet_id,
+        "title": title,
+        "index": index,
+        "gridProperties": {
+            "rowCount": row_count,
+            "columnCount": column_count,
+            "frozenRowCount": 1,
+            "frozenColumnCount": 1,
+        },
+    }
+    if sheet_type_null:
+        properties["sheetType"] = None
+    else:
+        properties["sheetType"] = "GRID"
+    if hidden_null:
+        properties["hidden"] = None
+    else:
+        properties["hidden"] = True
+    if rtl_null:
+        properties["rightToLeft"] = None
+    else:
+        properties["rightToLeft"] = True
+    sheet: dict[str, object] = {"properties": properties}
     if data is not None:
         sheet["data"] = data
     if merges is not None:
@@ -543,7 +594,177 @@ def test_cell_value_model_construct_bypass_rejected() -> None:
         number=1.0,
     )
     with pytest.raises(ValidationError):
-        GoogleSheetsCellValue(**malformed.__dict__)
+        GoogleSheetsCellValue(**malformed.model_dump())
+
+
+def test_cell_value_direct_formula_without_equals_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.FORMULA, text="SUM(1)")
+
+
+def test_cell_value_direct_blank_formula_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.FORMULA, text="   ")
+
+
+def test_cell_value_direct_oversized_text_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(
+            kind=GoogleSheetsCellValueKind.STRING,
+            text="x" * (_MAX_CELL_TEXT_LENGTH + 1),
+        )
+
+
+def test_cell_value_direct_unsafe_control_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.STRING, text="a\x00b")
+
+
+def test_cell_value_direct_nan_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.NUMBER, number=float("nan"))
+
+
+def test_cell_value_direct_positive_infinity_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.NUMBER, number=float("inf"))
+
+
+def test_cell_value_direct_negative_infinity_rejected() -> None:
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.NUMBER, number=float("-inf"))
+
+
+def test_cell_value_direct_negative_zero_normalized() -> None:
+    value = GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.NUMBER, number=-0.0)
+    assert value.number == 0.0
+    assert math.copysign(1.0, value.number) > 0
+
+
+def test_cell_value_direct_foreign_nested_error_subclass_rejected() -> None:
+    class _ForeignCellError(GoogleSheetsCellError):
+        pass
+
+    foreign = _ForeignCellError(error_type="ERROR", message="x")
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.ERROR, error=foreign)
+
+
+class _DictSubclass(dict[str, object]):
+    pass
+
+
+class _ListSubclass(list[object]):
+    pass
+
+
+def test_provider_top_level_dict_subclass_rejected() -> None:
+    transport = _RecordingTransport(responses=[_DictSubclass(_minimal_payload())])
+    reader = GoogleSheetsKnowledgeReader(transport=transport)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_provider_nested_dict_subclass_rejected() -> None:
+    payload = _minimal_payload()
+    payload["properties"] = _DictSubclass(dict(payload["properties"]))
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def test_provider_list_subclass_rejected() -> None:
+    payload = _minimal_payload()
+    payload["sheets"] = _ListSubclass(list(payload["sheets"]))
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        {"properties": {"title": _SPREADSHEET_TITLE, "locale": _LOCALE, "timeZone": _TIME_ZONE, "autoRecalc": None}},
+        {"sheets": [_grid_sheet_payload_with_options(sheet_type_null=True)]},
+        {"sheets": [_grid_sheet_payload_with_options(hidden_null=True)]},
+        {"sheets": [_grid_sheet_payload_with_options(rtl_null=True)]},
+        {"sheets": [_grid_sheet_payload_with_options(data=[{"startRow": None, "rowData": []}])]},
+        {"sheets": [_grid_sheet_payload_with_options(data=[{"startColumn": None, "rowData": []}])]},
+        {"sheets": [_grid_sheet_payload_with_options(data=[{"rowData": None}])]},
+        {
+            "sheets": [
+                _grid_sheet_payload_with_options(
+                    data=[{"rowData": [{"values": None}]}],
+                ),
+            ],
+        },
+        {
+            "sheets": [
+                _grid_sheet_payload_with_options(
+                    data=[{"rowData": [{"values": [{"userEnteredValue": None}]}]}],
+                ),
+            ],
+        },
+        {
+            "sheets": [
+                _grid_sheet_payload_with_options(
+                    data=[
+                        {
+                            "rowData": [
+                                {
+                                    "values": [
+                                        {"effectiveValue": None, "formattedValue": None, "note": None},
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                ),
+            ],
+        },
+        {
+            "sheets": [
+                _grid_sheet_payload_with_options(
+                    data=[
+                        {
+                            "rowData": [
+                                {
+                                    "values": [
+                                        {
+                                            "effectiveFormat": {
+                                                "numberFormat": {"type": "TEXT", "pattern": None},
+                                            },
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                ),
+            ],
+        },
+        {
+            "namedRanges": [
+                {
+                    "namedRangeId": "nr-1",
+                    "name": "Range",
+                    "range": {
+                        "sheetId": 100,
+                        "startRowIndex": None,
+                        "endRowIndex": 1,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": 1,
+                    },
+                },
+            ],
+        },
+    ],
+)
+def test_explicit_null_optional_provider_fields_rejected(mutation: dict[str, object]) -> None:
+    _read_with_mutation(mutation)
 
 
 @pytest.mark.parametrize(
@@ -741,6 +962,292 @@ def test_text_budget_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
         reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
 
 
+def test_text_budget_spreadsheet_title_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import (
+        sheets as sheets_module,
+    )
+
+    monkeypatch.setattr(sheets_module, "_MAX_TOTAL_TEXT_CHARS", 5)
+    reader, _ = _reader_with_payload(_minimal_payload())
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+
+def test_text_budget_named_range_names_overflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import (
+        sheets as sheets_module,
+    )
+
+    monkeypatch.setattr(sheets_module, "_MAX_TOTAL_TEXT_CHARS", 40)
+    payload = _minimal_payload()
+    payload["namedRanges"] = [
+        {
+            "namedRangeId": "nr-1",
+            "name": "x" * 30,
+            "range": {"sheetId": 100},
+        },
+    ]
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        [{"startRow": 10, "rowData": []}],
+        [{"startColumn": 10, "rowData": []}],
+        [{"startRow": 8, "rowData": [{}, {}, {}]}],
+        [{"startRow": 8, "rowData": [{"values": []}, {"values": []}, {"values": []}]}],
+        [{"startRow": 0, "startColumn": 10, "rowData": [{"values": []}]}],
+    ],
+)
+def test_empty_grid_coordinate_bounds_rejected(data: list[dict[str, object]]) -> None:
+    payload = _minimal_payload()
+    payload["sheets"] = [_grid_sheet_payload(row_count=10, column_count=10, data=data)]
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+    _assert_safe_dependency_error(exc_info)
+
+
+def _valid_cell_value() -> GoogleSheetsCellValue:
+    return GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.STRING, text="a")
+
+
+def _valid_cell() -> GoogleSheetsCell:
+    return GoogleSheetsCell(row_index=0, column_index=0, user_entered_value=_valid_cell_value())
+
+
+def _valid_row() -> GoogleSheetsRow:
+    return GoogleSheetsRow(row_index=0, cells=(_valid_cell(),))
+
+
+def _valid_grid_data() -> GoogleSheetsGridData:
+    return GoogleSheetsGridData(start_row_index=0, start_column_index=0, rows=(_valid_row(),))
+
+
+def _valid_grid_sheet() -> GoogleSheetsSheet:
+    return GoogleSheetsSheet(
+        sheet_id=100,
+        title="Grid",
+        index=0,
+        sheet_type=GoogleSheetsSheetType.GRID,
+        row_count=10,
+        column_count=10,
+        grid_data=(_valid_grid_data(),),
+    )
+
+
+def test_nested_model_construct_cell_error_in_cell_value_rejected() -> None:
+    malformed = GoogleSheetsCellError.model_construct(error_type="BAD", message="x")
+    with pytest.raises(ValidationError):
+        GoogleSheetsCellValue(kind=GoogleSheetsCellValueKind.ERROR, error=malformed)
+
+
+def test_nested_model_construct_cell_value_in_cell_rejected() -> None:
+    malformed = GoogleSheetsCellValue.model_construct(
+        kind=GoogleSheetsCellValueKind.STRING,
+        number=1.0,
+    )
+    with pytest.raises(ValidationError):
+        GoogleSheetsCell(row_index=0, column_index=0, user_entered_value=malformed)
+
+
+def test_nested_model_construct_cell_in_row_rejected() -> None:
+    malformed = GoogleSheetsCell.model_construct(row_index=1, column_index=0)
+    with pytest.raises(ValidationError):
+        GoogleSheetsRow(row_index=0, cells=(malformed,))
+
+
+def test_nested_model_construct_row_in_grid_data_rejected() -> None:
+    malformed = GoogleSheetsRow.model_construct(row_index=5, cells=())
+    with pytest.raises(ValidationError):
+        GoogleSheetsGridData(start_row_index=0, start_column_index=0, rows=(malformed,))
+
+
+def test_nested_model_construct_grid_data_in_sheet_rejected() -> None:
+    malformed = GoogleSheetsGridData.model_construct(start_row_index=99, rows=())
+    with pytest.raises(ValidationError):
+        GoogleSheetsSheet(
+            sheet_id=100,
+            title="Grid",
+            index=0,
+            sheet_type=GoogleSheetsSheetType.GRID,
+            row_count=10,
+            column_count=10,
+            grid_data=(malformed,),
+        )
+
+
+def test_nested_model_construct_grid_range_in_named_range_rejected() -> None:
+    malformed = GoogleSheetsGridRange.model_construct(sheet_id=100, start_row_index=5, end_row_index=1)
+    with pytest.raises(ValidationError):
+        GoogleSheetsNamedRange(named_range_id="nr-1", name="Range", grid_range=malformed)
+
+
+def test_nested_model_construct_sheet_in_spreadsheet_rejected() -> None:
+    malformed = GoogleSheetsSheet.model_construct(
+        sheet_id=100,
+        title="Grid",
+        index=5,
+        sheet_type=GoogleSheetsSheetType.GRID,
+        row_count=10,
+        column_count=10,
+    )
+    with pytest.raises(ValidationError):
+        GoogleSheetsSpreadsheet(
+            spreadsheet_id=_SPREADSHEET_ID,
+            title=_SPREADSHEET_TITLE,
+            locale=_LOCALE,
+            time_zone=_TIME_ZONE,
+            sheets=(malformed,),
+        )
+
+
+def test_nested_model_construct_named_range_in_spreadsheet_rejected() -> None:
+    malformed = GoogleSheetsNamedRange.model_construct(
+        named_range_id="nr-1",
+        name="Range",
+        grid_range=GoogleSheetsGridRange(sheet_id=999),
+    )
+    with pytest.raises(ValidationError):
+        GoogleSheetsSpreadsheet(
+            spreadsheet_id=_SPREADSHEET_ID,
+            title=_SPREADSHEET_TITLE,
+            locale=_LOCALE,
+            time_zone=_TIME_ZONE,
+            sheets=(_valid_grid_sheet(),),
+            named_ranges=(malformed,),
+        )
+
+
+class _ForeignCellValue(GoogleSheetsCellValue):
+    pass
+
+
+class _ForeignCell(GoogleSheetsCell):
+    pass
+
+
+class _ForeignRow(GoogleSheetsRow):
+    pass
+
+
+class _ForeignGridData(GoogleSheetsGridData):
+    pass
+
+
+class _ForeignGridRange(GoogleSheetsGridRange):
+    pass
+
+
+class _ForeignNamedRange(GoogleSheetsNamedRange):
+    pass
+
+
+class _ForeignSheet(GoogleSheetsSheet):
+    pass
+
+
+def test_nested_subclass_cell_value_in_cell_rejected() -> None:
+    foreign = _ForeignCellValue(kind=GoogleSheetsCellValueKind.STRING, text="a")
+    with pytest.raises(ValidationError):
+        GoogleSheetsCell(row_index=0, column_index=0, user_entered_value=foreign)
+
+
+def test_nested_subclass_cell_in_row_rejected() -> None:
+    foreign = _ForeignCell(row_index=0, column_index=0)
+    with pytest.raises(ValidationError):
+        GoogleSheetsRow(row_index=0, cells=(foreign,))
+
+
+def test_nested_subclass_row_in_grid_data_rejected() -> None:
+    foreign = _ForeignRow(row_index=0, cells=())
+    with pytest.raises(ValidationError):
+        GoogleSheetsGridData(start_row_index=0, start_column_index=0, rows=(foreign,))
+
+
+def test_nested_subclass_grid_data_in_sheet_rejected() -> None:
+    foreign = _ForeignGridData(start_row_index=0, start_column_index=0, rows=())
+    with pytest.raises(ValidationError):
+        GoogleSheetsSheet(
+            sheet_id=100,
+            title="Grid",
+            index=0,
+            sheet_type=GoogleSheetsSheetType.GRID,
+            row_count=10,
+            column_count=10,
+            grid_data=(foreign,),
+        )
+
+
+def test_nested_subclass_grid_range_in_named_range_rejected() -> None:
+    foreign = _ForeignGridRange(sheet_id=100)
+    with pytest.raises(ValidationError):
+        GoogleSheetsNamedRange(named_range_id="nr-1", name="Range", grid_range=foreign)
+
+
+def test_nested_subclass_sheet_in_spreadsheet_rejected() -> None:
+    foreign = _ForeignSheet(
+        sheet_id=100,
+        title="Grid",
+        index=0,
+        sheet_type=GoogleSheetsSheetType.GRID,
+        row_count=10,
+        column_count=10,
+    )
+    with pytest.raises(ValidationError):
+        GoogleSheetsSpreadsheet(
+            spreadsheet_id=_SPREADSHEET_ID,
+            title=_SPREADSHEET_TITLE,
+            locale=_LOCALE,
+            time_zone=_TIME_ZONE,
+            sheets=(foreign,),
+        )
+
+
+def test_nested_subclass_named_range_in_spreadsheet_rejected() -> None:
+    foreign = _ForeignNamedRange(
+        named_range_id="nr-1",
+        name="Range",
+        grid_range=GoogleSheetsGridRange(sheet_id=100),
+    )
+    with pytest.raises(ValidationError):
+        GoogleSheetsSpreadsheet(
+            spreadsheet_id=_SPREADSHEET_ID,
+            title=_SPREADSHEET_TITLE,
+            locale=_LOCALE,
+            time_zone=_TIME_ZONE,
+            sheets=(_valid_grid_sheet(),),
+            named_ranges=(foreign,),
+        )
+
+
+def test_named_range_object_sheet_rejected() -> None:
+    payload = _minimal_payload()
+    payload["sheets"] = [
+        {
+            "properties": {
+                "sheetId": 101,
+                "title": "ObjectSheet",
+                "index": 0,
+                "sheetType": "OBJECT",
+            },
+        },
+    ]
+    payload["namedRanges"] = [
+        {
+            "namedRangeId": "nr-obj",
+            "name": "ObjectRange",
+            "range": {"sheetId": 101},
+        },
+    ]
+    reader, _ = _reader_with_payload(payload)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+
 def test_serialized_output_no_secrets() -> None:
     reader, _ = _reader_with_payload(_success_spreadsheet_payload())
     spreadsheet = reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
@@ -823,8 +1330,23 @@ def test_knowledge_read_package_exports_sheets_symbols() -> None:
     assert GOOGLE_SHEETS_NATIVE_MIME_TYPE == "application/vnd.google-apps.spreadsheet"
 
 
+def test_lazy_sheets_exports_resolve() -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+        GoogleSheetsKnowledgeReader as TopLevelReader,
+        GoogleSheetsSpreadsheet as TopLevelSpreadsheet,
+    )
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import (
+        GoogleSheetsKnowledgeReader as PackageReader,
+        GoogleSheetsSpreadsheet as PackageSpreadsheet,
+    )
+
+    assert TopLevelReader is PackageReader
+    assert TopLevelSpreadsheet is PackageSpreadsheet
+    assert google_workspace.GOOGLE_SHEETS_SOURCE_KIND == GOOGLE_SHEETS_SOURCE_KIND
+
+
 def test_existing_docs_and_drive_exports_remain() -> None:
     public_names = set(google_workspace.__all__)
     assert "GoogleDocsKnowledgeReader" in public_names
     assert "GoogleDriveKnowledgeReader" in public_names
-    assert "GoogleSheetsKnowledgeReader" not in public_names
+    assert "GoogleSheetsKnowledgeReader" in public_names

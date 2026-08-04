@@ -6,6 +6,8 @@ from intergrax.utils.lazy_export import export_from_bundle
 __all__ = [
     "GOOGLE_DOCS_NATIVE_MIME_TYPE",
     "GOOGLE_DOCS_SOURCE_KIND",
+    "GOOGLE_SHEETS_NATIVE_MIME_TYPE",
+    "GOOGLE_SHEETS_SOURCE_KIND",
     "GoogleDocsBlock",
     "GoogleDocsBlockKind",
     "GoogleDocsBullet",
@@ -22,6 +24,22 @@ __all__ = [
     "GoogleDocsTable",
     "GoogleDocsTableCell",
     "GoogleDocsTableRow",
+    "GoogleSheetsCell",
+    "GoogleSheetsCellError",
+    "GoogleSheetsCellValue",
+    "GoogleSheetsCellValueKind",
+    "GoogleSheetsGridData",
+    "GoogleSheetsGridRange",
+    "GoogleSheetsKnowledgeReadClient",
+    "GoogleSheetsKnowledgeReader",
+    "GoogleSheetsNamedRange",
+    "GoogleSheetsNumberFormat",
+    "GoogleSheetsNumberFormatType",
+    "GoogleSheetsRecalculationInterval",
+    "GoogleSheetsRow",
+    "GoogleSheetsSheet",
+    "GoogleSheetsSheetType",
+    "GoogleSheetsSpreadsheet",
     "ABSOLUTE_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
     "DefaultGoogleWorkspaceClientFactory",
     "DEFAULT_GOOGLE_DRIVE_CONTENT_MAX_BYTES",
@@ -122,6 +140,29 @@ _DRIVE_EXPORTS = frozenset(
     }
 )
 
+_SHEETS_EXPORTS = frozenset(
+    {
+        "GOOGLE_SHEETS_NATIVE_MIME_TYPE",
+        "GOOGLE_SHEETS_SOURCE_KIND",
+        "GoogleSheetsCell",
+        "GoogleSheetsCellError",
+        "GoogleSheetsCellValue",
+        "GoogleSheetsCellValueKind",
+        "GoogleSheetsGridData",
+        "GoogleSheetsGridRange",
+        "GoogleSheetsKnowledgeReadClient",
+        "GoogleSheetsKnowledgeReader",
+        "GoogleSheetsNamedRange",
+        "GoogleSheetsNumberFormat",
+        "GoogleSheetsNumberFormatType",
+        "GoogleSheetsRecalculationInterval",
+        "GoogleSheetsRow",
+        "GoogleSheetsSheet",
+        "GoogleSheetsSheetType",
+        "GoogleSheetsSpreadsheet",
+    }
+)
+
 _BUNDLE_EXPORTS = frozenset(
     {
         "create_google_workspace_collaboration_suite",
@@ -199,6 +240,12 @@ def __getattr__(name: str):
         )
 
         return export_from_bundle(_knowledge_read, name, _DRIVE_EXPORTS)
+    if name in _SHEETS_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _SHEETS_EXPORTS)
     if name in _FOUNDATION_EXPORTS:
         if name == "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID":
             from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
