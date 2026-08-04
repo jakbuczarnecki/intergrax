@@ -9,6 +9,7 @@ import pytest
 from langchain_core.documents import Document
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
 )
@@ -198,6 +199,118 @@ def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path
     legacy_meta = embedding.received[0].metadata
     assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in legacy_meta
+
+
+def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "managed.txt"
+    source.write_text("hello", encoding="utf-8")
+    base_metadata = {
+        "tenant_id": "tenant.test",
+        "namespace": "managed",
+        "source_id": "managed-source-id",
+        "document_id": "managed-document-id",
+        "content_hash": "sha256:managed",
+        "workspace_id": "workspace-1",
+        "operation_id": "operation-1",
+        "source_path": str(source),
+        "file_name": "managed.txt",
+    }
+    original_metadata = dict(base_metadata)
+
+    native_doc = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "native-doc-id",
+                "root_document_id": "native-doc-id",
+            },
+            "scope": {"tenant_id": "tenant.test", "namespace": "managed"},
+            "content": "hello",
+            "metadata": {"parser": "tests.boundary"},
+            "provenance": {
+                "source_kind": "file",
+                "source_id": str(source),
+            },
+        }
+    )
+
+    class _BoundaryLoader:
+        def __init__(self) -> None:
+            self.custom_metadata: dict[str, object] | None = None
+
+        def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+            callback = kwargs["call_custom_metadata"]
+            assert callable(callback)
+            custom_metadata = callback(native_doc, source)
+            self.custom_metadata = dict(custom_metadata)
+            payload = native_doc.model_dump(mode="python")
+            payload["metadata"] = {
+                **dict(native_doc.metadata),
+                **self.custom_metadata,
+            }
+            return [KnowledgeDocument.model_validate(payload)]
+
+    class _CapturingSplitter:
+        def __init__(self) -> None:
+            self.received: list[KnowledgeDocument] | None = None
+
+        def split_documents(self, docs, strategy_id=None):
+            self.received = list(docs)
+            return docs
+
+    class _CapturingEmbedding:
+        def __init__(self) -> None:
+            self.received: list[Document] | None = None
+
+        def embed_documents(self, docs):
+            self.received = list(docs)
+            return MagicMock(documents=docs, embeddings=[[0.0]])
+
+    class _CapturingVectorstore:
+        def __init__(self) -> None:
+            self.received: dict[str, object] | None = None
+
+        def add_documents(self, **kwargs: object) -> list[str]:
+            self.received = kwargs
+            return ["id-0"]
+
+    loader = _BoundaryLoader()
+    splitter = _CapturingSplitter()
+    embedding = _CapturingEmbedding()
+    vectorstore = _CapturingVectorstore()
+    pipeline = IngestPipeline(
+        loader=loader,
+        splitter=splitter,
+        embedding_manager=embedding,
+        vectorstore=vectorstore,
+    )
+
+    result = pipeline.run(
+        IngestRequest(source_path=str(source), base_metadata=base_metadata)
+    )
+
+    assert result.used is True
+    assert result.reason == "ok"
+    assert loader.custom_metadata is not None
+    assert RESERVED_METADATA_KEYS.isdisjoint(loader.custom_metadata)
+    assert loader.custom_metadata == {
+        "workspace_id": "workspace-1",
+        "operation_id": "operation-1",
+        "source_path": str(source),
+        "file_name": "managed.txt",
+    }
+    assert splitter.received is not None
+    assert embedding.received is not None
+    assert vectorstore.received is not None
+
+    downstream_metadata = embedding.received[0].metadata
+    for key in ("source_id", "document_id", "content_hash"):
+        assert downstream_metadata[key] == base_metadata[key]
+    assert vectorstore.received["base_metadata"] == base_metadata
+    assert vectorstore.received["documents"][0].metadata == downstream_metadata
+    assert base_metadata == original_metadata
 
 
 def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: Path) -> None:

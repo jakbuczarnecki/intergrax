@@ -11,6 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     to_legacy_rag_document,
@@ -123,7 +124,7 @@ class IngestPipeline:
                 filtered = {
                     key: value
                     for key, value in base_metadata.items()
-                    if key not in {"tenant_id", "namespace"}
+                    if key not in RESERVED_METADATA_KEYS
                 }
                 return filtered
 
