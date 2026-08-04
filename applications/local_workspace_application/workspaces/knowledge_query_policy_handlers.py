@@ -15,10 +15,13 @@ from local_workspace_application.workspaces.knowledge_configuration_hashing impo
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV1,
+    QueryPolicyModeV2,
+    WorkspaceCommittedQueryPolicy,
     WorkspaceKnowledgeConfigurationV1,
     WorkspaceKnowledgeMutationOperationV1,
     WorkspaceKnowledgeMutationRecord,
     WorkspaceQueryPolicy,
+    WorkspaceQueryPolicyV2,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeExistingResult,
@@ -34,7 +37,7 @@ _QUERY_POLICY_ENTITY_ID = "query-policy"
 
 @dataclass(frozen=True, slots=True)
 class UpdateQueryPolicyMutationIntent:
-    mode: QueryPolicyModeV1
+    mode: QueryPolicyModeV1 | QueryPolicyModeV2
     allowed_connection_refs: tuple[str, ...]
     allowed_capability_ids: tuple[str, ...]
     max_live_calls: int
@@ -42,6 +45,7 @@ class UpdateQueryPolicyMutationIntent:
     max_result_items: int
     max_result_bytes: int
     live_result_retention: LiveResultRetentionV1
+    policy_schema_version: int = 1
 
 
 def _stage_conflict() -> WorkspaceKnowledgeStageInspection:
@@ -59,7 +63,7 @@ def _stage_valid() -> WorkspaceKnowledgeStageInspection:
 def _owned_query_policies(
     repository: ManagedWorkspaceRepository,
     mutation: WorkspaceKnowledgeMutationRecord,
-) -> list[WorkspaceQueryPolicy]:
+) -> list[WorkspaceCommittedQueryPolicy]:
     try:
         return [
             policy
@@ -73,7 +77,19 @@ def _owned_query_policies(
         raise RuntimeError("query_policy_owned_rows_unreadable") from None
 
 
-def _intent_from_policy(policy: WorkspaceQueryPolicy) -> UpdateQueryPolicyMutationIntent:
+def _intent_from_policy(policy: WorkspaceCommittedQueryPolicy) -> UpdateQueryPolicyMutationIntent:
+    if isinstance(policy, WorkspaceQueryPolicyV2):
+        return UpdateQueryPolicyMutationIntent(
+            mode=policy.mode,
+            allowed_connection_refs=policy.allowed_connection_refs,
+            allowed_capability_ids=policy.allowed_capability_ids,
+            max_live_calls=policy.max_live_calls,
+            max_total_duration_ms=policy.max_total_duration_ms,
+            max_result_items=policy.max_result_items,
+            max_result_bytes=policy.max_result_bytes,
+            live_result_retention=policy.live_result_retention,
+            policy_schema_version=2,
+        )
     return UpdateQueryPolicyMutationIntent(
         mode=policy.mode,
         allowed_connection_refs=policy.allowed_connection_refs,
@@ -87,9 +103,14 @@ def _intent_from_policy(policy: WorkspaceQueryPolicy) -> UpdateQueryPolicyMutati
 
 
 def _policy_matches_intent(
-    policy: WorkspaceQueryPolicy,
+    policy: WorkspaceCommittedQueryPolicy,
     intent: UpdateQueryPolicyMutationIntent,
 ) -> bool:
+    if intent.policy_schema_version == 2:
+        if not isinstance(policy, WorkspaceQueryPolicyV2):
+            return False
+    elif not isinstance(policy, WorkspaceQueryPolicy):
+        return False
     return (
         policy.mode is intent.mode
         and policy.allowed_connection_refs == intent.allowed_connection_refs
@@ -110,6 +131,7 @@ def _query_policy_request_hash(
     return normalize_update_query_policy_request_hash(
         tenant_id=mutation.tenant_id,
         workspace_id=mutation.workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -129,6 +151,7 @@ def _query_policy_semantic_hash(
     return semantic_identity_hash_for_query_policy(
         tenant_id=mutation.tenant_id,
         workspace_id=mutation.workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -148,6 +171,7 @@ def _query_policy_stage_manifest_hash(
     return query_policy_stage_manifest_hash(
         tenant_id=mutation.tenant_id,
         workspace_id=mutation.workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -208,7 +232,27 @@ def _expected_policy_row(
     target_revision: int,
     intent: UpdateQueryPolicyMutationIntent,
     updated_at: datetime,
-) -> WorkspaceQueryPolicy:
+) -> WorkspaceCommittedQueryPolicy:
+    if intent.policy_schema_version == 2:
+        if not isinstance(intent.mode, QueryPolicyModeV2):
+            raise RuntimeError("query_policy_v2_mode_required")
+        return WorkspaceQueryPolicyV2(
+            tenant_id=mutation.tenant_id,
+            workspace_id=mutation.workspace_id,
+            mode=intent.mode,
+            allowed_connection_refs=intent.allowed_connection_refs,
+            allowed_capability_ids=intent.allowed_capability_ids,
+            max_live_calls=intent.max_live_calls,
+            max_total_duration_ms=intent.max_total_duration_ms,
+            max_result_items=intent.max_result_items,
+            max_result_bytes=intent.max_result_bytes,
+            live_result_retention=intent.live_result_retention,
+            mutation_id=mutation.mutation_id,
+            effective_revision=target_revision,
+            updated_at=updated_at,
+        )
+    if not isinstance(intent.mode, QueryPolicyModeV1):
+        raise RuntimeError("query_policy_v1_mode_required")
     return WorkspaceQueryPolicy(
         tenant_id=mutation.tenant_id,
         workspace_id=mutation.workspace_id,

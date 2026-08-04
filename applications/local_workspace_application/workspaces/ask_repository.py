@@ -40,14 +40,25 @@ def detect_ask_run_schema_version(data: dict[str, Any]) -> AskRunSchemaVersion:
     raise WorkspaceAskRepositoryError("ask_run_schema_version_unknown")
 
 
-def _parse_ask_run(data: dict[str, Any]) -> WorkspaceAskRun | WorkspaceAskRunV2:
-    schema_version = detect_ask_run_schema_version(data)
+def _parse_ask_run_v1(data: dict[str, Any]) -> WorkspaceAskRun:
     try:
-        if schema_version is AskRunSchemaVersion.V1:
-            return WorkspaceAskRun.model_validate(data)
+        return WorkspaceAskRun.model_validate(data)
+    except ValidationError as exc:
+        raise WorkspaceAskRepositoryError("ask_run_malformed") from exc
+
+
+def _parse_ask_run_v2(data: dict[str, Any]) -> WorkspaceAskRunV2:
+    try:
         return WorkspaceAskRunV2.model_validate(data)
     except ValidationError as exc:
         raise WorkspaceAskRepositoryError("ask_run_malformed") from exc
+
+
+def _parse_ask_run(data: dict[str, Any]) -> WorkspaceAskRun | WorkspaceAskRunV2:
+    schema_version = detect_ask_run_schema_version(data)
+    if schema_version is AskRunSchemaVersion.V1:
+        return _parse_ask_run_v1(data)
+    return _parse_ask_run_v2(data)
 
 
 class WorkspaceAskRepository:
@@ -127,20 +138,22 @@ class WorkspaceAskRepository:
         result = self._store.query(_partition(tenant_id), limit=limit)
         runs: list[WorkspaceAskRun] = []
         for doc in result.documents:
-            parsed = _parse_ask_run(dict(doc.data))
-            if isinstance(parsed, WorkspaceAskRunV2):
-                raise WorkspaceAskRepositoryError("ask_run_schema_version_mismatch")
-            runs.append(parsed)
+            data = dict(doc.data)
+            schema_version = detect_ask_run_schema_version(data)
+            if schema_version is AskRunSchemaVersion.V2:
+                continue
+            runs.append(_parse_ask_run_v1(data))
         return runs
 
     def list_runs_v2(self, *, tenant_id: str, limit: int = 2000) -> list[WorkspaceAskRunV2]:
         result = self._store.query(_partition(tenant_id), limit=limit)
         runs: list[WorkspaceAskRunV2] = []
         for doc in result.documents:
-            parsed = _parse_ask_run(dict(doc.data))
-            if isinstance(parsed, WorkspaceAskRun):
-                raise WorkspaceAskRepositoryError("ask_run_schema_version_mismatch")
-            runs.append(parsed)
+            data = dict(doc.data)
+            schema_version = detect_ask_run_schema_version(data)
+            if schema_version is AskRunSchemaVersion.V1:
+                continue
+            runs.append(_parse_ask_run_v2(data))
         return runs
 
     def delete_run(self, *, tenant_id: str, run_id: str) -> None:

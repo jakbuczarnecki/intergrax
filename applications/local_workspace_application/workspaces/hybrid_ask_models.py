@@ -189,7 +189,6 @@ class LiveWorkspaceCitationV1(BaseModel):
     evidence_id: str = Field(..., min_length=1)
     evidence_type: Literal[EvidenceTypeV1.LIVE] = EvidenceTypeV1.LIVE
     safe_display_name: str = Field(..., min_length=1)
-    excerpt: str = ""
     retrieved_at: datetime
     provider_id: str = Field(..., min_length=1)
     connection_safe_label: str = Field(..., min_length=1)
@@ -283,16 +282,33 @@ class WorkspaceAskRunV2(BaseModel):
     @model_validator(mode="after")
     def _validate_run_integrity(self) -> Self:
         evidence_by_id: dict[str, EvidenceTypeV1] = {}
+        live_evidence_by_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
+        live_evidence_by_call_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
         for item in self.persisted_evidence:
             if item.evidence_id in evidence_by_id:
                 raise ValueError("duplicate_evidence_id")
             evidence_by_id[item.evidence_id] = item.evidence_type
+            if isinstance(item, PersistedLiveEvidenceProvenanceV2):
+                live_evidence_by_id[item.evidence_id] = item
+                existing = live_evidence_by_call_id.get(item.call_id)
+                if existing is not None and existing.evidence_id != item.evidence_id:
+                    raise ValueError("duplicate_live_call_id")
+                live_evidence_by_call_id[item.call_id] = item
 
-        receipt_ids: set[str] = set()
+        receipt_by_id: dict[str, LiveExecutionReceiptV1] = {}
         for receipt in self.execution_receipts:
-            if receipt.receipt_id in receipt_ids:
+            if receipt.receipt_id in receipt_by_id:
                 raise ValueError("duplicate_receipt_id")
-            receipt_ids.add(receipt.receipt_id)
+            if receipt.run_id != self.run_id:
+                raise ValueError("receipt_run_id_mismatch")
+            receipt_by_id[receipt.receipt_id] = receipt
+            live_evidence = live_evidence_by_call_id.get(receipt.call_id)
+            if live_evidence is None:
+                raise ValueError("receipt_unknown_live_call")
+            if receipt.live_access_binding_id != live_evidence.live_access_binding_id:
+                raise ValueError("receipt_binding_mismatch")
+            if receipt.capability_id != live_evidence.capability_id:
+                raise ValueError("receipt_capability_mismatch")
 
         for citation in self.citations:
             evidence_type = evidence_by_id.get(citation.evidence_id)
@@ -300,6 +316,18 @@ class WorkspaceAskRunV2(BaseModel):
                 raise ValueError("citation_evidence_not_found")
             if evidence_type is not citation.evidence_type:
                 raise ValueError("citation_evidence_type_mismatch")
+            if isinstance(citation, LiveWorkspaceCitationV1):
+                live_evidence = live_evidence_by_id.get(citation.evidence_id)
+                if live_evidence is None:
+                    raise ValueError("citation_live_evidence_not_found")
+                if citation.call_id != live_evidence.call_id:
+                    raise ValueError("citation_live_call_id_mismatch")
+                if citation.receipt_id is not None:
+                    receipt = receipt_by_id.get(citation.receipt_id)
+                    if receipt is None:
+                        raise ValueError("citation_receipt_not_found")
+                    if receipt.call_id != citation.call_id:
+                        raise ValueError("citation_receipt_call_id_mismatch")
 
         if self.status is AskRunStatus.COMPLETED:
             if not self.citations:
@@ -321,6 +349,9 @@ class WorkspaceAskRunV2(BaseModel):
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         data = super().model_dump(**kwargs)
         for item in data.get("persisted_evidence", []):
+            if isinstance(item, dict) and item.get("evidence_type") == EvidenceTypeV1.LIVE.value:
+                _assert_no_forbidden_live_body_fields(item)
+        for item in data.get("citations", []):
             if isinstance(item, dict) and item.get("evidence_type") == EvidenceTypeV1.LIVE.value:
                 _assert_no_forbidden_live_body_fields(item)
         return data

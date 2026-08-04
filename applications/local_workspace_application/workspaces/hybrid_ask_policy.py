@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
+    TenantLiveCapabilityCatalogPort,
     is_bindable_read_only_capability,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
@@ -47,6 +48,26 @@ _FORBIDDEN_MODEL_CONTROLLED_FIELDS = frozenset(
         "provider_client",
     }
 )
+
+
+def _contains_forbidden_model_controlled_field(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if key in _FORBIDDEN_MODEL_CONTROLLED_FIELDS:
+                return True
+            if _contains_forbidden_model_controlled_field(nested):
+                return True
+    elif isinstance(value, list):
+        for item in value:
+            if _contains_forbidden_model_controlled_field(item):
+                return True
+    return False
+
+
+def _reject_forbidden_model_controlled_fields(data: Any) -> Any:
+    if isinstance(data, dict) and _contains_forbidden_model_controlled_field(data):
+        raise ValueError("model_controlled_field_forbidden")
+    return data
 
 
 class HybridAskPolicyError(RuntimeError):
@@ -159,16 +180,7 @@ class LiveCallProposalV1(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _reject_forbidden_fields(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            forbidden = _FORBIDDEN_MODEL_CONTROLLED_FIELDS.intersection(data.keys())
-            if forbidden:
-                raise ValueError("model_controlled_field_forbidden")
-            request = data.get("typed_capability_request")
-            if isinstance(request, dict):
-                nested = _FORBIDDEN_MODEL_CONTROLLED_FIELDS.intersection(request.keys())
-                if nested:
-                    raise ValueError("model_controlled_field_forbidden")
-        return data
+        return _reject_forbidden_model_controlled_fields(data)
 
 
 class EffectiveLiveCallBudgetV1(BaseModel):
@@ -196,11 +208,7 @@ class EvidencePlanV1(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _reject_forbidden_fields(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            forbidden = _FORBIDDEN_MODEL_CONTROLLED_FIELDS.intersection(data.keys())
-            if forbidden:
-                raise ValueError("model_controlled_field_forbidden")
-        return data
+        return _reject_forbidden_model_controlled_fields(data)
 
 
 class ResolvedLiveResourceScopeV1(BaseModel):
@@ -221,6 +229,7 @@ class ExecutableLiveCallV1(BaseModel):
     capability_id: str = Field(..., min_length=1, max_length=128)
     validated_request: dict[str, Any]
     resolved_resource_scope: ResolvedLiveResourceScopeV1
+    effective_budget: EffectiveLiveCallBudgetV1
 
 
 class ValidatedEvidencePlanV1(BaseModel):
@@ -254,17 +263,6 @@ class LiveResourceScopeValidationPort(Protocol):
         ...
 
 
-@runtime_checkable
-class TenantLiveCapabilityCatalogPort(Protocol):
-    def get_descriptor(
-        self,
-        *,
-        tenant_id: str,
-        capability_id: str,
-    ) -> LiveCapabilityDescriptorV1 | None:
-        ...
-
-
 def _audience_matches_binding(
   audience: KnowledgeQueryAudienceV1,
   eligibility: KnowledgeAudienceEligibilityV1,
@@ -274,31 +272,81 @@ def _audience_matches_binding(
     return True
 
 
-def _strictest_budget(
+def _run_effective_budget(
     *,
     policy: EffectiveWorkspaceQueryPolicyV2,
-    descriptor: LiveCapabilityDescriptorV1,
     proposal_budget: EffectiveLiveCallBudgetV1,
 ) -> EffectiveLiveCallBudgetV1:
-    max_result_items = min(
-        policy.max_result_items,
-        proposal_budget.max_result_items,
-        descriptor.max_result_items or policy.max_result_items,
-    )
-    max_result_bytes = min(
-        policy.max_result_bytes,
-        proposal_budget.max_result_bytes,
-        descriptor.max_result_bytes or policy.max_result_bytes,
-    )
     return EffectiveLiveCallBudgetV1(
         max_live_calls=min(policy.max_live_calls, proposal_budget.max_live_calls),
         max_total_duration_ms=min(
             policy.max_total_duration_ms,
             proposal_budget.max_total_duration_ms,
         ),
-        max_result_items=max_result_items,
-        max_result_bytes=max_result_bytes,
+        max_result_items=min(policy.max_result_items, proposal_budget.max_result_items),
+        max_result_bytes=min(policy.max_result_bytes, proposal_budget.max_result_bytes),
     )
+
+
+def _per_call_effective_budget(
+    *,
+    run_budget: EffectiveLiveCallBudgetV1,
+    descriptor: LiveCapabilityDescriptorV1,
+) -> EffectiveLiveCallBudgetV1:
+    return EffectiveLiveCallBudgetV1(
+        max_live_calls=run_budget.max_live_calls,
+        max_total_duration_ms=run_budget.max_total_duration_ms,
+        max_result_items=min(
+            run_budget.max_result_items,
+            descriptor.max_result_items or run_budget.max_result_items,
+        ),
+        max_result_bytes=min(
+            run_budget.max_result_bytes,
+            descriptor.max_result_bytes or run_budget.max_result_bytes,
+        ),
+    )
+
+
+def _resolve_live_capability_descriptor(
+    *,
+    capability_catalog: TenantLiveCapabilityCatalogPort,
+    tenant_id: str,
+    connection_ref: str,
+    remote_resource_id: str | None,
+    capability_id: str,
+    provider_id: str,
+    integration_kind: IntegrationCategory,
+) -> LiveCapabilityDescriptorV1:
+    descriptors = capability_catalog.list_capabilities(
+        tenant_id=tenant_id,
+        connection_ref=connection_ref,
+        remote_resource_id=remote_resource_id,
+    )
+    matches = [
+        descriptor
+        for descriptor in descriptors
+        if descriptor.capability_id == capability_id
+        and descriptor.provider_id == provider_id
+        and descriptor.integration_kind is integration_kind
+    ]
+    if not matches:
+        raise HybridAskPolicyError("live_capability_unavailable")
+    if len(matches) > 1:
+        raise HybridAskPolicyError("live_capability_unavailable")
+    descriptor = matches[0]
+    if not is_bindable_read_only_capability(descriptor):
+        raise HybridAskPolicyError("live_capability_unavailable")
+    return descriptor
+
+
+def _find_binding(
+    configuration: WorkspaceKnowledgeConfigurationV1,
+    live_access_binding_id: str,
+) -> WorkspaceLiveAccessBinding | None:
+    for binding in configuration.live_access_bindings:
+        if binding.live_access_binding_id == live_access_binding_id:
+            return binding
+    return None
 
 
 def _find_active_attachment(
@@ -311,19 +359,6 @@ def _find_active_attachment(
             and attachment.status is WorkspaceConnectionAttachmentStatusV1.ATTACHED
         ):
             return attachment
-    return None
-
-
-def _find_active_binding(
-    configuration: WorkspaceKnowledgeConfigurationV1,
-    live_access_binding_id: str,
-) -> WorkspaceLiveAccessBinding | None:
-    for binding in configuration.live_access_bindings:
-        if (
-            binding.live_access_binding_id == live_access_binding_id
-            and binding.status is LiveAccessBindingStatusV1.ACTIVE
-        ):
-            return binding
     return None
 
 
@@ -370,14 +405,20 @@ def validate_evidence_plan(
 
     executable_calls: list[ExecutableLiveCallV1] = []
     seen_call_ids: set[str] = set()
+    run_effective_budget = _run_effective_budget(
+        policy=effective_policy,
+        proposal_budget=plan.budget_snapshot,
+    )
 
     for proposal in plan.ordered_live_call_proposals:
         if proposal.call_id in seen_call_ids:
             raise HybridAskPolicyError("duplicate_call_id")
         seen_call_ids.add(proposal.call_id)
 
-        binding = _find_active_binding(configuration, proposal.live_access_binding_id)
+        binding = _find_binding(configuration, proposal.live_access_binding_id)
         if binding is None:
+            raise HybridAskPolicyError("live_binding_not_found")
+        if binding.status is not LiveAccessBindingStatusV1.ACTIVE:
             raise HybridAskPolicyError("live_binding_unavailable")
 
         if not _audience_matches_binding(
@@ -399,12 +440,15 @@ def validate_evidence_plan(
         if binding.connection_ref not in effective_policy.allowed_connection_refs:
             raise HybridAskPolicyError("live_capability_not_allowed")
 
-        descriptor = capability_catalog.get_descriptor(
+        descriptor = _resolve_live_capability_descriptor(
+            capability_catalog=capability_catalog,
             tenant_id=plan.tenant_id,
+            connection_ref=binding.connection_ref,
+            remote_resource_id=binding.remote_resource_id,
             capability_id=proposal.capability_id,
+            provider_id=binding.derived_provider_id,
+            integration_kind=binding.derived_integration_kind,
         )
-        if descriptor is None or not is_bindable_read_only_capability(descriptor):
-            raise HybridAskPolicyError("live_capability_unavailable")
 
         validated_request = request_envelope_validator.validate_request_envelope(
             descriptor=descriptor,
@@ -414,6 +458,10 @@ def validate_evidence_plan(
             binding=binding,
             capability_id=proposal.capability_id,
             validated_request=validated_request,
+        )
+        call_effective_budget = _per_call_effective_budget(
+            run_budget=run_effective_budget,
+            descriptor=descriptor,
         )
 
         executable_calls.append(
@@ -426,6 +474,7 @@ def validate_evidence_plan(
                 capability_id=proposal.capability_id,
                 validated_request=validated_request,
                 resolved_resource_scope=resolved_scope,
+                effective_budget=call_effective_budget,
             )
         )
 
@@ -438,16 +487,7 @@ def validate_evidence_plan(
             raise HybridAskPolicyError("byte_budget_exceeded")
 
     if executable_calls:
-        last_descriptor = capability_catalog.get_descriptor(
-            tenant_id=plan.tenant_id,
-            capability_id=executable_calls[-1].capability_id,
-        )
-        assert last_descriptor is not None
-        effective_budget = _strictest_budget(
-            policy=effective_policy,
-            descriptor=last_descriptor,
-            proposal_budget=plan.budget_snapshot,
-        )
+        effective_budget = run_effective_budget
     else:
         effective_budget = EffectiveLiveCallBudgetV1(
             max_live_calls=0,
@@ -487,8 +527,4 @@ class KnowledgeQueryCommandV1(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def _reject_forbidden_fields(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            forbidden = _FORBIDDEN_MODEL_CONTROLLED_FIELDS.intersection(data.keys())
-            if forbidden:
-                raise ValueError("model_controlled_field_forbidden")
-        return data
+        return _reject_forbidden_model_controlled_fields(data)

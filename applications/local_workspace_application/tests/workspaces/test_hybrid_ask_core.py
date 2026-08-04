@@ -29,6 +29,7 @@ from local_workspace_application.workspaces.hybrid_ask_models import (
     HybridAskIndexedRetrievalStatusV1,
     HybridAskLiveExecutionStatusV1,
     IndexedWorkspaceCitationV1,
+    LiveExecutionReceiptV1,
     LiveWorkspaceCitationV1,
     PersistedIndexedEvidenceV2,
     PersistedLiveEvidenceProvenanceV2,
@@ -46,6 +47,11 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     resolve_effective_query_policy,
     validate_evidence_plan,
 )
+from local_workspace_application.workspaces.knowledge_configuration_hashing import (
+    normalize_update_query_policy_request_hash,
+    query_policy_stage_manifest_hash,
+    semantic_identity_hash_for_query_policy,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveAccessBindingStatusV1,
     LiveResultRetentionV1,
@@ -53,13 +59,33 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     QueryPolicyModeV2,
     WorkspaceConnectionAttachment,
     WorkspaceConnectionAttachmentStatusV1,
+    WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeConfigurationV1,
+    WorkspaceKnowledgeMutationOperationV1,
+    WorkspaceKnowledgeMutationRecord,
+    WorkspaceKnowledgeMutationStatusV1,
     WorkspaceLiveAccessBinding,
     WorkspaceQueryPolicy,
     WorkspaceQueryPolicyV2,
     parse_workspace_query_policy,
 )
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+    WorkspaceKnowledgeMutationRecoveryDispositionV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_validation import (
+    validate_configuration_idempotency_hash,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
+    UpdateQueryPolicyMutationHandler,
+    UpdateQueryPolicyMutationIntent,
+)
+from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
 pytestmark = pytest.mark.unit
 
@@ -68,6 +94,8 @@ _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
 _MUTATION = "mutation-1"
 _SHA256 = "a" * 64
+_IDEMPOTENCY = "b" * 64
+_POLICY_HANDLER = UpdateQueryPolicyMutationHandler()
 
 
 def _v1_policy(**overrides: object) -> WorkspaceQueryPolicy:
@@ -183,16 +211,24 @@ def _descriptor(**overrides: object) -> LiveCapabilityDescriptorV1:
 
 
 class _FakeCatalog:
-    def __init__(self, descriptors: dict[str, LiveCapabilityDescriptorV1]) -> None:
+    def __init__(
+        self,
+        descriptors: dict[str, LiveCapabilityDescriptorV1 | tuple[LiveCapabilityDescriptorV1, ...]],
+    ) -> None:
         self._descriptors = descriptors
 
-    def get_descriptor(
+    def list_capabilities(
         self,
         *,
         tenant_id: str,
-        capability_id: str,
-    ) -> LiveCapabilityDescriptorV1 | None:
-        return self._descriptors.get(capability_id)
+        connection_ref: str,
+        remote_resource_id: str | None,
+    ) -> tuple[LiveCapabilityDescriptorV1, ...]:
+        del tenant_id, remote_resource_id
+        value = self._descriptors.get(connection_ref, ())
+        if isinstance(value, LiveCapabilityDescriptorV1):
+            return (value,)
+        return value
 
 
 class _FakeEnvelopeValidator:
@@ -312,7 +348,6 @@ def _v2_run(**overrides: object) -> WorkspaceAskRunV2:
             LiveWorkspaceCitationV1(
                 evidence_id="live:call-1:item-1",
                 safe_display_name="Live item",
-                excerpt="",
                 retrieved_at=_NOW,
                 provider_id="provider-neutral",
                 connection_safe_label="Live Connection",
@@ -548,7 +583,7 @@ def test_effective_policy_resolution_matrix() -> None:
 
 
 def test_evidence_plan_validation_paths() -> None:
-    catalog = _FakeCatalog({"cap.read": _descriptor()})
+    catalog = _FakeCatalog({"conn.live": _descriptor()})
     envelope = _FakeEnvelopeValidator()
     scope = _FakeScopeValidator()
 
@@ -638,7 +673,7 @@ def test_evidence_plan_rejects_forbidden_model_fields_and_disabled_binding() -> 
                 configuration=config,
                 configuration_revision=1,
             ),
-            capability_catalog=_FakeCatalog({"cap.read": _descriptor()}),
+            capability_catalog=_FakeCatalog({"conn.live": _descriptor()}),
             request_envelope_validator=_FakeEnvelopeValidator(),
             resource_scope_validator=_FakeScopeValidator(),
         )
@@ -685,3 +720,511 @@ def test_completed_v2_run_rejects_duplicate_and_unknown_evidence_ids() -> None:
             ],
             persisted_evidence=[],
         )
+
+
+def test_live_citation_rejects_excerpt_field() -> None:
+    with pytest.raises(ValidationError):
+        LiveWorkspaceCitationV1(
+            evidence_id="live:call-1:item-1",
+            safe_display_name="Live item",
+            excerpt="secret",
+            retrieved_at=_NOW,
+            provider_id="provider-neutral",
+            connection_safe_label="Live Connection",
+            capability_id="cap.read",
+            call_id="call-1",
+        )
+
+
+def test_serialized_hybrid_run_has_indexed_excerpt_but_no_live_excerpt() -> None:
+    run = _v2_run()
+    serialized = json.dumps(run.model_dump(mode="json"))
+    assert '"excerpt": "Indexed excerpt"' in serialized
+    live_citation = run.citations[1]
+    assert isinstance(live_citation, LiveWorkspaceCitationV1)
+    live_payload = live_citation.model_dump(mode="json")
+    assert "excerpt" not in live_payload
+    for item in run.model_dump(mode="json")["persisted_evidence"]:
+        if item["evidence_type"] == "live":
+            assert "content" not in item
+            assert "excerpt" not in item
+
+
+def test_mixed_v1_v2_ask_partition_listing() -> None:
+    from local_workspace_application.tests.workspaces.test_ask_workspace_persistence import _run
+
+    store = InMemoryDocumentStore()
+    repo = WorkspaceAskRepository(store)
+    v1_runs = [_run(run_id="run-v1-a"), _run(run_id="run-v1-b", workspace_id="ws-2")]
+    v2_runs = [
+        _v2_run(run_id="run-v2-a"),
+        _v2_run(run_id="run-v2-b", workspace_id="ws-2"),
+    ]
+    for run in v1_runs:
+        repo.put_run(run)
+    for run in v2_runs:
+        repo.put_run_v2(run)
+
+    listed_v1 = {run.run_id for run in repo.list_runs(tenant_id=_TENANT)}
+    listed_v2 = {run.run_id for run in repo.list_runs_v2(tenant_id=_TENANT)}
+    assert listed_v1 == {"run-v1-a", "run-v1-b"}
+    assert listed_v2 == {"run-v2-a", "run-v2-b"}
+
+
+def test_descriptor_provider_mismatch_fails_closed() -> None:
+    catalog = _FakeCatalog(
+        {
+            "conn.live": _descriptor(
+                provider_id="other-provider",
+                integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
+            )
+        }
+    )
+    config = _configuration(
+        revision=1,
+        query_policy=_v2_policy(mode=QueryPolicyModeV2.LIVE_ONLY, effective_revision=1),
+    )
+    with pytest.raises(HybridAskPolicyError) as exc:
+        validate_evidence_plan(
+            plan=_live_plan(),
+            configuration=config,
+            effective_policy=resolve_effective_query_policy(
+                requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+                configuration=config,
+                configuration_revision=1,
+            ),
+            capability_catalog=catalog,
+            request_envelope_validator=_FakeEnvelopeValidator(),
+            resource_scope_validator=_FakeScopeValidator(),
+        )
+    assert exc.value.error_code == "live_capability_unavailable"
+
+
+def test_descriptor_integration_kind_mismatch_fails_closed() -> None:
+    catalog = _FakeCatalog(
+        {
+            "conn.live": _descriptor(
+                integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            )
+        }
+    )
+    config = _configuration(
+        revision=1,
+        query_policy=_v2_policy(mode=QueryPolicyModeV2.LIVE_ONLY, effective_revision=1),
+    )
+    with pytest.raises(HybridAskPolicyError) as exc:
+        validate_evidence_plan(
+            plan=_live_plan(),
+            configuration=config,
+            effective_policy=resolve_effective_query_policy(
+                requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+                configuration=config,
+                configuration_revision=1,
+            ),
+            capability_catalog=catalog,
+            request_envelope_validator=_FakeEnvelopeValidator(),
+            resource_scope_validator=_FakeScopeValidator(),
+        )
+    assert exc.value.error_code == "live_capability_unavailable"
+
+
+def test_live_binding_not_found_vs_unavailable() -> None:
+    config = _configuration(
+        revision=1,
+        query_policy=_v2_policy(mode=QueryPolicyModeV2.LIVE_ONLY, effective_revision=1),
+    )
+    missing_plan = EvidencePlanV1(
+        plan_id="plan-missing",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=1,
+        mode=QueryPolicyModeV2.LIVE_ONLY,
+        indexed_retrieval_directive=None,
+        ordered_live_call_proposals=(
+            LiveCallProposalV1(
+                call_id="call-1",
+                live_access_binding_id="missing-binding",
+                capability_id="cap.read",
+                typed_capability_request={"item_key": "ITEM-1"},
+            ),
+        ),
+        budget_snapshot=_budget(),
+        audience_context=AudienceContextV1(audience=KnowledgeQueryAudienceV1.PERSONAL),
+    )
+    with pytest.raises(HybridAskPolicyError) as exc:
+        validate_evidence_plan(
+            plan=missing_plan,
+            configuration=config,
+            effective_policy=resolve_effective_query_policy(
+                requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+                configuration=config,
+                configuration_revision=1,
+            ),
+            capability_catalog=_FakeCatalog({"conn.live": _descriptor()}),
+            request_envelope_validator=_FakeEnvelopeValidator(),
+            resource_scope_validator=_FakeScopeValidator(),
+        )
+    assert exc.value.error_code == "live_binding_not_found"
+
+
+def _two_call_plan(*, reverse: bool = False) -> EvidencePlanV1:
+    proposals = (
+        LiveCallProposalV1(
+            call_id="call-a",
+            live_access_binding_id="live-1",
+            capability_id="cap.a",
+            typed_capability_request={"item_key": "A"},
+        ),
+        LiveCallProposalV1(
+            call_id="call-b",
+            live_access_binding_id="live-1",
+            capability_id="cap.b",
+            typed_capability_request={"item_key": "B"},
+        ),
+    )
+    if reverse:
+        proposals = tuple(reversed(proposals))
+    return EvidencePlanV1(
+        plan_id="plan-two-call",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=1,
+        mode=QueryPolicyModeV2.LIVE_ONLY,
+        indexed_retrieval_directive=None,
+        ordered_live_call_proposals=proposals,
+        budget_snapshot=_budget(),
+        audience_context=AudienceContextV1(audience=KnowledgeQueryAudienceV1.PERSONAL),
+    )
+
+
+def _two_call_configuration() -> WorkspaceKnowledgeConfigurationV1:
+    binding = _live_binding(
+        allowed_capability_ids=("cap.a", "cap.b"),
+    )
+    return WorkspaceKnowledgeConfigurationV1(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=1,
+        connection_attachments=(_attachment(),),
+        indexed_sources=(),
+        live_access_bindings=(binding,),
+        query_policy=_v2_policy(
+            mode=QueryPolicyModeV2.LIVE_ONLY,
+            allowed_capability_ids=("cap.a", "cap.b"),
+            max_live_calls=2,
+            effective_revision=1,
+        ),
+        updated_at=_NOW,
+    )
+
+
+def test_per_call_budgets_are_independent_of_proposal_order() -> None:
+    catalog = _FakeCatalog(
+        {
+            "conn.live": (
+                _descriptor(
+                    capability_id="cap.a",
+                    max_result_items=10,
+                    max_result_bytes=1_000,
+                ),
+                _descriptor(
+                    capability_id="cap.b",
+                    max_result_items=20,
+                    max_result_bytes=2_000,
+                ),
+            )
+        }
+    )
+    config = _two_call_configuration()
+    effective = resolve_effective_query_policy(
+        requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+        configuration=config,
+        configuration_revision=1,
+    )
+    forward = validate_evidence_plan(
+        plan=_two_call_plan(reverse=False),
+        configuration=config,
+        effective_policy=effective,
+        capability_catalog=catalog,
+        request_envelope_validator=_FakeEnvelopeValidator(),
+        resource_scope_validator=_FakeScopeValidator(),
+    )
+    reverse = validate_evidence_plan(
+        plan=_two_call_plan(reverse=True),
+        configuration=config,
+        effective_policy=effective,
+        capability_catalog=catalog,
+        request_envelope_validator=_FakeEnvelopeValidator(),
+        resource_scope_validator=_FakeScopeValidator(),
+    )
+    forward_by_capability = {
+        call.capability_id: call.effective_budget for call in forward.executable_live_calls
+    }
+    reverse_by_capability = {
+        call.capability_id: call.effective_budget for call in reverse.executable_live_calls
+    }
+    assert forward_by_capability == reverse_by_capability
+    assert forward_by_capability["cap.a"].max_result_items == 10
+    assert forward_by_capability["cap.a"].max_result_bytes == 1_000
+    assert forward_by_capability["cap.b"].max_result_items == 20
+    assert forward_by_capability["cap.b"].max_result_bytes == 2_000
+    assert forward.effective_budget.max_result_items == 50
+    assert reverse.effective_budget.max_result_items == 50
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda: _v2_run(
+            execution_receipts=[
+                LiveExecutionReceiptV1(
+                    receipt_id="receipt-1",
+                    run_id="other-run",
+                    call_id="call-1",
+                    live_access_binding_id="live-1",
+                    capability_id="cap.read",
+                    started_at=_NOW,
+                    completed_at=_NOW,
+                    item_count=1,
+                    byte_count=10,
+                    content_hash=_SHA256,
+                    normalized_outcome="ok",
+                )
+            ]
+        ),
+        lambda: _v2_run(
+            citations=[
+                IndexedWorkspaceCitationV1(
+                    evidence_id="idx:ws-1:doc-1:chunk-1",
+                    safe_display_name="Indexed doc",
+                    excerpt="Indexed excerpt",
+                    retrieved_at=_NOW,
+                    document_id="doc-1",
+                    source_id="src-1",
+                    workspace_id=_WORKSPACE,
+                    source_path="/docs/a.txt",
+                    file_name="a.txt",
+                ),
+                LiveWorkspaceCitationV1(
+                    evidence_id="live:call-1:item-1",
+                    safe_display_name="Live item",
+                    retrieved_at=_NOW,
+                    provider_id="provider-neutral",
+                    connection_safe_label="Live Connection",
+                    capability_id="cap.read",
+                    call_id="call-wrong",
+                ),
+            ]
+        ),
+        lambda: _v2_run(
+            persisted_evidence=[
+                PersistedIndexedEvidenceV2(
+                    evidence_id="idx:ws-1:doc-1:chunk-1",
+                    safe_display_name="Indexed doc",
+                    retrieved_at=_NOW,
+                    content_hash=_SHA256,
+                    audience=AskAudienceV1.PERSONAL,
+                    source_id="src-1",
+                    document_id="doc-1",
+                    chunk_id="chunk-1",
+                ),
+                PersistedLiveEvidenceProvenanceV2(
+                    evidence_id="live:call-1:item-1",
+                    safe_display_name="Live item",
+                    retrieved_at=_NOW,
+                    content_hash=_SHA256,
+                    audience=AskAudienceV1.PERSONAL,
+                    provider_id="provider-neutral",
+                    live_access_binding_id="live-1",
+                    connection_ref="conn.live",
+                    capability_id="cap.read",
+                    call_id="call-1",
+                ),
+                PersistedLiveEvidenceProvenanceV2(
+                    evidence_id="live:call-2:item-2",
+                    safe_display_name="Duplicate call",
+                    retrieved_at=_NOW,
+                    content_hash=_SHA256,
+                    audience=AskAudienceV1.PERSONAL,
+                    provider_id="provider-neutral",
+                    live_access_binding_id="live-1",
+                    connection_ref="conn.live",
+                    capability_id="cap.read",
+                    call_id="call-1",
+                ),
+            ]
+        ),
+    ],
+)
+def test_v2_run_receipt_integrity_mismatches_fail(mutation) -> None:
+    with pytest.raises(ValidationError):
+        mutation()
+
+
+def test_nested_forbidden_model_controlled_fields_rejected() -> None:
+    nested_cases = [
+        {"nested": {"url": "https://evil"}},
+        {"nested": {"provider_id": "evil"}},
+        {"nested": {"connection_ref": "conn.evil"}},
+        {"nested": {"headers": {"Authorization": "secret"}}},
+        {"nested": {"jql": "project = SECRET"}},
+        {"nested": {"sql": "SELECT * FROM secrets"}},
+        {"nested": {"provider_client": {"token": "secret"}}},
+        {"items": [{"url": "https://evil"}]},
+    ]
+    for typed_request in nested_cases:
+        with pytest.raises(ValidationError):
+            LiveCallProposalV1(
+                call_id="call-1",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                typed_capability_request=typed_request,
+            )
+
+
+def _workspace_record() -> Workspace:
+    return Workspace(
+        workspace_id=_WORKSPACE,
+        tenant_id=_TENANT,
+        name="Workspace",
+        status=WorkspaceStatus.ACTIVE,
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
+
+
+def _v2_query_policy_intent() -> UpdateQueryPolicyMutationIntent:
+    return UpdateQueryPolicyMutationIntent(
+        mode=QueryPolicyModeV2.HYBRID,
+        allowed_connection_refs=("conn.live",),
+        allowed_capability_ids=("cap.read",),
+        max_live_calls=2,
+        max_total_duration_ms=30_000,
+        max_result_items=50,
+        max_result_bytes=1_048_576,
+        live_result_retention=LiveResultRetentionV1.EPHEMERAL,
+        policy_schema_version=2,
+    )
+
+
+def _policy_hashes(intent: UpdateQueryPolicyMutationIntent) -> tuple[str, str]:
+    request = normalize_update_query_policy_request_hash(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        policy_schema_version=intent.policy_schema_version,
+        mode=intent.mode,
+        allowed_connection_refs=intent.allowed_connection_refs,
+        allowed_capability_ids=intent.allowed_capability_ids,
+        max_live_calls=intent.max_live_calls,
+        max_total_duration_ms=intent.max_total_duration_ms,
+        max_result_items=intent.max_result_items,
+        max_result_bytes=intent.max_result_bytes,
+        live_result_retention=intent.live_result_retention,
+    )
+    semantic = semantic_identity_hash_for_query_policy(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        policy_schema_version=intent.policy_schema_version,
+        mode=intent.mode,
+        allowed_connection_refs=intent.allowed_connection_refs,
+        allowed_capability_ids=intent.allowed_capability_ids,
+        max_live_calls=intent.max_live_calls,
+        max_total_duration_ms=intent.max_total_duration_ms,
+        max_result_items=intent.max_result_items,
+        max_result_bytes=intent.max_result_bytes,
+        live_result_retention=intent.live_result_retention,
+    )
+    return request, semantic
+
+
+def test_query_policy_v2_survives_committed_mutation_and_restart() -> None:
+    validate_configuration_idempotency_hash(_IDEMPOTENCY)
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    repo.put_workspace(_workspace_record())
+    repo.put_knowledge_configuration_head_if_absent(
+        WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=0,
+            updated_at=_NOW,
+        )
+    )
+    lookup = ManagedWorkspaceService(repo)
+    config_service = WorkspaceKnowledgeConfigurationService(repo, lookup)
+    engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        repo,
+        lookup,
+        config_service,
+        {WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: _POLICY_HANDLER},
+        clock=lambda: _NOW,
+        mutation_id_factory=lambda: "mutation-v2-policy",
+    )
+    intent = _v2_query_policy_intent()
+    request_hash, semantic_hash = _policy_hashes(intent)
+    manifest_hash = query_policy_stage_manifest_hash(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        policy_schema_version=intent.policy_schema_version,
+        mode=intent.mode,
+        allowed_connection_refs=intent.allowed_connection_refs,
+        allowed_capability_ids=intent.allowed_capability_ids,
+        max_live_calls=intent.max_live_calls,
+        max_total_duration_ms=intent.max_total_duration_ms,
+        max_result_items=intent.max_result_items,
+        max_result_bytes=intent.max_result_bytes,
+        live_result_retention=intent.live_result_retention,
+    )
+    mutation = WorkspaceKnowledgeMutationRecord(
+        mutation_id="mutation-v2-policy",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
+        idempotency_key_hash=_IDEMPOTENCY,
+        normalized_request_hash=request_hash,
+        semantic_identity_hash=semantic_hash,
+        stage_manifest_hash=manifest_hash,
+        target_revision=1,
+        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
+        result_entity_type="query_policy",
+        result_entity_id="query-policy",
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
+    repo.put_knowledge_configuration_mutation_if_absent(mutation)
+    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert head is not None
+    repo.replace_knowledge_configuration_head_if_match(
+        expected=head,
+        replacement=head.model_copy(
+            update={
+                "pending_revision": 1,
+                "pending_mutation_id": mutation.mutation_id,
+                "updated_at": _NOW,
+            }
+        ),
+    )
+    _POLICY_HANDLER.stage(
+        repository=repo,
+        mutation=mutation,
+        target_revision=1,
+        intent=intent,
+        now=_NOW,
+    )
+    recovery = engine.recover_workspace_knowledge_mutation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED
+    projected = config_service.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert projected is not None
+    assert isinstance(projected.query_policy, WorkspaceQueryPolicyV2)
+    assert projected.query_policy.mode is QueryPolicyModeV2.HYBRID
+
+    restarted_repo = ManagedWorkspaceRepository(store)
+    restarted_lookup = ManagedWorkspaceService(restarted_repo)
+    restarted_config = WorkspaceKnowledgeConfigurationService(restarted_repo, restarted_lookup)
+    reloaded = restarted_config.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert reloaded is not None
+    assert isinstance(reloaded.query_policy, WorkspaceQueryPolicyV2)
+    assert reloaded.query_policy == projected.query_policy

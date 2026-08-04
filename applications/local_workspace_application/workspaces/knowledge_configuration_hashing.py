@@ -18,6 +18,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     LiveAccessBindingStatusV1,
     LiveResultRetentionV1,
     QueryPolicyModeV1,
+    QueryPolicyModeV2,
     WorkspaceKnowledgeMutationOperationV1,
 )
 
@@ -286,7 +287,8 @@ def normalize_disable_live_access_binding_request_hash(
 
 def _query_policy_config_payload(
     *,
-    mode: QueryPolicyModeV1,
+    policy_schema_version: int = 1,
+    mode: QueryPolicyModeV1 | QueryPolicyModeV2,
     allowed_connection_refs: tuple[str, ...] | list[str],
     allowed_capability_ids: tuple[str, ...] | list[str],
     max_live_calls: int,
@@ -299,7 +301,7 @@ def _query_policy_config_payload(
         allowed_connection_refs=allowed_connection_refs,
         allowed_capability_ids=allowed_capability_ids,
     )
-    return {
+    payload: dict[str, object] = {
         "mode": mode.value,
         "allowed_connection_refs": list(normalized_connection_refs),
         "allowed_capability_ids": list(normalized_capability_ids),
@@ -309,13 +311,17 @@ def _query_policy_config_payload(
         "max_result_bytes": max_result_bytes,
         "live_result_retention": live_result_retention.value,
     }
+    if policy_schema_version == 2:
+        payload["policy_schema_version"] = 2
+    return payload
 
 
 def normalize_update_query_policy_request_hash(
     *,
     tenant_id: str,
     workspace_id: str,
-    mode: QueryPolicyModeV1,
+    policy_schema_version: int = 1,
+    mode: QueryPolicyModeV1 | QueryPolicyModeV2,
     allowed_connection_refs: tuple[str, ...],
     allowed_capability_ids: tuple[str, ...],
     max_live_calls: int,
@@ -330,6 +336,7 @@ def normalize_update_query_policy_request_hash(
             "tenant_id": tenant_id.strip(),
             "workspace_id": workspace_id.strip(),
             **_query_policy_config_payload(
+                policy_schema_version=policy_schema_version,
                 mode=mode,
                 allowed_connection_refs=allowed_connection_refs,
                 allowed_capability_ids=allowed_capability_ids,
@@ -348,7 +355,8 @@ def semantic_identity_hash_for_query_policy(
     *,
     tenant_id: str,
     workspace_id: str,
-    mode: QueryPolicyModeV1,
+    policy_schema_version: int = 1,
+    mode: QueryPolicyModeV1 | QueryPolicyModeV2,
     allowed_connection_refs: tuple[str, ...],
     allowed_capability_ids: tuple[str, ...],
     max_live_calls: int,
@@ -362,6 +370,7 @@ def semantic_identity_hash_for_query_policy(
             "tenant_id": tenant_id.strip(),
             "workspace_id": workspace_id.strip(),
             **_query_policy_config_payload(
+                policy_schema_version=policy_schema_version,
                 mode=mode,
                 allowed_connection_refs=allowed_connection_refs,
                 allowed_capability_ids=allowed_capability_ids,
@@ -380,7 +389,8 @@ def query_policy_stage_manifest_hash(
     *,
     tenant_id: str,
     workspace_id: str,
-    mode: QueryPolicyModeV1,
+    policy_schema_version: int = 1,
+    mode: QueryPolicyModeV1 | QueryPolicyModeV2,
     allowed_connection_refs: tuple[str, ...],
     allowed_capability_ids: tuple[str, ...],
     max_live_calls: int,
@@ -396,6 +406,7 @@ def query_policy_stage_manifest_hash(
             "workspace_id": workspace_id.strip(),
             "query_policy_entity_id": _QUERY_POLICY_ENTITY_ID,
             **_query_policy_config_payload(
+                policy_schema_version=policy_schema_version,
                 mode=mode,
                 allowed_connection_refs=allowed_connection_refs,
                 allowed_capability_ids=allowed_capability_ids,
