@@ -197,12 +197,12 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 | Try LKW | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
 | Review bounded technical evidence | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Review current proofs | [PROOFS.md](PROOFS.md) |
-| Understand the architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Review as an architect or platform engineer | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
 | Start building with Intergrax | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Run a broader evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
-| Explore use cases | [USE_CASES.md](USE_CASES.md) |
-| Discuss a pilot or partnership | [PARTNERS.md](PARTNERS.md) |
+| Assess fit as a CTO, product lead or technical buyer | [USE_CASES.md](USE_CASES.md) |
+| Explore a partner, integrator or design-partner path | [PARTNERS.md](PARTNERS.md) |
 | Review license and permission boundaries | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 
 Technical documentation: [Public Documentation Map](docs/PUBLIC_DOCUMENTATION_MAP.md) · [Technical Documentation Map](docs/DOCUMENTATION_MAP.md)

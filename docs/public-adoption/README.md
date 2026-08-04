@@ -40,7 +40,7 @@ Public-reader route: no
 
 ```text
 Role: First bounded builder orientation and progressive-disclosure route
-Status: Implemented in PX-6 — READY_FOR_REVIEW
+Status: PX-6 — ACCEPTED / CLOSED
 Public-reader route: yes, through the root public documentation
 ```
 
@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-6 READY_FOR_REVIEW
+Status: ACTIVE — PX-7 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -67,10 +67,23 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-5 ACCEPTED / CLOSED
-Current phase: PX-6 READY_FOR_REVIEW
-Next after acceptance: PX-7
+Previous phase: PX-6 ACCEPTED / CLOSED
+Current phase: PX-7 READY_FOR_REVIEW
+Next after acceptance: PX-8
 External sessions: NOT_STARTED
+```
+
+## Audience-route summary
+
+```text
+Architect or platform engineer:
+../../ARCHITECTURE_OVERVIEW.md
+
+CTO, product lead or technical buyer:
+../../USE_CASES.md
+
+Partner, integrator or design partner:
+../../PARTNERS.md
 ```
 
 ## Validation status

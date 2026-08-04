@@ -12,9 +12,13 @@ A partner discussion or pilot name does **not** grant production, commercial, ho
 
 This guide helps your team determine partner fit, prepare a bounded pilot, and understand when written permission is required before you start.
 
+Primary audience: Partner, integrator or design partner with a concrete workflow to evaluate or a bounded pilot to propose.
+
 ---
 
 ## At a glance
+
+**Primary next action:** [prepare the pilot brief](#pilot-brief) in this document before starting a discussion.
 
 | Question | Answer |
 |----------|--------|
@@ -25,6 +29,16 @@ This guide helps your team determine partner fit, prepare a bounded pilot, and u
 | Operational pilot | Real users, production data, or business processes require explicit written permission before starting |
 | Permission source | [LICENSE](LICENSE) |
 | Contact | jakbu.czarnecki.83@gmail.com |
+
+---
+
+## Partner qualification sequence
+
+1. Confirm that there is a concrete workflow.
+2. Check whether the workflow fits current product boundaries.
+3. Classify the intended activity as evaluation-only or operational.
+4. Prepare the pilot brief.
+5. Start the appropriate discussion.
 
 ---
 
@@ -176,7 +190,7 @@ A partner discussion or pilot does **not** include:
 
 **Email:** jakbu.czarnecki.83@gmail.com
 
-Send a concise pilot brief. Before contacting, review:
+Start the discussion with a completed or substantially prepared pilot brief. Before contacting, review:
 
 - [USE_CASES.md](USE_CASES.md) — use-case fit;
 - [ROADMAP.md](ROADMAP.md) — current validation direction;

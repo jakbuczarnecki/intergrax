@@ -33,7 +33,7 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-6 — READY_FOR_REVIEW |
+| Current phase | PX-7 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
@@ -41,7 +41,10 @@ It does **not** replace:
 | Supported product quickstart | PX-3 — ACCEPTED / CLOSED |
 | LKW visual evidence | PX-4 — ACCEPTED / CLOSED |
 | LKW Product Tour | PX-5 — ACCEPTED / CLOSED |
-| Builder Quick Start | Implemented in PX-6 — READY_FOR_REVIEW |
+| Builder Quick Start | PX-6 — ACCEPTED / CLOSED |
+| Architect route | `ARCHITECTURE_OVERVIEW.md` |
+| Buyer route | `USE_CASES.md` |
+| Partner route | `PARTNERS.md` |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -169,14 +172,14 @@ The following must **not** be the first product action for normal readers:
 
 ## Audiences
 
-| Audience | Primary value they should understand | Primary next action |
-|----------|--------------------------------------|---------------------|
-| Potential LKW user | A governed knowledge-workflow product path exists; LKW is the primary product; maturity is honest and bounded | See the LKW workflow |
-| AI engineer or developer | Intergrax is a serious foundation for governed AI applications; builder paths exist separately from product trial | Open the bounded builder route |
-| Architect or platform engineer | Governance, architecture, and proof boundaries at a high level without first-contact subsystem jargon | Review architecture and proofs |
-| CTO, product lead or technical buyer | Problem, value, maturity, and honest proof status for decision-making | Assess use-case and evaluation fit |
-| Partner, integrator or design partner | Partner fit, pilot workflow, and what Intergrax does not promise publicly | Review the partner or pilot route |
-| Contributor or deep technical reviewer | Contribution boundaries, license scope, and where deep technical material lives | Open the technical documentation map |
+| Audience | Primary value they should understand | Primary next action | Primary destination |
+|----------|--------------------------------------|---------------------|---------------------|
+| Potential LKW user | A governed knowledge-workflow product path exists; LKW is the primary product; maturity is honest and bounded | See the LKW workflow | `LKW_PRODUCT_TOUR.md` |
+| AI engineer or developer | Intergrax is a serious foundation for governed AI applications; builder paths exist separately from product trial | Open the bounded builder route | `BUILDER_QUICKSTART.md` |
+| Architect or platform engineer | Governance, architecture, and proof boundaries at a high level without first-contact subsystem jargon | Review architecture and current proof boundaries | `ARCHITECTURE_OVERVIEW.md` |
+| CTO, product lead or technical buyer | Problem, value, maturity, and honest proof status for decision-making | Assess use-case fit and current evidence | `USE_CASES.md` |
+| Partner, integrator or design partner | Partner fit, pilot workflow, and what Intergrax does not promise publicly | Review partner fit and prepare a pilot brief | `PARTNERS.md` |
+| Contributor or deep technical reviewer | Contribution boundaries, license scope, and where deep technical material lives | Open the technical documentation map | `docs/DOCUMENTATION_MAP.md` |
 
 The positioning is **not** aimed at “everyone,” generic consumers, or every possible AI project.
 
@@ -190,8 +193,17 @@ See the LKW workflow
 Builder:
 Start building with Intergrax
 
-Technical reviewer:
-Review architecture and proofs
+Architect:
+Review architecture and proof boundaries
+
+Buyer:
+Assess use-case fit and evidence
+
+Partner:
+Review pilot fit and prepare a brief
+
+Deep technical reviewer:
+Open the technical documentation map
 ```
 
 ---

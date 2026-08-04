@@ -105,7 +105,7 @@ BUILDER_QUICKSTART.md
 | `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **PX-5 — ACCEPTED / CLOSED** |
-| `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **implemented in PX-6 — READY_FOR_REVIEW** |
+| `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **PX-6 — ACCEPTED / CLOSED** |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
 
@@ -184,24 +184,53 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Reader intent | Primary destination |
 |-------------|---------------------|
 | Understand the problem and value | `WHY_INTERGRAX.md` |
-| Check use-case fit | `USE_CASES.md` |
+| Review as an architect or platform engineer | `ARCHITECTURE_OVERVIEW.md` |
+| Assess fit as a CTO, product lead or technical buyer | `USE_CASES.md` |
+| Explore a partner, integrator or design-partner path | `PARTNERS.md` |
 | Understand product-validation direction | `ROADMAP.md` |
 | See the first-contact LKW product workflow | `README.md#local-knowledge-workspace-lkw` |
 | Understand LKW without running it | `LKW_PRODUCT_TOUR.md` |
 | Try LKW (supported product quickstart) | `applications/local_workspace_application/docs/QUICKSTART.md` |
 | Run or inspect the bounded LKW technical proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
-| Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
 | Start building with Intergrax | `BUILDER_QUICKSTART.md` |
 | Plan a deeper application build | `BUILD_WITH_INTERGRAX.md` |
 | Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
 | Check current proof status | `PROOFS.md` — root proof dashboard |
-| Discuss a pilot or design-partner workflow | `PARTNERS.md` |
 | Contribute or provide technical feedback | `COLLABORATION.md` |
 | Understand practical permission boundaries | `COLLABORATION.md` |
 | Read legally authoritative rights and restrictions | `LICENSE` |
 | Read general first-contact questions | `FAQ.md` |
 | Perform deep technical review | `docs/DOCUMENTATION_MAP.md` |
+
+### Audience ownership
+
+```text
+ARCHITECTURE_OVERVIEW.md:
+high-level responsibility, governance-placement and proof-boundary route for architects and platform engineers
+
+USE_CASES.md:
+fit, maturity, risk and evaluation-decision route for CTOs, product leads and technical buyers
+
+PARTNERS.md:
+partner qualification, pilot preparation and permission-aware next-step route for partners, integrators and design partners
+```
+
+Explicit exclusions:
+
+```text
+ARCHITECTURE_OVERVIEW.md does not own deep implementation navigation or proof matrices.
+
+USE_CASES.md does not own technical proof evidence, legal terms or pilot execution.
+
+PARTNERS.md does not grant production, commercial, hosting or redistribution permission.
+```
+
+Deep evidence remains owned by `PROOFS.md`.
+
+Legal terms remain owned by `LICENSE`.
+
+Practical permission routing remains owned by `COLLABORATION.md`.
 
 Reader-intent ownership is frozen as follows:
 

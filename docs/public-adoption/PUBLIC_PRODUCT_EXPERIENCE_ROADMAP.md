@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-6 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-7 |
+| Current phase | PX-7 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-8 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -244,7 +244,12 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-6 — Builder Quick Start
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:**
+
+- Implementation: `923c199fc10bde21e254071ac1709bb834104106`
+- Builder-contract review fix: `878595ddd19b1e58f91435cdf851bf87ac5884d7`
 
 **User-visible outcome:** Builders reach a bounded onboarding path without immediate deep reference overload.
 
@@ -280,17 +285,42 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-7 — Architect, buyer and partner routes
 
-**Status:** BLOCKED_ON_PX_6_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Architect, buyer, and partner intents each have one primary route with clear next action.
 
-**Completion gate:** Routing contract synchronized; no duplicate ownership across reader documents.
+**Delivered:**
+
+- explicit architect or platform-engineer route through `ARCHITECTURE_OVERVIEW.md`;
+- explicit CTO, product-lead or technical-buyer route through `USE_CASES.md`;
+- explicit partner, integrator or design-partner route through `PARTNERS.md`;
+- one primary decision question and immediate next action for each audience;
+- synchronized routing in README and the public documentation map;
+- frozen document ownership with no duplicate primary route;
+- no new audience document, runtime, command, visual or market claim.
+
+**Completion gate:**
+
+- README names all three audiences and primary destinations;
+- the public documentation map uses the same audience routes;
+- `ARCHITECTURE_OVERVIEW.md` identifies architects and platform engineers as its primary audience;
+- the architect route leads from boundaries to current proof status before deep technical navigation;
+- `USE_CASES.md` identifies CTOs, product leads and technical buyers as its primary decision audience;
+- the buyer route covers fit, evidence, incomplete capabilities and the decision to evaluate, defer or stop;
+- `PARTNERS.md` identifies partners, integrators and design partners as its primary audience;
+- the partner route makes pilot-brief preparation the first concrete action before contact;
+- partner wording preserves all license and permission boundaries;
+- documentation architecture records one primary destination per audience;
+- no generic route duplicates the new audience-specific route;
+- LKW remains the primary public product CTA;
+- no enterprise-readiness, customer-validation, commercial-validation, production-readiness or guaranteed-pilot claim is introduced;
+- no code, test, script, command, image or new document is created.
 
 ---
 
 ## PX-8 — Category and alternative positioning
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_7_ACCEPTANCE
 
 **User-visible outcome:** Readers understand where Intergrax fits relative to alternatives without unfair or inflated comparisons.
 

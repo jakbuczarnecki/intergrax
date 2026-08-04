@@ -15,7 +15,7 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | I want to… | Start here |
 |------------|------------|
 | Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
-| Understand the public architecture | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
+| Review as an architect or platform engineer | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
 | Start building with Intergrax | [Builder Quick Start](../BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
 | Understand Intergrax (first contact) | [README](../README.md) |
@@ -24,9 +24,9 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | Inspect bounded LKW technical evidence | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
 | Explore Token Optimization | [Token Optimization Engine](features/token_optimization/README.md) |
 | Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
-| Check use-case fit | [Use Cases](../USE_CASES.md) |
+| Assess fit as a CTO, product lead or technical buyer | [Use Cases](../USE_CASES.md) |
 | See where the product-validation program is heading | [Roadmap](../ROADMAP.md) |
-| Discuss a pilot or partnership | [Partners](../PARTNERS.md) |
+| Explore a partner, integrator or design-partner path | [Partners](../PARTNERS.md) |
 | Check current proof status | [Intergrax Proofs](../PROOFS.md) |
 | Contribute or provide technical feedback | [Collaboration](../COLLABORATION.md) |
 | Understand permission boundaries | [Collaboration](../COLLABORATION.md) and [LICENSE](../LICENSE) |

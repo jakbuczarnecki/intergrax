@@ -11,6 +11,8 @@ A concise view of how Intergrax separates product workflows, orchestration, agen
 > [!NOTE]
 > This document explains **responsibility boundaries** and **system flow**. It is **not** the complete architecture canon or a production-readiness claim. Deep technical readers should use the [Technical Documentation Map](docs/DOCUMENTATION_MAP.md).
 
+Primary audience: Architect or platform engineer evaluating responsibility boundaries, governance placement and current proof limits.
+
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
@@ -38,6 +40,19 @@ A concise view of how Intergrax separates product workflows, orchestration, agen
 | **Governed execution harness** | Execution cycle, policy, budgets, trace, and evidence collection | Product-specific business rules outside shared boundaries |
 | **Knowledge, tools and model systems** | Retrieval, integrations, and model access behind shared boundaries | The product workflow or end-user experience |
 | **Trace and evidence** | Receipts, observability, and reviewable execution records | Product certification or commercial validation |
+
+---
+
+## Architect review path
+
+| Step | Question | Primary source |
+| ---- | -------- | -------------- |
+| 1 | Are application, orchestration, agent and governed-execution responsibilities separated clearly? | This Architecture Overview |
+| 2 | Which mechanisms and product paths have current bounded evidence? | [PROOFS.md](PROOFS.md) |
+| 3 | Does a bounded evaluation justify deeper review? | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
+| 4 | Is deeper implementation-level due diligence required? | [docs/DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) |
+
+The primary architect next action after understanding the boundaries is to [review the current proof status](PROOFS.md).
 
 ---
 
@@ -132,4 +147,6 @@ It operates inside the harness execution path alongside policy, protected-region
 | LKW product proof | [LKW_PLATFORM_PROOF.md](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) |
 
-Next: choose an evaluation or building path in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
+Primary next action: review current evidence in [PROOFS.md](PROOFS.md).
+
+Then choose a bounded evaluation through [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md), or deep technical review through [docs/DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md). For a builder-specific route, use [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) as a secondary path.

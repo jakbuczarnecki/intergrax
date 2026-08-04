@@ -11,6 +11,8 @@ This document helps you determine whether Intergrax fits a concrete governed age
 > [!NOTE]
 > Intergrax is **source-available** and under active R&D. LKW is the strongest current product use case — **Primary product proof**, **Backend Product Alpha / MVP** — with **PARTIAL** proof status. Other use cases range from bounded platform support to planned validation.
 
+Primary decision audience: CTO, product lead or technical buyer assessing fit, maturity, risk and the next bounded evaluation step.
+
 ## At a glance
 
 | Question | Answer |
@@ -20,6 +22,18 @@ This document helps you determine whether Intergrax fits a concrete governed age
 | Best fit for platform evaluators | Specialized applications requiring policy, evidence, knowledge or controlled tools |
 | Next product fit to validate | Multi-source indexed + authorized live evidence workflow |
 | Not a fit today | Finished SaaS, generic no-code builder or unrestricted open-source framework |
+
+## Buyer decision path
+
+| Decision question | Where to check | Decision output |
+| ----------------- | -------------- | --------------- |
+| Does the concrete workflow fit the current product or platform direction? | This Use Cases guide | Fit, bounded fit, planned fit or not a fit |
+| What is actually implemented or boundedly proven? | [PROOFS.md](PROOFS.md) | Current evidence and claim limits |
+| Which important capabilities remain incomplete? | Current boundaries in this guide and [ROADMAP.md](ROADMAP.md) | Known product and validation risk |
+| Is a non-production technical evaluation justified? | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Proceed, defer or stop |
+| Does the intended activity require a pilot or written permission? | [PARTNERS.md](PARTNERS.md), [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) | Correct partner and permission route |
+
+The primary buyer next action after confirming apparent fit is to [review the current proof status](PROOFS.md) before starting a pilot or commercial discussion.
 
 ```mermaid
 flowchart TD
@@ -119,5 +133,15 @@ A good evaluation description should capture:
 - **Human approvals** — where a person must confirm
 - **Success criteria** — what would make the trial worthwhile
 - **Repeated-use criteria** — what would make someone return
+
+## Decision summary
+
+| Current conclusion | Next action |
+| ------------------ | ----------- |
+| Strong or bounded fit, but evidence not yet reviewed | Review [PROOFS.md](PROOFS.md) |
+| Evidence is relevant and a technical trial is justified | Use [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
+| A partner, pilot or operational discussion is needed | Use [PARTNERS.md](PARTNERS.md) |
+| The use case is currently not supported | Stop or choose another approach |
+| Rights or permission are unclear | Review [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 
 **Start here:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [PROOFS.md](PROOFS.md) · [ROADMAP.md](ROADMAP.md) · [PARTNERS.md](PARTNERS.md) · [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE)
