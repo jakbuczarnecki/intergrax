@@ -54,6 +54,15 @@ from intergrax.runtime.vendor_knowledge.adapters.google_workspace_docs import (
     GoogleWorkspaceDocsKnowledgeAdapter,
     register_google_workspace_docs_knowledge_adapter,
 )
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_sheets import (
+    GOOGLE_SHEETS_CURSOR_VERSION,
+    GOOGLE_SHEETS_ITEM_METADATA_VERSION,
+    GOOGLE_SHEETS_SPREADSHEET_SCOPE_TYPE,
+    GOOGLE_SHEETS_STRUCTURED_RECORD_MIME_TYPE,
+    GOOGLE_SHEETS_STRUCTURED_RECORD_SCHEMA,
+    GoogleWorkspaceSheetsKnowledgeAdapter,
+    register_google_workspace_sheets_knowledge_adapter,
+)
 from intergrax.runtime.vendor_knowledge.adapters.google_workspace_drive import (
     GOOGLE_DRIVE_CURSOR_VERSION,
     GOOGLE_DRIVE_ITEM_METADATA_VERSION,
@@ -79,6 +88,12 @@ __all__ = [
     "GOOGLE_DOCS_STRUCTURED_RECORD_MIME_TYPE",
     "GOOGLE_DOCS_STRUCTURED_RECORD_SCHEMA",
     "GoogleWorkspaceDocsKnowledgeAdapter",
+    "GOOGLE_SHEETS_CURSOR_VERSION",
+    "GOOGLE_SHEETS_ITEM_METADATA_VERSION",
+    "GOOGLE_SHEETS_SPREADSHEET_SCOPE_TYPE",
+    "GOOGLE_SHEETS_STRUCTURED_RECORD_MIME_TYPE",
+    "GOOGLE_SHEETS_STRUCTURED_RECORD_SCHEMA",
+    "GoogleWorkspaceSheetsKnowledgeAdapter",
     "GOOGLE_DRIVE_CURSOR_VERSION",
     "GOOGLE_DRIVE_ITEM_METADATA_VERSION",
     "GOOGLE_DRIVE_SHARED_DRIVE_SCOPE_TYPE",
@@ -110,6 +125,7 @@ __all__ = [
     "encode_msgraph_teams_chat_scope_id",
     "encode_slack_conversation_scope_id",
     "register_google_workspace_docs_knowledge_adapter",
+    "register_google_workspace_sheets_knowledge_adapter",
     "register_google_workspace_drive_knowledge_adapter",
     "register_confluence_pages_knowledge_adapter",
     "register_jira_issues_knowledge_adapter",
