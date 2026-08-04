@@ -4,14 +4,19 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+)
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
 from local_workspace_application.workspaces.idempotency import logical_document_id
 from local_workspace_application.workspaces.models import WorkspaceDocumentReference
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
@@ -94,6 +99,49 @@ class WorkspaceDocumentIndexingError(RuntimeError):
         super().__init__(code)
 
 
+class _WorkspaceDocumentIndexReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    workspace_id: str
+    source_id: str
+    operation_id: str
+    logical_source_path: str
+    safe_file_name: str
+    content_hash: str
+    document_id: str
+    status: Literal["in_progress", "completed"]
+    num_chunks: int = Field(default=0, ge=0)
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
+def _index_receipt_partition(tenant_id: str) -> str:
+    return f"lkw.managed_workspace:{tenant_id}:document_index_receipt"
+
+
+def _index_receipt_row_key(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    source_id: str,
+    logical_source_path: str,
+    content_hash: str,
+) -> str:
+    canonical = json.dumps(
+        {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "source_id": source_id,
+            "logical_source_path": logical_source_path,
+            "content_hash": content_hash,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 class WorkspaceDocumentIndexingService:
     """Owns document-ref lookup, unchanged detection and local.workspace.index invocation."""
 
@@ -104,6 +152,93 @@ class WorkspaceDocumentIndexingService:
     ) -> None:
         self._repository = repository
         self._task_executor = task_executor
+
+    def _get_index_receipt(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        logical_source_path: str,
+        content_hash: str,
+    ) -> tuple[DocumentRecord, _WorkspaceDocumentIndexReceipt] | None:
+        row_key = _index_receipt_row_key(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            logical_source_path=logical_source_path,
+            content_hash=content_hash,
+        )
+        record = self._repository.document_store.get(
+            _index_receipt_partition(tenant_id),
+            row_key,
+        )
+        if record is None:
+            return None
+        try:
+            receipt = _WorkspaceDocumentIndexReceipt.model_validate(dict(record.data))
+        except ValueError:
+            raise WorkspaceDocumentIndexingError("index_receipt_corrupt") from None
+        if (
+            receipt.tenant_id != tenant_id
+            or receipt.workspace_id != workspace_id
+            or receipt.source_id != source_id
+            or receipt.logical_source_path != logical_source_path
+            or receipt.content_hash != content_hash
+        ):
+            raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
+        return record, receipt
+
+    def _put_index_receipt_if_absent(
+        self,
+        receipt: _WorkspaceDocumentIndexReceipt,
+    ) -> bool:
+        document_store = self._repository.document_store
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise WorkspaceDocumentIndexingError("index_receipt_store_unavailable")
+        record = DocumentRecord(
+            partition_key=_index_receipt_partition(receipt.tenant_id),
+            row_key=_index_receipt_row_key(
+                tenant_id=receipt.tenant_id,
+                workspace_id=receipt.workspace_id,
+                source_id=receipt.source_id,
+                logical_source_path=receipt.logical_source_path,
+                content_hash=receipt.content_hash,
+            ),
+            data=receipt.model_dump(mode="json"),
+        )
+        return document_store.put_if_absent(record)
+
+    def _complete_index_receipt(
+        self,
+        *,
+        record: DocumentRecord,
+        receipt: _WorkspaceDocumentIndexReceipt,
+        num_chunks: int,
+    ) -> _WorkspaceDocumentIndexReceipt:
+        completed = receipt.model_copy(
+            update={
+                "status": "completed",
+                "num_chunks": num_chunks,
+                "completed_at": _utc_now(),
+            }
+        )
+        document_store = self._repository.document_store
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise WorkspaceDocumentIndexingError("index_receipt_store_unavailable")
+        replacement = record.model_copy(update={"data": completed.model_dump(mode="json")})
+        if not document_store.replace_if_match(expected=record, replacement=replacement):
+            reloaded = self._get_index_receipt(
+                tenant_id=receipt.tenant_id,
+                workspace_id=receipt.workspace_id,
+                source_id=receipt.source_id,
+                logical_source_path=receipt.logical_source_path,
+                content_hash=receipt.content_hash,
+            )
+            if reloaded is None or reloaded[1].status != "completed":
+                raise WorkspaceDocumentIndexingError("index_receipt_conflict")
+            return reloaded[1]
+        return completed
 
     async def index_one(
         self,
@@ -117,6 +252,56 @@ class WorkspaceDocumentIndexingService:
         safe_file_name: str,
         content_hash: str,
     ) -> WorkspaceDocumentIndexingResult:
+        document_id = logical_document_id(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            normalized_source_path=logical_source_path,
+            content_hash=content_hash,
+        )
+        receipt_record = self._get_index_receipt(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            logical_source_path=logical_source_path,
+            content_hash=content_hash,
+        )
+        if receipt_record is not None:
+            record, receipt = receipt_record
+            if receipt.document_id != document_id:
+                raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
+            if receipt.status == "in_progress":
+                raise WorkspaceDocumentIndexingError("index_recovery_required")
+            self._repository.put_document_ref(
+                WorkspaceDocumentReference(
+                    document_id=receipt.document_id,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    source_path=logical_source_path,
+                    file_name=receipt.safe_file_name,
+                    content_hash=content_hash,
+                    indexed_at=receipt.completed_at or receipt.created_at,
+                )
+            )
+            if receipt.operation_id == operation_id:
+                return WorkspaceDocumentIndexingResult(
+                    indexed=True,
+                    unchanged=False,
+                    document_id=receipt.document_id,
+                    documents_indexed=1,
+                    num_chunks=receipt.num_chunks,
+                    reason="index_replayed",
+                )
+            return WorkspaceDocumentIndexingResult(
+                indexed=False,
+                unchanged=True,
+                document_id=receipt.document_id,
+                documents_indexed=0,
+                num_chunks=0,
+                reason="unchanged",
+            )
+
         existing = self._repository.get_document_ref_by_path(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -133,16 +318,44 @@ class WorkspaceDocumentIndexingService:
                 reason="unchanged",
             )
 
-        document_id = logical_document_id(
+        receipt = _WorkspaceDocumentIndexReceipt(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
-            normalized_source_path=logical_source_path,
+            operation_id=operation_id,
+            logical_source_path=logical_source_path,
+            safe_file_name=safe_file_name,
             content_hash=content_hash,
+            document_id=document_id,
+            status="in_progress",
+            created_at=_utc_now(),
         )
-        run_id = new_run_id()
+        if not self._put_index_receipt_if_absent(receipt):
+            reloaded = self._get_index_receipt(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                logical_source_path=logical_source_path,
+                content_hash=content_hash,
+            )
+            if reloaded is None:
+                raise WorkspaceDocumentIndexingError("index_receipt_conflict")
+            _, existing_receipt = reloaded
+            if existing_receipt.status != "completed":
+                raise WorkspaceDocumentIndexingError("index_recovery_required")
+            return await self.index_one(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                operation_id=operation_id,
+                physical_path=physical_path,
+                logical_source_path=logical_source_path,
+                safe_file_name=safe_file_name,
+                content_hash=content_hash,
+            )
+
         task = Task(
-            task_id=run_id,
+            task_id=document_id,
             tenant_id=tenant_id,
             user_id="lkw.managed_workspace",
             message=f"Index managed workspace source file {safe_file_name}",
@@ -154,6 +367,7 @@ class WorkspaceDocumentIndexingService:
                 "collection_id": workspace_id,
                 "document_id": document_id,
                 "source_paths": [str(physical_path)],
+                "chunking_strategy_id": "recursive",
                 "logical_source_path": logical_source_path,
                 "display_file_name": safe_file_name,
                 "content_hash": content_hash,
@@ -167,6 +381,17 @@ class WorkspaceDocumentIndexingService:
             reason = str(ingest_summary.get("reason") or "ingest_failed")
             raise WorkspaceDocumentIndexingError(reason)
 
+        completed_receipt = self._complete_index_receipt(
+            record=self._get_index_receipt(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                logical_source_path=logical_source_path,
+                content_hash=content_hash,
+            )[0],
+            receipt=receipt,
+            num_chunks=int(ingest_summary.get("num_chunks") or 0),
+        )
         self._repository.put_document_ref(
             WorkspaceDocumentReference(
                 document_id=document_id,
@@ -176,7 +401,7 @@ class WorkspaceDocumentIndexingService:
                 source_path=logical_source_path,
                 file_name=safe_file_name,
                 content_hash=content_hash,
-                indexed_at=_utc_now(),
+                indexed_at=completed_receipt.completed_at or completed_receipt.created_at,
             )
         )
         return WorkspaceDocumentIndexingResult(
@@ -184,6 +409,6 @@ class WorkspaceDocumentIndexingService:
             unchanged=False,
             document_id=document_id,
             documents_indexed=1,
-            num_chunks=int(ingest_summary.get("num_chunks") or 0),
+            num_chunks=completed_receipt.num_chunks,
             reason=str(ingest_summary.get("reason") or "ingest_complete"),
         )

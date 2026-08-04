@@ -104,6 +104,7 @@ class _RecordingFakeLLM(LLMAdapter):
     def __init__(self, *, fixed_text: str) -> None:
         super().__init__()
         self._fixed_text = fixed_text
+        self.messages: list[tuple[tuple[str, str], ...]] = []
 
     @property
     def context_window_tokens(self) -> int:
@@ -117,7 +118,8 @@ class _RecordingFakeLLM(LLMAdapter):
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
-        _ = messages, temperature, max_tokens, run_id
+        _ = temperature, max_tokens, run_id
+        self.messages.append(tuple((message.role, message.content) for message in messages))
         return build_adapter_response(content=self._fixed_text)
 
 
@@ -274,6 +276,7 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("LOCAL_WORKSPACE_VECTOR_STORE", "inmemory")
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG", "true")
     monkeypatch.setenv("LOCAL_WORKSPACE_ENABLE_RAG_INGEST", "true")
+    monkeypatch.setenv("INTERGRAX_RAG_CHUNKING_STRATEGY", "recursive")
     monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(user_docs.resolve()))
     monkeypatch.setenv("LKW_DATA_HOME", str(data_home))
     monkeypatch.setenv("INTERGRAX_SQLITE_DATA_DIR", str(sqlite_dir))
@@ -433,6 +436,7 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "runtime": runtime,
             "harness_runtime": harness_runtime,
             "settings": settings,
+            "llm": llm,
         }
 
 
@@ -459,6 +463,7 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
     integration = rag_e2e_env["integration"]
     runtime = rag_e2e_env["runtime"]
     harness_runtime = rag_e2e_env["harness_runtime"]
+    llm: _RecordingFakeLLM = rag_e2e_env["llm"]
 
     discovery = client.get(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
@@ -522,6 +527,7 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
         results = search.json()["results"]
         assert results
         assert any(marker in (hit.get("snippet") or "") for hit in results)
+        assert all(hit.get("source_id") == source_id for hit in results)
 
     missing = client.post(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/search",
@@ -544,6 +550,11 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
         citation=body["citations"][0],
         source_id=source_id,
         marker=_MARKER_ROOT,
+    )
+    assert any(
+        _MARKER_ROOT in content
+        for message in llm.messages
+        for _, content in message
     )
     assert backend.history_calls == history_before_ask
     resolved = wiring.connection_registry.resolve(

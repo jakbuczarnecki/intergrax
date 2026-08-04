@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,11 @@ from intergrax.runtime.vendor_knowledge.bindings import (
     to_source_ref,
 )
 from intergrax.runtime.vendor_knowledge.models import KnowledgeChangeKind, KnowledgeContentMode
-from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncBatch
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeSyncBatch,
+    KnowledgeSyncSinkReceipt,
+    KnowledgeSyncSinkReceiptStatus,
+)
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
     begin_delivery_receipt,
@@ -108,6 +113,54 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             raise ConnectedSourceSyncSinkError(
                 f"connected_source_sink_internal_error:{exc.__class__.__name__}"
             ) from exc
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ) -> KnowledgeSyncSinkReceipt:
+        if (
+            tenant_id != self._context.tenant_id
+            or binding_id != self._context.knowledge_source_binding_ref
+        ):
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.CONFLICT,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        receipt = delivery_receipt_completed(
+            repository=self._repository,
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+            source_id=self._context.source_id,
+            delivery_id=delivery_id,
+            indexed_source_binding_id=self._context.indexed_source_binding_id,
+            knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+            binding_configuration_version=self._binding_configuration_version(),
+            operation_id=self._context.operation_id,
+        )
+        if receipt is None:
+            existing = self._repository.get_connected_source_delivery_receipt(
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                source_id=self._context.source_id,
+                delivery_id=delivery_id,
+            )
+            if existing is None:
+                return KnowledgeSyncSinkReceipt(status=KnowledgeSyncSinkReceiptStatus.ABSENT)
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.UNKNOWN,
+                delivery_id=delivery_id,
+                prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+            )
+        return KnowledgeSyncSinkReceipt(
+            status=KnowledgeSyncSinkReceiptStatus.APPLIED,
+            delivery_id=receipt.delivery_id,
+            prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+        )
 
     async def _apply_batch(self, *, batch: KnowledgeSyncBatch) -> ConnectedSourceDeliveryApplyResult:
         self._validate_authoritative_state(batch)
@@ -202,6 +255,15 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_failed=0,
             replayed=False,
         )
+
+    def _binding_configuration_version(self) -> int:
+        binding = self._tenant_binding_port.get_binding(
+            tenant_id=self._context.tenant_id,
+            binding_id=self._context.knowledge_source_binding_ref,
+        )
+        if binding is None:
+            raise ConnectedSourceSyncSinkError("connected_source_tenant_binding_not_found")
+        return binding.configuration_version
 
     def _validate_authoritative_state(self, batch: KnowledgeSyncBatch) -> None:
         if batch.tenant_id != self._context.tenant_id:
@@ -303,9 +365,16 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             raise ConnectedSourceSyncSinkError("connected_source_operation_not_running")
 
     async def _index_materialized_document(self, materialized):
+        allowed_roots = tuple(
+            item.strip()
+            for item in os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS", "").split(os.pathsep)
+            if item.strip()
+        )
+        temp_kwargs = {"prefix": "lkw-connected-source-", "suffix": ".md"}
+        if allowed_roots:
+            temp_kwargs["dir"] = allowed_roots[0]
         fd, temp_name = tempfile.mkstemp(
-            prefix="lkw-connected-source-",
-            suffix=".md",
+            **temp_kwargs,
         )
         temp_path = Path(temp_name)
         try:

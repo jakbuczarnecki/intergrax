@@ -17,11 +17,17 @@ from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
 from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
 from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
 from intergrax.runtime.vendor_knowledge.sync_document_store import (
+    DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
+    DocumentStoreKnowledgeReconciliationRunRepository,
     DocumentStoreKnowledgeRemoteItemStateRepository,
     DocumentStoreKnowledgeSourceLeaseRepository,
     DocumentStoreKnowledgeSyncCheckpointRepository,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
+from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeReconciliationRunPhase
+from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+    derive_reconciliation_run_id,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
@@ -92,6 +98,21 @@ class _DeliveryCountingSink:
         result = await self._inner.apply_batch(batch=batch)
         self._on_apply(batch.delivery_id, result)
         return result
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ):
+        return self._inner.inspect_receipt(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            delivery_id=delivery_id,
+            prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+        )
 
 
 def _utc_now() -> datetime:
@@ -179,6 +200,9 @@ class ManagedWorkspaceConnectedSourceSyncService:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise RuntimeError("connected_source_sync_requires_conditional_document_store")
         checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
+        reconciliation_run_repository = DocumentStoreKnowledgeReconciliationRunRepository(
+            document_store
+        )
         restart_decision = resolve_connected_source_restart(
             repository=self._repository,
             checkpoint_repository=checkpoint_repository,
@@ -189,6 +213,77 @@ class ManagedWorkspaceConnectedSourceSyncService:
         )
         operation = restart_decision.operation
         restart = restart_decision.restart
+        trigger_delivery_id: str | None = None
+        reconciliation_run = reconciliation_run_repository.get(
+            tenant_id=tenant_id,
+            binding_id=binding_ref,
+        )
+        expected_run_id = derive_reconciliation_run_id(
+            tenant_id=tenant_id,
+            binding_id=binding_ref,
+            operation_id=operation.operation_id,
+        )
+        if (
+            reconciliation_run is not None
+            and reconciliation_run.run_id == expected_run_id
+            and reconciliation_run.phase is KnowledgeReconciliationRunPhase.COMPLETED
+        ):
+            final_delivery_id = getattr(reconciliation_run, "final_delivery_id", None)
+            if isinstance(final_delivery_id, str) and final_delivery_id:
+                operation, _accounting = apply_completed_delivery_accounting(
+                    repository=self._repository,
+                    operation=operation,
+                    delivery_id=final_delivery_id,
+                )
+            completed = operation.model_copy(
+                update={
+                    "status": WorkspaceOperationStatus.COMPLETED,
+                    "completed_at": operation.completed_at or _utc_now(),
+                    "error": None,
+                }
+            )
+            self._repository.put_operation(completed)
+            repair_connected_source_source_projection(
+                repository=self._repository,
+                tenant_id=tenant_id,
+                workspace_id=completed.workspace_id,
+                source_id=completed.source_id,
+            )
+            return completed
+        if (
+            reconciliation_run is not None
+            and reconciliation_run.run_id == expected_run_id
+            and reconciliation_run.phase
+            in {
+                KnowledgeReconciliationRunPhase.COLLECTING,
+                KnowledgeReconciliationRunPhase.PAGE_PREPARED,
+                KnowledgeReconciliationRunPhase.FINALIZING,
+                KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+            }
+        ):
+            trigger_delivery_id = (
+                getattr(reconciliation_run, "last_applied_delivery_id", None)
+                or getattr(reconciliation_run, "prepared_parent_delivery_id", None)
+            )
+            if (
+                reconciliation_run.phase is KnowledgeReconciliationRunPhase.PAGE_PREPARED
+                and trigger_delivery_id is None
+            ):
+                restart = True
+            else:
+                restart = False
+            if (
+                operation.connected_source_reconciliation_state
+                is not ConnectedSourceReconciliationStateV1.CONTINUATION
+            ):
+                operation = operation.model_copy(
+                    update={
+                        "connected_source_reconciliation_state": (
+                            ConnectedSourceReconciliationStateV1.CONTINUATION
+                        )
+                    }
+                )
+                self._repository.put_operation(operation)
         reconciliation_state = (
             operation.connected_source_reconciliation_state
             or ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
@@ -258,10 +353,12 @@ class ManagedWorkspaceConnectedSourceSyncService:
                     binding_id=binding_ref,
                     page_size=self._page_size,
                     restart=restart,
+                    operation_id=operation.operation_id,
+                    trigger_delivery_id=trigger_delivery_id,
                 )
                 if result.status is KnowledgeSyncRunStatus.LEASE_BUSY:
                     return self._requeue_lease_busy(operation, source)
-                if result.checkpoint_advanced and (
+                if result.delivery_id is not None and (
                     operation.connected_source_reconciliation_state
                     is ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
                 ):
@@ -375,6 +472,13 @@ class ManagedWorkspaceConnectedSourceSyncService:
             item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
             sink=sink,
             lease_ttl_seconds=self._lease_ttl_seconds,
+            reconciliation_run_repository=DocumentStoreKnowledgeReconciliationRunRepository(
+                document_store
+            ),
+            candidate_inventory_repository=(
+                DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(document_store)
+            ),
+            sink_receipt_inspector=sink,
         )
 
     def _resolve_indexed_source_binding(

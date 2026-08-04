@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from intergrax.compat.langchain.documents import to_langchain_document
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.config import (
@@ -32,6 +34,8 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     compute_slack_conversation_message_revision,
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import _FrozenJsonArray  # noqa: SLF001
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
 from intergrax.queueing.providers.document_store.document_store_task_queue import (
     DocumentStoreTaskQueue,
@@ -80,7 +84,10 @@ from local_workspace_application.workspaces.connected_source_wiring import (
     build_connected_source_wiring,
     register_slack_connection_integration,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingResult,
+    WorkspaceDocumentIndexingService,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
     DisableIndexedSourceMutationHandler,
@@ -479,6 +486,66 @@ def test_delivery_identity_without_operation_id_reuses_completed_receipt() -> No
     assert stored.operation_id == _OPERATION
 
 
+def test_langchain_transport_normalizes_frozen_nested_metadata() -> None:
+    metadata = {
+        "nested": {
+            "ordered": [
+                "first",
+                {"provenance": {"events": ["created", "indexed"]}},
+                3,
+            ]
+        }
+    }
+    native = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "slack:message-1",
+                "root_document_id": "slack:message-1",
+            },
+            "scope": {"tenant_id": _TENANT, "namespace": "workspace"},
+            "content": "Slack message",
+            "metadata": metadata,
+            "provenance": {
+                "source_kind": "slack_message",
+                "source_id": _SOURCE,
+                "source_parent_id": "conversation:C01234567",
+                "provider_id": SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+                "source_revision": "rev-1",
+                "source_uri": "slack://C01234567/1704153600.000001",
+                "content_hash": "a" * 64,
+            },
+        }
+    )
+
+    assert isinstance(native.metadata["nested"]["ordered"], _FrozenJsonArray)
+
+    transported = to_langchain_document(native)
+    serialized = json.loads(transported.model_dump_json())
+
+    assert serialized["metadata"]["nested"]["ordered"] == [
+        "first",
+        {"provenance": {"events": ["created", "indexed"]}},
+        3,
+    ]
+    assert serialized["metadata"]["source_kind"] == "slack_message"
+    assert serialized["metadata"]["source_id"] == _SOURCE
+    assert serialized["metadata"]["source_parent_id"] == "conversation:C01234567"
+    assert serialized["metadata"]["provider_id"] == SLACK_CONVERSATION_CHANNEL_PROVIDER_ID
+    assert serialized["metadata"]["source_revision"] == "rev-1"
+    assert serialized["metadata"]["source_uri"] == "slack://C01234567/1704153600.000001"
+    assert serialized["metadata"]["content_hash"] == "a" * 64
+    assert metadata == {
+        "nested": {
+            "ordered": [
+                "first",
+                {"provenance": {"events": ["created", "indexed"]}},
+                3,
+            ]
+        }
+    }
+
+
 def test_delivery_receipt_conflict_on_binding_version_mismatch() -> None:
     store = InMemoryDocumentStore()
     repo = ManagedWorkspaceRepository(store)
@@ -591,6 +658,179 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
     )
     assert source is not None
     assert source.status is WorkspaceSourceStatus.SYNCING
+
+
+@pytest.mark.asyncio
+async def test_materialization_receipt_retry_does_not_reread_provider(tmp_path: Path, monkeypatch) -> None:
+    env = _build_sync_env(
+        tmp_path,
+        pages=(
+            SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(_message(message_ts="1704153600.000001", text=f"root {_MARKER}"),),
+                next_cursor=None,
+            ),
+        ),
+    )
+    env.repo.put_operation(_queued_operation())
+    import local_workspace_application.workspaces.connected_source_sync_service as sync_module
+
+    original_accounting = sync_module.apply_completed_delivery_accounting
+    fail_once = True
+
+    def _crash_after_materialization(*args: Any, **kwargs: Any):
+        nonlocal fail_once
+        result = original_accounting(*args, **kwargs)
+        if fail_once:
+            fail_once = False
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="crash after materialization receipt",
+            )
+        return result
+
+    monkeypatch.setattr(
+        sync_module,
+        "apply_completed_delivery_accounting",
+        _crash_after_materialization,
+    )
+    first = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert first.status is WorkspaceOperationStatus.QUEUED
+    history_calls = env.backend.history_calls
+    refs_after_materialization = env.repo.list_document_refs(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+
+    second = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert second.status is WorkspaceOperationStatus.COMPLETED
+    assert env.backend.history_calls == history_calls
+    assert env.repo.list_document_refs(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    ) == refs_after_materialization
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_committed_retry_is_noop_without_provider_reread(
+    tmp_path: Path,
+) -> None:
+    env = _build_sync_env(
+        tmp_path,
+        pages=(
+            SlackConversationMessagePage(
+                conversation_id=_CONVERSATION_ID,
+                oldest=_OLDEST,
+                latest=_LATEST,
+                items=(_message(message_ts="1704153600.000001", text=f"root {_MARKER}"),),
+                next_cursor=None,
+            ),
+        ),
+    )
+    env.repo.put_operation(_queued_operation())
+    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
+    fail_once = True
+
+    def _build_with_fail_once(*args: Any, **kwargs: Any):
+        coordinator = original_build(*args, **kwargs)
+        original_reconcile = coordinator.reconcile_once
+
+        async def _reconcile_once(**reconcile_kwargs: Any):
+            nonlocal fail_once
+            result = await original_reconcile(**reconcile_kwargs)
+            if fail_once:
+                fail_once = False
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                    safe_message="crash after checkpoint commit",
+                )
+            return result
+
+        coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
+        return coordinator
+
+    env.connected_sync._build_coordinator = _build_with_fail_once  # noqa: SLF001
+    first = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert first.status is WorkspaceOperationStatus.QUEUED
+    history_calls = env.backend.history_calls
+
+    second = await env.connected_sync.run_operation(
+        tenant_id=_TENANT,
+        operation_id=_OPERATION,
+    )
+    assert second.status is WorkspaceOperationStatus.COMPLETED
+    assert env.backend.history_calls == history_calls
+
+
+@pytest.mark.asyncio
+async def test_completed_index_receipt_replays_without_duplicate_index_effect(
+    tmp_path: Path,
+) -> None:
+    class _IndexExecutor:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        async def execute(self, task):
+            self.calls += 1
+            return type(
+                "Result",
+                (),
+                {"metadata": {"ingest_summary": {"used": True, "num_chunks": 2}}},
+            )()
+
+    repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    executor = _IndexExecutor()
+    service = WorkspaceDocumentIndexingService(repo, executor)
+    document_path = tmp_path / "slack.md"
+    document_path.write_text("marker", encoding="utf-8")
+    original_put = repo.put_document_ref
+    fail_once = True
+
+    def _crash_before_lifecycle_advance(reference):
+        nonlocal fail_once
+        if fail_once:
+            fail_once = False
+            raise RuntimeError("crash after index receipt")
+        return original_put(reference)
+
+    repo.put_document_ref = _crash_before_lifecycle_advance  # type: ignore[method-assign]
+    with pytest.raises(RuntimeError, match="crash after index receipt"):
+        await service.index_one(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            operation_id=_OPERATION,
+            physical_path=document_path,
+            logical_source_path="connected/slack-message/one.md",
+            safe_file_name="slack.md",
+            content_hash="a" * 64,
+        )
+    repo.put_document_ref = original_put  # type: ignore[method-assign]
+
+    replayed = await service.index_one(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        operation_id=_OPERATION,
+        physical_path=document_path,
+        logical_source_path="connected/slack-message/one.md",
+        safe_file_name="slack.md",
+        content_hash="a" * 64,
+    )
+    assert replayed.reason == "index_replayed"
+    assert replayed.documents_indexed == 1
+    assert executor.calls == 1
 
 
 def test_host_interruption_running_to_queued_for_connected_source() -> None:

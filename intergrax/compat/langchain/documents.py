@@ -6,14 +6,13 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
-from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
 
 if TYPE_CHECKING:
     from langchain_core.documents import Document as LangChainDocument
@@ -147,6 +146,14 @@ def _resolve_schema_version(metadata: Mapping[str, Any]) -> int:
     return 1
 
 
+def _normalize_transport_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {key: _normalize_transport_json(item) for key, item in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [_normalize_transport_json(item) for item in value]
+    return value
+
+
 def _remaining_metadata(
     metadata: Mapping[str, Any],
     *,
@@ -236,7 +243,7 @@ def to_langchain_document(document: object) -> LangChainDocument:
     except ValidationError:
         raise
 
-    transport_metadata = knowledge_metadata_to_plain(validated.metadata)
+    transport_metadata = _normalize_transport_json(validated.metadata)
 
     legacy_source = transport_metadata.get("source")
     if legacy_source is not None:
