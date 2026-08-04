@@ -1,7 +1,7 @@
 # Hybrid Ask — unified evidence, query orchestration and read-only live execution
 
 **Status:** READY_FOR_REVIEW  
-**Task:** LKW-HYBRID-ASK-ARCH-1-REVIEW-FIX-1-EXECUTION-BOUNDARY-PERSISTENCE-VERSIONING-AND-STATUS-CONSISTENCY
+**Task:** LKW-HYBRID-ASK-ARCH-1-REVIEW-FIX-2-CROSS-VERSION-RUN-ACCESS-DECISION
 **Classification:** docs-only architecture and implementation contract
 
 **Canonical references:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md)
@@ -570,11 +570,27 @@ Explicit path versioning — **no** content negotiation required to distinguish 
 
 **Rejected alternatives:** `Accept` header versioning, `schema-version` header, `api_version` request field.
 
-**Cross-version behavior:**
+**Cross-version run access (frozen):**
 
-- A V2 run requested through the V1 GET route must **not** be silently projected into a misleading document-only response.
-- Cross-version access returns a stable safe error or an explicit compatible projection frozen in implementation (`LKW-HYBRID-ASK-1E`).
-- V1 clients that only use V1 routes continue to receive unchanged indexed-only behavior.
+```text
+GET /v1/local_workspace/asks/{run_id}
++ run is WorkspaceAskRunV2
+→ HTTP 409
+→ ask_run_version_mismatch
+
+GET /v2/local_workspace/asks/{run_id}
++ run is WorkspaceAskRun V1
+→ HTTP 409
+→ ask_run_version_mismatch
+```
+
+- V1 GET returns only V1 records.
+- V2 GET returns only V2 records.
+- No automatic V2-to-V1 projection.
+- No automatic V1-to-V2 projection.
+- No document-only representation of a hybrid run.
+- The repository may identify the stored schema version, but the route must fail deterministically when the version does not match.
+- V1 clients that only use V1 routes continue to receive unchanged indexed-only behavior for V1 runs.
 
 ---
 
@@ -699,8 +715,9 @@ Must **not** contain transient live evidence bodies or `WorkspaceEvidenceV1.cont
 | Citation versioning | `citation_schema_version: 1 \| 2` on run; V2 uses discriminated citations |
 | Live fields persisted | Provenance + citations + optional receipt only — never raw body by default |
 | Run metadata | `query_mode`, `configuration_revision`, `plan_id`, `indexed_retrieval_status`, `live_execution_status`, `truncation`, `partial_failure` |
-| GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` — V1 indexed projection only |
-| GET Run V2 | `GET /v2/local_workspace/asks/{run_id}` — durable `WorkspaceAskRunV2` projection without transient bodies |
+| GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` — V1 indexed projection only; V2 run → `ask_run_version_mismatch` (409) |
+| GET Run V2 | `GET /v2/local_workspace/asks/{run_id}` — durable `WorkspaceAskRunV2` projection without transient bodies; V1 run → `ask_run_version_mismatch` (409) |
+| Cross-version access | No projection; version mismatch fails with HTTP 409 |
 
 No in-place mutation of historical records without explicit migration task.
 
@@ -717,6 +734,7 @@ Stable domain outcomes (fail-closed). Each code has **one** unambiguous HTTP sta
 | `query_policy_invalid` | Committed server projection is invalid | 503 |
 | `query_mode_not_allowed` | Mode not permitted by policy | 403 |
 | `configuration_revision_mismatch` | Request revision does not match committed head | 409 |
+| `ask_run_version_mismatch` | Run schema version does not match route version | 409 |
 | `configuration_projection_unstable` | Head revision changed during plan/commit | 503 |
 | `configuration_projection_invalid` | Committed projection failed validation | 503 |
 | `indexed_retrieval_failed` | Search/RAG path failed | 502 |
