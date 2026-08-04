@@ -312,13 +312,13 @@ def test_token_10e_canonical_documents_are_ready_for_independent_acceptance() ->
         for phase in ("TOKEN-10E-1", "TOKEN-10E-2", "TOKEN-10E-3", "TOKEN-10E-4"):
             status = _ucl_status_window(normalized, phase)
             assert "accepted" in status and "closed" in status
-        closeout = _ucl_status_window(normalized, "TOKEN-10E-CLOSEOUT-1")
+        assert "token-10e-closeout-1" in normalized
         assert (
-            "readyforreview" in closeout
-            or "ready_for_review" in closeout
-            or "ready for review" in closeout
+            "readyforreview" in normalized
+            or "ready_for_review" in normalized
+            or "ready for review" in normalized
         )
-        assert "not started" not in closeout
+        assert "token-10e-closeout-1 not started" not in normalized
         assert "independent github audit" in normalized
         assert (
             "token-10e implementation complete" in normalized

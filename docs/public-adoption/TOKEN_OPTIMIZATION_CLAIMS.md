@@ -54,6 +54,7 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 
 - Internal implementation status: **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
 - Roadmap status: **TOKEN-10E-1 ACCEPTED / CLOSED**, **TOKEN-10E-2 ACCEPTED / CLOSED**, **TOKEN-10E-3 ACCEPTED / CLOSED**, **TOKEN-10E-4 ACCEPTED / CLOSED**, **TOKEN-10E-CLOSEOUT-1 READY_FOR_REVIEW**.
+- Current next step: independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**.
 - Delivered bounded scope: policy eligibility, candidate reuse/create, protected-region validation, redaction-safe receipt and rollback metadata, durable SQLite artifact storage, and Memory/Session CAS activation.
 - Public claimability status: **PARTIAL / BOUNDED PROOF / NOT CLAIMABLE**. This closeout is not a public production rollout.
 - Durable compaction remains explicit/default-off; no rollback execution, human-review UX, provider KV-cache mutation, numeric savings claim, or general availability claim is supported.
