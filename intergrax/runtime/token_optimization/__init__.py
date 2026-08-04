@@ -291,6 +291,16 @@ from intergrax.runtime.token_optimization.protected_regions import (
     resolve_protected_terms,
     validate_protected_regions,
 )
+from intergrax.runtime.token_optimization.durable_compaction_validation import (
+    CompactionRollbackMetadata,
+    DurableCompactionReceipt,
+    DurableCompactionValidationCompiler,
+    DurableCompactionValidationError,
+    DurableCompactionValidationOutcome,
+    DurableCompactionValidationReason,
+    DurableCompactionValidationRequest,
+    DurableCompactionValidationStatus,
+)
 
 __all__ = [
     "build_compression_receipt",
@@ -332,6 +342,7 @@ __all__ = [
     "CompressionReceiptRef",
     "CompressionReceiptValidationResult",
     "CompressionReceiptValidationStatus",
+    "CompactionRollbackMetadata",
     "cache_aware_orchestration_result_to_safe_dict",
     "cache_aware_runtime_result_to_safe_dict",
     "cache_signal_normalization_result_to_safe_dict",
@@ -343,6 +354,13 @@ __all__ = [
     "MAX_PROTECTED_TERM_LENGTH",
     "PROTECTED_TERMS_ENV_VAR",
     "detect_protected_regions",
+    "DurableCompactionReceipt",
+    "DurableCompactionValidationCompiler",
+    "DurableCompactionValidationError",
+    "DurableCompactionValidationOutcome",
+    "DurableCompactionValidationReason",
+    "DurableCompactionValidationRequest",
+    "DurableCompactionValidationStatus",
     "hash_content",
     "InternalMessageSequenceModelCall",
     "MessageSequenceArtifactExecutionError",

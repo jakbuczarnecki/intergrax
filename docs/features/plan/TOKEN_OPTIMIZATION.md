@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of **TOKEN-10E-2**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** **ACCEPTED / CLOSED**; **TOKEN-10E-2** **READY_FOR_REVIEW**; receipt/rollback compilation, storage adapter, and activation remain not implemented.
+**Current next step:** Independent audit of **TOKEN-10E-3**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** and **TOKEN-10E-2** are **ACCEPTED / CLOSED**; **TOKEN-10E-3** is **READY_FOR_REVIEW**; storage adapter, activation, and rollback execution remain not implemented.
 
 ### LKW proof phase map (post-design)
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Independent audit of **TOKEN-10E-2**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED** and **TOKEN-10E-2** is **READY_FOR_REVIEW**. Durable activation remains not implemented.
+**Next step:** Independent audit of **TOKEN-10E-3**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** and **TOKEN-10E-2** are **ACCEPTED / CLOSED**, and **TOKEN-10E-3** is **READY_FOR_REVIEW**. Durable activation remains not implemented.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Architecture integration profile / **TOKEN-10E-2 READY_FOR_REVIEW**. TOKEN-10E-1 contracts are **ACCEPTED / CLOSED**; this slice implements candidate construction over the existing UCL repository and executor. Receipt/rollback compilation, storage adapter, activation, and production enablement remain out of scope.
+**Status:** Architecture integration profile / **TOKEN-10E-3 READY_FOR_REVIEW**. TOKEN-10E-1 and TOKEN-10E-2 are **ACCEPTED / CLOSED**; this slice validates inactive candidates over the existing UCL repository, compiles redaction-safe receipts, rollback metadata, and activation requirements. Storage adapter, activation, rollback execution, and production enablement remain out of scope.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
@@ -1756,17 +1756,17 @@ Closeout:
 
 ##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
 
-**Status:** **NOT STARTED**.
+**Status:** **READY_FOR_REVIEW**.
 
-**Goal:** Validate candidates against existing `ProtectedRegion` contracts; compile redaction-safe compaction receipt and rollback metadata.
+**Goal:** Validate inactive candidates against existing `ProtectedRegion` contracts and the immutable stored artifact; compile redaction-safe compaction receipt, rollback metadata, and future activation requirements.
 
-**Main contracts:** compaction receipt builder extending receipt patterns from TOKEN-1C; `CompactionRollbackMetadata`; measurement units explicit (chars vs tokens separate).
+**Main contracts:** `DurableCompactionValidationRequest`, `DurableCompactionValidationOutcome`, `DurableCompactionReceipt`, `CompactionRollbackMetadata`, and the existing `DurableCompactionActivationRequirements`; measurement units explicit (chars vs tokens separate).
 
-**Invariants:** protected-region failure rejects candidate; required rollback metadata missing → fail closed; no raw content in output; receipt must indicate: reused existing artifact; created new artifact; invalidated prior artifact; no LLM invocation on reuse.
+**Invariants:** exact candidate artifact is resolved and revalidated; protected-region failure rejects candidate; `SKIPPED` cannot pass; required rollback metadata missing → fail closed; no raw content in output; receipt truthfully indicates reuse/create, `invalidated_prior_artifact=False`, and no LLM invocation on reuse; no activation or rollback is executed.
 
-**Out of scope:** rollback execution, storage, application UX.
+**Out of scope:** durable production storage, revision activation, rollback execution, model invocation, and application UX.
 
-**Acceptance:** unit tests for validation failure, receipt field allowlist, rollback metadata presence when policy requires it, reuse vs create attribution.
+**Acceptance:** unit tests for exact artifact/payload revalidation, per-message protected-region detection, explicit-region extension/deduplication, redaction-safe failure details, receipt field allowlist, rollback metadata presence when policy requires it, token evidence handling, and reuse vs create attribution.
 
 ##### TOKEN-10E-4 — Durable production repository adapter and SessionContextRevision activation
 
@@ -1807,8 +1807,9 @@ Closeout:
 - [x] Internal-call boundary and single-flight creation defined in UCL
 - [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
 - [x] TOKEN-10E-4 owns first durable production repository adapter delivery
-- [x] Candidate runtime contribution (TOKEN-10E-1..2) — **implemented / ready for review**
-- [ ] Receipt/rollback compiler and activation runtime (TOKEN-10E-3..4) — **not started**
+- [x] TOKEN-10E-1 and TOKEN-10E-2 candidate runtime contribution — **ACCEPTED / CLOSED**
+- [x] Receipt/rollback compiler (TOKEN-10E-3) — **implemented / ready for review**
+- [ ] Durable production repository and activation runtime (TOKEN-10E-4) — **not started**
 - [ ] Phase closeout — **not started**
 
 #### Explicit out of scope (TOKEN-10E overall)
@@ -2325,7 +2326,7 @@ TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Accepted 
 TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
 TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
 TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
-TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-2 Ready for Review (activation/rollback runtime not started)
+TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
 TOKEN-10F..10H universal proof harness, corpus, README promotion — Planned
 ```
 
