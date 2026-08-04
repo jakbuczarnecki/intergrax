@@ -77,6 +77,28 @@ def _require_non_empty_text(value: object, field_name: str) -> str:
     return value
 
 
+def _require_strict_non_empty_text(value: object, field_name: str) -> str:
+    if type(value) is not str:
+        raise ValueError(f"{field_name} must be a string")
+    if not value:
+        raise ValueError(f"{field_name} must be non-empty")
+    if value != value.strip():
+        raise ValueError(f"{field_name} must not contain surrounding whitespace")
+    return value
+
+
+def _require_strict_non_empty_texts(
+    values: object,
+    field_name: str,
+) -> tuple[str, ...]:
+    if type(values) not in (tuple, list):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    normalized = tuple(
+        _require_strict_non_empty_text(value, f"{field_name} item") for value in values
+    )
+    return _reject_duplicates(normalized, field_name)
+
+
 def _require_non_empty_texts(
     values: object,
     field_name: str,
@@ -302,7 +324,7 @@ class DurableCompactionEligibilityReasonCode(StrEnum):
     POLICY_TARGET_IDENTITY_MISMATCH = "policy_target_identity_mismatch"
 
 
-_DURABLE_LOSSY_LOSSINESS_PROFILES: frozenset[str] = frozenset({"lossy_summary"})
+_SUPPORTED_DURABLE_LOSSINESS_PROFILES: frozenset[str] = frozenset({"lossy_summary"})
 _DURABLE_LLM_SUMMARY_STRATEGY_IDS: frozenset[str] = frozenset(
     {"message_sequence_summarization.v1"}
 )
@@ -328,11 +350,7 @@ def _require_non_empty_source_refs(refs: object, field_name: str) -> tuple[str, 
         raise ValueError(f"{field_name} must not be empty")
     normalized: list[str] = []
     for ref in refs:
-        if type(ref) is not str:
-            raise ValueError(f"{field_name} items must be strings")
-        if not ref or not ref.strip() or ref != ref.strip():
-            raise ValueError(f"{field_name} must not contain empty or whitespace values")
-        normalized.append(ref)
+        normalized.append(_require_strict_non_empty_text(ref, field_name))
     return _reject_duplicates(tuple(normalized), field_name)
 
 
@@ -379,17 +397,25 @@ class DurableCompactionPolicy:
         )
         object.__setattr__(self, "minimum_stable_revision_count", stable_count)
 
-        strategy_ids = _require_non_empty_texts(self.allowed_strategy_ids, "allowed_strategy_ids")
+        strategy_ids = _require_strict_non_empty_texts(
+            self.allowed_strategy_ids,
+            "allowed_strategy_ids",
+        )
         object.__setattr__(
             self,
             "allowed_strategy_ids",
             strategy_ids,
         )
 
-        lossiness_profiles = _require_non_empty_texts(
+        lossiness_profiles = _require_strict_non_empty_texts(
             self.allowed_lossiness_profiles,
             "allowed_lossiness_profiles",
         )
+        unsupported_profiles = set(lossiness_profiles) - _SUPPORTED_DURABLE_LOSSINESS_PROFILES
+        if unsupported_profiles:
+            raise ValueError(
+                "allowed_lossiness_profiles contains unsupported profile(s)"
+            )
         object.__setattr__(
             self,
             "allowed_lossiness_profiles",
@@ -424,12 +450,12 @@ class DurableCompactionSourceIdentity:
         object.__setattr__(
             self,
             "tenant_id",
-            _require_non_empty_text(self.tenant_id, "tenant_id"),
+            _require_strict_non_empty_text(self.tenant_id, "tenant_id"),
         )
         object.__setattr__(
             self,
             "context_scope_id",
-            _require_non_empty_text(self.context_scope_id, "context_scope_id"),
+            _require_strict_non_empty_text(self.context_scope_id, "context_scope_id"),
         )
         object.__setattr__(
             self,
@@ -460,17 +486,17 @@ class DurableCompactionSourceIdentity:
         object.__setattr__(
             self,
             "strategy_id",
-            _require_non_empty_text(self.strategy_id, "strategy_id"),
+            _require_strict_non_empty_text(self.strategy_id, "strategy_id"),
         )
         object.__setattr__(
             self,
             "strategy_version",
-            _require_non_empty_text(self.strategy_version, "strategy_version"),
+            _require_strict_non_empty_text(self.strategy_version, "strategy_version"),
         )
         object.__setattr__(
             self,
             "lossiness_profile",
-            _require_non_empty_text(self.lossiness_profile, "lossiness_profile"),
+            _require_strict_non_empty_text(self.lossiness_profile, "lossiness_profile"),
         )
 
         if lookup_key.tenant_id != self.tenant_id:
@@ -578,22 +604,28 @@ class DurableCompactionActivationRequirements:
         object.__setattr__(
             self,
             "candidate_artifact_id",
-            _require_non_empty_text(self.candidate_artifact_id, "candidate_artifact_id"),
+            _require_strict_non_empty_text(
+                self.candidate_artifact_id,
+                "candidate_artifact_id",
+            ),
         )
         object.__setattr__(
             self,
             "validated_artifact_id",
-            _require_non_empty_text(self.validated_artifact_id, "validated_artifact_id"),
+            _require_strict_non_empty_text(
+                self.validated_artifact_id,
+                "validated_artifact_id",
+            ),
         )
         object.__setattr__(
             self,
             "lineage_reference",
-            _require_non_empty_text(self.lineage_reference, "lineage_reference"),
+            _require_strict_non_empty_text(self.lineage_reference, "lineage_reference"),
         )
         object.__setattr__(
             self,
             "creation_receipt_reference",
-            _require_non_empty_text(
+            _require_strict_non_empty_text(
                 self.creation_receipt_reference,
                 "creation_receipt_reference",
             ),
@@ -601,7 +633,7 @@ class DurableCompactionActivationRequirements:
         object.__setattr__(
             self,
             "rollback_source_reference",
-            _require_non_empty_text(
+            _require_strict_non_empty_text(
                 self.rollback_source_reference,
                 "rollback_source_reference",
             ),
@@ -705,7 +737,7 @@ def assess_durable_compaction_eligibility(
         return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)
 
     if (
-        target.lossiness_profile in _DURABLE_LOSSY_LOSSINESS_PROFILES
+        target.lossiness_profile in _SUPPORTED_DURABLE_LOSSINESS_PROFILES
         and not policy.allow_lossy
     ):
         return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)

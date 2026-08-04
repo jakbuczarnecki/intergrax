@@ -1054,7 +1054,21 @@ def _durable_lookup_key(**overrides: object) -> ArtifactLookupKey:
 
 
 def _durable_source_identity(**overrides: object) -> DurableCompactionSourceIdentity:
-    lookup_key = _durable_lookup_key()
+    lookup_key = _durable_lookup_key(
+        **{
+            field: overrides[field]
+            for field in (
+                "tenant_id",
+                "context_scope_id",
+                "source_refs",
+                "source_content_hash",
+                "strategy_id",
+                "strategy_version",
+                "lossiness_profile",
+            )
+            if field in overrides
+        }
+    )
     defaults: dict[str, object] = {
         "tenant_id": lookup_key.tenant_id,
         "context_scope_id": lookup_key.context_scope_id,
@@ -1123,6 +1137,39 @@ def test_durable_compaction_policy_accepts_explicit_enabled_policy() -> None:
     assert policy.activation_mode.value == "compare_and_swap"
 
 
+def test_durable_compaction_policy_rejects_unsupported_lossiness_profile() -> None:
+    with pytest.raises(ValueError, match="unsupported profile"):
+        DurableCompactionPolicy(
+            enabled=True,
+            allowed_strategy_ids=("message_sequence_summarization.v1",),
+            allowed_lossiness_profiles=("custom_lossy",),
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("allowed_strategy_ids", (" strategy.v1",)),
+        ("allowed_strategy_ids", ("strategy.v1 ",)),
+        ("allowed_lossiness_profiles", (" lossy_summary",)),
+        ("allowed_lossiness_profiles", ("lossy_summary ",)),
+    ],
+)
+def test_durable_compaction_policy_rejects_surrounding_whitespace(
+    field: str,
+    value: tuple[str, ...],
+) -> None:
+    values: dict[str, object] = {
+        "enabled": True,
+        "allowed_strategy_ids": ("message_sequence_summarization.v1",),
+        "allowed_lossiness_profiles": ("lossy_summary",),
+    }
+    values[field] = value
+
+    with pytest.raises(ValueError, match=field):
+        DurableCompactionPolicy(**values)  # type: ignore[arg-type]
+
+
 def test_durable_compaction_policy_rejects_wrong_activation_mode_type() -> None:
     with pytest.raises(ValueError, match="activation_mode must be DurableCompactionActivationMode"):
         DurableCompactionPolicy(activation_mode="compare_and_swap")  # type: ignore[arg-type]
@@ -1171,6 +1218,70 @@ def test_durable_compaction_activation_requirements_reject_raw_content_included_
         )
 
 
+@pytest.mark.parametrize(
+    "field",
+    [
+        "candidate_artifact_id",
+        "validated_artifact_id",
+        "lineage_reference",
+        "creation_receipt_reference",
+        "rollback_source_reference",
+    ],
+)
+def test_durable_compaction_activation_requirements_reject_surrounding_whitespace(
+    field: str,
+) -> None:
+    values: dict[str, object] = {
+        "expected_active_revision": 3,
+        "candidate_artifact_id": "artifact-candidate",
+        "validated_artifact_id": "artifact-validated",
+        "lineage_reference": "lineage-1",
+        "creation_receipt_reference": "receipt-1",
+        "rollback_source_reference": "rollback-1",
+    }
+    values[field] = f" {values[field]}"
+
+    with pytest.raises(ValueError, match=field):
+        DurableCompactionActivationRequirements(**values)  # type: ignore[arg-type]
+
+
+def test_durable_compaction_activation_requirements_preserve_valid_references() -> None:
+    requirements = DurableCompactionActivationRequirements(
+        expected_active_revision=3,
+        candidate_artifact_id="artifact-candidate",
+        validated_artifact_id="artifact-validated",
+        lineage_reference="lineage-1",
+        creation_receipt_reference="receipt-1",
+        rollback_source_reference="rollback-1",
+    )
+
+    assert requirements.candidate_artifact_id == "artifact-candidate"
+    assert requirements.validated_artifact_id == "artifact-validated"
+    assert requirements.lineage_reference == "lineage-1"
+    assert requirements.creation_receipt_reference == "receipt-1"
+    assert requirements.rollback_source_reference == "rollback-1"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("tenant_id", " tenant-1"),
+        ("context_scope_id", "scope-1 "),
+        ("strategy_id", " strategy.v1"),
+        ("strategy_version", "1.0.0 "),
+        ("lossiness_profile", " lossy_summary"),
+        ("source_refs", (" msg-1",)),
+        ("source_refs", ("msg-1 ",)),
+    ],
+)
+def test_durable_compaction_source_identity_rejects_surrounding_whitespace(
+    field: str,
+    value: object,
+) -> None:
+    with pytest.raises(ValueError, match=field):
+        _durable_source_identity(**{field: value})
+
+
 def test_durable_compaction_source_identity_rejects_missing_expected_active_revision() -> None:
     with pytest.raises(ValueError, match="expected_active_revision must be > 0"):
         _durable_source_identity(expected_active_revision=0)
@@ -1187,7 +1298,7 @@ def test_durable_compaction_source_identity_rejects_duplicate_source_refs() -> N
 
 
 def test_durable_compaction_source_identity_rejects_whitespace_source_ref() -> None:
-    with pytest.raises(ValueError, match="source_refs must not contain empty or whitespace"):
+    with pytest.raises(ValueError, match="source_refs must not contain surrounding whitespace"):
         _durable_source_identity(source_refs=(" msg-1",))
 
 
@@ -1316,6 +1427,20 @@ def test_durable_compaction_eligibility_enforces_top_level_and_nested_fences(
 
     assert decision.eligible is False
     assert decision.reason_code is expected_reason
+
+
+def test_durable_compaction_eligibility_requires_allow_lossy_for_lossy_summary() -> None:
+    decision = assess_durable_compaction_eligibility(
+        policy=_durable_context_policy(
+            allow_lossy=False,
+            allow_llm_summarization=False,
+        ),
+        target=_durable_source_identity(),
+        stability_evidence=_stability_evidence(),
+    )
+
+    assert decision.eligible is False
+    assert decision.reason_code is DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED
 
 
 def test_durable_compaction_requires_message_sequence_artifact_type() -> None:
