@@ -18,7 +18,9 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | Understand the public architecture | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
 | Build or evaluate | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
 | Understand Intergrax (first contact) | [README](../README.md) |
-| See the LKW product proof | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
+| Understand LKW without running it | [LKW Product Tour](../LKW_PRODUCT_TOUR.md) |
+| Try LKW | [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) |
+| Inspect bounded LKW technical evidence | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
 | Explore Token Optimization | [Token Optimization Engine](features/token_optimization/README.md) |
 | Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
 | Check use-case fit | [Use Cases](../USE_CASES.md) |
@@ -38,7 +40,15 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 
 **Primary product proof**
 
-Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) demonstrates how a real application workflow uses and pressures the reusable Intergrax foundation — RAG, observability, background ingest, proof receipts, and application hosting — in a guided reviewer path.
+Local Knowledge Workspace (LKW) is the current primary product-development and platform-validation program. The reader route is:
+
+```text
+Product Tour
+→ Quick Start
+→ Platform Proof
+```
+
+Start with the [LKW Product Tour](../LKW_PRODUCT_TOUR.md) to understand the experience without running anything. From there, choose the [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) to run the supported indexed path or the [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) to inspect bounded technical evidence.
 
 ### Token Optimization Engine
 
@@ -67,6 +77,8 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [Roadmap](../ROADMAP.md) | Outcome-gated product-validation direction: now, next and later without implementation task IDs |
 | [Collaboration](../COLLABORATION.md) | Evaluation feedback, contribution, pilot-discussion, permission-request and security routes |
 | [LICENSE](../LICENSE) | Legal evaluation and collaboration terms |
+| [LKW Product Tour](../LKW_PRODUCT_TOUR.md) | Non-executable product-first walkthrough of the supported LKW experience and boundaries |
+| [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](features/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Token Optimization claim guardrails](public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) | Safe public wording boundaries |

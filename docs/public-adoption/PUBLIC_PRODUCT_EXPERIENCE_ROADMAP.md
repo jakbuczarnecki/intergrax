@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-4 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-5 |
+| Current phase | PX-5 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-6 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -176,7 +176,9 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-4 — Real visual product evidence
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `4abb771fae4f7ff196b0dfc7f8a330696cff4c36`
 
 **User-visible outcome:** Reviewed real or intentionally designed neutral visuals support LKW and product introduction without fabricated UI.
 
@@ -205,17 +207,39 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-5 — Product tour and certification-proof separation
 
-**Status:** BLOCKED_ON_PX_4_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Readers see a product tour before or alongside certification-style proof material; certification runbook does not replace the tour.
 
-**Completion gate:** Tour route exists; separation from heavy proof path is explicit in reader documents.
+**Delivered:**
+
+- dedicated root LKW Product Tour;
+- reuse of accepted light/dark LKW visual;
+- user-facing LKW experience walkthrough;
+- explicit Product Tour / Quick Start / Platform Proof separation;
+- routing from README, Quick Start, Platform Proof and public documentation map;
+- no new product or maturity claims;
+- no fabricated UI.
+
+**Completion gate:**
+
+- `LKW_PRODUCT_TOUR.md` exists;
+- the tour explains the supported indexed workflow without execution details;
+- the accepted LKW visual is reused;
+- one concise Mermaid product-experience flow exists;
+- README links to the tour before deeper proof;
+- Quick Start links to the tour as orientation;
+- Platform Proof identifies itself as the deep reviewer route;
+- public map lists Tour, Quick Start and Proof separately;
+- route ownership is recorded in documentation architecture;
+- no internal task IDs or maintainer vocabulary appear in the tour;
+- no Hybrid, live-provider, production, customer or validation claim is introduced.
 
 ---
 
 ## PX-6 — Builder Quick Start
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_5_ACCEPTANCE
 
 **User-visible outcome:** Builders reach a bounded onboarding path without immediate deep reference overload.
 

@@ -1,5 +1,7 @@
 # Try Local Knowledge Workspace
 
+Want to understand the product experience before running it? See the [LKW Product Tour](../../../LKW_PRODUCT_TOUR.md).
+
 ## What this does
 
 This quickstart is a supported local product-evaluation path. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question over indexed knowledge, shows the answer with a source citation, and verifies the persisted Ask run.
@@ -166,7 +168,7 @@ On Windows, use the same command from a shell after `cd` to that directory.
 
 ## Next steps
 
-- Root README LKW workflow: [README.md#local-knowledge-workspace-lkw](../../README.md#local-knowledge-workspace-lkw)
+- Product orientation: [LKW Product Tour](../../../LKW_PRODUCT_TOUR.md)
 - Bounded technical proof: [LKW Platform Proof](../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 - Proof status dashboard: [PROOFS.md](../../PROOFS.md)
 - Build and evaluate: [BUILD_WITH_INTERGRAX.md](../../BUILD_WITH_INTERGRAX.md)

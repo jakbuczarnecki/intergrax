@@ -1,5 +1,15 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
+## Choose the right route
+
+| Reader goal | Route |
+|-------------|-------|
+| Understand the product without running it | [LKW Product Tour](../../LKW_PRODUCT_TOUR.md) |
+| Run the supported indexed product evaluation | [LKW Quick Start](../../applications/local_workspace_application/docs/QUICKSTART.md) |
+| Inspect bounded technical evidence | This LKW Platform Proof |
+
+**Product Tour ≠ Product Quick Start ≠ Platform Proof.**
+
 **Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../../applications/local_workspace_application/docs/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
 
 **Product quickstart ≠ platform proof.** The quickstart demonstrates managed upload, indexed Ask, citation, and persisted read for product evaluation. This proof document remains the authoritative bounded technical certification path.

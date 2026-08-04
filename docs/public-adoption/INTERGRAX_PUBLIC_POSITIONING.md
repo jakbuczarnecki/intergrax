@@ -33,13 +33,14 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-4 — READY_FOR_REVIEW |
+| Current phase | PX-5 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
 | Product-orientation CTA | See the LKW workflow |
 | Supported product quickstart | PX-3 — ACCEPTED / CLOSED |
-| LKW visual evidence | Implemented in PX-4 — READY_FOR_REVIEW |
+| LKW visual evidence | PX-4 — ACCEPTED / CLOSED |
+| LKW Product Tour | Implemented in PX-5 — READY_FOR_REVIEW |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -120,6 +121,21 @@ The supported product quickstart path is accepted and closed in PX-3. It remains
 ### Product-orientation CTA
 
 **See the LKW workflow**
+
+→ `LKW_PRODUCT_TOUR.md`
+
+### LKW route separation
+
+```text
+Product Tour:
+understand the experience
+
+Quick Start:
+run the supported product path
+
+Platform Proof:
+review bounded technical evidence
+```
 
 ### Secondary CTA
 

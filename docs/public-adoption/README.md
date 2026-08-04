@@ -40,7 +40,7 @@ Public-reader route: no
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-4 READY_FOR_REVIEW
+Status: ACTIVE — PX-5 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -59,9 +59,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-3 ACCEPTED / CLOSED
-Current phase: PX-4 READY_FOR_REVIEW
-Next after acceptance: PX-5
+Previous phase: PX-4 ACCEPTED / CLOSED
+Current phase: PX-5 READY_FOR_REVIEW
+Next after acceptance: PX-6
 External sessions: NOT_STARTED
 ```
 
@@ -83,7 +83,9 @@ The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md
 
 | Route | Classification | Entry point |
 |-------|----------------|-------------|
-| LKW | Primary product proof | `LKW_PLATFORM_PROOF.md` |
+| Product Tour | Product orientation | `../../LKW_PRODUCT_TOUR.md` |
+| Product Quick Start | Supported executable product evaluation | `../../applications/local_workspace_application/docs/QUICKSTART.md` |
+| Technical Platform Proof | Bounded technical reviewer evidence | `LKW_PLATFORM_PROOF.md` |
 | Token Optimization | Featured platform-capability proof | `../features/token_optimization/README.md` |
 
 Secondary control for Token Optimization public wording: [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md)

@@ -11,7 +11,7 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](#local-knowledge-workspace-lkw) · [Explore Token Optimization](#token-optimization) · [Review architecture and proofs](ARCHITECTURE_OVERVIEW.md) · [PROOFS.md](PROOFS.md)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](LKW_PRODUCT_TOUR.md) · [Explore Token Optimization](#token-optimization) · [Review architecture and proofs](ARCHITECTURE_OVERVIEW.md) · [PROOFS.md](PROOFS.md)
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
 
@@ -42,6 +42,8 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 </picture>
 
 This neutral visual represents the documented Quick Start, not a finished UI screenshot; dynamic workspace and Ask-run IDs are omitted.
+
+**See the complete LKW product tour** → [LKW_PRODUCT_TOUR.md](LKW_PRODUCT_TOUR.md)
 
 ### What is boundedly proven today
 
@@ -191,8 +193,9 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 
 | Goal | Start here |
 | ---- | ---------- |
-| See the LKW workflow | [Local Knowledge Workspace (LKW)](#local-knowledge-workspace-lkw) |
-| Try LKW (supported quickstart) | [Try LKW](#try-lkw) |
+| Understand LKW without running it | [LKW_PRODUCT_TOUR.md](LKW_PRODUCT_TOUR.md) |
+| Try LKW | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
+| Review bounded technical evidence | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Review current proofs | [PROOFS.md](PROOFS.md) |
 | Understand the architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
 | Build or evaluate | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |

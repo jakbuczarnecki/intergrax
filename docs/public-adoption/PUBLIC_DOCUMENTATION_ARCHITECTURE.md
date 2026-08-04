@@ -89,6 +89,7 @@ PARTNERS.md
 COLLABORATION.md
 FAQ.md
 ROADMAP.md
+LKW_PRODUCT_TOUR.md
 ```
 
 | Document | Responsibility | Status |
@@ -102,6 +103,7 @@ ROADMAP.md
 | `COLLABORATION.md` | Collaboration and permission-request router | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
+| `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **implemented in PX-5 — READY_FOR_REVIEW** |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
 
@@ -183,6 +185,7 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Check use-case fit | `USE_CASES.md` |
 | Understand product-validation direction | `ROADMAP.md` |
 | See the first-contact LKW product workflow | `README.md#local-knowledge-workspace-lkw` |
+| Understand LKW without running it | `LKW_PRODUCT_TOUR.md` |
 | Try LKW (supported product quickstart) | `applications/local_workspace_application/docs/QUICKSTART.md` |
 | Run or inspect the bounded LKW technical proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
@@ -210,14 +213,25 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 Primary public entry:
 
 ```text
-First-contact LKW workflow:
-README.md#local-knowledge-workspace-lkw
+README
+→ Product Tour
+→ Quick Start or Platform Proof
 
-Bounded technical proof:
-docs/public-adoption/LKW_PLATFORM_PROOF.md
+README:
+first-contact explanation and primary CTA
+
+LKW_PRODUCT_TOUR.md:
+non-executable product walkthrough
+
+QUICKSTART.md:
+supported executable product evaluation
+
+LKW_PLATFORM_PROOF.md:
+bounded technical reviewer evidence
+
 ```
 
-The README owns the concise first-contact workflow. The LKW proof remains the authoritative bounded reviewer path. This is not yet the full dedicated product-tour/proof separation planned for PX-5.
+The Product Tour does not own execution instructions. The Quick Start does not own platform certification. The Platform Proof does not replace the Product Tour.
 
 **Frozen CTA placement (PX-1):**
 
@@ -328,6 +342,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
 | `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 ACCEPTED / CLOSED |
+| `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **implemented in PX-5 — READY_FOR_REVIEW** |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
