@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**  
+**Status:** Implemented foundation and execution engine; **TOKEN-10E-4 READY_FOR_REVIEW**; TOKEN-10E-CLOSEOUT-1 not started
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of **TOKEN-10E-3**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** and **TOKEN-10E-2** are **ACCEPTED / CLOSED**; **TOKEN-10E-3** is **READY_FOR_REVIEW**; storage adapter, activation, and rollback execution remain not implemented.
+**Current next step:** Independent GitHub audit of **TOKEN-10E-4**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, and **TOKEN-10E-3** are **ACCEPTED / CLOSED**; **TOKEN-10E-4** is **READY_FOR_REVIEW**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1808,9 +1808,22 @@ Closeout:
 - [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
 - [x] TOKEN-10E-4 owns first durable production repository adapter delivery
 - [x] TOKEN-10E-1 and TOKEN-10E-2 candidate runtime contribution — **ACCEPTED / CLOSED**
-- [x] Receipt/rollback compiler (TOKEN-10E-3) — **implemented / ready for review**
-- [ ] Durable production repository and activation runtime (TOKEN-10E-4) — **not started**
+- [x] Receipt/rollback compiler (TOKEN-10E-3) — **ACCEPTED / CLOSED**
+- [x] Durable production repository and activation runtime (TOKEN-10E-4) — **READY_FOR_REVIEW**
 - [ ] Phase closeout — **not started**
+
+#### TOKEN-10E-4 delivery
+
+`SQLiteOptimizationArtifactRepository` is the first durable implementation of the existing
+`OptimizationArtifactRepository` port. It persists tenant-scoped opaque payloads, safe metadata,
+leases, reservations, lifecycle state, and state versions in the canonical Memory/Session SQLite
+backend; reservation acquisition and validated publication use database transactions and
+uniqueness constraints. `SQLiteSessionContextRevisionStore` owns immutable append-only manifests
+and the separate active pointer. `SessionContextRevisionActivationService` consumes only a
+`PASSED` TOKEN-10E-3 outcome, revalidates the stored artifact, and performs transactional
+tenant-scoped CAS activation with `STALE_CONTEXT_REVISION` handling and operation replay
+idempotency. Durable compaction remains explicit/default-off; no model call, summary regeneration,
+rollback execution, or automatic prior-artifact invalidation is added.
 
 #### Explicit out of scope (TOKEN-10E overall)
 

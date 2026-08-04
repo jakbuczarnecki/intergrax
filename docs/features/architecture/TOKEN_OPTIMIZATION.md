@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; cache-aware universal runtime and proof planned under **TOKEN-10**
+**Status:** Implemented foundation and execution engine; **TOKEN-10E-4 READY_FOR_REVIEW**; TOKEN-10E-CLOSEOUT-1 not started
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
@@ -767,9 +767,17 @@ no observability/HOS emission
 
 Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
 
-#### In-cache compaction (**TOKEN-10E** — architecture defined / ready for review)
+#### In-cache compaction (**TOKEN-10E** — TOKEN-10E-4 ready for review)
 
-In-cache compaction is an explicitly planned implementation phase. Cross-domain lifecycle architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (**CTX-UCL-ARCH-1-R4**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded. Runtime **not** started; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+In-cache compaction is an explicitly policy-gated implementation phase. Cross-domain lifecycle
+architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
+(**CTX-UCL-ARCH-1-R4**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded.
+**TOKEN-10E-1**, **TOKEN-10E-2**, and **TOKEN-10E-3** are **ACCEPTED / CLOSED**.
+**TOKEN-10E-4** is **READY_FOR_REVIEW**: the first durable SQLite repository adapter,
+tenant-scoped durable reservations, Memory/Session-owned immutable revision manifests, separate
+active pointers, and transactional CAS activation are implemented and restart-tested.
+**TOKEN-10E-CLOSEOUT-1** has not started. Rollback execution, human-review UX, public production
+enablement, and automatic prior-artifact invalidation remain out of scope.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 

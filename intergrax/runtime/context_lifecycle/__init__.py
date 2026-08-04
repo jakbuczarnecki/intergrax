@@ -38,6 +38,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
 from intergrax.runtime.context_lifecycle.in_memory_repository import (
     InMemoryOptimizationArtifactRepository,
 )
+from intergrax.runtime.context_lifecycle.sqlite_repository import (
+    SQLiteOptimizationArtifactRepository,
+)
 from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
     OptimizationArtifactReference,
@@ -97,6 +100,7 @@ __all__ = [
     "DurableCompactionValidationRequirement",
     "EphemeralArtifactPersistencePolicy",
     "InMemoryOptimizationArtifactRepository",
+    "SQLiteOptimizationArtifactRepository",
     "ModelCallExecutionScope",
     "OptimizationArtifactReference",
     "OptimizationArtifactRepository",
