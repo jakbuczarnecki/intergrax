@@ -558,7 +558,7 @@ async def test_msgraph_teams_chat_retry_same_page_after_sink_failure() -> None:
     first_snapshot_calls = len(fake.snapshot_calls)
     result = await coordinator.reconcile_once(
         binding_id="msgraph-teams-chat-binding",
-        restart=False,
+        restart=True,
         operation_id="msgraph-teams-chat-sink-fail",
     )
     assert result.delivery_id == first_delivery

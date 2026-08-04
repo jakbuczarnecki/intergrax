@@ -80,7 +80,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     reconciliation_prepared_batch_payload_fingerprint,
     reconciliation_provider_page_fingerprint,
     recovery_evidence_from_run,
-    validate_reconciliation_candidate_inventory,
+    canonical_reconciliation_candidate_inventory_bytes,
 )
 
 _ACTIVE_RUN_PHASES: frozenset[KnowledgeReconciliationRunPhase] = frozenset(
@@ -160,6 +160,78 @@ def _require_non_empty(value: str, *, field_name: str) -> str:
     if not cleaned:
         raise ValueError(f"{field_name} must be a non-empty string")
     return cleaned
+
+
+_CANDIDATE_INVENTORY_CORRUPT_MESSAGE = (
+    "Knowledge reconciliation candidate inventory is corrupt"
+)
+_CANDIDATE_INVENTORY_LIMIT_MESSAGE = (
+    "Knowledge reconciliation candidate inventory exceeds configured limit"
+)
+_CANDIDATE_REMOTE_ID_LIMIT_MESSAGE = (
+    "Knowledge reconciliation candidate remote ID exceeds configured limit"
+)
+_CANDIDATE_PAYLOAD_LIMIT_MESSAGE = (
+    "Knowledge reconciliation candidate payload exceeds configured limit"
+)
+
+
+def _raise_corrupt_candidate_inventory(*, source: KnowledgeSourceRef) -> None:
+    raise VendorKnowledgeError(
+        code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+        safe_message=_CANDIDATE_INVENTORY_CORRUPT_MESSAGE,
+        provider_id=source.provider_id,
+        source_kind=source.source_kind,
+        retryable=False,
+    )
+
+
+def _validate_repository_candidate_inventory(
+    inventory: object,
+    *,
+    policy: KnowledgeReconciliationLimitPolicy,
+    source: KnowledgeSourceRef,
+) -> tuple[str, ...]:
+    if isinstance(inventory, str) or not isinstance(inventory, (tuple, list)):
+        _raise_corrupt_candidate_inventory(source=source)
+    ordered = tuple(inventory)
+    seen: set[str] = set()
+    for remote_id in ordered:
+        if not isinstance(remote_id, str):
+            _raise_corrupt_candidate_inventory(source=source)
+        cleaned = remote_id.strip()
+        if not cleaned:
+            _raise_corrupt_candidate_inventory(source=source)
+        if cleaned in seen:
+            _raise_corrupt_candidate_inventory(source=source)
+        seen.add(cleaned)
+    if len(ordered) > policy.max_reconciliation_candidate_count:
+        raise VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+            safe_message=_CANDIDATE_INVENTORY_LIMIT_MESSAGE,
+            provider_id=source.provider_id,
+            source_kind=source.source_kind,
+            retryable=False,
+        )
+    for remote_id in ordered:
+        if len(remote_id.encode("utf-8")) > policy.max_reconciliation_remote_id_bytes:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                safe_message=_CANDIDATE_REMOTE_ID_LIMIT_MESSAGE,
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            )
+    payload = canonical_reconciliation_candidate_inventory_bytes(ordered)
+    if len(payload) > policy.max_reconciliation_candidate_payload_bytes:
+        raise VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+            safe_message=_CANDIDATE_PAYLOAD_LIMIT_MESSAGE,
+            provider_id=source.provider_id,
+            source_kind=source.source_kind,
+            retryable=False,
+        )
+    return ordered
 
 
 def _advance_fields(
@@ -1277,15 +1349,11 @@ class VendorKnowledgeReconciliationEngine:
                 source_kind=source.source_kind,
                 retryable=True,
             ) from None
-        if len(inventory) > self._policy.max_reconciliation_candidate_count:
-            raise VendorKnowledgeError(
-                code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
-                safe_message="Knowledge reconciliation candidate inventory exceeds configured limit",
-                provider_id=source.provider_id,
-                source_kind=source.source_kind,
-                retryable=False,
-            )
-        validate_reconciliation_candidate_inventory(inventory, policy=self._policy)
+        inventory = _validate_repository_candidate_inventory(
+            inventory,
+            policy=self._policy,
+            source=source,
+        )
         now = self._utc_clock()
         collecting = KnowledgeReconciliationRunCollecting(
             tenant_id=self._tenant_id,

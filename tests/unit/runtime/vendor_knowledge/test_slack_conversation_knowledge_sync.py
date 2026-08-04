@@ -389,7 +389,7 @@ async def test_slack_sink_failure_retries_same_page_with_stable_delivery_id() ->
     assert state_after_failure is None
     retry_result = await coordinator.reconcile_once(
         binding_id="slack-conversation-binding",
-        restart=False,
+        restart=True,
         operation_id="slack-sink-retry",
     )
     assert retry_result.status is KnowledgeSyncRunStatus.COMPLETED
@@ -675,6 +675,7 @@ async def test_slack_reply_page_two_sink_failure_retries_safely() -> None:
         binding_id="slack-conversation-binding",
         restart=False,
         operation_id="slack-multi-page",
+        trigger_delivery_id=reply_one_result.delivery_id,
     )
     assert retry_result.status is KnowledgeSyncRunStatus.COMPLETED
     assert retry_result.delivery_id == failed_delivery_id

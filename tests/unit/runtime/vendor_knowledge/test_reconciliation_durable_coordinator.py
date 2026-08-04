@@ -958,3 +958,271 @@ async def test_run_repository_get_corruption_is_non_retryable() -> None:
     assert exc_info.value.retryable is False
     assert facade.read_calls == []
     assert "corrupt run row" not in str(exc_info.value)
+
+
+@dataclass
+class _StaticCandidateInventoryRepository:
+    inventory: tuple[str, ...] | list[str] | object
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if isinstance(self.inventory, (tuple, list)):
+            ordered = tuple(self.inventory)
+            if len(ordered) > limit:
+                return ordered[:limit]
+            return ordered
+        return self.inventory  # type: ignore[return-value]
+
+
+@dataclass
+class _TrackingRunRepository(InMemoryReconciliationRunRepository):
+    create_calls: int = 0
+
+    def create_initial_run(self, run: KnowledgeReconciliationRun) -> None:
+        self.create_calls += 1
+        super().create_initial_run(run)
+
+
+def _coordinator_with_static_inventory(
+    inventory: tuple[str, ...] | list[str] | object,
+    *,
+    runs: _TrackingRunRepository | None = None,
+) -> tuple[
+    VendorKnowledgeSyncCoordinator,
+    RecordingFacade,
+    InMemoryRemoteItemStateRepository,
+    InMemoryCheckpointRepository,
+    _TrackingRunRepository,
+    IdempotentRecordingSink,
+    RecordingSinkReceiptInspector,
+]:
+    binding = make_binding()
+    facade = RecordingFacade()
+    state = InMemoryRemoteItemStateRepository()
+    checkpoint = InMemoryCheckpointRepository()
+    runs = runs or _TrackingRunRepository()
+    sink = IdempotentRecordingSink()
+    inspector = RecordingSinkReceiptInspector()
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=InMemoryLeaseRepository(),
+        checkpoint_repository=checkpoint,
+        item_state_repository=state,
+        sink=sink,
+        lease_ttl_seconds=30,
+        reconciliation_run_repository=runs,
+        candidate_inventory_repository=_StaticCandidateInventoryRepository(
+            inventory=inventory,
+        ),
+        sink_receipt_inspector=inspector,
+    )
+    return coordinator, facade, state, checkpoint, runs, sink, inspector
+
+
+def _assert_candidate_rejection_no_side_effects(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    *,
+    expected_code: VendorKnowledgeErrorCode,
+    facade: RecordingFacade,
+    runs: _TrackingRunRepository,
+    sink: IdempotentRecordingSink,
+    state: InMemoryRemoteItemStateRepository,
+    checkpoint: InMemoryCheckpointRepository,
+    rejected_value: str,
+) -> None:
+    assert exc_info.value.code is expected_code
+    assert exc_info.value.retryable is False
+    assert facade.inspect_calls == []
+    assert facade.read_calls == []
+    assert runs.create_calls == 0
+    assert runs.runs == {}
+    assert sink.calls == []
+    assert state.states == {}
+    assert checkpoint.commit_calls == []
+    if rejected_value:
+        assert rejected_value not in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("inventory", "rejected_value"),
+    [
+        (("item-1", "item-1"), "item-1"),
+        (("",), ""),
+        (("   ",), "   "),
+        ((123,), "123"),
+    ],
+)
+async def test_malformed_candidate_inventory_structural_rejection(
+    inventory: tuple[object, ...],
+    rejected_value: str,
+) -> None:
+    coordinator, facade, state, checkpoint, runs, sink, _ = (
+        _coordinator_with_static_inventory(inventory)
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-malformed-candidate",
+        )
+    _assert_candidate_rejection_no_side_effects(
+        exc_info,
+        expected_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+        facade=facade,
+        runs=runs,
+        sink=sink,
+        state=state,
+        checkpoint=checkpoint,
+        rejected_value=rejected_value,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_candidate_inventory_remote_id_byte_limit_rejected() -> None:
+    oversized = "x" * 3000
+    coordinator, facade, state, checkpoint, runs, sink, _ = (
+        _coordinator_with_static_inventory((oversized,))
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-remote-id-limit",
+        )
+    _assert_candidate_rejection_no_side_effects(
+        exc_info,
+        expected_code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+        facade=facade,
+        runs=runs,
+        sink=sink,
+        state=state,
+        checkpoint=checkpoint,
+        rejected_value=oversized,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_candidate_inventory_payload_limit_rejected() -> None:
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationLimitPolicy,
+    )
+
+    inventory = ("x" * 40,)
+    coordinator, facade, state, checkpoint, runs, sink, _ = (
+        _coordinator_with_static_inventory(inventory)
+    )
+    assert coordinator._reconciliation_engine is not None
+    coordinator._reconciliation_engine._policy = KnowledgeReconciliationLimitPolicy(
+        max_reconciliation_candidate_payload_bytes=32,
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-payload-limit",
+        )
+    _assert_candidate_rejection_no_side_effects(
+        exc_info,
+        expected_code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+        facade=facade,
+        runs=runs,
+        sink=sink,
+        state=state,
+        checkpoint=checkpoint,
+        rejected_value=inventory[0],
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_candidate_inventory_count_limit_rejected() -> None:
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationLimitPolicy,
+    )
+
+    inventory = ("item-a", "item-b")
+    coordinator, facade, state, checkpoint, runs, sink, _ = (
+        _coordinator_with_static_inventory(inventory)
+    )
+    assert coordinator._reconciliation_engine is not None
+    coordinator._reconciliation_engine._policy = KnowledgeReconciliationLimitPolicy(
+        max_reconciliation_candidate_count=1,
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-count-limit",
+        )
+    _assert_candidate_rejection_no_side_effects(
+        exc_info,
+        expected_code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+        facade=facade,
+        runs=runs,
+        sink=sink,
+        state=state,
+        checkpoint=checkpoint,
+        rejected_value="item-a",
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_candidate_inventory_corrupt_state_is_non_retryable() -> None:
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+
+    inventory = _FaultyCandidateInventory(
+        state_repository=InMemoryRemoteItemStateRepository(),
+        list_error=KnowledgeSyncCorruptState("corrupt inventory row"),
+    )
+    binding = make_binding()
+    facade = RecordingFacade()
+    state = InMemoryRemoteItemStateRepository()
+    runs = _TrackingRunRepository()
+    sink = IdempotentRecordingSink()
+    checkpoint = InMemoryCheckpointRepository()
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=InMemoryLeaseRepository(),
+        checkpoint_repository=checkpoint,
+        item_state_repository=state,
+        sink=sink,
+        lease_ttl_seconds=30,
+        reconciliation_run_repository=runs,
+        candidate_inventory_repository=inventory,
+        sink_receipt_inspector=RecordingSinkReceiptInspector(),
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-inventory-corrupt",
+        )
+    _assert_candidate_rejection_no_side_effects(
+        exc_info,
+        expected_code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+        facade=facade,
+        runs=runs,
+        sink=sink,
+        state=state,
+        checkpoint=checkpoint,
+        rejected_value="corrupt inventory row",
+    )
