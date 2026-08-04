@@ -32,6 +32,10 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDocsDocument,
     GoogleDocsKnowledgeReader,
 )
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.sheets import (
+    GoogleSheetsKnowledgeReader,
+    GoogleSheetsSpreadsheet,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.drive import (
     GoogleDriveChangePage,
     GoogleDriveItem,
@@ -215,6 +219,10 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         family = self.require_client_family()
         return GoogleDocsKnowledgeReader(transport=family.transport)
 
+    def _sheets_reader(self) -> GoogleSheetsKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleSheetsKnowledgeReader(transport=family.transport)
+
     def _drive_content_reader(self) -> GoogleDriveContentReader:
         family = self.require_client_family()
         transport = family.transport
@@ -228,6 +236,15 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         document_id: str,
     ) -> GoogleDocsDocument:
         return self._docs_reader().read_document(document_id=document_id)
+
+    def read_sheets_spreadsheet(
+        self,
+        *,
+        spreadsheet_id: str,
+    ) -> GoogleSheetsSpreadsheet:
+        return self._sheets_reader().read_spreadsheet(
+            spreadsheet_id=spreadsheet_id,
+        )
 
     def read_drive_file_content(
         self,
