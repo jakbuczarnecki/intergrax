@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib.util
 import io
 import sys
+import subprocess
+import urllib.error
 from contextlib import redirect_stdout
 from pathlib import Path
 from types import ModuleType
@@ -127,13 +129,14 @@ def test_existing_env_never_overwritten(
     example = app_dir / ".env.example"
     example.write_text("SAFE_KEY=from_example\n", encoding="utf-8")
     env_file = app_dir / ".env"
-    env_file.write_text("SAFE_KEY=existing\n", encoding="utf-8")
+    original = b"SAFE_KEY=existing\r\n\xff"
+    env_file.write_bytes(original)
     monkeypatch.setattr(quick, "_APP_DIR", app_dir)
     monkeypatch.setattr(quick, "_ENV_FILE", env_file)
     monkeypatch.setattr(quick, "_ENV_EXAMPLE", example)
     created = quick.ensure_env_file()
     assert created is False
-    assert env_file.read_text(encoding="utf-8") == "SAFE_KEY=existing\n"
+    assert env_file.read_bytes() == original
 
 
 def test_bootstrap_selected_per_os(quick: ModuleType) -> None:
@@ -156,7 +159,16 @@ def test_stack_bootstrap_invokes_embedding_pull(
         return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
     monkeypatch.setattr(quick, "run_command", _run_command)
-    monkeypatch.setattr(quick, "ensure_ollama_embedding_model", lambda **_k: None)
+    monkeypatch.setattr(
+        quick,
+        "resolve_ollama_embedding_model",
+        lambda **_k: "configured-embed-model",
+    )
+    monkeypatch.setattr(
+        quick,
+        "ensure_ollama_embedding_model",
+        lambda *_a, **_k: None,
+    )
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
     monkeypatch.setattr(quick, "upload_sample_file", lambda *_a, **_k: "op-1")
@@ -183,6 +195,12 @@ def test_skip_stack_start_skips_bootstrap(
     sample.write_text("AURORA-17", encoding="utf-8")
     monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+    monkeypatch.setattr(
+        quick,
+        "resolve_ollama_embedding_model",
+        lambda **_k: "configured-embed-model",
+    )
+    monkeypatch.setattr(quick, "ensure_ollama_embedding_model", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
     monkeypatch.setattr(quick, "upload_sample_file", lambda *_a, **_k: "op-1")
@@ -223,6 +241,12 @@ def _patch_success_flow(
     sample.write_text("AURORA-17", encoding="utf-8")
     monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+    monkeypatch.setattr(
+        quick,
+        "resolve_ollama_embedding_model",
+        lambda **_k: "configured-embed-model",
+    )
+    monkeypatch.setattr(quick, "ensure_ollama_embedding_model", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     workspace_calls: list[dict[str, Any]] = []
     upload_calls: list[dict[str, Any]] = []
@@ -529,6 +553,251 @@ def test_failure_output_contract(
     assert "lkw_quickstart_result=FAIL" in text
     assert "failed_stage=ask" in text
     assert "failure_reason=answer_marker_missing" in text
+
+
+def test_workspace_urlerror_has_safe_failure_contract(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _urlopen(*_args: Any, **_kwargs: Any) -> Any:
+        raise urllib.error.URLError("raw transport secret")
+
+    monkeypatch.setattr(quick.urllib.request, "urlopen", _urlopen)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.http_post_json(
+            "http://127.0.0.1:8020/workspaces",
+            {},
+            {},
+            stage="workspace",
+        )
+    assert exc.value.reason == "http_transport_failed"
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        quick._emit_failure(exc.value.stage, exc.value.reason)
+    text = buffer.getvalue()
+    assert "lkw_quickstart_result=FAIL" in text
+    assert "raw transport secret" not in text
+    assert "Traceback" not in text
+
+
+def test_http_timeout_has_safe_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick.urllib.request,
+        "urlopen",
+        lambda *_a, **_k: (_ for _ in ()).throw(TimeoutError()),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.http_get_json("http://127.0.0.1:8020/health", {}, stage="health")
+    assert exc.value.reason == "http_transport_failed"
+
+
+@pytest.mark.parametrize("body", [b"\xff", b"not-json"])
+def test_malformed_http_payload_has_invalid_json_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, body: bytes
+) -> None:
+    class _Response:
+        status = 200
+
+        def __enter__(self) -> "_Response":
+            return self
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return body
+
+    monkeypatch.setattr(quick.urllib.request, "urlopen", lambda *_a, **_k: _Response())
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.http_get_json("http://127.0.0.1:8020/health", {}, stage="health")
+    assert exc.value.reason == "invalid_json_response"
+
+
+@pytest.mark.parametrize(
+    ("payload", "field", "stage"),
+    [
+        ({"status": "completed", "documents_indexed": "secret", "files_failed": 0}, "documents_indexed", "ingestion"),
+        ({"status": "accepted", "accepted_count": "bad", "failed_count": 0, "items": []}, "accepted_count", "upload"),
+    ],
+)
+def test_malformed_numeric_fields_have_invalid_shape_reason(
+    quick: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    payload: dict[str, Any],
+    field: str,
+    stage: str,
+) -> None:
+    if stage == "ingestion":
+        monkeypatch.setattr(quick, "http_get_json", lambda *_a, **_k: payload)
+        call = lambda: quick.wait_for_operation(
+            "http://127.0.0.1:8020", "op-1", {}, timeout_seconds=1
+        )
+    else:
+        sample = Path(quick._SAMPLE_FILE)
+        monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
+        monkeypatch.setattr(quick, "http_post_bytes", lambda *_a, **_k: (202, payload))
+        call = lambda: quick.upload_sample_file("http://127.0.0.1:8020", "ws-1")
+    with pytest.raises(quick.QuickstartError) as exc:
+        call()
+    assert exc.value.reason == "invalid_response_shape"
+    assert exc.value.stage == stage
+    assert field in payload
+
+
+def test_bootstrap_timeout_has_command_timeout_contract(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sample = tmp_path / "lkw_product_quickstart.txt"
+    sample.write_text("AURORA-17", encoding="utf-8")
+    monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
+    monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+    monkeypatch.setattr(
+        quick.subprocess,
+        "run",
+        lambda *_a, **_k: (_ for _ in ()).throw(
+            subprocess.TimeoutExpired("bootstrap", 1)
+        ),
+    )
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = quick.run_quickstart(_config(quick, skip_stack_start=False))
+    assert code == 1
+    assert "failure_reason=command_timeout" in buffer.getvalue()
+
+
+def test_subprocess_launch_failure_has_safe_contract(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick.subprocess,
+        "run",
+        lambda *_a, **_k: (_ for _ in ()).throw(OSError("secret command path")),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.run_command(["missing-command"], stage="stack_start")
+    assert exc.value.reason == "command_start_failed"
+
+
+def test_subprocess_output_is_not_printed_on_failure(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sample = tmp_path / "lkw_product_quickstart.txt"
+    sample.write_text("AURORA-17", encoding="utf-8")
+    monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
+    monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP", (), {
+                "returncode": 1,
+                "stdout": "stdout FAKE_SECRET",
+                "stderr": "stderr FAKE_SECRET",
+            }
+        )(),
+    )
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = quick.run_quickstart(_config(quick, skip_stack_start=False))
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failure_reason=stack_start_failed" in text
+    assert "FAKE_SECRET" not in text
+
+
+def test_unexpected_exception_has_safe_failure_contract(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _patch_success_flow(quick, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        quick,
+        "create_workspace",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("private traceback")),
+    )
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        code = quick.run_quickstart(_config(quick))
+    text = buffer.getvalue()
+    assert code == 1
+    assert "failure_reason=unexpected_internal_error" in text
+    assert "private traceback" not in text
+    assert "Traceback" not in text
+
+
+def test_model_resolution_reads_container_configured_value(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(args)
+        return type("CP", (), {"returncode": 0, "stdout": "custom/embed:latest\n", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    model_name = quick.resolve_ollama_embedding_model(timeout_seconds=10)
+    assert model_name == "custom/embed:latest"
+    command = " ".join(calls[0])
+    assert "local_workspace" in command
+    assert "OllamaEmbeddingProvider.ENV_MODEL" in command
+    assert "OllamaEmbeddingProvider.DEFAULT_MODEL" in command
+
+
+def test_model_resolution_expression_uses_runtime_default_when_env_missing(
+    quick: ModuleType,
+) -> None:
+    assert "os.getenv(OllamaEmbeddingProvider.ENV_MODEL)" in quick._MODEL_RESOLUTION_CODE
+    assert "OllamaEmbeddingProvider.DEFAULT_MODEL" in quick._MODEL_RESOLUTION_CODE
+
+
+def test_resolved_model_is_passed_to_ollama_pull(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+
+    def _run(args: list[str], **_kwargs: Any) -> Any:
+        calls.append(args)
+        return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    monkeypatch.setattr(quick, "run_command", _run)
+    quick.ensure_ollama_embedding_model("custom/embed:latest", timeout_seconds=10)
+    assert calls[0][-1] == "custom/embed:latest"
+
+
+@pytest.mark.parametrize("output", ["one\ntwo\n", "\n", "x" * 257, "bad\x01model\n"])
+def test_malformed_embedding_model_output_is_rejected(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP", (), {"returncode": 0, "stdout": output, "stderr": ""}
+        )(),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.resolve_ollama_embedding_model(timeout_seconds=10)
+    assert exc.value.reason == "embedding_model_resolution_failed"
+
+
+def test_skip_stack_start_still_resolves_and_pulls_model(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[str] = []
+    _patch_success_flow(quick, monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        quick,
+        "resolve_ollama_embedding_model",
+        lambda **_k: calls.append("resolve") or "custom/embed:latest",
+    )
+    monkeypatch.setattr(
+        quick,
+        "ensure_ollama_embedding_model",
+        lambda model_name, **_k: calls.append(f"pull:{model_name}"),
+    )
+    code = quick.run_quickstart(_config(quick, skip_stack_start=True))
+    assert code == 0
+    assert calls == ["resolve", "pull:custom/embed:latest"]
 
 
 def test_no_shell_true_in_runner_source() -> None:

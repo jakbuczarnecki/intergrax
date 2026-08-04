@@ -36,7 +36,15 @@ _BOOTSTRAP_BAT = _SCRIPT_DIR / "build-local-docker.bat"
 _BOOTSTRAP_SH = _SCRIPT_DIR / "build-local-docker.sh"
 _COMPOSE_FILE = _APP_DIR / "docker" / "docker-compose.yml"
 _COMPOSE_PROJECT = "intergrax_lkw"
-_OLLAMA_EMBED_MODEL = "nomic-embed-text"
+_NEW_ENV_OLLAMA_EMBED_MODEL = "nomic-embed-text"
+_MODEL_RESOLUTION_CODE = (
+    "import os; "
+    "from intergrax.rag.embedding.providers.ollama_embedding_provider "
+    "import OllamaEmbeddingProvider; "
+    "print(os.getenv(OllamaEmbeddingProvider.ENV_MODEL) "
+    "or OllamaEmbeddingProvider.DEFAULT_MODEL)"
+)
+_MAX_EMBEDDING_MODEL_LENGTH = 256
 
 _DEFAULT_BASE_URL = "http://127.0.0.1:8020"
 _DEFAULT_TIMEOUT = 600
@@ -159,19 +167,24 @@ def run_command(
     *,
     cwd: Path | None = None,
     timeout: int | None = None,
+    stage: str = "stack_start",
 ) -> subprocess.CompletedProcess[str]:
-    completed = subprocess.run(
-        list(args),
-        cwd=str(cwd) if cwd is not None else None,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        timeout=timeout,
-        shell=False,
-        check=False,
-    )
-    return completed
+    try:
+        return subprocess.run(
+            list(args),
+            cwd=str(cwd) if cwd is not None else None,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+            shell=False,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise QuickstartError("command_timeout", stage=stage) from None
+    except OSError:
+        raise QuickstartError("command_start_failed", stage=stage) from None
 
 
 def ensure_env_file() -> bool:
@@ -179,11 +192,15 @@ def ensure_env_file() -> bool:
         return False
     if not _ENV_EXAMPLE.is_file():
         raise QuickstartError("env_example_missing", stage="preflight")
-    shutil.copyfile(_ENV_EXAMPLE, _ENV_FILE)
-    with _ENV_FILE.open("a", encoding="utf-8") as handle:
-        handle.write(
-            f"\nINTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL={_OLLAMA_EMBED_MODEL}\n"
-        )
+    try:
+        shutil.copyfile(_ENV_EXAMPLE, _ENV_FILE)
+        with _ENV_FILE.open("a", encoding="utf-8") as handle:
+            handle.write(
+                f"\nINTERGRAX_DEFAULT_OLLAMA_EMBED_MODEL="
+                f"{_NEW_ENV_OLLAMA_EMBED_MODEL}\n"
+            )
+    except OSError:
+        raise QuickstartError("env_materialization_failed", stage="preflight") from None
     return True
 
 
@@ -205,7 +222,59 @@ def compose_exec_args(*compose_command: str) -> list[str]:
     ]
 
 
-def ensure_ollama_embedding_model(*, timeout_seconds: int) -> None:
+def _validate_resolved_embedding_model(output: str) -> str:
+    if not isinstance(output, str):
+        raise QuickstartError(
+            "embedding_model_resolution_failed",
+            stage="stack_start",
+        )
+    non_empty_lines = [line.strip() for line in output.splitlines() if line.strip()]
+    if len(non_empty_lines) != 1:
+        raise QuickstartError(
+            "embedding_model_resolution_failed",
+            stage="stack_start",
+        )
+    model_name = non_empty_lines[0]
+    if (
+        not model_name
+        or len(model_name) > _MAX_EMBEDDING_MODEL_LENGTH
+        or any(ord(character) < 32 or ord(character) == 127 for character in model_name)
+        or any(character.isspace() for character in model_name)
+    ):
+        raise QuickstartError(
+            "embedding_model_resolution_failed",
+            stage="stack_start",
+        )
+    return model_name
+
+
+def resolve_ollama_embedding_model(*, timeout_seconds: int) -> str:
+    completed = run_command(
+        compose_exec_args(
+            "exec",
+            "-T",
+            "local_workspace",
+            "python",
+            "-c",
+            _MODEL_RESOLUTION_CODE,
+        ),
+        cwd=_APP_DIR,
+        timeout=timeout_seconds,
+        stage="stack_start",
+    )
+    if completed.returncode != 0:
+        raise QuickstartError(
+            "embedding_model_resolution_failed",
+            stage="stack_start",
+        )
+    return _validate_resolved_embedding_model(completed.stdout)
+
+
+def ensure_ollama_embedding_model(
+    model_name: str,
+    *,
+    timeout_seconds: int,
+) -> None:
     completed = run_command(
         compose_exec_args(
             "exec",
@@ -213,15 +282,40 @@ def ensure_ollama_embedding_model(*, timeout_seconds: int) -> None:
             "ollama",
             "ollama",
             "pull",
-            _OLLAMA_EMBED_MODEL,
+            model_name,
         ),
         cwd=_APP_DIR,
         timeout=timeout_seconds,
+        stage="stack_start",
     )
     if completed.returncode != 0:
-        if completed.stderr:
-            print(completed.stderr.strip(), flush=True)
         raise QuickstartError("embedding_model_pull_failed", stage="stack_start")
+
+
+def _decode_json_object(raw: bytes, *, stage: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise QuickstartError("invalid_json_response", stage=stage) from None
+    if not isinstance(payload, dict):
+        raise QuickstartError("invalid_response_shape", stage=stage)
+    return payload
+
+
+def response_integer(
+    payload: Mapping[str, Any],
+    field: str,
+    *,
+    stage: str,
+    default: int = 0,
+) -> int:
+    value = payload.get(field, default)
+    if isinstance(value, bool):
+        raise QuickstartError("invalid_response_shape", stage=stage)
+    try:
+        return int(value)
+    except (TypeError, ValueError, OverflowError):
+        raise QuickstartError("invalid_response_shape", stage=stage) from None
 
 
 def http_get_json(
@@ -238,13 +332,12 @@ def http_get_json(
             status = response.status
     except urllib.error.HTTPError as exc:
         status = exc.code
-        body = exc.read()
+        body = b""
+    except (urllib.error.URLError, TimeoutError, OSError):
+        raise QuickstartError("http_transport_failed", stage=stage) from None
     if status < 200 or status >= 300:
         raise QuickstartError(f"http_status_{status}", stage=stage)
-    payload = json.loads(body.decode("utf-8"))
-    if not isinstance(payload, dict):
-        raise QuickstartError("invalid_json_object", stage=stage)
-    return payload
+    return _decode_json_object(body, stage=stage)
 
 
 def http_post_json(
@@ -265,14 +358,12 @@ def http_post_json(
             status = response.status
     except urllib.error.HTTPError as exc:
         status = exc.code
-        raw = exc.read()
-    try:
-        payload = json.loads(raw.decode("utf-8"))
-    except json.JSONDecodeError:
-        raise QuickstartError("invalid_json_response", stage=stage) from None
-    if not isinstance(payload, dict):
-        raise QuickstartError("invalid_json_object", stage=stage)
-    return status, payload
+        raw = b""
+    except (urllib.error.URLError, TimeoutError, OSError):
+        raise QuickstartError("http_transport_failed", stage=stage) from None
+    if status < 200 or status >= 300:
+        return status, {}
+    return status, _decode_json_object(raw, stage=stage)
 
 
 def encode_multipart_file(
@@ -333,8 +424,9 @@ def wait_for_health(base_url: str, *, timeout_seconds: int) -> None:
             payload = http_get_json(health_url, {}, timeout=5.0)
             if str(payload.get("status", "")).strip() == "ok":
                 return
-        except (QuickstartError, urllib.error.URLError, TimeoutError, OSError):
-            pass
+        except QuickstartError as exc:
+            if exc.reason != "http_transport_failed":
+                raise
         time.sleep(2)
     raise QuickstartError("health_timeout", stage="health")
 
@@ -352,9 +444,19 @@ def wait_for_operation(
         payload = http_get_json(url, headers, timeout=15.0, stage="ingestion")
         status = str(payload.get("status", "")).strip().lower()
         if status == "completed":
-            if int(payload.get("documents_indexed", 0)) < 1:
+            documents_indexed = response_integer(
+                payload,
+                "documents_indexed",
+                stage="ingestion",
+            )
+            files_failed = response_integer(
+                payload,
+                "files_failed",
+                stage="ingestion",
+            )
+            if documents_indexed < 1:
                 raise QuickstartError("documents_not_indexed", stage="ingestion")
-            if int(payload.get("files_failed", 0)) != 0:
+            if files_failed != 0:
                 raise QuickstartError("files_failed_nonzero", stage="ingestion")
             if payload.get("error") is not None:
                 raise QuickstartError("operation_error_present", stage="ingestion")
@@ -409,8 +511,12 @@ def upload_sample_file(base_url: str, workspace_id: str) -> str:
     if status != 202:
         raise QuickstartError("upload_http_failed", stage="upload")
     batch_status = str(payload.get("status", "")).strip().lower()
-    accepted_count = int(payload.get("accepted_count", 0))
-    failed_count = int(payload.get("failed_count", 0))
+    accepted_count = response_integer(
+        payload,
+        "accepted_count",
+        stage="upload",
+    )
+    failed_count = response_integer(payload, "failed_count", stage="upload")
     items = payload.get("items")
     if not isinstance(items, list) or len(items) != 1:
         raise QuickstartError("upload_item_count_invalid", stage="upload")
@@ -515,6 +621,7 @@ def emit_success(answer: str, workspace_id: str, run_id: str) -> None:
 
 
 def run_quickstart(config: QuickstartConfig) -> int:
+    current_stage = "preflight"
     try:
         validate_os_wrapper_pair(config.os_family, config.wrapper_id)
         base_url = validate_loopback_base_url(config.base_url)
@@ -528,38 +635,52 @@ def run_quickstart(config: QuickstartConfig) -> int:
                 flush=True,
             )
         if not config.skip_stack_start:
+            current_stage = "stack_start"
             if not _BOOTSTRAP_BAT.is_file() or not _BOOTSTRAP_SH.is_file():
                 raise QuickstartError("bootstrap_script_missing", stage="preflight")
             completed = run_command(
                 bootstrap_args(config.os_family),
                 cwd=_REPO_ROOT,
                 timeout=config.timeout_seconds,
+                stage="stack_start",
             )
             if completed.returncode != 0:
-                if completed.stderr:
-                    print(completed.stderr.strip(), flush=True)
-                if completed.stdout:
-                    print(completed.stdout.strip(), flush=True)
                 raise QuickstartError("stack_start_failed", stage="stack_start")
-            ensure_ollama_embedding_model(timeout_seconds=config.timeout_seconds)
+        current_stage = "health"
         wait_for_health(base_url, timeout_seconds=config.timeout_seconds)
+        current_stage = "stack_start"
+        model_name = resolve_ollama_embedding_model(
+            timeout_seconds=config.timeout_seconds,
+        )
+        ensure_ollama_embedding_model(
+            model_name,
+            timeout_seconds=config.timeout_seconds,
+        )
+        current_stage = "workspace"
         workspace_id = create_workspace(base_url)
+        current_stage = "upload"
         operation_id = upload_sample_file(base_url, workspace_id)
+        current_stage = "ingestion"
         wait_for_operation(
             base_url,
             operation_id,
             _tenant_headers(),
             timeout_seconds=config.timeout_seconds,
         )
+        current_stage = "ask"
         ask_payload = ask_workspace(base_url, workspace_id)
         run_id = str(ask_payload.get("run_id", "")).strip()
         answer = str(ask_payload.get("answer", "")).strip()
+        current_stage = "persisted_read"
         verify_persisted_ask(base_url, run_id, workspace_id)
         _assert_safe_user_text(answer)
         emit_success(answer, workspace_id, run_id)
         return 0
     except QuickstartError as exc:
         _emit_failure(exc.stage, exc.reason)
+        return 1
+    except Exception:
+        _emit_failure(current_stage, "unexpected_internal_error")
         return 1
 
 

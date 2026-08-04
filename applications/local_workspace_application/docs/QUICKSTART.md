@@ -121,7 +121,10 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 ## First-run downloads
 
 - Docker images for the LKW stack may be downloaded on first run.
-- The configured Ollama model (`llama3.1:latest` by default) may be pulled on first run.
+- The configured generation model (`llama3.1:latest` by default) may be downloaded by the stack.
+- The quickstart resolves the embedding model configured in the running LKW container and pulls that exact model.
+- An existing `.env` is not modified; a missing `.env` is created once from `.env.example`.
+- Operational failures return a safe stage and reason instead of raw Docker, HTTP or subprocess logs.
 - Duration varies by environment; timing is not claimed as validated until external sessions confirm it.
 
 ## Safety
