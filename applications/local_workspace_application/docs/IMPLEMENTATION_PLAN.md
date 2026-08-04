@@ -47,7 +47,9 @@ Slack Knowledge vertical next:
   → LKW-GOOGLE-WORKSPACE-PROOF-1
 
 LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
-LKW-CONVERSATIONAL-INTERACTION-1B → BLOCKED only until LKW-CONVERSATION-CONTEXT-1B3 acceptance
+LKW-CONVERSATION-CONTEXT-1B3 → ACCEPTED / CLOSED
+LKW-CONVERSATIONAL-INTERACTION-1B → READY_FOR_REVIEW
+LKW-CONVERSATIONAL-INTERACTION-1C → PLANNED
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable platform proof
 ```
 
@@ -207,7 +209,7 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 | `LKW-CONVERSATION-CONTEXT-1A` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B2` | **READY_FOR_REVIEW** |
-| `LKW-CONVERSATION-CONTEXT-1B3` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1B3` | **ACCEPTED / CLOSED** |
 | `LKW-CONVERSATION-CONTEXT-1C` | **PLANNED** / next after acceptance |
 
 **Required dependency (implementation tracks):**
