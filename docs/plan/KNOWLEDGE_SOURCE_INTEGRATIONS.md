@@ -1686,3 +1686,279 @@ GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
 
 Each read surface and its adapter must be independently reviewable before proceeding. The final Google LKW proof may combine Docs, Sheets, Calendar and an optional ordinary Drive file.
+
+---
+
+## Phase 9 — Unified Vendor Knowledge live capability rollout
+
+### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
+
+**Status:** `READY_FOR_REVIEW`
+**Scope:** planning only; no runtime implementation is activated by this task.
+
+This rollout makes one shared execution boundary authoritative for all Vendor
+Knowledge live capabilities:
+
+```text
+LiveCapabilityDescriptorV1
+→ tenant-safe capability catalog
+→ durable Live Access Binding lifecycle
+→ exact immutable LiveCapabilityHandlerV1 registry
+→ validated provider-neutral executor
+→ bounded normalized live evidence
+→ receipt-only retention
+```
+
+The rollout covers Microsoft Graph, Slack, Jira, Confluence and Google
+Workspace. All source kinds without a production handler remain
+`FOUNDATION_ONLY`; the existing generic live foundation is not provider
+production proof.
+
+#### Binding ownership split
+
+The Google Workspace core workstream owns:
+
+```text
+provider integration primitives
+source-specific read surfaces
+provider pagination and cursors
+source-specific typed models
+Vendor Knowledge durable adapters
+source-specific adapter tests
+Google family implementation closeout
+```
+
+This Vendor Knowledge live rollout owns:
+
+```text
+LiveCapabilityDescriptorV1 declarations
+LiveCapabilityHandlerV1 implementations
+provider-neutral request/result contracts
+handler registration
+capability catalog registration
+effective budgets
+timeouts
+provider error normalization
+normalized live evidence
+safe locators
+receipt behavior
+retention behavior
+cross-provider contract tests
+live family closeout
+```
+
+The Google core workstream must not build a second live executor, a
+Google-specific live registry, a Google-specific receipt mechanism or a direct
+LKW-to-Google execution path. This rollout must not reimplement Google
+clients, authentication, provider transport, pagination, source-specific read
+primitives or durable adapters.
+
+#### Shared foundation status
+
+```text
+provider-neutral capability descriptors: implemented
+tenant-safe capability catalog: implemented
+durable Live Access Binding lifecycle: implemented
+exact immutable handler registry: implemented
+validated provider-neutral executor: implemented
+timeout, item and byte budgets: implemented
+normalized live evidence: implemented
+receipt-only retention: implemented
+provider-specific production handlers: not implemented
+provider-specific production registrations: not implemented
+cross-provider production proof: not implemented
+```
+
+#### Source-kind coverage
+
+```text
+Microsoft Graph: drive, mail, teams_channel, teams_chat, calendar
+Slack:          slack_conversation
+Jira:           issues
+Confluence:     pages
+Google Workspace: drive, docs, sheets, calendar, slides, mail, chat
+```
+
+There are 15 planned source kinds. Databricks remains excluded until one exact
+source kind is selected. Power BI and Atlan remain outside this rollout unless
+separately activated.
+
+### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1`
+
+**Status:** `PLANNED / NEXT`
+**Activation:** only after this plan is accepted and external review is
+complete.
+
+This architecture task freezes one reusable pattern for every provider,
+including Google Workspace:
+
+```text
+capability naming
+search/list versus exact read
+request schemas
+result schemas
+connection scope
+remote-resource scope
+audience enforcement
+effective budgets
+timeouts
+provider errors
+normalized evidence
+safe locators
+receipts
+retention
+descriptor registration
+handler registration
+contract tests
+family closeouts
+readiness gates
+```
+
+It prohibits provider-specific live frameworks, direct application-to-provider
+calls, duplicate credential resolution, duplicate clients, unbounded search,
+write/admin capabilities and raw provider payload exposure. Every provider
+uses the same executor, registry, normalized evidence and receipt boundary.
+
+### Canonical rollout order
+
+```text
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
+→ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
+
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
+
+→ SLACK-KNOWLEDGE-LIVE-CAPABILITY-1
+→ JIRA-KNOWLEDGE-LIVE-CAPABILITY-1
+→ CONFLUENCE-KNOWLEDGE-LIVE-CAPABILITY-1
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1
+
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1B-DOCS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1C-SHEETS
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1D-CALENDAR
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1E-SLIDES
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1F-MAIL
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITY-1G-CHAT
+→ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
+
+→ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1
+```
+
+These are planned tasks, not activation claims. No implementation task may be
+activated before external review of this plan.
+
+### `GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1`
+
+**Status:** `PLANNED`
+**Rule:** readiness is evaluated independently for each exact source kind.
+
+The gate inspects `drive`, `docs`, `sheets`, `calendar`, `slides`, `mail` and
+`chat` separately. Each source kind requires evidence of:
+
+```text
+stable source_kind identity
+shared Google Workspace integration reuse
+typed source-specific read surface
+bounded provider read
+safe provider references
+stable remote item identity
+provider error normalization
+no secret-bearing public models
+Vendor Knowledge adapter availability where required
+focused source-specific tests
+current task/review status
+```
+
+Possible per-source outcomes:
+
+```text
+READY_FOR_LIVE_ROLLOUT
+BLOCKED_BY_CORE_READ_SURFACE
+BLOCKED_BY_ADAPTER
+BLOCKED_BY_PROVIDER_SEMANTICS
+BLOCKED_BY_REVIEW
+```
+
+One ready source kind never proves readiness for the Google family. A Google
+live task is active only when its exact source kind is
+`READY_FOR_LIVE_ROLLOUT`; unfinished source kinds do not block ready ones.
+The Google family closeout remains blocked until every source kind in the
+accepted Google core family scope has either an accepted live implementation
+or an explicit deferred/excluded decision.
+
+### Provider live tasks and family closeouts
+
+Each provider task implements only its source-specific handler and registration
+over the frozen shared boundary. Each family closeout verifies:
+
+```text
+one shared provider integration
+no duplicate provider clients
+tenant-safe connection resolution
+exact source-kind isolation
+read-only enforcement
+resource-scope enforcement
+bounded request and result behavior
+timeout behavior
+provider error normalization
+normalized evidence
+safe locator behavior
+receipt privacy
+credential non-disclosure
+contract tests
+production proof
+```
+
+The Google family closeout additionally verifies reuse of the existing shared
+`GoogleWorkspaceCollaborationSuiteIntegration`, with no separate Drive, Docs,
+Sheets, Calendar, Slides, Mail or Chat clients.
+
+### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1`
+
+**Status:** `PLANNED`
+
+The final audit produces a matrix for every gated source kind and every
+explicitly deferred source kind with its reason. Required columns are:
+
+```text
+provider
+source_kind
+capability_id
+search/list support
+exact-read support
+resource scope
+request schema
+result schema
+timeout
+item budget
+byte budget
+evidence mapping
+safe locator
+receipt behavior
+retention
+descriptor registration
+handler registration
+proof status
+commercial status
+```
+
+### Status after this task
+
+```text
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: PLANNED / NEXT
+Microsoft Graph live tasks: PLANNED
+Slack live task: PLANNED
+Jira live task: PLANNED
+Confluence live task: PLANNED
+GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1: PLANNED
+Google source-kind live tasks: PLANNED / GATED_BY_CORE_READINESS
+Google live family closeout: PLANNED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1: PLANNED
+```

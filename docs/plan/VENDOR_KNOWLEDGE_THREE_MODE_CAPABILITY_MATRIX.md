@@ -260,3 +260,177 @@ These are sequencing findings, not newly activated implementation tasks.
 
 The accepted audit's provider-specific adapter tests are referenced rather than
 re-read here; they prove adapter/sync layers, not the higher application modes.
+
+---
+
+## 13. Unified live capability rollout matrix
+
+### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
+
+**Status:** `READY_FOR_REVIEW`
+
+This addendum is the canonical live-rollout planning view. It does not convert
+any `FOUNDATION_ONLY` row into an implemented provider capability.
+
+Shared live foundation:
+
+```text
+provider-neutral capability descriptors: implemented
+tenant-safe capability catalog: implemented
+durable Live Access Binding lifecycle: implemented
+exact immutable handler registry: implemented
+validated provider-neutral executor: implemented
+timeout, item and byte budgets: implemented
+normalized live evidence: implemented
+receipt-only retention: implemented
+provider-specific production handlers: not implemented
+provider-specific production registrations: not implemented
+cross-provider production proof: not implemented
+```
+
+All rows below use the same planned contract shape. `ARCH-1` freezes the
+provider-neutral request/result schemas and exact capability naming; the
+provider-specific rows remain planned until their handler and registration
+proof exists.
+
+| provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Microsoft Graph | `drive` | `PLANNED:vk.msgraph.drive.search/read` | planned | planned | one known drive | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `mail` | `PLANNED:vk.msgraph.mail.search/read` | planned | planned | mailbox + folder | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `teams_channel` | `PLANNED:vk.msgraph.teams_channel.search/read` | planned | planned | one team + channel | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `teams_chat` | `PLANNED:vk.msgraph.teams_chat.search/read` | planned | planned | one chat + bounded window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `calendar` | `PLANNED:vk.msgraph.calendar.search/read` | planned | planned | mailbox calendar + UTC window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Slack | `slack_conversation` | `PLANNED:vk.slack.slack_conversation.search/read` | planned | planned | one authorized conversation | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Jira | `issues` | `PLANNED:vk.jira.issues.search/read` | planned | planned | one Jira project | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Confluence | `pages` | `PLANNED:vk.confluence.pages.search/read` | planned | planned | one Confluence space | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `drive` | `PLANNED:vk.google_workspace.drive.search/read` | gated | gated | selected Drive resource | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `docs` | `PLANNED:vk.google_workspace.docs.search/read` | gated | gated | one known document | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `sheets` | `PLANNED:vk.google_workspace.sheets.search/read` | gated | gated | one known spreadsheet | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `calendar` | `PLANNED:vk.google_workspace.calendar.search/read` | gated | gated | calendar + bounded time window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `slides` | `PLANNED:vk.google_workspace.slides.search/read` | gated | gated | one known presentation | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `mail` | `PLANNED:vk.google_workspace.mail.search/read` | gated | gated | mailbox + bounded folder/query scope | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+| Google Workspace | `chat` | `PLANNED:vk.google_workspace.chat.search/read` | gated | gated | one authorized space + window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | gated | gated | `FOUNDATION_ONLY` | NONE |
+
+`gated` means that the exact source kind must first pass
+`GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1`; it is not an implementation
+claim. The matrix deliberately uses no numeric budgets before `ARCH-1` freezes
+the effective policy inputs and provider-specific tasks prove their bounded
+behavior.
+
+### Google readiness gate
+
+#### `GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1`
+
+**Status:** `PLANNED`
+
+The gate evaluates each of the seven exact Google source kinds independently.
+For every row it requires:
+
+```text
+stable source_kind identity
+shared Google Workspace integration reuse
+typed source-specific read surface
+bounded provider read
+safe provider references
+stable remote item identity
+provider error normalization
+no secret-bearing public models
+Vendor Knowledge adapter availability where required
+focused source-specific tests
+current task/review status
+```
+
+Allowed outcomes are:
+
+```text
+READY_FOR_LIVE_ROLLOUT
+BLOCKED_BY_CORE_READ_SURFACE
+BLOCKED_BY_ADAPTER
+BLOCKED_BY_PROVIDER_SEMANTICS
+BLOCKED_BY_REVIEW
+```
+
+The gate is not yet run, so every Google row above is `FOUNDATION_ONLY` with
+activation `gated`. A ready Drive/Docs/Sheets/Calendar subset may activate
+independently; Slides, Mail or Chat readiness does not block that subset, and
+an unfinished source kind must not be represented as ready by family inference.
+The Google family closeout requires an accepted live implementation or an
+explicit deferred/excluded decision for every source kind in the accepted core
+family scope.
+
+### Ownership and family closeout
+
+Google core remains owned by its separate workstream:
+
+```text
+integration primitives
+source-specific read surfaces
+pagination/cursors
+typed provider models
+durable Vendor Knowledge adapters
+source-specific adapter tests
+Google family implementation closeout
+```
+
+This rollout owns Google live integration:
+
+```text
+LiveCapabilityDescriptorV1 declarations
+LiveCapabilityHandlerV1 implementations
+provider-neutral request/result contracts
+handler and catalog registration
+effective budgets and timeouts
+provider error normalization
+normalized evidence and safe locators
+receipts and retention
+cross-provider tests
+live family closeout
+```
+
+No Google-specific executor, registry, receipt mechanism or direct LKW-to-Google
+path is allowed. No provider-specific live framework or duplicate provider
+client is allowed for any family.
+
+Every provider family closeout verifies shared integration reuse, tenant-safe
+connection resolution, exact source-kind and resource-scope isolation,
+read-only enforcement, bounded request/results, timeout behavior, normalized
+errors/evidence, safe locators, private receipts, credential non-disclosure,
+contract tests and production proof. Google additionally proves that all seven
+handlers reuse the existing shared `GoogleWorkspaceCollaborationSuiteIntegration`.
+
+### Canonical rollout order and final audit
+
+Immediate next task:
+
+```text
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1 — PLANNED / NEXT
+```
+
+The complete order is frozen in
+`KNOWLEDGE_SOURCE_INTEGRATIONS.md`, from this rollout plan through Graph,
+Slack, Jira, Confluence, the Google readiness gate and independently gated
+Google source tasks, to both family closeouts and:
+
+```text
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1 — PLANNED
+```
+
+The final audit matrix must retain the columns shown above and include all
+source kinds that passed their readiness gates plus every explicitly deferred
+source kind and its reason. Databricks remains excluded because no exact
+`source_kind` has been selected; Power BI and Atlan are outside this rollout.
+
+### Rollout status
+
+```text
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: PLANNED / NEXT
+Microsoft Graph live tasks: PLANNED
+Slack live task: PLANNED
+Jira live task: PLANNED
+Confluence live task: PLANNED
+GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1: PLANNED
+Google source-kind live tasks: PLANNED / GATED_BY_CORE_READINESS
+Google live family closeout: PLANNED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1: PLANNED
+```
