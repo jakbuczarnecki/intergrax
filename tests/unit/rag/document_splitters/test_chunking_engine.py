@@ -7,6 +7,10 @@ from typing import Sequence
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    attach_parser_native_handle,
+    get_parser_native_handle,
+)
 from intergrax.rag.document_splitters.chunk_document import (
     build_derived_chunk,
     validate_derived_chunk,
@@ -64,6 +68,27 @@ class _PassthroughStrategy(BaseChunkingStrategy):
         return [
             build_derived_chunk(doc, content=doc.content, strategy_id=self.strategy_id(), chunk_index=0)
             for doc in documents
+        ]
+
+
+class _RuntimeStateStrategy(BaseChunkingStrategy):
+    def __init__(self, expected_handle: object) -> None:
+        self._expected_handle = expected_handle
+
+    @classmethod
+    def strategy_id(cls) -> str:
+        return "runtime_state"
+
+    def chunk(self, documents: Sequence[KnowledgeDocument]) -> Sequence[KnowledgeDocument]:
+        assert get_parser_native_handle(documents[0]) is self._expected_handle
+        document = documents[0]
+        return [
+            build_derived_chunk(
+                document,
+                content=document.content,
+                strategy_id=self.strategy_id(),
+                chunk_index=0,
+            )
         ]
 
 
@@ -216,6 +241,25 @@ def test_chunking_engine_preserves_source_order_and_unique_ids() -> None:
     assert chunks[0].identity.parent_document_id == "doc-a"
     assert chunks[1].identity.parent_document_id == "doc-b"
     assert len({chunk.identity.document_id for chunk in chunks}) == 2
+
+
+def test_chunking_engine_preserves_private_parser_runtime_state_for_strategy() -> None:
+    source = _source("doc-runtime", "runtime content")
+    expected_handle = object()
+    source = attach_parser_native_handle(source, expected_handle)
+
+    result = _engine(_RuntimeStateStrategy(expected_handle)).chunk(
+        [source],
+        strategy_id="runtime_state",
+    )
+
+    assert len(result) == 1
+    result_chunk = result[0]
+    assert result_chunk.metadata.get("chunk_fallback") is not True
+    assert get_parser_native_handle(result_chunk) is None
+    serialized_result = result_chunk.model_dump(mode="python")
+    assert expected_handle not in serialized_result.values()
+    assert expected_handle not in result_chunk.metadata.values()
 
 
 def test_chunking_engine_rejects_duplicate_source_document_ids() -> None:

@@ -8,6 +8,9 @@ from collections import defaultdict
 from typing import Sequence
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    copy_parser_runtime_state,
+)
 from intergrax.rag.document_splitters.chunk_document import (
     build_derived_chunk,
     validate_derived_chunk,
@@ -65,8 +68,12 @@ class ChunkingEngine:
                 raise TypeError(
                     f"Chunking input must be KnowledgeDocument instances, got {type(document)!r}"
                 )
-            revalidated_source = KnowledgeDocument.model_validate(
+            validated_fields = KnowledgeDocument.model_validate(
                 document.model_dump(mode="python")
+            )
+            revalidated_source = copy_parser_runtime_state(
+                document,
+                validated_fields,
             )
             source_id = revalidated_source.identity.document_id
             if source_id in input_by_id:
