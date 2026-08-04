@@ -78,9 +78,20 @@ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A
   through REVIEW-FIX-3
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B
   through REVIEW-FIX-5-REVIEW-CORRECTION-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
+  ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
+  ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
+  ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
+  ACCEPTED through REVIEW-FIX-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
+  ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
 READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY
+MSGRAPH-KNOWLEDGE-ADAPTERS-1
+MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT
 CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
   correction under review
@@ -89,22 +100,6 @@ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2
 IN_PROGRESS:
 LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1
-  DONE:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL
-  DONE:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-BASED-PAGING-AND-EXACT-MESSAGE-READ
-  DONE:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-READS-REVIEW-FIX-1
-  DONE:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
-  DONE:
-  MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1
-CHANGES_REQUIRED:
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
-  Calendar acceptance proof complete; awaiting external review
 PLANNED:
 LKW-CONVERSATION-CONTEXT-1
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
@@ -170,9 +165,9 @@ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correc
 → VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 — CHANGES_REQUIRED
 → VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 — CHANGES_REQUIRED
 → VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF — ACCEPTED
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — CHANGES_REQUIRED
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
 → MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 — CHANGES_REQUIRED
-→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — READY_FOR_REVIEW
+→ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — ACCEPTED
 → Microsoft Graph adapter-family audit
 
 INDEPENDENT GOOGLE WORKSPACE TRACK (after LKW-SLACK-KNOWLEDGE-PROOF-1 ACCEPTED):
@@ -226,7 +221,11 @@ Microsoft Graph Teams Chat Vendor Knowledge adapter
 (`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`) is implemented.
 
 Microsoft Graph Calendar Vendor Knowledge adapter
-(`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **CHANGES_REQUIRED** pending external review of `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY`; the prior review fix remains **CHANGES_REQUIRED**. Durable reconciliation finalization is accepted through Review Fix 5 correction; the Calendar proof covers safe non-primary missing-item finalization.
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) is **ACCEPTED** through
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY`;
+the prior review fix remains **CHANGES_REQUIRED**. Durable reconciliation
+finalization is accepted through Review Fix 5 correction; the Calendar proof
+covers safe non-primary missing-item finalization.
 
 Drive capability matrix:
 
@@ -412,7 +411,12 @@ treated as proof of global event deletion.
 
 No beta Graph endpoint, group calendar, recursive item attachment or reference-attachment download is implemented.
 
-The Microsoft Graph Calendar Vendor Knowledge adapter is **CHANGES_REQUIRED** (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) pending external review of `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY`; its prior review fix remains **CHANGES_REQUIRED**. Non-primary missing-item detection is implemented and proven only after the final snapshot page. Calendar ACL is not implemented.
+The Microsoft Graph Calendar Vendor Knowledge adapter is **ACCEPTED**
+(`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`) through
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY`;
+its prior review fix remains **CHANGES_REQUIRED**. Non-primary missing-item
+detection is implemented and proven only after the final snapshot page.
+Calendar ACL is not implemented.
 
 Microsoft Graph Teams Chat low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -501,8 +505,9 @@ First real vendor facade/coordinator proof implemented
 Jira Issues, Confluence Pages, Microsoft Graph Drive, Microsoft Graph Mail, Microsoft Graph Teams Channel and Microsoft Graph Teams Chat Vendor Knowledge adapters implemented.
 
 Microsoft Graph Teams Chat Vendor Knowledge adapter is implemented.
-Microsoft Graph Calendar Vendor Knowledge adapter code exists but remains
-**CHANGES_REQUIRED** until shared reconciliation-finalization is implemented.
+Microsoft Graph Calendar Vendor Knowledge adapter is **ACCEPTED** through
+`REVIEW-FIX-1-REVIEW-CORRECTION-1`; its prior review fix remains
+**CHANGES_REQUIRED**.
 LKW connected-source bridge not implemented
 ```
 
@@ -618,8 +623,8 @@ LKW bridge: not implemented
 
 ```text
 low-level read foundation: implemented
-Vendor Knowledge adapter: CHANGES_REQUIRED — acceptance proof ready for external review
-non-primary missing-item detection: implemented; final-page proof ready for external review
+Vendor Knowledge adapter: ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
+non-primary missing-item detection: implemented; final-page proof accepted
 provider-neutral live capability: not implemented
 LKW bridge: not implemented
 ```
@@ -955,7 +960,8 @@ VendorKnowledgeSyncRuntime.
 
 **Next after acceptance:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` (currently **PLANNED**, blocked pending architecture correction acceptance).
 
-**Blocks:** `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` (currently **CHANGES_REQUIRED** pending external review). Calendar missing-item detection is implemented and covered by the Calendar acceptance proof.
+**Blocks:** none in the Microsoft Graph adapter family; Calendar missing-item
+detection is implemented and covered by the accepted Calendar proof.
 
 ---
 
@@ -1091,25 +1097,31 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 #### `MSGRAPH-KNOWLEDGE-ADAPTERS-1`
 
-**Status:** `IN_PROGRESS`
+**Status:** `READY_FOR_REVIEW`
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE` is **DONE**.
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE` is **ACCEPTED**.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **DONE**.
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL` is **ACCEPTED**.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL` is **DONE**.
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL` is **ACCEPTED**.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-BASED-PAGING-AND-EXACT-MESSAGE-READ` is **DONE**.
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT` is **ACCEPTED** through
+`REVIEW-FIX-1`.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-0-TEAMS-CHAT-REFERENCE-READS-REVIEW-FIX-1` is **DONE**.
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is **ACCEPTED** through
+`REVIEW-FIX-1-REVIEW-CORRECTION-1`; its prior review fix remains
+**CHANGES_REQUIRED**. Shared reconciliation finalization is accepted through
+Review Fix 5 correction.
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT` is **DONE**.
+#### `MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT`
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT-REVIEW-FIX-1` is **DONE**.
+**Status:** `READY_FOR_REVIEW`
 
-`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` is **CHANGES_REQUIRED** pending external review of `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY`; `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` is **CHANGES_REQUIRED**. Shared reconciliation finalization is accepted through Review Fix 5 correction.
-
-**Next (Microsoft Graph Vendor Knowledge):** `MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT` after external Calendar review (`LKW-SLACK-CONNECTED-SOURCE-1` remains **IN_PROGRESS / CHANGES_REQUIRED** on the LKW track; `LKW-CONVERSATION-CONTEXT-1` is not the next Microsoft Graph task).
+The Drive, Mail, Teams Channel, Teams Chat and Calendar adapters are verified
+as one Microsoft Graph integration family. Shared durable reconciliation,
+provider-specific paging/content boundaries, deterministic delivery identity
+and secret-safe public outputs are covered by the provider and focused
+regression suites. Unsupported capabilities remain explicitly unsupported.
 
 **Vendor Knowledge / Microsoft Graph track (independent of Google Workspace):**
 
@@ -1127,10 +1139,11 @@ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3 — CHANGES_REQUIRE
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4 — CHANGES_REQUIRED
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5 — CHANGES_REQUIRED
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF — ACCEPTED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — CHANGES_REQUIRED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR — ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1 — CHANGES_REQUIRED
-MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — READY_FOR_REVIEW
-→ Microsoft Graph adapter-family audit
+MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1-REVIEW-CORRECTION-1-NO-PROVIDER-REREAD-AND-STATUS-HISTORY — ACCEPTED
+MSGRAPH-KNOWLEDGE-ADAPTERS-1 — READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT — READY_FOR_REVIEW
 ```
 
 Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
@@ -1179,7 +1192,7 @@ Recommended implementation/proof order inside the Microsoft scope:
 2. mail
 3. teams_channel
 4. teams_chat
-5. calendar — CHANGES_REQUIRED (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; review correction READY_FOR_REVIEW, prior review fix CHANGES_REQUIRED)
+5. calendar — ACCEPTED through `REVIEW-FIX-1-REVIEW-CORRECTION-1` (prior review fix CHANGES_REQUIRED)
 ```
 
 Google Workspace remains an independent workstream. Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream. After architecture correction acceptance, the next Vendor Knowledge task in the Microsoft Graph adapter family is `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
