@@ -70,9 +70,15 @@ class _RecordingLLM(LLMAdapter):
     provider = "fake"
     model = "fake"
 
-    def __init__(self, used_ids: list[str]) -> None:
+    def __init__(
+        self,
+        used_ids: list[str],
+        *,
+        status: str = "completed",
+    ) -> None:
         super().__init__()
         self.used_ids = used_ids
+        self.status = status
         self.calls = 0
 
     @property
@@ -92,8 +98,12 @@ class _RecordingLLM(LLMAdapter):
         return build_adapter_response(
             content=json.dumps(
                 {
-                    "status": "completed",
-                    "answer": "The answer is grounded in the selected evidence.",
+                    "status": self.status,
+                    "answer": (
+                        "The answer is grounded in the selected evidence."
+                        if self.status == "completed"
+                        else None
+                    ),
                     "used_evidence_ids": self.used_ids,
                 }
             )
@@ -476,4 +486,178 @@ def test_v2_unknown_model_evidence_id_fails_closed_and_persists() -> None:
     assert run.error is not None
     assert run.error.code == "unknown_evidence_id"
     assert repository.get_run_v2(tenant_id=_TENANT, run_id=run.run_id) is not None
+
+
+def test_v2_insufficient_evidence_persists_and_reconstructs() -> None:
+    service, _, _, repository = _service(
+        QueryPolicyModeV2.INDEXED_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+        _RecordingLLM([], status="insufficient_evidence"),
+    )
+
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.INDEXED_ONLY)))
+
+    assert run.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+    assert run.citations == []
+    reloaded = repository.get_run_v2(tenant_id=_TENANT, run_id=run.run_id)
+    assert reloaded is not None
+    assert reloaded.status is AskRunStatus.INSUFFICIENT_EVIDENCE
+
+
+def test_v2_controlled_execution_failure_persists_and_reconstructs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _, _, repository = _service(
+        QueryPolicyModeV2.LIVE_ONLY,
+        LiveResultRetentionV1.EPHEMERAL,
+        _RecordingLLM([_LIVE_ID]),
+    )
+
+    async def fail_execute(**_: Any) -> Any:
+        raise RuntimeError("controlled execution failure")
+
+    monkeypatch.setattr(service._orchestrator, "execute", fail_execute)
+    run = asyncio.run(service.ask(_command(QueryPolicyModeV2.LIVE_ONLY)))
+
+    assert run.status is AskRunStatus.FAILED
+    assert run.error is not None
+    assert run.error.code == "live_execution_failed"
+    reloaded = repository.get_run_v2(tenant_id=_TENANT, run_id=run.run_id)
+    assert reloaded is not None
+    assert reloaded.error is not None
+    assert reloaded.error.code == "live_execution_failed"
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "citation_missing_evidence",
+        "citation_evidence_type_mismatch",
+        "citation_live_call_id_mismatch",
+        "citation_provider_mismatch",
+        "citation_unrelated_receipt",
+        "receipt_run_id_mismatch",
+        "receipt_unknown_live_call",
+        "duplicate_receipt_call_id",
+        "receipt_only_requires_call_receipt",
+        "ephemeral_retention_forbids_receipts",
+        "duplicate_evidence_id",
+        "live_call_identity_mismatch",
+        "receipt_binding_mismatch",
+    ],
+)
+def test_v2_finalization_revalidates_and_persists_only_safe_failure(
+    case: str,
+) -> None:
+    receipt_cases = {
+        "citation_unrelated_receipt",
+        "receipt_run_id_mismatch",
+        "receipt_unknown_live_call",
+        "duplicate_receipt_call_id",
+        "receipt_only_requires_call_receipt",
+        "ephemeral_retention_forbids_receipts",
+        "receipt_binding_mismatch",
+    }
+    retention = (
+        LiveResultRetentionV1.RECEIPT_ONLY
+        if case in receipt_cases
+        else LiveResultRetentionV1.EPHEMERAL
+    )
+    service, _, _, repository = _service(
+        QueryPolicyModeV2.LIVE_ONLY,
+        retention,
+        _RecordingLLM([_LIVE_ID]),
+    )
+    run = asyncio.run(
+        service.ask(
+            _command(
+                QueryPolicyModeV2.LIVE_ONLY,
+                retention=retention,
+            )
+        )
+    )
+    live_citation = run.citations[0]
+    live_evidence = next(
+        item for item in run.persisted_evidence if item.evidence_type.value == "live"
+    )
+    receipt = run.execution_receipts[0] if run.execution_receipts else None
+
+    if case == "citation_missing_evidence":
+        update = {"citations": [live_citation.model_copy(update={"evidence_id": "live:missing"})]}
+    elif case == "citation_evidence_type_mismatch":
+        update = {"citations": [live_citation.model_copy(update={"evidence_type": "indexed"})]}
+    elif case == "citation_live_call_id_mismatch":
+        update = {"citations": [live_citation.model_copy(update={"call_id": "call-other"})]}
+    elif case == "citation_provider_mismatch":
+        update = {"citations": [live_citation.model_copy(update={"provider_id": "other-provider"})]}
+    elif case == "citation_unrelated_receipt":
+        update = {"citations": [live_citation.model_copy(update={"receipt_id": "receipt-other"})]}
+    elif case == "receipt_run_id_mismatch":
+        assert receipt is not None
+        update = {
+            "execution_receipts": [
+                receipt.model_copy(update={"run_id": "run-other"})
+            ]
+        }
+    elif case == "receipt_unknown_live_call":
+        assert receipt is not None
+        update = {
+            "execution_receipts": [
+                receipt.model_copy(update={"call_id": "call-other"})
+            ]
+        }
+    elif case == "duplicate_receipt_call_id":
+        assert receipt is not None
+        update = {
+            "execution_receipts": [
+                receipt,
+                receipt.model_copy(update={"receipt_id": "receipt-duplicate"}),
+            ]
+        }
+    elif case == "receipt_only_requires_call_receipt":
+        update = {"execution_receipts": []}
+    elif case == "ephemeral_retention_forbids_receipts":
+        assert receipt is not None
+        update = {
+            "live_result_retention": LiveResultRetentionV1.EPHEMERAL,
+            "execution_receipts": [receipt],
+        }
+    elif case == "duplicate_evidence_id":
+        update = {
+            "persisted_evidence": [live_evidence, live_evidence.model_copy()]
+        }
+    elif case == "live_call_identity_mismatch":
+        update = {
+            "persisted_evidence": [
+                live_evidence,
+                live_evidence.model_copy(
+                    update={
+                        "evidence_id": "live:call-1:conflicting",
+                        "provider_id": "other-provider",
+                    }
+                ),
+            ]
+        }
+    else:
+        assert case == "receipt_binding_mismatch"
+        assert receipt is not None
+        update = {
+            "execution_receipts": [
+                receipt.model_copy(update={"live_access_binding_id": "other-binding"})
+            ]
+        }
+
+    finalized = service._finalize_run_model(run, update=update)
+
+    assert finalized.status is AskRunStatus.FAILED
+    assert finalized.error is not None
+    assert finalized.error.code == "citation_validation_failed"
+    assert finalized.citations == []
+    assert finalized.persisted_evidence == []
+    assert finalized.execution_receipts == []
+    persisted = repository.get_run_v2(tenant_id=_TENANT, run_id=run.run_id)
+    assert persisted is not None
+    assert persisted == finalized
+    assert persisted.error is not None
+    assert persisted.error.message == "Evidence citations could not be verified."
 

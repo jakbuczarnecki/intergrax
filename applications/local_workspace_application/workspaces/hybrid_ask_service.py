@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
@@ -404,7 +404,8 @@ class WorkspaceAskServiceV2:
         citations: list[Any],
         status: AskRunStatus,
     ) -> WorkspaceAskRunV2:
-        finalized = initial.model_copy(
+        return self._finalize_run_model(
+            initial,
             update={
                 "status": status,
                 "answer": answer,
@@ -417,10 +418,8 @@ class WorkspaceAskServiceV2:
                 "partial_failure": execution.partial_failure,
                 "completed_at": self._clock(),
                 "error": None,
-            }
+            },
         )
-        self._persist(finalized)
-        return finalized
 
     def _finalize_failure(
         self,
@@ -451,7 +450,35 @@ class WorkspaceAskServiceV2:
                 "error": AskError(code=code, message=self._safe_message(code)),
                 "completed_at": self._clock(),
             }
-        finalized = initial.model_copy(update=update)
+        return self._finalize_run_model(initial, update=update)
+
+    def _finalize_run_model(
+        self,
+        initial: WorkspaceAskRunV2,
+        *,
+        update: dict[str, Any],
+    ) -> WorkspaceAskRunV2:
+        payload = initial.model_dump(mode="python")
+        payload.update(update)
+        try:
+            finalized = WorkspaceAskRunV2.model_validate(payload)
+        except ValidationError:
+            safe_payload = initial.model_dump(mode="python")
+            safe_payload.update(
+                {
+                    "status": AskRunStatus.FAILED,
+                    "answer": None,
+                    "citations": [],
+                    "persisted_evidence": [],
+                    "execution_receipts": [],
+                    "completed_at": self._clock(),
+                    "error": AskError(
+                        code="citation_validation_failed",
+                        message=self._safe_message("citation_validation_failed"),
+                    ),
+                }
+            )
+            finalized = WorkspaceAskRunV2.model_validate(safe_payload)
         self._persist(finalized)
         return finalized
 
