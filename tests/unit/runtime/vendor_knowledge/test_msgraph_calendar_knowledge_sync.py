@@ -80,6 +80,8 @@ from intergrax.runtime.vendor_knowledge.sync_document_store import (
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemStatus,
+    KnowledgeSyncSinkReceipt,
+    KnowledgeSyncSinkReceiptStatus,
     KnowledgeSyncRunStatus,
 )
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
@@ -566,6 +568,29 @@ class _FailingCheckpointRepository:
         self.successful_commits += 1
 
 
+class _SinkBackedReceiptInspector:
+    def __init__(self, sink: IdempotentRecordingSink) -> None:
+        self._sink = sink
+
+    def inspect_receipt(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+        prepared_batch_payload_fingerprint: str,
+    ) -> KnowledgeSyncSinkReceipt:
+        if delivery_id not in self._sink.durable_delivery_ids:
+            return KnowledgeSyncSinkReceipt(
+                status=KnowledgeSyncSinkReceiptStatus.ABSENT
+            )
+        return KnowledgeSyncSinkReceipt(
+            status=KnowledgeSyncSinkReceiptStatus.APPLIED,
+            delivery_id=delivery_id,
+            prepared_batch_payload_fingerprint=prepared_batch_payload_fingerprint,
+        )
+
+
 def _public_blob(value: object) -> str:
     return json.dumps(value, default=str)
 
@@ -655,6 +680,7 @@ def _build_coordinator(
     checkpoint_repository: object | None = None,
     item_state_repository: object | None = None,
     sink: IdempotentRecordingSink | None = None,
+    sink_receipt_inspector: object | None = None,
 ):
     integration = _CalendarTestIntegration.from_client(fake, enabled=True)
     registry = KnowledgeAdapterRegistry()
@@ -696,6 +722,12 @@ def _build_coordinator(
         status=KnowledgeSourceBindingStatus.ACTIVE,
         configuration_version=1,
     )
+    reconciliation_kwargs = durable_reconciliation_coordinator_kwargs(
+        state_repository=InMemoryRemoteItemStateRepository(),
+        document_store=document_store,
+    )
+    if sink_receipt_inspector is not None:
+        reconciliation_kwargs["sink_receipt_inspector"] = sink_receipt_inspector
     coordinator = VendorKnowledgeSyncCoordinator(
         tenant_id="tenant-1",
         owner_id="owner-1",
@@ -706,10 +738,7 @@ def _build_coordinator(
         item_state_repository=state_repo,
         sink=sink,
         lease_ttl_seconds=30,
-        **durable_reconciliation_coordinator_kwargs(
-            state_repository=InMemoryRemoteItemStateRepository(),
-            document_store=document_store,
-        ),
+        **reconciliation_kwargs,
     )
     return coordinator, sink, checkpoint_repo, state_repo, fake, integration
 
@@ -1417,6 +1446,7 @@ async def test_msgraph_calendar_primary_item_state_failure_retries_without_dupli
     )
     state_inner = InMemoryRemoteItemStateRepository()
     state_repo = _FailingItemStateRepository(state_inner)
+    sink = IdempotentRecordingSink()
     coordinator, sink, checkpoint_repo, _state_repo, fake, integration = (
         _build_coordinator(
             fake,
@@ -1424,8 +1454,11 @@ async def test_msgraph_calendar_primary_item_state_failure_retries_without_dupli
             binding_id=_PRIMARY_BINDING_ID,
             safe_display_name="Primary Calendar",
             item_state_repository=state_repo,
+            sink=sink,
+            sink_receipt_inspector=_SinkBackedReceiptInspector(sink),
         )
     )
+    integration_id = id(integration)
     operation_id = "msgraph-calendar-item-state-retry"
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.reconcile_once(
@@ -1454,10 +1487,18 @@ async def test_msgraph_calendar_primary_item_state_failure_retries_without_dupli
     assert result.status is KnowledgeSyncRunStatus.COMPLETED
     assert result.delivery_id == first_delivery
     assert sink.durable_delivery_ids == [first_delivery]
-    assert len(sink.calls) == 2
-    assert len(fake.delta_calls) == 2
+    assert len(sink.calls) == 1
+    assert sink.calls[0].delivery_id == result.delivery_id
+    assert len(fake.delta_calls) == 1
     assert state_inner.applied_delivery_ids == {first_delivery}
-    assert integration is not None
+    assert (
+        checkpoint_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+        )
+        is not None
+    )
+    assert id(integration) == integration_id
 
 
 @pytest.mark.asyncio
@@ -1493,6 +1534,7 @@ async def test_msgraph_calendar_checkpoint_failure_retries_finalizing_without_du
             checkpoint_repository=checkpoint_repo,
         )
     )
+    integration_id = id(integration)
     operation_id = "msgraph-calendar-checkpoint-retry"
     with pytest.raises(VendorKnowledgeError) as exc_info:
         await coordinator.reconcile_once(
@@ -1506,6 +1548,13 @@ async def test_msgraph_calendar_checkpoint_failure_retries_finalizing_without_du
     assert checkpoint_repo.successful_commits == 0
     assert checkpoint_repo.fail_times == 0
     assert sink.durable_delivery_ids == [first_delivery]
+    assert (
+        checkpoint_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+        )
+        is None
+    )
     assert fake.delta_calls
 
     result = await coordinator.reconcile_once(
@@ -1517,6 +1566,8 @@ async def test_msgraph_calendar_checkpoint_failure_retries_finalizing_without_du
     assert result.delivery_id == first_delivery
     assert checkpoint_repo.successful_commits == 1
     assert sink.durable_delivery_ids == [first_delivery]
+    assert len(sink.calls) == 1
+    assert sink.calls[0].delivery_id == result.delivery_id
     assert len(fake.delta_calls) == 1
     assert (
         state_repo.get(
@@ -1529,7 +1580,7 @@ async def test_msgraph_calendar_checkpoint_failure_retries_finalizing_without_du
         )
         is not None
     )
-    assert integration is not None
+    assert id(integration) == integration_id
 
 
 @pytest.mark.asyncio
