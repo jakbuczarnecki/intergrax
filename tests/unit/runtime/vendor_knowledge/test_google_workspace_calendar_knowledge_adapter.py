@@ -426,8 +426,17 @@ async def test_full_inventory_cursor_transitions() -> None:
     fake = _FakeIntegration(pages=[_page(next_page_token=_PAGE_TOKEN, next_sync_token=None)])
     first = await _read_page(adapter, fake, limit=123)
     assert first.has_more is True
-    assert first.proposed_checkpoint is None
-    assert _decode_cursor(first.next_cursor)["phase"] == "inventory"
+    assert first.next_cursor is not None
+    assert first.proposed_checkpoint is not None
+    assert first.next_cursor == first.proposed_checkpoint
+    assert first.next_cursor.version == GOOGLE_CALENDAR_CURSOR_VERSION
+    assert first.proposed_checkpoint.version == GOOGLE_CALENDAR_CURSOR_VERSION
+    next_cursor = _decode_cursor(first.next_cursor)
+    proposed_checkpoint = _decode_cursor(first.proposed_checkpoint)
+    assert next_cursor == proposed_checkpoint
+    assert next_cursor["phase"] == "inventory"
+    assert next_cursor["page_token"] == _PAGE_TOKEN
+    assert next_cursor["sync_token"] is None
     assert fake.page_calls == [
         {
             "calendar_id": _CALENDAR_ID,
@@ -449,7 +458,9 @@ async def test_full_inventory_cursor_transitions() -> None:
 
 async def test_incremental_pagination_preserves_original_sync_token() -> None:
     adapter = GoogleWorkspaceCalendarKnowledgeAdapter()
-    fake = _FakeIntegration(pages=[_page(next_page_token="next-page", next_sync_token=None)])
+    fake = _FakeIntegration(
+        pages=[_page(next_page_token="incremental-page-2", next_sync_token=None)]
+    )
     cursor = KnowledgeCursor(
         value=base64.urlsafe_b64encode(
             json.dumps(
@@ -460,7 +471,7 @@ async def test_incremental_pagination_preserves_original_sync_token() -> None:
                     ).hexdigest(),
                     "phase": "changes",
                     "page_token": None,
-                    "sync_token": "original-sync",
+                    "sync_token": "sync-v1",
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -469,18 +480,46 @@ async def test_incremental_pagination_preserves_original_sync_token() -> None:
         version=GOOGLE_CALENDAR_CURSOR_VERSION,
     )
     page = await _read_page(adapter, fake, cursor=cursor)
-    assert fake.page_calls[0]["sync_token"].value == "original-sync"
+    assert fake.page_calls[0]["sync_token"].value == "sync-v1"
     assert fake.page_calls[0]["page_token"] is None
+    assert page.has_more is True
+    assert page.next_cursor is not None
+    assert page.proposed_checkpoint is not None
+    assert page.next_cursor == page.proposed_checkpoint
     continuation = _decode_cursor(page.next_cursor)
-    assert continuation["sync_token"] == "original-sync"
-    assert continuation["page_token"] == "next-page"
-    assert page.proposed_checkpoint is None
+    checkpoint = _decode_cursor(page.proposed_checkpoint)
+    assert continuation == checkpoint
+    assert continuation["phase"] == "changes"
+    assert continuation["sync_token"] == "sync-v1"
+    assert continuation["page_token"] == "incremental-page-2"
 
-    fake = _FakeIntegration(pages=[_page(next_sync_token="new-sync")])
+    fake = _FakeIntegration(
+        pages=[_page(next_page_token="incremental-page-3", next_sync_token=None)]
+    )
     page = await _read_page(adapter, fake, cursor=page.next_cursor)
-    assert fake.page_calls[0]["sync_token"].value == "original-sync"
-    assert fake.page_calls[0]["page_token"].value == "next-page"
-    assert _decode_cursor(page.proposed_checkpoint)["sync_token"] == "new-sync"
+    assert fake.page_calls[0]["sync_token"].value == "sync-v1"
+    assert fake.page_calls[0]["page_token"].value == "incremental-page-2"
+    assert page.has_more is True
+    assert page.next_cursor is not None
+    assert page.proposed_checkpoint is not None
+    assert page.next_cursor == page.proposed_checkpoint
+    continuation = _decode_cursor(page.next_cursor)
+    checkpoint = _decode_cursor(page.proposed_checkpoint)
+    assert continuation == checkpoint
+    assert continuation["phase"] == "changes"
+    assert continuation["sync_token"] == "sync-v1"
+    assert continuation["page_token"] == "incremental-page-3"
+
+    fake = _FakeIntegration(pages=[_page(next_sync_token="sync-v2")])
+    terminal = await _read_page(adapter, fake, cursor=page.next_cursor)
+    assert fake.page_calls[0]["sync_token"].value == "sync-v1"
+    assert fake.page_calls[0]["page_token"].value == "incremental-page-3"
+    assert terminal.next_cursor is None
+    assert terminal.has_more is False
+    checkpoint = _decode_cursor(terminal.proposed_checkpoint)
+    assert checkpoint["phase"] == "changes"
+    assert checkpoint["sync_token"] == "sync-v2"
+    assert checkpoint["page_token"] is None
 
 
 async def test_event_mapping_order_and_nested_structured_descriptor() -> None:

@@ -198,32 +198,54 @@ async def test_next_sync_uses_committed_checkpoint() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_incremental_two_page_continuation() -> None:
-    cp1 = KnowledgeCursor(value="cp-1")
+    initial_cursor = KnowledgeCursor(value="sync-v1")
+    cp1 = KnowledgeCursor(value="sync-v1-page-2")
     final_delta = KnowledgeCursor(value="final-delta")
+    checkpoint = InMemoryCheckpointRepository()
+    checkpoint.checkpoints[("tenant-1", "binding-1")] = KnowledgeSyncCheckpoint(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        cursor=initial_cursor,
+    )
     facade = RecordingFacade(
         pages_by_cursor={
-            None: make_page(
+            initial_cursor.value: make_page(
                 changes=(make_change(remote_id="item-1"),),
                 has_more=True,
                 next_cursor=cp1,
                 proposed_checkpoint=cp1,
             ),
-            "cp-1": make_page(
+            cp1.value: make_page(
                 changes=(make_change(remote_id="item-2"),),
                 proposed_checkpoint=final_delta,
                 has_more=False,
             ),
         }
     )
-    coordinator, _, _, _, checkpoint, _, sink = _coordinator(facade=facade)
+    coordinator, binding_service, _, lease, _, state, sink = _coordinator(
+        facade=facade,
+        checkpoint=checkpoint,
+    )
     first = await coordinator.sync_once(binding_id="binding-1")
+    assert facade.read_calls[0]["cursor"] == initial_cursor
     assert first.has_more is True
     assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == cp1
     assert len(sink.calls) == 1
-    second = await coordinator.sync_once(binding_id="binding-1")
+    fresh_coordinator, *_ = _coordinator(
+        binding_service=binding_service,
+        facade=facade,
+        lease=lease,
+        checkpoint=checkpoint,
+        state=state,
+        sink=sink,
+    )
+    second = await fresh_coordinator.sync_once(binding_id="binding-1")
     assert facade.read_calls[1]["cursor"] == cp1
     assert second.has_more is False
     assert checkpoint.checkpoints[("tenant-1", "binding-1")].cursor == final_delta
+    assert len(facade.read_calls) == 2
+    assert len(sink.calls) == 2
     assert sink.calls[0].delivery_id != sink.calls[1].delivery_id
 
 

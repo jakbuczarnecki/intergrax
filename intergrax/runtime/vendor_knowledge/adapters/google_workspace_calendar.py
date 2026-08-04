@@ -283,17 +283,18 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
 
         if phase == "inventory":
             if validated_page.next_page_token is not None:
+                continuation_cursor = self._encode_cursor(
+                    self._cursor(
+                        calendar_id=calendar_id,
+                        phase="inventory",
+                        page_token=validated_page.next_page_token.value,
+                        sync_token=None,
+                    )
+                )
                 return KnowledgePage(
                     changes=changes,
-                    next_cursor=self._encode_cursor(
-                        self._cursor(
-                            calendar_id=calendar_id,
-                            phase="inventory",
-                            page_token=validated_page.next_page_token.value,
-                            sync_token=None,
-                        )
-                    ),
-                    proposed_checkpoint=None,
+                    next_cursor=continuation_cursor,
+                    proposed_checkpoint=continuation_cursor,
                     has_more=True,
                 )
             if validated_page.next_sync_token is None:
@@ -315,17 +316,18 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
         if validated_page.next_page_token is not None:
             if decoded is None or decoded.sync_token is None:
                 raise self._invalid_provider_response_error()
+            continuation_cursor = self._encode_cursor(
+                self._cursor(
+                    calendar_id=calendar_id,
+                    phase="changes",
+                    page_token=validated_page.next_page_token.value,
+                    sync_token=decoded.sync_token,
+                )
+            )
             return KnowledgePage(
                 changes=changes,
-                next_cursor=self._encode_cursor(
-                    self._cursor(
-                        calendar_id=calendar_id,
-                        phase="changes",
-                        page_token=validated_page.next_page_token.value,
-                        sync_token=decoded.sync_token,
-                    )
-                ),
-                proposed_checkpoint=None,
+                next_cursor=continuation_cursor,
+                proposed_checkpoint=continuation_cursor,
                 has_more=True,
             )
         if validated_page.next_sync_token is None:
