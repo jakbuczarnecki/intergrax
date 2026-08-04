@@ -18,12 +18,14 @@ from local_workspace_application.workspaces.knowledge_configuration_hashing impo
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV1,
+    QueryPolicyModeV2,
     WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeMutationOperationV1,
     WorkspaceKnowledgeMutationOutcomeV1,
     WorkspaceKnowledgeMutationRecord,
     WorkspaceKnowledgeMutationStatusV1,
     WorkspaceQueryPolicy,
+    WorkspaceQueryPolicyV2,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
@@ -41,6 +43,7 @@ from local_workspace_application.workspaces.knowledge_query_policy_handlers impo
 )
 from local_workspace_application.workspaces.knowledge_query_policy_service import (
     UpdateWorkspaceQueryPolicyCommand,
+    UpdateWorkspaceQueryPolicyV2Command,
     WorkspaceQueryPolicyError,
     WorkspaceQueryPolicyService,
 )
@@ -149,6 +152,25 @@ def _cmd(**overrides: object) -> UpdateWorkspaceQueryPolicyCommand:
     }
     payload.update(overrides)
     return UpdateWorkspaceQueryPolicyCommand(**payload)
+
+
+def _v2_cmd(**overrides: object) -> UpdateWorkspaceQueryPolicyV2Command:
+    payload = {
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "mode": QueryPolicyModeV2.HYBRID,
+        "allowed_connection_refs": (_CONN_A,),
+        "allowed_capability_ids": (_CAP_A,),
+        "max_live_calls": 3,
+        "max_total_duration_ms": 60_000,
+        "max_result_items": 100,
+        "max_result_bytes": 2_097_152,
+        "live_result_retention": LiveResultRetentionV1.EPHEMERAL,
+        "expected_revision": 0,
+        "idempotency_key_hash": _SHA256_A,
+    }
+    payload.update(overrides)
+    return UpdateWorkspaceQueryPolicyV2Command(**payload)
 
 
 def _live_cmd(**overrides: object) -> UpdateWorkspaceQueryPolicyCommand:
@@ -891,3 +913,31 @@ def test_missing_historical_policy_projection_incomplete() -> None:
             request_hash=result.mutation.normalized_request_hash,
             semantic_hash=result.mutation.semantic_identity_hash or "",
         )
+
+
+def test_v2_hybrid_policy_update_through_service() -> None:
+    service, repo, config, _ = _build_stack()
+    result = service.update_query_policy_v2(_v2_cmd())
+    assert result.updated_policy is True
+    assert isinstance(result.policy, WorkspaceQueryPolicyV2)
+    assert result.policy.mode is QueryPolicyModeV2.HYBRID
+    assert config.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE).query_policy == result.policy
+    assert len(repo.list_knowledge_query_policy_versions(tenant_id=_TENANT, workspace_id=_WORKSPACE)) == 1
+
+
+def test_v2_committed_replay() -> None:
+    service, _, _, _ = _build_stack()
+    first = service.update_query_policy_v2(_v2_cmd())
+    replay = service.update_query_policy_v2(
+        _v2_cmd(expected_revision=first.configuration_revision, idempotency_key_hash=_SHA256_A)
+    )
+    assert replay.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert replay.policy == first.policy
+
+
+def test_v2_idempotency_conflict_with_v1_same_key() -> None:
+    service, _, _, _ = _build_stack()
+    service.update_query_policy(_cmd())
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        service.update_query_policy_v2(_v2_cmd())
+    assert exc.value.error_code == "configuration_idempotency_conflict"

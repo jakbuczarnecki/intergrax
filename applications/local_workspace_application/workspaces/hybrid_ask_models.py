@@ -11,7 +11,10 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from local_workspace_application.workspaces.ask_models import AskError, AskRunStatus
-from local_workspace_application.workspaces.knowledge_configuration_models import QueryPolicyModeV2
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    LiveResultRetentionV1,
+    QueryPolicyModeV2,
+)
 
 _EVIDENCE_ID_INDEXED_PREFIX = "idx:"
 _EVIDENCE_ID_LIVE_PREFIX = "live:"
@@ -250,6 +253,15 @@ class HybridAskTruncationStateV1(StrEnum):
     BOTH = "both"
 
 
+class LiveCallEvidenceIdentityV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    live_access_binding_id: str
+    connection_ref: str
+    provider_id: str
+    capability_id: str
+
+
 class WorkspaceAskRunV2(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -263,6 +275,7 @@ class WorkspaceAskRunV2(BaseModel):
     query_mode: QueryPolicyModeV2
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
+    live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
     answer: str | None = None
     citations: list[WorkspaceCitationV1] = Field(default_factory=list)
     persisted_evidence: list[PersistedAskEvidenceV2] = Field(default_factory=list)
@@ -283,32 +296,59 @@ class WorkspaceAskRunV2(BaseModel):
     def _validate_run_integrity(self) -> Self:
         evidence_by_id: dict[str, EvidenceTypeV1] = {}
         live_evidence_by_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
-        live_evidence_by_call_id: dict[str, PersistedLiveEvidenceProvenanceV2] = {}
+        live_evidence_by_call_id: dict[str, list[PersistedLiveEvidenceProvenanceV2]] = {}
+        call_identity_by_call_id: dict[str, LiveCallEvidenceIdentityV1] = {}
         for item in self.persisted_evidence:
             if item.evidence_id in evidence_by_id:
                 raise ValueError("duplicate_evidence_id")
             evidence_by_id[item.evidence_id] = item.evidence_type
             if isinstance(item, PersistedLiveEvidenceProvenanceV2):
                 live_evidence_by_id[item.evidence_id] = item
-                existing = live_evidence_by_call_id.get(item.call_id)
-                if existing is not None and existing.evidence_id != item.evidence_id:
-                    raise ValueError("duplicate_live_call_id")
-                live_evidence_by_call_id[item.call_id] = item
+                call_items = live_evidence_by_call_id.setdefault(item.call_id, [])
+                call_items.append(item)
+                identity = LiveCallEvidenceIdentityV1(
+                    live_access_binding_id=item.live_access_binding_id,
+                    connection_ref=item.connection_ref,
+                    provider_id=item.provider_id,
+                    capability_id=item.capability_id,
+                )
+                existing_identity = call_identity_by_call_id.get(item.call_id)
+                if existing_identity is not None and existing_identity != identity:
+                    raise ValueError("live_call_identity_mismatch")
+                call_identity_by_call_id[item.call_id] = identity
+
+        if self.live_result_retention is LiveResultRetentionV1.EPHEMERAL:
+            if self.execution_receipts:
+                raise ValueError("ephemeral_retention_forbids_receipts")
 
         receipt_by_id: dict[str, LiveExecutionReceiptV1] = {}
+        receipt_count_by_call_id: dict[str, int] = {}
         for receipt in self.execution_receipts:
             if receipt.receipt_id in receipt_by_id:
                 raise ValueError("duplicate_receipt_id")
             if receipt.run_id != self.run_id:
                 raise ValueError("receipt_run_id_mismatch")
             receipt_by_id[receipt.receipt_id] = receipt
-            live_evidence = live_evidence_by_call_id.get(receipt.call_id)
-            if live_evidence is None:
+            call_evidence = live_evidence_by_call_id.get(receipt.call_id)
+            if call_evidence is None:
                 raise ValueError("receipt_unknown_live_call")
-            if receipt.live_access_binding_id != live_evidence.live_access_binding_id:
+            call_identity = call_identity_by_call_id.get(receipt.call_id)
+            if call_identity is None:
+                raise ValueError("receipt_unknown_live_call")
+            if receipt.live_access_binding_id != call_identity.live_access_binding_id:
                 raise ValueError("receipt_binding_mismatch")
-            if receipt.capability_id != live_evidence.capability_id:
+            if receipt.capability_id != call_identity.capability_id:
                 raise ValueError("receipt_capability_mismatch")
+            receipt_count_by_call_id[receipt.call_id] = (
+                receipt_count_by_call_id.get(receipt.call_id, 0) + 1
+            )
+            if receipt_count_by_call_id[receipt.call_id] > 1:
+                raise ValueError("duplicate_receipt_call_id")
+
+        if self.live_result_retention is LiveResultRetentionV1.RECEIPT_ONLY:
+            for call_id, call_evidence in live_evidence_by_call_id.items():
+                if receipt_count_by_call_id.get(call_id, 0) != 1:
+                    raise ValueError("receipt_only_requires_call_receipt")
 
         for citation in self.citations:
             evidence_type = evidence_by_id.get(citation.evidence_id)
@@ -322,12 +362,24 @@ class WorkspaceAskRunV2(BaseModel):
                     raise ValueError("citation_live_evidence_not_found")
                 if citation.call_id != live_evidence.call_id:
                     raise ValueError("citation_live_call_id_mismatch")
+                if citation.provider_id != live_evidence.provider_id:
+                    raise ValueError("citation_provider_mismatch")
+                if citation.capability_id != live_evidence.capability_id:
+                    raise ValueError("citation_capability_mismatch")
+                if citation.remote_resource_id != live_evidence.remote_resource_id:
+                    raise ValueError("citation_remote_resource_mismatch")
+                if citation.remote_item_id != live_evidence.remote_item_id:
+                    raise ValueError("citation_remote_item_mismatch")
                 if citation.receipt_id is not None:
                     receipt = receipt_by_id.get(citation.receipt_id)
                     if receipt is None:
                         raise ValueError("citation_receipt_not_found")
                     if receipt.call_id != citation.call_id:
                         raise ValueError("citation_receipt_call_id_mismatch")
+                    if receipt.live_access_binding_id != live_evidence.live_access_binding_id:
+                        raise ValueError("citation_receipt_binding_mismatch")
+                    if receipt.capability_id != live_evidence.capability_id:
+                        raise ValueError("citation_receipt_capability_mismatch")
 
         if self.status is AskRunStatus.COMPLETED:
             if not self.citations:

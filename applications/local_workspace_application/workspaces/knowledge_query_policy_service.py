@@ -17,11 +17,14 @@ from local_workspace_application.workspaces.knowledge_configuration_hashing impo
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV1,
+    QueryPolicyModeV2,
+    WorkspaceCommittedQueryPolicy,
     WorkspaceKnowledgeMutationOperationV1,
     WorkspaceKnowledgeMutationOutcomeV1,
     WorkspaceKnowledgeMutationRecord,
     WorkspaceKnowledgeMutationStatusV1,
     WorkspaceQueryPolicy,
+    WorkspaceQueryPolicyV2,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
@@ -71,6 +74,31 @@ class UpdateWorkspaceQueryPolicyCommand:
 @dataclass(frozen=True, slots=True)
 class UpdateWorkspaceQueryPolicyResult:
     policy: WorkspaceQueryPolicy
+    configuration_revision: int
+    disposition: WorkspaceKnowledgeMutationExecutionDispositionV1
+    updated_policy: bool
+    mutation: WorkspaceKnowledgeMutationRecord
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateWorkspaceQueryPolicyV2Command:
+    tenant_id: str
+    workspace_id: str
+    mode: QueryPolicyModeV2
+    allowed_connection_refs: tuple[str, ...]
+    allowed_capability_ids: tuple[str, ...]
+    max_live_calls: int
+    max_total_duration_ms: int
+    max_result_items: int
+    max_result_bytes: int
+    live_result_retention: LiveResultRetentionV1
+    expected_revision: int
+    idempotency_key_hash: str
+
+
+@dataclass(frozen=True, slots=True)
+class UpdateWorkspaceQueryPolicyV2Result:
+    policy: WorkspaceQueryPolicyV2
     configuration_revision: int
     disposition: WorkspaceKnowledgeMutationExecutionDispositionV1
     updated_policy: bool
@@ -128,6 +156,54 @@ def _validate_and_normalize_intent(
     )
 
 
+def _validate_and_normalize_intent_v2(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    mode: object,
+    allowed_connection_refs: tuple[str, ...],
+    allowed_capability_ids: tuple[str, ...],
+    max_live_calls: int,
+    max_total_duration_ms: int,
+    max_result_items: int,
+    max_result_bytes: int,
+    live_result_retention: object,
+) -> UpdateQueryPolicyMutationIntent:
+    if not isinstance(mode, QueryPolicyModeV2):
+        raise WorkspaceQueryPolicyError("query_policy_mode_unsupported")
+    if not isinstance(live_result_retention, LiveResultRetentionV1):
+        raise WorkspaceQueryPolicyError("query_policy_invalid")
+    try:
+        validated = WorkspaceQueryPolicyV2(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            mode=mode,
+            allowed_connection_refs=allowed_connection_refs,
+            allowed_capability_ids=allowed_capability_ids,
+            max_live_calls=max_live_calls,
+            max_total_duration_ms=max_total_duration_ms,
+            max_result_items=max_result_items,
+            max_result_bytes=max_result_bytes,
+            live_result_retention=live_result_retention,
+            mutation_id=_VALIDATION_MUTATION_ID,
+            effective_revision=1,
+            updated_at=_VALIDATION_NOW,
+        )
+    except (ValidationError, ValueError):
+        raise WorkspaceQueryPolicyError("query_policy_invalid") from None
+    return UpdateQueryPolicyMutationIntent(
+        mode=validated.mode,
+        allowed_connection_refs=validated.allowed_connection_refs,
+        allowed_capability_ids=validated.allowed_capability_ids,
+        max_live_calls=validated.max_live_calls,
+        max_total_duration_ms=validated.max_total_duration_ms,
+        max_result_items=validated.max_result_items,
+        max_result_bytes=validated.max_result_bytes,
+        live_result_retention=validated.live_result_retention,
+        policy_schema_version=2,
+    )
+
+
 def _policy_hashes(
     *,
     tenant_id: str,
@@ -137,6 +213,7 @@ def _policy_hashes(
     request_hash = normalize_update_query_policy_request_hash(
         tenant_id=tenant_id,
         workspace_id=workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -149,6 +226,7 @@ def _policy_hashes(
     semantic_hash = semantic_identity_hash_for_query_policy(
         tenant_id=tenant_id,
         workspace_id=workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -170,6 +248,7 @@ def _stage_manifest_hash(
     return query_policy_stage_manifest_hash(
         tenant_id=tenant_id,
         workspace_id=workspace_id,
+        policy_schema_version=intent.policy_schema_version,
         mode=intent.mode,
         allowed_connection_refs=intent.allowed_connection_refs,
         allowed_capability_ids=intent.allowed_capability_ids,
@@ -182,10 +261,10 @@ def _stage_manifest_hash(
 
 
 def _highest_policy(
-    versions: list[WorkspaceQueryPolicy],
+    versions: list[WorkspaceCommittedQueryPolicy],
     *,
     revision: int,
-) -> WorkspaceQueryPolicy | None:
+) -> WorkspaceCommittedQueryPolicy | None:
     matches = [item for item in versions if item.effective_revision <= revision]
     if not matches:
         return None
@@ -196,9 +275,14 @@ def _highest_policy(
 
 
 def _policy_matches_intent(
-    policy: WorkspaceQueryPolicy,
+    policy: WorkspaceCommittedQueryPolicy,
     intent: UpdateQueryPolicyMutationIntent,
 ) -> bool:
+    if intent.policy_schema_version == 2:
+        if not isinstance(policy, WorkspaceQueryPolicyV2):
+            return False
+    elif not isinstance(policy, WorkspaceQueryPolicy):
+        return False
     return (
         policy.mode is intent.mode
         and policy.allowed_connection_refs == intent.allowed_connection_refs
@@ -220,7 +304,7 @@ def _resolve_historical_policy(
     intent: UpdateQueryPolicyMutationIntent,
     request_hash: str,
     semantic_hash: str,
-) -> WorkspaceQueryPolicy:
+) -> WorkspaceCommittedQueryPolicy:
     mutation = result.mutation
     if (
         mutation.normalized_request_hash != request_hash
@@ -251,14 +335,127 @@ def _resolve_historical_policy(
         ):
             raise _incomplete()
     elif mutation.outcome is WorkspaceKnowledgeMutationOutcomeV1.EXISTING_RESULT:
+        committed_revision = mutation.committed_revision
         if (
             mutation.target_revision is not None
-            or policy.effective_revision > mutation.committed_revision
+            or committed_revision is None
+            or policy.effective_revision > committed_revision
         ):
             raise _incomplete()
     else:
         raise _incomplete()
     return policy
+
+
+def _resolve_historical_policy_v2(
+    repository: ManagedWorkspaceRepository,
+    *,
+    result: WorkspaceKnowledgeMutationExecutionResult,
+    tenant_id: str,
+    workspace_id: str,
+    intent: UpdateQueryPolicyMutationIntent,
+    request_hash: str,
+    semantic_hash: str,
+) -> WorkspaceQueryPolicyV2:
+    policy = _resolve_historical_policy(
+        repository,
+        result=result,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        intent=intent,
+        request_hash=request_hash,
+        semantic_hash=semantic_hash,
+    )
+    if not isinstance(policy, WorkspaceQueryPolicyV2):
+        raise _incomplete()
+    return policy
+
+
+def _execute_query_policy_update(
+    service: WorkspaceQueryPolicyService,
+    *,
+    command_expected_revision: int,
+    command_idempotency_key_hash: str,
+    intent: UpdateQueryPolicyMutationIntent,
+    tenant_id: str,
+    workspace_id: str,
+) -> tuple[WorkspaceCommittedQueryPolicy, WorkspaceKnowledgeMutationExecutionResult]:
+    request_hash, semantic_hash = _policy_hashes(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        intent=intent,
+    )
+    manifest_hash = _stage_manifest_hash(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        intent=intent,
+    )
+    existing = service._repository.get_knowledge_configuration_mutation(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
+        idempotency_key_hash=command_idempotency_key_hash,
+    )
+    if existing is not None and existing.normalized_request_hash != request_hash:
+        raise WorkspaceKnowledgeConfigurationMutationError(
+            "configuration_idempotency_conflict"
+        )
+    if (
+        existing is not None
+        and existing.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
+    ):
+        replay = service._mutation_engine.execute(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
+            expected_revision=command_expected_revision,
+            idempotency_key_hash=command_idempotency_key_hash,
+            normalized_request_hash=request_hash,
+            semantic_identity_hash=semantic_hash,
+            stage_manifest_hash=existing.stage_manifest_hash,
+            intent=intent,
+        )
+        if (
+            replay.disposition
+            is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+        ):
+            policy = _resolve_historical_policy(
+                service._repository,
+                result=replay,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                intent=intent,
+                request_hash=request_hash,
+                semantic_hash=semantic_hash,
+            )
+            return policy, replay
+    configuration = service._configuration_service.get_configuration(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+    )
+    if configuration is None:
+        raise WorkspaceQueryPolicyError("workspace_not_found")
+    result = service._mutation_engine.execute(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
+        expected_revision=command_expected_revision,
+        idempotency_key_hash=command_idempotency_key_hash,
+        normalized_request_hash=request_hash,
+        semantic_identity_hash=semantic_hash,
+        stage_manifest_hash=manifest_hash,
+        intent=intent,
+    )
+    policy = _resolve_historical_policy(
+        service._repository,
+        result=result,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        intent=intent,
+        request_hash=request_hash,
+        semantic_hash=semantic_hash,
+    )
+    return policy, result
 
 
 def _updated_policy_flag(
@@ -298,79 +495,57 @@ class WorkspaceQueryPolicyService:
             max_result_bytes=command.max_result_bytes,
             live_result_retention=command.live_result_retention,
         )
+        policy, result = _execute_query_policy_update(
+            self,
+            command_expected_revision=command.expected_revision,
+            command_idempotency_key_hash=command.idempotency_key_hash,
+            intent=intent,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if not isinstance(policy, WorkspaceQueryPolicy):
+            raise _incomplete()
+        return UpdateWorkspaceQueryPolicyResult(
+            policy=policy,
+            configuration_revision=result.configuration_revision,
+            disposition=result.disposition,
+            updated_policy=_updated_policy_flag(result.disposition),
+            mutation=result.mutation,
+        )
+
+    def update_query_policy_v2(
+        self,
+        command: UpdateWorkspaceQueryPolicyV2Command,
+    ) -> UpdateWorkspaceQueryPolicyV2Result:
+        validate_configuration_idempotency_hash(command.idempotency_key_hash)
+        tenant_id = command.tenant_id.strip()
+        workspace_id = command.workspace_id.strip()
+        intent = _validate_and_normalize_intent_v2(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            mode=command.mode,
+            allowed_connection_refs=command.allowed_connection_refs,
+            allowed_capability_ids=command.allowed_capability_ids,
+            max_live_calls=command.max_live_calls,
+            max_total_duration_ms=command.max_total_duration_ms,
+            max_result_items=command.max_result_items,
+            max_result_bytes=command.max_result_bytes,
+            live_result_retention=command.live_result_retention,
+        )
         request_hash, semantic_hash = _policy_hashes(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             intent=intent,
         )
-        manifest_hash = _stage_manifest_hash(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
+        policy, result = _execute_query_policy_update(
+            self,
+            command_expected_revision=command.expected_revision,
+            command_idempotency_key_hash=command.idempotency_key_hash,
             intent=intent,
-        )
-        existing = self._repository.get_knowledge_configuration_mutation(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
-            idempotency_key_hash=command.idempotency_key_hash,
-        )
-        if existing is not None and existing.normalized_request_hash != request_hash:
-            raise WorkspaceKnowledgeConfigurationMutationError(
-                "configuration_idempotency_conflict"
-            )
-        if (
-            existing is not None
-            and existing.status is WorkspaceKnowledgeMutationStatusV1.COMMITTED
-        ):
-            replay = self._mutation_engine.execute(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
-                expected_revision=command.expected_revision,
-                idempotency_key_hash=command.idempotency_key_hash,
-                normalized_request_hash=request_hash,
-                semantic_identity_hash=semantic_hash,
-                stage_manifest_hash=existing.stage_manifest_hash,
-                intent=intent,
-            )
-            if (
-                replay.disposition
-                is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
-            ):
-                policy = _resolve_historical_policy(
-                    self._repository,
-                    result=replay,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    intent=intent,
-                    request_hash=request_hash,
-                    semantic_hash=semantic_hash,
-                )
-                return UpdateWorkspaceQueryPolicyResult(
-                    policy=policy,
-                    configuration_revision=replay.configuration_revision,
-                    disposition=replay.disposition,
-                    updated_policy=False,
-                    mutation=replay.mutation,
-                )
-        configuration = self._configuration_service.get_configuration(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
         )
-        if configuration is None:
-            raise WorkspaceQueryPolicyError("workspace_not_found")
-        result = self._mutation_engine.execute(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
-            expected_revision=command.expected_revision,
-            idempotency_key_hash=command.idempotency_key_hash,
-            normalized_request_hash=request_hash,
-            semantic_identity_hash=semantic_hash,
-            stage_manifest_hash=manifest_hash,
-            intent=intent,
-        )
-        policy = _resolve_historical_policy(
+        resolved = _resolve_historical_policy_v2(
             self._repository,
             result=result,
             tenant_id=tenant_id,
@@ -379,8 +554,8 @@ class WorkspaceQueryPolicyService:
             request_hash=request_hash,
             semantic_hash=semantic_hash,
         )
-        return UpdateWorkspaceQueryPolicyResult(
-            policy=policy,
+        return UpdateWorkspaceQueryPolicyV2Result(
+            policy=resolved,
             configuration_revision=result.configuration_revision,
             disposition=result.disposition,
             updated_policy=_updated_policy_flag(result.disposition),

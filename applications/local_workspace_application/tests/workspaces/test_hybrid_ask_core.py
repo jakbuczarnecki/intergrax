@@ -47,11 +47,6 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     resolve_effective_query_policy,
     validate_evidence_plan,
 )
-from local_workspace_application.workspaces.knowledge_configuration_hashing import (
-    normalize_update_query_policy_request_hash,
-    query_policy_stage_manifest_hash,
-    semantic_identity_hash_for_query_policy,
-)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveAccessBindingStatusV1,
     LiveResultRetentionV1,
@@ -59,11 +54,8 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     QueryPolicyModeV2,
     WorkspaceConnectionAttachment,
     WorkspaceConnectionAttachmentStatusV1,
-    WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeConfigurationV1,
     WorkspaceKnowledgeMutationOperationV1,
-    WorkspaceKnowledgeMutationRecord,
-    WorkspaceKnowledgeMutationStatusV1,
     WorkspaceLiveAccessBinding,
     WorkspaceQueryPolicy,
     WorkspaceQueryPolicyV2,
@@ -71,7 +63,12 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationEngine,
-    WorkspaceKnowledgeMutationRecoveryDispositionV1,
+    WorkspaceKnowledgeConfigurationMutationError,
+    WorkspaceKnowledgeMutationExecutionDispositionV1,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_service import (
+    UpdateWorkspaceQueryPolicyV2Command,
+    WorkspaceQueryPolicyService,
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
@@ -81,7 +78,6 @@ from local_workspace_application.workspaces.knowledge_configuration_validation i
 )
 from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
     UpdateQueryPolicyMutationHandler,
-    UpdateQueryPolicyMutationIntent,
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
@@ -1041,12 +1037,12 @@ def test_per_call_budgets_are_independent_of_proposal_order() -> None:
                     call_id="call-1",
                 ),
                 PersistedLiveEvidenceProvenanceV2(
-                    evidence_id="live:call-2:item-2",
-                    safe_display_name="Duplicate call",
+                    evidence_id="live:call-1:item-2",
+                    safe_display_name="Conflicting identity",
                     retrieved_at=_NOW,
                     content_hash=_SHA256,
                     audience=AskAudienceV1.PERSONAL,
-                    provider_id="provider-neutral",
+                    provider_id="other-provider",
                     live_access_binding_id="live-1",
                     connection_ref="conn.live",
                     capability_id="cap.read",
@@ -1093,138 +1089,476 @@ def _workspace_record() -> Workspace:
     )
 
 
-def _v2_query_policy_intent() -> UpdateQueryPolicyMutationIntent:
-    return UpdateQueryPolicyMutationIntent(
-        mode=QueryPolicyModeV2.HYBRID,
-        allowed_connection_refs=("conn.live",),
-        allowed_capability_ids=("cap.read",),
-        max_live_calls=2,
-        max_total_duration_ms=30_000,
-        max_result_items=50,
-        max_result_bytes=1_048_576,
-        live_result_retention=LiveResultRetentionV1.EPHEMERAL,
-        policy_schema_version=2,
-    )
+def _v2_query_policy_cmd(**overrides: object) -> UpdateWorkspaceQueryPolicyV2Command:
+    payload = {
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "mode": QueryPolicyModeV2.HYBRID,
+        "allowed_connection_refs": ("conn.live",),
+        "allowed_capability_ids": ("cap.read",),
+        "max_live_calls": 2,
+        "max_total_duration_ms": 30_000,
+        "max_result_items": 50,
+        "max_result_bytes": 1_048_576,
+        "live_result_retention": LiveResultRetentionV1.EPHEMERAL,
+        "expected_revision": 0,
+        "idempotency_key_hash": _IDEMPOTENCY,
+    }
+    payload.update(overrides)
+    return UpdateWorkspaceQueryPolicyV2Command(**payload)
 
 
-def _policy_hashes(intent: UpdateQueryPolicyMutationIntent) -> tuple[str, str]:
-    request = normalize_update_query_policy_request_hash(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        policy_schema_version=intent.policy_schema_version,
-        mode=intent.mode,
-        allowed_connection_refs=intent.allowed_connection_refs,
-        allowed_capability_ids=intent.allowed_capability_ids,
-        max_live_calls=intent.max_live_calls,
-        max_total_duration_ms=intent.max_total_duration_ms,
-        max_result_items=intent.max_result_items,
-        max_result_bytes=intent.max_result_bytes,
-        live_result_retention=intent.live_result_retention,
-    )
-    semantic = semantic_identity_hash_for_query_policy(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        policy_schema_version=intent.policy_schema_version,
-        mode=intent.mode,
-        allowed_connection_refs=intent.allowed_connection_refs,
-        allowed_capability_ids=intent.allowed_capability_ids,
-        max_live_calls=intent.max_live_calls,
-        max_total_duration_ms=intent.max_total_duration_ms,
-        max_result_items=intent.max_result_items,
-        max_result_bytes=intent.max_result_bytes,
-        live_result_retention=intent.live_result_retention,
-    )
-    return request, semantic
-
-
-def test_query_policy_v2_survives_committed_mutation_and_restart() -> None:
-    validate_configuration_idempotency_hash(_IDEMPOTENCY)
+def _build_query_policy_service_stack(
+    *,
+    mutation_ids: list[str] | None = None,
+) -> tuple[WorkspaceQueryPolicyService, ManagedWorkspaceRepository, WorkspaceKnowledgeConfigurationService]:
     store = InMemoryDocumentStore()
     repo = ManagedWorkspaceRepository(store)
     repo.put_workspace(_workspace_record())
-    repo.put_knowledge_configuration_head_if_absent(
-        WorkspaceKnowledgeConfigurationHead(
-            tenant_id=_TENANT,
-            workspace_id=_WORKSPACE,
-            committed_revision=0,
-            updated_at=_NOW,
-        )
-    )
     lookup = ManagedWorkspaceService(repo)
     config_service = WorkspaceKnowledgeConfigurationService(repo, lookup)
+    ids = mutation_ids or [f"mutation-{i}" for i in range(1, 20)]
+    idx = {"i": 0}
+
+    def _next_id() -> str:
+        value = ids[idx["i"]]
+        idx["i"] = min(idx["i"] + 1, len(ids) - 1)
+        return value
+
     engine = WorkspaceKnowledgeConfigurationMutationEngine(
         repo,
         lookup,
         config_service,
         {WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: _POLICY_HANDLER},
         clock=lambda: _NOW,
-        mutation_id_factory=lambda: "mutation-v2-policy",
+        mutation_id_factory=_next_id,
     )
-    intent = _v2_query_policy_intent()
-    request_hash, semantic_hash = _policy_hashes(intent)
-    manifest_hash = query_policy_stage_manifest_hash(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        policy_schema_version=intent.policy_schema_version,
-        mode=intent.mode,
-        allowed_connection_refs=intent.allowed_connection_refs,
-        allowed_capability_ids=intent.allowed_capability_ids,
-        max_live_calls=intent.max_live_calls,
-        max_total_duration_ms=intent.max_total_duration_ms,
-        max_result_items=intent.max_result_items,
-        max_result_bytes=intent.max_result_bytes,
-        live_result_retention=intent.live_result_retention,
-    )
-    mutation = WorkspaceKnowledgeMutationRecord(
-        mutation_id="mutation-v2-policy",
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
-        operation=WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY,
-        idempotency_key_hash=_IDEMPOTENCY,
-        normalized_request_hash=request_hash,
-        semantic_identity_hash=semantic_hash,
-        stage_manifest_hash=manifest_hash,
-        target_revision=1,
-        status=WorkspaceKnowledgeMutationStatusV1.PREPARED,
-        result_entity_type="query_policy",
-        result_entity_id="query-policy",
-        created_at=_NOW,
-        updated_at=_NOW,
-    )
-    repo.put_knowledge_configuration_mutation_if_absent(mutation)
-    head = repo.get_knowledge_configuration_head(tenant_id=_TENANT, workspace_id=_WORKSPACE)
-    assert head is not None
-    repo.replace_knowledge_configuration_head_if_match(
-        expected=head,
-        replacement=head.model_copy(
-            update={
-                "pending_revision": 1,
-                "pending_mutation_id": mutation.mutation_id,
-                "updated_at": _NOW,
-            }
-        ),
-    )
-    _POLICY_HANDLER.stage(
+    service = WorkspaceQueryPolicyService(
         repository=repo,
-        mutation=mutation,
-        target_revision=1,
-        intent=intent,
-        now=_NOW,
+        configuration_service=config_service,
+        mutation_engine=engine,
     )
-    recovery = engine.recover_workspace_knowledge_mutation(
-        tenant_id=_TENANT,
-        workspace_id=_WORKSPACE,
+    return service, repo, config_service
+
+
+def test_query_policy_v2_update_through_service_persists_and_replays() -> None:
+    validate_configuration_idempotency_hash(_IDEMPOTENCY)
+    service, repo, config_service = _build_query_policy_service_stack(
+        mutation_ids=["mutation-v2-policy"]
     )
-    assert recovery.disposition is WorkspaceKnowledgeMutationRecoveryDispositionV1.COMMITTED
+    first = service.update_query_policy_v2(_v2_query_policy_cmd())
+    assert first.updated_policy is True
+    assert first.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED
+    assert isinstance(first.policy, WorkspaceQueryPolicyV2)
+    assert first.policy.mode is QueryPolicyModeV2.HYBRID
     projected = config_service.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert projected is not None
-    assert isinstance(projected.query_policy, WorkspaceQueryPolicyV2)
-    assert projected.query_policy.mode is QueryPolicyModeV2.HYBRID
+    assert projected.query_policy == first.policy
 
-    restarted_repo = ManagedWorkspaceRepository(store)
+    restarted_repo = ManagedWorkspaceRepository(repo.document_store)
     restarted_lookup = ManagedWorkspaceService(restarted_repo)
     restarted_config = WorkspaceKnowledgeConfigurationService(restarted_repo, restarted_lookup)
+    restarted_engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        restarted_repo,
+        restarted_lookup,
+        restarted_config,
+        {WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: _POLICY_HANDLER},
+        clock=lambda: _NOW,
+        mutation_id_factory=lambda: "unused",
+    )
+    restarted_service = WorkspaceQueryPolicyService(
+        repository=restarted_repo,
+        configuration_service=restarted_config,
+        mutation_engine=restarted_engine,
+    )
     reloaded = restarted_config.get_configuration(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     assert reloaded is not None
     assert isinstance(reloaded.query_policy, WorkspaceQueryPolicyV2)
-    assert reloaded.query_policy == projected.query_policy
+    assert reloaded.query_policy == first.policy
+
+    replay = restarted_service.update_query_policy_v2(
+        _v2_query_policy_cmd(expected_revision=first.configuration_revision)
+    )
+    assert replay.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.COMMITTED_REPLAY
+    assert replay.updated_policy is False
+    assert replay.policy == first.policy
+
+
+def test_query_policy_v2_idempotency_conflict_with_v1_payload() -> None:
+    service, _, _ = _build_query_policy_service_stack()
+    from local_workspace_application.workspaces.knowledge_query_policy_service import (
+        UpdateWorkspaceQueryPolicyCommand,
+    )
+
+    service.update_query_policy(
+        UpdateWorkspaceQueryPolicyCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            mode=QueryPolicyModeV1.INDEXED_ONLY,
+            allowed_connection_refs=(),
+            allowed_capability_ids=(),
+            max_live_calls=0,
+            max_total_duration_ms=30_000,
+            max_result_items=50,
+            max_result_bytes=1_048_576,
+            live_result_retention=LiveResultRetentionV1.EPHEMERAL,
+            expected_revision=0,
+            idempotency_key_hash=_IDEMPOTENCY,
+        )
+    )
+    with pytest.raises(WorkspaceKnowledgeConfigurationMutationError) as exc:
+        service.update_query_policy_v2(_v2_query_policy_cmd())
+    assert exc.value.error_code == "configuration_idempotency_conflict"
+
+
+def test_two_live_evidence_items_same_call_succeed() -> None:
+    run = _v2_run(
+        persisted_evidence=[
+            PersistedIndexedEvidenceV2(
+                evidence_id="idx:ws-1:doc-1:chunk-1",
+                safe_display_name="Indexed doc",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                source_id="src-1",
+                document_id="doc-1",
+                chunk_id="chunk-1",
+            ),
+            PersistedLiveEvidenceProvenanceV2(
+                evidence_id="live:call-1:item-a",
+                safe_display_name="Item A",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                provider_id="provider-neutral",
+                live_access_binding_id="live-1",
+                connection_ref="conn.live",
+                capability_id="cap.read",
+                remote_item_id="item-a",
+                call_id="call-1",
+            ),
+            PersistedLiveEvidenceProvenanceV2(
+                evidence_id="live:call-1:item-b",
+                safe_display_name="Item B",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                provider_id="provider-neutral",
+                live_access_binding_id="live-1",
+                connection_ref="conn.live",
+                capability_id="cap.read",
+                remote_item_id="item-b",
+                call_id="call-1",
+            ),
+        ],
+        citations=[
+            IndexedWorkspaceCitationV1(
+                evidence_id="idx:ws-1:doc-1:chunk-1",
+                safe_display_name="Indexed doc",
+                excerpt="Indexed excerpt",
+                retrieved_at=_NOW,
+                document_id="doc-1",
+                source_id="src-1",
+                workspace_id=_WORKSPACE,
+                source_path="/docs/a.txt",
+                file_name="a.txt",
+            ),
+            LiveWorkspaceCitationV1(
+                evidence_id="live:call-1:item-a",
+                safe_display_name="Item A",
+                retrieved_at=_NOW,
+                provider_id="provider-neutral",
+                connection_safe_label="Live Connection",
+                capability_id="cap.read",
+                remote_item_id="item-a",
+                call_id="call-1",
+            ),
+            LiveWorkspaceCitationV1(
+                evidence_id="live:call-1:item-b",
+                safe_display_name="Item B",
+                retrieved_at=_NOW,
+                provider_id="provider-neutral",
+                connection_safe_label="Live Connection",
+                capability_id="cap.read",
+                remote_item_id="item-b",
+                call_id="call-1",
+            ),
+        ],
+    )
+    assert len(run.persisted_evidence) == 3
+
+
+def test_one_receipt_supports_multiple_live_evidence_items() -> None:
+    run = _v2_run(
+        live_result_retention=LiveResultRetentionV1.RECEIPT_ONLY,
+        persisted_evidence=[
+            PersistedIndexedEvidenceV2(
+                evidence_id="idx:ws-1:doc-1:chunk-1",
+                safe_display_name="Indexed doc",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                source_id="src-1",
+                document_id="doc-1",
+                chunk_id="chunk-1",
+            ),
+            PersistedLiveEvidenceProvenanceV2(
+                evidence_id="live:call-1:item-a",
+                safe_display_name="Item A",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                provider_id="provider-neutral",
+                live_access_binding_id="live-1",
+                connection_ref="conn.live",
+                capability_id="cap.read",
+                remote_item_id="item-a",
+                call_id="call-1",
+            ),
+            PersistedLiveEvidenceProvenanceV2(
+                evidence_id="live:call-1:item-b",
+                safe_display_name="Item B",
+                retrieved_at=_NOW,
+                content_hash=_SHA256,
+                audience=AskAudienceV1.PERSONAL,
+                provider_id="provider-neutral",
+                live_access_binding_id="live-1",
+                connection_ref="conn.live",
+                capability_id="cap.read",
+                remote_item_id="item-b",
+                call_id="call-1",
+            ),
+        ],
+        execution_receipts=[
+            LiveExecutionReceiptV1(
+                receipt_id="receipt-1",
+                run_id="run-v2-1",
+                call_id="call-1",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                started_at=_NOW,
+                completed_at=_NOW,
+                item_count=2,
+                byte_count=20,
+                content_hash=_SHA256,
+                normalized_outcome="ok",
+            ),
+        ],
+        citations=[
+            IndexedWorkspaceCitationV1(
+                evidence_id="idx:ws-1:doc-1:chunk-1",
+                safe_display_name="Indexed doc",
+                excerpt="Indexed excerpt",
+                retrieved_at=_NOW,
+                document_id="doc-1",
+                source_id="src-1",
+                workspace_id=_WORKSPACE,
+                source_path="/docs/a.txt",
+                file_name="a.txt",
+            ),
+            LiveWorkspaceCitationV1(
+                evidence_id="live:call-1:item-a",
+                safe_display_name="Item A",
+                retrieved_at=_NOW,
+                provider_id="provider-neutral",
+                connection_safe_label="Live Connection",
+                capability_id="cap.read",
+                remote_item_id="item-a",
+                call_id="call-1",
+                receipt_id="receipt-1",
+            ),
+            LiveWorkspaceCitationV1(
+                evidence_id="live:call-1:item-b",
+                safe_display_name="Item B",
+                retrieved_at=_NOW,
+                provider_id="provider-neutral",
+                connection_safe_label="Live Connection",
+                capability_id="cap.read",
+                remote_item_id="item-b",
+                call_id="call-1",
+                receipt_id="receipt-1",
+            ),
+        ],
+    )
+    assert len(run.execution_receipts) == 1
+
+
+def test_two_receipts_for_one_call_fail() -> None:
+    with pytest.raises(ValidationError, match="duplicate_receipt_call_id"):
+        _v2_run(
+            live_result_retention=LiveResultRetentionV1.RECEIPT_ONLY,
+            persisted_evidence=[
+                PersistedIndexedEvidenceV2(
+                    evidence_id="idx:ws-1:doc-1:chunk-1",
+                    safe_display_name="Indexed doc",
+                    retrieved_at=_NOW,
+                    content_hash=_SHA256,
+                    audience=AskAudienceV1.PERSONAL,
+                    source_id="src-1",
+                    document_id="doc-1",
+                    chunk_id="chunk-1",
+                ),
+                PersistedLiveEvidenceProvenanceV2(
+                    evidence_id="live:call-1:item-1",
+                    safe_display_name="Live item",
+                    retrieved_at=_NOW,
+                    content_hash=_SHA256,
+                    audience=AskAudienceV1.PERSONAL,
+                    provider_id="provider-neutral",
+                    live_access_binding_id="live-1",
+                    connection_ref="conn.live",
+                    capability_id="cap.read",
+                    call_id="call-1",
+                ),
+            ],
+            execution_receipts=[
+                LiveExecutionReceiptV1(
+                    receipt_id="receipt-1",
+                    run_id="run-v2-1",
+                    call_id="call-1",
+                    live_access_binding_id="live-1",
+                    capability_id="cap.read",
+                    started_at=_NOW,
+                    completed_at=_NOW,
+                    item_count=1,
+                    byte_count=10,
+                    content_hash=_SHA256,
+                    normalized_outcome="ok",
+                ),
+                LiveExecutionReceiptV1(
+                    receipt_id="receipt-2",
+                    run_id="run-v2-1",
+                    call_id="call-1",
+                    live_access_binding_id="live-1",
+                    capability_id="cap.read",
+                    started_at=_NOW,
+                    completed_at=_NOW,
+                    item_count=1,
+                    byte_count=10,
+                    content_hash=_SHA256,
+                    normalized_outcome="ok",
+                ),
+            ],
+        )
+
+
+def test_citation_provider_capability_remote_item_mismatch_fails() -> None:
+    with pytest.raises(ValidationError, match="citation_provider_mismatch"):
+        _v2_run(
+            citations=[
+                IndexedWorkspaceCitationV1(
+                    evidence_id="idx:ws-1:doc-1:chunk-1",
+                    safe_display_name="Indexed doc",
+                    excerpt="Indexed excerpt",
+                    retrieved_at=_NOW,
+                    document_id="doc-1",
+                    source_id="src-1",
+                    workspace_id=_WORKSPACE,
+                    source_path="/docs/a.txt",
+                    file_name="a.txt",
+                ),
+                LiveWorkspaceCitationV1(
+                    evidence_id="live:call-1:item-1",
+                    safe_display_name="Live item",
+                    retrieved_at=_NOW,
+                    provider_id="other-provider",
+                    connection_safe_label="Live Connection",
+                    capability_id="cap.read",
+                    call_id="call-1",
+                ),
+            ]
+        )
+
+
+def test_oversized_plan_budget_is_clamped_not_rejected() -> None:
+    policy = _v2_policy(
+        mode=QueryPolicyModeV2.LIVE_ONLY,
+        max_live_calls=2,
+        max_result_items=20,
+        max_result_bytes=1_000,
+        max_total_duration_ms=10_000,
+        effective_revision=1,
+    )
+    config = _configuration(revision=1, query_policy=policy)
+    effective = resolve_effective_query_policy(
+        requested_mode=QueryPolicyModeV2.LIVE_ONLY,
+        configuration=config,
+        configuration_revision=1,
+    )
+    oversized_budget = EffectiveLiveCallBudgetV1(
+        max_live_calls=50,
+        max_total_duration_ms=300_000,
+        max_result_items=500,
+        max_result_bytes=16_777_216,
+    )
+    plan = EvidencePlanV1(
+        plan_id="plan-clamp",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=1,
+        mode=QueryPolicyModeV2.LIVE_ONLY,
+        indexed_retrieval_directive=None,
+        ordered_live_call_proposals=(
+            LiveCallProposalV1(
+                call_id="call-1",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                typed_capability_request={"item_key": "ITEM-1"},
+            ),
+        ),
+        budget_snapshot=oversized_budget,
+        audience_context=AudienceContextV1(audience=KnowledgeQueryAudienceV1.PERSONAL),
+    )
+    validated = validate_evidence_plan(
+        plan=plan,
+        configuration=config,
+        effective_policy=effective,
+        capability_catalog=_FakeCatalog({"conn.live": _descriptor()}),
+        request_envelope_validator=_FakeEnvelopeValidator(),
+        resource_scope_validator=_FakeScopeValidator(),
+    )
+    assert validated.effective_budget.max_live_calls == 2
+    assert validated.effective_budget.max_result_items == 20
+    assert validated.effective_budget.max_result_bytes == 1_000
+    assert validated.effective_budget.max_total_duration_ms == 10_000
+
+    too_many_calls_plan = EvidencePlanV1(
+        plan_id="plan-too-many",
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        configuration_revision=1,
+        mode=QueryPolicyModeV2.LIVE_ONLY,
+        indexed_retrieval_directive=None,
+        ordered_live_call_proposals=(
+            LiveCallProposalV1(
+                call_id="call-1",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                typed_capability_request={"item_key": "A"},
+            ),
+            LiveCallProposalV1(
+                call_id="call-2",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                typed_capability_request={"item_key": "B"},
+            ),
+            LiveCallProposalV1(
+                call_id="call-3",
+                live_access_binding_id="live-1",
+                capability_id="cap.read",
+                typed_capability_request={"item_key": "C"},
+            ),
+        ),
+        budget_snapshot=oversized_budget,
+        audience_context=AudienceContextV1(audience=KnowledgeQueryAudienceV1.PERSONAL),
+    )
+    with pytest.raises(HybridAskPolicyError) as exc:
+        validate_evidence_plan(
+            plan=too_many_calls_plan,
+            configuration=config,
+            effective_policy=effective,
+            capability_catalog=_FakeCatalog({"conn.live": _descriptor()}),
+            request_envelope_validator=_FakeEnvelopeValidator(),
+            resource_scope_validator=_FakeScopeValidator(),
+        )
+    assert exc.value.error_code == "live_call_budget_exceeded"

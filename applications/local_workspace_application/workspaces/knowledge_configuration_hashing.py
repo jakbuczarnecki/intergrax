@@ -297,6 +297,8 @@ def _query_policy_config_payload(
     max_result_bytes: int,
     live_result_retention: LiveResultRetentionV1,
 ) -> dict[str, object]:
+    if policy_schema_version not in (1, 2):
+        raise ValueError("query_policy_schema_version_unknown")
     normalized_connection_refs, normalized_capability_ids = _normalized_query_policy_fields(
         allowed_connection_refs=allowed_connection_refs,
         allowed_capability_ids=allowed_capability_ids,

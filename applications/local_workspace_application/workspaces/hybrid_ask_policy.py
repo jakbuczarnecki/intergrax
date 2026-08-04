@@ -398,17 +398,36 @@ def validate_evidence_plan(
             raise HybridAskPolicyError("live_proposal_required")
 
     if plan.mode is not QueryPolicyModeV2.INDEXED_ONLY:
-        if len(plan.ordered_live_call_proposals) > effective_policy.max_live_calls:
-            raise HybridAskPolicyError("live_call_budget_exceeded")
-        if plan.budget_snapshot.max_live_calls > effective_policy.max_live_calls:
+        run_effective_budget = _run_effective_budget(
+            policy=effective_policy,
+            proposal_budget=plan.budget_snapshot,
+        )
+        if len(plan.ordered_live_call_proposals) > run_effective_budget.max_live_calls:
             raise HybridAskPolicyError("live_call_budget_exceeded")
 
     executable_calls: list[ExecutableLiveCallV1] = []
     seen_call_ids: set[str] = set()
-    run_effective_budget = _run_effective_budget(
-        policy=effective_policy,
-        proposal_budget=plan.budget_snapshot,
-    )
+    if plan.mode is not QueryPolicyModeV2.INDEXED_ONLY:
+        run_effective_budget = _run_effective_budget(
+            policy=effective_policy,
+            proposal_budget=plan.budget_snapshot,
+        )
+    else:
+        run_effective_budget = EffectiveLiveCallBudgetV1(
+            max_live_calls=0,
+            max_total_duration_ms=min(
+                plan.budget_snapshot.max_total_duration_ms,
+                effective_policy.max_total_duration_ms,
+            ),
+            max_result_items=min(
+                plan.budget_snapshot.max_result_items,
+                effective_policy.max_result_items,
+            ),
+            max_result_bytes=min(
+                plan.budget_snapshot.max_result_bytes,
+                effective_policy.max_result_bytes,
+            ),
+        )
 
     for proposal in plan.ordered_live_call_proposals:
         if proposal.call_id in seen_call_ids:
@@ -477,14 +496,6 @@ def validate_evidence_plan(
                 effective_budget=call_effective_budget,
             )
         )
-
-    if plan.mode is not QueryPolicyModeV2.INDEXED_ONLY:
-        if plan.budget_snapshot.max_total_duration_ms > effective_policy.max_total_duration_ms:
-            raise HybridAskPolicyError("duration_budget_exceeded")
-        if plan.budget_snapshot.max_result_items > effective_policy.max_result_items:
-            raise HybridAskPolicyError("item_budget_exceeded")
-        if plan.budget_snapshot.max_result_bytes > effective_policy.max_result_bytes:
-            raise HybridAskPolicyError("byte_budget_exceeded")
 
     if executable_calls:
         effective_budget = run_effective_budget
