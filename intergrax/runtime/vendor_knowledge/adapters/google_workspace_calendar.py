@@ -113,6 +113,7 @@ _SHA256_HEX = re.compile(r"^[a-f0-9]{64}$")
 _VERSION = re.compile(r"^(?:0|[1-9][0-9]*)$")
 _CURSOR_ALPHABET = re.compile(r"^[A-Za-z0-9_-]+$")
 _MAX_CALENDAR_ID_LENGTH = 1024
+_MAX_EVENT_ID_LENGTH = 1024
 _MAX_TOKEN_LENGTH = 4096
 _MAX_ENCODED_CURSOR_LENGTH = 24_576
 _MAX_TEXT_LENGTH = 16_384
@@ -142,6 +143,20 @@ def _validate_cursor_token(value: object) -> str:
         or _ASCII_CONTROL.search(value)
     ):
         raise ValueError("invalid cursor token")
+    return value
+
+
+def _validate_event_id(value: object) -> str:
+    if (
+        type(value) is not str
+        or not value
+        or value != value.strip()
+        or len(value) > _MAX_EVENT_ID_LENGTH
+        or _ASCII_CONTROL.search(value)
+        or "/" in value
+        or "\\" in value
+    ):
+        raise ValueError("invalid event id")
     return value
 
 
@@ -856,17 +871,7 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                 or type(item.metadata) is not dict
             ):
                 raise ValueError("invalid descriptor field types")
-            data = item.model_dump(mode="python")
-            data["identity"] = KnowledgeItemIdentity(
-                **item.identity.model_dump(mode="python")
-            )
-            data["revision"] = KnowledgeItemRevision(
-                **item.revision.model_dump(mode="python")
-            )
-            data["provenance"] = KnowledgeItemProvenance(
-                **item.provenance.model_dump(mode="python")
-            )
-            return KnowledgeItemDescriptor(**data)
+            return item.model_copy(deep=True)
         except Exception:
             raise self._invalid_descriptor_error() from None
 
@@ -878,16 +883,14 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
         calendar_id: str,
     ) -> None:
         try:
+            identity_remote_id = _validate_event_id(item.identity.remote_id)
+            provenance_remote_id = _validate_event_id(item.provenance.remote_id)
             if (
-                item.identity.remote_id != item.provenance.remote_id
-                or item.identity.remote_id == ""
-                or item.identity.remote_id != item.provenance.remote_id
+                identity_remote_id != provenance_remote_id
                 or item.identity.parent_remote_id is not None
                 or item.identity.logical_key is not None
-                or item.provenance.remote_id != item.identity.remote_id
                 or item.provenance.provider_id != self.provider_id
                 or item.provenance.source_kind != self.source_kind
-                or item.identity.remote_id != item.provenance.remote_id
                 or item.item_type != _GOOGLE_CALENDAR_EVENT_ITEM_TYPE
                 or item.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD
                 or item.content_available is not True
@@ -908,11 +911,15 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
             ):
                 raise ValueError("invalid title")
             revision = item.revision
-            if revision.version is not None and _VERSION.fullmatch(revision.version) is None:
+            if revision.version is not None and (
+                _VERSION.fullmatch(revision.version) is None
+                or len(revision.version) > _MAX_TOKEN_LENGTH
+            ):
                 raise ValueError("invalid version")
             if revision.etag is not None and (
                 type(revision.etag) is not str
                 or not revision.etag
+                or revision.etag != revision.etag.strip()
                 or len(revision.etag) > _MAX_TEXT_LENGTH
                 or _ASCII_CONTROL.search(revision.etag)
             ):

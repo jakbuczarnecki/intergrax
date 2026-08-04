@@ -78,9 +78,6 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeChangeKind,
     KnowledgeContentMode,
     KnowledgeCursor,
-    KnowledgeItemIdentity,
-    KnowledgeItemProvenance,
-    KnowledgeItemRevision,
     KnowledgeSourceRef,
     KnowledgeSourceScope,
 )
@@ -719,56 +716,155 @@ async def test_cursor_rejects_wrong_scope_version_padding_and_invalid_phase() ->
 
 async def test_descriptor_mutations_are_rejected_before_single_event_call() -> None:
     adapter = GoogleWorkspaceCalendarKnowledgeAdapter()
-    fake = _FakeIntegration(pages=[_page()])
+    fake = _FakeIntegration(pages=[_page()], events=[_event()])
     page = await _read_page(adapter, fake)
     descriptor = page.changes[0].descriptor
     assert descriptor is not None
 
-    mutations = [
-        lambda d: KnowledgeItemIdentity.model_construct(
-            remote_id=d.identity.remote_id,
-            parent_remote_id="parent",
-            logical_key=None,
-        ),
-        lambda d: KnowledgeItemRevision.model_construct(
-            version=d.revision.version,
-            etag=d.revision.etag,
-            content_hash="bad",
-            acl_hash=None,
-            updated_at=d.revision.updated_at,
-        ),
-        lambda d: KnowledgeItemProvenance.model_construct(
-            provider_id=d.provenance.provider_id,
-            source_kind="drive",
-            remote_id=d.provenance.remote_id,
-            web_url=None,
-            safe_locator=None,
-        ),
-    ]
-    for mutation in mutations:
-        mutated = descriptor.model_copy(
+    def with_identity(**updates: Any):
+        return descriptor.model_copy(
+            update={"identity": descriptor.identity.model_copy(update=updates)}
+        )
+
+    def with_revision(**updates: Any):
+        return descriptor.model_copy(
+            update={"revision": descriptor.revision.model_copy(update=updates)}
+        )
+
+    def with_provenance(**updates: Any):
+        return descriptor.model_copy(
+            update={"provenance": descriptor.provenance.model_copy(update=updates)}
+        )
+
+    def with_remote_ids(
+        identity_remote_id: object,
+        provenance_remote_id: object,
+    ):
+        return descriptor.model_copy(
             update={
-                "identity": mutation(descriptor),
+                "identity": descriptor.identity.model_copy(
+                    update={"remote_id": identity_remote_id}
+                ),
+                "provenance": descriptor.provenance.model_copy(
+                    update={"remote_id": provenance_remote_id}
+                ),
             }
         )
-        if mutation is mutations[1]:
-            mutated = descriptor.model_copy(
-                update={"revision": mutation(descriptor)}
-            )
-        elif mutation is mutations[2]:
-            mutated = descriptor.model_copy(
-                update={"provenance": mutation(descriptor)}
-            )
+
+    def with_metadata(**updates: Any):
+        metadata = dict(descriptor.metadata)
+        metadata.update(updates)
+        return descriptor.model_copy(update={"metadata": metadata})
+
+    malformed_event_ids = (
+        "",
+        " event-1",
+        "event-1 ",
+        "event/1",
+        "event\\1",
+        "event\x00one",
+        "event\x7fone",
+        "x" * 1025,
+    )
+    mutations = [
+        ("parent_remote_id", lambda: with_identity(parent_remote_id="parent")),
+        ("logical_key", lambda: with_identity(logical_key="logical-key")),
+        ("wrong provider", lambda: with_provenance(provider_id="other")),
+        ("wrong source kind", lambda: with_provenance(source_kind="drive")),
+        (
+            "wrong item type",
+            lambda: descriptor.model_copy(update={"item_type": "drive_file"}),
+        ),
+        (
+            "wrong content mode",
+            lambda: descriptor.model_copy(
+                update={
+                    "content_mode": next(
+                        mode
+                        for mode in KnowledgeContentMode
+                        if mode is not KnowledgeContentMode.STRUCTURED_RECORD
+                    )
+                }
+            ),
+        ),
+        (
+            "content unavailable",
+            lambda: descriptor.model_copy(update={"content_available": False}),
+        ),
+        (
+            "malformed version",
+            lambda: with_revision(version="not-a-version"),
+        ),
+        (
+            "unbounded version",
+            lambda: with_revision(version="9" * 4097),
+        ),
+        ("empty etag", lambda: with_revision(etag="")),
+        ("whitespace etag", lambda: with_revision(etag=" etag-1")),
+        ("control etag", lambda: with_revision(etag="etag-\x00-1")),
+        ("unbounded etag", lambda: with_revision(etag="e" * 16385)),
+        ("malformed content hash", lambda: with_revision(content_hash="bad")),
+        ("ACL hash", lambda: with_revision(acl_hash="a" * 64)),
+        (
+            "naive updated_at",
+            lambda: with_revision(updated_at=datetime(2026, 1, 1, 9, 30)),
+        ),
+        (
+            "web URL",
+            lambda: with_provenance(web_url="https://calendar.google.com/event"),
+        ),
+        ("safe locator", lambda: with_provenance(safe_locator="event-1")),
+        (
+            "metadata keys",
+            lambda: descriptor.model_copy(
+                update={"metadata": {**descriptor.metadata, "unexpected": "value"}}
+            ),
+        ),
+        ("metadata status", lambda: with_metadata(status="cancelled")),
+        ("metadata event type", lambda: with_metadata(event_type="invalid")),
+        (
+            "valid remote ID mismatch",
+            lambda: with_remote_ids("event-1", "event-2"),
+        ),
+        (
+            "malformed provenance remote ID",
+            lambda: with_remote_ids("event-1", "event/1"),
+        ),
+    ]
+    mutations.extend(
+        (
+            f"malformed identity and provenance remote ID {value!r}",
+            lambda value=value: with_remote_ids(value, value),
+        )
+        for value in malformed_event_ids
+    )
+
+    for label, mutation in mutations:
+        mutated = mutation()
         fake.event_calls.clear()
-        with pytest.raises(VendorKnowledgeError) as exc_info:
+        try:
             await adapter.fetch_content(
                 integration=_integration(fake),
                 source=_source(),
                 item=mutated,
             )
-        assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_SCOPE
-        assert exc_info.value.retryable is False
+        except VendorKnowledgeError as error:
+            exc_info = error
+        else:
+            pytest.fail(f"mutation did not raise: {label}")
+        assert exc_info.code is VendorKnowledgeErrorCode.INVALID_SCOPE
+        assert exc_info.retryable is False
+        assert (
+            exc_info.safe_message
+            == "Google Workspace Calendar event descriptor is invalid"
+        )
+        assert exc_info.__cause__ is None
         assert fake.event_calls == []
+        error_repr = repr(exc_info)
+        error_text = str(exc_info)
+        for private_value in (_CALENDAR_ID, _EVENT_ID, _CONNECTION_REF):
+            assert private_value not in error_repr
+            assert private_value not in error_text
 
 
 async def test_wrong_integration_and_malformed_page_fail_closed() -> None:
