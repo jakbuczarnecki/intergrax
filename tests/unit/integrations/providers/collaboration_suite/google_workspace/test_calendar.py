@@ -23,6 +23,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleCalendarAttendeeResponseStatus,
     GoogleCalendarConferenceSolutionType,
     GoogleCalendarEventStatus,
+    GoogleCalendarEventType,
     GoogleCalendarKnowledgeReader,
     GoogleCalendarReminderMethod,
     GoogleCalendarSyncToken,
@@ -179,6 +180,12 @@ def _reader(payload: object) -> tuple[GoogleCalendarKnowledgeReader, _RecordingT
     return GoogleCalendarKnowledgeReader(transport=transport), transport
 
 
+def _construct_invalid_page_token(value: str) -> GoogleWorkspacePageToken:
+    token = object.__new__(GoogleWorkspacePageToken)
+    object.__setattr__(token, "value", value)
+    return token
+
+
 def test_exact_full_request_and_structured_page() -> None:
     reader, transport = _reader(_page(terminal=False))
     page = reader.list_events_page(calendar_id=_CALENDAR_ID, max_results=25)
@@ -215,16 +222,78 @@ def test_exact_full_request_and_structured_page() -> None:
     assert event.reminders.overrides[0].method is GoogleCalendarReminderMethod.EMAIL
 
 
-def test_incremental_and_terminal_requests_are_token_stable() -> None:
-    reader, transport = _reader(_page())
-    with pytest.raises(IntegrationConfigurationError, match="invalid Google Calendar sync token"):
-        reader.list_events_page(
-            calendar_id=_CALENDAR_ID,
-            page_token=_PAGE_TOKEN,
-            sync_token=_SYNC_TOKEN,
-        )
-    assert len(transport.calls) == 0
+def test_from_gmail_event_type_is_parsed() -> None:
+    event = {
+        "id": "gmail-event",
+        "status": "confirmed",
+        "eventType": "fromGmail",
+        "start": {"dateTime": "2026-01-01T10:00:00Z"},
+        "end": {"dateTime": "2026-01-01T11:00:00Z"},
+    }
+    reader, _ = _reader(_page(events=[event]))
 
+    page = reader.list_events_page(calendar_id=_CALENDAR_ID)
+
+    assert page.events[0].event_type is GoogleCalendarEventType.FROM_GMAIL
+
+
+def test_none_access_role_is_parsed_on_terminal_page() -> None:
+    reader, _ = _reader(
+        {
+            "accessRole": "none",
+            "items": [],
+            "nextSyncToken": "sync-next",
+        }
+    )
+
+    page = reader.list_events_page(calendar_id=_CALENDAR_ID)
+
+    assert page.access_role is GoogleCalendarAccessRole.NONE
+
+
+def test_sms_reminder_method_is_rejected_safely() -> None:
+    event = _event()
+    event["reminders"] = {
+        "useDefault": False,
+        "overrides": [{"method": "sms", "minutes": 10}],
+    }
+    reader, _ = _reader(_page(events=[event]))
+
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.list_events_page(calendar_id=_CALENDAR_ID)
+
+    assert exc_info.value.__cause__ is None
+    for secret in (
+        _CALENDAR_ID,
+        "event-1",
+        "Planning",
+        "creator@example.com",
+        "sync-1",
+        "page-1",
+        "sms",
+    ):
+        assert secret not in str(exc_info.value)
+
+
+def test_full_continuation_request_uses_only_page_token() -> None:
+    reader, transport = _reader(_page(terminal=False))
+    page = reader.list_events_page(
+        calendar_id=_CALENDAR_ID,
+        page_token=_PAGE_TOKEN,
+    )
+
+    assert page.next_page_token is not None
+    assert transport.calls[0]["params"] == {
+        "maxResults": 250,
+        "showDeleted": True,
+        "singleEvents": False,
+        "fields": _GOOGLE_CALENDAR_EVENTS_FIELDS,
+        "pageToken": "page-1",
+    }
+    assert "syncToken" not in transport.calls[0]["params"]
+
+
+def test_incremental_first_page_uses_only_sync_token() -> None:
     reader, transport = _reader(_page())
     page = reader.list_events_page(
         calendar_id=_CALENDAR_ID,
@@ -243,6 +312,29 @@ def test_incremental_and_terminal_requests_are_token_stable() -> None:
     assert "updatedMin" not in transport.calls[0]["params"]
     assert "orderBy" not in transport.calls[0]["params"]
     assert "q" not in transport.calls[0]["params"]
+
+
+def test_incremental_continuation_preserves_both_tokens() -> None:
+    reader, transport = _reader(_page(terminal=False))
+    page = reader.list_events_page(
+        calendar_id=_CALENDAR_ID,
+        page_token=_PAGE_TOKEN,
+        sync_token=_SYNC_TOKEN,
+        max_results=2500,
+    )
+
+    assert page.next_page_token is not None
+    assert page.next_sync_token is None
+    assert transport.calls[0]["params"] == {
+        "maxResults": 2500,
+        "showDeleted": True,
+        "singleEvents": False,
+        "fields": _GOOGLE_CALENDAR_EVENTS_FIELDS,
+        "pageToken": "page-1",
+        "syncToken": "sync-1",
+    }
+    for incompatible_filter in ("timeMin", "timeMax", "updatedMin", "orderBy", "q", "iCalUID"):
+        assert incompatible_filter not in transport.calls[0]["params"]
 
 
 @pytest.mark.parametrize(
@@ -264,20 +356,49 @@ def test_invalid_page_limit_makes_no_call(max_results: object) -> None:
     assert transport.calls == []
 
 
-def test_page_and_sync_tokens_are_mutually_exclusive_and_revalidated() -> None:
+@pytest.mark.parametrize(
+    ("token_kind", "token"),
+    [
+        ("page", _construct_invalid_page_token("")),
+        ("page", _construct_invalid_page_token("x" * 4097)),
+        ("page", _construct_invalid_page_token("\x00page")),
+        ("sync", GoogleCalendarSyncToken.model_construct(value="")),
+        ("sync", GoogleCalendarSyncToken.model_construct(value="x" * 4097)),
+        ("sync", GoogleCalendarSyncToken.model_construct(value="\x00sync")),
+    ],
+)
+def test_invalid_individual_tokens_make_no_call(token_kind: str, token: object) -> None:
     reader, transport = _reader(_page())
-    with pytest.raises(IntegrationConfigurationError, match="invalid Google Calendar sync token"):
-        reader.list_events_page(
-            calendar_id=_CALENDAR_ID,
-            page_token=_PAGE_TOKEN,
-            sync_token=_SYNC_TOKEN,
-        )
+    token_argument = {"page_token": token} if token_kind == "page" else {"sync_token": token}
+    message = "invalid Google Calendar page token" if token_kind == "page" else "invalid Google Calendar sync token"
+    with pytest.raises(IntegrationConfigurationError, match=message):
+        reader.list_events_page(calendar_id=_CALENDAR_ID, **token_argument)  # type: ignore[arg-type]
     assert transport.calls == []
 
-    malformed = GoogleCalendarSyncToken.model_construct(value="")
-    with pytest.raises(IntegrationConfigurationError, match="invalid Google Calendar sync token"):
-        reader.list_events_page(calendar_id=_CALENDAR_ID, sync_token=malformed)
-    assert transport.calls == []
+
+def test_token_subclasses_make_no_call() -> None:
+    class PageTokenSubclass(GoogleWorkspacePageToken):
+        pass
+
+    class SyncTokenSubclass(GoogleCalendarSyncToken):
+        pass
+
+    for token_kind, token, message in (
+        ("page", PageTokenSubclass(value="page-1"), "invalid Google Calendar page token"),
+        ("sync", SyncTokenSubclass(value="sync-1"), "invalid Google Calendar sync token"),
+    ):
+        reader, transport = _reader(_page())
+        token_argument = {"page_token": token} if token_kind == "page" else {"sync_token": token}
+        with pytest.raises(IntegrationConfigurationError, match=message):
+            reader.list_events_page(calendar_id=_CALENDAR_ID, **token_argument)  # type: ignore[arg-type]
+        assert transport.calls == []
+
+
+def test_public_calendar_enum_values_match_provider_contract() -> None:
+    assert GoogleCalendarEventType("fromGmail") is GoogleCalendarEventType.FROM_GMAIL
+    assert GoogleCalendarAccessRole("none") is GoogleCalendarAccessRole.NONE
+    with pytest.raises(ValueError):
+        GoogleCalendarReminderMethod("sms")
 
 
 @pytest.mark.parametrize(

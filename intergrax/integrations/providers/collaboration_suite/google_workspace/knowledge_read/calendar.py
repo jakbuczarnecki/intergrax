@@ -161,6 +161,7 @@ _PAGE_ALLOWED_KEYS = frozenset(
 
 
 class GoogleCalendarAccessRole(StrEnum):
+    NONE = "none"
     FREE_BUSY_READER = "freeBusyReader"
     READER = "reader"
     WRITER = "writer"
@@ -179,6 +180,7 @@ class GoogleCalendarEventType(StrEnum):
     FOCUS_TIME = "focusTime"
     WORKING_LOCATION = "workingLocation"
     BIRTHDAY = "birthday"
+    FROM_GMAIL = "fromGmail"
 
 
 class GoogleCalendarVisibility(StrEnum):
@@ -209,7 +211,6 @@ class GoogleCalendarConferenceSolutionType(StrEnum):
 
 class GoogleCalendarReminderMethod(StrEnum):
     EMAIL = "email"
-    SMS = "sms"
     POPUP = "popup"
 
 
@@ -1086,8 +1087,6 @@ class GoogleCalendarKnowledgeReader:
             validated_sync_token = _validate_sync_token_for_request(sync_token)
             if type(max_results) is not int or not 1 <= max_results <= _MAX_EVENT_PAGE_SIZE:
                 raise ValueError(_INVALID_PAGE_LIMIT_MESSAGE)
-            if validated_page_token is not None and validated_sync_token is not None:
-                raise ValueError(_INVALID_SYNC_TOKEN_MESSAGE)
         except ValueError as exc:
             message = str(exc)
             if message == _INVALID_CALENDAR_ID_MESSAGE:
