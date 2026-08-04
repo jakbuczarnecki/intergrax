@@ -29,6 +29,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleCalendarSyncToken,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    _GOOGLE_CALENDAR_EVENT_FIELDS,
     _GOOGLE_CALENDAR_EVENTS_FIELDS,
     GoogleCalendarAttendee,
     GoogleCalendarEvent,
@@ -609,3 +610,115 @@ def test_public_exports_resolve_exact_objects() -> None:
     assert google_workspace.GoogleCalendarEvent is GoogleCalendarEvent
     assert google_workspace.GoogleCalendarKnowledgeReader is GoogleCalendarKnowledgeReader
     assert google_workspace.GoogleCalendarSyncToken is GoogleCalendarSyncToken
+
+
+def test_read_event_uses_exact_single_event_request_and_existing_parser() -> None:
+    reader, transport = _reader(_event(event_id="event+with"))
+
+    event = reader.read_event(
+        calendar_id="team+shared@group.calendar.google.com",
+        event_id="event+with",
+    )
+
+    assert event.id == "event+with"
+    assert event.status is GoogleCalendarEventStatus.CONFIRMED
+    assert len(transport.calls) == 1
+    assert transport.calls[0] == {
+        "source_kind": GoogleWorkspaceSourceKind.CALENDAR,
+        "relative_path": (
+            "/calendars/team%2Bshared%40group.calendar.google.com/"
+                "events/event%2Bwith"
+        ),
+        "params": {"fields": _GOOGLE_CALENDAR_EVENT_FIELDS},
+        "headers": {},
+    }
+
+
+@pytest.mark.parametrize(
+    "event_id",
+    ["", " ", " event", "event ", "a\x00b", "a\x7fb", "a/b", r"a\b", "x" * 1025, 123, True],
+)
+def test_read_event_rejects_unsafe_event_id_before_call(event_id: object) -> None:
+    reader, transport = _reader(_event())
+
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Calendar event identifier") as exc_info:
+        reader.read_event(calendar_id=_CALENDAR_ID, event_id=event_id)  # type: ignore[arg-type]
+
+    assert exc_info.value.__cause__ is None
+    assert transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "calendar_id",
+    ["", " ", " team", "team ", "a\x00b", "a\x7fb", "a/b", r"a\b", "x" * 1025, 123, True],
+)
+def test_read_event_rejects_unsafe_calendar_id_before_call(calendar_id: object) -> None:
+    reader, transport = _reader(_event())
+
+    with pytest.raises(IntegrationConfigurationError, match="invalid Google Calendar identifier"):
+        reader.read_event(calendar_id=calendar_id, event_id="event-1")  # type: ignore[arg-type]
+
+    assert transport.calls == []
+
+
+def test_read_event_maps_malformed_and_transport_failures_safely() -> None:
+    malformed = _event()
+    malformed["unknown"] = "private"
+    reader, transport = _reader(malformed)
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_event(calendar_id=_CALENDAR_ID, event_id="event-1")
+    assert exc_info.value.__cause__ is None
+    assert _CALENDAR_ID not in str(exc_info.value)
+    assert "event-1" not in str(exc_info.value)
+    assert "private" not in str(exc_info.value)
+    assert len(transport.calls) == 1
+
+    transport = _RecordingTransport(exception=RuntimeError("private transport details"))
+    with pytest.raises(IntegrationDependencyError, match="Google Calendar provider request failed") as exc_info:
+        GoogleCalendarKnowledgeReader(transport=transport).read_event(
+            calendar_id=_CALENDAR_ID,
+            event_id="event-1",
+        )
+    assert exc_info.value.__cause__ is None
+    assert "private" not in str(exc_info.value)
+
+    api_error = GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.NOT_FOUND,
+        status_code=404,
+        retry_after_seconds=None,
+        safe_reason="not_found",
+        attempts=1,
+    )
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        GoogleCalendarKnowledgeReader(
+            transport=_RecordingTransport(exception=api_error)
+        ).read_event(calendar_id=_CALENDAR_ID, event_id="event-1")
+    assert exc_info.value is api_error
+
+
+def test_integration_delegates_single_event_and_disabled_integration_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    disabled = GoogleWorkspaceCollaborationSuiteIntegration(
+        integration_id="calendar-test",
+        provider_id="google_workspace",
+    )
+    with pytest.raises(IntegrationConfigurationError, match="integration is disabled"):
+        disabled.read_calendar_event(calendar_id=_CALENDAR_ID, event_id="event-1")
+
+    reader, transport = _reader(_event(event_id="event-1"))
+    monkeypatch.setattr(
+        GoogleWorkspaceCollaborationSuiteIntegration,
+        "_calendar_reader",
+        lambda self: reader,
+    )
+    integration = GoogleWorkspaceCollaborationSuiteIntegration(
+        integration_id="calendar-test",
+        provider_id="google_workspace",
+    )
+    event = integration.read_calendar_event(
+        calendar_id=_CALENDAR_ID,
+        event_id="event-1",
+    )
+    assert event.id == "event-1"
+    assert transport.calls[0]["source_kind"] is GoogleWorkspaceSourceKind.CALENDAR

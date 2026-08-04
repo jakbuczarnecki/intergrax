@@ -50,6 +50,7 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDriveFileContent,
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    GoogleCalendarEvent,
     GoogleCalendarEventPage,
     GoogleCalendarKnowledgeReader,
     GoogleCalendarSyncToken,
@@ -268,6 +269,17 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
             page_token=page_token,
             sync_token=sync_token,
             max_results=max_results,
+        )
+
+    def read_calendar_event(
+        self,
+        *,
+        calendar_id: str,
+        event_id: str,
+    ) -> GoogleCalendarEvent:
+        return self._calendar_reader().read_event(
+            calendar_id=calendar_id,
+            event_id=event_id,
         )
 
     def read_drive_file_content(

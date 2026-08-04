@@ -72,6 +72,15 @@ from intergrax.runtime.vendor_knowledge.adapters.google_workspace_drive import (
     GoogleWorkspaceDriveKnowledgeAdapter,
     register_google_workspace_drive_knowledge_adapter,
 )
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_calendar import (
+    GOOGLE_CALENDAR_CURSOR_VERSION,
+    GOOGLE_CALENDAR_ITEM_METADATA_VERSION,
+    GOOGLE_CALENDAR_SCOPE_TYPE,
+    GOOGLE_CALENDAR_STRUCTURED_RECORD_MIME_TYPE,
+    GOOGLE_CALENDAR_STRUCTURED_RECORD_SCHEMA,
+    GoogleWorkspaceCalendarKnowledgeAdapter,
+    register_google_workspace_calendar_knowledge_adapter,
+)
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_CURSOR_VERSION,
     SLACK_CONVERSATION_SCOPE_TYPE,
@@ -100,6 +109,12 @@ __all__ = [
     "GOOGLE_DRIVE_USER_SCOPE_ID",
     "GOOGLE_DRIVE_USER_SCOPE_TYPE",
     "GoogleWorkspaceDriveKnowledgeAdapter",
+    "GOOGLE_CALENDAR_CURSOR_VERSION",
+    "GOOGLE_CALENDAR_ITEM_METADATA_VERSION",
+    "GOOGLE_CALENDAR_SCOPE_TYPE",
+    "GOOGLE_CALENDAR_STRUCTURED_RECORD_MIME_TYPE",
+    "GOOGLE_CALENDAR_STRUCTURED_RECORD_SCHEMA",
+    "GoogleWorkspaceCalendarKnowledgeAdapter",
     "JiraIssuesKnowledgeAdapter",
     "MSGRAPH_CALENDAR_CURSOR_VERSION",
     "MSGRAPH_CALENDAR_SCOPE_TYPE",
@@ -127,6 +142,7 @@ __all__ = [
     "register_google_workspace_docs_knowledge_adapter",
     "register_google_workspace_sheets_knowledge_adapter",
     "register_google_workspace_drive_knowledge_adapter",
+    "register_google_workspace_calendar_knowledge_adapter",
     "register_confluence_pages_knowledge_adapter",
     "register_jira_issues_knowledge_adapter",
     "register_msgraph_calendar_knowledge_adapter",

@@ -31,6 +31,7 @@ GOOGLE_CALENDAR_SOURCE_KIND = "calendar"
 _STRICT_MODEL_CONFIG = ConfigDict(extra="forbid", frozen=True, strict=True)
 
 _INVALID_CALENDAR_ID_MESSAGE = "invalid Google Calendar identifier"
+_INVALID_EVENT_ID_MESSAGE = "invalid Google Calendar event identifier"
 _INVALID_PAGE_TOKEN_MESSAGE = "invalid Google Calendar page token"
 _INVALID_SYNC_TOKEN_MESSAGE = "invalid Google Calendar sync token"
 _INVALID_PAGE_LIMIT_MESSAGE = "invalid Google Calendar page limit"
@@ -758,6 +759,14 @@ class GoogleCalendarKnowledgeReadClient(Protocol):
     ) -> GoogleCalendarEventPage:
         ...
 
+    def read_event(
+        self,
+        *,
+        calendar_id: str,
+        event_id: str,
+    ) -> GoogleCalendarEvent:
+        ...
+
 
 def _validate_calendar_id_for_request(value: object) -> str:
     validated = _validate_nonblank(
@@ -765,6 +774,15 @@ def _validate_calendar_id_for_request(value: object) -> str:
     )
     if "/" in validated or "\\" in validated:
         raise ValueError(_INVALID_CALENDAR_ID_MESSAGE)
+    return validated
+
+
+def _validate_event_id_for_request(value: object) -> str:
+    validated = _validate_nonblank(
+        value, max_length=_MAX_CALENDAR_ID_LENGTH, message=_INVALID_EVENT_ID_MESSAGE
+    )
+    if "/" in validated or "\\" in validated:
+        raise ValueError(_INVALID_EVENT_ID_MESSAGE)
     return validated
 
 
@@ -1124,5 +1142,36 @@ class GoogleCalendarKnowledgeReader:
                 calendar_id=validated_calendar_id,
                 max_results=max_results,
             )
+        except Exception:
+            raise IntegrationDependencyError(_UNEXPECTED_RESPONSE_MESSAGE) from None
+
+    def read_event(
+        self,
+        *,
+        calendar_id: str,
+        event_id: str,
+    ) -> GoogleCalendarEvent:
+        try:
+            validated_calendar_id = _validate_calendar_id_for_request(calendar_id)
+            validated_event_id = _validate_event_id_for_request(event_id)
+        except ValueError as exc:
+            raise IntegrationConfigurationError(str(exc)) from None
+
+        encoded_calendar_id = quote(validated_calendar_id, safe="")
+        encoded_event_id = quote(validated_event_id, safe="")
+        try:
+            payload = self._transport.get_json(
+                source_kind=GoogleWorkspaceSourceKind.CALENDAR,
+                relative_path=(
+                    f"/calendars/{encoded_calendar_id}/events/{encoded_event_id}"
+                ),
+                params={"fields": _GOOGLE_CALENDAR_EVENT_FIELDS},
+            )
+        except GoogleWorkspaceApiError:
+            raise
+        except Exception:
+            raise IntegrationDependencyError(_REQUEST_FAILED_MESSAGE) from None
+        try:
+            return _parse_event(payload)
         except Exception:
             raise IntegrationDependencyError(_UNEXPECTED_RESPONSE_MESSAGE) from None
