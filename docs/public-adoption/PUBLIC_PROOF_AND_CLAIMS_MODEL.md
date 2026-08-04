@@ -219,8 +219,8 @@ Token Optimization = Featured platform-capability proof
 |----------|-------------------------|
 | **Implemented mechanisms** | Deterministic pipeline, approved-configuration routing, protected regions, receipts/fallback, cache-stable assembly, exact-send integrity, cache-aware execution gate |
 | **Bounded proof** | vLLM prefix-cache proof in named environment |
-| **Partial** | Unified Context Lifecycle — CTX-UCL-1 through CTX-UCL-5 accepted/closed; CTX-UCL-6 in progress; CTX-UCL-6A ready for review; CTX-UCL-CLOSEOUT-1 not started |
-| **Planned** | CTX-UCL-CLOSEOUT-1; TOKEN-10E; TOKEN-10F; TOKEN-10G; TOKEN-10H |
+| **Partial** | Unified Context Lifecycle — CTX-UCL-5 accepted/closed; CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review / pending independent acceptance |
+| **Planned** | TOKEN-10E; TOKEN-10F; TOKEN-10G; TOKEN-10H |
 | **NOT CLAIMABLE** | Universal token reduction, production-proven savings, provider-independent cache behavior, completed in-cache compaction |
 
 Token Optimization demonstrates a reusable platform mechanism. LKW-PF6 product proof remains scheduled after universal platform proof (TOKEN-10G).

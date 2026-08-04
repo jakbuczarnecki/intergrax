@@ -85,7 +85,7 @@ Deeper detail: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) 
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
-| Unified Context Lifecycle | 🟡 **PARTIAL** | Contracts and runtime integration through CTX-UCL-5 accepted/closed; legacy migration CTX-UCL-6 in progress | CTX-UCL-6A ready for review; CTX-UCL-CLOSEOUT-1 not started; durable production integration not complete |
+| Unified Context Lifecycle | 🟡 **PARTIAL** | CTX-UCL-5 accepted/closed; CTX-UCL-6 accepted/closed through 6D; EPHEMERAL_ASSEMBLY closure-ready; CTX-UCL-CLOSEOUT-1 ready for final review | TOKEN-10E-1 blocked pending closeout acceptance; durable production integration not complete |
 | Durable in-cache compaction | 🗓️ **PLANNED** | TOKEN-10E architecture defined | Runtime blocked until UCL closeout |
 | Universal proof and hard gates | 🗓️ **PLANNED** | TOKEN-10F / TOKEN-10G harness and corpus | Hard gates not passed |
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |

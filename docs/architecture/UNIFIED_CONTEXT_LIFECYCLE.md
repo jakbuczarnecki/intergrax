@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** **CTX-UCL-3** correction delivered through CTX-UCL-3-R1; **CTX-UCL-2** accepted/closed through R1; **CTX-UCL-1** accepted/closed through R1/R2
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **READY_FOR_FINAL_REVIEW**
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — **Accepted**) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture pass:** 2026-08-02 — **CTX-UCL-2** reference `OptimizationArtifactRepository` + `InMemoryOptimizationArtifactRepository` delivered (`intergrax/runtime/context_lifecycle/`)
+**Last architecture/runtime pass:** 2026-08-04 — **CTX-UCL-CLOSEOUT-1** runtime truth synchronized; **EPHEMERAL_ASSEMBLY** closure-ready; **DURABLE_COMPACTION** remains planned under **TOKEN-10E**
 
 ---
 
@@ -13,10 +13,11 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-2** — reference repository delivered; Nexus runtime integration (**CTX-UCL-5**) not started |
-| Prior passes | **CTX-UCL-ARCH-1** (**ACCEPTED / CLOSED** through **R4-R1**) · **CTX-UCL-1** (**ACCEPTED / CLOSED** through **R1/R2**) · **CTX-UCL-ARCH-1-R2** (accepted/closed) · **CTX-UCL-ARCH-1-R3** (closed through R4) · **CTX-UCL-ARCH-1-R4** (accepted/closed) · **CTX-UCL-ARCH-1-R4-R1** (accepted/closed) |
-| Runtime implementation | **CTX-UCL-1 contracts** and **CTX-UCL-2 reference repository** delivered — runtime Nexus integration (**CTX-UCL-4/5**) not started |
-| TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| Task | **CTX-UCL-CLOSEOUT-1** — **READY_FOR_FINAL_REVIEW** (pending independent acceptance) |
+| Implemented phases | **CTX-UCL-1** through **CTX-UCL-6D** **ACCEPTED / CLOSED** |
+| Runtime implementation | **EPHEMERAL_ASSEMBLY** integrated — `ContextEngine` → `resolve_ucl_context_plan()` → repository lookup/reservation → `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only |
+| Legacy migration | **Complete** for model-facing conversation history — `HistoryLayer.OFF` raw-only; non-OFF strategies fail-closed; legacy provider slicing/flattening disabled; legacy compression profiles canonical or fail-closed; history summary prompt builder/YAML removed; no application-local summary caches; no direct conversation-summary bypass |
+| TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed — **DURABLE_COMPACTION** planned, not production-complete |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
 
@@ -36,7 +37,10 @@ This is **architecture and documentation only**. No runtime code, storage migrat
 
 ---
 
-## 3. Current-state audit
+## 3. Historical baseline audit (2026-08-01)
+
+> **Historical baseline captured on 2026-08-01 — not the post-migration runtime state.**
+> The table below records pre-UCL mechanism discovery. Final closeout disposition is in §3.2.
 
 Audit performed by tracing call sites and wiring (2026-08-01). **Existence of code or configuration does not imply production hot-path activity.** **Documented mechanism count: 19** (table rows below; prior delivery report incorrectly cited 17).
 
@@ -62,7 +66,51 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 | `SessionMemoryConsolidationService._prepare_conversation_for_prompt` | User profile / LTM | No | **Yes** (prompt slice) | messages/chars | Partial | Yes | Not validated | No | No | No | None | Active on consolidation path | **separate concern** | **retain** — not conversation compaction |
 | `ConversationalMemory.get_for_model(native_tools=True)` | Memory | No | **Yes** | messages | Yes | Filtered | Strips tool msgs | No | No | No | lock | Active when native_tools path used | model-presentation | **retain** — adapter presentation, not compaction |
 
-### 3.1 Duplicate authorities (highest risk)
+### 3.2 Final closeout resolution register (2026-08-04)
+
+Post-migration runtime disposition for each historical mechanism. Scope: **PRIMARY_MODEL_CALL** consuming UCL-managed model-facing context unless noted.
+
+| Mechanism | Final classification | Final runtime status | Owner | UCL authority impact | Proof / test |
+|-----------|---------------------|----------------------|-------|----------------------|--------------|
+| `ConversationalMemory._trim_if_needed` | RETENTION_ONLY | Active in-RAM bounded active history only | Memory | None — not model-facing optimization | Memory retention contracts |
+| `InMemorySessionStorage` FIFO | RETENTION_ONLY | Dev/test storage FIFO | Memory / Session | None — retention, not compaction | Session storage tests |
+| `SqliteConversationalMemoryStore` max_messages | RETENTION_ONLY | Active on SQLite path | Memory | None — retention policy | Memory store tests |
+| `SessionManager.append_message` | RAW_COMPATIBILITY_ONLY | Canonical append-only write path | Memory / Session | Durable source preserved; no optimization side effect | Session manager tests |
+| `fragments_from_session_history` | DISABLED_FAIL_CLOSED | Raises `SessionHistorySnapshotRequiredError` | Context Engineering | Removed legacy slicing/flattening authority | `test_legacy_bridge_providers` |
+| `builtin.session_history` `[-N:]` slicing | REMOVED_LEGACY_AUTHORITY | Canonical `SessionHistorySnapshot` path only | Context Engineering | CE collects structured snapshot refs | `test_context_runtime_bridge`, CE provider tests |
+| `DefaultContextFormatter` | MODEL_PRESENTATION_ONLY | Active on CE format/injection path | Context Engineering | Presentation only — not canonical history transport | CE formatter tests |
+| `HistoryLayer` | RAW_COMPATIBILITY_ONLY | **OFF** loads raw `SessionManager.get_history()`; non-OFF fail-closed | Nexus | No compression authority | `test_engine_history_layer` |
+| `HistoryCompressionStrategy` (non-OFF) | DISABLED_FAIL_CLOSED | Mapped at bridge; non-OFF raises `LegacyHistoryCompressionDisabledError` | Nexus / Application | Fail-closed before planner/model | `test_engine_history_layer` |
+| `ContextCompiler` + `DegradationLadder` | CANONICAL_UCL | Active CE global budget path | Context Engineering | Sole global input budget authority | `test_context_plan_integration`, `test_uaep_assemble` |
+| `TOKENIZER_HARD_TRIM` | CANONICAL_UCL | Last `DegradationLadder` step within CE budget; respects segment classes | Context Engineering | Overflow within CE plan only | Degradation ladder / compiler tests |
+| `ContextManager` | CANONICAL_UCL | Task/shared-context assembly under CE when wired; not a second history summarizer | Nexus / CE | Bounded assembly metadata — not conversation summary authority | Nexus context manager tests |
+| `verify_context_preflight` | CANONICAL_UCL | Active post-compile final boundary | Context Engineering | Mandatory pre-adapter validation | CE preflight tests |
+| Token Optimization pipeline | CANONICAL_UCL | Active for string `TextArtifact` transforms on `CREATE_ARTIFACT` | Token Optimization | Executor under UCL decision — not repository owner | `test_message_sequence_artifact`, pipeline tests |
+| `protected_regions.py` | CANONICAL_UCL | Active in TO pipeline | Token Optimization | Protected-region validation on transforms | TO validation tests |
+| `budget_aware_packing` / `context_pack.py` | CANONICAL_UCL | Active prototype under CE budget allocation | Token Optimization | Packing under CE budget — not second global budget | TO packing tests |
+| `semantic_compression_enabled` + metadata | DISABLED_FAIL_CLOSED | Fail-closed or maps `summarize_oldest` → canonical `ContextOptimizationPolicy` only | Application / Runtime wiring | No standalone `semantic_compression.v1` consumer | `test_context_runtime_bridge` |
+| `SessionMemoryConsolidationService._prepare_conversation_for_prompt` | SEPARATE_MEMORY_LIFECYCLE | Active LTM consolidation path | User profile / LTM | **Out of UCL** — separate memory lifecycle | LTM consolidation tests |
+| `HistorySummaryDiagV1` / trace summaries | SEPARATE_TRACE_OR_RESPONSE_LIFECYCLE | Diagnostic trace payloads only | Nexus tracing | **Out of UCL** — trace/response lifecycle | History layer trace tests |
+| `max_memory_entries_in_context` | RETENTION_ONLY (retrieval scope) | Retrieval-only cap for LTM fragments in CE collect | Context Engineering | No authority over session history | `builtin.py` LTM collect tests |
+| History summary prompt builder / YAML | REMOVED_LEGACY_AUTHORITY | **Removed** | — | Canonical summary path only via `MessageSequenceArtifactExecutor` | `test_ctx_ucl_6d_legacy_summary_guard` |
+| Application-local history summary caches | REMOVED_LEGACY_AUTHORITY | **None** in production scan roots | — | Reuse via `OptimizationArtifactRepository` only | `test_ctx_ucl_6d_legacy_summary_guard` |
+| Direct conversation-summary model-call bypass | REMOVED_LEGACY_AUTHORITY | **None** — all summary creation via UCL reservation path | Nexus / TO | Single creation path enforced | `test_ucl_orchestration`, source guard |
+
+**Canonical model-facing summary creation (sole path):**
+
+```text
+PRIMARY_MODEL_CALL
+→ ContextEngine.resolve_ucl_context_plan()
+→ OptimizationArtifactRepository.lookup()
+→ REUSE_ARTIFACT | CREATE_ARTIFACT (ArtifactCreationReservation)
+→ MessageSequenceArtifactExecutor (CREATE + ACQUIRED only)
+→ INTERNAL_OPTIMIZATION_CALL
+→ store → final CE assembly → adapter
+```
+
+**Out of UCL scope (explicitly separate, not bypasses):** LTM extraction/consolidation; trace consolidation; planning/critic/eval calls; provider cache behavior; response summarization.
+
+### 3.1 Duplicate authorities (highest risk — historical)
 
 1. **Pre-`ContextPlan` history slicing** (`messages[-N:]`) vs **ContextCompiler global budget** vs **dormant HistoryLayer token compression**.
 2. **Storage-backed FIFO retention** (may cause durable loss) vs **ConversationalMemory in-RAM FIFO** (active in-memory state loss only) — both presented as bounded memory but indistinguishable from optimization in ops.
@@ -931,13 +979,13 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-1** | Contracts: `ModelCallExecutionScope`, `OptimizationExecutionGuard`, `ContextOptimizationDecision`, `ArtifactLookupKey`, `ReusableOptimizationArtifact`, `ArtifactCompatibilityResult`, `ArtifactCreationCoordinationStatus`, `ArtifactCreationReservation`, policy fields, reason codes, safe serialization — **no Nexus integration; no LLM calls** | **ACCEPTED / CLOSED** through R1/R2 |
 | **CTX-UCL-2** | `OptimizationArtifactRepository` neutral Protocol; **`InMemoryOptimizationArtifactRepository`** reference adapter (process-local, non-durable, not a production fallback); atomic lookup; tenant-scoped keys; `try_acquire_creation_reservation`; bounded lease/expiry; validated store; reservation release; invalidation and retirement; reference resolution; deterministic concurrency tests — **no Nexus wiring; no durable backend** | **ACCEPTED / CLOSED through R1** |
 | **CTX-UCL-2-R1** | Bounded wait correction, deterministic wake proofs, provider lifecycle correction | **ACCEPTED / CLOSED** |
-| **CTX-UCL-3** | `ContextPlan` contracts; structured `SessionHistorySnapshot`; deterministic CE-owned `ArtifactLookupKey` inputs; canonical session provider without pre-plan `[-N:]` slicing; internal-call budget classification; CE sole global budget — **no repository lookup; no artifact executor; no LLM** | **Correction delivered through CTX-UCL-3-R1** — **READY_FOR_REVIEW** |
-| **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source; no executor on `REUSE_ARTIFACT` or `ALREADY_IN_PROGRESS`; receipt tied to parent operation and lookup key | Not started / blocked pending **CTX-UCL-3** acceptance |
-| **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile; inject `OptimizationArtifactRepository`; use `InMemoryOptimizationArtifactRepository` in reference tests; sequential and concurrent single-flight proofs | Not started |
-| **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Not started |
-| **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no ambiguous delivery item; no competing summary caches | Not started |
+| **CTX-UCL-3** | `ContextPlan` contracts; structured `SessionHistorySnapshot`; deterministic CE-owned `ArtifactLookupKey` inputs; canonical session provider without pre-plan `[-N:]` slicing; internal-call budget classification; CE sole global budget | **ACCEPTED / CLOSED** through CTX-UCL-3-R1 |
+| **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source | **ACCEPTED / CLOSED** through R1 |
+| **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile | **ACCEPTED / CLOSED** through R1/R2/R3 |
+| **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | **ACCEPTED / CLOSED** through **6D** |
+| **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches | **READY_FOR_FINAL_REVIEW** |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` ready for review → `CTX-UCL-2` … `CTX-UCL-6` → `CTX-UCL-CLOSEOUT-1` accepted/closed → **TOKEN-10E-1** may begin.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` … `CTX-UCL-6D` accepted/closed → **CTX-UCL-CLOSEOUT-1** ready for final review → after acceptance **TOKEN-10E-1** may begin.
 
 **After CTX-UCL-CLOSEOUT-1:**
 
@@ -957,6 +1005,8 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 
 ## 25. User-visible meaning
 
+- **Ephemeral assembly** (`EPHEMERAL_ASSEMBLY`) is **implemented and closure-ready** for UCL-managed `PRIMARY_MODEL_CALL` paths.
+- **Durable compaction** (`DURABLE_COMPACTION`) remains **planned under TOKEN-10E** — not production-complete.
 - **Users** retain full conversation history subject to retention policy; compaction does not silently delete durable turns without explicit durable mode + policy.
 - **Review UX** (when `require_human_review`) shows candidate summary before activation — application host responsibility.
 - **Rollback** restores prior active revision when policy and metadata support it.

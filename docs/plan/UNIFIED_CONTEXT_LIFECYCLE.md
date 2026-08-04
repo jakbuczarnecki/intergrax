@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-5** **ACCEPTED / CLOSED** through R1/R2/R3; **CTX-UCL-6A** **ACCEPTED / CLOSED** through R1; **CTX-UCL-6B** **READY_FOR_REVIEW**
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **READY_FOR_FINAL_REVIEW**
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -26,10 +26,12 @@
 | **CTX-UCL-3** | **ACCEPTED / CLOSED** through R1/R2/R3 — `ContextPlan`, `SessionHistorySnapshot`, deterministic lookup inputs, canonical session provider (no last-N slicing), CE global budget |
 | **CTX-UCL-4** | **ACCEPTED / CLOSED through R1** — non-recursive `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` + `ACQUIRED` only |
 | **CTX-UCL-5** | **ACCEPTED / CLOSED** through R1/R2/R3 |
-| **CTX-UCL-6** | **IN PROGRESS** through **CTX-UCL-6B** |
+| **CTX-UCL-6** | **ACCEPTED / CLOSED** through **6D** |
 | **CTX-UCL-6A** | **ACCEPTED / CLOSED** through R1 |
-| **CTX-UCL-6B** | **READY_FOR_REVIEW** — canonical snapshot only; legacy slicing and flattening disabled fail-closed |
-| **CTX-UCL-CLOSEOUT-1** | Not started |
+| **CTX-UCL-6B** | **ACCEPTED / CLOSED** |
+| **CTX-UCL-6C** | **ACCEPTED / CLOSED** |
+| **CTX-UCL-6D** | **ACCEPTED / CLOSED** |
+| **CTX-UCL-CLOSEOUT-1** | **READY_FOR_FINAL_REVIEW** — cross-domain runtime truth, documentation sync, closure proof |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
 | **TOKEN-10C** | Accepted / Closed |
@@ -104,14 +106,16 @@ TOKEN-10E-1 → may begin
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
 | **CTX-UCL-6** | Disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | Verify all history-summary creation uses canonical repository and execution-scope boundary |
-| **CTX-UCL-6A** | Disable HistoryLayer summarization/truncation authority; OFF remains raw compatibility load; legacy reduction strategies fail closed. | Independent review |
-| **CTX-UCL-6B** | Canonical SessionHistorySnapshot-only provider path; raw messages require stable revision; legacy slicing/flattening disabled. | Independent review |
+| **CTX-UCL-6A** | Disable HistoryLayer summarization/truncation authority; OFF remains raw compatibility load; legacy reduction strategies fail closed. | **ACCEPTED / CLOSED** |
+| **CTX-UCL-6B** | Canonical SessionHistorySnapshot-only provider path; raw messages require stable revision; legacy slicing/flattening disabled. | **ACCEPTED / CLOSED** |
+| **CTX-UCL-6C** | Legacy compression profile migration to canonical `ContextOptimizationPolicy` or fail-closed. | **ACCEPTED / CLOSED** |
+| **CTX-UCL-6D** | Remove history summary prompt builder/YAML, application-local caches, and direct summarizer bypasses. | **ACCEPTED / CLOSED** |
 
 ### Phase 4 — Closeout
 
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
-| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime + documentation sync | One canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no ambiguous delivery item; no competing summary caches; identical sequential source reuses; identical concurrent source invokes summarizer once |
+| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime + documentation sync | **READY_FOR_FINAL_REVIEW** — one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches |
 
 ### Phase 5 — Durable compaction (after UCL closeout)
 
@@ -169,24 +173,31 @@ TOKEN-10E-1 → may begin
 
 **CTX-UCL-CLOSEOUT-1** requires:
 
-- One canonical optimization decision point on every model call
-- One canonical summary creation path
-- Internal-call recursion blocked
-- Single-flight same-key creation proven in runtime tests
-- Different-key concurrency preserved
-- Reference `InMemoryOptimizationArtifactRepository` wired
-- No ambiguous `CTX-UCL-2+` delivery item
-- No competing summary generator or application-local caches
-- Identical sequential source reuses artifact
-- Identical concurrent source invokes summarizer once
-- Runtime call graph matches architecture audit classifications (19 mechanisms)
-- Documentation hub lists UCL domain pair and ADR-UCL-001
-- TOKEN_OPTIMIZATION §8.10 references UCL as sole lifecycle source
-- Public claims guardrails pass
+- [x] One canonical optimization decision point on every `PRIMARY_MODEL_CALL` consuming UCL-managed context
+- [x] One canonical summary creation path (`MessageSequenceArtifactExecutor`, `message_sequence_summarization.v1`, `INTERNAL_OPTIMIZATION_CALL`)
+- [x] Internal-call recursion blocked (`OptimizationExecutionGuard`, `OPTIMIZATION_RECURSION_BLOCKED`)
+- [x] Single-flight same-key creation proven (`test_concurrent_same_key_single_flight`)
+- [x] Different-key concurrency preserved (`test_different_key_concurrency_allows_two_model_calls`)
+- [x] Sequential reuse-before-create proven (`test_lookup_hit_reuses_without_executor`)
+- [x] Failed creation releases reservation (`test_executor_failure_releases_reservation`)
+- [x] Reference `InMemoryOptimizationArtifactRepository` wired
+- [x] No competing summary generator or application-local caches (cross-domain source guard)
+- [x] Runtime call graph matches 19-mechanism closeout register
+- [x] Documentation hub lists UCL domain pair and ADR-UCL-001
+- [x] TOKEN_OPTIMIZATION §8.10 references UCL as sole lifecycle source
+- [x] Public claims guardrails pass
+- [ ] Independent final review and acceptance
 
 ---
 
-## Deferred work
+## Next step
+
+Independent final review of **CTX-UCL-CLOSEOUT-1**.
+
+After acceptance:
+
+- **CTX-UCL-CLOSEOUT-1** → **ACCEPTED / CLOSED**
+- **TOKEN-10E-1** may begin.
 
 | Item | Notes |
 |------|-------|
@@ -198,6 +209,4 @@ TOKEN-10E-1 → may begin
 
 ---
 
-## Next step
-
-Independent review of **CTX-UCL-6B**. After acceptance: **CTX-UCL-6C** legacy compression configuration migration.
+## Deferred work

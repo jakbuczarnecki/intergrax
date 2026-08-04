@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Review and accept **CTX-UCL-ARCH-1-R4** ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)), then begin **CTX-UCL-1**. **TOKEN-10E-ARCH-1** superseded by UCL + ADR-UCL-001. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Current next step:** Independent final review of **CTX-UCL-CLOSEOUT-1**. **CTX-UCL-6** accepted/closed through **6D**; closeout **ready for final review**. **TOKEN-10E-1** blocked pending independent closeout acceptance.
 
 ### LKW proof phase map (post-design)
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Review **CTX-UCL-ARCH-1-R4**; after acceptance begin **CTX-UCL-1**. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Next step:** Independent final review of **CTX-UCL-CLOSEOUT-1**. After acceptance: **TOKEN-10E-1** may begin. **TOKEN-10E-1** blocked pending closeout acceptance.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 

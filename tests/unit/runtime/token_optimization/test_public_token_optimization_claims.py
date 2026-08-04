@@ -176,29 +176,17 @@ def _assert_required_ucl_statuses(normalized: str) -> None:
     assert "accepted" in ucl5 and "closed" in ucl5, "CTX-UCL-5 must be accepted/closed"
 
     ucl6 = _ucl_status_window(normalized, "CTX-UCL-6")
-    assert "in progress" in ucl6, "CTX-UCL-6 must be in progress"
-
-    ucl6a = _ucl_status_window(normalized, "CTX-UCL-6A")
-    assert "ready for review" in ucl6a, "CTX-UCL-6A must be ready for review"
+    assert "accepted" in ucl6 and "closed" in ucl6, "CTX-UCL-6 must be accepted/closed"
 
     closeout = _ucl_status_window(normalized, "CTX-UCL-CLOSEOUT-1")
-    assert "not started" in closeout or _ucl_closeout_reports_not_started(normalized), (
-        "CTX-UCL-CLOSEOUT-1 must be not started"
-    )
+    assert (
+        "ready for final review" in closeout
+        or "pending independent acceptance" in closeout
+    ), "CTX-UCL-CLOSEOUT-1 must be ready for final review or pending independent acceptance"
 
-
-def _ucl_closeout_reports_not_started(normalized: str) -> bool:
-    milestone = "ctx-ucl-closeout-1"
-    start = 0
-    while True:
-        idx = normalized.find(milestone, start)
-        if idx == -1:
-            return False
-        window = normalized[idx : idx + 80]
-        if "not started" in window:
-            return True
-        start = idx + len(milestone)
-    return False
+    token10e = _ucl_status_window(normalized, "TOKEN-10E-1")
+    if token10e:
+        assert "blocked" in token10e, "TOKEN-10E-1 must remain blocked"
 
 
 _CTX_UCL_6_NOT_STARTED = re.compile(
@@ -214,23 +202,21 @@ def _assert_no_stale_ucl_wording(normalized: str) -> None:
         and "accepted" not in ucl5_segment
     ), "CTX-UCL-5 must not be described as ready for review or in review"
 
-    assert not _CTX_UCL_6_NOT_STARTED.search(normalized), (
-        "CTX-UCL-6 must not be described as not started"
-    )
-
-    combined_stale_patterns = (
+    stale_patterns = (
+        _CTX_UCL_6_NOT_STARTED,
+        re.compile(r"ctx-ucl-6(?!a).{0,60}\bin progress\b", re.IGNORECASE),
+        re.compile(r"ctx-ucl-6a.{0,60}\bready for review\b", re.IGNORECASE),
+        re.compile(r"ctx-ucl-6b.{0,60}\bready for review\b", re.IGNORECASE),
+        re.compile(r"ctx-ucl-closeout-1.{0,60}\bnot started\b", re.IGNORECASE),
+        re.compile(r"token-10e.{0,60}\bimplementation started\b", re.IGNORECASE),
         re.compile(
-            r"ctx-ucl-6(?!a).{0,40}and\s+ctx-ucl-closeout-1.{0,40}not\s+started",
-            re.IGNORECASE | re.DOTALL,
-        ),
-        re.compile(
-            r"ctx-ucl-6(?!a).{0,40}and\s+closeout.{0,40}not\s+started",
-            re.IGNORECASE | re.DOTALL,
+            r"token-10e(?:\s+is|\s+runtime|\s+implementation)?\s+implemented\b",
+            re.IGNORECASE,
         ),
     )
-    for pattern in combined_stale_patterns:
+    for pattern in stale_patterns:
         assert not pattern.search(normalized), (
-            f"Stale combined UCL wording matched pattern: {pattern.pattern!r}"
+            f"Stale UCL wording matched pattern: {pattern.pattern!r}"
         )
 
 

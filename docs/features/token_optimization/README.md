@@ -19,8 +19,8 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Role** | Featured platform-capability proof |
 | **Implemented foundation** | Deterministic pipeline, approved-configuration routing, protected regions, receipts/fallback, cache-stable assembly, exact-send integrity, cache-aware execution |
 | **Bounded proof** | Named vLLM prefix-cache proof environment (documented version, model, workload) |
-| **Partial work** | Unified Context Lifecycle — CTX-UCL-1 through CTX-UCL-5 accepted/closed; CTX-UCL-6 in progress; CTX-UCL-6A ready for review |
-| **Planned work** | CTX-UCL-CLOSEOUT-1, durable in-cache compaction (TOKEN-10E), universal proof harness (TOKEN-10F), hard gates (TOKEN-10G), public promotion (TOKEN-10H) |
+| **Partial work** | Unified Context Lifecycle — CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review |
+| **Planned work** | Durable in-cache compaction (TOKEN-10E), universal proof harness (TOKEN-10F), hard gates (TOKEN-10G), public promotion (TOKEN-10H) |
 | **Claim boundary** | No universal or production-proven savings; performance promotion gated by TOKEN-10G and TOKEN-10H |
 
 ### Engine lifecycle
@@ -92,8 +92,8 @@ input
 | ----- | -------------------------- |
 | **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware runtime (TOKEN-10D), vLLM proof runner |
 | **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
-| **Partial** | Unified Context Lifecycle runtime — CTX-UCL-1 through CTX-UCL-5 accepted/closed; CTX-UCL-6 in progress; CTX-UCL-6A ready for review; CTX-UCL-CLOSEOUT-1 not started; durable compaction not complete |
-| **Planned** | CTX-UCL-CLOSEOUT-1, TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
+| **Partial** | Unified Context Lifecycle runtime — CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review; durable compaction not complete |
+| **Planned** | TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
 | **Public-proof-gated** | Performance badges, savings numbers, and broad proof promotion require TOKEN-10G + TOKEN-10H; neutral README discovery allowed before TOKEN-10H |
 
 **Phase snapshot (authoritative detail in [plan](../plan/TOKEN_OPTIMIZATION.md)):**
@@ -111,8 +111,9 @@ input
 | TOKEN-10G | Planned |
 | TOKEN-10H | Planned |
 | CTX-UCL-5 | Accepted / Closed through R1/R2/R3 |
-| CTX-UCL-6 | In progress — CTX-UCL-6A ready for review |
-| CTX-UCL-CLOSEOUT-1 | Not started |
+| CTX-UCL-6 | Accepted / Closed through 6D |
+| CTX-UCL-CLOSEOUT-1 | Ready for final review / pending independent acceptance |
+| TOKEN-10E-1 | Blocked pending CTX-UCL-CLOSEOUT-1 acceptance |
 | TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
 
 TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.
