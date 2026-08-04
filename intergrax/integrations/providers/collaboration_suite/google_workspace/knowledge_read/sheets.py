@@ -998,11 +998,13 @@ def _parse_error_value(
             max_length=_MAX_ERROR_MESSAGE_LENGTH,
             allow_unsafe_controls=True,
         )
-    return _safe_construct(
+    error = _safe_construct(
         GoogleSheetsCellError,
         error_type=error_type,
         message=message,
     )
+    budget.add_text(len(error.error_type))
+    return error
 
 
 def _parse_extended_value(
@@ -1393,14 +1395,16 @@ def _parse_sheet_properties(
     frozen_row_count = 0
     frozen_column_count = 0
 
-    grid_properties_raw = mapping.get("gridProperties")
+    grid_properties_present = "gridProperties" in mapping
+    if grid_properties_present and mapping["gridProperties"] is None:
+        raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
     if sheet_type is GoogleSheetsSheetType.OBJECT:
-        if grid_properties_raw is not None:
+        if grid_properties_present:
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
     else:
-        if grid_properties_raw is None:
+        if not grid_properties_present:
             raise ValueError(_UNEXPECTED_RESPONSE_MESSAGE)
-        grid_properties = _require_exact_dict(grid_properties_raw)
+        grid_properties = _require_exact_dict(mapping["gridProperties"])
         _reject_unknown_fields(grid_properties, _GRID_PROPERTIES_ALLOWED_KEYS)
         row_count = _require_positive_int(grid_properties.get("rowCount"))
         column_count = _require_positive_int(grid_properties.get("columnCount"))

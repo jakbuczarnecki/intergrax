@@ -901,6 +901,57 @@ def test_object_sheet_with_grid_rejected() -> None:
         reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
 
 
+def test_object_sheet_without_grid_properties_succeeds() -> None:
+    payload = _minimal_payload()
+    payload["sheets"] = [
+        {
+            "properties": {
+                "sheetId": 1,
+                "title": "ObjectSheet",
+                "index": 0,
+                "sheetType": "OBJECT",
+            },
+        },
+    ]
+    reader, _ = _reader_with_payload(payload)
+
+    spreadsheet = reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+    object_sheet = spreadsheet.sheets[0]
+    assert object_sheet.sheet_type is GoogleSheetsSheetType.OBJECT
+    assert object_sheet.row_count is None
+    assert object_sheet.column_count is None
+    assert object_sheet.frozen_row_count == 0
+    assert object_sheet.frozen_column_count == 0
+    assert object_sheet.grid_data == ()
+    assert object_sheet.merged_ranges == ()
+
+
+def test_object_sheet_with_null_grid_properties_rejected() -> None:
+    payload = _minimal_payload()
+    payload["sheets"] = [
+        {
+            "properties": {
+                "sheetId": 1,
+                "title": "ObjectSheet",
+                "index": 0,
+                "sheetType": "OBJECT",
+                "gridProperties": None,
+            },
+        },
+    ]
+    reader, _ = _reader_with_payload(payload)
+
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+    _assert_safe_dependency_error(exc_info)
+    rendered = str(exc_info.value)
+    assert "ObjectSheet" not in rendered
+    assert "gridProperties" not in rendered
+    assert exc_info.value.__cause__ is None
+
+
 def test_merge_single_cell_rejected() -> None:
     payload = _minimal_payload()
     grid = payload["sheets"][0]
@@ -990,6 +1041,118 @@ def test_text_budget_named_range_names_overflow(monkeypatch: pytest.MonkeyPatch)
     reader, _ = _reader_with_payload(payload)
     with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE):
         reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+
+def test_text_budget_error_type_below_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import (
+        sheets as sheets_module,
+    )
+
+    payload = _minimal_payload()
+    payload["sheets"] = [
+        _grid_sheet_payload(
+            data=[
+                {
+                    "rowData": [
+                        {
+                            "values": [
+                                {
+                                    "effectiveValue": {
+                                        "errorValue": {"type": "DIVIDE_BY_ZERO"},
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        ),
+    ]
+    base_text_length = sum(
+        len(value)
+        for value in (
+            _SPREADSHEET_ID,
+            _SPREADSHEET_TITLE,
+            _LOCALE,
+            _TIME_ZONE,
+            "GridSheet",
+        )
+    )
+    monkeypatch.setattr(
+        sheets_module,
+        "_MAX_TOTAL_TEXT_CHARS",
+        base_text_length + len("DIVIDE_BY_ZERO") - 1,
+    )
+    reader, _ = _reader_with_payload(payload)
+
+    with pytest.raises(IntegrationDependencyError, match=_UNEXPECTED_MESSAGE) as exc_info:
+        reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+    _assert_safe_dependency_error(exc_info)
+    rendered = str(exc_info.value)
+    for private_value in (
+        "DIVIDE_BY_ZERO",
+        _SPREADSHEET_TITLE,
+        "GridSheet",
+        "cell payload",
+        "Authorization",
+        "Bearer",
+        "access_token",
+        "credential_ref",
+    ):
+        assert private_value not in rendered
+    assert exc_info.value.__cause__ is None
+
+
+def test_text_budget_error_type_exact_boundary(monkeypatch: pytest.MonkeyPatch) -> None:
+    from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read import (
+        sheets as sheets_module,
+    )
+
+    payload = _minimal_payload()
+    payload["sheets"] = [
+        _grid_sheet_payload(
+            data=[
+                {
+                    "rowData": [
+                        {
+                            "values": [
+                                {
+                                    "effectiveValue": {
+                                        "errorValue": {"type": "DIVIDE_BY_ZERO"},
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        ),
+    ]
+    base_text_length = sum(
+        len(value)
+        for value in (
+            _SPREADSHEET_ID,
+            _SPREADSHEET_TITLE,
+            _LOCALE,
+            _TIME_ZONE,
+            "GridSheet",
+        )
+    )
+    monkeypatch.setattr(
+        sheets_module,
+        "_MAX_TOTAL_TEXT_CHARS",
+        base_text_length + len("DIVIDE_BY_ZERO"),
+    )
+    reader, _ = _reader_with_payload(payload)
+
+    spreadsheet = reader.read_spreadsheet(spreadsheet_id=_SPREADSHEET_ID)
+
+    effective_value = spreadsheet.sheets[0].grid_data[0].rows[0].cells[0].effective_value
+    assert effective_value is not None
+    assert effective_value.kind is GoogleSheetsCellValueKind.ERROR
+    assert effective_value.error is not None
+    assert effective_value.error.error_type == "DIVIDE_BY_ZERO"
 
 
 @pytest.mark.parametrize(
