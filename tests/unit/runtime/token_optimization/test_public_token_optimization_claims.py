@@ -640,12 +640,36 @@ def test_ucl_architecture_context_manager_not_canonical_ucl() -> None:
         line for line in table_section.splitlines() if "`ContextManager`" in line
     )
     lowered = context_manager_row.lower()
-    assert "canonical_ucl" not in lowered.replace("_", "")
+    normalized = lowered.replace("_", "").replace("-", "")
+    assert "canonicalucl" not in normalized
     assert (
         "model_presentation_only" in lowered.replace("-", "_")
         or "legacy_compatibility_presentation" in lowered.replace("-", "_")
     )
     assert "outside ucl-managed" in lowered
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "`protected_regions.py`",
+        "`budget_aware_packing` / `context_pack.py`",
+    ),
+)
+def test_generic_pipeline_components_are_not_canonical_ucl(
+    marker: str,
+) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    table_section = _historical_resolution_table_section(content)
+    row = next(
+        line
+        for line in table_section.splitlines()
+        if marker in line
+    )
+    normalized = row.lower().replace("_", "").replace("-", "")
+
+    assert "separatetokenoptimizationpipeline" in normalized
+    assert "canonicalucl" not in normalized
 
 
 def test_ucl_architecture_section_33_includes_history_summary_diag() -> None:
