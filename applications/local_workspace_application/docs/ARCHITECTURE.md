@@ -585,6 +585,21 @@ LKW is not defined solely by RAG. The target product combines:
 
 **Current vs target Ask:** Today, `WorkspaceAskService` implements **indexed-only** Ask (`local.workspace.search` → `WorkspaceSearchHitV1` → `AskAnswerAssembler`). Hybrid Ask — combining indexed RAG with authorized read-only live provider evidence in one response — is **not implemented**. Target contract: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md) (**READY_FOR_REVIEW**, task `LKW-HYBRID-ASK-ARCH-1`). Implementation block `LKW-HYBRID-ASK-1` is **BLOCKED_ON_ARCH_ACCEPTANCE**.
 
+**Frozen architecture highlights** (detail in Hybrid Ask doc):
+
+| Concept | Frozen decision |
+|---------|-----------------|
+| Descriptor catalog | `TenantLiveCapabilityCatalog` — metadata only; no provider invocation |
+| Integration resolver | `TenantConnectionIntegrationResolverPort` → `KnowledgeConnectionRegistry`; not `TenantConnectionCapabilityReadService` |
+| Executable handlers | `LiveCapabilityHandlerRegistry` keyed by `provider_id` + `integration_kind` + `capability_id` |
+| Executor | `WorkspaceLiveCapabilityExecutor` — no direct provider branches |
+| Transient evidence | `WorkspaceEvidenceV1` with `content` — in-memory during synthesis only |
+| Durable evidence | `PersistedAskEvidenceV2` in `WorkspaceAskRunV2` — provenance only under `EPHEMERAL` |
+| HTTP V1 | `POST/GET /v1/local_workspace/.../ask` — indexed-only; unchanged contract |
+| HTTP V2 | `POST/GET /v2/local_workspace/.../ask` — `indexed_only`, `live_only`, `hybrid`; no `Accept`/`api_version` negotiation |
+| Absent Query Policy | `indexed_only` → no error; `live_only`/`hybrid` → `query_policy_required` (409) |
+| First capability | `jira.issue.read` via `get_knowledge_issue(issue_key)` |
+
 **Knowledge Intake** introduces or synchronizes durable indexed knowledge. **Live Access Binding** authorizes bounded query-time reads. Live provider results do not automatically become Documents.
 
 Conversation/reasoning LLM (`LLMAdapter`, Ollama or vLLM via wiring) is separate from the embedding provider. Model runtime portability is a planned product proof (`LKW-MODEL-RUNTIME-1`), not a completed claim.

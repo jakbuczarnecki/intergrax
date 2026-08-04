@@ -121,11 +121,17 @@ LKW-MODEL-RUNTIME-1
 → OLLAMA / vLLM END-TO-END PORTABILITY
 → accepted with full canonical proof and evidence v2
 
-NEXT:
+COMPLETED / ACCEPTED:
 LKW-KNOWLEDGE-ACCESS-1
 → WORKSPACE CONNECTIONS, INDEXED SOURCES AND LIVE ACCESS CONFIGURATION
 
+CURRENT ARCHITECTURE REVIEW:
+LKW-HYBRID-ASK-ARCH-1
+→ READY_FOR_REVIEW
+
+NEXT IMPLEMENTATION, BLOCKED:
 LKW-HYBRID-ASK-1
+→ BLOCKED_ON_ARCH_ACCEPTANCE
 → RAG + LIVE KNOWLEDGE QUERY WITH UNIFIED PROVENANCE
 
 LKW-CONVERSATIONAL-FRONTEND-1
@@ -372,17 +378,17 @@ Provider switch may require application restart. Conversation LLM and embedding 
 
 Expected capabilities: durable tenant Connection catalog with restart-safe rehydration; connection listing and safe inspection; remote-resource discovery; workspace binding; indexed vs live selection; capability allowlists; query policy; safe connection health.
 
-**Internal decomposition:**
+**Internal decomposition** (historical slice identity — all slices **ACCEPTED** as part of closed parent `LKW-KNOWLEDGE-ACCESS-1`):
 
 | Slice | Title | Status |
 |-------|-------|--------|
 | `1A` | Implementation contract freeze | **ACCEPTED** (including C3 mutation semantics; C4 persistence boundary) |
-| `1B` | Provider-neutral durable workspace authorization foundation | **NEXT** |
-| `1C-1` | Durable tenant Connection catalog and restart rehydration | **PLANNED** |
-| `1C-2` | Safe Connection / Remote Resource discovery and typed capability catalog | **PLANNED** (depends on 1B, 1C-1) |
-| `1D` | HTTP create/disable for bindings with server-derived metadata | **PLANNED** (depends on 1B, 1C-1, 1C-2) |
-| `1E` | Query Policy and complete configuration projection | **PLANNED** |
-| `1F` | One-connection indexed/live reuse proof (with restart reconstruction) | **PLANNED** |
+| `1B` | Provider-neutral durable workspace authorization foundation | **ACCEPTED** (included in closed parent) |
+| `1C-1` | Durable tenant Connection catalog and restart rehydration | **ACCEPTED** (included in closed parent) |
+| `1C-2` | Safe Connection / Remote Resource discovery and typed capability catalog | **ACCEPTED** (included in closed parent) |
+| `1D` | HTTP create/disable for bindings with server-derived metadata | **ACCEPTED** (included in closed parent) |
+| `1E` | Query Policy and complete configuration projection | **ACCEPTED** (included in closed parent) |
+| `1F` | One-connection indexed/live reuse proof (with restart reconstruction) | **ACCEPTED** (included in closed parent) |
 
 **Acceptance gate:** Must prove that **one durable Connection** reconstructed after restart can support both Indexed Source and Live Access Binding without duplicating credentials or integrations.
 
@@ -419,7 +425,7 @@ Canonical contract: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md).
 
 **Status:** **BLOCKED_ON_ARCH_ACCEPTANCE** (`LKW-HYBRID-ASK-ARCH-1` must be accepted first).
 
-Architecture: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md). First bounded live provider proof: **Jira** project-scoped issue read (`search_knowledge_issues`, `get_knowledge_issue`). Confluence deferred (inventory listing / arbitrary query paths). Microsoft Graph live search requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
+Architecture: [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md). First bounded live provider proof: **Jira** `jira.issue.read` via `JiraIssueTrackerIntegration.get_knowledge_issue(issue_key)` (`JiraIssueReadRequestV1` → `JiraKnowledgeIssue`). Server-side project scope from Live Access Binding; no arbitrary JQL. Deferred: `jira.issues.list_bounded`, `jira.issues.search` (later capability tasks). `search_knowledge_issues` is bounded project inventory/listing, not semantic search. Confluence deferred. Microsoft Graph live search requires a separate bounded contract and must not be simulated through delta, reconciliation or full inventory.
 
 Initial live access is read-only.
 
@@ -429,7 +435,7 @@ Initial live access is read-only.
 |-------|-------|--------|
 | `1A` | Unified evidence, provenance, citation and Ask Run V2 contracts | **PLANNED** |
 | `1B` | Query Policy V2 with `hybrid`, effective-policy resolution and Evidence Plan validation | **PLANNED** |
-| `1C` | Provider-neutral Live Capability Executor + first Jira bounded capability | **PLANNED** |
+| `1C` | Provider-neutral Live Capability Executor + first Jira `jira.issue.read` capability | **PLANNED** |
 | `1D` | Knowledge Query Orchestrator (`indexed_only`, `live_only`, `hybrid`) | **PLANNED** |
 | `1E` | `WorkspaceAskService`, Ask repository and HTTP integration | **PLANNED** |
 | `1F` | Bounded hybrid acceptance proof | **PLANNED** |

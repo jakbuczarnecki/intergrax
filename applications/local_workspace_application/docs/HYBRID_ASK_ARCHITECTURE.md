@@ -1,7 +1,7 @@
 # Hybrid Ask — unified evidence, query orchestration and read-only live execution
 
 **Status:** READY_FOR_REVIEW  
-**Task:** LKW-HYBRID-ASK-ARCH-1-UNIFIED-EVIDENCE-QUERY-ORCHESTRATION-AND-READ-ONLY-LIVE-EXECUTION-CONTRACT  
+**Task:** LKW-HYBRID-ASK-ARCH-1-REVIEW-FIX-1-EXECUTION-BOUNDARY-PERSISTENCE-VERSIONING-AND-STATUS-CONSISTENCY
 **Classification:** docs-only architecture and implementation contract
 
 **Canonical references:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md)
@@ -87,6 +87,15 @@ QueryPolicyModeV2:
 ```
 
 **V1 backward compatibility:** persisted `WorkspaceQueryPolicy` records with `QueryPolicyModeV1` (`indexed_only` | `live_only`) remain valid and readable. `hybrid` requires V2 mode enum and acceptance of this architecture. Migration adds V2 fields without mutating historical revision payloads in place.
+
+### 3.6 Absent Query Policy defaults (frozen)
+
+| Request context | Effective mode | Outcome |
+|-----------------|----------------|---------|
+| No persisted Query Policy + `indexed_only` V1 or V2 request | `indexed_only` | **No error** — indexed retrieval proceeds |
+| No persisted Query Policy + `live_only` or `hybrid` request | — | `query_policy_required` → **HTTP 409** |
+
+Absent Query Policy does **not** authorize live or hybrid execution.
 
 ---
 
@@ -244,45 +253,169 @@ No layer may widen another layer's authorization.
 
 ---
 
-## 8. Live capability execution port
+## 8. Live capability execution boundary (frozen)
 
-### 8.1 `WorkspaceLiveCapabilityExecutorPort`
+Four separate runtime concepts must not be conflated:
 
-Provider-neutral application port. One validated executable live call in; normalized live evidence out.
+### 8.1 `TenantLiveCapabilityCatalog` (descriptor catalog only)
+
+Platform-owned descriptor catalog. **Not** an integration resolver and **not** an executable handler registry.
 
 **Responsibilities:**
 
-- Receive one already validated `ExecutableLiveCallV1`
-- Resolve Connection through connection-aware runtime (`TenantConnectionCapabilityReadService`, existing integration instance reuse)
-- Invoke one registered read-only capability implementation
+- Advertise typed capability metadata (`LiveCapabilityDescriptorV1`)
+- Provide request/result schema references
+- Provide read-only / effect / resource / limit metadata
+- Perform **no** provider invocation
+
+### 8.2 `TenantConnectionCapabilityReadService` (safe projections only)
+
+Exposes safe Connection projections and descriptor listing. It does **not** resolve a runtime integration instance. Do not describe it as an integration resolver.
+
+### 8.3 `TenantConnectionIntegrationResolverPort` (runtime integration resolution)
+
+Narrow runtime port:
+
+```text
+resolve(
+    tenant_id,
+    connection_ref,
+    provider_id,
+    integration_kind,
+) -> existing integration instance
+```
+
+**Production adapter:** `KnowledgeConnectionRegistry` (or an explicitly named adapter over it).
+
+**Rules:**
+
+- Return only an **already rehydrated** integration instance
+- Never construct a second client
+- Never read credentials
+- Fail safely when the runtime integration is unavailable
+
+Alternative resolution path: `ConnectionAwareVendorResolver` when wired to the same registry-backed instance — still **one** rehydrated integration, never a duplicate client.
+
+### 8.4 `LiveCapabilityHandlerV1` (provider capability implementation)
+
+```text
+execute(
+    integration,
+    validated_request,
+    resolved_resource_scope,
+    effective_budget,
+) -> normalized provider result
+```
+
+A handler must:
+
+- Be read-only
+- Receive the **already resolved** integration instance
+- Accept a capability-specific validated request
+- Never resolve credentials
+- Never persist result bodies
+- Return a typed result for normalization
+
+### 8.5 `LiveCapabilityHandlerRegistry` (executable handlers)
+
+Runtime registry keyed by:
+
+```text
+provider_id
+integration_kind
+capability_id
+```
+
+Separate from `TenantLiveCapabilityCatalog`. Validation must require:
+
+```text
+descriptor identity
+=
+handler registry identity
+=
+validated Live Access Binding identity
+```
+
+### 8.6 `WorkspaceLiveCapabilityExecutorPort` / `WorkspaceLiveCapabilityExecutor`
+
+Provider-neutral application port. One validated executable live call in; transient normalized live evidence out.
+
+**Frozen dependencies:**
+
+```text
+TenantConnectionPort
+TenantLiveCapabilityCatalogPort
+TenantConnectionIntegrationResolverPort
+LiveCapabilityHandlerRegistry
+live result normalizer
+clock / timeout boundary
+```
+
+**Execution flow:**
+
+```text
+validated ExecutableLiveCallV1
+→ safe Connection projection (TenantConnectionPort)
+→ descriptor lookup (TenantLiveCapabilityCatalog)
+→ handler lookup (LiveCapabilityHandlerRegistry)
+→ existing integration resolution (TenantConnectionIntegrationResolverPort)
+→ bounded handler execution (LiveCapabilityHandlerV1)
+→ normalized transient live evidence (LiveWorkspaceEvidenceV1)
+→ optional safe receipt
+```
+
+**Responsibilities:**
+
 - Enforce timeout, item and byte limits (strictest effective budget)
 - Normalize provider errors to stable domain codes
-- Return `LiveWorkspaceEvidenceV1` and optional safe execution receipt
 - Never expose credentials or raw provider clients
 - Never persist result bodies by itself
 
-**Rejected:** orchestrator calling `JiraIssueTrackerIntegration` / `ConfluenceWikiKnowledgeIntegration` directly; provider branches in `WorkspaceAskService`; separate provider-specific Ask services.
+**Rejected:** direct Jira, Confluence, Microsoft Graph or Slack branches in the executor; orchestrator calling `JiraIssueTrackerIntegration` / `ConfluenceWikiKnowledgeIntegration` directly; provider branches in `WorkspaceAskService`; separate provider-specific Ask services; describing `TenantConnectionCapabilityReadService` as an integration resolver.
 
 ---
 
 ## 9. First provider decision
 
-### 9.1 Selected: **Jira** (`jira` / issue tracker)
+### 9.1 Selected: **Jira** (`jira` / `issue_tracker`) — one initial capability only
 
-**First bounded live capability proof:** project-scoped issue read via existing `JiraKnowledgeReadClient`:
+**First bounded live capability proof:** exactly one capability:
 
-| Capability | Integration method | Typed contract |
-|------------|-------------------|----------------|
-| Bounded project issue listing | `search_knowledge_issues(project_key, next_page_token, limit)` | `JiraKnowledgeIssuePage` |
-| Exact issue read | `get_knowledge_issue(issue_key)` | `JiraKnowledgeIssue` |
+```text
+capability_id: jira.issue.read
+```
+
+| Field | Value |
+|-------|-------|
+| Production integration method | `JiraIssueTrackerIntegration.get_knowledge_issue(issue_key)` |
+| Typed request | `JiraIssueReadRequestV1` → `issue_key` |
+| Typed result | `JiraKnowledgeIssue` |
+
+**Required authorization (frozen):**
+
+1. Live Access Binding identifies the allowed Jira project remote resource.
+2. Server-side remote-resource resolution derives the authoritative Jira project key.
+3. Request schema validates `issue_key`.
+4. Deterministic scope validation proves the issue key belongs to the bound project.
+5. The model cannot provide or override the authoritative project scope.
+6. The same rehydrated Jira integration instance is used (no second client).
+7. No arbitrary JQL is accepted.
+
+**Deferred to a later capability task:**
+
+```text
+jira.issues.list_bounded
+jira.issues.search
+```
+
+Note: `search_knowledge_issues(project_key, cursor, limit)` on `JiraIssueTrackerIntegration` is **bounded project inventory/listing**, not semantic or free-form search. It is **not** part of the first Hybrid Ask proof.
 
 **Selection rationale:**
 
-- Production integration methods exist (`JiraIssueTrackerIntegration`)
+- Production integration method exists (`JiraIssueTrackerIntegration`)
 - Read-only, typed input/output (`knowledge_read.py`)
-- Bounded via `limit`; project scope via validated `project_key` — **no LLM-generated JQL**
-- Connection-aware instance reuse through Vendor Knowledge / integration wiring
-- Vendor Knowledge adapter (`jira_issues.py`) already maps sync surfaces to the same client
+- Project scope enforced server-side — **no LLM-generated JQL**
+- Connection-aware instance reuse through `KnowledgeConnectionRegistry` / integration wiring
 - Deterministic fixture proof without network access (strict Pydantic parsers)
 
 ### 9.2 Deferred: **Confluence**
@@ -295,7 +428,11 @@ Microsoft Graph live search is **not** selected and must not be simulated throug
 
 ## 10. Unified evidence ABI
 
-### 10.1 Discriminated union
+Two separate model families: **transient synthesis evidence** (in-memory during execution) and **durable evidence projection** (persisted Ask record).
+
+### 10.1 Transient synthesis evidence (in-memory only)
+
+Exists during query execution and synthesis. Contains bounded `content`. Passed to the assembler. **Not** the durable Ask record contract. Discarded after finalization according to retention policy.
 
 ```text
 WorkspaceEvidenceV1
@@ -303,7 +440,7 @@ WorkspaceEvidenceV1
 └── LiveWorkspaceEvidenceV1
 ```
 
-### 10.2 Common fields
+**Common transient fields:**
 
 ```text
 evidence_id
@@ -312,12 +449,12 @@ tenant_id
 workspace_id
 safe_display_name
 retrieved_at
-content                # excerpt or bounded structured content
+content                # excerpt or bounded structured content (transient only)
 content_hash
 audience
 ```
 
-### 10.3 Indexed provenance
+### 10.2 Indexed provenance (transient)
 
 ```text
 source_id
@@ -329,7 +466,7 @@ safe_source_label / path projection
 indexed_source_binding_id (when available)
 ```
 
-### 10.4 Live provenance
+### 10.3 Live provenance (transient)
 
 ```text
 live_access_binding_id
@@ -347,6 +484,18 @@ execution_receipt_id (when retained)
 ```
 
 Provider identity is permitted in safe provenance. Credentials, private endpoints and raw authorization material are forbidden.
+
+### 10.4 Durable evidence projection (persisted Ask record)
+
+Separate name family — **not** `WorkspaceEvidenceV1`:
+
+```text
+PersistedAskEvidenceV2
+├── PersistedIndexedEvidenceV2
+└── PersistedLiveEvidenceProvenanceV2
+```
+
+`WorkspaceAskRunV2` stores `list[PersistedAskEvidenceV2]` — provenance projections only, never transient live bodies.
 
 ### 10.5 Evidence identity rules
 
@@ -406,12 +555,26 @@ call_id / receipt_id
 
 A live citation must **not** pretend to be a durable LKW Document.
 
-### 11.5 Public API versioning
+Safe final citations may contain only explicitly frozen minimum fields. Under `EPHEMERAL`, an excerpt is **not** retained unless the architecture explicitly classifies it as retained content (see §13).
 
-- **V1 HTTP responses** remain valid for indexed-only runs (`WorkspaceAskResponseV1` shape).
-- **V2** introduces optional `evidence_type` on citations, `query_mode`, `plan_id`, and discriminated evidence on GET Run when hybrid/live participated.
-- Clients that do not send `Accept` / schema version continue to receive V1-compatible indexed citations for indexed-only runs.
-- Hybrid runs require V2 response contract or explicit `api_version=2` request field (exact HTTP field frozen in `LKW-HYBRID-ASK-1E`).
+### 11.5 Public HTTP versioning (frozen path versioning)
+
+Explicit path versioning — **no** content negotiation required to distinguish V1 and V2.
+
+| Route | Contract | Behavior |
+|-------|----------|----------|
+| `POST /v1/local_workspace/workspaces/{workspace_id}/ask` | `WorkspaceAskRequestV1` / `WorkspaceAskResponseV1` | **Indexed-only** — never invokes live capabilities; response shape unchanged |
+| `GET /v1/local_workspace/asks/{run_id}` | V1 run projection | Indexed-only durable shape for V1 runs |
+| `POST /v2/local_workspace/workspaces/{workspace_id}/ask` | `WorkspaceAskRequestV2` / `WorkspaceAskResponseV2` | Supports `indexed_only`, `live_only`, `hybrid` |
+| `GET /v2/local_workspace/asks/{run_id}` | `WorkspaceAskRunV2` durable projection | Returns durable V2 projection — **not** transient live bodies |
+
+**Rejected alternatives:** `Accept` header versioning, `schema-version` header, `api_version` request field.
+
+**Cross-version behavior:**
+
+- A V2 run requested through the V1 GET route must **not** be silently projected into a misleading document-only response.
+- Cross-version access returns a stable safe error or an explicit compatible projection frozen in implementation (`LKW-HYBRID-ASK-1E`).
+- V1 clients that only use V1 routes continue to receive unchanged indexed-only behavior.
 
 ---
 
@@ -439,17 +602,52 @@ One synthesis step over unified `WorkspaceEvidenceV1` collection.
 
 ## 13. Live result retention
 
-Query Policy `live_result_retention` (`LiveResultRetentionV1`) governs post-synthesis persistence.
+Query Policy `live_result_retention` (`LiveResultRetentionV1`) governs post-synthesis persistence of live evidence.
 
-### 13.1 `EPHEMERAL` (default)
+### 13.1 Transient evidence destruction point
+
+Transient `WorkspaceEvidenceV1` (including `content`) exists only from plan validation through synthesis finalization. After the run is finalized and persisted:
+
+- Transient live evidence bodies are destroyed per retention policy.
+- Only durable projections (`PersistedAskEvidenceV2`, citations, optional receipts) remain in `WorkspaceAskRunV2`.
+- `GET /v2/local_workspace/asks/{run_id}` returns the durable projection only.
+
+### 13.2 `EPHEMERAL` (default)
 
 - Raw provider result never durably persisted
 - Normalized live evidence body/excerpt **not** stored in Ask repository after synthesis
 - Final answer may remain part of durable Ask run
-- Safe citations and minimum audit metadata may persist per public contract
+- Safe citations and minimum audit provenance may persist per public contract
 - No LKW Document, Chunk or Vector created from live results
 
-### 13.2 `RECEIPT_ONLY`
+**`PersistedLiveEvidenceProvenanceV2` under `EPHEMERAL` may contain only:**
+
+```text
+evidence_id
+evidence_type
+safe_display_name
+provider_id
+live_access_binding_id
+connection_ref or safe connection label
+capability_id
+safe remote resource/item references when approved
+retrieved_at
+remote_updated_at
+content_hash
+truncated
+call_id
+```
+
+**Must not contain:**
+
+```text
+content
+excerpt copied from live result
+structured live result
+raw provider body
+```
+
+### 13.3 `RECEIPT_ONLY`
 
 May additionally persist `LiveExecutionReceiptV1`:
 
@@ -468,12 +666,24 @@ truncated
 normalized_outcome (safe enum / code only)
 ```
 
-Must **not** persist: raw provider body, credentials, tokens, private headers, provider client, unapproved private locator.
+Must **not** persist: raw provider body, credentials, tokens, private headers, provider client, unapproved private locator. Live evidence bodies and excerpts remain forbidden.
 
-### 13.3 `WorkspaceAskRun` evolution
+### 13.4 `WorkspaceAskRunV2` (durable model)
+
+Frozen contents:
+
+```text
+run metadata
+answer
+citations
+persisted evidence provenance (list[PersistedAskEvidenceV2])
+optional safe receipts
+execution status
+```
+
+Must **not** contain transient live evidence bodies or `WorkspaceEvidenceV1.content`.
 
 - **V1 runs** (`WorkspaceAskRun`): indexed evidence as `WorkspaceSearchHitV1`; unchanged for historical reads.
-- **V2 runs** (`WorkspaceAskRunV2`): `evidence` as `list[WorkspaceEvidenceV1]`; live bodies omitted under `EPHEMERAL`; receipts optional under `RECEIPT_ONLY`.
 - In-flight execution state (plan, partial calls) is separate from durable run record.
 
 ---
@@ -484,11 +694,13 @@ Must **not** persist: raw provider body, credentials, tokens, private headers, p
 |----------|----------|
 | V1 vs V2 model | `WorkspaceAskRun` remains V1; introduce `WorkspaceAskRunV2` for hybrid/live |
 | Indexed run readability | V1 records unchanged; repository returns V1 shape for `run_id` without V2 marker |
+| Transient vs durable evidence | `WorkspaceEvidenceV1` transient during execution; `PersistedAskEvidenceV2` durable in run |
 | In-flight vs durable | `EvidencePlanV1` and execution receipts are separate types from persisted run evidence |
 | Citation versioning | `citation_schema_version: 1 \| 2` on run; V2 uses discriminated citations |
 | Live fields persisted | Provenance + citations + optional receipt only — never raw body by default |
 | Run metadata | `query_mode`, `configuration_revision`, `plan_id`, `indexed_retrieval_status`, `live_execution_status`, `truncation`, `partial_failure` |
-| GET Run compatibility | V1 clients: indexed fields only; V2 clients: full union when `schema_version=2` |
+| GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` — V1 indexed projection only |
+| GET Run V2 | `GET /v2/local_workspace/asks/{run_id}` — durable `WorkspaceAskRunV2` projection without transient bodies |
 
 No in-place mutation of historical records without explicit migration task.
 
@@ -496,14 +708,17 @@ No in-place mutation of historical records without explicit migration task.
 
 ## 15. Failure semantics
 
-Stable domain outcomes (fail-closed):
+Stable domain outcomes (fail-closed). Each code has **one** unambiguous HTTP status for V2. Where V1 behavior differs, implementation documents it explicitly (`LKW-HYBRID-ASK-1E`) — do not mix statuses in one cell.
 
-| Code | Meaning | HTTP family |
-|------|---------|-------------|
+| Code | Meaning | V2 HTTP |
+|------|---------|---------|
 | `workspace_not_found` | Workspace missing or unauthorized | 404 |
-| `query_policy_missing_or_invalid` | No policy or revision mismatch | 400 / 409 |
+| `query_policy_required` | No persisted policy; `live_only` or `hybrid` requested | 409 |
+| `query_policy_invalid` | Committed server projection is invalid | 503 |
 | `query_mode_not_allowed` | Mode not permitted by policy | 403 |
-| `configuration_projection_unstable` | Head revision changed during plan | 409 |
+| `configuration_revision_mismatch` | Request revision does not match committed head | 409 |
+| `configuration_projection_unstable` | Head revision changed during plan/commit | 503 |
+| `configuration_projection_invalid` | Committed projection failed validation | 503 |
 | `indexed_retrieval_failed` | Search/RAG path failed | 502 |
 | `live_binding_not_found` | Binding ID unknown | 404 |
 | `live_binding_unavailable` | Binding disabled/unavailable | 409 |
@@ -519,6 +734,10 @@ Stable domain outcomes (fail-closed):
 | `assembly_failed` | Synthesis/parse failure | 502 |
 | `unknown_evidence_id` | Model cited unknown ID | 502 |
 | `persistence_failed` | Run save failed | 500 |
+
+**Query Policy default (no error):** absent persisted Query Policy + `indexed_only` V1/V2 request → effective `indexed_only`, no error.
+
+Configuration projection failures (`configuration_projection_unstable`, `configuration_projection_invalid`, `query_policy_invalid`) map to **503** — aligned with accepted Knowledge Access HTTP behavior. Do **not** map them to 409.
 
 **Hybrid fail-closed rules:**
 
@@ -599,7 +818,7 @@ Parent block: **`LKW-HYBRID-ASK-1`** — **BLOCKED_ON_ARCH_ACCEPTANCE** until th
 
 | | |
 |---|---|
-| **Purpose** | Freeze Pydantic/domain types for `WorkspaceEvidenceV1`, citations, `WorkspaceAskRunV2` |
+| **Purpose** | Freeze Pydantic/domain types for transient `WorkspaceEvidenceV1`, `PersistedAskEvidenceV2`, citations, `WorkspaceAskRunV2` |
 | **Depends on** | `LKW-KNOWLEDGE-ACCESS-1` (accepted), this architecture |
 | **Production scope** | Models, schemas, repository serialization contract |
 | **Non-goals** | Live execution, orchestrator, HTTP |
@@ -619,13 +838,13 @@ Parent block: **`LKW-HYBRID-ASK-1`** — **BLOCKED_ON_ARCH_ACCEPTANCE** until th
 | **Acceptance gate** | Valid hybrid plan approved; invalid plans rejected with stable codes |
 | **User-visible** | None |
 
-### `LKW-HYBRID-ASK-1C` — Live Capability Executor + first Jira capability
+### `LKW-HYBRID-ASK-1C` — Live Capability Executor + first Jira `jira.issue.read`
 
 | | |
 |---|---|
-| **Purpose** | `WorkspaceLiveCapabilityExecutorPort` + Jira bounded read capability |
-| **Depends on** | `1B`, `TenantLiveCapabilityCatalog`, Jira integration |
-| **Production scope** | Executor, Jira capability handler, budgets, error normalization |
+| **Purpose** | `WorkspaceLiveCapabilityExecutorPort` + `jira.issue.read` capability handler |
+| **Depends on** | `1B`, `TenantLiveCapabilityCatalog`, `LiveCapabilityHandlerRegistry`, `KnowledgeConnectionRegistry`, Jira integration |
+| **Production scope** | Executor with frozen port dependencies, Jira `jira.issue.read` handler, budgets, error normalization |
 | **Non-goals** | Ask synthesis, HTTP |
 | **Tests** | Fixture-based Jira call, budget truncation, connection reuse, no persistence |
 | **Acceptance gate** | One validated call returns `LiveWorkspaceEvidenceV1`; no raw body stored |
@@ -643,13 +862,13 @@ Parent block: **`LKW-HYBRID-ASK-1`** — **BLOCKED_ON_ARCH_ACCEPTANCE** until th
 | **Acceptance gate** | Hybrid run produces ≥1 indexed + ≥1 live evidence in memory |
 | **User-visible** | None |
 
-### `LKW-HYBRID-ASK-1E` — WorkspaceAskService, repository, HTTP integration
+### `LKW-HYBRID-ASK-1E` — WorkspaceAskService, repository, HTTP V1/V2 integration
 
 | | |
 |---|---|
-| **Purpose** | Wire orchestrator into Ask; unified citations; retention; stable errors |
+| **Purpose** | Wire orchestrator into Ask; unified citations; retention; stable errors; frozen V1/V2 path versioning |
 | **Depends on** | `1A`, `1D` |
-| **Production scope** | `WorkspaceAskService`, `ask_repository`, routes/schemas V2 |
+| **Production scope** | `WorkspaceAskService`, `ask_repository`, routes/schemas V1 (indexed-only) and V2 (hybrid/live) |
 | **Non-goals** | Conversational frontend, Slack adapter |
 | **Tests** | Indexed-only regression; hybrid HTTP proof; GET Run V1/V2 |
 | **Acceptance gate** | Indexed-only behavior unchanged; hybrid errors stable |
