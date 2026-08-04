@@ -6,7 +6,10 @@ import pytest
 import numpy as np
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.rag.embedding.contracts.embedding_result import (
+    EmbeddingResult,
+    validate_embedding_matrix,
+)
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
@@ -121,6 +124,63 @@ def test_embedding_result_normalizes_and_defensively_copies_embeddings() -> None
     assert result.embeddings.flags.writeable is False
 
 
+def test_validate_embedding_matrix_rejects_invalid_expected_rows() -> None:
+    matrix = np.ones((1, 2), dtype=np.float32)
+
+    with pytest.raises(TypeError, match="expected_rows"):
+        validate_embedding_matrix(matrix, expected_rows=True)
+    with pytest.raises(ValueError, match="non-negative"):
+        validate_embedding_matrix(matrix, expected_rows=-1)
+
+
+def test_validate_embedding_matrix_rejects_wrong_cardinality() -> None:
+    with pytest.raises(ValueError, match="expected_rows"):
+        validate_embedding_matrix(
+            np.ones((1, 2), dtype=np.float32),
+            expected_rows=2,
+        )
+
+
+@pytest.mark.parametrize(
+    "embeddings",
+    [
+        np.ones(2, dtype=np.float32),
+        np.ones((1, 1, 1), dtype=np.float32),
+    ],
+)
+def test_validate_embedding_matrix_rejects_wrong_dimensions(embeddings: np.ndarray) -> None:
+    with pytest.raises(ValueError, match="two-dimensional"):
+        validate_embedding_matrix(embeddings, expected_rows=1)
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf, -np.inf])
+def test_validate_embedding_matrix_rejects_non_finite_values(value: float) -> None:
+    with pytest.raises(ValueError, match="finite"):
+        validate_embedding_matrix(
+            np.array([[value]], dtype=np.float32),
+            expected_rows=1,
+        )
+
+
+def test_validate_embedding_matrix_rejects_nonempty_zero_dimension() -> None:
+    with pytest.raises(ValueError, match="positive embedding dimension"):
+        validate_embedding_matrix(
+            np.empty((2, 0), dtype=np.float32),
+            expected_rows=2,
+        )
+
+
+def test_validate_embedding_matrix_defensively_copies_and_sets_readonly() -> None:
+    source = np.array([[1, 2], [3, 4]], dtype=np.float64)
+
+    result = validate_embedding_matrix(source, expected_rows=2)
+    source[0, 0] = 99
+
+    assert result.dtype == np.float32
+    assert np.array_equal(result, [[1, 2], [3, 4]])
+    assert result.flags.writeable is False
+
+
 @pytest.mark.parametrize(
     "embeddings",
     [
@@ -134,7 +194,7 @@ def test_embedding_result_rejects_wrong_dimensions(embeddings: np.ndarray) -> No
 
 
 def test_embedding_result_rejects_wrong_cardinality() -> None:
-    with pytest.raises(ValueError, match="document count"):
+    with pytest.raises(ValueError, match="expected_rows"):
         EmbeddingResult(
             documents=(make_document("one"), make_document("two")),
             embeddings=np.ones((1, 2), dtype=np.float32),
@@ -170,10 +230,18 @@ def test_embedding_result_accepts_empty_result() -> None:
 
 
 def test_embedding_result_rejects_nonempty_empty_matrix() -> None:
-    with pytest.raises(ValueError, match="document count"):
+    with pytest.raises(ValueError, match="expected_rows"):
         EmbeddingResult(
             documents=(make_document("one"),),
             embeddings=np.empty((0, 0), dtype=np.float32),
+        )
+
+
+def test_embedding_result_rejects_nonempty_zero_dimension_matrix() -> None:
+    with pytest.raises(ValueError, match="positive embedding dimension"):
+        EmbeddingResult(
+            documents=(make_document("one"), make_document("two")),
+            embeddings=np.empty((2, 0), dtype=np.float32),
         )
 
 
@@ -239,7 +307,7 @@ def test_pipeline_rejects_engine_cardinality_mismatch() -> None:
 
     pipeline = EmbeddingPipeline(engine=WrongCardinalityEngine(), provider_id="wrong")
 
-    with pytest.raises(ValueError, match="document count"):
+    with pytest.raises(ValueError, match="expected_rows"):
         pipeline.embed_documents([make_document("one"), make_document("two")])
 
 

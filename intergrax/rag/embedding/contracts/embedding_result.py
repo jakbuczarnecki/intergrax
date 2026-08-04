@@ -13,6 +13,39 @@ from numpy.typing import NDArray
 from intergrax.knowledge.contracts import KnowledgeDocument
 
 
+def validate_embedding_matrix(
+    embeddings: object,
+    *,
+    expected_rows: int,
+) -> NDArray[np.float32]:
+    """Validate and normalize an embedding matrix for vector-store use."""
+    if type(expected_rows) is not int:
+        raise TypeError("expected_rows must be an exact int, not bool")
+    if expected_rows < 0:
+        raise ValueError("expected_rows must be non-negative")
+    if not isinstance(embeddings, np.ndarray):
+        raise TypeError("embeddings must be a numpy.ndarray")
+
+    try:
+        normalized = np.array(embeddings, dtype=np.float32, copy=True)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("embeddings must be numeric") from exc
+
+    if normalized.ndim != 2:
+        raise ValueError("embeddings must be a two-dimensional matrix")
+    if normalized.shape[0] != expected_rows:
+        raise ValueError("embedding rows must match expected_rows")
+    if expected_rows == 0 and normalized.shape != (0, 0):
+        raise ValueError("empty results must use embeddings with shape (0, 0)")
+    if expected_rows > 0 and normalized.shape[1] <= 0:
+        raise ValueError("non-empty results must have a positive embedding dimension")
+    if not np.isfinite(normalized).all():
+        raise ValueError("embeddings must contain only finite values")
+
+    normalized.setflags(write=False)
+    return normalized
+
+
 @dataclass(frozen=True)
 class EmbeddingResult:
     """Immutable, validated alignment of native documents and vectors."""
@@ -27,23 +60,8 @@ class EmbeddingResult:
                 raise TypeError("documents must contain only KnowledgeDocument values")
         object.__setattr__(self, "documents", documents)
 
-        if not isinstance(self.embeddings, np.ndarray):
-            raise TypeError("embeddings must be a numpy.ndarray")
-
-        try:
-            embeddings = np.array(self.embeddings, dtype=np.float32, copy=True)
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise ValueError("embeddings must be numeric") from exc
-
-        if embeddings.ndim != 2:
-            raise ValueError("embeddings must be a two-dimensional matrix")
-        if len(documents) == 0:
-            if embeddings.shape != (0, 0):
-                raise ValueError("empty results must use embeddings with shape (0, 0)")
-        elif embeddings.shape[0] != len(documents):
-            raise ValueError("embedding rows must match the document count")
-        if not np.isfinite(embeddings).all():
-            raise ValueError("embeddings must contain only finite values")
-
-        embeddings.setflags(write=False)
+        embeddings = validate_embedding_matrix(
+            self.embeddings,
+            expected_rows=len(documents),
+        )
         object.__setattr__(self, "embeddings", embeddings)

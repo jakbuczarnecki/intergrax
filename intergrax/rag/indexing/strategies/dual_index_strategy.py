@@ -10,6 +10,7 @@ from langchain_core.documents import Document
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.embedding_result import validate_embedding_matrix
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
@@ -48,8 +49,12 @@ class DualIndexStrategy(IndexStrategy):
         # Main CHUNK index
         # -----------------------------
 
-        embeddings = embed_manager.embed_texts(
+        raw_embeddings = embed_manager.embed_texts(
             [document.page_content for document in documents]
+        )
+        embeddings = validate_embedding_matrix(
+            raw_embeddings,
+            expected_rows=len(documents),
         )
 
         self._insert_batches(
@@ -97,8 +102,12 @@ class DualIndexStrategy(IndexStrategy):
                 )
             )
 
-        toc_embeddings = embed_manager.embed_texts(
+        raw_toc_embeddings = embed_manager.embed_texts(
             [document.page_content for document in toc_docs]
+        )
+        toc_embeddings = validate_embedding_matrix(
+            raw_toc_embeddings,
+            expected_rows=len(toc_docs),
         )
 
         self._insert_batches(

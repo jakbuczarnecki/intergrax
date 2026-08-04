@@ -76,15 +76,92 @@ def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
     main_store = _Store()
     toc_store = _Store()
 
-    DualIndexStrategy(toc_vectorstore=toc_store, batch_size=10).build_index(
+    DualIndexStrategy(toc_vectorstore=toc_store, batch_size=1).build_index(
         documents=documents,
         embed_manager=embedding,
         vectorstore=main_store,
     )
 
     assert embedding.calls == [["chunk-a", "chunk-b"], ["Section A", "Section B"]]
-    assert main_store.calls[0]["documents"] == documents
+    assert [call["documents"] for call in main_store.calls] == [[documents[0]], [documents[1]]]
     assert toc_store.calls[0]["documents"][0].page_content == "Section A"
+    assert toc_store.calls[1]["documents"][0].page_content == "Section B"
+
+
+def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() -> None:
+    class _Embedding:
+        def __init__(self) -> None:
+            self.calls: list[list[str]] = []
+
+        def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
+            self.calls.append(list(texts))
+            return np.ones((len(texts) - 1, 2), dtype=np.float32)
+
+    class _Store:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def add_documents(self, **kwargs: object) -> None:
+            self.calls.append(kwargs)
+
+    documents = [
+        Document(page_content="chunk-a", metadata={ChunkMetadataKey.SECTION: "Section A"}),
+        Document(page_content="chunk-b", metadata={ChunkMetadataKey.SECTION: "Section B"}),
+    ]
+    embedding = _Embedding()
+    main_store = _Store()
+    toc_store = _Store()
+
+    with pytest.raises(ValueError, match="expected_rows"):
+        DualIndexStrategy(toc_vectorstore=toc_store).build_index(
+            documents=documents,
+            embed_manager=embedding,
+            vectorstore=main_store,
+        )
+
+    assert embedding.calls == [["chunk-a", "chunk-b"]]
+    assert main_store.calls == []
+    assert toc_store.calls == []
+
+
+def test_dual_index_strategy_rejects_invalid_toc_embeddings_after_main_store() -> None:
+    class _Embedding:
+        def __init__(self) -> None:
+            self.calls: list[list[str]] = []
+            self.results = [
+                np.ones((2, 2), dtype=np.float32),
+                np.empty((2, 0), dtype=np.float32),
+            ]
+
+        def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
+            self.calls.append(list(texts))
+            return self.results.pop(0)
+
+    class _Store:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def add_documents(self, **kwargs: object) -> None:
+            self.calls.append(kwargs)
+
+    documents = [
+        Document(page_content="chunk-a", metadata={ChunkMetadataKey.SECTION: "Section A"}),
+        Document(page_content="chunk-b", metadata={ChunkMetadataKey.SECTION: "Section B"}),
+    ]
+    embedding = _Embedding()
+    main_store = _Store()
+    toc_store = _Store()
+
+    with pytest.raises(ValueError, match="positive embedding dimension"):
+        DualIndexStrategy(toc_vectorstore=toc_store, batch_size=1).build_index(
+            documents=documents,
+            embed_manager=embedding,
+            vectorstore=main_store,
+        )
+
+    assert embedding.calls == [["chunk-a", "chunk-b"], ["Section A", "Section B"]]
+    assert [call["documents"] for call in main_store.calls] == [[documents[0]], [documents[1]]]
+    assert toc_store.calls == []
 
 
 def test_profile_uses_hierarchical_index_flag_and_retriever() -> None:

@@ -41,6 +41,24 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
     ) -> NDArray[np.float32]:
         pass
 
+
+class ControlledEmbeddingManager(FakeEmbeddingManager):
+    def __init__(self, *, row_delta: int = 0, dimension: int = 3) -> None:
+        super().__init__()
+        self.row_delta = row_delta
+        self.dimension = dimension
+
+    def embed_texts(
+        self,
+        texts: Sequence[str],
+    ) -> NDArray[np.float32]:
+        self.received_texts = list(texts)
+        return np.ones(
+            (len(texts) + self.row_delta, self.dimension),
+            dtype=np.float32,
+        )
+
+
 class FakeVectorstore(BaseVectorstoreManager):
 
     def __init__(self):
@@ -97,3 +115,36 @@ def test_single_index_strategy_inserts_documents():
     assert embed_manager.received_texts == ["A", "B"]
     assert vectorstore.docs == docs
     assert np.array_equal(vectorstore.embeddings, [[0, 1, 2], [1, 2, 3]])
+
+
+@pytest.mark.parametrize(
+    ("row_delta", "dimension"),
+    [
+        (-1, 3),
+        (0, 0),
+    ],
+)
+def test_single_index_strategy_rejects_invalid_embeddings_before_vectorstore(
+    row_delta: int,
+    dimension: int,
+) -> None:
+    docs = [
+        Document(page_content="A"),
+        Document(page_content="B"),
+    ]
+    embed_manager = ControlledEmbeddingManager(
+        row_delta=row_delta,
+        dimension=dimension,
+    )
+    vectorstore = FakeVectorstore()
+
+    with pytest.raises(ValueError):
+        SingleIndexStrategy().build_index(
+            documents=docs,
+            embed_manager=embed_manager,
+            vectorstore=vectorstore,
+        )
+
+    assert vectorstore.count() == 0
+    assert vectorstore.docs == []
+    assert embed_manager.received_texts == ["A", "B"]
