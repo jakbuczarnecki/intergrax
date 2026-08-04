@@ -49,6 +49,11 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
     GoogleDriveContentReader,
     GoogleDriveFileContent,
 )
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    GoogleCalendarEventPage,
+    GoogleCalendarKnowledgeReader,
+    GoogleCalendarSyncToken,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspacePageToken,
 )
@@ -223,6 +228,10 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
         family = self.require_client_family()
         return GoogleSheetsKnowledgeReader(transport=family.transport)
 
+    def _calendar_reader(self) -> GoogleCalendarKnowledgeReader:
+        family = self.require_client_family()
+        return GoogleCalendarKnowledgeReader(transport=family.transport)
+
     def _drive_content_reader(self) -> GoogleDriveContentReader:
         family = self.require_client_family()
         transport = family.transport
@@ -244,6 +253,21 @@ class GoogleWorkspaceCollaborationSuiteIntegration(CollaborationSuiteIntegration
     ) -> GoogleSheetsSpreadsheet:
         return self._sheets_reader().read_spreadsheet(
             spreadsheet_id=spreadsheet_id,
+        )
+
+    def list_calendar_events_page(
+        self,
+        *,
+        calendar_id: str,
+        page_token: GoogleWorkspacePageToken | None = None,
+        sync_token: GoogleCalendarSyncToken | None = None,
+        max_results: int = 250,
+    ) -> GoogleCalendarEventPage:
+        return self._calendar_reader().list_events_page(
+            calendar_id=calendar_id,
+            page_token=page_token,
+            sync_token=sync_token,
+            max_results=max_results,
         )
 
     def read_drive_file_content(

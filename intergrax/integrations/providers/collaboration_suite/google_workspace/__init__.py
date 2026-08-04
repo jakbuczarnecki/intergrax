@@ -83,6 +83,28 @@ __all__ = [
     "GoogleWorkspaceRetryPolicy",
     "GoogleWorkspaceSourceKind",
     "GoogleWorkspaceTransport",
+    "GOOGLE_CALENDAR_SOURCE_KIND",
+    "GoogleCalendarAccessRole",
+    "GoogleCalendarAttendee",
+    "GoogleCalendarAttendeeResponseStatus",
+    "GoogleCalendarConferenceData",
+    "GoogleCalendarConferenceEntryPoint",
+    "GoogleCalendarConferenceSolution",
+    "GoogleCalendarConferenceSolutionType",
+    "GoogleCalendarEvent",
+    "GoogleCalendarEventDateTime",
+    "GoogleCalendarEventPage",
+    "GoogleCalendarEventStatus",
+    "GoogleCalendarEventType",
+    "GoogleCalendarKnowledgeReadClient",
+    "GoogleCalendarKnowledgeReader",
+    "GoogleCalendarPerson",
+    "GoogleCalendarReminder",
+    "GoogleCalendarReminderMethod",
+    "GoogleCalendarReminders",
+    "GoogleCalendarSyncToken",
+    "GoogleCalendarTransparency",
+    "GoogleCalendarVisibility",
     "create_google_workspace_collaboration_suite",
     "create_google_workspace_collaboration_suite_integration",
     "parse_google_workspace_collection_page",
@@ -160,6 +182,33 @@ _SHEETS_EXPORTS = frozenset(
         "GoogleSheetsSheet",
         "GoogleSheetsSheetType",
         "GoogleSheetsSpreadsheet",
+    }
+)
+
+_CALENDAR_EXPORTS = frozenset(
+    {
+        "GOOGLE_CALENDAR_SOURCE_KIND",
+        "GoogleCalendarAccessRole",
+        "GoogleCalendarAttendee",
+        "GoogleCalendarAttendeeResponseStatus",
+        "GoogleCalendarConferenceData",
+        "GoogleCalendarConferenceEntryPoint",
+        "GoogleCalendarConferenceSolution",
+        "GoogleCalendarConferenceSolutionType",
+        "GoogleCalendarEvent",
+        "GoogleCalendarEventDateTime",
+        "GoogleCalendarEventPage",
+        "GoogleCalendarEventStatus",
+        "GoogleCalendarEventType",
+        "GoogleCalendarKnowledgeReadClient",
+        "GoogleCalendarKnowledgeReader",
+        "GoogleCalendarPerson",
+        "GoogleCalendarReminder",
+        "GoogleCalendarReminderMethod",
+        "GoogleCalendarReminders",
+        "GoogleCalendarSyncToken",
+        "GoogleCalendarTransparency",
+        "GoogleCalendarVisibility",
     }
 )
 
@@ -246,6 +295,12 @@ def __getattr__(name: str):
         )
 
         return export_from_bundle(_knowledge_read, name, _SHEETS_EXPORTS)
+    if name in _CALENDAR_EXPORTS:
+        from intergrax.integrations.providers.collaboration_suite.google_workspace import (
+            knowledge_read as _knowledge_read,
+        )
+
+        return export_from_bundle(_knowledge_read, name, _CALENDAR_EXPORTS)
     if name in _FOUNDATION_EXPORTS:
         if name == "GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID":
             from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
