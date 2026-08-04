@@ -9,8 +9,7 @@ from typing import Sequence
 import numpy as np
 from numpy.typing import NDArray
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
@@ -66,9 +65,9 @@ class EmbeddingManager(BaseEmbeddingManager):
 
     def embed_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> EmbeddingResult:
         """
-        Generate embeddings for LangChain Document objects.
+        Generate embeddings for native KnowledgeDocument objects.
         """
         return self._pipeline.embed_documents(documents)

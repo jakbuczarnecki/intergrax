@@ -4,18 +4,22 @@ from __future__ import annotations
 
 from typing import Sequence
 
+import numpy as np
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.rag.bootstrap.hierarchical_bootstrap import profile_uses_hierarchical_index
+from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.document_splitters.strategies.parent_child_chunking_strategy import (
     ParentChildChunkingStrategy,
 )
+from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from langchain_core.documents import Document
 from testing_support.builder import build_fake_embedding_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -37,6 +41,50 @@ class _InlineSplitter:
     def split_documents(self, docs: Sequence[KnowledgeDocument], strategy_id: str | None = None) -> Sequence[KnowledgeDocument]:
         del strategy_id
         return self._strategy.chunk(docs)
+
+
+def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
+    class _EmbeddingSpy:
+        def __init__(self) -> None:
+            self.calls: list[list[str]] = []
+
+        def embed_documents(self, documents: object) -> None:
+            raise AssertionError("dual indexing compatibility must use embed_texts")
+
+        def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
+            self.calls.append(list(texts))
+            return np.ones((len(texts), 2), dtype=np.float32)
+
+    class _Store:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def add_documents(self, **kwargs: object) -> None:
+            self.calls.append(kwargs)
+
+    documents = [
+        Document(
+            page_content="chunk-a",
+            metadata={ChunkMetadataKey.SECTION: "Section A"},
+        ),
+        Document(
+            page_content="chunk-b",
+            metadata={ChunkMetadataKey.SECTION: "Section B"},
+        ),
+    ]
+    embedding = _EmbeddingSpy()
+    main_store = _Store()
+    toc_store = _Store()
+
+    DualIndexStrategy(toc_vectorstore=toc_store, batch_size=10).build_index(
+        documents=documents,
+        embed_manager=embedding,
+        vectorstore=main_store,
+    )
+
+    assert embedding.calls == [["chunk-a", "chunk-b"], ["Section A", "Section B"]]
+    assert main_store.calls[0]["documents"] == documents
+    assert toc_store.calls[0]["documents"][0].page_content == "Section A"
 
 
 def test_profile_uses_hierarchical_index_flag_and_retriever() -> None:

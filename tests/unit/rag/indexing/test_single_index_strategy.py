@@ -9,7 +9,6 @@ import pytest
 from langchain_core.documents import Document
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.indexing.strategies.single_index_strategy import SingleIndexStrategy
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
@@ -20,15 +19,21 @@ pytestmark = pytest.mark.unit
 
 class FakeEmbeddingManager(BaseEmbeddingManager):
 
+    def __init__(self) -> None:
+        self.received_texts: list[str] = []
+
     def embed_documents(self, documents):
-        vectors = [[0.1, 0.2, 0.3] for _ in documents]
-        return vectors, documents
+        raise AssertionError("indexing compatibility must use embed_texts")
     
     def embed_texts(
         self,
         texts: Sequence[str],
     ) -> NDArray[np.float32]:
-        pass
+        self.received_texts = list(texts)
+        return np.array(
+            [[index, index + 1, index + 2] for index in range(len(texts))],
+            dtype=np.float32,
+        )
 
     def embed_one(
         self,
@@ -36,21 +41,11 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
     ) -> NDArray[np.float32]:
         pass
 
-    def embed_documents(
-        self,
-        documents: Sequence[Document],
-    ) -> EmbeddingResult:
-        vectors = [[0.1, 0.2, 0.3] for _ in documents]
-        return EmbeddingResult(
-            documents=documents,
-            embeddings=vectors,
-        )
-
-
 class FakeVectorstore(BaseVectorstoreManager):
 
     def __init__(self):
         self.docs = []
+        self.embeddings = None
 
     def add_documents(
         self,
@@ -61,6 +56,7 @@ class FakeVectorstore(BaseVectorstoreManager):
         base_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.docs.extend(documents)
+        self.embeddings = embeddings
     
     def query(
         self,
@@ -98,3 +94,6 @@ def test_single_index_strategy_inserts_documents():
     )
 
     assert vectorstore.count() == 2
+    assert embed_manager.received_texts == ["A", "B"]
+    assert vectorstore.docs == docs
+    assert np.array_equal(vectorstore.embeddings, [[0, 1, 2], [1, 2, 3]])

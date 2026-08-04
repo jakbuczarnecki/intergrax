@@ -11,7 +11,6 @@ from langchain_core.documents import Document
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
 
@@ -49,12 +48,14 @@ class DualIndexStrategy(IndexStrategy):
         # Main CHUNK index
         # -----------------------------
 
-        result = embed_manager.embed_documents(documents)
+        embeddings = embed_manager.embed_texts(
+            [document.page_content for document in documents]
+        )
 
         self._insert_batches(
             vectorstore,
-            result.documents,
-            result.embeddings,
+            documents,
+            embeddings,
         )
 
         # -----------------------------
@@ -96,12 +97,14 @@ class DualIndexStrategy(IndexStrategy):
                 )
             )
 
-        result = embed_manager.embed_documents(toc_docs)
+        toc_embeddings = embed_manager.embed_texts(
+            [document.page_content for document in toc_docs]
+        )
 
         self._insert_batches(
             self.toc_vectorstore,
-            result.documents,
-            result.embeddings,
+            toc_docs,
+            toc_embeddings,
         )
 
     def _insert_batches(

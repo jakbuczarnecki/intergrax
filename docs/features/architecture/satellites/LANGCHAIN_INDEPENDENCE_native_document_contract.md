@@ -611,3 +611,15 @@ Derivative chunk lineage:
 
 Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. Native recursive chunking is the default and core-safe path. LangChain recursive chunking is an optional provider behind the `rag-langchain-splitters` extra, registered explicitly through the existing registry/plugin boundary; missing the extra is a stable configuration error.
 
+
+### Native embedding boundary (LCI-3A)
+
+```text
+KnowledgeDocument sequence
+→ document.content sequence
+→ EmbeddingEngine
+→ readonly float32 embedding matrix
+→ EmbeddingResult(documents, embeddings)
+```
+
+Document and vector cardinality must be identical, and input order is significant. Embedding does not change document identity, scope, metadata, or provenance; the vector is never part of native document metadata.

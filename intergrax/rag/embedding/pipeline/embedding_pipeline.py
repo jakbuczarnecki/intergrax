@@ -4,14 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List
+from typing import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
-from langchain_core.documents import Document
-
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 
@@ -24,7 +22,7 @@ class EmbeddingPipeline:
     ----------------
     - accept texts or documents
     - delegate embedding computation to EmbeddingEngine
-    - attach vectors to document metadata when required
+    - keep native documents separate from their vectors
     """
 
     def __init__(
@@ -70,37 +68,32 @@ class EmbeddingPipeline:
 
     def embed_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> EmbeddingResult:
         """
-        Generate embeddings for documents and attach them to metadata.
+        Embed validated native documents without mutating them.
         """
 
-        if not documents:
-            return EmbeddingResult(
-                documents=[],
-                embeddings=[],
+        materialized_documents = list(documents)
+        validated_documents: list[KnowledgeDocument] = []
+        for document in materialized_documents:
+            if not isinstance(document, KnowledgeDocument):
+                raise TypeError("documents must contain only KnowledgeDocument values")
+            validated_documents.append(
+                KnowledgeDocument.model_validate(document.model_dump(mode="python"))
             )
 
-        texts: List[str] = [doc.page_content for doc in documents]
+        if not validated_documents:
+            return EmbeddingResult(
+                documents=(),
+                embeddings=np.empty((0, 0), dtype=np.float32),
+            )
+
+        texts = [document.content for document in validated_documents]
 
         embeddings = self.embed_texts(texts)
 
-        enriched_documents: List[Document] = []
-
-        for document, vector in zip(documents, embeddings):
-
-            metadata = dict(document.metadata or {})
-            metadata[EmbeddingMetadataKey.VECTOR] = vector
-
-            enriched_documents.append(
-                Document(
-                    page_content=document.page_content,
-                    metadata=metadata,
-                )
-            )
-
         return EmbeddingResult(
-            documents=enriched_documents,
+            documents=tuple(validated_documents),
             embeddings=embeddings,
         )

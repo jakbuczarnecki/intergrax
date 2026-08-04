@@ -6,10 +6,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Sequence
 
-from langchain_core.documents import Document
 import numpy as np
 from numpy.typing import NDArray
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 
 
@@ -21,7 +21,7 @@ class BaseEmbeddingManager(ABC):
         texts: Sequence[str],
     ) -> NDArray[np.float32]:
         """
-        Generate embeddings for raw texts.
+        Embed raw text strings.
         """
         raise NotImplementedError
 
@@ -31,16 +31,19 @@ class BaseEmbeddingManager(ABC):
         text: str,
     ) -> NDArray[np.float32]:
         """
-        Generate embedding for a single text.
+        Embed one raw text string.
         """
         raise NotImplementedError
 
     @abstractmethod
     def embed_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> EmbeddingResult:
         """
-        Generate embeddings for LangChain Document objects.
+        Embed native documents without mutating them.
+
+        The result preserves input order and keeps documents separate from
+        their embedding vectors.
         """
         raise NotImplementedError

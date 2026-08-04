@@ -32,9 +32,11 @@ class SingleIndexStrategy(IndexStrategy):
         if not documents:
             return
 
-        result = embed_manager.embed_documents(documents)
+        embeddings = embed_manager.embed_texts(
+            [document.page_content for document in documents]
+        )
 
         vectorstore.add_documents(
-            documents=result.documents,
-            embeddings=result.embeddings,
+            documents=documents,
+            embeddings=embeddings,
         )
