@@ -25,6 +25,7 @@ _LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PR
 _TOKEN_OPT_README = _REPO_ROOT / "docs" / "features" / "token_optimization" / "README.md"
 _TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
 _UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
+_UCL_PLAN = _REPO_ROOT / "docs" / "plan" / "UNIFIED_CONTEXT_LIFECYCLE.md"
 _UCL_ADR = _REPO_ROOT / "docs" / "adr" / "entries" / "2026-08-01" / "ADR-UCL-001.md"
 
 _CANONICAL_STATUS_LABELS = (
@@ -185,8 +186,8 @@ def _assert_required_ucl_statuses(normalized: str) -> None:
     ), "CTX-UCL-CLOSEOUT-1 must be ready for final review or pending independent acceptance"
 
     token10e = _ucl_status_window(normalized, "TOKEN-10E-1")
-    if token10e:
-        assert "blocked" in token10e, "TOKEN-10E-1 must remain blocked"
+    assert token10e, "TOKEN-10E-1 status must be present"
+    assert "blocked" in token10e, "TOKEN-10E-1 must remain blocked"
 
 
 _CTX_UCL_6_NOT_STARTED = re.compile(
@@ -550,3 +551,143 @@ def test_public_adoption_reading_order_is_zero_through_nine_unique() -> None:
     section = content[start:section_end]
     steps = [int(match.group(1)) for match in re.finditer(r"^\|\s*(\d+)\s*\|", section, re.MULTILINE)]
     assert steps == list(range(10))
+
+
+# --- CTX-UCL-CLOSEOUT-1: final register integrity guards ---
+
+
+def _extract_markdown_section(content: str, start_heading: str, end_heading: str) -> str:
+    start = content.index(start_heading)
+    end = content.index(end_heading, start + len(start_heading))
+    return content[start:end]
+
+
+def _count_markdown_table_data_rows(section: str) -> list[str]:
+    lines = section.splitlines()
+    rows: list[str] = []
+    in_table = False
+    for line in lines:
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            if in_table and rows:
+                break
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if not cells:
+            continue
+        headerish = all(set(cell) <= {"-", ":", " "} for cell in cells)
+        if headerish:
+            in_table = True
+            continue
+        if in_table:
+            rows.append(stripped)
+    return rows
+
+
+def _historical_resolution_table_section(content: str) -> str:
+    section = _extract_markdown_section(
+        content,
+        "### 3.2 Final resolution of the 19 historical mechanisms",
+        "### 3.3 Additional closure surfaces",
+    )
+    marker = "| Mechanism | Final classification |"
+    return section[section.index(marker) :]
+
+
+_HISTORICAL_3_2_MARKERS = (
+    "ConversationalMemory._trim_if_needed",
+    "InMemorySessionStorage",
+    "SqliteConversationalMemoryStore",
+    "SessionManager.append_message",
+    "fragments_from_session_history",
+    "builtin.session_history",
+    "DefaultContextFormatter",
+    "HistoryLayer",
+    "HistoryCompressionStrategy",
+    "ContextCompiler",
+    "TOKENIZER_HARD_TRIM",
+    "ContextManager",
+    "verify_context_preflight",
+    "Token Optimization pipeline",
+    "protected_regions.py",
+    "budget_aware_packing",
+    "semantic_compression_enabled",
+    "SessionMemoryConsolidationService",
+    "ConversationalMemory.get_for_model",
+)
+
+
+def test_ucl_architecture_section_32_has_exactly_19_resolution_rows() -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    table_section = _historical_resolution_table_section(content)
+    rows = _count_markdown_table_data_rows(table_section)
+    assert len(rows) == 19, f"Expected 19 historical resolution rows, found {len(rows)}"
+
+
+@pytest.mark.parametrize("marker", _HISTORICAL_3_2_MARKERS)
+def test_ucl_architecture_section_32_resolves_each_historical_mechanism(
+    marker: str,
+) -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    table_section = _historical_resolution_table_section(content)
+    assert marker in table_section, f"Missing historical mechanism resolution: {marker!r}"
+
+
+def test_ucl_architecture_context_manager_not_canonical_ucl() -> None:
+    content = _read_public_doc(_UCL_ARCH)
+    table_section = _historical_resolution_table_section(content)
+    context_manager_row = next(
+        line for line in table_section.splitlines() if "`ContextManager`" in line
+    )
+    lowered = context_manager_row.lower()
+    assert "canonical_ucl" not in lowered.replace("_", "")
+    assert (
+        "model_presentation_only" in lowered.replace("-", "_")
+        or "legacy_compatibility_presentation" in lowered.replace("-", "_")
+    )
+    assert "outside ucl-managed" in lowered
+
+
+def test_ucl_architecture_section_33_includes_history_summary_diag() -> None:
+    arch = _read_public_doc(_UCL_ARCH)
+    section_33 = _extract_markdown_section(
+        arch,
+        "### 3.3 Additional closure surfaces",
+        "**UCL-managed compile integrity fence:**",
+    )
+    assert "HistorySummaryDiagV1" in section_33
+
+
+def test_ucl_architecture_executor_distinction() -> None:
+    arch = _read_public_doc(_UCL_ARCH)
+    table_section = _historical_resolution_table_section(arch)
+    pipeline_row = next(
+        line for line in table_section.splitlines() if "Token Optimization pipeline" in line
+    )
+    assert "separate_token_optimization_pipeline" in pipeline_row.lower().replace(
+        "-", "_"
+    )
+
+    section_33 = _extract_markdown_section(
+        arch,
+        "### 3.3 Additional closure surfaces",
+        "**UCL-managed compile integrity fence:**",
+    )
+    executor_row = next(
+        line
+        for line in section_33.splitlines()
+        if line.strip().startswith("| `MessageSequenceArtifactExecutor`")
+    )
+    assert "canonical_ucl" in executor_row.lower().replace("-", "_")
+    assert "sole conversation-summary executor" in executor_row.lower()
+
+
+def test_ucl_plan_deferred_work_precedes_next_step() -> None:
+    plan = _read_public_doc(_UCL_PLAN)
+    deferred_index = plan.index("## Deferred work")
+    next_index = plan.index("## Next step")
+    assert deferred_index < next_index
+
+    deferred_section = plan[deferred_index:next_index]
+    deferred_rows = _count_markdown_table_data_rows(deferred_section)
+    assert len(deferred_rows) >= 1, "Deferred work table must have at least one data row"

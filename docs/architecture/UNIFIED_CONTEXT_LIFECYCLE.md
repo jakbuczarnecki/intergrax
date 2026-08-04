@@ -66,9 +66,19 @@ Audit performed by tracing call sites and wiring (2026-08-01). **Existence of co
 | `SessionMemoryConsolidationService._prepare_conversation_for_prompt` | User profile / LTM | No | **Yes** (prompt slice) | messages/chars | Partial | Yes | Not validated | No | No | No | None | Active on consolidation path | **separate concern** | **retain** — not conversation compaction |
 | `ConversationalMemory.get_for_model(native_tools=True)` | Memory | No | **Yes** | messages | Yes | Filtered | Strips tool msgs | No | No | No | lock | Active when native_tools path used | model-presentation | **retain** — adapter presentation, not compaction |
 
-### 3.2 Final closeout resolution register (2026-08-04)
+### 3.2 Final resolution of the 19 historical mechanisms
+
+The register below resolves exactly the 19 mechanisms from the 2026-08-01 historical baseline, one-to-one and in the same order. Additional closure surfaces discovered during migration are listed separately in §3.3 and are not included in the historical count.
 
 Post-migration runtime disposition for each historical mechanism. Scope: **PRIMARY_MODEL_CALL** consuming UCL-managed model-facing context unless noted.
+
+**Closeout classification dictionary (additions):**
+
+| Classification | Meaning |
+|----------------|---------|
+| `LEGACY_COMPATIBILITY_PRESENTATION` | Active compatibility path outside UCL-managed PRIMARY_MODEL_CALL; model-presentation trim only; not a UCL decision point |
+| `LEGACY_COMPILER_LADDER` | Legacy `DegradationLadder` step; may mutate message shape; post-UCL-resolution mutation rejected on managed primary path |
+| `SEPARATE_TOKEN_OPTIMIZATION_PIPELINE` | Distinct TextArtifact/string Token Optimization mechanism; not invoked by UCL summary `CREATE_ARTIFACT`; not repository owner |
 
 | Mechanism | Final classification | Final runtime status | Owner | UCL authority impact | Proof / test |
 |-----------|---------------------|----------------------|-------|----------------------|--------------|
@@ -80,21 +90,34 @@ Post-migration runtime disposition for each historical mechanism. Scope: **PRIMA
 | `builtin.session_history` `[-N:]` slicing | REMOVED_LEGACY_AUTHORITY | Canonical `SessionHistorySnapshot` path only | Context Engineering | CE collects structured snapshot refs | `test_context_runtime_bridge`, CE provider tests |
 | `DefaultContextFormatter` | MODEL_PRESENTATION_ONLY | Active on CE format/injection path | Context Engineering | Presentation only — not canonical history transport | CE formatter tests |
 | `HistoryLayer` | RAW_COMPATIBILITY_ONLY | **OFF** loads raw `SessionManager.get_history()`; non-OFF fail-closed | Nexus | No compression authority | `test_engine_history_layer` |
-| `HistoryCompressionStrategy` (non-OFF) | DISABLED_FAIL_CLOSED | Mapped at bridge; non-OFF raises `LegacyHistoryCompressionDisabledError` | Nexus / Application | Fail-closed before planner/model | `test_engine_history_layer` |
-| `ContextCompiler` + `DegradationLadder` | CANONICAL_UCL | Active CE global budget path | Context Engineering | Sole global input budget authority | `test_context_plan_integration`, `test_uaep_assemble` |
-| `TOKENIZER_HARD_TRIM` | CANONICAL_UCL | Last `DegradationLadder` step within CE budget; respects segment classes | Context Engineering | Overflow within CE plan only | Degradation ladder / compiler tests |
-| `ContextManager` | CANONICAL_UCL | Task/shared-context assembly under CE when wired; not a second history summarizer | Nexus / CE | Bounded assembly metadata — not conversation summary authority | Nexus context manager tests |
+| `HistoryCompressionStrategy` | DISABLED_FAIL_CLOSED | Non-OFF modes mapped at bridge; non-OFF raises `LegacyHistoryCompressionDisabledError` | Nexus / Application | Fail-closed before planner/model | `test_engine_history_layer` |
+| `ContextCompiler` + `DegradationLadder` | CANONICAL_UCL | Active CE global budget/compiler path; not a second UCL optimization decision point | Context Engineering | Sole global input budget authority | `test_context_plan_integration`, `test_uaep_assemble` |
+| `TOKENIZER_HARD_TRIM` | LEGACY_COMPILER_LADDER | Last legacy `DegradationLadder` step; may reconstruct `ChatMessage` without full `entry_id` / `name` / `tool_calls` / `tool_call_id` | Context Engineering | Remains in compiler ladder; on UCL-managed planned context, post-resolution mutation is rejected by final compile integrity fence (`FINAL_COMPILE_MUTATED_PLAN`) | Degradation ladder / compiler tests |
+| `ContextManager` | LEGACY_COMPATIBILITY_PRESENTATION | Active compatibility sync fallback via `build_agent_context()` → `_build_agent_context_core()` → `trim_message_to_budget()` char-budget model-presentation trim; **outside UCL-managed PRIMARY_MODEL_CALL** when Context Engine is not wired. Does not create conversation summary; does not use `OptimizationArtifactRepository`; not canonical UCL decision point; UCL closeout claim does not cover this fallback; future migration is a separate architectural task | Nexus / CE | Presentation-only fallback — not UCL-managed primary path | Nexus context manager tests |
 | `verify_context_preflight` | CANONICAL_UCL | Active post-compile final boundary | Context Engineering | Mandatory pre-adapter validation | CE preflight tests |
-| Token Optimization pipeline | CANONICAL_UCL | Active for string `TextArtifact` transforms on `CREATE_ARTIFACT` | Token Optimization | Executor under UCL decision — not repository owner | `test_message_sequence_artifact`, pipeline tests |
+| Token Optimization pipeline | SEPARATE_TOKEN_OPTIMIZATION_PIPELINE | Active for string `TextArtifact` transforms via `CacheAwareTokenOptimizationRuntime.run()`; **not** invoked by current UCL summary `CREATE_ARTIFACT`; not repository owner; not a second conversation-history summarizer | Token Optimization | Separate TO mechanism — not UCL summary executor | TO pipeline tests |
 | `protected_regions.py` | CANONICAL_UCL | Active in TO pipeline | Token Optimization | Protected-region validation on transforms | TO validation tests |
 | `budget_aware_packing` / `context_pack.py` | CANONICAL_UCL | Active prototype under CE budget allocation | Token Optimization | Packing under CE budget — not second global budget | TO packing tests |
 | `semantic_compression_enabled` + metadata | DISABLED_FAIL_CLOSED | Fail-closed or maps `summarize_oldest` → canonical `ContextOptimizationPolicy` only | Application / Runtime wiring | No standalone `semantic_compression.v1` consumer | `test_context_runtime_bridge` |
 | `SessionMemoryConsolidationService._prepare_conversation_for_prompt` | SEPARATE_MEMORY_LIFECYCLE | Active LTM consolidation path | User profile / LTM | **Out of UCL** — separate memory lifecycle | LTM consolidation tests |
-| `HistorySummaryDiagV1` / trace summaries | SEPARATE_TRACE_OR_RESPONSE_LIFECYCLE | Diagnostic trace payloads only | Nexus tracing | **Out of UCL** — trace/response lifecycle | History layer trace tests |
+| `ConversationalMemory.get_for_model(native_tools=True)` | MODEL_PRESENTATION_ONLY | Active when `native_tools=True`; adapter presentation filters tool messages; not compaction | Memory | Presentation only — not canonical history optimization | Memory adapter tests |
+
+### 3.3 Additional closure surfaces
+
+Surfaces discovered during UCL migration that are **not** part of the 19-mechanism historical baseline (§3.2).
+
+| Surface | Final classification | Final runtime status | Owner | UCL authority impact | Proof / test |
+|---------|---------------------|----------------------|-------|----------------------|--------------|
+| `HistoryCompressionStrategy` non-OFF modes | DISABLED_FAIL_CLOSED | Bridge maps non-OFF to fail-closed before planner/model | Nexus / Application | No compression authority on non-OFF paths | `test_engine_history_layer` |
 | `max_memory_entries_in_context` | RETENTION_ONLY (retrieval scope) | Retrieval-only cap for LTM fragments in CE collect | Context Engineering | No authority over session history | `builtin.py` LTM collect tests |
 | History summary prompt builder / YAML | REMOVED_LEGACY_AUTHORITY | **Removed** | — | Canonical summary path only via `MessageSequenceArtifactExecutor` | `test_ctx_ucl_6d_legacy_summary_guard` |
 | Application-local history summary caches | REMOVED_LEGACY_AUTHORITY | **None** in production scan roots | — | Reuse via `OptimizationArtifactRepository` only | `test_ctx_ucl_6d_legacy_summary_guard` |
 | Direct conversation-summary model-call bypass | REMOVED_LEGACY_AUTHORITY | **None** — all summary creation via UCL reservation path | Nexus / TO | Single creation path enforced | `test_ucl_orchestration`, source guard |
+| `MessageSequenceArtifactExecutor` | CANONICAL_UCL | Sole conversation-summary executor on UCL path: consumes structured `SessionHistoryMessage`; builds `INTERNAL_OPTIMIZATION_CALL`; creates message-sequence artifact via `resolve_ucl_context_plan()` → executor (not generic TextArtifact pipeline) | Token Optimization / Nexus | Canonical UCL summary creation authority | `test_message_sequence_artifact`, `test_ucl_orchestration` |
+| `HistorySummaryDiagV1` / trace summaries | SEPARATE_TRACE_OR_RESPONSE_LIFECYCLE | Diagnostic trace payloads only | Nexus tracing | **Out of UCL** — trace/response lifecycle | History layer trace tests |
+| `TRUNCATE_OLDEST_HISTORY` | LEGACY_COMPILER_LADDER | Remains in legacy `DegradationLadder`; on UCL-managed planned context, post-resolution mutation rejected by final compile integrity fence | Context Engineering | Compiler ladder step — not UCL optimization decision point | Degradation ladder tests |
+
+**UCL-managed compile integrity fence:** On the UCL-managed Context Engine path, Context Engine compares planned model-facing hash vs compiled model-facing hash; mutation after UCL resolution raises `FINAL_COMPILE_MUTATED_PLAN` (fail-closed). `TRUNCATE_OLDEST_HISTORY` and `TOKENIZER_HARD_TRIM` remain in the legacy compiler ladder but are not accepted as post-UCL-resolution mutators on the managed primary path.
 
 **Canonical model-facing summary creation (sole path):**
 

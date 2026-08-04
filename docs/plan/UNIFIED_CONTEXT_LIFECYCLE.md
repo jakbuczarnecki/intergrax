@@ -190,14 +190,7 @@ TOKEN-10E-1 → may begin
 
 ---
 
-## Next step
-
-Independent final review of **CTX-UCL-CLOSEOUT-1**.
-
-After acceptance:
-
-- **CTX-UCL-CLOSEOUT-1** → **ACCEPTED / CLOSED**
-- **TOKEN-10E-1** may begin.
+## Deferred work
 
 | Item | Notes |
 |------|-------|
@@ -209,4 +202,11 @@ After acceptance:
 
 ---
 
-## Deferred work
+## Next step
+
+Independent final review of **CTX-UCL-CLOSEOUT-1**.
+
+After acceptance:
+
+- **CTX-UCL-CLOSEOUT-1** → **ACCEPTED / CLOSED**
+- **TOKEN-10E-1** may begin.
