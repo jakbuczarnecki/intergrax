@@ -636,7 +636,7 @@ KnowledgeDocument chunks
 → legacy vector-store adapter
 ```
 
-The manager materializes the input, requires `KnowledgeDocument`, and performs full public-field revalidation. Pipeline and strategies preserve order and do not mutate documents. `SingleIndexStrategy` and `DualIndexStrategy` call `embed_documents`; conversion through `to_legacy_rag_document()` occurs only immediately before `BaseVectorstoreManager.add_documents()`.
+The manager materializes the input, requires `KnowledgeDocument`, and performs full public-field revalidation. Pipeline and strategies preserve order and do not mutate documents. `SingleIndexStrategy` and `DualIndexStrategy` call `embed_documents`; conversion through `to_legacy_rag_document()` occurs only inside the private `VectorstoreManager` provider adapter.
 
 Dual TOC lineage follows the first canonical section chunk:
 
@@ -648,3 +648,25 @@ first canonical section chunk
 ```
 
 TOC grouping is tenant-, namespace-, root-, and section-safe. The derivative preserves scope, source provenance, root identity, and parent identity; its content is the section name, its content hash is canonical, and its metadata contains only safe section and parent-chunk fields.
+
+### Native vector-store boundary (LCI-3C)
+
+```text
+KnowledgeDocument + vector
+� VectorStoreRecord
+� explicit VectorStoreScope validation
+� VectorstoreManager
+� private legacy provider adapter
+```
+
+Native reads follow the inverse boundary:
+
+```text
+query vector + explicit scope
+� legacy provider
+� native KnowledgeDocument reconstruction
+� scope validation
+� VectorStoreHit
+```
+
+Tenant and namespace are authoritative routing fields. User metadata and filters cannot override them; delete and count fail closed unless tenant isolation is proven.

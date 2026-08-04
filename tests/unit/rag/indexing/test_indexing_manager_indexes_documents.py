@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import Any, Dict, Optional, Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,7 +16,12 @@ from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.pipeline.indexing_pipeline import IndexingPipeline
 from intergrax.rag.indexing.strategies.single_index_strategy import SingleIndexStrategy
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -50,33 +55,37 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
 class FakeVectorstore(BaseVectorstoreManager):
 
     def __init__(self):
-        self.docs = []
+        self.records = []
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-        base_metadata: Optional[Dict[str, Any]] = None,
+        scope: VectorStoreScope | None = None,
     ) -> None:
-        self.docs.extend(documents)
+        self.records.extend(records)
     
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope | None = None,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         pass
     
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(
+        self,
+        ids: Sequence[str],
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> None:
         pass
     
-    def count(self) -> int:
-        return len(self.docs)
+    def count(self, *, scope: VectorStoreScope | None = None) -> int:
+        return len(self.records)
 
 
 class CapturingStrategy(IndexStrategy):
@@ -110,8 +119,8 @@ def test_indexing_manager_indexes_documents():
     manager.index_documents(docs)
 
     assert store.count() == 1
-    assert isinstance(store.docs[0], Document)
-    assert store.docs[0].page_content == "doc"
+    assert isinstance(store.records[0], VectorStoreRecord)
+    assert store.records[0].document.content == "doc"
 
 
 def test_indexing_manager_materializes_generator_and_revalidates_documents() -> None:

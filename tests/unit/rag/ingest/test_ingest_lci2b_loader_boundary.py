@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import pytest
-from langchain_core.documents import Document
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
@@ -49,8 +47,8 @@ class _NoopVectorstore:
     def __init__(self) -> None:
         self.received: dict[str, object] | None = None
 
-    def add_documents(self, **kwargs: object) -> list[str]:
-        self.received = kwargs
+    def add_records(self, records, *, scope=None) -> list[str]:
+        self.received = {"records": records, "scope": scope}
         return ["id-0"]
 
 
@@ -235,12 +233,10 @@ def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in splitter.received[0].metadata
     assert embedding.received == ["Native context\n\nhello"]
     assert vectorstore.received is not None
-    legacy_doc = vectorstore.received["documents"][0]
-    assert isinstance(legacy_doc, Document)
-    assert legacy_doc.page_content == "Native context\n\nhello"
-    legacy_meta = legacy_doc.metadata
-    assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
-    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in legacy_meta
+    record = vectorstore.received["records"][0]
+    assert isinstance(record.document, KnowledgeDocument)
+    assert record.document.content == "Native context\n\nhello"
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in record.document.metadata
 
 
 def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
@@ -317,8 +313,8 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
         def __init__(self) -> None:
             self.received: dict[str, object] | None = None
 
-        def add_documents(self, **kwargs: object) -> list[str]:
-            self.received = kwargs
+        def add_records(self, records, *, scope=None) -> list[str]:
+            self.received = {"records": records, "scope": scope}
             return ["id-0"]
 
     loader = _BoundaryLoader()
@@ -355,7 +351,9 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     assert RESERVED_METADATA_KEYS.isdisjoint(native_metadata)
     assert splitter.received[0].scope.tenant_id == "tenant.test"
     assert splitter.received[0].scope.namespace == "managed"
-    assert vectorstore.received["base_metadata"] == base_metadata
+    assert vectorstore.received["scope"].tenant_id == "tenant.test"
+    assert vectorstore.received["scope"].namespace == "managed"
+    assert vectorstore.received["records"][0].document.metadata["workspace_id"] == "workspace-1"
     assert base_metadata == original_metadata
 
 
@@ -409,7 +407,7 @@ def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: P
         def __init__(self) -> None:
             self.called = False
 
-        def add_documents(self, **kwargs: object) -> list[str]:
+        def add_records(self, records, *, scope=None) -> list[str]:
             self.called = True
             return ["id-0"]
 

@@ -255,24 +255,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0097",
-      "path": "intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0098",
-      "path": "intergrax/rag/vectorstore/contracts/vector_store.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0099",
       "path": "intergrax/rag/vectorstore/providers/base_vector_store.py",
       "kind": "from",
@@ -284,24 +266,6 @@
     {
       "inventory_id": "LCI-INV-0100",
       "path": "intergrax/rag/vectorstore/soak/prod_slo.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0101",
-      "path": "intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0102",
-      "path": "intergrax/rag/vectorstore/vectorstore_manager.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

@@ -19,6 +19,7 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.factory import build_profile_from_env, resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -69,7 +70,8 @@ def create_vectorstore_manager(
         tenant_id=tenant_id,
         **config_overrides,
     )
-    return VectorstoreManager(store=store)
+    scope = VectorStoreScope(tenant_id=tenant_id) if tenant_id is not None else None
+    return VectorstoreManager(store=store, scope=scope)
 
 
 def create_default_vectorstore_manager(*, tenant_id: Optional[str] = None) -> BaseVectorstoreManager:

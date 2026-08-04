@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Optional
 
-CollectionOperation = Literal["read", "write"]
+CollectionOperation = Literal["read", "write", "delete", "count"]
 
 
 class CollectionAccessDenied(PermissionError):

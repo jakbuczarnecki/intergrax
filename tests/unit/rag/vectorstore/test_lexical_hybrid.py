@@ -6,7 +6,6 @@ import pytest
 from langchain_core.documents import Document
 
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 pytestmark = pytest.mark.unit
 
@@ -24,7 +23,7 @@ def test_inmemory_query_hybrid_prefers_keyword_match() -> None:
         [0.95, 0.05, 0.0],
         "Intergrax RAG",
         top_k=2,
-        metadata_filter=MetadataFilter(conditions={"tenant_id": "t1"}),
+        metadata_filter=None,
     )
     assert hits
     assert hits[0].id == "a"

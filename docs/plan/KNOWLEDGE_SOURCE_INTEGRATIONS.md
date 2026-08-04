@@ -90,11 +90,15 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
   ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
 VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1
   ACCEPTED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
+  ACCEPTED / CLOSED
 READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT
 VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1
+  READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
   READY_FOR_REVIEW
 CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
@@ -118,6 +122,11 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
 `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` freezes the complete Google Workspace knowledge architecture and proof-first roadmap so one existing `GoogleWorkspaceCollaborationSuiteIntegration` can support Drive, Docs, Sheets, Calendar, Slides, Mail and Chat through shared provider primitives, separate Vendor Knowledge adapters and provider-neutral LKW consumption immediately after the complete Slack Knowledge vertical. Status: **READY_FOR_REVIEW**. Runtime tasks below remain **PLANNED** — no Google knowledge capability is implemented.
+
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
+[live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
+It is **READY_FOR_REVIEW**; provider/source-kind live tasks remain **PLANNED**
+and the Google readiness gate remains independently **PLANNED**.
 
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),

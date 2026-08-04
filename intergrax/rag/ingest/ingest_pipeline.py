@@ -31,6 +31,10 @@ from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrat
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.tracking.rag_spans import rag_span
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 
 @dataclass(frozen=True)
@@ -200,17 +204,22 @@ class IngestPipeline:
                     vector_ids = ids
                 else:
                     embeddings = self._embedding_manager.embed_texts(texts)
+                    records = [
+                        VectorStoreRecord(
+                            document=chunk,
+                            embedding=embeddings[index],
+                            vector_id=ids[index],
+                        )
+                        for index, chunk in enumerate(native_chunks)
+                    ]
+                    stored_ids = self._vectorstore.add_records(
+                        records,
+                        scope=VectorStoreScope.from_document(records[0].document),
+                    )
+                    vector_ids = list(stored_ids) if stored_ids is not None else ids
                     aligned_docs = [
                         to_legacy_rag_document(chunk) for chunk in native_chunks
                     ]
-
-                    stored_ids = self._vectorstore.add_documents(
-                        documents=aligned_docs,
-                        embeddings=embeddings,
-                        ids=ids,
-                        base_metadata=base_metadata,
-                    )
-                    vector_ids = list(stored_ids) if stored_ids is not None else ids
 
             if self._graph_store is not None and self._profile.graph_rag_enabled:
                 with rag_span("rag.ingest.graph_index"):

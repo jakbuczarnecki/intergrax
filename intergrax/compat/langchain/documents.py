@@ -42,6 +42,21 @@ def _get_langchain_document_class() -> type[LangChainDocument]:
     return module.Document
 
 
+def make_langchain_document(
+    *,
+    document_id: str | None,
+    content: str,
+    metadata: Mapping[str, Any],
+) -> LangChainDocument:
+    """Create a legacy document without exposing its SDK import to core."""
+    document_cls = _get_langchain_document_class()
+    return document_cls(
+        id=document_id,
+        page_content=content,
+        metadata=dict(metadata),
+    )
+
+
 def _require_mapping(value: object, *, field_name: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
         raise LangChainDocumentBridgeError(f"{field_name} must be a mapping")

@@ -10,13 +10,15 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-3B — Native indexing contract, strategies and TOC lineage
+**Current active task:** LCI-3C — Native vector-store records and tenant isolation
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
 **LCI-3A decision:** The embedding API accepts `KnowledgeDocument`; `EmbeddingResult` stores native documents and readonly float32 vectors separately. Vectors are never stored in native metadata. Legacy vector-store compatibility remains until LCI-3C.
 
-**LCI-3B decision:** `IndexingManager`, `IndexingPipeline`, and index strategies accept native `KnowledgeDocument` sequences. Single and Dual Index call native `embed_documents`; Dual TOC records are deterministic native derivatives with scope-safe grouping and preserved lineage. `to_legacy_rag_document()` is used only immediately before the still-legacy `BaseVectorstoreManager`.
+**LCI-3B decision:** `IndexingManager`, `IndexingPipeline`, and index strategies accept native `KnowledgeDocument` sequences. Single and Dual Index call native `embed_documents`; Dual TOC records are deterministic native derivatives with scope-safe grouping and preserved lineage. Legacy conversion is now private to the native vector-store manager/provider boundary.
+
+**LCI-3C decision:** Public vector-store manager contracts use immutable native records, explicit `VectorStoreScope`, and native hits containing `KnowledgeDocument`. Tenant and namespace are authoritative routing fields and cannot be supplied through user metadata. Legacy conversion remains private at the manager/provider compatibility boundary until LCI-3D; delete and count fail closed unless tenant isolation is proven.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 

@@ -1,10 +1,10 @@
 <!--
-© Artur Czarnecki. All rights reserved.
-Intergrax framework – proprietary and confidential.
+Ă‚Â© Artur Czarnecki. All rights reserved.
+Intergrax framework Ă˘â‚¬â€ś proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LANGCHAIN_INDEPENDENCE — dependency inventory
+# LANGCHAIN_INDEPENDENCE Ă˘â‚¬â€ť dependency inventory
 
 **Parent hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
@@ -28,22 +28,22 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 60 |
-| direct test imports | 55 |
+| direct production/runtime imports | 56 |
+| direct test imports | 51 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
 | generated lock rows | 1 |
-| core contract leaks | 6 |
-| core implementation dependencies | 18 |
+| core contract leaks | 3 |
+| core implementation dependencies | 17 |
 | provider-bound dependencies | 24 |
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
-| test-only | 55 |
+| test-only | 51 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 127 |
+| total detailed inventory rows | 119 |
 
 ## C. Detailed inventory table
 
@@ -102,12 +102,8 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0094 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_api_reranker_base.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0095 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_cross_encoder_base.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0096 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/embedding_cosine_reranker.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
-| LCI-INV-0097 | `langchain_core.documents` | `intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C | verified import |
-| LCI-INV-0098 | `langchain_core.documents` | `intergrax/rag/vectorstore/contracts/vector_store.py` | 12 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C | verified import |
 | LCI-INV-0099 | `langchain_core.documents` | `intergrax/rag/vectorstore/providers/base_vector_store.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3C | verified import |
 | LCI-INV-0100 | `langchain_core.documents` | `intergrax/rag/vectorstore/soak/prod_slo.py` | 14 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
-| LCI-INV-0101 | `langchain_core.documents` | `intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C | verified import |
-| LCI-INV-0102 | `langchain_core.documents` | `intergrax/rag/vectorstore/vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3C | verified import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |
@@ -142,10 +138,7 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0149 | `langchain_core.documents` | `tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py` | 4 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4C | verified import |
 | LCI-INV-0150 | `langchain_core.documents` | `tests/unit/rag/graph/test_llm_graph_indexer.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4C | verified import |
 | LCI-INV-0151 | `langchain_core.documents` | `tests/unit/rag/indexing/test_indexing_manager_indexes_documents.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3B | verified import |
-| LCI-INV-0152 | `langchain_core.documents` | `tests/unit/rag/indexing/test_single_index_strategy.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3B | verified import |
 | LCI-INV-0153 | `langchain_core.documents` | `tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
-| LCI-INV-0154 | `langchain_core.documents` | `tests/unit/rag/ingest/test_ingest_embedding_version_policy.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
-| LCI-INV-0155 | `langchain_core.documents` | `tests/unit/rag/ingest/test_semantic_chunking_size_guard.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2D | verified import |
 | LCI-INV-0156 | `langchain_core.documents` | `tests/unit/rag/profiles/test_rag_profile_query_expansion_wiring.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0157 | `langchain_core.documents` | `tests/unit/rag/profiles/test_rag_profile_validator.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0158 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_hybrid_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
@@ -154,7 +147,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0161 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_parent_child_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0162 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_vector_similarity_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0163 | `langchain_core.documents` | `tests/unit/rag/tracking/test_rag_otel_spans.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0164 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_collection_access_policy.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0165 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_lexical_hybrid.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0166 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_vectorstore_contract.py` | 3 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0167 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_vectorstore_cross_tenant_isolation.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
@@ -175,11 +167,11 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 191 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
 | LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 191 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
 | LCI-INV-0184 | `langchain-ollama` | `pyproject.toml` | 208 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-all | PACKAGING_DEPENDENCY | llm-all extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-all |
-| LCI-INV-0185 | `uv.lock` | `uv.lock` | — | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
+| LCI-INV-0185 | `uv.lock` | `uv.lock` | Ă˘â‚¬â€ť | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
 
 ## D. Public contract leak register
 
-Only real leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks — see §E.
+Only real leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks Ă˘â‚¬â€ť see Ă‚Â§E.
 
 | Leaked type | Contract signature / location | Producers | Consumers | Future native contract | Architecture prerequisite | Implementation migration | Migration risk |
 |-------------|------------------------------|-----------|-----------|------------------------|----------------|----------------|
@@ -208,12 +200,12 @@ Only real leaks through public or shared core contracts (LangChain types in Inte
 
 ## F. Dependency package register
 
-Direct import counts are from §C import rows only (not packaging rows).
+Direct import counts are from Ă‚Â§C import rows only (not packaging rows).
 
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | Document/messages ABI leak | 58 | 55 | 1 | 114 | yes | compat extra only | LCI-7A |
+| langchain-core | Document/messages ABI leak | 54 | 51 | 1 | 106 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
@@ -222,7 +214,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 
 ## G. LangGraph register
 
-Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated §C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context/` copies mirror the same two modules but are excluded from §C to avoid double-counting.
+Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated Ă‚Â§C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context/` copies mirror the same two modules but are excluded from Ă‚Â§C to avoid double-counting.
 
 | Path | Line | Symbol | Classification | Task |
 |------|-----:|--------|----------------|------|
@@ -248,3 +240,7 @@ The JSON file is the executable grandfather subset for protected production zone
 ## I. Unverified items
 
 Ollama native parity (`LCI-6C`), embedding numeric parity, vector store live round-trip: **UNVERIFIED** until respective proof tasks execute.
+
+## LCI-3C boundary note
+
+`intergrax/rag/vectorstore/contracts/vector_store.py` remains a legacy provider compatibility port owned by LCI-3D. The native core surface is implemented in `contracts/native_vectorstore.py` and `VectorstoreManager`; provider implementations and SDK-facing rows remain grandfathered until LCI-3D.

@@ -5,6 +5,7 @@
 **Branch:** `development`  
 **Input:** [`VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md`](VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md)  
 **Roadmap:** [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Live architecture:** [`VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md`](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md)
 
 ## 1. Executive summary
 
@@ -267,7 +268,12 @@ re-read here; they prove adapter/sync layers, not the higher application modes.
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED / CLOSED`
+
+Canonical architecture:
+[`VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md`](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md)
+— `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` —
+`READY_FOR_REVIEW`.
 
 This addendum is the canonical live-rollout planning view. It does not convert
 any `FOUNDATION_ONLY` row into an implemented provider capability.
@@ -288,10 +294,11 @@ provider-specific production registrations: not implemented
 cross-provider production proof: not implemented
 ```
 
-All rows below use the same planned contract shape. `ARCH-1` freezes the
-provider-neutral request/result schemas and exact capability naming; the
-provider-specific rows remain planned until their handler and registration
-proof exists.
+All rows below use the same planned boundary. The `PLANNED:vk...` values in the
+legacy matrix are planning placeholders, not canonical capability IDs.
+`ARCH-1` freezes the provider-neutral request/result schemas and exact
+capability naming; provider-specific rows remain planned until their handler
+and registration proof exists.
 
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -423,9 +430,10 @@ source kind and its reason. Databricks remains excluded because no exact
 ### Rollout status
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: PLANNED / NEXT
-Microsoft Graph live tasks: PLANNED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
+other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED
 Confluence live task: PLANNED

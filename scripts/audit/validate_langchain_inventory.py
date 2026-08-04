@@ -30,9 +30,6 @@ ROADMAP_TASKS = {
 
 SEMANTIC_PATH_TASKS: dict[str, str] = {
     "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py": "LCI-3C",
-    "intergrax/rag/vectorstore/contracts/vector_store.py": "LCI-3C",
-    "intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py": "LCI-3C",
     "intergrax/rag/rerankers/contracts/reranker_types.py": "LCI-4B",
     "intergrax/rag/graph/tenant/graph_isolation_contract.py": "LCI-4C",
     "intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py": "LCI-4B",
@@ -132,18 +129,6 @@ def apply_inventory_fixes(text: str) -> str:
         (
             "`intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
             "`intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/contracts/vector_store.py` | 12 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/contracts/vector_store.py` | 12 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
-        ),
-        (
-            "`intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3C |",
         ),
         (
             "`intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D |",
@@ -264,7 +249,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 127, f"expected 127 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 119, f"expected 119 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -284,12 +269,13 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 60
+    assert summary.get("direct production/runtime imports") == 56
+    assert summary.get("direct test imports") == 51
     assert summary.get("provider-bound dependencies") == 24
-    assert summary.get("total detailed inventory rows") == 127
+    assert summary.get("total detailed inventory rows") == 119
     assert summary.get("unclassified occurrences") == 0
-    assert summary.get("core contract leaks") == 6
-    assert summary.get("core implementation dependencies") == 18
+    assert summary.get("core contract leaks") == 3
+    assert summary.get("core implementation dependencies") == 17
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
@@ -336,7 +322,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("127 unique inventory IDs")
+    print("119 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from pydantic import PrivateAttr
 
 from intergrax.compat.langchain import to_langchain_document
+from intergrax.compat.langchain.documents import make_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 
@@ -54,3 +56,37 @@ def to_legacy_rag_document(document: KnowledgeDocument) -> object:
         page_content=langchain_doc.page_content,
         metadata=metadata,
     )
+
+
+def from_legacy_rag_hit(hit: object) -> KnowledgeDocument:
+    """Reconstruct a native document from a legacy provider hit."""
+    try:
+        metadata = getattr(hit, "metadata")
+        content = getattr(hit, "content")
+        document_id = getattr(hit, "id", None)
+    except AttributeError as exc:
+        raise ValueError("legacy vector-store hit is malformed") from exc
+    if not isinstance(metadata, Mapping):
+        raise ValueError("legacy vector-store hit metadata must be a mapping")
+    if not isinstance(content, str):
+        raise ValueError("legacy vector-store hit content must be a string")
+    if document_id is not None and not isinstance(document_id, str):
+        raise ValueError("legacy vector-store hit id must be a string")
+    metadata_copy = dict(metadata)
+    metadata_document_id = metadata_copy.get("document_id")
+    if metadata_document_id is not None and not isinstance(metadata_document_id, str):
+        raise ValueError("legacy vector-store hit document_id must be a string")
+    resolved_document_id = metadata_document_id or document_id
+    if resolved_document_id is None:
+        raise ValueError("legacy vector-store hit has no document identity")
+    metadata_copy.pop("document_id", None)
+    metadata_copy.pop("text", None)
+
+    from intergrax.compat.langchain.documents import from_langchain_document
+
+    legacy_document = make_langchain_document(
+        document_id=resolved_document_id,
+        content=content,
+        metadata=metadata_copy,
+    )
+    return from_langchain_document(legacy_document)

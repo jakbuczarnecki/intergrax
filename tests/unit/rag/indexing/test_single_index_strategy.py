@@ -1,19 +1,23 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-from typing import Any, Dict, Optional, Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 import pytest
-from langchain_core.documents import Document
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.indexing.strategies.single_index_strategy import SingleIndexStrategy
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -76,35 +80,39 @@ class ControlledEmbeddingManager(FakeEmbeddingManager):
 class FakeVectorstore(BaseVectorstoreManager):
 
     def __init__(self):
-        self.docs = []
+        self.records = []
         self.embeddings = None
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-        base_metadata: Optional[Dict[str, Any]] = None,
+        scope: VectorStoreScope | None = None,
     ) -> None:
-        self.docs.extend(documents)
-        self.embeddings = embeddings
+        self.records.extend(records)
+        self.embeddings = np.array([record.embedding for record in records])
     
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope | None = None,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         pass
     
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(
+        self,
+        ids: Sequence[str],
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> None:
         pass
     
-    def count(self) -> int:
-        return len(self.docs)
+    def count(self, *, scope: VectorStoreScope | None = None) -> int:
+        return len(self.records)
 
 
 def test_single_index_strategy_inserts_documents():
@@ -127,9 +135,9 @@ def test_single_index_strategy_inserts_documents():
 
     assert vectorstore.count() == 2
     assert embed_manager.received_documents == tuple(docs)
-    assert [document.page_content for document in vectorstore.docs] == ["A", "B"]
-    assert all(isinstance(document, Document) for document in vectorstore.docs)
-    assert vectorstore.docs[0].metadata["tenant_id"] == "tenant.test"
+    assert [record.document.content for record in vectorstore.records] == ["A", "B"]
+    assert all(isinstance(record, VectorStoreRecord) for record in vectorstore.records)
+    assert vectorstore.records[0].document.scope.tenant_id == "tenant.test"
     assert np.array_equal(vectorstore.embeddings, [[0, 1, 2], [1, 2, 3]])
 
 
@@ -162,7 +170,7 @@ def test_single_index_strategy_rejects_invalid_embeddings_before_vectorstore(
         )
 
     assert vectorstore.count() == 0
-    assert vectorstore.docs == []
+    assert vectorstore.records == []
     assert embed_manager.received_documents == tuple(docs)
 
 

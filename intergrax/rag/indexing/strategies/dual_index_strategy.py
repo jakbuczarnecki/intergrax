@@ -10,14 +10,15 @@ import numpy as np
 from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
-    to_legacy_rag_document,
-)
 from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
 
@@ -133,11 +134,17 @@ class DualIndexStrategy(IndexStrategy):
 
             j = min(i + self.batch_size, n)
 
-            legacy_documents = [
-                to_legacy_rag_document(document) for document in documents[i:j]
+            batch_documents = documents[i:j]
+            records = [
+                VectorStoreRecord(
+                    document=document,
+                    embedding=embeddings[index],
+                    vector_id=document.identity.document_id,
+                )
+                for index, document in enumerate(batch_documents, start=i)
             ]
 
-            vectorstore.add_documents(
-                documents=legacy_documents,
-                embeddings=embeddings[i:j],
+            vectorstore.add_records(
+                records,
+                scope=VectorStoreScope.from_document(records[0].document),
             )

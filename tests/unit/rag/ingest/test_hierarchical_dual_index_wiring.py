@@ -68,8 +68,13 @@ def test_dual_index_strategy_uses_native_embedding_for_main_and_toc() -> None:
         def __init__(self) -> None:
             self.calls: list[dict[str, object]] = []
 
-        def add_documents(self, **kwargs: object) -> None:
-            self.calls.append(kwargs)
+        def add_records(
+            self,
+            records: Sequence[object],
+            *,
+            scope: object = None,
+        ) -> None:
+            self.calls.append({"records": records, "scope": scope})
 
     documents = [
         _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
@@ -105,8 +110,8 @@ def test_dual_index_strategy_uses_native_embedding_for_main_and_toc() -> None:
     assert toc_documents[0].metadata[ChunkMetadataKey.SECTION.value] == "Section A"
     assert toc_documents[0].metadata[ChunkMetadataKey.PARENT_CHUNK_ID.value] == "chunk-a"
     assert RESERVED_METADATA_KEYS.isdisjoint(toc_documents[0].metadata)
-    assert toc_store.calls[0]["documents"][0].page_content == "Section A"
-    assert toc_store.calls[1]["documents"][0].page_content == "Section B"
+    assert toc_store.calls[0]["records"][0].document.content == "Section A"
+    assert toc_store.calls[1]["records"][0].document.content == "Section B"
 
 
 def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() -> None:
@@ -128,8 +133,13 @@ def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() 
         def __init__(self) -> None:
             self.calls: list[dict[str, object]] = []
 
-        def add_documents(self, **kwargs: object) -> None:
-            self.calls.append(kwargs)
+        def add_records(
+            self,
+            records: Sequence[object],
+            *,
+            scope: object = None,
+        ) -> None:
+            self.calls.append({"records": records, "scope": scope})
 
     documents = [
         _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
@@ -178,8 +188,13 @@ def test_dual_index_strategy_rejects_invalid_toc_embeddings_after_main_store() -
         def __init__(self) -> None:
             self.calls: list[dict[str, object]] = []
 
-        def add_documents(self, **kwargs: object) -> None:
-            self.calls.append(kwargs)
+        def add_records(
+            self,
+            records: Sequence[object],
+            *,
+            scope: object = None,
+        ) -> None:
+            self.calls.append({"records": records, "scope": scope})
 
     documents = [
         _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
@@ -201,7 +216,7 @@ def test_dual_index_strategy_rejects_invalid_toc_embeddings_after_main_store() -
         ["Section A", "Section B"],
     ]
     assert [
-        [document.page_content for document in call["documents"]]
+        [record.document.content for record in call["records"]]
         for call in main_store.calls
     ] == [["chunk-a"], ["chunk-b"]]
     assert toc_store.calls == []
@@ -255,8 +270,13 @@ def test_toc_grouping_is_first_seen_and_scope_safe() -> None:
         def __init__(self) -> None:
             self.calls: list[dict[str, object]] = []
 
-        def add_documents(self, **kwargs: object) -> None:
-            self.calls.append(kwargs)
+        def add_records(
+            self,
+            records: Sequence[object],
+            *,
+            scope: object = None,
+        ) -> None:
+            self.calls.append({"records": records, "scope": scope})
 
     documents = [
         _native_chunk("chunk-a", "root-a", "tenant-a", "Shared"),

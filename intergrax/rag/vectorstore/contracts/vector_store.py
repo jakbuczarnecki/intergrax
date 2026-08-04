@@ -7,43 +7,40 @@ from intergrax.utils import attribute_access
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
-from langchain_core.documents import Document
-
-
-@dataclass(frozen=True)
-class MetadataFilter:
-    """
-    Provider-agnostic metadata filter model.
-    Providers are responsible for translating this
-    into native filtering mechanisms.
-    """
-    conditions: Dict[str, Any]
+from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.rag.vectorstore.contracts.native_vectorstore import MetadataFilter
 
 
 @dataclass(frozen=True)
-class VectorStoreHit:
+class LegacyVectorStoreHit:
     """
-    Unified vector store hit model returned by all providers.
+    Legacy provider result owned by LCI-3D.
+
+    ``VectorstoreManager`` converts this private transport shape into the
+    native hit before returning it to core callers.
     """
     id: str
     content: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, JsonValue]
     similarity_score: float
     rank: int
     embedding: Optional[List[float]] = None
 
 
+VectorStoreHit = LegacyVectorStoreHit
+
+
 class VectorStore(ABC):
     """
-    Contract for all vector store providers.
+    Legacy provider compatibility port owned by LCI-3D.
     """
 
     @abstractmethod
     def add_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[object],
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Optional[Sequence[str]] = None,
@@ -61,7 +58,7 @@ class VectorStore(ABC):
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
-    ) -> List[VectorStoreHit]:
+    ) -> List[LegacyVectorStoreHit]:
         """
         Query top_k most similar vectors.
         Must return similarity_score normalized to [0,1].
