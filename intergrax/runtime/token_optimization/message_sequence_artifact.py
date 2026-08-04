@@ -632,7 +632,7 @@ class MessageSequenceArtifactExecutor:
       raise MessageSequenceArtifactExecutionError(
         MessageSequenceArtifactExecutionReason.POLICY_DISALLOWED.value
       )
-    if lookup_key.lossiness_profile != "lossy":
+    if lookup_key.lossiness_profile not in {"lossy", "lossy_summary"}:
       raise MessageSequenceArtifactExecutionError(
         MessageSequenceArtifactExecutionReason.POLICY_DISALLOWED.value
       )

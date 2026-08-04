@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of **TOKEN-10E-1**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** **READY_FOR_REVIEW**; candidate flow, storage adapter, and activation remain not implemented.
+**Current next step:** Independent audit of **TOKEN-10E-2**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** **ACCEPTED / CLOSED**; **TOKEN-10E-2** **READY_FOR_REVIEW**; receipt/rollback compilation, storage adapter, and activation remain not implemented.
 
 ### LKW proof phase map (post-design)
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Independent audit of **TOKEN-10E-1**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **READY_FOR_REVIEW**. Candidate flow and durable activation remain not implemented.
+**Next step:** Independent audit of **TOKEN-10E-2**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED** and **TOKEN-10E-2** is **READY_FOR_REVIEW**. Durable activation remains not implemented.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Architecture integration profile / **TOKEN-10E-1 READY_FOR_REVIEW**. Runtime contribution is **contract-only**: candidate flow, storage adapter, and activation are not implemented. Do not mark TOKEN-10E implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
+**Status:** Architecture integration profile / **TOKEN-10E-2 READY_FOR_REVIEW**. TOKEN-10E-1 contracts are **ACCEPTED / CLOSED**; this slice implements candidate construction over the existing UCL repository and executor. Receipt/rollback compilation, storage adapter, activation, and production enablement remain out of scope.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
@@ -1736,7 +1736,7 @@ Closeout:
 
 **Acceptance:** contracts importable from package root; unit tests prove policy authority, trusted identity hashes, typed stability evidence, activation-readiness separation, strict decoding and canonical round-trip; no pipeline behavior change.
 
-**Status:** **READY_FOR_REVIEW** after **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED**.
+**Status:** **ACCEPTED / CLOSED** after **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED**.
 
 ##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
 
@@ -1750,9 +1750,13 @@ Closeout:
 
 **Acceptance:** unit tests prove candidate creation on synthetic message-sequence fixtures; reuse path does not invoke summarizer; protected original context; no public auto-enable.
 
-**Blocked by:** CTX-UCL-4, TOKEN-10E-1.
+**Dependencies satisfied:** CTX-UCL-4 and TOKEN-10E-1.
+
+**Closeout for TOKEN-10E-2:** immutable snapshot/request/candidate/result contracts, reuse-before-create, bounded single-flight coordination, validated repository storage, and fail-closed reservation release are implemented over the existing UCL contracts. No revision activation, rollback/receipt compiler, or new repository is included.
 
 ##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
+
+**Status:** **NOT STARTED**.
 
 **Goal:** Validate candidates against existing `ProtectedRegion` contracts; compile redaction-safe compaction receipt and rollback metadata.
 
@@ -1803,7 +1807,8 @@ Closeout:
 - [x] Internal-call boundary and single-flight creation defined in UCL
 - [x] CTX-UCL-2 owns InMemoryOptimizationArtifactRepository reference delivery
 - [x] TOKEN-10E-4 owns first durable production repository adapter delivery
-- [ ] Runtime implementation (TOKEN-10E-1..4) — **not started**
+- [x] Candidate runtime contribution (TOKEN-10E-1..2) — **implemented / ready for review**
+- [ ] Receipt/rollback compiler and activation runtime (TOKEN-10E-3..4) — **not started**
 - [ ] Phase closeout — **not started**
 
 #### Explicit out of scope (TOKEN-10E overall)
@@ -2320,7 +2325,7 @@ TOKEN-10C-R4-R1 proof test contract and managed cleanup correction — Accepted 
 TOKEN-DOCS-1   token optimization documentation hub and relocation — Implemented / Ready for review
 TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
 TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
-TOKEN-10E   policy-governed in-cache compaction — Architecture Defined / Ready for Review (runtime not started)
+TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-2 Ready for Review (activation/rollback runtime not started)
 TOKEN-10F..10H universal proof harness, corpus, README promotion — Planned
 ```
 

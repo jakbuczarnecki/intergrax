@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
@@ -28,7 +27,6 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactCreationCoordinationStatus,
     ArtifactLookupKey,
-    ArtifactValidationStatus,
     ContextOptimizationDecision,
     ContextOptimizationMode,
     ContextOptimizationPolicy,
@@ -37,7 +35,6 @@ from intergrax.runtime.context_lifecycle.contracts import (
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationExecutionGuard,
-    ReusableArtifactStatus,
     ReusableOptimizationArtifact,
 )
 from intergrax.runtime.context_lifecycle.repository import (
@@ -45,13 +42,17 @@ from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactRepository,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
-    compute_artifact_content_hash,
 )
 from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
 from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutionRequest,
     MessageSequenceArtifactExecutor,
     MessageSequenceArtifactSourceGroupProof,
+)
+from intergrax.runtime.token_optimization.durable_compaction_candidate import (
+    MessageSequenceArtifactValidationError,
+    validate_message_sequence_payload,
+    validate_stored_message_sequence_artifact,
 )
 
 logger = logging.getLogger("intergrax.nexus.ucl")
@@ -60,20 +61,6 @@ NEXUS_UCL_RUNTIME_HANDLE = "nexus_ucl_runtime"
 
 _MEDIA_TYPE = "application/vnd.intergrax.message-sequence-summary+json"
 _ENCODING = "utf-8"
-_PAYLOAD_SCHEMA_VERSION = "message_sequence_artifact.v1"
-_PAYLOAD_ARTIFACT_TYPE = "message_sequence"
-_REQUIRED_PAYLOAD_KEYS = frozenset(
-    {
-        "schema_version",
-        "artifact_type",
-        "source_refs",
-        "source_content_hash",
-        "strategy_id",
-        "strategy_version",
-        "lossiness_profile",
-        "summary",
-    }
-)
 _PERSIST_POLICIES = frozenset(
     {
         EphemeralArtifactPersistencePolicy.PERSIST_REUSABLE,
@@ -976,20 +963,10 @@ def _validate_stored_artifact_payload(
     *,
     lookup_key: ArtifactLookupKey,
 ) -> tuple[str, str]:
-    metadata = stored.metadata
-    if metadata.lookup_key != lookup_key:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if metadata.status is not ReusableArtifactStatus.VALIDATED:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if metadata.validation.status is not ArtifactValidationStatus.PASSED:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    return _validate_message_sequence_payload(
-        payload=stored.payload,
-        media_type=stored.media_type,
-        encoding=stored.encoding,
-        artifact_content_hash=metadata.artifact_content_hash,
-        lookup_key=lookup_key,
-    )
+    try:
+        return validate_stored_message_sequence_artifact(stored, lookup_key=lookup_key)
+    except MessageSequenceArtifactValidationError:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID) from None
 
 
 def _validate_execution_payload(
@@ -998,54 +975,15 @@ def _validate_execution_payload(
     *,
     lookup_key: ArtifactLookupKey,
 ) -> tuple[str, str]:
-    return _validate_message_sequence_payload(
-        payload=payload,
-        media_type=_MEDIA_TYPE,
-        encoding=_ENCODING,
-        artifact_content_hash=artifact_content_hash,
-        lookup_key=lookup_key,
-    )
-
-
-def _validate_message_sequence_payload(
-    *,
-    payload: bytes,
-    media_type: str,
-    encoding: str | None,
-    artifact_content_hash: str,
-    lookup_key: ArtifactLookupKey,
-) -> tuple[str, str]:
-    if media_type != _MEDIA_TYPE:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if encoding != _ENCODING:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if compute_artifact_content_hash(payload) != artifact_content_hash:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-
     try:
-        decoded = payload.decode(_ENCODING)
-        parsed = json.loads(decoded)
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID) from None
-    if not isinstance(parsed, dict) or set(parsed) != _REQUIRED_PAYLOAD_KEYS:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-
-    if parsed["schema_version"] != _PAYLOAD_SCHEMA_VERSION:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["artifact_type"] != _PAYLOAD_ARTIFACT_TYPE:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    source_refs = parsed["source_refs"]
-    if not isinstance(source_refs, list) or tuple(source_refs) != lookup_key.source_refs:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["source_content_hash"] != lookup_key.source_content_hash:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["strategy_id"] != lookup_key.strategy_id:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["strategy_version"] != lookup_key.strategy_version:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    if parsed["lossiness_profile"] != lookup_key.lossiness_profile:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    summary = parsed["summary"]
-    if not isinstance(summary, str) or not summary.strip():
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID)
-    return summary.strip(), artifact_content_hash
+        return validate_message_sequence_payload(
+            payload=payload,
+            media_type=_MEDIA_TYPE,
+            encoding=_ENCODING,
+            artifact_content_hash=artifact_content_hash,
+            lookup_key=lookup_key,
+        )
+    except MessageSequenceArtifactValidationError:
+        raise NexusUCLExecutionError(
+            NexusUCLExecutionReason.ARTIFACT_PAYLOAD_INVALID
+        ) from None
