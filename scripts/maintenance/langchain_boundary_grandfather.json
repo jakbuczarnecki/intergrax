@@ -111,93 +111,12 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0060",
-      "path": "intergrax/rag/document_splitters/contracts/base_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0061",
-      "path": "intergrax/rag/document_splitters/contracts/base_documents_splitter.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0062",
-      "path": "intergrax/rag/document_splitters/documents_splitter.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0063",
-      "path": "intergrax/rag/document_splitters/engine/chunking_engine.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0064",
-      "path": "intergrax/rag/document_splitters/strategies/docling_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0065",
-      "path": "intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0066",
       "path": "intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py",
       "kind": "from",
       "module": "langchain_text_splitters",
       "names": [
         "RecursiveCharacterTextSplitter"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0067",
-      "path": "intergrax/rag/document_splitters/strategies/parent_child_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0068",
-      "path": "intergrax/rag/document_splitters/strategies/recursive_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0069",
-      "path": "intergrax/rag/document_splitters/strategies/semantic_chunking_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
       ]
     },
     {
@@ -392,15 +311,6 @@
     {
       "inventory_id": "LCI-INV-0091",
       "path": "intergrax/rag/ingest/ingest_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0092",
-      "path": "intergrax/rag/ingest/ingest_policy.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

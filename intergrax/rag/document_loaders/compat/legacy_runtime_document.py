@@ -25,7 +25,7 @@ def _as_runtime_document(document: KnowledgeDocument) -> _KnowledgeDocumentWithP
     )
 
 
-def _get_parser_native_handle(document: KnowledgeDocument) -> object | None:
+def get_parser_native_handle(document: KnowledgeDocument) -> object | None:
     if isinstance(document, _KnowledgeDocumentWithParserRuntime):
         return document._parser_native_handle
     return None
@@ -38,7 +38,7 @@ def attach_parser_native_handle(document: KnowledgeDocument, handle: object) -> 
 
 
 def copy_parser_runtime_state(source: KnowledgeDocument, target: KnowledgeDocument) -> KnowledgeDocument:
-    handle = _get_parser_native_handle(source)
+    handle = get_parser_native_handle(source)
     if handle is None:
         return target
     return attach_parser_native_handle(target, handle)
@@ -48,9 +48,6 @@ def to_legacy_rag_document(document: KnowledgeDocument) -> object:
     langchain_doc = to_langchain_document(document)
     metadata = dict(langchain_doc.metadata or {})
     metadata[DocumentMetadataKey.DOCUMENT_ID.value] = document.identity.document_id
-    handle = _get_parser_native_handle(document)
-    if handle is not None:
-        metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] = handle
     document_cls = type(langchain_doc)
     return document_cls(
         id=langchain_doc.id,

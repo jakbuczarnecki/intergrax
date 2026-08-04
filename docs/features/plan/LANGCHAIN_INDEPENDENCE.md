@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-2C
-**Next task after acceptance:** LCI-2D
+**Current task:** LCI-2D
+**Next task after acceptance:** LCI-2E
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -222,7 +222,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Base chunking contracts, engine, and native strategies use native contract. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2C |

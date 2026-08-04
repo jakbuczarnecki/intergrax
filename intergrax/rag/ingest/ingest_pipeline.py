@@ -138,11 +138,9 @@ class IngestPipeline:
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
-            docs: List[Document] = [to_legacy_rag_document(doc) for doc in native_docs]
-
             strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
             sem_allowed, sem_reason, _ = semantic_chunking_allowed(
-                docs=docs,
+                docs=native_docs,
                 strategy_id=strategy_id,
                 profile=self._profile,
             )
@@ -156,7 +154,7 @@ class IngestPipeline:
 
             parser_trace: Dict[str, Any] = {}
             parser_id: Optional[str] = None
-            first_meta = docs[0].metadata or {}
+            first_meta = dict(native_docs[0].metadata)
             if TRACE_METADATA_KEY in first_meta:
                 parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
                 parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
@@ -166,10 +164,13 @@ class IngestPipeline:
                 attributes={"rag.ingest.chunking_strategy": strategy_id},
             ):
                 try:
-                    chunks = self._splitter.split_documents(docs, strategy_id=strategy_id)
+                    native_chunks = self._splitter.split_documents(
+                        native_docs,
+                        strategy_id=strategy_id,
+                    )
                 except TypeError:
-                    chunks = self._splitter.split_documents(docs)
-            if not chunks:
+                    native_chunks = self._splitter.split_documents(native_docs)
+            if not native_chunks:
                 return IngestResult(
                     used=False,
                     reason="no_chunks_generated",
@@ -177,9 +178,15 @@ class IngestPipeline:
                     parser_trace=parser_trace,
                 )
 
-            chunk_list: Sequence[Document] = list(chunks)
+            legacy_chunks: List[Document] = [
+                to_legacy_rag_document(chunk) for chunk in native_chunks
+            ]
+            chunk_list: Sequence[Document] = legacy_chunks
             if self._profile.contextual_enrich == "on" and self._contextual is not None:
-                chunk_list = self._contextual.enrich(docs, chunk_list)
+                legacy_sources: List[Document] = [
+                    to_legacy_rag_document(document) for document in native_docs
+                ]
+                chunk_list = self._contextual.enrich(legacy_sources, legacy_chunks)
 
             aligned_docs = list(chunk_list)
             for doc in aligned_docs:

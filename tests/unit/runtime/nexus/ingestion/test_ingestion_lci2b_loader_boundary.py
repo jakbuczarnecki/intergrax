@@ -6,7 +6,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from langchain_core.documents import Document
+
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.llm.messages import AttachmentRef
@@ -61,9 +62,9 @@ class _PassthroughHandler(BaseDocumentHandler):
         return [_PassthroughParser()]
 
 
-class _LangChainSplitter:
+class _NativeSplitter:
     def __init__(self) -> None:
-        self.received: list[Document] | None = None
+        self.received: list[KnowledgeDocument] | None = None
 
     def split_documents(self, docs):
         self.received = list(docs)
@@ -93,7 +94,7 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path
         normalizer_pipeline=NormalizerPipeline(normalizers=[]),
         metadata_pipeline=MetadataPipeline(providers=[]),
     )
-    splitter = _LangChainSplitter()
+    splitter = _NativeSplitter()
 
     service = AttachmentIngestionService(
         resolver=_Resolver(attachment_path),
@@ -116,8 +117,8 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path
     assert result[0].num_chunks == 1
     assert result[0].metadata.get("reason") != "ingestion_failed"
     assert splitter.received is not None
-    assert isinstance(splitter.received[0], Document)
-    assert splitter.received[0].page_content == "hello"
+    assert isinstance(splitter.received[0], KnowledgeDocument)
+    assert splitter.received[0].content == "hello"
 
     loaded = loader.load_document(
         str(attachment_path),

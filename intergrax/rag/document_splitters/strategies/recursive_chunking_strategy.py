@@ -4,12 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List
+from typing import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
-from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 
 
 class RecursiveChunkingStrategy(BaseChunkingStrategy):
@@ -37,36 +36,30 @@ class RecursiveChunkingStrategy(BaseChunkingStrategy):
 
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
 
-        chunks: List[Document] = []
+        chunks: list[KnowledgeDocument] = []
 
         for doc in documents:
-            text = doc.page_content
-            metadata = dict(doc.metadata)
-
+            text = doc.content
             start = 0
             chunk_index = 0
 
             while start < len(text):
-
                 end = start + self._chunk_size
                 chunk_text = text[start:end]
 
-                chunk_metadata = dict(metadata)
-                chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
-                chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-                chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(chunk_text)
-
-                chunk = Document(
-                    page_content=chunk_text,
-                    metadata=chunk_metadata,
+                chunks.append(
+                    build_derived_chunk(
+                        doc,
+                        content=chunk_text,
+                        strategy_id=self.strategy_id(),
+                        chunk_index=chunk_index,
+                    )
                 )
 
-                chunks.append(chunk)
-
                 start = end - self._chunk_overlap
-                chunk_index = len(chunks)
+                chunk_index += 1
 
         return chunks

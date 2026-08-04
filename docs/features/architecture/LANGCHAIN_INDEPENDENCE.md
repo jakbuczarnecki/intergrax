@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-2C — Native normalization and metadata pipeline
+**Current active task:** LCI-2D — Native chunking contract and derivative lineage
 
 `ParsedDocumentFragment` is extraction-stage only. `KnowledgeDocument` remains the canonical RAG knowledge ABI.
 

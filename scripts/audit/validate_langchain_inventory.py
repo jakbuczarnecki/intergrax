@@ -31,8 +31,6 @@ ROADMAP_TASKS = {
 
 SEMANTIC_PATH_TASKS: dict[str, str] = {
     "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/document_splitters/contracts/base_chunking_strategy.py": "LCI-2D",
-    "intergrax/rag/document_splitters/contracts/base_documents_splitter.py": "LCI-2D",
     "intergrax/rag/embedding/contracts/base_embedding_manager.py": "LCI-3A",
     "intergrax/rag/embedding/contracts/embedding_result.py": "LCI-3A",
     "intergrax/rag/indexing/contracts/index_strategy.py": "LCI-3B",
@@ -126,14 +124,6 @@ def apply_inventory_fixes(text: str) -> str:
         (
             "`intergrax/rag/document_loaders/contracts/metadata_provider.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
             "`intergrax/rag/document_loaders/contracts/metadata_provider.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2C |",
-        ),
-        (
-            "`intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D |",
-        ),
-        (
-            "`intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
-            "`intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D |",
         ),
         (
             "`intergrax/rag/embedding/contracts/base_embedding_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-1A |",
@@ -286,7 +276,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 149, f"expected 149 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 139, f"expected 139 unique inventory IDs, got {len(ids)}"
 
     keys = [(r["path"], r["line"], r["symbol"]) for r in rows]
     dupes = [k for k, c in Counter(keys).items() if c > 1]
@@ -296,7 +286,7 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("total detailed inventory rows") == 149
+    assert summary.get("total detailed inventory rows") == 139
     assert summary.get("unclassified occurrences") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
@@ -344,7 +334,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("149 unique inventory IDs")
+    print("139 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

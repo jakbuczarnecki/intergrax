@@ -382,13 +382,11 @@ class AttachmentIngestionService:
             call_custom_metadata=_metadata_callback,
         )
 
-        docs: List[Document] = [to_legacy_rag_document(doc) for doc in native_docs]
-
-        if docs and self._trace_writer is not None:
+        if native_docs and self._trace_writer is not None:
             from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
             from intergrax.runtime.nexus.tracing.parser_trace_span import maybe_append_parser_trace
 
-            first_meta = docs[0].metadata or {}
+            first_meta = dict(native_docs[0].metadata)
             trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
             if trace:
                 maybe_append_parser_trace(
@@ -401,7 +399,7 @@ class AttachmentIngestionService:
                     tenant_id=tenant_id or "",
                 )
 
-        if not docs:
+        if not native_docs:
             return IngestionResult(
                 attachment_id=attachment.id,
                 attachment_type=attachment.type,
@@ -414,7 +412,10 @@ class AttachmentIngestionService:
             )
 
         # 4) Split into chunks via IntergraxDocumentsSplitter
-        chunks: List[Document] = self._splitter.split_documents(docs)
+        native_chunks = self._splitter.split_documents(native_docs)
+        chunks: List[Document] = [
+            to_legacy_rag_document(chunk) for chunk in native_chunks
+        ]
 
         if not chunks:
             return IngestionResult(

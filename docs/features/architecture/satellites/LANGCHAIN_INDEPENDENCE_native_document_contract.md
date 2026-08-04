@@ -575,3 +575,23 @@ ParsedDocumentFragment
 | Private runtime handle | not serialized; copied across native pipeline stages |
 | Legacy conversion | `to_legacy_rag_document()` only immediately before splitters |
 | Runtime handle removal | owned by LCI-2D |
+
+## Native chunking flow (LCI-2D)
+
+```text
+KnowledgeDocument source
+→ native chunking
+→ derivative KnowledgeDocument chunks
+→ legacy conversion immediately before contextual enrichment/embedding
+```
+
+Derivative chunk lineage:
+
+- `chunk.document_id` — deterministyczne ID chunka
+- `chunk.root_document_id` — root dokumentu źródłowego
+- `chunk.parent_document_id` — dokument bezpośrednio dzielony
+- `chunk.scope` — niezmieniony
+- `chunk.provenance` — zachowane źródło, nowy `content_hash`
+
+Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. LangChain recursive splitting remains an optional strategy until LCI-2E.
+

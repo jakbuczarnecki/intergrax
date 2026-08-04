@@ -8,7 +8,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class BaseDocumentsSplitter(ABC):
@@ -16,15 +16,15 @@ class BaseDocumentsSplitter(ABC):
     @abstractmethod
     def split_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         strategy_id: Optional[str] = None,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
         """
         Split documents using a configured chunking strategy.
 
         Parameters
         ----------
-        documents : Sequence[Document]
+        documents : Sequence[KnowledgeDocument]
             Documents produced by the ingestion pipeline.
 
         strategy_id : str
@@ -32,7 +32,7 @@ class BaseDocumentsSplitter(ABC):
 
         Returns
         -------
-        Sequence[Document]
+        Sequence[KnowledgeDocument]
             Chunked documents produced by the selected strategy.
         """
 

@@ -28,28 +28,28 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 82 |
+| direct production/runtime imports | 72 |
 | direct test imports | 55 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
-| packaging declaration rows | 9 |
+| packaging declaration rows | 10 |
 | generated lock rows | 1 |
-| core contract leaks | 11 |
-| core implementation dependencies | 34 |
-| provider-bound dependencies | 25 |
+| core contract leaks | 9 |
+| core implementation dependencies | 27 |
+| provider-bound dependencies | 24 |
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
 | test-only | 55 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 149 |
+| total detailed inventory rows | 139 |
 
 ## C. Detailed inventory table
 
 | Inventory ID | Package/module | Path | Line | Symbol or usage | Layer/domain | Dependency exposure | Classification | Current requirement status | Target state | Migration task | Evidence/notes |
 |--------------|----------------|------|-----:|-----------------|--------------|---------------------|----------------|----------------------------|--------------|----------------|----------------|
-| LCI-INV-0001 | `langchain_core.documents` | `applications/local_workspace_application/tests/workspaces/test_workspace_lifecycle.py` | 13 | `Document` | APPLICATION / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
+| LCI-INV-0001 | `langchain_core.documents` | `applications/local_workspace_application/tests/workspaces/test_workspace_lifecycle.py` | 3 | `Document` | APPLICATION / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0002 | `langchain_core.documents` | `intergrax/integrations/_shared/p3/vector_adapters.py` | 10 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
 | LCI-INV-0003 | `langchain_core.documents` | `intergrax/integrations/_shared/p7/factories.py` | 11 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
 | LCI-INV-0004 | `langchain_core.documents` | `intergrax/integrations/_shared/p8/factories.py` | 11 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
@@ -86,16 +86,7 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0035 | `langchain_core.documents` | `intergrax/multimedia/video_smart_loader.py` | 9 | `Document` | MODALITY / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
 | LCI-INV-0036 | `langchain_core.documents` | `intergrax/rag/contextual/chunk_enricher.py` | 14 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2F | verified import |
 | LCI-INV-0054 | `langchain_community.document_loaders` | `intergrax/rag/document_loaders/parsers/text_smart_parser.py` | 9 | `TextLoader` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5A | verified import |
-| LCI-INV-0060 | `langchain_core.documents` | `intergrax/rag/document_splitters/contracts/base_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D | verified import |
-| LCI-INV-0061 | `langchain_core.documents` | `intergrax/rag/document_splitters/contracts/base_documents_splitter.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-2D | verified import |
-| LCI-INV-0062 | `langchain_core.documents` | `intergrax/rag/document_splitters/documents_splitter.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
-| LCI-INV-0063 | `langchain_core.documents` | `intergrax/rag/document_splitters/engine/chunking_engine.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
-| LCI-INV-0064 | `langchain_core.documents` | `intergrax/rag/document_splitters/strategies/docling_chunking_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
-| LCI-INV-0065 | `langchain_core.documents` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 9 | `Document` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-2E | verified import |
 | LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 10 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-2E | verified import |
-| LCI-INV-0067 | `langchain_core.documents` | `intergrax/rag/document_splitters/strategies/parent_child_chunking_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
-| LCI-INV-0068 | `langchain_core.documents` | `intergrax/rag/document_splitters/strategies/recursive_chunking_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
-| LCI-INV-0069 | `langchain_core.documents` | `intergrax/rag/document_splitters/strategies/semantic_chunking_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2D | verified import |
 | LCI-INV-0070 | `langchain_core.documents` | `intergrax/rag/embedding/contracts/base_embedding_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A | verified import |
 | LCI-INV-0071 | `langchain_core.documents` | `intergrax/rag/embedding/contracts/embedding_result.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A | verified import |
 | LCI-INV-0072 | `langchain_core.documents` | `intergrax/rag/embedding/embedding_manager.py` | 12 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3A | verified import |
@@ -118,7 +109,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0089 | `langchain_core.documents` | `intergrax/rag/indexing/strategies/dual_index_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
 | LCI-INV-0090 | `langchain_core.documents` | `intergrax/rag/indexing/strategies/single_index_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
 | LCI-INV-0091 | `langchain_core.documents` | `intergrax/rag/ingest/ingest_pipeline.py` | 12 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2F | verified import |
-| LCI-INV-0092 | `langchain_core.documents` | `intergrax/rag/ingest/ingest_policy.py` | 16 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2F | verified import |
 | LCI-INV-0093 | `langchain_core.documents` | `intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B | verified import |
 | LCI-INV-0094 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_api_reranker_base.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0095 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_cross_encoder_base.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |

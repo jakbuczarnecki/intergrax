@@ -28,9 +28,9 @@ class _TrackingLoader:
         return []
 
 
-class _LangChainSplitter:
+class _NativeSplitter:
     def __init__(self) -> None:
-        self.received: list[Document] | None = None
+        self.received: list[KnowledgeDocument] | None = None
 
     def split_documents(self, docs, strategy_id=None):
         self.received = list(docs)
@@ -52,7 +52,7 @@ def test_ingest_pipeline_missing_tenant_skips_loader(tmp_path: Path) -> None:
     source.write_text("hello", encoding="utf-8")
 
     loader = _TrackingLoader()
-    splitter = _LangChainSplitter()
+    splitter = _NativeSplitter()
 
     pipeline = IngestPipeline(
         loader=loader,
@@ -69,7 +69,7 @@ def test_ingest_pipeline_missing_tenant_skips_loader(tmp_path: Path) -> None:
     assert splitter.received is None
 
 
-def test_ingest_pipeline_converts_native_docs_before_splitter(tmp_path: Path) -> None:
+def test_ingest_pipeline_passes_native_docs_to_splitter(tmp_path: Path) -> None:
     source = tmp_path / "sample.txt"
     source.write_text("hello", encoding="utf-8")
 
@@ -99,7 +99,7 @@ def test_ingest_pipeline_converts_native_docs_before_splitter(tmp_path: Path) ->
         def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
             return [native_doc]
 
-    splitter = _LangChainSplitter()
+    splitter = _NativeSplitter()
 
     pipeline = IngestPipeline(
         loader=_NativeLoader(),
@@ -118,11 +118,11 @@ def test_ingest_pipeline_converts_native_docs_before_splitter(tmp_path: Path) ->
     assert result.used is True
     assert splitter.received is not None
     assert len(splitter.received) == 1
-    assert isinstance(splitter.received[0], Document)
-    assert splitter.received[0].page_content == "hello"
+    assert isinstance(splitter.received[0], KnowledgeDocument)
+    assert splitter.received[0].content == "hello"
 
 
-def test_ingest_pipeline_legacy_conversion_includes_document_id_and_handle(tmp_path: Path) -> None:
+def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path) -> None:
     source = tmp_path / "sample.txt"
     source.write_text("hello", encoding="utf-8")
 
@@ -156,12 +156,29 @@ def test_ingest_pipeline_legacy_conversion_includes_document_id_and_handle(tmp_p
         def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
             return [native_doc]
 
-    splitter = _LangChainSplitter()
+    class _ReturningSplitter:
+        def __init__(self) -> None:
+            self.received: list[KnowledgeDocument] | None = None
+
+        def split_documents(self, docs, strategy_id=None):
+            self.received = list(docs)
+            return docs
+
+    class _CapturingEmbedding:
+        def __init__(self) -> None:
+            self.received: list[Document] | None = None
+
+        def embed_documents(self, docs):
+            self.received = list(docs)
+            return MagicMock(documents=docs, embeddings=[[0.0]])
+
+    embedding = _CapturingEmbedding()
+    splitter = _ReturningSplitter()
 
     pipeline = IngestPipeline(
         loader=_NativeLoader(),
         splitter=splitter,
-        embedding_manager=_NoopEmbedding(),
+        embedding_manager=embedding,
         vectorstore=_NoopVectorstore(),
     )
 
@@ -174,7 +191,10 @@ def test_ingest_pipeline_legacy_conversion_includes_document_id_and_handle(tmp_p
 
     assert result.used is True
     assert splitter.received is not None
-    legacy_meta = splitter.received[0].metadata
+    assert isinstance(splitter.received[0], KnowledgeDocument)
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in splitter.received[0].metadata
+    assert embedding.received is not None
+    assert isinstance(embedding.received[0], Document)
+    legacy_meta = embedding.received[0].metadata
     assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
-    assert legacy_meta[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
-    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in native_doc.metadata
+    assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in legacy_meta

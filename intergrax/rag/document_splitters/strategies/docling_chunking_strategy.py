@@ -4,25 +4,25 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence, List, Optional, cast
+from typing import TYPE_CHECKING, Sequence
 
-from langchain_core.documents import Document
-
-from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
-
-if TYPE_CHECKING:
-    from docling_core.types.doc import DoclingDocument
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import get_parser_native_handle
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import (
     BaseChunkingStrategy,
 )
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
+
+if TYPE_CHECKING:
+    from docling_core.types.doc import DoclingDocument
 
 
 class DoclingChunkingStrategy(BaseChunkingStrategy):
     """
     Production-grade Docling AST chunking strategy.
 
-    The strategy consumes DoclingDocument stored in metadata and
+    The strategy consumes DoclingDocument from private parser runtime state and
     creates chunks aligned with structural elements of the document.
     """
 
@@ -34,8 +34,8 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
 
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
         from docling_core.types.doc import (
             CodeItem,
             FormulaItem,
@@ -46,44 +46,36 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
             TextItem,
         )
 
-        chunks: List[Document] = []
+        chunks: list[KnowledgeDocument] = []
 
         for document in documents:
-
-            metadata = dict(document.metadata)
-
-            docling_doc: Optional[DoclingDocument] = cast(
-                Optional[DoclingDocument],
-                metadata.get(DocumentMetadataKey.DOCLING_DOCUMENT_META),
-            )
-
+            docling_doc = get_parser_native_handle(document)
             if docling_doc is None:
                 continue
 
-            buffer: List[str] = []
+            docling_document: DoclingDocument = docling_doc  # type: ignore[assignment]
+
+            buffer: list[str] = []
             buffer_length: int = 0
             chunk_index = 0
-            current_section: Optional[str] = None
+            current_section: str | None = None
 
-            for item, _level in docling_doc.iterate_items():
-
+            for item, _level in docling_document.iterate_items():
                 if isinstance(item, SectionHeaderItem):
-
-                    current_section = item.text
-
                     if buffer:
-                        chunks.append(
-                            self._create_chunk(
-                                "\n".join(buffer),
-                                metadata,
-                                chunk_index,
-                                current_section,
-                            )
+                        chunk = self._try_create_chunk(
+                            document,
+                            "\n".join(buffer),
+                            chunk_index,
+                            current_section,
                         )
-                        chunk_index = len(chunks)
+                        if chunk is not None:
+                            chunks.append(chunk)
+                            chunk_index += 1
                         buffer = []
                         buffer_length = 0
 
+                    current_section = item.text
                     buffer.append(item.text)
                     buffer_length += len(item.text)
 
@@ -96,46 +88,42 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                     buffer_length += len(item.text)
 
                 elif isinstance(item, TableItem):
-
                     if buffer:
-                        chunks.append(
-                            self._create_chunk(
-                                "\n".join(buffer),
-                                metadata,
-                                chunk_index,
-                                current_section,
-                            )
+                        chunk = self._try_create_chunk(
+                            document,
+                            "\n".join(buffer),
+                            chunk_index,
+                            current_section,
                         )
-                        chunk_index = len(chunks)
+                        if chunk is not None:
+                            chunks.append(chunk)
+                            chunk_index += 1
                         buffer = []
                         buffer_length = 0
 
                     table_text = item.export_to_markdown()
-
-                    chunks.append(
-                        self._create_single_chunk(
-                            table_text,
-                            metadata,
-                            chunk_index,
-                            current_section,
-                        )
+                    chunk = self._try_create_chunk(
+                        document,
+                        table_text,
+                        chunk_index,
+                        current_section,
                     )
-                    chunk_index = len(chunks)
+                    if chunk is not None:
+                        chunks.append(chunk)
+                        chunk_index += 1
                     continue
 
                 elif isinstance(item, PictureItem):
-
                     caption = item.label or ""
-
-                    chunks.append(
-                        self._create_single_chunk(
-                            caption,
-                            metadata,
-                            chunk_index,
-                            current_section,
-                        )
+                    chunk = self._try_create_chunk(
+                        document,
+                        caption,
+                        chunk_index,
+                        current_section,
                     )
-                    chunk_index = len(chunks)
+                    if chunk is not None:
+                        chunks.append(chunk)
+                        chunk_index += 1
                     continue
 
                 elif isinstance(item, CodeItem):
@@ -147,91 +135,48 @@ class DoclingChunkingStrategy(BaseChunkingStrategy):
                     buffer_length += len(item.text)
 
                 if buffer_length >= self.MAX_CHUNK_SIZE:
-
-                    chunks.append(
-                        self._create_chunk(
-                            "\n".join(buffer),
-                            metadata,
-                            chunk_index,
-                            current_section,
-                        )
+                    chunk = self._try_create_chunk(
+                        document,
+                        "\n".join(buffer),
+                        chunk_index,
+                        current_section,
                     )
-
-                    chunk_index = len(chunks)
+                    if chunk is not None:
+                        chunks.append(chunk)
+                        chunk_index += 1
                     buffer = []
                     buffer_length = 0
 
             if buffer:
-
-                chunks.append(
-                    self._create_chunk(
-                        "\n".join(buffer),
-                        metadata,
-                        chunk_index,
-                        current_section,
-                    )
+                chunk = self._try_create_chunk(
+                    document,
+                    "\n".join(buffer),
+                    chunk_index,
+                    current_section,
                 )
+                if chunk is not None:
+                    chunks.append(chunk)
 
         return chunks
 
-    def _create_chunk(
+    def _try_create_chunk(
         self,
+        source_document: KnowledgeDocument,
         chunk_text: str,
-        metadata: dict,
         chunk_index: int,
-        section: Optional[str],
-    ) -> Document:
+        section: str | None,
+    ) -> KnowledgeDocument | None:
+        if not chunk_text.strip():
+            return None
 
-        chunk_metadata = dict(metadata)
-
-        chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
-        chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-        chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(chunk_text)
-
+        metadata_updates: dict[str, object] = {}
         if section:
-            chunk_metadata[ChunkMetadataKey.SECTION] = section
+            metadata_updates[ChunkMetadataKey.SECTION.value] = section
 
-        document_id = chunk_metadata.get(DocumentMetadataKey.DOCUMENT_ID)
-
-        if document_id:
-            chunk_metadata[ChunkMetadataKey.CHUNK_ID] = (
-                f"{document_id}:{self.strategy_id()}:{chunk_index}"
-            )
-
-        chunk_metadata.pop(DocumentMetadataKey.DOCLING_DOCUMENT_META, None)
-
-        return Document(
-            page_content=chunk_text,
-            metadata=chunk_metadata,
-        )
-
-    def _create_single_chunk(
-        self,
-        text: str,
-        metadata: dict,
-        chunk_index: int,
-        section: Optional[str],
-    ) -> Document:
-
-        chunk_metadata = dict(metadata)
-
-        chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
-        chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-        chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(text)
-
-        if section:
-            chunk_metadata[ChunkMetadataKey.SECTION] = section
-
-        document_id = chunk_metadata.get(DocumentMetadataKey.DOCUMENT_ID)
-
-        if document_id:
-            chunk_metadata[ChunkMetadataKey.CHUNK_ID] = (
-                f"{document_id}:{self.strategy_id()}:{chunk_index}"
-            )
-
-        chunk_metadata.pop(DocumentMetadataKey.DOCLING_DOCUMENT_META, None)
-
-        return Document(
-            page_content=text,
-            metadata=chunk_metadata,
+        return build_derived_chunk(
+            source_document,
+            content=chunk_text,
+            strategy_id=self.strategy_id(),
+            chunk_index=chunk_index,
+            metadata_updates=metadata_updates or None,
         )

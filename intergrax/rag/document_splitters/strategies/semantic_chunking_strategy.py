@@ -4,13 +4,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence, List
+from typing import Sequence
 
 import numpy as np
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
-from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 
 
@@ -50,16 +50,13 @@ class SemanticChunkingStrategy(BaseChunkingStrategy):
 
     def chunk(
         self,
-        documents: Sequence[Document],
-    ) -> Sequence[Document]:
+        documents: Sequence[KnowledgeDocument],
+    ) -> Sequence[KnowledgeDocument]:
 
-        chunks: List[Document] = []
+        chunks: list[KnowledgeDocument] = []
 
         for doc in documents:
-
-            text = doc.page_content
-            metadata = dict(doc.metadata)
-
+            text = doc.content
             sentences = [s.strip() for s in text.split(".") if s.strip()]
 
             if not sentences:
@@ -67,50 +64,38 @@ class SemanticChunkingStrategy(BaseChunkingStrategy):
 
             embeddings = self._embedding_manager.embed_texts(sentences)
 
-            current_chunk: List[str] = [sentences[0]]
+            current_chunk: list[str] = [sentences[0]]
             chunk_index = 0
 
             for i in range(1, len(sentences)):
-
                 sim = self._cosine_similarity(
                     embeddings[i - 1],
                     embeddings[i],
                 )
 
                 if sim < self._threshold:
-
                     chunk_text = ". ".join(current_chunk)
-
-                    chunk_metadata = dict(metadata)
-                    chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
-                    chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-                    chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(chunk_text)
-
                     chunks.append(
-                        Document(
-                            page_content=chunk_text,
-                            metadata=chunk_metadata,
+                        build_derived_chunk(
+                            doc,
+                            content=chunk_text,
+                            strategy_id=self.strategy_id(),
+                            chunk_index=chunk_index,
                         )
                     )
-
                     current_chunk = []
                     chunk_index += 1
 
                 current_chunk.append(sentences[i])
 
             if current_chunk:
-
                 chunk_text = ". ".join(current_chunk)
-
-                chunk_metadata = dict(metadata)
-                chunk_metadata[ChunkMetadataKey.CHUNK_INDEX] = chunk_index
-                chunk_metadata[ChunkMetadataKey.CHUNK_STRATEGY] = self.strategy_id()
-                chunk_metadata[ChunkMetadataKey.CHUNK_SIZE] = len(chunk_text)
-
                 chunks.append(
-                    Document(
-                        page_content=chunk_text,
-                        metadata=chunk_metadata,
+                    build_derived_chunk(
+                        doc,
+                        content=chunk_text,
+                        strategy_id=self.strategy_id(),
+                        chunk_index=chunk_index,
                     )
                 )
 
