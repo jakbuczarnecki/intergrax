@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **READY_FOR_REVIEW**; LCI-3B **PLANNED**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **READY_FOR_REVIEW**; LCI-3C **PLANNED**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-3A
-**Next task after acceptance:** LCI-3B
+**Current task:** LCI-3B
+**Next task after acceptance:** LCI-3C
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -270,7 +270,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | APPROVED |
 | **Purpose** | Neutral embedding contract: embed_texts, embed_one, embed_documents(native document). |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-1D |
@@ -286,14 +286,16 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | Indexing manager, pipeline, and strategies use native document. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Indexing manager, pipeline, and strategies use native `KnowledgeDocument`. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-3A |
 | **Exact scope** | indexing/** |
 | **Explicit out of scope** | Vector store providers |
-| **Acceptance criteria** | Indexing unit/integration tests pass with native documents |
+| **Acceptance criteria** | Indexing unit/integration tests pass with native documents, native `embed_documents`, deterministic tenant-safe TOC lineage, and legacy conversion only immediately before `BaseVectorstoreManager`. |
 | **User-visible outcome** | Indexing API native at contract |
+
+**Decision:** `IndexingManager`, pipeline, and strategies accept `KnowledgeDocument`. Single and Dual Index use native `embed_documents`. Dual TOC records are native derivatives with deterministic lineage and tenant-safe grouping. Legacy conversion occurs only immediately before `BaseVectorstoreManager`.
 
 ---
 

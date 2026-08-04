@@ -28,14 +28,14 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 65 |
+| direct production/runtime imports | 60 |
 | direct test imports | 55 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
 | generated lock rows | 1 |
-| core contract leaks | 7 |
-| core implementation dependencies | 22 |
+| core contract leaks | 6 |
+| core implementation dependencies | 18 |
 | provider-bound dependencies | 24 |
 | optional compatibility paths | 4 |
 | legacy optional paths | 8 |
@@ -43,7 +43,7 @@ Use, modification, or distribution without written permission is prohibited.
 | test-only | 55 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 132 |
+| total detailed inventory rows | 127 |
 
 ## C. Detailed inventory table
 
@@ -98,11 +98,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0083 | `langchain_core.documents` | `intergrax/rag/graph/indexer/llm_graph_indexer.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
 | LCI-INV-0084 | `langchain_core.documents` | `intergrax/rag/graph/indexer/plugin_registry.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
 | LCI-INV-0085 | `langchain_core.documents` | `intergrax/rag/graph/tenant/graph_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4C | verified import |
-| LCI-INV-0086 | `langchain_core.documents` | `intergrax/rag/indexing/contracts/index_strategy.py` | 10 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3B | verified import |
-| LCI-INV-0087 | `langchain_core.documents` | `intergrax/rag/indexing/indexing_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
-| LCI-INV-0088 | `langchain_core.documents` | `intergrax/rag/indexing/pipeline/indexing_pipeline.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
-| LCI-INV-0089 | `langchain_core.documents` | `intergrax/rag/indexing/strategies/dual_index_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
-| LCI-INV-0090 | `langchain_core.documents` | `intergrax/rag/indexing/strategies/single_index_strategy.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3B | verified import |
 | LCI-INV-0093 | `langchain_core.documents` | `intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B | verified import |
 | LCI-INV-0094 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_api_reranker_base.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0095 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_cross_encoder_base.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
@@ -218,7 +213,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | Document/messages ABI leak | 63 | 55 | 1 | 119 | yes | compat extra only | LCI-7A |
+| langchain-core | Document/messages ABI leak | 58 | 55 | 1 | 114 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |

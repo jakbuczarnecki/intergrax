@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Sequence
 
 import numpy as np
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.rag.bootstrap.hierarchical_bootstrap import profile_uses_hierarchical_index
@@ -15,11 +17,11 @@ from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkM
 from intergrax.rag.document_splitters.strategies.parent_child_chunking_strategy import (
     ParentChildChunkingStrategy,
 )
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-from langchain_core.documents import Document
 from testing_support.builder import build_fake_embedding_manager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -43,17 +45,24 @@ class _InlineSplitter:
         return self._strategy.chunk(docs)
 
 
-def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
+def test_dual_index_strategy_uses_native_embedding_for_main_and_toc() -> None:
     class _EmbeddingSpy:
         def __init__(self) -> None:
-            self.calls: list[list[str]] = []
+            self.calls: list[tuple[KnowledgeDocument, ...]] = []
 
-        def embed_documents(self, documents: object) -> None:
-            raise AssertionError("dual indexing compatibility must use embed_texts")
+        def embed_documents(
+            self,
+            documents: Sequence[KnowledgeDocument],
+        ) -> EmbeddingResult:
+            native_documents = tuple(documents)
+            self.calls.append(native_documents)
+            return EmbeddingResult(
+                documents=native_documents,
+                embeddings=np.ones((len(native_documents), 2), dtype=np.float32),
+            )
 
         def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
-            self.calls.append(list(texts))
-            return np.ones((len(texts), 2), dtype=np.float32)
+            raise AssertionError("dual indexing must not use embed_texts")
 
     class _Store:
         def __init__(self) -> None:
@@ -63,14 +72,8 @@ def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
             self.calls.append(kwargs)
 
     documents = [
-        Document(
-            page_content="chunk-a",
-            metadata={ChunkMetadataKey.SECTION: "Section A"},
-        ),
-        Document(
-            page_content="chunk-b",
-            metadata={ChunkMetadataKey.SECTION: "Section B"},
-        ),
+        _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
+        _native_chunk("chunk-b", "root-a", "tenant-a", "Section B"),
     ]
     embedding = _EmbeddingSpy()
     main_store = _Store()
@@ -82,8 +85,26 @@ def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
         vectorstore=main_store,
     )
 
-    assert embedding.calls == [["chunk-a", "chunk-b"], ["Section A", "Section B"]]
-    assert [call["documents"] for call in main_store.calls] == [[documents[0]], [documents[1]]]
+    assert [[document.content for document in call] for call in embedding.calls] == [
+        ["chunk-a", "chunk-b"],
+        ["Section A", "Section B"],
+    ]
+    assert all(
+        isinstance(document, KnowledgeDocument)
+        for call in embedding.calls
+        for document in call
+    )
+    toc_documents = embedding.calls[1]
+    assert toc_documents[0].identity.parent_document_id == "chunk-a"
+    assert toc_documents[0].identity.root_document_id == "root-a"
+    assert toc_documents[0].scope.tenant_id == "tenant-a"
+    assert toc_documents[0].content == "Section A"
+    assert toc_documents[0].provenance.content_hash == hashlib.sha256(
+        b"Section A"
+    ).hexdigest()
+    assert toc_documents[0].metadata[ChunkMetadataKey.SECTION.value] == "Section A"
+    assert toc_documents[0].metadata[ChunkMetadataKey.PARENT_CHUNK_ID.value] == "chunk-a"
+    assert RESERVED_METADATA_KEYS.isdisjoint(toc_documents[0].metadata)
     assert toc_store.calls[0]["documents"][0].page_content == "Section A"
     assert toc_store.calls[1]["documents"][0].page_content == "Section B"
 
@@ -91,11 +112,17 @@ def test_dual_index_strategy_uses_embed_texts_for_main_and_toc() -> None:
 def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() -> None:
     class _Embedding:
         def __init__(self) -> None:
-            self.calls: list[list[str]] = []
+            self.calls: list[tuple[KnowledgeDocument, ...]] = []
+
+        def embed_documents(
+            self,
+            documents: Sequence[KnowledgeDocument],
+        ) -> EmbeddingResult:
+            self.calls.append(tuple(documents))
+            raise ValueError("invalid main embedding result")
 
         def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
-            self.calls.append(list(texts))
-            return np.ones((len(texts) - 1, 2), dtype=np.float32)
+            raise AssertionError("dual indexing must not use embed_texts")
 
     class _Store:
         def __init__(self) -> None:
@@ -105,21 +132,23 @@ def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() 
             self.calls.append(kwargs)
 
     documents = [
-        Document(page_content="chunk-a", metadata={ChunkMetadataKey.SECTION: "Section A"}),
-        Document(page_content="chunk-b", metadata={ChunkMetadataKey.SECTION: "Section B"}),
+        _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
+        _native_chunk("chunk-b", "root-a", "tenant-a", "Section B"),
     ]
     embedding = _Embedding()
     main_store = _Store()
     toc_store = _Store()
 
-    with pytest.raises(ValueError, match="expected_rows"):
+    with pytest.raises(ValueError, match="invalid main"):
         DualIndexStrategy(toc_vectorstore=toc_store).build_index(
             documents=documents,
             embed_manager=embedding,
             vectorstore=main_store,
         )
 
-    assert embedding.calls == [["chunk-a", "chunk-b"]]
+    assert [[document.content for document in call] for call in embedding.calls] == [
+        ["chunk-a", "chunk-b"]
+    ]
     assert main_store.calls == []
     assert toc_store.calls == []
 
@@ -127,15 +156,23 @@ def test_dual_index_strategy_rejects_invalid_main_embeddings_before_any_store() 
 def test_dual_index_strategy_rejects_invalid_toc_embeddings_after_main_store() -> None:
     class _Embedding:
         def __init__(self) -> None:
-            self.calls: list[list[str]] = []
-            self.results = [
-                np.ones((2, 2), dtype=np.float32),
-                np.empty((2, 0), dtype=np.float32),
-            ]
+            self.calls: list[tuple[KnowledgeDocument, ...]] = []
+
+        def embed_documents(
+            self,
+            documents: Sequence[KnowledgeDocument],
+        ) -> EmbeddingResult:
+            native_documents = tuple(documents)
+            self.calls.append(native_documents)
+            if len(self.calls) == 2:
+                raise ValueError("invalid TOC embedding result")
+            return EmbeddingResult(
+                documents=native_documents,
+                embeddings=np.ones((len(native_documents), 2), dtype=np.float32),
+            )
 
         def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
-            self.calls.append(list(texts))
-            return self.results.pop(0)
+            raise AssertionError("dual indexing must not use embed_texts")
 
     class _Store:
         def __init__(self) -> None:
@@ -145,23 +182,111 @@ def test_dual_index_strategy_rejects_invalid_toc_embeddings_after_main_store() -
             self.calls.append(kwargs)
 
     documents = [
-        Document(page_content="chunk-a", metadata={ChunkMetadataKey.SECTION: "Section A"}),
-        Document(page_content="chunk-b", metadata={ChunkMetadataKey.SECTION: "Section B"}),
+        _native_chunk("chunk-a", "root-a", "tenant-a", "Section A"),
+        _native_chunk("chunk-b", "root-a", "tenant-a", "Section B"),
     ]
     embedding = _Embedding()
     main_store = _Store()
     toc_store = _Store()
 
-    with pytest.raises(ValueError, match="positive embedding dimension"):
+    with pytest.raises(ValueError, match="invalid TOC"):
         DualIndexStrategy(toc_vectorstore=toc_store, batch_size=1).build_index(
             documents=documents,
             embed_manager=embedding,
             vectorstore=main_store,
         )
 
-    assert embedding.calls == [["chunk-a", "chunk-b"], ["Section A", "Section B"]]
-    assert [call["documents"] for call in main_store.calls] == [[documents[0]], [documents[1]]]
+    assert [[document.content for document in call] for call in embedding.calls] == [
+        ["chunk-a", "chunk-b"],
+        ["Section A", "Section B"],
+    ]
+    assert [
+        [document.page_content for document in call["documents"]]
+        for call in main_store.calls
+    ] == [["chunk-a"], ["chunk-b"]]
     assert toc_store.calls == []
+
+
+def _native_chunk(
+    document_id: str,
+    root_document_id: str,
+    tenant_id: str,
+    section: str,
+) -> KnowledgeDocument:
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": document_id,
+                "root_document_id": root_document_id,
+                "parent_document_id": root_document_id,
+            },
+            "scope": {"tenant_id": tenant_id, "namespace": "rag"},
+            "content": document_id,
+            "metadata": {
+                ChunkMetadataKey.SECTION.value: section,
+                "source_marker": document_id,
+            },
+            "provenance": {
+                "source_kind": "test",
+                "source_id": f"source-{root_document_id}",
+            },
+        }
+    )
+
+
+def test_toc_grouping_is_first_seen_and_scope_safe() -> None:
+    class _Embedding:
+        def __init__(self) -> None:
+            self.calls: list[tuple[KnowledgeDocument, ...]] = []
+
+        def embed_documents(
+            self,
+            documents: Sequence[KnowledgeDocument],
+        ) -> EmbeddingResult:
+            native_documents = tuple(documents)
+            self.calls.append(native_documents)
+            return EmbeddingResult(
+                documents=native_documents,
+                embeddings=np.ones((len(native_documents), 2), dtype=np.float32),
+            )
+
+    class _Store:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def add_documents(self, **kwargs: object) -> None:
+            self.calls.append(kwargs)
+
+    documents = [
+        _native_chunk("chunk-a", "root-a", "tenant-a", "Shared"),
+        _native_chunk("chunk-b", "root-a", "tenant-a", "Shared"),
+        _native_chunk("chunk-c", "root-b", "tenant-b", "Shared"),
+    ]
+    embedding = _Embedding()
+    main_store = _Store()
+    toc_store = _Store()
+
+    DualIndexStrategy(toc_vectorstore=toc_store).build_index(
+        documents=documents,
+        embed_manager=embedding,
+        vectorstore=main_store,
+    )
+
+    toc_documents = embedding.calls[1]
+    assert [document.identity.parent_document_id for document in toc_documents] == [
+        "chunk-a",
+        "chunk-c",
+    ]
+    assert len({document.identity.document_id for document in toc_documents}) == 2
+    assert [document.identity.root_document_id for document in toc_documents] == [
+        "root-a",
+        "root-b",
+    ]
+    assert [document.scope.tenant_id for document in toc_documents] == [
+        "tenant-a",
+        "tenant-b",
+    ]
 
 
 def test_profile_uses_hierarchical_index_flag_and_retriever() -> None:

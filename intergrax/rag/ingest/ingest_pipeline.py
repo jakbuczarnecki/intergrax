@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional
 
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
@@ -192,14 +192,11 @@ class IngestPipeline:
             ):
                 if self._uses_dual_index():
                     assert self._toc_vectorstore is not None
-                    aligned_docs: Sequence[Any] = [
-                        to_legacy_rag_document(chunk) for chunk in native_chunks
-                    ]
                     IndexingManager(
                         embed_manager=self._embedding_manager,
                         vectorstore=self._vectorstore,
                         strategy=DualIndexStrategy(toc_vectorstore=self._toc_vectorstore),
-                    ).index_documents(aligned_docs)
+                    ).index_documents(native_chunks)
                     vector_ids = ids
                 else:
                     embeddings = self._embedding_manager.embed_texts(texts)
@@ -222,7 +219,15 @@ class IngestPipeline:
                         self._profile,
                         llm=self._llm_for_graph,
                     )
-                    indexer.index_documents(aligned_docs, chunk_ids=vector_ids)
+                    graph_documents = (
+                        [
+                            to_legacy_rag_document(chunk)
+                            for chunk in native_chunks
+                        ]
+                        if self._uses_dual_index()
+                        else aligned_docs
+                    )
+                    indexer.index_documents(graph_documents, chunk_ids=vector_ids)
 
             return IngestResult(
                 used=True,

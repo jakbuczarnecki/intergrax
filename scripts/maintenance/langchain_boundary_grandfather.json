@@ -219,51 +219,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0086",
-      "path": "intergrax/rag/indexing/contracts/index_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0087",
-      "path": "intergrax/rag/indexing/indexing_manager.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0088",
-      "path": "intergrax/rag/indexing/pipeline/indexing_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0089",
-      "path": "intergrax/rag/indexing/strategies/dual_index_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0090",
-      "path": "intergrax/rag/indexing/strategies/single_index_strategy.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0093",
       "path": "intergrax/rag/rerankers/contracts/reranker_types.py",
       "kind": "from",

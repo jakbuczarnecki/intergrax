@@ -589,7 +589,7 @@ ParsedDocumentFragment
 | Metadata provider mutation | `metadata` only |
 | Protected fields | `identity`, `scope`, `provenance` are immutable across normalization and metadata |
 | Private runtime handle | not serialized; copied across native pipeline stages |
-| Legacy conversion | `to_legacy_rag_document()` only immediately before splitters |
+| Legacy conversion | `to_legacy_rag_document()` only at the downstream consumer boundary |
 | Runtime handle removal | owned by LCI-2D |
 
 ## Native chunking flow (LCI-2D)
@@ -598,7 +598,8 @@ ParsedDocumentFragment
 KnowledgeDocument source
 → native chunking
 → derivative KnowledgeDocument chunks
-→ legacy conversion immediately before contextual enrichment/embedding
+→ native contextual enrichment
+→ native embedding/indexing boundaries
 ```
 
 Derivative chunk lineage:
@@ -623,3 +624,27 @@ KnowledgeDocument sequence
 ```
 
 Document and vector cardinality must be identical, and input order is significant. Embedding does not change document identity, scope, metadata, or provenance; the vector is never part of native document metadata.
+
+
+### Native indexing boundary (LCI-3B)
+
+```text
+KnowledgeDocument chunks
+→ IndexingManager validation
+→ native IndexStrategy
+→ native EmbeddingResult
+→ legacy vector-store adapter
+```
+
+The manager materializes the input, requires `KnowledgeDocument`, and performs full public-field revalidation. Pipeline and strategies preserve order and do not mutate documents. `SingleIndexStrategy` and `DualIndexStrategy` call `embed_documents`; conversion through `to_legacy_rag_document()` occurs only immediately before `BaseVectorstoreManager.add_documents()`.
+
+Dual TOC lineage follows the first canonical section chunk:
+
+```text
+first canonical section chunk
+→ deterministic native TOC derivative
+→ native embedding
+→ legacy vector-store adapter
+```
+
+TOC grouping is tenant-, namespace-, root-, and section-safe. The derivative preserves scope, source provenance, root identity, and parent identity; its content is the section name, its content hash is canonical, and its metadata contains only safe section and parent-chunk fields.

@@ -5,10 +5,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -17,7 +16,7 @@ class IndexStrategy(ABC):
     """
     Contract for index construction strategies.
 
-    Implementations define how documents are transformed into
+    Implementations define how native documents are transformed into
     vectorstore indexes.
 
     The strategy receives documents and is responsible for:
@@ -32,7 +31,7 @@ class IndexStrategy(ABC):
     def build_index(
         self,
         *,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
     ) -> None:
@@ -42,12 +41,14 @@ class IndexStrategy(ABC):
         Parameters
         ----------
         documents
-            Input documents or chunks to index.
+            Native input documents or chunks to index. The strategy preserves
+            their order and does not mutate them.
 
         embed_manager
             Embedding manager responsible for generating vector embeddings.
 
         vectorstore
-            Target vectorstore where indexed documents will be inserted.
+            Temporary legacy vectorstore consumer where indexed documents will
+            be inserted.
         """
         raise NotImplementedError

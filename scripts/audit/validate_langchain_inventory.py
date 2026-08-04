@@ -30,7 +30,6 @@ ROADMAP_TASKS = {
 
 SEMANTIC_PATH_TASKS: dict[str, str] = {
     "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/indexing/contracts/index_strategy.py": "LCI-3B",
     "intergrax/rag/vectorstore/contracts/base_vectorstore_manager.py": "LCI-3C",
     "intergrax/rag/vectorstore/contracts/vector_store.py": "LCI-3C",
     "intergrax/rag/vectorstore/tenant/tenant_isolation_contract.py": "LCI-3C",
@@ -265,7 +264,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 132, f"expected 132 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 127, f"expected 127 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -285,12 +284,12 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 65
+    assert summary.get("direct production/runtime imports") == 60
     assert summary.get("provider-bound dependencies") == 24
-    assert summary.get("total detailed inventory rows") == 132
+    assert summary.get("total detailed inventory rows") == 127
     assert summary.get("unclassified occurrences") == 0
-    assert summary.get("core contract leaks") == 7
-    assert summary.get("core implementation dependencies") == 22
+    assert summary.get("core contract leaks") == 6
+    assert summary.get("core implementation dependencies") == 18
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
@@ -337,7 +336,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("132 unique inventory IDs")
+    print("127 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

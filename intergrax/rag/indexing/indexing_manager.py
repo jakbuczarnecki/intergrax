@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import Optional
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 
@@ -44,17 +44,26 @@ class IndexingManager:
 
     def index_documents(
         self,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> None:
         """
         Execute indexing for provided documents.
         """
 
-        if not documents:
+        materialized_documents = tuple(documents)
+        if not materialized_documents:
             return
 
+        validated_documents: list[KnowledgeDocument] = []
+        for document in materialized_documents:
+            if not isinstance(document, KnowledgeDocument):
+                raise TypeError("documents must contain only KnowledgeDocument values")
+            validated_documents.append(
+                KnowledgeDocument.model_validate(document.model_dump(mode="python"))
+            )
+
         self.pipeline.run(
-            documents=documents,
+            documents=tuple(validated_documents),
             embed_manager=self.embed_manager,
             vectorstore=self.vectorstore,
         )

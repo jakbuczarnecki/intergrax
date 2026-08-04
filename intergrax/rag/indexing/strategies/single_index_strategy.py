@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
-from typing import List
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    to_legacy_rag_document,
+)
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.rag.embedding.contracts.embedding_result import validate_embedding_matrix
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
@@ -25,7 +26,7 @@ class SingleIndexStrategy(IndexStrategy):
     def build_index(
         self,
         *,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
     ) -> None:
@@ -33,15 +34,12 @@ class SingleIndexStrategy(IndexStrategy):
         if not documents:
             return
 
-        raw_embeddings = embed_manager.embed_texts(
-            [document.page_content for document in documents]
-        )
-        embeddings = validate_embedding_matrix(
-            raw_embeddings,
-            expected_rows=len(documents),
-        )
+        result = embed_manager.embed_documents(documents)
+        legacy_documents = [
+            to_legacy_rag_document(document) for document in result.documents
+        ]
 
         vectorstore.add_documents(
-            documents=documents,
-            embeddings=embeddings,
+            documents=legacy_documents,
+            embeddings=result.embeddings,
         )

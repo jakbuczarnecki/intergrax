@@ -8,7 +8,9 @@ from numpy.typing import NDArray
 import pytest
 from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.indexing.strategies.single_index_strategy import SingleIndexStrategy
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
@@ -20,26 +22,35 @@ pytestmark = pytest.mark.unit
 class FakeEmbeddingManager(BaseEmbeddingManager):
 
     def __init__(self) -> None:
-        self.received_texts: list[str] = []
+        self.received_documents: tuple[KnowledgeDocument, ...] = ()
 
-    def embed_documents(self, documents):
-        raise AssertionError("indexing compatibility must use embed_texts")
-    
     def embed_texts(
         self,
         texts: Sequence[str],
     ) -> NDArray[np.float32]:
-        self.received_texts = list(texts)
-        return np.array(
-            [[index, index + 1, index + 2] for index in range(len(texts))],
-            dtype=np.float32,
-        )
+        raise AssertionError("native indexing must use embed_documents")
 
     def embed_one(
         self,
         text: str,
     ) -> NDArray[np.float32]:
         pass
+
+    def embed_documents(
+        self,
+        documents: Sequence[KnowledgeDocument],
+    ) -> EmbeddingResult:
+        self.received_documents = tuple(documents)
+        return EmbeddingResult(
+            documents=self.received_documents,
+            embeddings=np.array(
+                [
+                    [index, index + 1, index + 2]
+                    for index in range(len(documents))
+                ],
+                dtype=np.float32,
+            ),
+        )
 
 
 class ControlledEmbeddingManager(FakeEmbeddingManager):
@@ -48,14 +59,17 @@ class ControlledEmbeddingManager(FakeEmbeddingManager):
         self.row_delta = row_delta
         self.dimension = dimension
 
-    def embed_texts(
+    def embed_documents(
         self,
-        texts: Sequence[str],
-    ) -> NDArray[np.float32]:
-        self.received_texts = list(texts)
-        return np.ones(
-            (len(texts) + self.row_delta, self.dimension),
-            dtype=np.float32,
+        documents: Sequence[KnowledgeDocument],
+    ) -> EmbeddingResult:
+        self.received_documents = tuple(documents)
+        return EmbeddingResult(
+            documents=self.received_documents,
+            embeddings=np.ones(
+                (len(documents) + self.row_delta, self.dimension),
+                dtype=np.float32,
+            ),
         )
 
 
@@ -96,8 +110,8 @@ class FakeVectorstore(BaseVectorstoreManager):
 def test_single_index_strategy_inserts_documents():
 
     docs = [
-        Document(page_content="A"),
-        Document(page_content="B"),
+        _native_document("A", 0),
+        _native_document("B", 1),
     ]
 
     embed_manager = FakeEmbeddingManager()
@@ -112,8 +126,10 @@ def test_single_index_strategy_inserts_documents():
     )
 
     assert vectorstore.count() == 2
-    assert embed_manager.received_texts == ["A", "B"]
-    assert vectorstore.docs == docs
+    assert embed_manager.received_documents == tuple(docs)
+    assert [document.page_content for document in vectorstore.docs] == ["A", "B"]
+    assert all(isinstance(document, Document) for document in vectorstore.docs)
+    assert vectorstore.docs[0].metadata["tenant_id"] == "tenant.test"
     assert np.array_equal(vectorstore.embeddings, [[0, 1, 2], [1, 2, 3]])
 
 
@@ -129,8 +145,8 @@ def test_single_index_strategy_rejects_invalid_embeddings_before_vectorstore(
     dimension: int,
 ) -> None:
     docs = [
-        Document(page_content="A"),
-        Document(page_content="B"),
+        _native_document("A", 0),
+        _native_document("B", 1),
     ]
     embed_manager = ControlledEmbeddingManager(
         row_delta=row_delta,
@@ -147,4 +163,24 @@ def test_single_index_strategy_rejects_invalid_embeddings_before_vectorstore(
 
     assert vectorstore.count() == 0
     assert vectorstore.docs == []
-    assert embed_manager.received_texts == ["A", "B"]
+    assert embed_manager.received_documents == tuple(docs)
+
+
+def _native_document(content: str, index: int) -> KnowledgeDocument:
+    document_id = f"document-{index}"
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": document_id,
+                "root_document_id": document_id,
+            },
+            "scope": {"tenant_id": "tenant.test", "namespace": "rag"},
+            "content": content,
+            "metadata": {"position": index},
+            "provenance": {
+                "source_kind": "test",
+                "source_id": f"source-{index}",
+            },
+        }
+    )
