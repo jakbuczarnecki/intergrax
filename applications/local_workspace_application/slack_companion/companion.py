@@ -529,5 +529,5 @@ def _apply_slack_companion_lifespan(
     existing = cast(Any, app.router.lifespan_context)
     app.router.lifespan_context = cast(
         Any,
-        combine_lifespans(existing, _lifespan),
+        combine_lifespans(existing, cast(Any, _lifespan)),
     )

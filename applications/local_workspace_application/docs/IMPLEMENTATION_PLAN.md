@@ -46,10 +46,11 @@ Slack Knowledge vertical next:
   → LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1
   → LKW-GOOGLE-WORKSPACE-PROOF-1
 
-LKW-CONVERSATIONAL-INTERACTION-1A → planner core implemented sufficiently to continue the product roadmap
+LKW-CONVERSATIONAL-INTERACTION-1A → ACCEPTED / CLOSED
 LKW-CONVERSATION-CONTEXT-1B3 → ACCEPTED / CLOSED
-LKW-CONVERSATIONAL-INTERACTION-1B → READY_FOR_REVIEW
-LKW-CONVERSATIONAL-INTERACTION-1C → PLANNED
+LKW-CONVERSATIONAL-INTERACTION-1B → ACCEPTED / CLOSED
+LKW-CONVERSATIONAL-INTERACTION-1C → READY_FOR_REVIEW
+LKW-CONVERSATIONAL-FRONTEND-1 → READY_FOR_REVIEW
 Final target: LKW-LIVE-PLATFORM-PROOF-1 → complete demonstrable platform proof
 ```
 
@@ -181,7 +182,7 @@ LKW-LIVE-PLATFORM-PROOF-1
 | `LKW-KNOWLEDGE-ACCESS-1` | A workspace can be configured with provider Connections, discoverable Remote Resources, Indexed Sources, Live Access Bindings and bounded Query Policies without exposing credentials | **ACCEPTED / CLOSED** |
 | `LKW-HYBRID-ASK-ARCH-1` | Unified evidence, query orchestration and read-only live execution contract | **ACCEPTED / CLOSED** |
 | `LKW-HYBRID-ASK-1` | One workspace question can combine indexed RAG evidence with authorized live provider evidence and return one grounded answer with unified provenance | **ACCEPTED / CLOSED** |
-| `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **PLANNED** |
+| `LKW-CONVERSATIONAL-FRONTEND-1` | A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities | **READY_FOR_REVIEW** |
 | `LKW-VENDOR-ACCESS-COLLABORATION-1` | LKW supports indexed and controlled live knowledge access across Microsoft 365, Google Workspace, Jira and Confluence through provider-neutral contracts | **PLANNED** |
 | `LKW-VENDOR-ACCESS-DATA-1` | LKW provides governed read-only access to Databricks, Power BI and Atlan, allowing live analytical and metadata evidence to participate in Hybrid Ask | **PLANNED** |
 | `LKW-KNOWLEDGE-LIFECYCLE-1` | Indexed and live workspace knowledge share coherent freshness, permission, operation, provenance and safe-removal semantics without deleting upstream data | **PLANNED** |
@@ -243,8 +244,8 @@ LKW-SLACK-CONNECTED-SOURCE-1
 | Slice | Placement | Status |
 |---|---|---|
 | `CONV-1A` | Planner contract under `LKW-CONVERSATIONAL-FRONTEND-1` | **ACCEPTED** (sufficient to continue) |
-| `CONV-1B` | Resolver + executor under `LKW-CONVERSATIONAL-FRONTEND-1` | **PLANNED** |
-| `CONV-1C` | Slack natural-language cutover under `LKW-CONVERSATIONAL-FRONTEND-1` | **PLANNED** |
+| `CONV-1B` | Resolver + executor under `LKW-CONVERSATIONAL-FRONTEND-1` | **ACCEPTED / CLOSED** |
+| `CONV-1C` | Slack natural-language cutover under `LKW-CONVERSATIONAL-FRONTEND-1` | **READY_FOR_REVIEW** |
 | `1B-5-3` | Web URL ingestion, indexing and Ask proof | **MERGED INTO 1B-5-2** |
 | `1B-6-0` | LKW / VENDOR-KNOWLEDGE ownership contract | **REPLANNED** → architecture in `LKW-KNOWLEDGE-ACCESS-ARCHITECTURE-1`; implementation in `LKW-KNOWLEDGE-ACCESS-1` |
 | `1B-6-1` | Connection and Remote Resource discovery | **MAPPED INTO** `LKW-KNOWLEDGE-ACCESS-1` |
@@ -296,7 +297,7 @@ The following table preserves accepted intake foundations and the accepted WEB_U
 | `LKW-WORKSPACE-CONTENTS-1B-5-2-C1` | Harden production index path and real RAG proof | ACCEPTED (correction to `1B-5-2`) |
 | `LKW-WORKSPACE-CONTENTS-1B-5-2-C2` | Close retrieval evidence and regression review | ACCEPTED (correction to `1B-5-2`) |
 
-`LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (execution not wired; sufficient to continue).
+`LKW-CONVERSATIONAL-INTERACTION-1A` — channel-neutral structured interaction plan contract and provider-neutral LLM planner (**ACCEPTED / CLOSED**).
 
 ---
 
@@ -455,7 +456,7 @@ Initial live access is read-only.
 
 **One-sentence outcome:** A user can operate LKW naturally through Slack or another frontend while the planner, resolver and validated executor invoke real LKW capabilities.
 
-**Status:** **PLANNED**. Internal slices: `CONV-1B` (resolver + executor), `CONV-1C` (Slack mixed-message cutover). See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
+**Status:** **READY_FOR_REVIEW**. `CONV-1B` (resolver + executor) is **ACCEPTED / CLOSED**; `CONV-1C` (Slack mixed-message cutover) is **READY_FOR_REVIEW**. See [`CONVERSATIONAL_INTERACTION.md`](CONVERSATIONAL_INTERACTION.md).
 
 ### 7.6 `LKW-VENDOR-ACCESS-COLLABORATION-1`
 

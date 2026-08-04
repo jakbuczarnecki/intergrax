@@ -39,7 +39,6 @@ _ERROR_MESSAGES = {
     "source_candidate_unavailable": "Source candidates are temporarily unavailable.",
     "source_candidate_ambiguous": "The source candidate reference is ambiguous.",
     "source_reference_unsupported": "That source type is not supported.",
-    "conversation_capability_not_allowed": "This operation is not allowed in the current conversation.",
     "action_execution_failed": "This operation could not be completed.",
 }
 

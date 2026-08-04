@@ -10,7 +10,8 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from collections.abc import Sequence
+from typing import Any, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -256,7 +257,7 @@ class ConversationInteractionApplicationService:
         try:
             await self._prepare_attachments(command, plan, registry)
             try:
-                execution_result = await _maybe_await(
+                raw_execution_result = await _maybe_await(
                     self._executor.execute(
                         ConversationInteractionExecutionCommand(
                             tenant_id=command.tenant_id,
@@ -267,6 +268,12 @@ class ConversationInteractionApplicationService:
                         )
                     )
                 )
+                if not isinstance(
+                    raw_execution_result,
+                    ConversationInteractionExecutionResult,
+                ):
+                    raise TypeError("invalid conversation execution result")
+                execution_result = raw_execution_result
             except Exception:  # noqa: BLE001 - executor boundary
                 logger.warning("conversation executor failed")
                 return self._finish_failure(
@@ -335,8 +342,10 @@ class ConversationInteractionApplicationService:
         command: ConversationInteractionApplicationCommand,
         execution_context: ConversationExecutionContextV1,
     ) -> ConversationPlanningRequest:
-        workspaces = self._workspace_service.list_workspaces(tenant_id=command.tenant_id)
-        workspaces = await _maybe_await(workspaces)
+        raw_workspaces = self._workspace_service.list_workspaces(
+            tenant_id=command.tenant_id
+        )
+        workspaces = cast(Sequence[Any], await _maybe_await(raw_workspaces))
         planning_workspaces = tuple(
             ConversationPlanningWorkspace(
                 workspace_id=str(item.workspace_id),
@@ -353,7 +362,10 @@ class ConversationInteractionApplicationService:
                     tenant_id=command.tenant_id,
                     workspace_id=execution_context.workspace_id,
                 )
-                raw_candidates = await _maybe_await(raw_candidates)
+                raw_candidates = cast(
+                    Sequence[Any],
+                    await _maybe_await(raw_candidates),
+                )
                 candidates = tuple(
                     ConversationPlanningSourceCandidate(
                         candidate_id=str(item.candidate_id),

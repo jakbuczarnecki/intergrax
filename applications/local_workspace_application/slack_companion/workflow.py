@@ -93,7 +93,6 @@ from local_workspace_application.slack_companion.selection_store import (
 )
 from local_workspace_application.conversation.interaction_application_service import (
     ConversationInteractionApplicationCommand,
-    ConversationInteractionApplicationResult,
     ConversationInteractionApplicationService,
 )
 from local_workspace_application.workspaces.conversation_context_models import (
@@ -557,8 +556,9 @@ class SlackAskWorkflow:
         if authorized is None:
             return
 
-        if self._interaction_application_service is not None:
-            await self._handle_interaction(event, authorized)
+        interaction_service = self._interaction_application_service
+        if interaction_service is not None:
+            await self._handle_interaction(event, authorized, interaction_service)
             return
 
         claim = self._dedupe.claim(
@@ -596,6 +596,7 @@ class SlackAskWorkflow:
         self,
         event: InboundConversationEvent,
         authorized: AuthorizedSlackMessageContext,
+        interaction_service: ConversationInteractionApplicationService,
     ) -> None:
         if event.metadata.get("slack_channel_type") != "im":
             return
@@ -615,7 +616,7 @@ class SlackAskWorkflow:
             message_text=authorized.text,
             attachments=event.attachments,
         )
-        result = await self._interaction_application_service.handle(command)
+        result = await interaction_service.handle(command)
         if not result.should_send or not result.response_text:
             return
         try:
@@ -630,9 +631,9 @@ class SlackAskWorkflow:
                 "slack_companion interaction_response_send_failed kind=%s",
                 type(exc).__name__,
             )
-            self._interaction_application_service.mark_response_failed(result)
+            interaction_service.mark_response_failed(result)
             return
-        self._interaction_application_service.mark_response_sent(result)
+        interaction_service.mark_response_sent(result)
 
     async def _handle_attachments(self, context: SlackCommandContext) -> None:
         address = context.address
