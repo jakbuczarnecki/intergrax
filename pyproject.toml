@@ -80,7 +80,6 @@ dependencies = [
   "langchain-community>=0.3,<0.5",
   "langchain-openai>=0.3,<2.0",
   "langchain-ollama>=0.2,<2.0",
-  "langchain-text-splitters>=0.3,<2.0",
   # -----------------
   # RAG / Vector DBs
   # -----------------
@@ -176,6 +175,9 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+rag-langchain-splitters = [
+  "langchain-text-splitters>=0.3,<2.0",
+]
 harness-author = [
   "fastapi>=0.115",
   "uvicorn>=0.30",

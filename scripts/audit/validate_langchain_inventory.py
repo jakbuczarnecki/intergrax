@@ -1,7 +1,6 @@
 ﻿"""Uncommitted LCI-0A inventory validator (not part of LCI-0A commit)."""
 from __future__ import annotations
 
-import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -10,7 +9,7 @@ INVENTORY = Path("docs/features/architecture/satellites/LANGCHAIN_INDEPENDENCE_d
 PLAN = Path("docs/features/plan/LANGCHAIN_INDEPENDENCE.md")
 
 VALID_TASKS = {f"LCI-{c}{n}" for c in "012345678" for n in "ABCDEFGH"}
-VALID_TASKS.update({f"LCI-{n}{l}" for n in range(10) for l in "ABCD"})
+VALID_TASKS.update({f"LCI-{n}{letter}" for n in range(10) for letter in "ABCD"})
 
 # Canonical LCI task IDs from roadmap
 ROADMAP_TASKS = {
@@ -278,6 +277,16 @@ def validate(text: str) -> None:
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
     assert len(ids) == 139, f"expected 139 unique inventory IDs, got {len(ids)}"
 
+    splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
+    assert len(splitter_packaging_rows) == 1
+    splitter_packaging_row = splitter_packaging_rows[0]
+    assert "optional extra: rag-langchain-splitters" in splitter_packaging_row["raw"]
+    assert "[project.optional-dependencies].rag-langchain-splitters" in splitter_packaging_row["raw"]
+
+    splitter_import_rows = [row for row in rows if row["id"] == "LCI-INV-0066"]
+    assert len(splitter_import_rows) == 1
+    assert "Optional provider loaded lazily" in splitter_import_rows[0]["raw"]
+
     keys = [(r["path"], r["line"], r["symbol"]) for r in rows]
     dupes = [k for k, c in Counter(keys).items() if c > 1]
     assert not dupes, f"duplicate path+line+symbol: {dupes[:5]}"
@@ -286,6 +295,8 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
+    assert summary.get("direct production/runtime imports") == 72
+    assert summary.get("provider-bound dependencies") == 24
     assert summary.get("total detailed inventory rows") == 139
     assert summary.get("unclassified occurrences") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")

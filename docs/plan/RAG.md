@@ -66,7 +66,8 @@ Load **only** the satellite matching your task or cited gap ID.
 |------|----------|--------|-------------|------|
 | LCI-2B | P1 | APPROVED | scoped native handler and loader boundary | LCI-2C |
 | LCI-2C | P1 | APPROVED | native normalization and metadata pipeline | LCI-2D |
-| LCI-2D | P1 | READY_FOR_REVIEW | native chunking contract and derivative lineage | LCI-2E |
+| LCI-2D | P1 | APPROVED | native chunking contract and derivative lineage | LCI-2E |
+| LCI-2E | P1 | READY_FOR_REVIEW | optional LangChain recursive splitter | LCI-2F |
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
 

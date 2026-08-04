@@ -6,8 +6,6 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
@@ -29,6 +27,17 @@ class LangChainRecursiveChunkingStrategy(BaseChunkingStrategy):
 
         if chunk_overlap >= chunk_size:
             raise ValueError("chunk_overlap must be smaller than chunk_size")
+
+        try:
+            from langchain_text_splitters import RecursiveCharacterTextSplitter
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_text_splitters":
+                raise RuntimeError(
+                    "LangChain recursive chunking requires the "
+                    "'rag-langchain-splitters' optional dependency. "
+                    "Install Intergrax-ai[rag-langchain-splitters]."
+                ) from exc
+            raise
 
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,

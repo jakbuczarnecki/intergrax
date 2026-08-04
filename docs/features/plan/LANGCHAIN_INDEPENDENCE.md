@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-2D
-**Next task after acceptance:** LCI-2E
+**Current task:** LCI-2E
+**Next task after acceptance:** LCI-2F
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -200,7 +200,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Normalizer, metadata provider, and parser/metadata pipelines use native contract. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2B |
@@ -222,7 +222,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Base chunking contracts, engine, and native strategies use native contract. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2C |
@@ -238,13 +238,13 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | LangChain recursive splitter remains optional provider; native recursive strategy is default baseline. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | LangChain recursive splitter remains an optional provider; native recursive strategy is the default and core-safe baseline. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2D |
-| **Exact scope** | langchain_recursive_chunking_strategy.py behind optional extra; lazy import and config error |
+| **Exact scope** | `langchain_recursive_chunking_strategy.py` behind `rag-langchain-splitters`; lazy import, explicit registry registration, and stable missing-extra configuration error |
 | **Explicit out of scope** | Mandatory removal of LangChain splitter |
-| **Acceptance criteria** | Default chunking path does not import langchain_text_splitters; optional provider works when extra installed |
+| **Acceptance criteria** | Default bootstrap registers only `recursive`, `semantic`, `parent_child`, and `docling`; default chunking path does not import `langchain_text_splitters`; optional provider works after installing `rag-langchain-splitters`; no silent fallback |
 | **User-visible outcome** | Native chunking default with optional LangChain provider |
 
 ---

@@ -1655,7 +1655,6 @@ dependencies = [
     { name = "langchain-core", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-ollama", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-openai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "langchain-text-splitters", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "mcp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "mistralai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "mypy-boto3-bedrock-runtime", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1809,6 +1808,9 @@ llm-vllm = [
     { name = "openai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+rag-langchain-splitters = [
+    { name = "langchain-text-splitters", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1853,7 +1855,7 @@ requires-dist = [
     { name = "langchain-ollama", marker = "extra == 'llm-all'", specifier = ">=0.2,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'llm-ollama'", specifier = ">=0.2,<2.0" },
     { name = "langchain-openai", specifier = ">=0.3,<2.0" },
-    { name = "langchain-text-splitters", specifier = ">=0.3,<2.0" },
+    { name = "langchain-text-splitters", marker = "extra == 'rag-langchain-splitters'", specifier = ">=0.3,<2.0" },
     { name = "langgraph", marker = "extra == 'langgraph-legacy'", specifier = ">=0.0.40" },
     { name = "mcp", specifier = ">=1.0" },
     { name = "mistralai", specifier = ">=0.4" },
@@ -1935,7 +1937,7 @@ requires-dist = [
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
-provides-extras = ["harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [[package]]
 name = "intergrax-assistant-agent"

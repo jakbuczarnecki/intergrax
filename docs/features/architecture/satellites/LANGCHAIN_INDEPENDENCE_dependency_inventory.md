@@ -86,7 +86,7 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0035 | `langchain_core.documents` | `intergrax/multimedia/video_smart_loader.py` | 9 | `Document` | MODALITY / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
 | LCI-INV-0036 | `langchain_core.documents` | `intergrax/rag/contextual/chunk_enricher.py` | 14 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-2F | verified import |
 | LCI-INV-0054 | `langchain_community.document_loaders` | `intergrax/rag/document_loaders/parsers/text_smart_parser.py` | 9 | `TextLoader` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5A | verified import |
-| LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 10 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-2E | verified import |
+| LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 34 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional | Optional provider loaded lazily; explicit registry registration | LCI-2E | verified lazy import |
 | LCI-INV-0070 | `langchain_core.documents` | `intergrax/rag/embedding/contracts/base_embedding_manager.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A | verified import |
 | LCI-INV-0071 | `langchain_core.documents` | `intergrax/rag/embedding/contracts/embedding_result.py` | 9 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-3A | verified import |
 | LCI-INV-0072 | `langchain_core.documents` | `intergrax/rag/embedding/embedding_manager.py` | 12 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3A | verified import |
@@ -182,7 +182,7 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0177 | `langchain-community` | `pyproject.toml` | 80 | `langchain-community>=0.3,<0.5` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
 | LCI-INV-0178 | `langchain-openai` | `pyproject.toml` | 81 | `langchain-openai>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
 | LCI-INV-0179 | `langchain-ollama` | `pyproject.toml` | 82 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
-| LCI-INV-0180 | `langchain-text-splitters` | `pyproject.toml` | 83 | `langchain-text-splitters>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
+| LCI-INV-0180 | `langchain-text-splitters` | `pyproject.toml` | 180 | `langchain-text-splitters>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-splitters | PACKAGING_DEPENDENCY | optional | optional extra: rag-langchain-splitters | LCI-2E | declaration in [project.optional-dependencies].rag-langchain-splitters |
 | LCI-INV-0181 | `langgraph` | `pyproject.toml` | 187 | `langgraph>=0.0.40` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].langgraph-legacy | PACKAGING_DEPENDENCY | optional extra | optional extra or removed from core | LCI-8A | declaration in [project.optional-dependencies].langgraph-legacy |
 | LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 191 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
 | LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 191 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
@@ -216,7 +216,7 @@ Only real leaks through public or shared core contracts (LangChain types in Inte
 | `tool_calls_from_langchain_message` | `intergrax/llm_adapters/contracts/tool_call.py` | Migration candidate (no direct LangChain import) | LCI-6E | `Any`-typed helper; does not import `langchain*` |
 | Integration shared bridges | `intergrax/integrations/_shared/*` | OPTIONAL_COMPATIBILITY | LCI-3D | Map native records at boundary |
 | LangChain community loaders | document parser providers | PROVIDER_BOUND_DEPENDENCY | LCI-5C | Optional extras with lazy import |
-| LangChain recursive splitter | `langchain_recursive_chunking_strategy.py` | PROVIDER_BOUND_DEPENDENCY | LCI-2E | Optional provider; native recursive strategy is baseline |
+| LangChain recursive splitter | `langchain_recursive_chunking_strategy.py` | PROVIDER_BOUND_DEPENDENCY | LCI-2E | Optional provider behind `rag-langchain-splitters`; native recursive strategy is baseline; explicit registry registration |
 
 ## F. Dependency package register
 
@@ -229,7 +229,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
-| langchain-text-splitters | Recursive splitter optional provider | 1 | 0 | 0 | 1 | yes | optional chunking extra | LCI-2E |
+| langchain-text-splitters | Recursive splitter optional provider | 1 | 0 | 0 | 1 | optional | rag-langchain-splitters extra | LCI-2E |
 | langgraph | Legacy orchestration adapters | 2 | 0 | 0 | 2 | optional extra only | retirement review | LCI-8A |
 
 ## G. LangGraph register

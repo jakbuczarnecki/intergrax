@@ -593,5 +593,5 @@ Derivative chunk lineage:
 - `chunk.scope` — niezmieniony
 - `chunk.provenance` — zachowane źródło, nowy `content_hash`
 
-Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. LangChain recursive splitting remains an optional strategy until LCI-2E.
+Docling private parser `native_handle` is consumed by the native Docling splitter, is not copied into chunk metadata, and does not appear in serialized output. Native recursive chunking is the default and core-safe path. LangChain recursive chunking is an optional provider behind the `rag-langchain-splitters` extra, registered explicitly through the existing registry/plugin boundary; missing the extra is a stable configuration error.
 
