@@ -182,7 +182,8 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Understand the problem and value | `WHY_INTERGRAX.md` |
 | Check use-case fit | `USE_CASES.md` |
 | Understand product-validation direction | `ROADMAP.md` |
-| See a real product workflow | LKW Platform Proof — `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
+| See the first-contact LKW product workflow | `README.md#local-knowledge-workspace-lkw` |
+| Run or inspect the bounded LKW technical proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
 | Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
 | Build or evaluate with Intergrax | `BUILD_WITH_INTERGRAX.md` |

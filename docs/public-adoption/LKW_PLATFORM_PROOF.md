@@ -1,6 +1,6 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
-**Prerequisite:** This is a bounded technical reviewer proof, not the simplified product trial.
+**Prerequisite:** This is a bounded technical reviewer proof, not a simplified public product trial. A simplified public LKW trial is not yet claimed available.
 
 Start with the [root README](../../README.md) for the product overview, then use the prerequisites and one-command proof entrypoints documented below.
 

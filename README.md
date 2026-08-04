@@ -62,7 +62,7 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 
 ## Why this matters
 
-Building an impressive AI demo is relatively easy. Operating a controlled application that a team can review, operate, and trust is harder.
+Building an impressive AI demo is relatively easy. Operating a controlled application that a team can review and trust is harder.
 
 Teams repeatedly rebuild permissions, knowledge access, integrations, policy enforcement, and evidence collection for every new product. Intergrax centralizes those reusable foundations so product teams can focus on the concrete workflow.
 
