@@ -26,8 +26,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
-from langchain_core.documents import Document
-
 from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.llm.messages import AttachmentRef
@@ -37,6 +35,10 @@ from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.ingest.native_document_metadata import (
+    add_native_metadata,
+    filter_native_metadata,
+)
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -358,7 +360,7 @@ class AttachmentIngestionService:
             "workspace_id": workspace_id,
         }
         if attachment.metadata:
-            base_metadata.update(attachment.metadata)
+            base_metadata.update(filter_native_metadata(attachment.metadata))
 
         # 3) Use IntergraxDocumentsLoader.load_document(...) for a single file
         def _metadata_callback(doc: KnowledgeDocument, p: str) -> Dict[str, Any]:
@@ -370,9 +372,7 @@ class AttachmentIngestionService:
             we do not override keys that the loader already set (unless they
             are absent).
             """
-            merged = dict(base_metadata)
-            # Optionally, we could inspect doc.metadata here and adjust.
-            return merged
+            return filter_native_metadata(base_metadata)
 
         native_docs = self._loader.load_document(
             str(path),
@@ -413,11 +413,11 @@ class AttachmentIngestionService:
 
         # 4) Split into chunks via IntergraxDocumentsSplitter
         native_chunks = self._splitter.split_documents(native_docs)
-        chunks: List[Document] = [
-            to_legacy_rag_document(chunk) for chunk in native_chunks
+        native_chunks = [
+            add_native_metadata(chunk, base_metadata) for chunk in native_chunks
         ]
 
-        if not chunks:
+        if not native_chunks:
             return IngestionResult(
                 attachment_id=attachment.id,
                 attachment_type=attachment.type,
@@ -441,43 +441,26 @@ class AttachmentIngestionService:
         #   else: use it directly
 
         # 5a) Embeddings
-        try:
-            embed_result = self._embedding_manager.embed_documents(chunks)
+        embed_result = self._embedding_manager.embed_texts(
+            [chunk.content for chunk in native_chunks]
+        )
+        if inspect.iscoroutine(embed_result):
+            embeddings = await embed_result
+        else:
+            embeddings = embed_result
 
-            if inspect.iscoroutine(embed_result):
-                embed_result = await embed_result
+        aligned_docs = [
+            to_legacy_rag_document(chunk) for chunk in native_chunks
+        ]
 
-            aligned_docs = embed_result.documents
-            embeddings = embed_result.embeddings
+        # 5b) Generate stable IDs for each stored chunk
+        ids = [f"{attachment.id}-{i}" for i in range(len(native_chunks))]
 
-        except AttributeError:
-            # Fallback: manager exposes only embed_texts(texts)
-
-            texts = [c.page_content for c in chunks]
-
-            embed_result = self._embedding_manager.embed_texts(texts)
-
-            if inspect.iscoroutine(embed_result):
-                embeddings = await embed_result
-            else:
-                embeddings = embed_result
-
-            aligned_docs = chunks
-
-        # 5b) Enrich metadata on documents with base_metadata
-        #
-        # This ensures that later retrieval can filter by session/tenant/user/etc.
-        for d in aligned_docs:
-            d.metadata = {**(d.metadata or {}), **base_metadata}
-
-        # 5c) Generate stable IDs for each stored chunk
-        ids = [f"{attachment.id}-{i}" for i in range(len(aligned_docs))]
-
-        # 5d) Store in vectorstore using the current IntergraxVectorstoreManager API.
+        # 5c) Store in vectorstore using the current IntergraxVectorstoreManager API.
         #
         # We assume a signature similar to:
         #   add_documents(
-        #       documents: Sequence[Document],
+        #       documents: Sequence[object],
         #       embeddings: Optional[Any] = None,
         #       ids: Optional[Sequence[str]] = None,
         #       base_metadata: Optional[Dict[str, Any]] = None,
@@ -514,7 +497,7 @@ class AttachmentIngestionService:
         return IngestionResult(
             attachment_id=attachment.id,
             attachment_type=attachment.type,
-            num_chunks=len(aligned_docs),
+            num_chunks=len(native_chunks),
             vector_ids=vector_ids,
             metadata={
                 "source_path": str(path),

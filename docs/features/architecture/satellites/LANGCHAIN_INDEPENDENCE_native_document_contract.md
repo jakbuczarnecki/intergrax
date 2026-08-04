@@ -36,6 +36,22 @@ provider parser -> ParsedDocumentFragment -> scoped loader/handler -> KnowledgeD
 
 ParsedDocumentFragment is a short-lived extraction-stage result. Parser load(source) receives only a source URI — no authoritative tenant, namespace, or document scope — so parser-stage code must not construct KnowledgeDocument or invent a default tenant.
 
+### End-to-end native ingest boundary (LCI-2F)
+
+```text
+ParsedDocumentFragment
+? scoped KnowledgeDocument
+? native normalization
+? native metadata
+? native chunking
+? native contextual enrichment
+? legacy indexing adapter
+```
+
+`KnowledgeDocument` remains canonical through contextual enrichment. The compatibility adapter is created only immediately before the not-yet-migrated indexing, vector-store, and Graph consumers. Contextual enrichment creates a fully revalidated document without changing identity, scope, provenance, or the canonical pre-enrichment `provenance.content_hash`.
+
+Chunk lineage remains the native contract: chunk identity and parent/root relationships are preserved while optional enrichment changes only the resulting content presented to downstream embedding/indexing boundaries.
+
 ---
 
 ## 2. Location decision

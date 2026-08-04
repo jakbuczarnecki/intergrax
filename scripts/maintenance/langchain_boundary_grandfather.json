@@ -93,15 +93,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0036",
-      "path": "intergrax/rag/contextual/chunk_enricher.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0054",
       "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
       "kind": "from",
@@ -309,15 +300,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0091",
-      "path": "intergrax/rag/ingest/ingest_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0093",
       "path": "intergrax/rag/rerankers/contracts/reranker_types.py",
       "kind": "from",
@@ -401,15 +383,6 @@
     {
       "inventory_id": "LCI-INV-0102",
       "path": "intergrax/rag/vectorstore/vectorstore_manager.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0103",
-      "path": "intergrax/runtime/nexus/ingestion/ingestion_service.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

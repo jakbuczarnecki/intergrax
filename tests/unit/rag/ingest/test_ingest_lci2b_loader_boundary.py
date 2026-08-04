@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
-
 import pytest
 from langchain_core.documents import Document
 
@@ -15,6 +13,7 @@ from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
 )
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
+from intergrax.rag.profiles.rag_profile import RagProfile
 
 
 pytestmark = pytest.mark.unit
@@ -39,12 +38,19 @@ class _NativeSplitter:
 
 
 class _NoopEmbedding:
+    def embed_texts(self, texts):
+        return [[0.0] for _ in texts]
+
     def embed_documents(self, docs):
-        return MagicMock(documents=docs, embeddings=[[0.0]])
+        raise AssertionError("native ingest must not call embed_documents")
 
 
 class _NoopVectorstore:
+    def __init__(self) -> None:
+        self.received: dict[str, object] | None = None
+
     def add_documents(self, **kwargs: object) -> list[str]:
+        self.received = kwargs
         return ["id-0"]
 
 
@@ -102,11 +108,24 @@ def test_ingest_pipeline_passes_native_docs_to_splitter(tmp_path: Path) -> None:
 
     splitter = _NativeSplitter()
 
+    class _CapturingContextual:
+        def __init__(self) -> None:
+            self.documents: list[KnowledgeDocument] | None = None
+            self.chunks: list[KnowledgeDocument] | None = None
+
+        def enrich(self, documents, chunks):
+            self.documents = list(documents)
+            self.chunks = list(chunks)
+            return list(chunks)
+
+    contextual = _CapturingContextual()
     pipeline = IngestPipeline(
         loader=_NativeLoader(),
         splitter=splitter,
         embedding_manager=_NoopEmbedding(),
         vectorstore=_NoopVectorstore(),
+        profile=RagProfile(contextual_enrich="on"),
+        contextual_enricher=contextual,
     )
 
     result = pipeline.run(
@@ -121,6 +140,10 @@ def test_ingest_pipeline_passes_native_docs_to_splitter(tmp_path: Path) -> None:
     assert len(splitter.received) == 1
     assert isinstance(splitter.received[0], KnowledgeDocument)
     assert splitter.received[0].content == "hello"
+    assert contextual.documents is not None
+    assert contextual.chunks is not None
+    assert all(isinstance(doc, KnowledgeDocument) for doc in contextual.documents)
+    assert all(isinstance(chunk, KnowledgeDocument) for chunk in contextual.chunks)
 
 
 def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path) -> None:
@@ -165,22 +188,38 @@ def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path
             self.received = list(docs)
             return docs
 
+    class _NativeContextual:
+        def enrich(self, documents, chunks):
+            assert all(isinstance(doc, KnowledgeDocument) for doc in documents)
+            assert all(isinstance(chunk, KnowledgeDocument) for chunk in chunks)
+            payload = chunks[0].model_dump(mode="json")
+            payload["content"] = "Native context\n\n" + chunks[0].content
+            payload["metadata"]["contextual_enrich"] = True
+            return [KnowledgeDocument.model_validate(payload)]
+
     class _CapturingEmbedding:
         def __init__(self) -> None:
-            self.received: list[Document] | None = None
+            self.received: list[str] | None = None
+
+        def embed_texts(self, texts):
+            self.received = list(texts)
+            return [[0.0] for _ in texts]
 
         def embed_documents(self, docs):
-            self.received = list(docs)
-            return MagicMock(documents=docs, embeddings=[[0.0]])
+            raise AssertionError("native ingest must not call embed_documents")
 
     embedding = _CapturingEmbedding()
     splitter = _ReturningSplitter()
+    vectorstore = _NoopVectorstore()
+    contextual = _NativeContextual()
 
     pipeline = IngestPipeline(
         loader=_NativeLoader(),
         splitter=splitter,
         embedding_manager=embedding,
-        vectorstore=_NoopVectorstore(),
+        vectorstore=vectorstore,
+        profile=RagProfile(contextual_enrich="on"),
+        contextual_enricher=contextual,
     )
 
     result = pipeline.run(
@@ -194,9 +233,12 @@ def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path
     assert splitter.received is not None
     assert isinstance(splitter.received[0], KnowledgeDocument)
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in splitter.received[0].metadata
-    assert embedding.received is not None
-    assert isinstance(embedding.received[0], Document)
-    legacy_meta = embedding.received[0].metadata
+    assert embedding.received == ["Native context\n\nhello"]
+    assert vectorstore.received is not None
+    legacy_doc = vectorstore.received["documents"][0]
+    assert isinstance(legacy_doc, Document)
+    assert legacy_doc.page_content == "Native context\n\nhello"
+    legacy_meta = legacy_doc.metadata
     assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in legacy_meta
 
@@ -262,11 +304,14 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
 
     class _CapturingEmbedding:
         def __init__(self) -> None:
-            self.received: list[Document] | None = None
+            self.received: list[str] | None = None
+
+        def embed_texts(self, texts):
+            self.received = list(texts)
+            return [[0.0] for _ in texts]
 
         def embed_documents(self, docs):
-            self.received = list(docs)
-            return MagicMock(documents=docs, embeddings=[[0.0]])
+            raise AssertionError("native ingest must not call embed_documents")
 
     class _CapturingVectorstore:
         def __init__(self) -> None:
@@ -305,11 +350,12 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     assert embedding.received is not None
     assert vectorstore.received is not None
 
-    downstream_metadata = embedding.received[0].metadata
-    for key in ("source_id", "document_id", "content_hash"):
-        assert downstream_metadata[key] == base_metadata[key]
+    assert embedding.received == ["hello"]
+    native_metadata = splitter.received[0].metadata
+    assert RESERVED_METADATA_KEYS.isdisjoint(native_metadata)
+    assert splitter.received[0].scope.tenant_id == "tenant.test"
+    assert splitter.received[0].scope.namespace == "managed"
     assert vectorstore.received["base_metadata"] == base_metadata
-    assert vectorstore.received["documents"][0].metadata == downstream_metadata
     assert base_metadata == original_metadata
 
 
@@ -355,9 +401,9 @@ def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: P
         def __init__(self) -> None:
             self.called = False
 
-        def embed_documents(self, docs):
+        def embed_texts(self, texts):
             self.called = True
-            return MagicMock(documents=docs, embeddings=[[0.0]])
+            return [[0.0] for _ in texts]
 
     class _TrackingVectorstore:
         def __init__(self) -> None:

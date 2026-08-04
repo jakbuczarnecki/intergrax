@@ -9,9 +9,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
-from langchain_core.documents import Document
-
-from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     to_legacy_rag_document,
@@ -25,6 +22,10 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
 from intergrax.rag.governance.embedding_version_policy import evaluate_ingest_embedding_version
 from intergrax.rag.ingest.ingest_policy import semantic_chunking_allowed, sync_ingest_allowed
+from intergrax.rag.ingest.native_document_metadata import (
+    add_native_metadata,
+    filter_native_metadata,
+)
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -120,13 +121,8 @@ class IngestPipeline:
 
             def _cb(doc: Any, source: str) -> Dict[str, Any]:
                 if self._metadata_callback is not None:
-                    return self._metadata_callback(doc, source)
-                filtered = {
-                    key: value
-                    for key, value in base_metadata.items()
-                    if key not in RESERVED_METADATA_KEYS
-                }
-                return filtered
+                    return filter_native_metadata(self._metadata_callback(doc, source))
+                return filter_native_metadata(base_metadata)
 
             with rag_span("rag.ingest.load", attributes={"rag.ingest.source": str(path)}):
                 native_docs = self._loader.load_document(
@@ -176,31 +172,29 @@ class IngestPipeline:
                     parser_trace=parser_trace,
                 )
 
-            legacy_chunks: List[Document] = [
-                to_legacy_rag_document(chunk) for chunk in native_chunks
-            ]
-            chunk_list: Sequence[Document] = legacy_chunks
             if self._profile.contextual_enrich == "on" and self._contextual is not None:
-                legacy_sources: List[Document] = [
-                    to_legacy_rag_document(document) for document in native_docs
-                ]
-                chunk_list = self._contextual.enrich(legacy_sources, legacy_chunks)
-
-            aligned_docs = list(chunk_list)
-            for doc in aligned_docs:
-                doc.metadata = {**(doc.metadata or {}), **base_metadata}
-
-            ids = [f"ingest-{path.stem}-{i}" for i in range(len(aligned_docs))]
+                native_chunks = self._contextual.enrich(
+                    native_docs,
+                    native_chunks,
+                )
+            native_chunks = [
+                add_native_metadata(chunk, base_metadata) for chunk in native_chunks
+            ]
+            texts = [chunk.content for chunk in native_chunks]
+            ids = [f"ingest-{path.stem}-{i}" for i in range(len(native_chunks))]
 
             with rag_span(
                 "rag.ingest.index",
                 attributes={
-                    "rag.ingest.num_chunks": len(aligned_docs),
+                    "rag.ingest.num_chunks": len(native_chunks),
                     "rag.ingest.dual_index": self._uses_dual_index(),
                 },
             ):
                 if self._uses_dual_index():
                     assert self._toc_vectorstore is not None
+                    aligned_docs: Sequence[Any] = [
+                        to_legacy_rag_document(chunk) for chunk in native_chunks
+                    ]
                     IndexingManager(
                         embed_manager=self._embedding_manager,
                         vectorstore=self._vectorstore,
@@ -208,13 +202,10 @@ class IngestPipeline:
                     ).index_documents(aligned_docs)
                     vector_ids = ids
                 else:
-                    try:
-                        embed_result = self._embedding_manager.embed_documents(aligned_docs)
-                        aligned_docs = list(embed_result.documents)
-                        embeddings = embed_result.embeddings
-                    except AttributeError:
-                        texts = [c.page_content for c in aligned_docs]
-                        embeddings = self._embedding_manager.embed_texts(texts)
+                    embeddings = self._embedding_manager.embed_texts(texts)
+                    aligned_docs = [
+                        to_legacy_rag_document(chunk) for chunk in native_chunks
+                    ]
 
                     stored_ids = self._vectorstore.add_documents(
                         documents=aligned_docs,
@@ -236,7 +227,7 @@ class IngestPipeline:
             return IngestResult(
                 used=True,
                 reason="ok",
-                num_chunks=len(aligned_docs),
+                num_chunks=len(native_chunks),
                 vector_ids=vector_ids,
                 parser_id=parser_id,
                 parser_trace=parser_trace,

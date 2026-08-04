@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-2E
-**Next task after acceptance:** LCI-2F
+**Current task:** LCI-2F
+**Next task after acceptance:** LCI-3A
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -238,7 +238,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | LangChain recursive splitter remains an optional provider; native recursive strategy is the default and core-safe baseline. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2D |
@@ -254,14 +254,14 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | Full parser → normalization → chunking → ingest path and boundary consumers on native documents. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Full parser → normalization → chunking → contextual enrichment → ingest path on native documents, with legacy conversion only at downstream consumer boundaries. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/ORCHESTRATION.md |
 | **Dependencies** | LCI-2E |
 | **Exact scope** | ingest_pipeline.py, ingest_policy.py, chunk_enricher.py, Nexus ingestion_service.py; e2e ingest proof |
 | **Explicit out of scope** | Embedding/indexing migration |
-| **Acceptance criteria** | Ingest and Nexus ingestion integration tests pass on native documents |
-| **User-visible outcome** | End-to-end ingest API LangChain-free at boundary |
+| **Acceptance criteria** | Ingest and Nexus ingestion tests prove native loader-through-contextual stages, raw-text embedding input, and compatibility conversion only immediately before indexing/vector-store/Graph consumers. |
+| **User-visible outcome** | End-to-end ingest API is LangChain-free through native contextual enrichment; embedding contracts remain LCI-3A and indexing remains LCI-3B. |
 
 ---
 

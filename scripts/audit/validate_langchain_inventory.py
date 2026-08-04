@@ -275,7 +275,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 139, f"expected 139 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 136, f"expected 136 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -295,9 +295,9 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 72
+    assert summary.get("direct production/runtime imports") == 69
     assert summary.get("provider-bound dependencies") == 24
-    assert summary.get("total detailed inventory rows") == 139
+    assert summary.get("total detailed inventory rows") == 136
     assert summary.get("unclassified occurrences") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
@@ -345,7 +345,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("139 unique inventory IDs")
+    print("136 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

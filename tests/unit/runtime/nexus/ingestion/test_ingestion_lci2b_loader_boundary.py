@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
-
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.document import RESERVED_METADATA_KEYS
 
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.llm.messages import AttachmentRef
@@ -72,17 +71,36 @@ class _NativeSplitter:
 
 
 class _NoopEmbedding:
+    def embed_texts(self, texts):
+        return [[0.0] for _ in texts]
+
     def embed_documents(self, docs):
-        return MagicMock(documents=docs, embeddings=[[0.0]])
+        raise AssertionError("attachment ingest must not call embed_documents")
+
+
+class _AsyncEmbedding:
+    async def embed_texts(self, texts):
+        return [[0.0] for _ in texts]
+
+    def embed_documents(self, docs):
+        raise AssertionError("attachment ingest must not call embed_documents")
 
 
 class _NoopVectorstore:
+    def __init__(self) -> None:
+        self.received: dict[str, object] | None = None
+
     def add_documents(self, **kwargs: object) -> list[str]:
+        self.received = kwargs
         return ["vec-0"]
 
 
 @pytest.mark.asyncio
-async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path: Path) -> None:
+@pytest.mark.parametrize("embedding", [_NoopEmbedding(), _AsyncEmbedding()])
+async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
+    tmp_path: Path,
+    embedding: object,
+) -> None:
     attachment_path = tmp_path / "note.txt"
     attachment_path.write_text("hello", encoding="utf-8")
 
@@ -95,11 +113,12 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path
         metadata_pipeline=MetadataPipeline(providers=[]),
     )
     splitter = _NativeSplitter()
+    vectorstore = _NoopVectorstore()
 
     service = AttachmentIngestionService(
         resolver=_Resolver(attachment_path),
-        embedding_manager=_NoopEmbedding(),
-        vectorstore_manager=_NoopVectorstore(),
+        embedding_manager=embedding,
+        vectorstore_manager=vectorstore,
         loader=loader,
         splitter=splitter,
     )
@@ -119,6 +138,18 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(tmp_path
     assert splitter.received is not None
     assert isinstance(splitter.received[0], KnowledgeDocument)
     assert splitter.received[0].content == "hello"
+    assert RESERVED_METADATA_KEYS.isdisjoint(splitter.received[0].metadata)
+    assert splitter.received[0].scope.tenant_id == "tenant.test"
+    assert splitter.received[0].scope.namespace == "workspace-1"
+    assert vectorstore.received is not None
+    stored_doc = vectorstore.received["documents"][0]
+    stored_metadata = stored_doc.metadata
+    assert stored_metadata["attachment_id"] == "att-1"
+    assert stored_metadata["session_id"] == "sess-1"
+    assert stored_metadata["user_id"] == "user-1"
+    assert stored_metadata["workspace_id"] == "workspace-1"
+    assert stored_metadata["tenant_id"] == "tenant.test"
+    assert stored_metadata["namespace"] == "workspace-1"
 
     loaded = loader.load_document(
         str(attachment_path),
