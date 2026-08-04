@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
 from intergrax.runtime.vendor_knowledge.errors import (
@@ -20,6 +22,8 @@ from intergrax.runtime.vendor_knowledge.sync_coordinator import (
     VendorKnowledgeSyncCoordinator,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRun,
+    KnowledgeReconciliationRunCollecting,
     KnowledgeReconciliationRunPhase,
     KnowledgeSyncMode,
     reconciliation_delivery_id,
@@ -605,3 +609,352 @@ async def test_finalizing_checkpoint_commit_corruption_enters_recovery() -> None
     assert runs.runs[("tenant-1", "binding-1")].phase is (
         KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED
     )
+
+
+@dataclass
+class _FaultyRunRepository(InMemoryReconciliationRunRepository):
+    get_error: Exception | None = None
+    create_error: Exception | None = None
+    cas_replace_error: Exception | None = None
+    cas_recovery_error: Exception | None = None
+    cas_supersede_error: Exception | None = None
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeReconciliationRun | None:
+        if self.get_error is not None:
+            raise self.get_error
+        return super().get(tenant_id=tenant_id, binding_id=binding_id)
+
+    def create_initial_run(self, run: KnowledgeReconciliationRun) -> None:
+        if self.create_error is not None:
+            raise self.create_error
+        super().create_initial_run(run)
+
+    def cas_replace(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None:
+        if self.cas_replace_error is not None:
+            raise self.cas_replace_error
+        super().cas_replace(expected=expected, replacement=replacement)
+
+    def cas_recovery(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRun,
+    ) -> None:
+        if self.cas_recovery_error is not None:
+            raise self.cas_recovery_error
+        super().cas_recovery(expected=expected, replacement=replacement)
+
+    def cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRunCollecting,
+    ) -> None:
+        if self.cas_supersede_error is not None:
+            raise self.cas_supersede_error
+        super().cas_supersede_terminal(expected=expected, replacement=replacement)
+
+
+@dataclass
+class _FaultyCandidateInventory(InMemoryCandidateInventoryRepository):
+    list_error: Exception | None = None
+
+    def list_active_remote_ids(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        binding_configuration_version: int,
+        limit: int,
+    ) -> tuple[str, ...]:
+        if self.list_error is not None:
+            raise self.list_error
+        return super().list_active_remote_ids(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            binding_configuration_version=binding_configuration_version,
+            limit=limit,
+        )
+
+
+def _coordinator_with_run_repo(
+    runs: _FaultyRunRepository,
+) -> tuple[VendorKnowledgeSyncCoordinator, RecordingFacade]:
+    binding = make_binding()
+    facade = RecordingFacade()
+    state = InMemoryRemoteItemStateRepository()
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=InMemoryLeaseRepository(),
+        checkpoint_repository=InMemoryCheckpointRepository(),
+        item_state_repository=state,
+        sink=IdempotentRecordingSink(),
+        lease_ttl_seconds=30,
+        reconciliation_run_repository=runs,
+        candidate_inventory_repository=InMemoryCandidateInventoryRepository(
+            state_repository=state,
+        ),
+        sink_receipt_inspector=RecordingSinkReceiptInspector(),
+    )
+    return coordinator, facade
+
+
+def _assert_dependency_unavailable_no_provider_read(
+    exc_info: pytest.ExceptionInfo[VendorKnowledgeError],
+    facade: RecordingFacade,
+) -> None:
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert facade.read_calls == []
+    assert "backend down" not in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_repository_get_backend_failure_is_retryable() -> None:
+    runs = _FaultyRunRepository(get_error=RuntimeError("backend down"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-run-get-fail",
+        )
+    _assert_dependency_unavailable_no_provider_read(exc_info, facade)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_candidate_inventory_backend_failure_is_retryable() -> None:
+    state = InMemoryRemoteItemStateRepository()
+    inventory = _FaultyCandidateInventory(
+        state_repository=state,
+        list_error=RuntimeError("backend down"),
+    )
+    binding = make_binding()
+    facade = RecordingFacade()
+    coordinator = VendorKnowledgeSyncCoordinator(
+        tenant_id="tenant-1",
+        owner_id="owner-1",
+        binding_service=RecordingBindingService(binding=binding),  # type: ignore[arg-type]
+        facade=facade,
+        lease_repository=InMemoryLeaseRepository(),
+        checkpoint_repository=InMemoryCheckpointRepository(),
+        item_state_repository=state,
+        sink=IdempotentRecordingSink(),
+        lease_ttl_seconds=30,
+        reconciliation_run_repository=InMemoryReconciliationRunRepository(),
+        candidate_inventory_repository=inventory,
+        sink_receipt_inspector=RecordingSinkReceiptInspector(),
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-inventory-fail",
+        )
+    _assert_dependency_unavailable_no_provider_read(exc_info, facade)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_initial_run_backend_failure_is_retryable() -> None:
+    runs = _FaultyRunRepository(create_error=RuntimeError("backend down"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-create-fail",
+        )
+    _assert_dependency_unavailable_no_provider_read(exc_info, facade)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cas_replace_backend_failure_is_retryable() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        knowledge_cursor_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-cas-replace-fail"
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    runs = _FaultyRunRepository(cas_replace_error=RuntimeError("backend down"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    collecting = KnowledgeReconciliationRunCollecting(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=1,
+        created_at=now,
+        updated_at=now,
+        current_input_cursor_fingerprint=knowledge_cursor_fingerprint_sha256(None),
+        remaining_candidate_remote_ids=(),
+    )
+    runs.runs[("tenant-1", "binding-1")] = collecting
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert "backend down" not in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cas_recovery_backend_failure_is_retryable() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationRecoveryCommand,
+        KnowledgeReconciliationRecoveryCommandKind,
+        KnowledgeReconciliationRunRecoveryRequired,
+        knowledge_cursor_fingerprint_sha256,
+        recovery_evidence_from_run,
+    )
+
+    runs = _FaultyRunRepository(cas_recovery_error=RuntimeError("backend down"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    collecting = KnowledgeReconciliationRunCollecting(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id="run-cas-recovery",
+        record_version=1,
+        created_at=now,
+        updated_at=now,
+        current_input_cursor_fingerprint=knowledge_cursor_fingerprint_sha256(None),
+        remaining_candidate_remote_ids=(),
+    )
+    recovery = KnowledgeReconciliationRunRecoveryRequired(
+        **collecting.model_dump(
+            exclude={
+                "phase",
+                "record_version",
+                "updated_at",
+                "candidate_inventory_continuation_token",
+                "current_input_cursor",
+                "current_input_cursor_fingerprint",
+                "remaining_candidate_remote_ids",
+            }
+        ),
+        phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+        record_version=2,
+        updated_at=now,
+        recovery_reason_code="test",
+        recovery_evidence=recovery_evidence_from_run(collecting),
+    )
+    runs.runs[("tenant-1", "binding-1")] = recovery
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        coordinator.execute_reconciliation_recovery(
+            KnowledgeReconciliationRecoveryCommand(
+                kind=KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT,
+                tenant_id="tenant-1",
+                binding_id="binding-1",
+                expected_run_id="run-cas-recovery",
+                expected_run_record_version=2,
+                expected_phase=KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED,
+                operator_reason_code="resume",
+            )
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    assert "backend down" not in str(exc_info.value)
+    assert facade.read_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cas_supersede_terminal_backend_failure_is_retryable() -> None:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        knowledge_cursor_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    operation_id = "op-supersede-fail"
+    existing_run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id="op-existing",
+    )
+    runs = _FaultyRunRepository(cas_supersede_error=RuntimeError("backend down"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    collecting = KnowledgeReconciliationRunCollecting(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=existing_run_id,
+        record_version=1,
+        created_at=now,
+        updated_at=now,
+        current_input_cursor_fingerprint=knowledge_cursor_fingerprint_sha256(None),
+        remaining_candidate_remote_ids=(),
+    )
+    runs.runs[("tenant-1", "binding-1")] = collecting
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    _assert_dependency_unavailable_no_provider_read(exc_info, facade)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_run_repository_get_corruption_is_non_retryable() -> None:
+    from intergrax.runtime.vendor_knowledge.sync_contracts import (
+        KnowledgeSyncCorruptState,
+    )
+
+    runs = _FaultyRunRepository(get_error=KnowledgeSyncCorruptState("corrupt run row"))
+    coordinator, facade = _coordinator_with_run_repo(runs)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id="op-run-corrupt",
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+    assert exc_info.value.retryable is False
+    assert facade.read_calls == []
+    assert "corrupt run row" not in str(exc_info.value)

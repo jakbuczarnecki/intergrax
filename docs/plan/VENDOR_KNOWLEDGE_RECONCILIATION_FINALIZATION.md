@@ -974,9 +974,15 @@ Durable continuation lineage, fail-closed configuration, truthful active-index c
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED`
 
 Initial job identity and replay, truthful terminal replay, single PAGE_PREPARED recovery receipt decision, corrupt receipt and checkpoint boundaries, and shared strict active-index parsing.
+
+### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4`
+
+**Status:** `READY_FOR_REVIEW`
+
+Strict caller-supplied job identity without durable-state inference, normalized run and candidate-inventory repository error boundaries, and zero-effect rejection for malformed continuation identity.
 
 ### `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`
 
@@ -1006,8 +1012,9 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3` | `READY_FOR_REVIEW` |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending Review Fix 3 acceptance |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4` | `READY_FOR_REVIEW` |
+| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending Review Fix 4 acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` | `PLANNED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |

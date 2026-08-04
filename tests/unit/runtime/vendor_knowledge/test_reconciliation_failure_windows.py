@@ -16,6 +16,7 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeCursor,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRunPagePrepared,
     KnowledgeReconciliationRunPhase,
 )
 from tests.unit.runtime.vendor_knowledge.test_reconciliation_durable_coordinator import (
@@ -448,3 +449,234 @@ async def test_multi_page_completed_replay_reports_committed_checkpoint() -> Non
         assert len(state.states) == state_before
     assert len(checkpoint.commit_calls) == checkpoint_before
     assert runs.runs[("tenant-1", "binding-1")].record_version == version_before
+
+
+def _first_page_prepared(
+    *, operation_id: str
+) -> KnowledgeReconciliationRunPagePrepared:
+    from datetime import datetime, timezone
+
+    from intergrax.runtime.vendor_knowledge.models import KnowledgeItemRevision
+    from intergrax.runtime.vendor_knowledge.sync_models import (
+        KnowledgeReconciliationPreparedStateMutationTemplate,
+        KnowledgeRemoteItemStatus,
+        canonical_prepared_state_mutations_fingerprint,
+        knowledge_cursor_fingerprint_sha256,
+    )
+    from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+        derive_reconciliation_run_id,
+    )
+
+    run_id = derive_reconciliation_run_id(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        operation_id=operation_id,
+    )
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    null_cursor_fp = knowledge_cursor_fingerprint_sha256(None)
+    fingerprint = "b" * 64
+    templates = (
+        KnowledgeReconciliationPreparedStateMutationTemplate(
+            remote_id="item-1",
+            resulting_status=KnowledgeRemoteItemStatus.ACTIVE,
+            revision=KnowledgeItemRevision(version="1"),
+            binding_configuration_version=1,
+        ),
+    )
+    return KnowledgeReconciliationRunPagePrepared(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        provider_id="example",
+        source_kind="issues",
+        run_id=run_id,
+        record_version=2,
+        created_at=now,
+        updated_at=now,
+        applied_page_count=0,
+        prepared_input_cursor_fingerprint=null_cursor_fp,
+        provider_page_fingerprint=fingerprint,
+        prepared_batch_payload_fingerprint=fingerprint,
+        prepared_state_mutation_templates=templates,
+        prepared_state_mutations_fingerprint=canonical_prepared_state_mutations_fingerprint(
+            templates
+        ),
+        prepared_proposed_checkpoint_fingerprint=null_cursor_fp,
+        prepared_next_cursor_fingerprint=null_cursor_fp,
+        prepared_page_size=50,
+        has_more=False,
+        delivery_id="a" * 64,
+        prepared_parent_delivery_id=None,
+        remaining_candidate_remote_ids=(),
+        synthetic_tombstone_remote_ids=(),
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_foreign_operation_page_prepared_rejects_missing_trigger() -> None:
+    coordinator, facade, state, checkpoint, runs, sink, _ = _durable_coordinator()
+    prepared = _first_page_prepared(operation_id="op-a")
+    runs.runs[("tenant-1", "binding-1")] = prepared
+    run_id_before = prepared.run_id
+    version_before = prepared.record_version
+    phase_before = prepared.phase
+    reads_before = len(facade.read_calls)
+    sink_before = len(sink.calls)
+    state_before = len(getattr(state, "states", {}))
+    checkpoint_before = len(checkpoint.commit_calls)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=False,
+            operation_id="op-b",
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert exc_info.value.retryable is False
+    run_after = runs.runs[("tenant-1", "binding-1")]
+    assert run_after.run_id == run_id_before
+    assert run_after.record_version == version_before
+    assert run_after.phase is phase_before
+    assert len(facade.read_calls) == reads_before
+    assert len(sink.calls) == sink_before
+    if hasattr(state, "states"):
+        assert len(state.states) == state_before
+    assert len(checkpoint.commit_calls) == checkpoint_before
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_same_operation_page_prepared_rejects_missing_trigger() -> None:
+    coordinator, facade, state, checkpoint, runs, sink, _ = _durable_coordinator()
+    prepared = _first_page_prepared(operation_id="op-a")
+    runs.runs[("tenant-1", "binding-1")] = prepared
+    run_id_before = prepared.run_id
+    version_before = prepared.record_version
+    phase_before = prepared.phase
+    reads_before = len(facade.read_calls)
+    sink_before = len(sink.calls)
+    state_before = len(getattr(state, "states", {}))
+    checkpoint_before = len(checkpoint.commit_calls)
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=False,
+            operation_id="op-a",
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert exc_info.value.retryable is False
+    run_after = runs.runs[("tenant-1", "binding-1")]
+    assert run_after.run_id == run_id_before
+    assert run_after.record_version == version_before
+    assert run_after.phase is phase_before
+    assert len(facade.read_calls) == reads_before
+    assert len(sink.calls) == sink_before
+    if hasattr(state, "states"):
+        assert len(state.states) == state_before
+    assert len(checkpoint.commit_calls) == checkpoint_before
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_page_prepared_initial_retry_resumes_with_restart_true() -> None:
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import RecordingFacade
+
+    reconcile_cp1 = KnowledgeCursor(value="reconcile-cp-1")
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True, content_fetch=True
+        ),
+        pages_by_cursor={
+            None: make_page(
+                changes=(make_change(remote_id="item-1"),),
+                has_more=True,
+                next_cursor=reconcile_cp1,
+                proposed_checkpoint=reconcile_cp1,
+            ),
+        },
+    )
+    coordinator, facade_ref, _, _, runs, sink, _ = _durable_coordinator(facade=facade)
+    sink.apply_error = RuntimeError("sink unavailable")
+    operation_id = "op-prepared-retry"
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.PAGE_PREPARED
+    )
+    reads_before = len(facade_ref.read_calls)
+    sink.apply_error = None
+    result = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=True,
+        operation_id=operation_id,
+    )
+    assert result.retryable is False
+    assert len(facade_ref.read_calls) == reads_before + 1
+    assert len(sink.calls) == 2
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.COLLECTING
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_page_prepared_continuation_retry_resumes_with_parent_trigger() -> None:
+    from tests.unit.runtime.vendor_knowledge._sync_fakes import RecordingFacade
+
+    reconcile_cp1 = KnowledgeCursor(value="reconcile-cp-1")
+    facade = RecordingFacade(
+        capabilities=KnowledgeAdapterCapabilities(
+            reconciliation=True, content_fetch=True
+        ),
+        pages_by_cursor={
+            None: make_page(
+                changes=(make_change(remote_id="item-1"),),
+                has_more=True,
+                next_cursor=reconcile_cp1,
+                proposed_checkpoint=reconcile_cp1,
+            ),
+            "reconcile-cp-1": make_page(
+                changes=(make_change(remote_id="item-2"),),
+                has_more=True,
+                next_cursor=KnowledgeCursor(value="reconcile-cp-2"),
+                proposed_checkpoint=KnowledgeCursor(value="reconcile-cp-2"),
+            ),
+        },
+    )
+    coordinator, facade_ref, _, _, runs, sink, _ = _durable_coordinator(facade=facade)
+    operation_id = "op-prepared-continue"
+    first = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=True,
+        operation_id=operation_id,
+    )
+    sink.apply_error = RuntimeError("sink unavailable")
+    with pytest.raises(VendorKnowledgeError):
+        await coordinator.reconcile_once(
+            binding_id="binding-1",
+            restart=False,
+            operation_id=operation_id,
+            trigger_delivery_id=first.delivery_id,
+        )
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.PAGE_PREPARED
+    )
+    reads_before = len(facade_ref.read_calls)
+    sink.apply_error = None
+    result = await coordinator.reconcile_once(
+        binding_id="binding-1",
+        restart=False,
+        operation_id=operation_id,
+        trigger_delivery_id=first.delivery_id,
+    )
+    assert result.retryable is False
+    assert len(facade_ref.read_calls) == reads_before + 1
+    assert len(sink.calls) == 3
+    assert runs.runs[("tenant-1", "binding-1")].phase is (
+        KnowledgeReconciliationRunPhase.COLLECTING
+    )

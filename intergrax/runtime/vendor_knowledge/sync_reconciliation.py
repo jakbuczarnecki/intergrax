@@ -227,19 +227,11 @@ class VendorKnowledgeReconciliationEngine:
             operation_id,
         )
         existing_run = self._read_run(binding_id=binding.binding_id)
-        effective_restart = restart
-        effective_trigger = trigger_delivery_id
-        if not restart and trigger_delivery_id is None:
-            if isinstance(existing_run, KnowledgeReconciliationRunPagePrepared):
-                if existing_run.prepared_parent_delivery_id is None:
-                    effective_restart = True
-                else:
-                    effective_trigger = existing_run.prepared_parent_delivery_id
         invocation = self._classify_job_invocation(
             existing_run=existing_run,
             run_id=run_id,
-            restart=effective_restart,
-            trigger_delivery_id=effective_trigger,
+            restart=restart,
+            trigger_delivery_id=trigger_delivery_id,
         )
         if invocation is _JobInvocationClass.STALE_OR_FOREIGN:
             raise VendorKnowledgeError(
@@ -278,8 +270,8 @@ class VendorKnowledgeReconciliationEngine:
             binding=binding,
             source=source,
             loaded_checkpoint=loaded_checkpoint,
-            restart=effective_restart,
-            trigger_delivery_id=effective_trigger,
+            restart=restart,
+            trigger_delivery_id=trigger_delivery_id,
             invocation=invocation,
         )
         if run.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
@@ -1277,6 +1269,14 @@ class VendorKnowledgeReconciliationEngine:
                 source_kind=source.source_kind,
                 retryable=False,
             ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation candidate inventory lookup failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None
         if len(inventory) > self._policy.max_reconciliation_candidate_count:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
@@ -1305,9 +1305,10 @@ class VendorKnowledgeReconciliationEngine:
             remaining_candidate_remote_ids=inventory,
         )
         if superseded_run is not None:
-            self._run_repository.cas_supersede_terminal(
+            self._cas_supersede_terminal(
                 expected=superseded_run,
                 replacement=collecting,
+                source=source,
             )
             return collecting
         try:
@@ -1323,6 +1324,22 @@ class VendorKnowledgeReconciliationEngine:
                     retryable=True,
                 ) from None
             return existing  # type: ignore[return-value]
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation run state is corrupt",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation run creation failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None
         return collecting
 
     def _resume_exact_sync(
@@ -2015,6 +2032,18 @@ class VendorKnowledgeReconciliationEngine:
                 safe_message="Knowledge reconciliation run conflict",
                 retryable=True,
             ) from None
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation run state is corrupt",
+                retryable=False,
+            ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation run update failed",
+                retryable=True,
+            ) from None
 
     def _cas_recovery(
         self,
@@ -2030,6 +2059,55 @@ class VendorKnowledgeReconciliationEngine:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
                 safe_message="Knowledge reconciliation recovery conflict",
+                retryable=True,
+            ) from None
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation run state is corrupt",
+                retryable=False,
+            ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation recovery update failed",
+                retryable=True,
+            ) from None
+
+    def _cas_supersede_terminal(
+        self,
+        *,
+        expected: KnowledgeReconciliationRun,
+        replacement: KnowledgeReconciliationRunCollecting,
+        source: KnowledgeSourceRef,
+    ) -> None:
+        try:
+            self._run_repository.cas_supersede_terminal(
+                expected=expected,
+                replacement=replacement,
+            )
+        except KnowledgeReconciliationRunConflict:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation run supersession conflict",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=True,
+            ) from None
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation run state is corrupt",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
+                retryable=False,
+            ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation run supersession failed",
+                provider_id=source.provider_id,
+                source_kind=source.source_kind,
                 retryable=True,
             ) from None
 
@@ -2138,6 +2216,12 @@ class VendorKnowledgeReconciliationEngine:
                 code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                 safe_message="Knowledge reconciliation run state is corrupt",
                 retryable=False,
+            ) from None
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge reconciliation run lookup failed",
+                retryable=True,
             ) from None
 
     def _enforce_reconciliation_capabilities(
