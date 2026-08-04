@@ -554,3 +554,24 @@ ative_handle is **RAG-local**, **private**, **non-ABI**, **non-serialized**, **t
 - Legacy chunkers receive
 ative_handle only through 	o_legacy_rag_document() under DocumentMetadataKey.DOCLING_DOCUMENT_META immediately before splitting (removed in **LCI-2D — native chunking migration**).
 - DocumentsLoader applies a temporary normalization/metadata LangChain bridge (removed in LCI-2C).
+
+## LCI-2C native ingest boundary
+
+Native loader path after scoped handler construction:
+
+```text
+ParsedDocumentFragment
+→ scoped KnowledgeDocument
+→ native normalization
+→ native metadata enrichment
+→ KnowledgeDocument
+```
+
+| Rule | Policy |
+|------|--------|
+| Normalizer mutation | `content` only |
+| Metadata provider mutation | `metadata` only |
+| Protected fields | `identity`, `scope`, `provenance` are immutable across normalization and metadata |
+| Private runtime handle | not serialized; copied across native pipeline stages |
+| Legacy conversion | `to_legacy_rag_document()` only immediately before splitters |
+| Runtime handle removal | owned by LCI-2D |

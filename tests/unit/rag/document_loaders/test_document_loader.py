@@ -207,7 +207,7 @@ def test_loader_invalid_tenant_raises():
         loader.load_document("file.pdf", tenant_id="")
 
 
-def test_loader_preserves_scope_after_bridge_round_trip():
+def test_loader_preserves_scope_through_native_pipelines():
 
     docs = [_sample_knowledge_doc()]
 
@@ -228,6 +228,84 @@ def test_loader_preserves_scope_after_bridge_round_trip():
     assert result[0].scope.namespace == namespace
     assert result[0].identity.document_id == docs[0].identity.document_id
     assert result[0].provenance.source_kind == docs[0].provenance.source_kind
+
+
+def test_loader_handler_output_passes_directly_to_normalizer_pipeline():
+
+    docs = [_sample_knowledge_doc(content="A   B")]
+
+    handler = _DummyHandler(docs)
+    registry = DocumentHandlerRegistry()
+    registry.register(handler)
+
+    loader = DocumentsLoader(
+        registry=registry,
+        metadata_pipeline=_DummyMetadataPipeline(),
+        normalizer_pipeline=create_default_normalizer_pipeline(),
+    )
+
+    result = loader.load_document("file.pdf", tenant_id=_TENANT)
+
+    assert result[0].content == "A B"
+
+
+def test_loader_normalized_output_passes_directly_to_metadata_pipeline(tmp_path):
+
+    from intergrax.rag.document_loaders.metadata.default_metadata_provider import (
+        DefaultMetadataProvider,
+    )
+    from intergrax.rag.document_loaders.pipeline.metadata_pipeline import MetadataPipeline
+
+    source = tmp_path / "sample.pdf"
+    source.write_text("pdf", encoding="utf-8")
+
+    docs = [_sample_knowledge_doc()]
+
+    handler = _DummyHandler(docs)
+    registry = DocumentHandlerRegistry()
+    registry.register(handler)
+
+    loader = DocumentsLoader(
+        registry=registry,
+        metadata_pipeline=MetadataPipeline([DefaultMetadataProvider()]),
+        normalizer_pipeline=create_default_normalizer_pipeline(),
+    )
+
+    result = loader.load_document(str(source), tenant_id=_TENANT)
+
+    assert result[0].metadata[DocumentMetadataKey.SOURCE_NAME] == "sample.pdf"
+
+
+def test_loader_does_not_use_compatibility_bridge(monkeypatch):
+
+    docs = [_sample_knowledge_doc()]
+
+    handler = _DummyHandler(docs)
+    registry = DocumentHandlerRegistry()
+    registry.register(handler)
+
+    def _forbidden(*args, **kwargs):
+        raise AssertionError("LangChain compatibility bridge must not be called")
+
+    monkeypatch.setattr(
+        "intergrax.compat.langchain.to_langchain_document",
+        _forbidden,
+    )
+    monkeypatch.setattr(
+        "intergrax.compat.langchain.from_langchain_document",
+        _forbidden,
+    )
+
+    loader = DocumentsLoader(
+        registry=registry,
+        metadata_pipeline=_DummyMetadataPipeline(),
+        normalizer_pipeline=create_default_normalizer_pipeline(),
+    )
+
+    result = loader.load_document("file.pdf", tenant_id=_TENANT)
+
+    assert len(result) == 1
+    assert isinstance(result[0], KnowledgeDocument)
 
 
 def test_loader_custom_metadata_merged_and_validated():
@@ -301,7 +379,7 @@ def test_loader_does_not_mutate_source_document():
     assert dict(source_doc.metadata) == original_metadata
 
 
-def test_loader_preserves_parser_runtime_state_through_round_trip():
+def test_loader_preserves_parser_runtime_state_through_pipelines():
 
     handle = object()
     source_doc = attach_parser_native_handle(_sample_knowledge_doc(), handle)
@@ -351,59 +429,6 @@ def test_loader_preserves_parser_runtime_state_through_custom_metadata():
     legacy = to_legacy_rag_document(result[0])
     assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
     assert result[0].metadata["custom_key"] == "custom_value"
-
-
-def test_loader_roundtrip_missing_langchain_id():
-
-    docs = [_sample_knowledge_doc()]
-    handler = _DummyHandler(docs)
-    registry = DocumentHandlerRegistry()
-    registry.register(handler)
-
-    loader = DocumentsLoader(
-        registry=registry,
-        metadata_pipeline=_DummyMetadataPipeline(),
-        normalizer_pipeline=create_default_normalizer_pipeline(),
-    )
-
-    result = loader.load_document("file.pdf", tenant_id=_TENANT)
-
-    assert result[0].identity.document_id == docs[0].identity.document_id
-
-
-def test_loader_roundtrip_rejects_changed_document_id():
-
-    from langchain_core.documents import Document
-
-    from intergrax.compat.langchain import to_langchain_document
-    from intergrax.rag.document_loaders.documents_loader import _roundtrip_knowledge_document
-
-    original = _sample_knowledge_doc()
-    langchain_doc = to_langchain_document(original)
-    changed = Document(
-        id="docid99999999999999",
-        page_content=langchain_doc.page_content,
-        metadata={
-            **dict(langchain_doc.metadata),
-            "root_document_id": "docid99999999999999",
-        },
-    )
-
-    with pytest.raises(ValueError, match="document_id mismatch after normalization"):
-        _roundtrip_knowledge_document(original, changed)
-
-
-def test_loader_roundtrip_preserved_langchain_id():
-
-    from intergrax.compat.langchain import to_langchain_document
-    from intergrax.rag.document_loaders.documents_loader import _roundtrip_knowledge_document
-
-    original = _sample_knowledge_doc()
-    langchain_doc = to_langchain_document(original)
-
-    result = _roundtrip_knowledge_document(original, langchain_doc)
-
-    assert result.identity.document_id == original.identity.document_id
 
 
 def test_to_legacy_rag_document_does_not_mutate_source():

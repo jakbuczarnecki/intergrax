@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-2B
-**Next task after acceptance:** LCI-2C
+**Current task:** LCI-2C
+**Next task after acceptance:** LCI-2D
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -178,7 +178,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Scoped handler and loader boundary emits `KnowledgeDocument`. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2A |
@@ -190,7 +190,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Loader output** | `KnowledgeDocument` |
 | **Scope** | required `tenant_id`, optional `namespace` |
 | **Identity** | deterministic per parser fragment (`source` + `position`) |
-| **Normalization/metadata bridge** | temporary until LCI-2C |
+| **Normalization/metadata bridge** | removed in LCI-2C |
 | **Downstream LangChain conversion** | limited to existing ingest call sites |
 
 ---
@@ -200,7 +200,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Normalizer, metadata provider, and parser/metadata pipelines use native contract. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-2B |
@@ -208,6 +208,12 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Explicit out of scope** | Chunking, embedding |
 | **Acceptance criteria** | Normalization/metadata pipelines preserve fields on native documents |
 | **User-visible outcome** | Metadata and normalization native throughout |
+
+| **Normalizer contracts** | `KnowledgeDocument` |
+| **Metadata provider contracts** | `KnowledgeDocument` |
+| **DocumentsLoader compatibility round-trip** | removed |
+| **Runtime handle** | preserved privately |
+| **Legacy conversion** | only immediately before splitters |
 
 ---
 

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Sequence
 from pathlib import Path
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class BaseDocumentNormalizer(ABC):
@@ -28,9 +28,9 @@ class BaseDocumentNormalizer(ABC):
     @abstractmethod
     def normalize(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         source: Path | str,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
         """
         Normalize document content.
 

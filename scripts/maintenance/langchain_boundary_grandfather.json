@@ -102,66 +102,12 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0039",
-      "path": "intergrax/rag/document_loaders/contracts/base_document_normalizer.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0041",
-      "path": "intergrax/rag/document_loaders/contracts/metadata_provider.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0044",
-      "path": "intergrax/rag/document_loaders/metadata/default_metadata_provider.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0045",
-      "path": "intergrax/rag/document_loaders/normalizers/whitespace_normalizer.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0054",
       "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
       "kind": "from",
       "module": "langchain_community.document_loaders",
       "names": [
         "TextLoader"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0057",
-      "path": "intergrax/rag/document_loaders/pipeline/metadata_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0058",
-      "path": "intergrax/rag/document_loaders/pipeline/normalizer_pipeline.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
       ]
     },
     {

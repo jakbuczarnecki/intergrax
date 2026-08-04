@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from pydantic import ValidationError
 
-from intergrax.compat.langchain import from_langchain_document, to_langchain_document
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.knowledge.contracts.validation import JsonValue, knowledge_metadata_to_plain
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
@@ -42,33 +41,6 @@ def _merge_custom_metadata(
     payload["metadata"] = merged
     validated = KnowledgeDocument.model_validate(payload)
     return copy_parser_runtime_state(document, validated)
-
-
-def _roundtrip_knowledge_document(
-    original: KnowledgeDocument,
-    langchain_doc: object,
-) -> KnowledgeDocument:
-    if getattr(langchain_doc, "id", None) is None:
-        converted = from_langchain_document(
-            langchain_doc,
-            document_id=original.identity.document_id,
-        )
-    else:
-        converted = from_langchain_document(langchain_doc)
-
-    if converted.identity.document_id != original.identity.document_id:
-        raise ValueError(
-            "document_id mismatch after normalization: "
-            f"expected {original.identity.document_id!r}, "
-            f"got {converted.identity.document_id!r}"
-        )
-
-    payload = converted.model_dump(mode="python")
-    payload["identity"] = original.identity.model_dump()
-    payload["scope"] = original.scope.model_dump()
-    payload["provenance"] = original.provenance.model_dump()
-    validated = KnowledgeDocument.model_validate(payload)
-    return copy_parser_runtime_state(original, validated)
 
 
 class DocumentsLoader(BaseDocumentsLoader):
@@ -137,24 +109,17 @@ class DocumentsLoader(BaseDocumentsLoader):
             if not loaded:
                 return docs
 
-            # Temporary LCI-2B bridge around legacy normalization/metadata pipelines.
-            # Removed in LCI-2C.
-            langchain_docs = [to_langchain_document(doc) for doc in loaded]
             normalized = self._normalizer_pipeline.normalize(
-                langchain_docs,
+                loaded,
                 source,
             )
 
             if use_default_metadata:
-                enriched_seq = self._metadata_pipeline.enrich(normalized, source)
-                enriched_langchain = list(enriched_seq)
+                enriched = list(
+                    self._metadata_pipeline.enrich(normalized, source)
+                )
             else:
-                enriched_langchain = list(normalized)
-
-            enriched = [
-                _roundtrip_knowledge_document(original, doc)
-                for original, doc in zip(loaded, enriched_langchain, strict=True)
-            ]
+                enriched = list(normalized)
 
             if call_custom_metadata is not None:
                 merged_docs: List[KnowledgeDocument] = []

@@ -8,28 +8,28 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Sequence
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class BaseMetadataProvider(ABC):
     """
     Contract for metadata enrichment used in the Intergrax RAG document loading pipeline.
 
-    Implementations may add or modify metadata fields on Document objects.
+    Implementations may add or modify metadata fields on KnowledgeDocument objects.
     """
 
     @abstractmethod
     def enrich(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         source: Path | str,
-    ) -> Sequence[Document]:
+    ) -> Sequence[KnowledgeDocument]:
         """
         Enrich documents with metadata.
 
         Parameters
         ----------
-        documents : Sequence[Document]
+        documents : Sequence[KnowledgeDocument]
             Documents returned by a loader provider.
 
         source : Path | str
@@ -37,7 +37,7 @@ class BaseMetadataProvider(ABC):
 
         Returns
         -------
-        Sequence[Document]
+        Sequence[KnowledgeDocument]
             Documents with additional metadata.
         """
         raise NotImplementedError
