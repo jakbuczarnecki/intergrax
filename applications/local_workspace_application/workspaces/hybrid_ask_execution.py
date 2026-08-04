@@ -12,10 +12,12 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from uuid import uuid4
 
-from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
+if TYPE_CHECKING:
+    from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
+
 from local_workspace_application.serving.workspace_schemas import WorkspaceSearchHitV1
 from local_workspace_application.workspaces.hybrid_ask_models import (
     AskAudienceV1,

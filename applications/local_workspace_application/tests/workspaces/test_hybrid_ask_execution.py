@@ -324,6 +324,9 @@ class _SearchExecution:
 
 class _SearchTaskResult:
     def __init__(self, evidence: list[dict[str, object]]) -> None:
+        self.agent_id = "agent-1"
+        self.run_id = "run-1"
+        self.task_id = "task-1"
         self.metadata: dict[str, object] = {}
         self.execution_result = _SearchExecution(evidence)
 
@@ -347,6 +350,9 @@ def _authoritative_retriever(
     repository: _AuthoritativeRepository | None = None,
 ) -> WorkspaceIndexedEvidenceRetrieverV1:
     repo = repository or _AuthoritativeRepository(binding)
+    search_metadata = {"indexed_source_binding_id": binding.indexed_source_binding_id}
+    if metadata is not None:
+        search_metadata.update(metadata)
     result = _SearchTaskResult(
         [
             {
@@ -357,7 +363,7 @@ def _authoritative_retriever(
                 "file_name": "document.txt",
                 "score": 0.9,
                 "snippet": "indexed content",
-                "metadata": metadata or {},
+                "metadata": search_metadata,
             }
         ]
     )
