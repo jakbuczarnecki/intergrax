@@ -38,6 +38,7 @@ from local_workspace_application.serving.workspace_schemas import (
     WorkspaceAskCitationV1,
     WorkspaceAskErrorV1,
     WorkspaceAskRequestV1,
+    WorkspaceAskRequestV2,
     WorkspaceAskResponseV1,
     WorkspaceListResponseV1,
     WorkspaceResponseV1,
@@ -45,12 +46,38 @@ from local_workspace_application.serving.workspace_schemas import (
     WorkspaceSearchResponseV1,
 )
 from local_workspace_application.workspaces.ask_models import WorkspaceAskRun
-from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.ask_repository import (
+    WorkspaceAskRepository,
+    WorkspaceAskRepositoryError,
+)
 from local_workspace_application.workspaces.ask_service import (
     WorkspaceAskLookupError,
     WorkspaceAskNotFoundError,
     WorkspaceAskPersistenceError,
     WorkspaceAskService,
+)
+from local_workspace_application.workspaces.hybrid_ask_execution import (
+    KnowledgeConnectionRegistryIntegrationResolverV1,
+    KnowledgeQueryOrchestratorV1,
+    LiveCapabilityExecutorV1,
+    LiveCapabilityHandlerRegistryV1,
+    WorkspaceIndexedEvidenceRetrieverV1,
+)
+from local_workspace_application.workspaces.hybrid_ask_models import WorkspaceAskRunV2
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    AudienceContextV1,
+    HybridAskPolicyError,
+    KnowledgeQueryAudienceV1,
+)
+from local_workspace_application.workspaces.hybrid_ask_service import (
+    BindingResourceScopeValidator,
+    SafeCapabilityRequestEnvelopeValidator,
+    UnavailableTenantLiveCapabilityCatalog,
+    WorkspaceAskCommandV2,
+    WorkspaceAskServiceV2,
+    WorkspaceAskV2Error,
+    WorkspaceAskV2LookupError,
+    WorkspaceAskV2PersistenceError,
 )
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_managed_workspace_document_store,
@@ -156,6 +183,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
+    WorkspaceKnowledgeConfigurationServiceError,
 )
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
@@ -367,6 +395,7 @@ def mount_managed_workspace_routes(
     tenant_connection_port: TenantConnectionPort | None = None,
     tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
     live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
+    ask_service_v2: WorkspaceAskServiceV2 | None = None,
 ) -> ManagedWorkspaceService:
     from pathlib import Path
 
@@ -535,6 +564,9 @@ def mount_managed_workspace_routes(
     if any(dep is not None for dep in live_access_deps):
         if not all(dep is not None for dep in live_access_deps):
             raise RuntimeError("live_access_wiring_incomplete")
+        assert tenant_connection_port is not None
+        assert tenant_live_capability_catalog is not None
+        assert live_access_remote_resource_lookup_port is not None
         live_access_service = WorkspaceLiveAccessBindingService(
             repository=repository,
             configuration_service=configuration_service,
@@ -645,10 +677,44 @@ def mount_managed_workspace_routes(
             llm_adapter_factory=(None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))),
         )
 
+    if ask_service_v2 is None:
+        if connected_wiring is None:
+            raise RuntimeError("hybrid_ask_wiring_incomplete")
+        live_handler_registry = LiveCapabilityHandlerRegistryV1()
+        ask_service_v2 = WorkspaceAskServiceV2(
+            workspace_service=service,
+            workspace_repository=repository,
+            ask_repository=ask_repository,
+            configuration_service=configuration_service,
+            capability_catalog=(
+                tenant_live_capability_catalog
+                or UnavailableTenantLiveCapabilityCatalog()
+            ),
+            request_envelope_validator=SafeCapabilityRequestEnvelopeValidator(),
+            resource_scope_validator=BindingResourceScopeValidator(),
+            orchestrator=KnowledgeQueryOrchestratorV1(
+                indexed_retriever=WorkspaceIndexedEvidenceRetrieverV1(
+                    task_executor=task_executor,
+                    workspace_repository=repository,
+                ),
+                live_executor=LiveCapabilityExecutorV1(
+                    handler_registry=live_handler_registry,
+                    integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
+                        connected_wiring.connection_registry
+                    ),
+                ),
+            ),
+            llm_adapter=llm_adapter,
+            llm_adapter_factory=(
+                None if llm_adapter is not None else (lambda: resolve_llm_adapter(None))
+            ),
+        )
+
     app.state.lkw_managed_workspace_service = service
     app.state.lkw_managed_workspace_repository = repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
+    app.state.lkw_ask_service_v2 = ask_service_v2
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service
@@ -1282,9 +1348,175 @@ def mount_managed_workspace_routes(
             run = current_ask.get_run(tenant_id=tenant_id, run_id=run_id)
         except WorkspaceAskNotFoundError as exc:
             raise _not_found() from exc
+        except WorkspaceAskRepositoryError as exc:
+            if exc.error_code == "ask_run_schema_version_mismatch":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="ask_run_version_mismatch",
+                ) from exc
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="ask_run_read_failed",
+            ) from exc
         return _ask_response(run)
 
+    v2_prefix = prefix.replace("/v1", "/v2", 1)
+    v2_router = APIRouter(prefix=v2_prefix, tags=["local_workspace_ask_v2"])
+
+    def _v2_http_exception(error_code: str) -> HTTPException:
+        if error_code in {"workspace_not_found", "ask_run_not_found"}:
+            code = status.HTTP_404_NOT_FOUND
+        elif error_code in {
+            "query_policy_required",
+            "configuration_revision_mismatch",
+            "configuration_projection_unstable",
+            "live_binding_unavailable",
+            "ask_run_version_mismatch",
+        }:
+            code = status.HTTP_409_CONFLICT
+        elif error_code == "query_mode_not_allowed":
+            code = status.HTTP_403_FORBIDDEN
+        elif error_code in {
+            "live_binding_not_found",
+        }:
+            code = status.HTTP_404_NOT_FOUND
+        elif error_code in {
+            "evidence_plan_invalid",
+            "live_request_invalid",
+            "live_capability_not_allowed",
+            "audience_mismatch",
+        }:
+            code = status.HTTP_422_UNPROCESSABLE_ENTITY
+        elif error_code == "live_result_too_large":
+            code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+        elif error_code == "live_execution_timeout":
+            code = status.HTTP_504_GATEWAY_TIMEOUT
+        elif error_code in {
+            "live_capability_unavailable",
+            "query_policy_invalid",
+            "configuration_projection_invalid",
+        }:
+            code = status.HTTP_503_SERVICE_UNAVAILABLE
+        elif error_code in {
+            "indexed_retrieval_failed",
+            "live_execution_failed",
+            "live_result_invalid",
+            "assembly_failed",
+            "unknown_evidence_id",
+            "citation_validation_failed",
+        }:
+            code = status.HTTP_502_BAD_GATEWAY
+        elif error_code == "ask_run_persistence_failed":
+            code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        else:
+            code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return HTTPException(status_code=code, detail=error_code)
+
+    @v2_router.post(
+        "/workspaces/{workspace_id}/ask",
+        response_model=WorkspaceAskRunV2,
+    )
+    async def ask_workspace_v2(
+        request: Request,
+        workspace_id: str,
+        body: WorkspaceAskRequestV2,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        current_v2: WorkspaceAskServiceV2 = getattr(
+            request.app.state, "lkw_ask_service_v2", ask_service_v2
+        )
+        try:
+            return await current_v2.ask(
+                WorkspaceAskCommandV2(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    question=body.question,
+                    requested_mode=body.mode,
+                    audience_context=AudienceContextV1(
+                        audience=KnowledgeQueryAudienceV1.PERSONAL
+                    ),
+                    indexed_max_results=body.indexed_max_results,
+                    ordered_live_call_proposals=body.ordered_live_call_proposals,
+                )
+            )
+        except WorkspaceAskV2PersistenceError as exc:
+            raise _v2_http_exception("ask_run_persistence_failed") from exc
+        except WorkspaceAskV2LookupError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceAskV2Error as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except HybridAskPolicyError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceKnowledgeConfigurationServiceError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except Exception as exc:
+            logger.warning("ask_workspace_v2_failed kind=%s", type(exc).__name__)
+            raise _v2_http_exception("internal_error") from exc
+
+    async def _read_ask_run_v2(
+        request: Request,
+        *,
+        run_id: str,
+        workspace_id: str | None,
+        x_tenant_id: str | None,
+    ) -> WorkspaceAskRunV2:
+        tenant_id = resolve_tenant_id(request, header_tenant_id=x_tenant_id)
+        managed_service: ManagedWorkspaceService = getattr(
+            request.app.state, "lkw_managed_workspace_service", service
+        )
+        current_v2: WorkspaceAskServiceV2 = getattr(
+            request.app.state, "lkw_ask_service_v2", ask_service_v2
+        )
+        try:
+            run = current_v2.get_run(tenant_id=tenant_id, run_id=run_id)
+        except WorkspaceAskV2LookupError as exc:
+            raise _v2_http_exception(exc.error_code) from exc
+        except WorkspaceAskRepositoryError as exc:
+            if exc.error_code == "ask_run_schema_version_mismatch":
+                raise _v2_http_exception("ask_run_version_mismatch") from exc
+            raise _v2_http_exception("ask_run_read_failed") from exc
+        if managed_service.get_workspace(
+            tenant_id=tenant_id,
+            workspace_id=run.workspace_id,
+        ) is None:
+            raise _v2_http_exception("workspace_not_found")
+        if workspace_id is not None and run.workspace_id != workspace_id:
+            raise _v2_http_exception("workspace_not_found")
+        return run
+
+    @v2_router.get("/asks/{run_id}", response_model=WorkspaceAskRunV2)
+    async def get_ask_run_v2(
+        request: Request,
+        run_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        return await _read_ask_run_v2(
+            request,
+            run_id=run_id,
+            workspace_id=None,
+            x_tenant_id=x_tenant_id,
+        )
+
+    @v2_router.get(
+        "/workspaces/{workspace_id}/ask-runs/{run_id}",
+        response_model=WorkspaceAskRunV2,
+    )
+    async def get_workspace_ask_run_v2(
+        request: Request,
+        workspace_id: str,
+        run_id: str,
+        x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
+    ) -> WorkspaceAskRunV2:
+        return await _read_ask_run_v2(
+            request,
+            run_id=run_id,
+            workspace_id=workspace_id,
+            x_tenant_id=x_tenant_id,
+        )
+
     app.include_router(router)
+    app.include_router(v2_router)
     return service
 
 

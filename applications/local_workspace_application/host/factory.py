@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
@@ -83,6 +83,7 @@ def create_local_workspace_backend_app(
     runtime_events_db_path: Path | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
     host_readiness: LocalWorkspaceReadinessProvider | None = None,
+    hybrid_ask_service: Any | None = None,
 ) -> FastAPI:
     resolved_settings = cast(
         LocalWorkspaceBackendSettings,
@@ -241,6 +242,7 @@ def create_local_workspace_backend_app(
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
         shared_slack_integration=shared_slack_integration,
+        ask_service_v2=hybrid_ask_service,
     )
     mount_local_workspace_readiness_routes(
         app,

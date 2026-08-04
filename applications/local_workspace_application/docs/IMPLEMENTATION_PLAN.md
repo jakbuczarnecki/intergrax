@@ -27,9 +27,9 @@ Architecture:
 
 Next implementation:
   LKW-HYBRID-ASK-1 — IN_PROGRESS
-    LKW-HYBRID-ASK-1A — READY_FOR_REVIEW
-    LKW-HYBRID-ASK-1B — PLANNED
-    LKW-HYBRID-ASK-1C — PLANNED
+    LKW-HYBRID-ASK-1A — ACCEPTED / CLOSED
+    LKW-HYBRID-ASK-1B — ACCEPTED / CLOSED
+    LKW-HYBRID-ASK-1C — READY_FOR_REVIEW
 
 Platform next (vendor knowledge):
   SLACK-KNOWLEDGE-FOUNDATION-1 — DONE
@@ -136,9 +136,9 @@ NEXT IMPLEMENTATION:
 LKW-HYBRID-ASK-1
 → IN_PROGRESS
 → RAG + LIVE KNOWLEDGE QUERY WITH UNIFIED PROVENANCE
-  1A — provider-neutral core contracts, Query Policy V2, Evidence Plan validation — READY_FOR_REVIEW
-  1B — provider-neutral live execution + Knowledge Query orchestration — PLANNED
-  1C — Workspace Ask integration, HTTP V2, bounded acceptance proof — PLANNED
+  1A — provider-neutral core contracts, Query Policy V2, Evidence Plan validation — ACCEPTED / CLOSED
+  1B — provider-neutral live execution + Knowledge Query orchestration — ACCEPTED / CLOSED
+  1C — Workspace Ask integration, HTTP V2, bounded acceptance proof — READY_FOR_REVIEW
 
 LKW-CONVERSATIONAL-FRONTEND-1
 → NATURAL-LANGUAGE EXECUTION AND LIVE SLACK CUTOVER

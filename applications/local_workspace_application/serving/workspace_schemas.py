@@ -9,6 +9,13 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    LiveCallProposalV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    QueryPolicyModeV2,
+)
+
 
 class CreateWorkspaceRequestV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -171,6 +178,22 @@ class WorkspaceAskResponseV1(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     error: WorkspaceAskErrorV1 | None = None
+
+
+class WorkspaceAskRequestV2(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(..., min_length=1)
+    mode: QueryPolicyModeV2
+    indexed_max_results: int | None = Field(default=None, ge=1, le=500)
+    ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+
+    @field_validator("question")
+    @classmethod
+    def question_must_not_be_whitespace(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("question must not be blank")
+        return value
 
 
 class ManagedFileBatchItemAcceptedV1(BaseModel):
