@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-2 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-3 |
+| Current phase | PX-3 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-4 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -152,27 +152,29 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-2 — Product-first root README
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `5b8423dde34da1c47acc908a8509ebabed8a10b9`
+
+**Delivered:** product-first root README; LKW workflow before platform architecture; removal of lab/echo as primary Quick Start; clear separation of product workflow and bounded proof.
 
 **User-visible outcome:** Root README leads with product value, LKW workflow, and one clear next action before platform depth.
-
-**Completion gate:** README receives a scoped editorial and factual audit; LKW is the primary CTA; echo/lab are not the primary Quick Start; limitations remain visible; the result is later verified in real external-reader sessions.
 
 ---
 
 ## PX-3 — Supported LKW product Quick Start
 
-**Status:** BLOCKED_ON_PX_2_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** A supported, documented LKW product Quick Start exists that public readers can follow without maintainer vocabulary.
 
-**Completion gate:** Quick Start path is real, tested, and documented; not advertised as simple until the path actually exists; 15-minute LKW target becomes claimable only after validation.
+**Completion gate:** Real managed upload; real indexing; real Ask; citation; persisted Ask read; Windows live run; Linux/macOS wrappers present but not falsely live-certified; no 15-minute validation claim before external sessions.
 
 ---
 
 ## PX-4 — Real visual product evidence
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_3_ACCEPTANCE
 
 **User-visible outcome:** Reviewed real or intentionally designed neutral visuals support LKW and product introduction without fabricated UI.
 

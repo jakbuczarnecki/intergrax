@@ -59,9 +59,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-1 ACCEPTED / CLOSED
-Current phase: PX-2 READY_FOR_REVIEW
-Next after acceptance: PX-3
+Previous phase: PX-2 ACCEPTED / CLOSED
+Current phase: PX-3 READY_FOR_REVIEW
+Next after acceptance: PX-4
 External sessions: NOT_STARTED
 ```
 

@@ -183,6 +183,7 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Check use-case fit | `USE_CASES.md` |
 | Understand product-validation direction | `ROADMAP.md` |
 | See the first-contact LKW product workflow | `README.md#local-knowledge-workspace-lkw` |
+| Try LKW (supported product quickstart) | `applications/local_workspace_application/docs/QUICKSTART.md` |
 | Run or inspect the bounded LKW technical proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
 | Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
@@ -220,12 +221,11 @@ The README owns the concise first-contact workflow. The LKW proof remains the au
 
 **Frozen CTA placement (PX-1):**
 
-- LKW is the primary public product CTA.
+- LKW is the primary public product CTA (**Try LKW**).
 - Token Optimization is the secondary capability CTA.
-- Product trial and platform evaluation are separate routes.
-- The current primary CTA is **See the LKW workflow**.
-- **Try LKW** is gated by PX-3.
-- Root README adoption is implemented in PX-2 and ready for audit.
+- Product quickstart and platform proof are separate routes (`product quickstart ≠ platform proof`).
+- Root README adoption is implemented in PX-2 (ACCEPTED / CLOSED).
+- Supported Try LKW quickstart is implemented in PX-3 (READY_FOR_REVIEW).
 
 ---
 

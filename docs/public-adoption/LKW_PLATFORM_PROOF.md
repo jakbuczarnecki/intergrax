@@ -1,6 +1,8 @@
 # Intergrax Platform Proof — Local Knowledge Workspace
 
-**Prerequisite:** This is a bounded technical reviewer proof, not a simplified public product trial. A simplified public LKW trial is not yet claimed available.
+**Prerequisite:** For the supported first LKW product run, use the [LKW Quickstart](../../applications/local_workspace_application/docs/QUICKSTART.md). This document is the deeper bounded technical reviewer proof. It is not required to complete the product quickstart.
+
+**Product quickstart ≠ platform proof.** The quickstart demonstrates managed upload, indexed Ask, citation, and persisted read for product evaluation. This proof document remains the authoritative bounded technical certification path.
 
 Start with the [root README](../../README.md) for the product overview, then use the prerequisites and one-command proof entrypoints documented below.
 

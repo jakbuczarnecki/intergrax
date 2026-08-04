@@ -90,11 +90,13 @@ LKW should support three entry paths.
 
 | User type | Goal | Entry path |
 |-----------|------|------------|
-| Product evaluator | See that LKW solves a real local knowledge problem | README -> LKW quickstart -> index fixture -> search -> synthesize |
+| Product evaluator | See that LKW solves a real local knowledge problem | README → [Try LKW](../../README.md#try-lkw) → managed sample upload → indexed Ask → grounded answer and citation → persisted Ask-run verification |
 | Platform evaluator | See that Intergrax can produce repeatable agent applications | README -> LKW platform proof loop -> scaffold/build/deploy docs |
 | Developer contributor | Extend or improve LKW / Intergrax | architecture -> implementation plan -> one wave -> tests -> platform propagation |
 
-The first user path is the most important. If a new user cannot reach a useful local run quickly, LKW is not ready.
+The first user path is the most important. The supported product quickstart ([QUICKSTART.md](QUICKSTART.md)) is **implemented and ready for review** — one OS command, managed sample upload, indexed Ask, citation, and persisted Ask-run verification.
+
+The longer manual index/search/synthesize developer journey remains an **advanced path** (see §4 and host/API documentation).
 
 ---
 

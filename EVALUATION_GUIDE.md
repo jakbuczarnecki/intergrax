@@ -89,7 +89,9 @@ Start from:
 - [README.md](README.md) — product overview and LKW workflow.
 - [PROOFS.md](PROOFS.md) — current proof status and claim boundaries.
 
-A simplified public LKW trial is not yet claimed available. Use the bounded builder or technical evaluation paths documented in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
+A simplified public LKW trial is available through the supported product quickstart: [applications/local_workspace_application/docs/QUICKSTART.md](applications/local_workspace_application/docs/QUICKSTART.md).
+
+This path is indexed-only LKW. First-run duration varies; timing is not yet externally validated. Deeper technical proof remains separate — see [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) and [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
 
 Typical local flow:
 

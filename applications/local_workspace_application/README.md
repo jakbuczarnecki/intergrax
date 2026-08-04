@@ -8,7 +8,7 @@ Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral 
 
 **Architecture (canonical):** [ARCHITECTURE.md](docs/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md)  
 **Live verification:** [LKW_1_LIVE_VERIFICATION.md](docs/LKW_1_LIVE_VERIFICATION.md)  
-**User journey:** [USER_JOURNEY.md](docs/USER_JOURNEY.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)  
+**User journey:** [USER_JOURNEY.md](docs/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](docs/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](docs/PLATFORM_PROOF_LOOP.md)
 **Build & deploy:** [BUILD_AND_DEPLOY.md](docs/BUILD_AND_DEPLOY.md)
 
 ## Agents
@@ -19,9 +19,15 @@ Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral 
 | `LocalSearchAgent` | `local.workspace.search` (default) |
 | `LocalSynthesizerAgent` | `local.workspace.synthesize` |
 
+## Try LKW
+
+**Supported product quickstart:** [docs/QUICKSTART.md](docs/QUICKSTART.md)
+
+One command uploads a bundled sample through managed-file intake, waits for indexing, asks a grounded question, shows a citation, and verifies persisted Ask readback. No `INTERGRAX_ALLOWED_READ_ROOTS`, no manual API JSON, and no Platform Proof run required.
+
 ## What LKW proves
 
-For the fastest external evaluation path, start with the public LKW Platform Proof: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../docs/public-adoption/LKW_PLATFORM_PROOF.md). It shows the Docker-based run path, Elasticsearch/Kibana inspection, expected outputs, and proof-helper PASS criteria.
+For deeper bounded technical review, see the public LKW Platform Proof: [`docs/public-adoption/LKW_PLATFORM_PROOF.md`](../../docs/public-adoption/LKW_PLATFORM_PROOF.md). The product quickstart above is the normal first evaluation path; the platform proof is separate.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
@@ -51,6 +57,12 @@ The common self-hosted / developer reference topology (not the product definitio
 In-memory vector storage is only for tests or temporary development. It is not the reference product default for durable RAG.
 
 ## Docker quickstart
+
+### Supported product quickstart
+
+See [docs/QUICKSTART.md](docs/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
+
+### Advanced developer path
 
 From `applications/local_workspace_application/`:
 

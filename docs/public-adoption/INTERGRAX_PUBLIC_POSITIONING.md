@@ -33,12 +33,13 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-2 — READY_FOR_REVIEW |
+| Current phase | PX-3 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
-| Current primary CTA | See the LKW workflow |
-| Future product-trial CTA | Try LKW — only after PX-3 provides an actual supported path |
-| Root README application | APPLIED IN PX-2 — READY_FOR_REVIEW |
+| Current primary CTA | Try LKW |
+| Product-orientation CTA | See the LKW workflow |
+| Supported product quickstart | Implemented in PX-3 — READY_FOR_REVIEW |
+| Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -103,15 +104,13 @@ Product trial and platform evaluation are different routes. A certification runb
 
 ### Current primary CTA
 
-**See the LKW workflow**
-
-This is the active CTA until PX-3 is accepted and delivers a real supported path.
-
-### Future primary CTA
-
 **Try LKW**
 
-Try LKW may become active only after PX-3 provides an actual supported path, the path is tested, documentation accurately matches it, and the product is not falsely presented as easier than it is.
+The supported product quickstart path is implemented in PX-3 and ready for audit. It must remain a real tested path — not documentation-only.
+
+### Product-orientation CTA
+
+**See the LKW workflow**
 
 ### Secondary CTA
 

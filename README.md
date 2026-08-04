@@ -11,7 +11,7 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](PROOFS.md)
 
-**[See the LKW workflow](#local-knowledge-workspace-lkw)** · [Explore Token Optimization](#token-optimization) · [Review architecture and proofs](ARCHITECTURE_OVERVIEW.md) · [PROOFS.md](PROOFS.md)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](#local-knowledge-workspace-lkw) · [Explore Token Optimization](#token-optimization) · [Review architecture and proofs](ARCHITECTURE_OVERVIEW.md) · [PROOFS.md](PROOFS.md)
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
 
@@ -57,6 +57,38 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 **Review the bounded LKW proof** → [docs/public-adoption/LKW_PLATFORM_PROOF.md](docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 **Check current proof status** → [PROOFS.md](PROOFS.md)
+
+---
+
+## Try LKW
+
+One supported command takes you from repository checkout to a grounded answer with a source citation over indexed knowledge — using managed file upload, without manual API JSON or local path allowlists.
+
+**Windows:**
+
+```bat
+applications\local_workspace_application\scripts\run-lkw-product-quickstart-windows.bat
+```
+
+**Linux:**
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh
+```
+
+**macOS:**
+
+```sh
+./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh
+```
+
+**Expected answer marker:** `AURORA-17` · **Expected source file:** `lkw_product_quickstart.txt`
+
+**Detailed guide:** [applications/local_workspace_application/docs/QUICKSTART.md](applications/local_workspace_application/docs/QUICKSTART.md)
+
+First run may download Docker images and the configured local model; duration depends on your environment and is not yet externally validated as a fixed time target.
+
+<a id="try-lkw"></a>
 
 ---
 
@@ -152,6 +184,7 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 | Goal | Start here |
 | ---- | ---------- |
 | See the LKW workflow | [Local Knowledge Workspace (LKW)](#local-knowledge-workspace-lkw) |
+| Try LKW (supported quickstart) | [Try LKW](#try-lkw) |
 | Review current proofs | [PROOFS.md](PROOFS.md) |
 | Understand the architecture | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
 | Build or evaluate | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
