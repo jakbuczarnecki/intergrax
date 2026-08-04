@@ -133,10 +133,12 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         scope: VectorStoreScope | None = None,
     ) -> Sequence[str] | None:
-        resolved_scope = self._resolve_scope(scope)
-        self._enforce_access("write", resolved_scope)
+        materialized = list(records)
+        if not materialized:
+            return []
+
         validated: list[VectorStoreRecord] = []
-        for record in list(records):
+        for record in materialized:
             if not isinstance(record, VectorStoreRecord):
                 raise TypeError("records must contain only VectorStoreRecord values")
             checked = VectorStoreRecord(
@@ -144,14 +146,57 @@ class VectorstoreManager(BaseVectorstoreManager):
                 embedding=record.embedding,
                 vector_id=record.vector_id,
             )
-            if not resolved_scope.matches_document(checked.document):
-                raise VectorStoreContractError(
-                    "record document scope does not match operation scope"
-                )
             validated.append(checked)
 
-        if not validated:
-            return []
+        first_document_scope = validated[0].document.scope
+        if any(
+            record.document.scope.tenant_id != first_document_scope.tenant_id
+            or record.document.scope.namespace != first_document_scope.namespace
+            for record in validated[1:]
+        ):
+            raise VectorStoreContractError(
+                "records must share the same document tenant and namespace"
+            )
+
+        document_scope = VectorStoreScope(
+            tenant_id=first_document_scope.tenant_id,
+            namespace=first_document_scope.namespace,
+        )
+        if scope is None:
+            bound_scope = self._bound_scope
+            if bound_scope is not None:
+                if bound_scope.tenant_id != document_scope.tenant_id:
+                    raise VectorStoreContractError(
+                        "document tenant_id differs from bound scope"
+                    )
+                if (
+                    bound_scope.namespace is not None
+                    and bound_scope.namespace != document_scope.namespace
+                ):
+                    raise VectorStoreContractError(
+                        "document namespace differs from bound scope"
+                    )
+            resolved_scope = self._resolve_scope(
+                VectorStoreScope(
+                    tenant_id=document_scope.tenant_id,
+                    namespace=document_scope.namespace,
+                    workspace_id=(
+                        bound_scope.workspace_id if bound_scope is not None else None
+                    ),
+                )
+            )
+        else:
+            resolved_scope = self._resolve_scope(scope)
+
+        if any(
+            not resolved_scope.matches_document(record.document)
+            for record in validated
+        ):
+            raise VectorStoreContractError(
+                "record document scope does not match operation scope"
+            )
+
+        self._enforce_access("write", resolved_scope)
 
         legacy_documents = []
         for record in validated:

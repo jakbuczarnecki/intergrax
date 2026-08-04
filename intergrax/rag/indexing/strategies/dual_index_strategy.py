@@ -17,7 +17,6 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
-    VectorStoreScope,
 )
 from intergrax.rag.indexing.contracts.index_strategy import IndexStrategy
 
@@ -144,7 +143,4 @@ class DualIndexStrategy(IndexStrategy):
                 for index, document in enumerate(batch_documents, start=i)
             ]
 
-            vectorstore.add_records(
-                records,
-                scope=VectorStoreScope.from_document(records[0].document),
-            )
+            vectorstore.add_records(records)

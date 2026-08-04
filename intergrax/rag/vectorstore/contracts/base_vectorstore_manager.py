@@ -21,6 +21,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 
 class BaseVectorstoreManager(ABC):
 
+    @abstractmethod
     def add_records(
         self,
         records: Sequence[VectorStoreRecord],

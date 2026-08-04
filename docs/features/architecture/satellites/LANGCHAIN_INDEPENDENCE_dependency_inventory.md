@@ -1,10 +1,10 @@
 <!--
-Ă‚Â© Artur Czarnecki. All rights reserved.
-Intergrax framework Ă˘â‚¬â€ś proprietary and confidential.
+© Artur Czarnecki. All rights reserved.
+Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
 -->
 
-# LANGCHAIN_INDEPENDENCE Ă˘â‚¬â€ť dependency inventory
+# LANGCHAIN_INDEPENDENCE — dependency inventory
 
 **Parent hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
@@ -167,11 +167,11 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 191 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
 | LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 191 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
 | LCI-INV-0184 | `langchain-ollama` | `pyproject.toml` | 208 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-all | PACKAGING_DEPENDENCY | llm-all extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-all |
-| LCI-INV-0185 | `uv.lock` | `uv.lock` | Ă˘â‚¬â€ť | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
+| LCI-INV-0185 | `uv.lock` | `uv.lock` | — | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
 
 ## D. Public contract leak register
 
-Only real leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks Ă˘â‚¬â€ť see Ă‚Â§E.
+Only real leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks — see §E.
 
 | Leaked type | Contract signature / location | Producers | Consumers | Future native contract | Architecture prerequisite | Implementation migration | Migration risk |
 |-------------|------------------------------|-----------|-----------|------------------------|----------------|----------------|
@@ -200,7 +200,7 @@ Only real leaks through public or shared core contracts (LangChain types in Inte
 
 ## F. Dependency package register
 
-Direct import counts are from Ă‚Â§C import rows only (not packaging rows).
+Direct import counts are from §C import rows only (not packaging rows).
 
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
@@ -214,7 +214,7 @@ Direct import counts are from Ă‚Â§C import rows only (not packaging rows).
 
 ## G. LangGraph register
 
-Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated Ă‚Â§C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context/` copies mirror the same two modules but are excluded from Ă‚Â§C to avoid double-counting.
+Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated §C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context/` copies mirror the same two modules but are excluded from §C to avoid double-counting.
 
 | Path | Line | Symbol | Classification | Task |
 |------|-----:|--------|----------------|------|

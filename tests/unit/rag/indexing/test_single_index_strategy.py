@@ -10,6 +10,7 @@ import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.indexing.strategies.single_index_strategy import SingleIndexStrategy
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
@@ -82,6 +83,7 @@ class FakeVectorstore(BaseVectorstoreManager):
     def __init__(self):
         self.records = []
         self.embeddings = None
+        self.calls = []
 
     def add_records(
         self,
@@ -89,6 +91,7 @@ class FakeVectorstore(BaseVectorstoreManager):
         *,
         scope: VectorStoreScope | None = None,
     ) -> None:
+        self.calls.append({"records": records, "scope": scope})
         self.records.extend(records)
         self.embeddings = np.array([record.embedding for record in records])
     
@@ -134,11 +137,38 @@ def test_single_index_strategy_inserts_documents():
     )
 
     assert vectorstore.count() == 2
+    assert len(vectorstore.calls) == 1
+    assert vectorstore.calls[0]["scope"] is None
+    assert vectorstore.calls[0]["records"] == vectorstore.records
     assert embed_manager.received_documents == tuple(docs)
     assert [record.document.content for record in vectorstore.records] == ["A", "B"]
     assert all(isinstance(record, VectorStoreRecord) for record in vectorstore.records)
     assert vectorstore.records[0].document.scope.tenant_id == "tenant.test"
     assert np.array_equal(vectorstore.embeddings, [[0, 1, 2], [1, 2, 3]])
+
+
+def test_dual_index_strategy_batches_without_operational_scope():
+    docs = [
+        _native_document("A", 0),
+        _native_document("B", 1),
+    ]
+    embed_manager = FakeEmbeddingManager()
+    vectorstore = FakeVectorstore()
+    toc_vectorstore = FakeVectorstore()
+
+    DualIndexStrategy(toc_vectorstore=toc_vectorstore, batch_size=1).build_index(
+        documents=docs,
+        embed_manager=embed_manager,
+        vectorstore=vectorstore,
+    )
+
+    assert [call["scope"] for call in vectorstore.calls] == [None, None]
+    assert [
+        record.document.content
+        for call in vectorstore.calls
+        for record in call["records"]
+    ] == ["A", "B"]
+    assert toc_vectorstore.calls == []
 
 
 @pytest.mark.parametrize(
