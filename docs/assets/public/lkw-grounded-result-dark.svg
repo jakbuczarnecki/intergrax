@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 760" role="img">
+  <title>Local Knowledge Workspace grounded result</title>
+  <desc>Neutral documentation visual showing an approved quickstart source moving through managed upload and indexing to a question, a grounded answer, a source reference, and persisted Ask-run verification.</desc>
+  <rect width="1600" height="760" fill="#0d1117"/>
+  <rect x="40" y="36" width="1520" height="688" rx="24" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+
+  <text x="800" y="94" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="34" font-weight="700" fill="#e6edf3">Local Knowledge Workspace</text>
+  <text x="800" y="132" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#8b949e">Approved knowledge to a grounded answer with a source</text>
+
+  <rect x="80" y="180" width="330" height="300" rx="18" fill="#1c2d4a" stroke="#58a6ff" stroke-width="2"/>
+  <text x="245" y="230" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Approved source</text>
+  <text x="245" y="292" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#c9d1d9">lkw_product_quickstart.txt</text>
+  <text x="245" y="362" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#e6edf3">Project codename:</text>
+  <text x="245" y="400" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="26" font-weight="700" fill="#79c0ff">AURORA-17</text>
+
+  <line x1="410" y1="330" x2="460" y2="330" stroke="#e6edf3" stroke-width="3"/>
+  <path d="M460 330 L444 320 L444 340 Z" fill="#e6edf3"/>
+
+  <rect x="460" y="180" width="270" height="300" rx="18" fill="#1a2e1a" stroke="#3fb950" stroke-width="2"/>
+  <text x="595" y="252" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#e6edf3">Managed upload</text>
+  <line x1="510" y1="300" x2="680" y2="300" stroke="#3fb950" stroke-width="2"/>
+  <text x="595" y="372" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#e6edf3">Indexed knowledge</text>
+
+  <line x1="730" y1="330" x2="780" y2="330" stroke="#e6edf3" stroke-width="3"/>
+  <path d="M780 330 L764 320 L764 340 Z" fill="#e6edf3"/>
+
+  <rect x="780" y="180" width="310" height="300" rx="18" fill="#2d2a1a" stroke="#d29922" stroke-width="2"/>
+  <text x="935" y="240" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#e6edf3">Question</text>
+  <text x="935" y="316" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#c9d1d9">What is the project</text>
+  <text x="935" y="354" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#c9d1d9">codename?</text>
+
+  <line x1="1090" y1="330" x2="1140" y2="330" stroke="#e6edf3" stroke-width="3"/>
+  <path d="M1140 330 L1124 320 L1124 340 Z" fill="#e6edf3"/>
+
+  <rect x="1140" y="180" width="380" height="300" rx="18" fill="#21262d" stroke="#8b949e" stroke-width="2"/>
+  <text x="1330" y="232" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="27" font-weight="700" fill="#e6edf3">Grounded answer</text>
+  <text x="1330" y="292" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#79c0ff">AURORA-17</text>
+  <text x="1330" y="356" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#c9d1d9">Source: lkw_product_quickstart.txt</text>
+  <text x="1330" y="416" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#e6edf3">Persisted Ask run: verified</text>
+
+  <rect x="80" y="550" width="1440" height="76" rx="14" fill="#21262d" stroke="#484f58" stroke-width="2"/>
+  <text x="800" y="598" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#c9d1d9">Neutral representation of the supported indexed quickstart &#8212; not an application UI screenshot.</text>
+
+  <text x="800" y="682" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#8b949e">Source reference and persisted Ask-run verification complete the evidence path.</text>
+</svg>

@@ -26,14 +26,22 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 3. Ask a question over indexed knowledge.
 4. Receive a grounded result with source references and inspectable evidence.
 
-```mermaid
-flowchart LR
-    A[Approved knowledge] --> B[Background processing]
-    B --> C[Persisted index]
-    C --> D[Question]
-    D --> E[Grounded result]
-    E --> F[Source references and evidence]
-```
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/assets/public/lkw-grounded-result-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/assets/public/lkw-grounded-result-light.svg"
+  >
+  <img
+    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
+    src="docs/assets/public/lkw-grounded-result-light.svg"
+  >
+</picture>
+
+This neutral visual represents the documented Quick Start, not a finished UI screenshot; dynamic workspace and Ask-run IDs are omitted.
 
 ### What is boundedly proven today
 

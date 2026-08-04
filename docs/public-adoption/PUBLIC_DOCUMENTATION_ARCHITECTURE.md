@@ -55,7 +55,7 @@ Freeze five layers.
 README.md
 ```
 
-**Status:** implemented in PX-2 — READY_FOR_REVIEW
+**Status:** implemented in PX-2 — ACCEPTED / CLOSED
 
 **Role:**
 
@@ -225,7 +225,24 @@ The README owns the concise first-contact workflow. The LKW proof remains the au
 - Token Optimization is the secondary capability CTA.
 - Product quickstart and platform proof are separate routes (`product quickstart ≠ platform proof`).
 - Root README adoption is implemented in PX-2 (ACCEPTED / CLOSED).
-- Supported Try LKW quickstart is implemented in PX-3 (READY_FOR_REVIEW).
+- Supported Try LKW quickstart is implemented in PX-3 (ACCEPTED / CLOSED).
+
+---
+
+## 4a. LKW visual evidence ownership
+
+PX-4 owns the neutral documentation visual for the supported indexed LKW Quick Start. It presents a concrete indexed result: the approved sample source, managed intake and indexing, the user question, the grounded answer, the source reference, and persisted Ask-run verification.
+
+The canonical assets are:
+
+```text
+docs/assets/public/lkw-grounded-result-light.svg
+docs/assets/public/lkw-grounded-result-dark.svg
+```
+
+The root `README.md` is the primary placement and `applications/local_workspace_application/docs/QUICKSTART.md` is the secondary placement. The visual is not a UI screenshot and makes no Hybrid, live-provider, or production claim.
+
+The canonical alt-text meaning identifies `lkw_product_quickstart.txt`, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification.
 
 ---
 

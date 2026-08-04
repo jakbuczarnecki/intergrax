@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-3 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-4 |
+| Current phase | PX-4 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-5 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -164,7 +164,9 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-3 — Supported LKW product Quick Start
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `f12176d831670468f639ab2f1841e5ccc6dfc4f8`
 
 **User-visible outcome:** A supported, documented LKW product Quick Start exists that public readers can follow without maintainer vocabulary.
 
@@ -174,7 +176,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-4 — Real visual product evidence
 
-**Status:** BLOCKED_ON_PX_3_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Reviewed real or intentionally designed neutral visuals support LKW and product introduction without fabricated UI.
 
@@ -184,7 +186,7 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-5 — Product tour and certification-proof separation
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_4_ACCEPTANCE
 
 **User-visible outcome:** Readers see a product tour before or alongside certification-style proof material; certification runbook does not replace the tour.
 
@@ -259,6 +261,12 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 **User-visible outcome:** The complete public journey receives a final human editorial, factual and cross-document consistency review before external sessions.
 
 **Completion gate:** The main reader paths are manually reviewed against the positioning, proof-status and roadmap sources of truth; links and commands are checked using normal repository tooling where appropriate; no Python copywriting tests, regex wording contracts or mutation tests are introduced.
+
+Before external sessions, executable public claims must be run or supported by reviewed evidence against a pinned repository revision.
+
+Technical failures are assigned to their owning technical sessions.
+
+Unsupported claims must be corrected, qualified or removed before PX-13.
 
 ---
 

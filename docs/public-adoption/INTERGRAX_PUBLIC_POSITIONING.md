@@ -33,12 +33,13 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-3 — READY_FOR_REVIEW |
+| Current phase | PX-4 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
 | Product-orientation CTA | See the LKW workflow |
-| Supported product quickstart | Implemented in PX-3 — READY_FOR_REVIEW |
+| Supported product quickstart | PX-3 — ACCEPTED / CLOSED |
+| LKW visual evidence | Implemented in PX-4 — READY_FOR_REVIEW |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -97,6 +98,14 @@ Full certification proof = reviewer route, not first product introduction
 ```
 
 Product trial and platform evaluation are different routes. A certification runbook must not replace a product tour.
+
+---
+
+## LKW visual evidence rule
+
+The first product visual shows a concrete indexed LKW result: an approved sample source, managed intake and indexing, a user question, a grounded answer, a source reference, and persisted Ask-run verification. The platform architecture visual remains later in the README, after the concrete product workflow.
+
+The PX-4 visual is a neutral documentation representation, not a UI screenshot. It makes no Hybrid, live-provider, or production claim.
 
 ---
 

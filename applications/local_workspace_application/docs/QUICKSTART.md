@@ -54,6 +54,23 @@ From the repository root:
 
 ## What you should see
 
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="../../../docs/assets/public/lkw-grounded-result-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="../../../docs/assets/public/lkw-grounded-result-light.svg"
+  >
+  <img
+    alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
+    src="../../../docs/assets/public/lkw-grounded-result-light.svg"
+  >
+</picture>
+
+The visual summarizes the documented result shape. The text block below remains the exact reviewable output contract.
+
 A successful run ends with a concise summary like:
 
 ```text
