@@ -958,7 +958,7 @@ VendorKnowledgeSyncRuntime.
 - incremental sync blocked while an active reconciliation run exists;
 - reconciliation tombstones mean `absent_from_completed_synchronized_source_inventory` only.
 
-**Next after acceptance:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` (currently **PLANNED**, blocked pending architecture correction acceptance).
+**Implementation outcome:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A` is **ACCEPTED** through `REVIEW-FIX-3`, and `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` is **ACCEPTED** through `REVIEW-FIX-5-REVIEW-CORRECTION-1`.
 
 **Blocks:** none in the Microsoft Graph adapter family; Calendar missing-item
 detection is implemented and covered by the accepted Calendar proof.
@@ -1195,7 +1195,12 @@ Recommended implementation/proof order inside the Microsoft scope:
 5. calendar — ACCEPTED through `REVIEW-FIX-1-REVIEW-CORRECTION-1` (prior review fix CHANGES_REQUIRED)
 ```
 
-Google Workspace remains an independent workstream. Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream. After architecture correction acceptance, the next Vendor Knowledge task in the Microsoft Graph adapter family is `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
+Google Workspace remains an independent workstream. Google Workspace does not gate reconciliation finalization or Microsoft Calendar acceptance. Microsoft Calendar work does not gate the independent Google Workspace workstream.
+
+The Microsoft Graph adapter family is complete through
+`MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT`. The next documented
+cross-provider Vendor Knowledge task is
+`VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1`.
 
 The complete Slack Knowledge vertical slice (`SLACK-KNOWLEDGE-FOUNDATION-1` → `LKW-CONVERSATION-CONTEXT-ARCH-1` → implementation tracks through `SLACK-LIVE-CAPABILITY-1`; final proof joins `LKW-HYBRID-ASK-1` at `LKW-SLACK-KNOWLEDGE-PROOF-1`) precedes the Google Workspace proof-critical path.
 
