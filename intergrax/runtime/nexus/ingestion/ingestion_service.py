@@ -352,15 +352,19 @@ class AttachmentIngestionService:
             raise ValueError("tenant_id is required for attachment ingestion")
 
         # 2) Build base metadata that we want on every chunk
+        attachment_metadata = (
+            filter_native_metadata(attachment.metadata)
+            if attachment.metadata
+            else {}
+        )
         base_metadata: Dict[str, Any] = {
+            **attachment_metadata,
             "attachment_id": attachment.id,
             "attachment_type": attachment.type,
             "session_id": session_id,
             "user_id": user_id,
             "workspace_id": workspace_id,
         }
-        if attachment.metadata:
-            base_metadata.update(filter_native_metadata(attachment.metadata))
 
         # 3) Use IntergraxDocumentsLoader.load_document(...) for a single file
         def _metadata_callback(doc: KnowledgeDocument, p: str) -> Dict[str, Any]:

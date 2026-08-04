@@ -123,7 +123,21 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
         splitter=splitter,
     )
 
-    attachment = AttachmentRef(id="att-1", type="file", uri=f"file://{attachment_path}")
+    attachment = AttachmentRef(
+        id="att-1",
+        type="file",
+        uri=f"file://{attachment_path}",
+        metadata={
+            "custom_label": "retained",
+            "attachment_id": "spoofed-attachment",
+            "attachment_type": "spoofed-type",
+            "session_id": "spoofed-session",
+            "user_id": "spoofed-user",
+            "workspace_id": "spoofed-workspace",
+            "tenant_id": "spoofed-tenant",
+            "namespace": "spoofed-namespace",
+        },
+    )
 
     result = await service.ingest_attachments_for_session(
         [attachment],
@@ -139,12 +153,23 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
     assert isinstance(splitter.received[0], KnowledgeDocument)
     assert splitter.received[0].content == "hello"
     assert RESERVED_METADATA_KEYS.isdisjoint(splitter.received[0].metadata)
+    native_metadata = splitter.received[0].metadata
+    assert native_metadata["custom_label"] == "retained"
+    assert native_metadata["attachment_id"] == "att-1"
+    assert native_metadata["attachment_type"] == "file"
+    assert native_metadata["session_id"] == "sess-1"
+    assert native_metadata["user_id"] == "user-1"
+    assert native_metadata["workspace_id"] == "workspace-1"
+    assert "tenant_id" not in native_metadata
+    assert "namespace" not in native_metadata
     assert splitter.received[0].scope.tenant_id == "tenant.test"
     assert splitter.received[0].scope.namespace == "workspace-1"
     assert vectorstore.received is not None
     stored_doc = vectorstore.received["documents"][0]
     stored_metadata = stored_doc.metadata
+    assert stored_metadata["custom_label"] == "retained"
     assert stored_metadata["attachment_id"] == "att-1"
+    assert stored_metadata["attachment_type"] == "file"
     assert stored_metadata["session_id"] == "sess-1"
     assert stored_metadata["user_id"] == "user-1"
     assert stored_metadata["workspace_id"] == "workspace-1"
