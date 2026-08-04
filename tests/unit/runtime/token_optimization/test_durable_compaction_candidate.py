@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -191,6 +192,7 @@ class _SpyRepository(InMemoryOptimizationArtifactRepository):
         self.wait_calls = 0
         self.store_calls = 0
         self.release_calls = 0
+        self.release_reason_codes: list[Any] = []
         self.lookup_sequence: list[Any] = []
         self.coordination: ArtifactCreationCoordinationResult | None = None
         self.store_error = False
@@ -239,6 +241,7 @@ class _SpyRepository(InMemoryOptimizationArtifactRepository):
 
     def release_creation_reservation(self, *, reservation: Any, reason_code: Any = None) -> bool:
         self.release_calls += 1
+        self.release_reason_codes.append(reason_code)
         return super().release_creation_reservation(
             reservation=reservation,
             reason_code=reason_code,
@@ -414,13 +417,13 @@ def test_contracts_are_immutable_and_redacted() -> None:
             messages=tuple(reversed(request.snapshot.messages)),
             source_group_proofs=request.snapshot.source_group_proofs,
         )
-        with pytest.raises(ValueError, match="duplicate"):
-            CompactionInputSnapshot(
-                source_identity=request.snapshot.source_identity,
-                stability_evidence=request.snapshot.stability_evidence,
-                messages=(request.snapshot.messages[0], request.snapshot.messages[0]),
-                source_group_proofs=request.snapshot.source_group_proofs,
-            )
+    with pytest.raises(ValueError, match="duplicate"):
+        CompactionInputSnapshot(
+            source_identity=request.snapshot.source_identity,
+            stability_evidence=request.snapshot.stability_evidence,
+            messages=(request.snapshot.messages[0], request.snapshot.messages[0]),
+            source_group_proofs=request.snapshot.source_group_proofs,
+        )
 
 
 def test_request_requires_eligible_primary_depth_zero_and_matching_hashes() -> None:
@@ -598,6 +601,52 @@ def test_failures_after_acquired_release_reservation(failure: str) -> None:
     assert repository.release_calls == 1
     assert _SECRET not in str(exc_info.value)
     assert calls == [1]
+
+
+@pytest.mark.parametrize(
+    "mismatch",
+    [
+        "coordination artifact_lookup_key_hash",
+        "reservation artifact_lookup_key_hash",
+        "reservation tenant_id",
+    ],
+)
+def test_malformed_acquired_coordination_releases_reservation(mismatch: str) -> None:
+    repository = _SpyRepository()
+    request = _request()
+    lookup_hash = compute_artifact_lookup_key_hash(
+        request.snapshot.source_identity.artifact_lookup_key
+    )
+    reservation = _reservation(request)
+    coordination_hash = lookup_hash
+    if mismatch == "coordination artifact_lookup_key_hash":
+        coordination_hash = "0" * 64
+    elif mismatch == "reservation artifact_lookup_key_hash":
+        reservation = replace(reservation, artifact_lookup_key_hash="0" * 64)
+    else:
+        reservation = replace(reservation, tenant_id="tenant-2")
+    repository.coordination = ArtifactCreationCoordinationResult(
+        status=ArtifactCreationCoordinationStatus.ACQUIRED,
+        artifact_lookup_key_hash=coordination_hash,
+        state_version=2,
+        reservation=reservation,
+    )
+    builder, executor_calls = _builder(repository)
+
+    with pytest.raises(DurableCompactionCandidateError) as exc_info:
+        builder.build(request)
+
+    assert executor_calls == [0]
+    assert repository.store_calls == 0
+    assert repository.release_calls == 1
+    failed_reason = __import__(
+        "intergrax.runtime.context_lifecycle.contracts",
+        fromlist=["ContextOptimizationReasonCode"],
+    ).ContextOptimizationReasonCode.ARTIFACT_CREATION_FAILED
+    assert repository.release_reason_codes == [
+        failed_reason
+    ]
+    assert _SECRET not in str(exc_info.value)
 
 
 @pytest.mark.parametrize("failure", ["malformed", "hash_mismatch", "validation"])

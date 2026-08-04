@@ -19,6 +19,7 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ContextOptimizationDecision,
     ContextOptimizationMode,
     ContextOptimizationPolicy,
+    ContextOptimizationReasonCode,
     DurableCompactionEligibilityDecision,
     DurableCompactionSourceIdentity,
     DurableCompactionStabilityEvidence,
@@ -511,8 +512,68 @@ class DurableCompactionCandidateBuilder:
             return self._reused_result(request, stored, coordination_status=None)
 
         coordination = self._safe_acquire(request, lookup_key)
-        self._validate_coordination_identity(coordination, request, lookup_hash)
         status = coordination.status
+        if status is ArtifactCreationCoordinationStatus.ACQUIRED:
+            try:
+                self._validate_coordination_identity(coordination, request, lookup_hash)
+                if coordination.reservation is None:
+                    raise DurableCompactionCandidateError(
+                        DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
+                    )
+
+                execution_request = MessageSequenceArtifactExecutionRequest(
+                    decision=ContextOptimizationDecision.CREATE_ARTIFACT,
+                    coordination=coordination,
+                    lookup_key=lookup_key,
+                    policy=request.policy,
+                    parent_guard=request.execution_guard,
+                    source_messages=request.snapshot.messages,
+                    source_group_proofs=request.snapshot.source_group_proofs,
+                )
+                execution_result = self._executor.execute(execution_request)
+                validate_message_sequence_execution_result(
+                    execution_result,
+                    lookup_key=lookup_key,
+                )
+                self._validate_execution_identity(execution_result, request, lookup_hash)
+                stored = self._stored_from_execution(
+                    execution_result,
+                    request=request,
+                    lookup_key=lookup_key,
+                )
+                reference = self._repository.store_validated_artifact(
+                    reservation=coordination.reservation,
+                    artifact=stored,
+                )
+                self._validate_reference(
+                    reference,
+                    lookup_key=lookup_key,
+                    expected_content_hash=stored.metadata.artifact_content_hash,
+                )
+                candidate = self._candidate(
+                    reference=reference,
+                    lookup_key=lookup_key,
+                    source_identity=request.snapshot.source_identity,
+                    policy=request.policy,
+                    status=CompactionCandidateStatus.CREATED_NEW_ARTIFACT,
+                    validation_status=stored.metadata.validation.status,
+                )
+                return CompactionResult(
+                    reused=False,
+                    created=True,
+                    llm_invoked=True,
+                    coordination_status=ArtifactCreationCoordinationStatus.ACQUIRED,
+                    candidate=candidate,
+                )
+            except Exception as exc:
+                self._release_after_failure(coordination)
+                if isinstance(exc, DurableCompactionCandidateError):
+                    raise
+                raise DurableCompactionCandidateError(
+                    DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
+                ) from None
+
+        self._validate_coordination_identity(coordination, request, lookup_hash)
         if status is ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE:
             stored = self._safe_lookup(lookup_key)
             if stored is None:
@@ -567,63 +628,6 @@ class DurableCompactionCandidateBuilder:
             raise DurableCompactionCandidateError(
                 DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
             )
-        if coordination.reservation is None:
-            raise DurableCompactionCandidateError(
-                DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
-            )
-
-        try:
-            execution_request = MessageSequenceArtifactExecutionRequest(
-                decision=ContextOptimizationDecision.CREATE_ARTIFACT,
-                coordination=coordination,
-                lookup_key=lookup_key,
-                policy=request.policy,
-                parent_guard=request.execution_guard,
-                source_messages=request.snapshot.messages,
-                source_group_proofs=request.snapshot.source_group_proofs,
-            )
-            execution_result = self._executor.execute(execution_request)
-            validate_message_sequence_execution_result(
-                execution_result,
-                lookup_key=lookup_key,
-            )
-            self._validate_execution_identity(execution_result, request, lookup_hash)
-            stored = self._stored_from_execution(
-                execution_result,
-                request=request,
-                lookup_key=lookup_key,
-            )
-            reference = self._repository.store_validated_artifact(
-                reservation=coordination.reservation,
-                artifact=stored,
-            )
-            self._validate_reference(
-                reference,
-                lookup_key=lookup_key,
-                expected_content_hash=stored.metadata.artifact_content_hash,
-            )
-            candidate = self._candidate(
-                reference=reference,
-                lookup_key=lookup_key,
-                source_identity=request.snapshot.source_identity,
-                policy=request.policy,
-                status=CompactionCandidateStatus.CREATED_NEW_ARTIFACT,
-                validation_status=stored.metadata.validation.status,
-            )
-            return CompactionResult(
-                reused=False,
-                created=True,
-                llm_invoked=True,
-                coordination_status=ArtifactCreationCoordinationStatus.ACQUIRED,
-                candidate=candidate,
-            )
-        except Exception as exc:
-            self._release_after_failure(coordination)
-            if isinstance(exc, DurableCompactionCandidateError):
-                raise
-            raise DurableCompactionCandidateError(
-                DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
-            ) from None
 
     @staticmethod
     def _validate_request(request: CompactionRequest) -> None:
@@ -838,6 +842,7 @@ class DurableCompactionCandidateBuilder:
         try:
             self._repository.release_creation_reservation(
                 reservation=coordination.reservation,
+                reason_code=ContextOptimizationReasonCode.ARTIFACT_CREATION_FAILED,
             )
         except Exception:
             return
