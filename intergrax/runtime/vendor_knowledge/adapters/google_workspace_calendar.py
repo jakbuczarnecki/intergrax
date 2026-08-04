@@ -92,8 +92,14 @@ _INVALID_CURSOR_MESSAGE = "Google Workspace Calendar knowledge cursor is invalid
 _INVALID_PROVIDER_RESPONSE_MESSAGE = (
     "Google Workspace Calendar knowledge provider response is invalid"
 )
+_PROVIDER_INVALID_REQUEST_MESSAGE = (
+    "Google Workspace Calendar knowledge provider rejected the request"
+)
 _INVALID_DESCRIPTOR_MESSAGE = "Google Workspace Calendar event descriptor is invalid"
 _CONFIGURATION_ERROR_MESSAGE = "Google Workspace Calendar knowledge page limit is invalid"
+_RECONCILIATION_REQUIRED_MESSAGE = (
+    "Google Workspace Calendar synchronization requires full reconciliation"
+)
 _DEPENDENCY_UNAVAILABLE_MESSAGE = (
     "Google Workspace Calendar knowledge dependency is unavailable"
 )
@@ -275,6 +281,11 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                     else None
                 ),
                 limit=provider_limit,
+                reconciliation_required_on_expiry=(
+                    decoded is not None
+                    and decoded.phase == "changes"
+                    and decoded.sync_token is not None
+                ),
             )
             phase = decoded.phase
 
@@ -416,6 +427,7 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
         page_token: GoogleWorkspacePageToken | None,
         sync_token: GoogleCalendarSyncToken | None,
         limit: int,
+        reconciliation_required_on_expiry: bool = False,
     ) -> GoogleCalendarEventPage:
         return await self._invoke_integration(
             lambda: integration.list_calendar_events_page(
@@ -423,7 +435,8 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                 page_token=page_token,
                 sync_token=sync_token,
                 max_results=limit,
-            )
+            ),
+            reconciliation_required_on_expiry=reconciliation_required_on_expiry,
         )
 
     def _event_to_change(
@@ -962,12 +975,19 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
         except Exception:
             raise self._invalid_descriptor_error() from None
 
-    async def _invoke_integration(self, operation: Callable[[], _T]) -> _T:
+    async def _invoke_integration(
+        self,
+        operation: Callable[[], _T],
+        *,
+        reconciliation_required_on_expiry: bool = False,
+    ) -> _T:
         try:
             return await asyncio.to_thread(operation)
         except VendorKnowledgeError:
             raise
         except GoogleWorkspaceApiError as exc:
+            if reconciliation_required_on_expiry and exc.status_code == 410:
+                raise self._reconciliation_required_error() from None
             raise self._map_google_api_error(exc) from None
         except IntegrationConfigurationError:
             raise VendorKnowledgeError(
@@ -995,6 +1015,15 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
                 source_kind=self.source_kind,
                 retryable=True,
             ) from None
+
+    def _reconciliation_required_error(self) -> VendorKnowledgeError:
+        return VendorKnowledgeError(
+            code=VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED,
+            safe_message=_RECONCILIATION_REQUIRED_MESSAGE,
+            provider_id=self.provider_id,
+            source_kind=self.source_kind,
+            retryable=False,
+        )
 
     def _map_google_api_error(
         self,
@@ -1025,7 +1054,9 @@ class GoogleWorkspaceCalendarKnowledgeAdapter:
         return VendorKnowledgeError(
             code=code,
             safe_message=(
-                _CONFIGURATION_ERROR_MESSAGE
+                _PROVIDER_INVALID_REQUEST_MESSAGE
+                if exc.kind is GoogleWorkspaceErrorKind.INVALID_REQUEST
+                else _CONFIGURATION_ERROR_MESSAGE
                 if code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
                 else _INVALID_PROVIDER_RESPONSE_MESSAGE
                 if code is VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE

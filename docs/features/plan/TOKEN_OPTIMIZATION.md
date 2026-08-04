@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E-4 READY_FOR_REVIEW**; TOKEN-10E-CLOSEOUT-1 not started
+**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent GitHub audit of **TOKEN-10E-4**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, and **TOKEN-10E-3** are **ACCEPTED / CLOSED**; **TOKEN-10E-4** is **READY_FOR_REVIEW**; rollback execution remains outside scope.
+**Current next step:** Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1492,7 +1492,7 @@ Live E2E: `tests/e2e/token_optimization/test_llm_router_ollama_live.py` with `IN
 
 ## TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof
 
-**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; **TOKEN-10E architecture defined / ready for review**; TOKEN-10E runtime not started).
+**Status:** **Planned / Active roadmap** (TOKEN-10A accepted/closed; TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 accepted/closed; TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 accepted/closed; TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3, TOKEN-10D accepted/closed; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance).
 
 **Purpose:** Connect existing components into a complete cache-aware runtime and reproducible proof path from cache-stable prompt assembly through vLLM prefix-cache reuse, LLM routing, deterministic optimization, cache-aware execution, auditable proof generation, and later LKW product integration.
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Independent audit of **TOKEN-10E-3**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** and **TOKEN-10E-2** are **ACCEPTED / CLOSED**, and **TOKEN-10E-3** is **READY_FOR_REVIEW**. Durable activation remains not implemented.
+**Next step:** Independent audit of **TOKEN-10E-CLOSEOUT-1**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**. Durable activation is implemented; rollback execution remains outside scope.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Architecture integration profile / **TOKEN-10E-3 READY_FOR_REVIEW**. TOKEN-10E-1 and TOKEN-10E-2 are **ACCEPTED / CLOSED**; this slice validates inactive candidates over the existing UCL repository, compiles redaction-safe receipts, rollback metadata, and activation requirements. Storage adapter, activation, rollback execution, and production enablement remain out of scope.
+**Status:** **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance. TOKEN-10E-1, TOKEN-10E-2, TOKEN-10E-3, and TOKEN-10E-4 are **ACCEPTED / CLOSED**; the closeout proves the complete policy → candidate → validation → durable storage → CAS activation path. Rollback execution, human-review UX, and production enablement remain out of scope.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
@@ -1756,7 +1756,7 @@ Closeout:
 
 ##### TOKEN-10E-3 — Protected-region validation, receipt and rollback-metadata compiler
 
-**Status:** **READY_FOR_REVIEW**.
+**Status:** **ACCEPTED / CLOSED**.
 
 **Goal:** Validate inactive candidates against existing `ProtectedRegion` contracts and the immutable stored artifact; compile redaction-safe compaction receipt, rollback metadata, and future activation requirements.
 
@@ -1770,6 +1770,8 @@ Closeout:
 
 ##### TOKEN-10E-4 — Durable production repository adapter and SessionContextRevision activation
 
+**Status:** **ACCEPTED / CLOSED**.
+
 **Goal:** Deliver the first durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration. Implementation may physically live in Memory/Session packages; delivery is coordinated by TOKEN-10E-4. Activation operates on `SessionContextRevision` references and must not regenerate artifact content.
 
 **Main contracts:** durable repository adapter; activation request contract; `STALE_CONTEXT_REVISION` on version mismatch; cache-lineage metadata separate from content-reduction metrics.
@@ -1780,15 +1782,17 @@ Closeout:
 
 **Acceptance:** contract tests for activation request and conflict paths; activation references artifact without content rewrite; durable repository adapter passes UCL reservation semantics; no direct application activation API.
 
-**Blocked by:** CTX-UCL-2, TOKEN-10E-3.
+**Dependencies satisfied:** CTX-UCL-2 and TOKEN-10E-3.
 
 ##### TOKEN-10E-CLOSEOUT-1 — Public package-root contract freeze and phase acceptance
 
 **Goal:** Export stable public contracts at `intergrax.runtime.token_optimization` package root; document phase acceptance; synchronize claims guardrails.
 
-**Invariants:** no production enablement; architecture invariants unchanged; claim doc forbids implementation wording.
+**Status:** **READY_FOR_REVIEW**.
 
-**Acceptance:** public exports frozen; claim guardrail tests pass; TOKEN-10E marked implemented/ready for review only after closeout — not before.
+**Invariants:** no production enablement; architecture invariants unchanged; claims distinguish internal implementation completion from public claimability.
+
+**Acceptance:** public exports frozen; the real end-to-end proof covers candidate reuse/reopen, validation, durable artifact recovery, CAS activation, idempotent replay, and stale revision rejection; claim guardrail tests pass; TOKEN-10E is implementation complete / READY_FOR_REVIEW, pending independent acceptance.
 
 #### Acceptance criteria (architecture — CTX-UCL-ARCH-1-R4; UCL sole lifecycle source)
 
@@ -1809,8 +1813,8 @@ Closeout:
 - [x] TOKEN-10E-4 owns first durable production repository adapter delivery
 - [x] TOKEN-10E-1 and TOKEN-10E-2 candidate runtime contribution — **ACCEPTED / CLOSED**
 - [x] Receipt/rollback compiler (TOKEN-10E-3) — **ACCEPTED / CLOSED**
-- [x] Durable production repository and activation runtime (TOKEN-10E-4) — **READY_FOR_REVIEW**
-- [ ] Phase closeout — **not started**
+- [x] Durable production repository and activation runtime (TOKEN-10E-4) — **ACCEPTED / CLOSED**
+- [x] Phase closeout — **READY_FOR_REVIEW**
 
 #### TOKEN-10E-4 delivery
 
@@ -1837,9 +1841,9 @@ TOKEN-10F, TOKEN-10G, TOKEN-10H implementation
 automatic production enablement
 ```
 
-#### Next step after architecture acceptance
+#### Current next step
 
-Complete **CTX-UCL-1…6** and **CTX-UCL-CLOSEOUT-1** before **TOKEN-10E-1**. Do not wire LKW, Slack, or application storage until closeout exports are frozen.
+Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. Do not wire LKW, Slack, or application storage; TOKEN-10F, TOKEN-10G, and TOKEN-10H remain planned.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 

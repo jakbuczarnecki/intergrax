@@ -328,6 +328,28 @@ def _decode_cursor(cursor: KnowledgeCursor) -> dict[str, Any]:
     return json.loads(raw.decode("utf-8"))
 
 
+def _calendar_cursor(
+    *,
+    phase: str = "changes",
+    page_token: str | None = None,
+    sync_token: str | None = "expired-sync",
+) -> KnowledgeCursor:
+    payload = {
+        "schema_version": GOOGLE_CALENDAR_CURSOR_VERSION,
+        "scope_fingerprint": hashlib.sha256(
+            f"google_workspace\x00calendar\x00{_CALENDAR_ID}".encode()
+        ).hexdigest(),
+        "phase": phase,
+        "page_token": page_token,
+        "sync_token": sync_token,
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return KnowledgeCursor(
+        value=base64.urlsafe_b64encode(raw).decode().rstrip("="),
+        version=GOOGLE_CALENDAR_CURSOR_VERSION,
+    )
+
+
 async def _read_page(
     adapter: GoogleWorkspaceCalendarKnowledgeAdapter,
     fake: _FakeIntegration,
@@ -520,6 +542,148 @@ async def test_incremental_pagination_preserves_original_sync_token() -> None:
     assert checkpoint["phase"] == "changes"
     assert checkpoint["sync_token"] == "sync-v2"
     assert checkpoint["page_token"] is None
+
+
+@pytest.mark.parametrize("page_token", [None, _PAGE_TOKEN])
+async def test_expired_incremental_sync_token_requires_reconciliation(
+    page_token: GoogleWorkspacePageToken | None,
+) -> None:
+    api_error = GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+        status_code=410,
+        retry_after_seconds=None,
+        safe_reason="private provider response",
+        attempts=1,
+    )
+    fake = _FakeIntegration(exception=api_error)
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await _read_page(
+            GoogleWorkspaceCalendarKnowledgeAdapter(),
+            fake,
+            cursor=_calendar_cursor(
+                page_token=page_token,
+                sync_token="expired-sync",
+            ),
+        )
+
+    error = exc_info.value
+    assert error.code is VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED
+    assert error.retryable is False
+    assert error.safe_message == (
+        "Google Workspace Calendar synchronization requires full reconciliation"
+    )
+    assert error.__cause__ is None
+    assert fake.page_calls[0]["sync_token"].value == "expired-sync"
+    assert fake.page_calls[0]["page_token"] == page_token
+    assert "expired-sync" not in repr(error)
+    assert "private provider response" not in repr(error)
+    assert "page-1" not in repr(error)
+    assert _CALENDAR_ID not in repr(error)
+
+
+async def test_http_410_inventory_is_not_reconciliation_required() -> None:
+    fake = _FakeIntegration(
+        exception=GoogleWorkspaceApiError(
+            kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            status_code=410,
+            retry_after_seconds=None,
+            safe_reason="private provider response",
+            attempts=1,
+        )
+    )
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await _read_page(GoogleWorkspaceCalendarKnowledgeAdapter(), fake)
+
+    assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.retryable is False
+    assert exc_info.value.safe_message == (
+        "Google Workspace Calendar knowledge provider rejected the request"
+    )
+    assert exc_info.value.__cause__ is None
+    assert fake.page_calls[0]["sync_token"] is None
+    assert fake.page_calls[0]["page_token"] is None
+
+
+@pytest.mark.parametrize(
+    ("status_code", "kind", "expected_code", "retryable"),
+    [
+        (
+            400,
+            GoogleWorkspaceErrorKind.INVALID_REQUEST,
+            VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+            False,
+        ),
+        (
+            429,
+            GoogleWorkspaceErrorKind.RATE_LIMITED,
+            VendorKnowledgeErrorCode.RATE_LIMITED,
+            True,
+        ),
+        (
+            500,
+            GoogleWorkspaceErrorKind.TEMPORARY,
+            VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+            True,
+        ),
+    ],
+)
+async def test_non_410_incremental_errors_keep_existing_mapping(
+    status_code: int,
+    kind: GoogleWorkspaceErrorKind,
+    expected_code: VendorKnowledgeErrorCode,
+    retryable: bool,
+) -> None:
+    fake = _FakeIntegration(
+        exception=GoogleWorkspaceApiError(
+            kind=kind,
+            status_code=status_code,
+            retry_after_seconds=None,
+            safe_reason="private provider response",
+            attempts=1,
+        )
+    )
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await _read_page(
+            GoogleWorkspaceCalendarKnowledgeAdapter(),
+            fake,
+            cursor=_calendar_cursor(),
+        )
+
+    assert exc_info.value.code is expected_code
+    assert exc_info.value.retryable is retryable
+    assert exc_info.value.__cause__ is None
+    assert exc_info.value.code is not VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED
+
+
+async def test_http_410_content_fetch_keeps_content_mapping() -> None:
+    adapter = GoogleWorkspaceCalendarKnowledgeAdapter()
+    fake = _FakeIntegration(pages=[_page()])
+    page = await _read_page(adapter, fake)
+    descriptor = page.changes[0].descriptor
+    assert descriptor is not None
+    fake.exception = GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+        status_code=410,
+        retry_after_seconds=None,
+        safe_reason="private provider response",
+        attempts=1,
+    )
+
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await adapter.fetch_content(
+            integration=_integration(fake),
+            source=_source(),
+            item=descriptor,
+        )
+
+    assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.code is not VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED
+    assert exc_info.value.retryable is False
+    assert exc_info.value.__cause__ is None
+    assert "expired-sync" not in repr(exc_info.value)
 
 
 async def test_event_mapping_order_and_nested_structured_descriptor() -> None:

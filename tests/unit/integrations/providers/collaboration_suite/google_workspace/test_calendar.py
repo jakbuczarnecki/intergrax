@@ -42,7 +42,9 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.knowl
 from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
     GoogleWorkspaceApiError,
     GoogleWorkspaceErrorKind,
+    GoogleWorkspaceHttpTransport,
     GoogleWorkspacePageToken,
+    GoogleWorkspaceRetryPolicy,
 )
 
 _CALENDAR_ID = "team@group.calendar.google.com"
@@ -78,6 +80,40 @@ class _RecordingTransport:
             raise self.exception
         response = self.responses.pop(0)
         return response  # type: ignore[return-value]
+
+
+@dataclass(frozen=True)
+class _HttpResponse:
+    status_code: int
+    headers: Mapping[str, str]
+    content: bytes
+
+    def json(self) -> object:
+        return {}
+
+
+@dataclass
+class _ResponseExecutor:
+    response: _HttpResponse
+    calls: list[dict[str, object]] = field(default_factory=list)
+
+    def get(
+        self,
+        *,
+        url: str,
+        params: Mapping[str, object] | None,
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> _HttpResponse:
+        self.calls.append(
+            {
+                "url": url,
+                "params": dict(params or {}),
+                "headers": dict(headers),
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        return self.response
 
 
 def _timed(start: str = "2026-01-01T10:00:00Z", end: str = "2026-01-01T11:00:00Z") -> dict[str, object]:
@@ -557,6 +593,87 @@ def test_transport_error_boundary_and_api_error_passthrough() -> None:
             calendar_id=_CALENDAR_ID
         )
     assert exc_info.value is api_error
+
+
+@pytest.mark.parametrize(
+    ("status_code", "kind", "retryable"),
+    [
+        (410, GoogleWorkspaceErrorKind.INVALID_REQUEST, False),
+        (400, GoogleWorkspaceErrorKind.INVALID_REQUEST, False),
+        (429, GoogleWorkspaceErrorKind.RATE_LIMITED, True),
+        (500, GoogleWorkspaceErrorKind.TEMPORARY, True),
+    ],
+)
+def test_http_status_classification_preserves_safe_410_boundary(
+    status_code: int,
+    kind: GoogleWorkspaceErrorKind,
+    retryable: bool,
+) -> None:
+    response = _HttpResponse(
+        status_code=status_code,
+        headers={"Content-Type": "application/json"},
+        content=(
+            b'{"error":{"status":"private provider body","errors":[{"reason":"private"}]},'
+            b'"syncToken":"expired-sync","access_token":"secret-access-token",'
+            b'"calendarId":"private-calendar","eventId":"private-event"}'
+        ),
+    )
+    executor = _ResponseExecutor(response=response)
+    transport = GoogleWorkspaceHttpTransport(
+        executor=executor,
+        retry_policy=GoogleWorkspaceRetryPolicy(max_attempts=1),
+    )
+
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        transport.get_json(
+            source_kind=GoogleWorkspaceSourceKind.CALENDAR,
+            relative_path="/calendars/team/events",
+        )
+
+    error = exc_info.value
+    assert error.status_code == status_code
+    assert error.kind is kind
+    assert error.retryable is retryable
+    assert error.attempts == 1
+    assert "private" not in repr(error)
+    assert "expired-sync" not in repr(error)
+    assert "secret-access-token" not in repr(error)
+    assert "private-calendar" not in repr(error)
+    assert "private-event" not in repr(error)
+    assert len(executor.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("page_token", "sync_token"),
+    [(None, _SYNC_TOKEN), (_PAGE_TOKEN, _SYNC_TOKEN), (None, None)],
+)
+def test_calendar_reader_propagates_http_410_without_partial_page(
+    page_token: GoogleWorkspacePageToken | None,
+    sync_token: GoogleCalendarSyncToken | None,
+) -> None:
+    api_error = GoogleWorkspaceApiError(
+        kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+        status_code=410,
+        retry_after_seconds=None,
+        safe_reason="private provider body",
+        attempts=1,
+    )
+    reader = GoogleCalendarKnowledgeReader(
+        transport=_RecordingTransport(exception=api_error)
+    )
+
+    with pytest.raises(GoogleWorkspaceApiError) as exc_info:
+        reader.list_events_page(
+            calendar_id=_CALENDAR_ID,
+            page_token=page_token,
+            sync_token=sync_token,
+        )
+
+    assert exc_info.value is api_error
+    assert exc_info.value.status_code == 410
+    assert exc_info.value.__cause__ is None
+    assert "private provider body" not in repr(exc_info.value)
+    assert "expired-sync" not in repr(exc_info.value)
 
 
 def test_strict_public_models_and_construct_bypass() -> None:

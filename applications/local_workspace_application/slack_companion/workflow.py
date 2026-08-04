@@ -91,6 +91,16 @@ from local_workspace_application.slack_companion.selection_store import (
     SlackWorkspaceSelection,
     slack_selection_actor_key,
 )
+from local_workspace_application.conversation.interaction_application_service import (
+    ConversationInteractionApplicationCommand,
+    ConversationInteractionApplicationResult,
+    ConversationInteractionApplicationService,
+)
+from local_workspace_application.workspaces.conversation_context_models import (
+    ConversationActivationSignal,
+    ConversationIngressContextV1,
+    ConversationObservedAudience,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -471,6 +481,8 @@ class SlackAskWorkflow:
         attachment_fetcher: ConversationAttachmentFetcher | None = None,
         attachment_max_bytes: int = 25 * 1024 * 1024,
         attachment_max_batch_files: int = 20,
+        interaction_application_service: ConversationInteractionApplicationService | None = None,
+        conversation_connection_ref: str = "slack",
     ) -> None:
         if (
             not isinstance(attachment_max_bytes, int)
@@ -495,6 +507,8 @@ class SlackAskWorkflow:
         self._attachment_fetcher = attachment_fetcher
         self._attachment_max_bytes = attachment_max_bytes
         self._attachment_max_batch_files = attachment_max_batch_files
+        self._interaction_application_service = interaction_application_service
+        self._conversation_connection_ref = conversation_connection_ref.strip() or "slack"
         self._commands = discover_slack_commands(self)
 
     def _resolve_effective_workspace(
@@ -518,6 +532,8 @@ class SlackAskWorkflow:
         pending_deletion_store: InMemorySlackPendingDeletionStore | None = None,
         attachment_max_bytes: int = 25 * 1024 * 1024,
         attachment_max_batch_files: int = 20,
+        interaction_application_service: ConversationInteractionApplicationService | None = None,
+        conversation_connection_ref: str = "slack",
     ) -> SlackAskWorkflow:
         fetcher: ConversationAttachmentFetcher | None = (
             backend if isinstance(backend, ConversationAttachmentFetcher) else None
@@ -532,11 +548,17 @@ class SlackAskWorkflow:
             attachment_fetcher=fetcher,
             attachment_max_bytes=attachment_max_bytes,
             attachment_max_batch_files=attachment_max_batch_files,
+            interaction_application_service=interaction_application_service,
+            conversation_connection_ref=conversation_connection_ref,
         )
 
     async def handle(self, event: InboundConversationEvent) -> None:
         authorized = authorize_inbound_message(event, config=self._auth)
         if authorized is None:
+            return
+
+        if self._interaction_application_service is not None:
+            await self._handle_interaction(event, authorized)
             return
 
         claim = self._dedupe.claim(
@@ -569,6 +591,48 @@ class SlackAskWorkflow:
             return
 
         await self._handle_regular_ask(context)
+
+    async def _handle_interaction(
+        self,
+        event: InboundConversationEvent,
+        authorized: AuthorizedSlackMessageContext,
+    ) -> None:
+        if event.metadata.get("slack_channel_type") != "im":
+            return
+        thread_ref = (event.address.thread_id or event.address.conversation_id).strip()
+        ingress = ConversationIngressContextV1(
+            conversation_connection_ref=self._conversation_connection_ref,
+            opaque_conversation_ref=event.address.conversation_id,
+            opaque_thread_ref=thread_ref,
+            actor_principal_ref=authorized.user_id,
+            observed_audience=ConversationObservedAudience.PERSONAL,
+            activation_signal=ConversationActivationSignal.ORDINARY_MESSAGE,
+            provider_event_ref=authorized.event_id,
+        )
+        command = ConversationInteractionApplicationCommand(
+            tenant_id=authorized.tenant_id,
+            ingress=ingress,
+            message_text=authorized.text,
+            attachments=event.attachments,
+        )
+        result = await self._interaction_application_service.handle(command)
+        if not result.should_send or not result.response_text:
+            return
+        try:
+            await self._send(
+                OutboundConversationMessage(
+                    address=event.address,
+                    text=result.response_text,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 - execution must not be retried
+            logger.warning(
+                "slack_companion interaction_response_send_failed kind=%s",
+                type(exc).__name__,
+            )
+            self._interaction_application_service.mark_response_failed(result)
+            return
+        self._interaction_application_service.mark_response_sent(result)
 
     async def _handle_attachments(self, context: SlackCommandContext) -> None:
         address = context.address

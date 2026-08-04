@@ -25,6 +25,7 @@ class VendorKnowledgeErrorCode(StrEnum):
     REMOTE_ITEM_NOT_FOUND = "remote_item_not_found"
     REMOTE_ITEM_REVOKED = "remote_item_revoked"
     INVALID_CURSOR = "invalid_cursor"
+    RECONCILIATION_REQUIRED = "reconciliation_required"
     INVALID_SCOPE = "invalid_scope"
     TENANT_MISMATCH = "tenant_mismatch"
     INVALID_PROVIDER_RESPONSE = "invalid_provider_response"

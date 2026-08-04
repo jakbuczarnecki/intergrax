@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E-4 READY_FOR_REVIEW**; TOKEN-10E-CLOSEOUT-1 not started
+**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
@@ -767,17 +767,17 @@ no observability/HOS emission
 
 Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
 
-#### In-cache compaction (**TOKEN-10E** — TOKEN-10E-4 ready for review)
+#### In-cache compaction (**TOKEN-10E** — implementation complete / READY_FOR_REVIEW)
 
 In-cache compaction is an explicitly policy-gated implementation phase. Cross-domain lifecycle
 architecture is canonical in [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 (**CTX-UCL-ARCH-1-R4**); integration profile in §8.10. **TOKEN-10E-ARCH-1** superseded.
-**TOKEN-10E-1**, **TOKEN-10E-2**, and **TOKEN-10E-3** are **ACCEPTED / CLOSED**.
-**TOKEN-10E-4** is **READY_FOR_REVIEW**: the first durable SQLite repository adapter,
+**TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**. The
+TOKEN-10E-CLOSEOUT-1 phase is **READY_FOR_REVIEW**: the first durable SQLite repository adapter,
 tenant-scoped durable reservations, Memory/Session-owned immutable revision manifests, separate
 active pointers, and transactional CAS activation are implemented and restart-tested.
-**TOKEN-10E-CLOSEOUT-1** has not started. Rollback execution, human-review UX, public production
-enablement, and automatic prior-artifact invalidation remain out of scope.
+Rollback execution, human-review UX, public production enablement, and automatic prior-artifact
+invalidation remain out of scope.
 
 Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
 
@@ -1060,7 +1060,7 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** Integration profile / **TOKEN-10E-3 READY_FOR_REVIEW**. **TOKEN-10E-1 and TOKEN-10E-2 are ACCEPTED / CLOSED**; candidate validation, redaction-safe receipt compilation, rollback-metadata compilation, and future activation-requirement compilation are implemented over existing UCL contracts. Storage adapter, activation, rollback execution, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **DURABLE_COMPACTION** activation remains **not implemented**. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
+**Status:** **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
 
 #### 1. Status and dependency
 
@@ -1070,6 +1070,8 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 | ADR | [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md) |
 | TOKEN-10E-1 | **ACCEPTED / CLOSED** — durable policy, source identity, eligibility, and activation safety contracts |
 | TOKEN-10E-2 | **ACCEPTED / CLOSED** — immutable durable candidate construction, reuse-before-create, and validated artifact storage flow |
+| TOKEN-10E-3 | **ACCEPTED / CLOSED** — protected-region validation, redaction-safe receipt, rollback metadata, and activation requirements |
+| TOKEN-10E-4 | **ACCEPTED / CLOSED** — durable SQLite repository and Memory/Session CAS activation |
 | TOKEN-10D | Accepted / closed — timing gate semantics unchanged |
 
 #### 2. TOKEN-10E responsibility inside UCL
@@ -1187,7 +1189,7 @@ Do **not** claim provider KV cache mutation, deletion, or inferred TTL.
 - Not a second lifecycle architecture (no duplicated ownership, flows, or activation sections here).
 - No direct Application context → CacheAwareTokenOptimizationRuntime → application activation path.
 - No Application-owned persistence or activation wording.
-- TOKEN-10E-1 and TOKEN-10E-2 are **ACCEPTED / CLOSED** after CTX-UCL-CLOSEOUT-1; TOKEN-10E-3 is **READY_FOR_REVIEW**. TOKEN-10E-4 remains **NOT STARTED**.
+- TOKEN-10E-1, TOKEN-10E-2, TOKEN-10E-3, and TOKEN-10E-4 are **ACCEPTED / CLOSED**; TOKEN-10E-CLOSEOUT-1 is **READY_FOR_REVIEW** pending independent acceptance.
 - No LKW, Slack, or application-storage dependencies inside Token Optimization.
 - No automatic production enablement.
 
@@ -1201,7 +1203,7 @@ Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, doma
 
 **Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
-**Next step:** Independent audit of **TOKEN-10E-3**; **TOKEN-10E-4** remains **NOT STARTED**.
+**Next step:** Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. TOKEN-10F, TOKEN-10G, and TOKEN-10H remain planned.
 
 ---
 

@@ -9,6 +9,35 @@ from pathlib import Path
 
 import pytest
 
+import intergrax.runtime.token_optimization as token_optimization
+from intergrax.runtime.token_optimization.durable_compaction_candidate import (
+    CompactionCandidate,
+    CompactionCandidateStatus,
+    CompactionInputSnapshot,
+    CompactionRequest,
+    CompactionResult,
+    DurableCompactionCandidateBuilder,
+    DurableCompactionCandidateError,
+)
+from intergrax.runtime.token_optimization.durable_compaction_validation import (
+    CompactionRollbackMetadata,
+    DurableCompactionReceipt,
+    DurableCompactionValidationCompiler,
+    DurableCompactionValidationError,
+    DurableCompactionValidationOutcome,
+    DurableCompactionValidationReason,
+    DurableCompactionValidationRequest,
+    DurableCompactionValidationStatus,
+)
+from intergrax.runtime.token_optimization.message_sequence_artifact import (
+    MessageSequenceArtifactExecutionError,
+    MessageSequenceArtifactExecutionReason,
+    MessageSequenceArtifactExecutionReceipt,
+    MessageSequenceArtifactExecutionRequest,
+    MessageSequenceArtifactExecutionResult,
+    MessageSequenceArtifactExecutor,
+)
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -119,6 +148,36 @@ _ALLOWED_APPLICATION_BOUNDARY_PHRASES = (
     "persistence adapter selection and wiring",
 )
 
+_TOKEN_10E_PUBLIC_CONTRACTS = {
+    "CompactionInputSnapshot": CompactionInputSnapshot,
+    "CompactionRequest": CompactionRequest,
+    "CompactionCandidateStatus": CompactionCandidateStatus,
+    "CompactionCandidate": CompactionCandidate,
+    "CompactionResult": CompactionResult,
+    "DurableCompactionCandidateBuilder": DurableCompactionCandidateBuilder,
+    "DurableCompactionCandidateError": DurableCompactionCandidateError,
+    "DurableCompactionValidationRequest": DurableCompactionValidationRequest,
+    "DurableCompactionValidationStatus": DurableCompactionValidationStatus,
+    "DurableCompactionValidationOutcome": DurableCompactionValidationOutcome,
+    "DurableCompactionValidationReason": DurableCompactionValidationReason,
+    "DurableCompactionValidationError": DurableCompactionValidationError,
+    "DurableCompactionValidationCompiler": DurableCompactionValidationCompiler,
+    "DurableCompactionReceipt": DurableCompactionReceipt,
+    "CompactionRollbackMetadata": CompactionRollbackMetadata,
+    "MessageSequenceArtifactExecutor": MessageSequenceArtifactExecutor,
+    "MessageSequenceArtifactExecutionRequest": MessageSequenceArtifactExecutionRequest,
+    "MessageSequenceArtifactExecutionResult": MessageSequenceArtifactExecutionResult,
+    "MessageSequenceArtifactExecutionReceipt": MessageSequenceArtifactExecutionReceipt,
+    "MessageSequenceArtifactExecutionError": MessageSequenceArtifactExecutionError,
+    "MessageSequenceArtifactExecutionReason": MessageSequenceArtifactExecutionReason,
+}
+
+_TOKEN_10E_CANONICAL_SURFACES = (
+    _TOKEN_OPT_ARCH,
+    _REPO_ROOT / "docs" / "features" / "plan" / "TOKEN_OPTIMIZATION.md",
+    _CLAIMS_DOC,
+)
+
 
 def _read_claims_doc() -> str:
     return _CLAIMS_DOC.read_text(encoding="utf-8")
@@ -189,6 +248,8 @@ def _assert_required_ucl_statuses(normalized: str) -> None:
     token10e = _ucl_status_window(normalized, "TOKEN-10E-1")
     assert token10e, "TOKEN-10E-1 status must be present"
     assert (
+        ("accepted" in token10e and "closed" in token10e)
+        or
         "ready for review" in token10e
         or "ready_for_review" in token10e
         or "blocked" in token10e
@@ -224,6 +285,78 @@ def _assert_no_stale_ucl_wording(normalized: str) -> None:
         assert not pattern.search(normalized), (
             f"Stale UCL wording matched pattern: {pattern.pattern!r}"
         )
+
+
+def test_token_10e_public_contracts_are_frozen_at_package_root() -> None:
+    exported = token_optimization.__all__
+    assert all(isinstance(name, str) for name in exported)
+    assert len(exported) == len(set(exported))
+
+    for name, canonical_symbol in _TOKEN_10E_PUBLIC_CONTRACTS.items():
+        assert name in exported
+        assert getattr(token_optimization, name) is canonical_symbol
+        assert exported.count(name) == 1
+
+    for foreign_name in (
+        "SQLiteOptimizationArtifactRepository",
+        "SQLiteSessionContextRevisionStore",
+        "SessionContextRevisionActivationService",
+    ):
+        assert foreign_name not in exported
+        assert not hasattr(token_optimization, foreign_name)
+
+
+def test_token_10e_canonical_documents_are_ready_for_independent_acceptance() -> None:
+    for path in _TOKEN_10E_CANONICAL_SURFACES:
+        normalized = _normalize_public_text(_read_public_doc(path))
+        for phase in ("TOKEN-10E-1", "TOKEN-10E-2", "TOKEN-10E-3", "TOKEN-10E-4"):
+            status = _ucl_status_window(normalized, phase)
+            assert "accepted" in status and "closed" in status
+        closeout = _ucl_status_window(normalized, "TOKEN-10E-CLOSEOUT-1")
+        assert (
+            "readyforreview" in closeout
+            or "ready_for_review" in closeout
+            or "ready for review" in closeout
+        )
+        assert "not started" not in closeout
+        assert "independent github audit" in normalized
+        assert (
+            "token-10e implementation complete" in normalized
+            or "token-10e is implementation complete" in normalized
+        )
+
+        stale_phrases = (
+            "token-10e-4 readyforreview",
+            "token-10e-closeout-1 not started",
+            "token-10e-3 current next step",
+            "token-10e implementation not started",
+        )
+        for phrase in stale_phrases:
+            assert phrase not in normalized
+
+
+def test_claims_distinguish_internal_completion_from_public_claimability() -> None:
+    content = _read_claims_doc().lower()
+    assert "implementation complete" in content
+    assert "ready_for_review" in content or "ready for review" in content
+    assert "pending independent acceptance" in content
+    assert "not claimable" in content
+    assert "explicit/default-off" in content
+    assert "numeric savings" in content
+
+    forbidden_section = content[content.index("## forbidden wording") :]
+    before_forbidden_section = content[: content.index("## forbidden wording")]
+    for phrase in (
+        "enabled by default",
+        "generally available",
+        "production rollout complete",
+        "rollback execution implemented",
+        "human-review ux implemented",
+        "fully production-ready",
+        "publicly proven",
+        "provider kv-cache mutation",
+    ):
+        assert phrase in forbidden_section or phrase not in before_forbidden_section
 
 
 def _token_optimization_section_810() -> str:

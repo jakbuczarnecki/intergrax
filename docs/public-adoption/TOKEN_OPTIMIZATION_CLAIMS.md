@@ -43,12 +43,20 @@ Supporting vocabulary: deterministic pipeline, approved configuration routing, p
 ### Remaining roadmap
 
 - **CTX-UCL** — Unified Context Lifecycle: architecture accepted/closed through CTX-UCL-ARCH-1-R4-R1; runtime contracts CTX-UCL-1 through CTX-UCL-5 **accepted/closed**; CTX-UCL-6 **accepted/closed** through **6D**; CTX-UCL-CLOSEOUT-1 **ready for final review** / pending independent acceptance ([`UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md), [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md)).
-- **TOKEN-10E** — policy-governed durable compaction integration profile documented; **blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed; runtime not implemented; **TOKEN-10E-1** blocked.
+- **TOKEN-10E** — bounded policy-governed durable compaction implementation complete / **READY_FOR_REVIEW**, pending independent acceptance; public claimability remains **PARTIAL / BOUNDED PROOF / NOT CLAIMABLE**.
 - **TOKEN-10F** — universal TOML proof harness (planned).
 - **TOKEN-10G** — proof corpus, hard gates, and evals (planned; hard gates not passed).
 - **TOKEN-10H** — checked-in public promotion (planned; not completed).
 
 Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`, `dynamic tail`, `provider prefix-cache reuse`, `cache-aware optimization`, `in-cache compaction`, `universal Token Optimization proof`. Do not call the implementation “VIKTOR algorithm/cache/runtime.”
+
+### TOKEN-10E implementation versus public claimability
+
+- Internal implementation status: **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
+- Roadmap status: **TOKEN-10E-1 ACCEPTED / CLOSED**, **TOKEN-10E-2 ACCEPTED / CLOSED**, **TOKEN-10E-3 ACCEPTED / CLOSED**, **TOKEN-10E-4 ACCEPTED / CLOSED**, **TOKEN-10E-CLOSEOUT-1 READY_FOR_REVIEW**.
+- Delivered bounded scope: policy eligibility, candidate reuse/create, protected-region validation, redaction-safe receipt and rollback metadata, durable SQLite artifact storage, and Memory/Session CAS activation.
+- Public claimability status: **PARTIAL / BOUNDED PROOF / NOT CLAIMABLE**. This closeout is not a public production rollout.
+- Durable compaction remains explicit/default-off; no rollback execution, human-review UX, provider KV-cache mutation, numeric savings claim, or general availability claim is supported.
 
 ---
 
@@ -64,8 +72,9 @@ Use platform-owned terminology: `cache-stable prompt assembly`, `stable prefix`,
 - The budget-aware packing layer is currently a character-budget prototype, not a provider-tokenizer-accurate budget engine.
 - Existing synthetic or character-level evaluation results apply only to their documented workloads.
 - Content reduction and provider prefix-cache reuse are measured and attributed separately.
-- Unified Context Lifecycle contracts and runtime integration through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review / pending independent acceptance; durable production integration (TOKEN-10E) remains not started.
-- TOKEN-10E in-cache compaction integration profile and safety boundary are documented (runtime implementation not yet available; blocked until CTX-UCL-CLOSEOUT-1).
+- Unified Context Lifecycle contracts and runtime integration through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review / pending independent acceptance.
+- TOKEN-10E in-cache compaction implementation is bounded and explicit/default-off; independent closeout acceptance and public proof remain pending.
+- TOKEN-10E has an internal implementation complete / READY_FOR_REVIEW status; it is not publicly claimable as a production capability.
 
 ---
 
@@ -157,8 +166,9 @@ Explicit forbidden examples:
 - Do not say “Intergrax reduces token usage by X%” without a named corpus, provider/model, metric unit, strategy attribution, and checked-in evidence.
 - Do not say “production-proven token savings” before the required production and TOKEN-10G evidence exists.
 - Do not call Intergrax a “token-accurate optimizer” while the general optimization path has no provider-aware tokenizer.
-- Do not say in-cache compaction is implemented, automatic context compaction is available, rollback is available, or long conversations are already cheaper — TOKEN-10E architecture is documented; runtime is not implemented.
-- Do not claim production durable compaction, session revision store, rollback execution, semantic compression active in production, provider cache mutation, measured production savings from UCL, summary reuse implemented end-to-end, summary cache available in production, LLM summarization deduplicated in runtime, Nexus repository wiring, artifact reservations operational in production, internal summarizer recursion prevented in runtime, distributed single-flight creation, production artifact persistence, cross-process artifact sharing, restart durability for artifacts, single-flight creation implemented end-to-end, TOKEN-10E implementation, or LKW UCL integration — UCL contracts and a reference-only in-memory repository exist; durable production adapter and Nexus integration are not implemented.
+- Do not claim durable compaction is enabled by default, generally available, publicly proven, fully production-ready, or part of a completed production rollout.
+- Do not claim rollback execution implemented, human-review UX implemented, provider KV-cache mutation, measured production savings from UCL, or long conversations are already cheaper.
+- Do not claim production durable compaction, session revision store, semantic compression active in production, summary reuse implemented end-to-end, summary cache available in production, Nexus repository wiring, artifact reservations operational in production, internal summarizer recursion prevented in runtime, distributed single-flight creation, production artifact persistence, cross-process artifact sharing, restart durability for artifacts, single-flight creation implemented end-to-end, TOKEN-10E public rollout, or LKW UCL integration.
 
 ---
 

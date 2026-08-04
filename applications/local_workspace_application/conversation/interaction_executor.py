@@ -518,10 +518,15 @@ class ConversationInteractionExecutor:
             selected_workspace_id = str(selection.selected_workspace_id)
             resolved_workspace_ids[action.action_id] = selected_workspace_id
             resolver.set_active_workspace(selected_workspace_id)
+            selected_workspace = self._workspace_service.get_workspace(
+                tenant_id=tenant_id,
+                workspace_id=selected_workspace_id,
+            )
             return ConversationExecutionArtifact(
                 artifact_type=action.action_type,
                 data={
                     "workspace_id": selected_workspace_id,
+                    "name": _safe_attr(selected_workspace, "name"),
                     "previous_workspace_id": selection.previous_workspace_id,
                     "configuration_version": selection.configuration_version,
                     "changed": selection.changed,
