@@ -92,6 +92,7 @@ READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT
+VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1
 CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
   correction under review
@@ -1265,7 +1266,7 @@ Planned tasks:
 
 | Task | Purpose |
 |---|---|
-| `VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1` | Audit adapter-family completeness and gap classification |
+| [`VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1`](VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md) | Audit adapter-family completeness and gap classification |
 | `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1` | Explicit per-provider, per-source-kind, per-mode capability matrix |
 
 #### DURABLE BRANCH
