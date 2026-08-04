@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 
 from local_workspace_application.conversation.interaction_execution_models import (
+    ConversationActionExecutionResult,
     ConversationActionExecutionStatus,
+    ConversationExecutionArtifact,
+    ConversationExecutionError,
     ConversationInteractionExecutionCommand,
+    ConversationInteractionExecutionResult,
     ConversationInteractionOverallStatus,
 )
 from local_workspace_application.conversation.interaction_executor import (
@@ -319,6 +325,13 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
     web_service = WebUrlServiceFake()
     local_service = LocalReferenceServiceFake()
     ask_service = AskServiceFake()
+    clock_calls: list[datetime] = []
+
+    def clock() -> datetime:
+        value = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(seconds=len(clock_calls))
+        clock_calls.append(value)
+        return value
+
     executor = ConversationInteractionExecutor(
         workspace_service=workspace_service,  # type: ignore[arg-type]
         workspace_selection_service=selection_service,  # type: ignore[arg-type]
@@ -329,6 +342,7 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
         local_reference_intake_service=local_service,
         ask_service=ask_service,  # type: ignore[arg-type]
         execution_id_factory=lambda: "execution-1",
+        clock=clock,
     )
 
     result = await executor.execute(
@@ -341,6 +355,9 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
     )
 
     assert result.status is ConversationInteractionOverallStatus.COMPLETED
+    assert result.tenant_id == "tenant-1"
+    assert result.plan_version == "2"
+    assert result.completed_at >= result.started_at
     assert [item.status for item in result.action_results] == [
         ConversationActionExecutionStatus.COMPLETED,
         ConversationActionExecutionStatus.COMPLETED,
@@ -360,6 +377,22 @@ async def test_executor_maps_all_ten_actions_to_injected_services() -> None:
     assert result.active_workspace_id == "w3"
     assert result.created_resources[0].data["workspace_id"] == "w3"
     assert result.ask_runs[0].data["run_id"] == "run-1"
+    assert [item.resolved_workspace_id for item in result.action_results] == [
+        None,
+        "w3",
+        "w3",
+        "w1",
+        "w3",
+        "w3",
+        "w3",
+        "w3",
+        "w3",
+        "w3",
+    ]
+    assert all(item.completed_at >= item.started_at for item in result.action_results)
+    assert len(clock_calls) == 22
+    assert result.started_at == clock_calls[0]
+    assert result.completed_at == clock_calls[-1]
 
 
 @pytest.mark.asyncio
@@ -430,6 +463,317 @@ async def test_preflight_context_mismatch_performs_no_mutation() -> None:
     assert result.error is not None
     assert result.error.code == "conversation_execution_context_mismatch"
     assert not any(call.startswith("create:") for call in workspace_service.calls)
+
+
+_STARTED_AT = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+_COMPLETED_AT = _STARTED_AT + timedelta(seconds=1)
+
+
+def _artifact(artifact_type: str = "workspace.list") -> ConversationExecutionArtifact:
+    return ConversationExecutionArtifact(artifact_type=artifact_type)
+
+
+def _action_result(
+    status: ConversationActionExecutionStatus,
+    *,
+    artifact: ConversationExecutionArtifact | None = None,
+    error: ConversationExecutionError | None = None,
+    action_id: str = "a1",
+    started_at: datetime = _STARTED_AT,
+    completed_at: datetime = _COMPLETED_AT,
+) -> ConversationActionExecutionResult:
+    return ConversationActionExecutionResult(
+        action_id=action_id,
+        action_type="workspace.list",
+        status=status,
+        artifact=artifact,
+        error=error,
+        started_at=started_at,
+        completed_at=completed_at,
+    )
+
+
+@pytest.mark.parametrize(
+    ("status", "artifact", "error"),
+    [
+        (ConversationActionExecutionStatus.COMPLETED, _artifact(), None),
+        (
+            ConversationActionExecutionStatus.FAILED,
+            None,
+            ConversationExecutionError(code="action_execution_failed", action_id="a1"),
+        ),
+        (
+            ConversationActionExecutionStatus.BLOCKED_DEPENDENCY,
+            None,
+            ConversationExecutionError(code="blocked_dependency", action_id="a1"),
+        ),
+        (
+            ConversationActionExecutionStatus.BLOCKED_CLARIFICATION,
+            None,
+            ConversationExecutionError(code="blocked_clarification", action_id="a1"),
+        ),
+        (ConversationActionExecutionStatus.SKIPPED, None, None),
+    ],
+)
+def test_action_result_integrity_accepts_every_status(
+    status: ConversationActionExecutionStatus,
+    artifact: ConversationExecutionArtifact | None,
+    error: ConversationExecutionError | None,
+) -> None:
+    result = _action_result(status, artifact=artifact, error=error)
+    assert result.status is status
+
+
+@pytest.mark.parametrize(
+    "result_factory",
+    [
+        lambda: _action_result(ConversationActionExecutionStatus.COMPLETED),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.COMPLETED,
+            artifact=_artifact(),
+            error=ConversationExecutionError(code="action_execution_failed", action_id="a1"),
+        ),
+        lambda: _action_result(ConversationActionExecutionStatus.FAILED),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.FAILED,
+            artifact=_artifact(),
+            error=ConversationExecutionError(code="action_execution_failed", action_id="a1"),
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.BLOCKED_DEPENDENCY,
+            error=ConversationExecutionError(code="action_execution_failed", action_id="a1"),
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.BLOCKED_CLARIFICATION,
+            error=ConversationExecutionError(code="action_execution_failed", action_id="a1"),
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.FAILED,
+            error=ConversationExecutionError(code="action_execution_failed", action_id="other"),
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.COMPLETED,
+            artifact=_artifact(),
+            started_at=_COMPLETED_AT,
+            completed_at=_STARTED_AT,
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.COMPLETED,
+            artifact=_artifact(),
+            started_at=datetime(2026, 1, 1, 12, 0),
+        ),
+        lambda: _action_result(
+            ConversationActionExecutionStatus.COMPLETED,
+            artifact=_artifact(),
+            completed_at=datetime(
+                2026,
+                1,
+                1,
+                14,
+                0,
+                tzinfo=timezone(timedelta(hours=2)),
+            ),
+        ),
+    ],
+)
+def test_action_result_integrity_rejects_invalid_instances(result_factory: object) -> None:
+    with pytest.raises(ValidationError):
+        result_factory()  # type: ignore[operator]
+
+
+def _aggregate(
+    status: ConversationInteractionOverallStatus,
+    action_results: tuple[ConversationActionExecutionResult, ...] = (),
+    *,
+    created_resources: tuple[ConversationExecutionArtifact, ...] = (),
+    ask_runs: tuple[ConversationExecutionArtifact, ...] = (),
+    error: ConversationExecutionError | None = None,
+    started_at: datetime = _STARTED_AT,
+    completed_at: datetime = _COMPLETED_AT,
+) -> ConversationInteractionExecutionResult:
+    return ConversationInteractionExecutionResult(
+        execution_id="execution-1",
+        tenant_id="tenant-1",
+        plan_version="2",
+        started_at=started_at,
+        completed_at=completed_at,
+        status=status,
+        action_results=action_results,
+        created_resources=created_resources,
+        ask_runs=ask_runs,
+        error=error,
+    )
+
+
+def test_aggregate_integrity_accepts_canonical_outcomes() -> None:
+    completed = _action_result(
+        ConversationActionExecutionStatus.COMPLETED,
+        artifact=_artifact(),
+    )
+    failed = _action_result(
+        ConversationActionExecutionStatus.FAILED,
+        action_id="a2",
+        error=ConversationExecutionError(code="action_execution_failed", action_id="a2"),
+    )
+    blocked = _action_result(
+        ConversationActionExecutionStatus.BLOCKED_CLARIFICATION,
+        action_id="a2",
+        error=ConversationExecutionError(code="blocked_clarification", action_id="a2"),
+    )
+
+    assert _aggregate(ConversationInteractionOverallStatus.COMPLETED, (completed,))
+    assert _aggregate(
+        ConversationInteractionOverallStatus.PARTIALLY_COMPLETED,
+        (completed, failed),
+    )
+    assert _aggregate(
+        ConversationInteractionOverallStatus.CLARIFICATION_REQUIRED,
+        (completed, blocked),
+    )
+    assert _aggregate(ConversationInteractionOverallStatus.FAILED, (failed,))
+    assert _aggregate(
+        ConversationInteractionOverallStatus.FAILED,
+        error=ConversationExecutionError(code="interaction_plan_invalid"),
+    )
+
+
+@pytest.mark.parametrize(
+    "aggregate_factory",
+    [
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (
+                _action_result(
+                    ConversationActionExecutionStatus.COMPLETED,
+                    artifact=_artifact(),
+                ),
+                _action_result(
+                    ConversationActionExecutionStatus.COMPLETED,
+                    artifact=_artifact("workspace.create"),
+                ),
+            ),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (
+                _action_result(
+                    ConversationActionExecutionStatus.FAILED,
+                    error=ConversationExecutionError(
+                        code="action_execution_failed",
+                        action_id="a1",
+                    ),
+                ),
+            ),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+            error=ConversationExecutionError(code="interaction_plan_invalid"),
+        ),
+        lambda: _aggregate(ConversationInteractionOverallStatus.FAILED),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.FAILED,
+            error=ConversationExecutionError(
+                code="interaction_plan_invalid",
+                action_id="a1",
+            ),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.CLARIFICATION_REQUIRED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.PARTIALLY_COMPLETED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+            created_resources=(_artifact("workspace.create"),),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+            ask_runs=(_artifact("workspace.ask"),),
+        ),
+        lambda: _aggregate(
+            ConversationInteractionOverallStatus.COMPLETED,
+            (_action_result(ConversationActionExecutionStatus.COMPLETED, artifact=_artifact()),),
+            started_at=_COMPLETED_AT,
+            completed_at=_STARTED_AT,
+        ),
+    ],
+)
+def test_aggregate_integrity_rejects_invalid_instances(aggregate_factory: object) -> None:
+    with pytest.raises(ValidationError):
+        aggregate_factory()  # type: ignore[operator]
+
+
+@pytest.mark.asyncio
+async def test_preflight_result_preserves_identity_and_uses_injected_clock() -> None:
+    now = datetime(2026, 2, 1, tzinfo=UTC)
+    clock_values = iter((now, now + timedelta(seconds=1)))
+    executor = ConversationInteractionExecutor(
+        workspace_service=WorkspaceServiceFake(),  # type: ignore[arg-type]
+        workspace_selection_service=SelectionServiceFake(),  # type: ignore[arg-type]
+        clock=lambda: next(clock_values),
+    )
+    plan = ConversationInteractionPlan(
+        plan_version="2",
+        actions=(
+            WorkspaceCreatePlannedAction(action_id="a1", action_type="workspace.create", name="new"),
+        ),
+        response_mode="aggregate",
+    )
+
+    result = await executor.execute(
+        ConversationInteractionExecutionCommand(
+            tenant_id="different-tenant",
+            planning_request=ConversationPlanningRequest(message_text="new"),
+            interaction_plan=plan,
+            execution_context=_context(),
+        )
+    )
+
+    assert result.status is ConversationInteractionOverallStatus.FAILED
+    assert result.action_results == ()
+    assert result.tenant_id == "tenant-1"
+    assert result.plan_version == "2"
+    assert result.started_at == now
+    assert result.completed_at == now + timedelta(seconds=1)
+    assert result.started_at.tzinfo is not None
+    assert result.started_at.utcoffset() == timedelta(0)
+
+
+@pytest.mark.asyncio
+async def test_failed_workspace_resolution_does_not_publish_workspace_id() -> None:
+    executor = ConversationInteractionExecutor(
+        workspace_service=WorkspaceServiceFake(),  # type: ignore[arg-type]
+        workspace_selection_service=SelectionServiceFake(),  # type: ignore[arg-type]
+    )
+    plan = ConversationInteractionPlan(
+        plan_version="2",
+        actions=(
+            WorkspaceDeletePlannedAction(
+                action_id="delete",
+                action_type="workspace.delete",
+                workspace=_reference(WorkspaceReferenceKind.name, "missing"),
+            ),
+        ),
+        response_mode="aggregate",
+    )
+
+    result = await executor.execute(
+        ConversationInteractionExecutionCommand(
+            tenant_id="tenant-1",
+            planning_request=ConversationPlanningRequest(message_text="delete missing"),
+            interaction_plan=plan,
+            execution_context=_context(),
+        )
+    )
+
+    assert result.action_results[0].status is ConversationActionExecutionStatus.FAILED
+    assert result.action_results[0].resolved_workspace_id is None
 
 
 @pytest.mark.asyncio

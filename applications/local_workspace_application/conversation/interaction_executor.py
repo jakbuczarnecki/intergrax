@@ -7,6 +7,7 @@ from __future__ import annotations
 import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
 from local_workspace_application.conversation.interaction_execution_models import (
@@ -35,6 +36,7 @@ from local_workspace_application.conversation.interaction_models import (
     WorkspaceCreatePlannedAction,
     WorkspaceDeletePlannedAction,
     WorkspaceListPlannedAction,
+    WorkspaceReference,
 )
 from local_workspace_application.conversation.interaction_planner import (
     PlanRequestValidationError,
@@ -185,6 +187,7 @@ class ConversationInteractionExecutor:
         local_reference_intake_service: LocalReferenceIntakeService | None = None,
         ask_service: WorkspaceAskService | None = None,
         execution_id_factory: Callable[[], str] | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._workspace_service = workspace_service
         self._workspace_selection_service = workspace_selection_service
@@ -195,11 +198,13 @@ class ConversationInteractionExecutor:
         self._local_reference_intake_service = local_reference_intake_service
         self._ask_service = ask_service
         self._execution_id_factory = execution_id_factory or (lambda: str(uuid.uuid4()))
+        self._clock = clock or (lambda: datetime.now(UTC))
 
     async def execute(
         self,
         command: ConversationInteractionExecutionCommand,
     ) -> ConversationInteractionExecutionResult:
+        started_at = self._utc_now()
         execution_id = command.execution_id or self._execution_id_factory()
         plan = command.interaction_plan
         try:
@@ -208,6 +213,9 @@ class ConversationInteractionExecutor:
             return self._preflight_result(
                 execution_id=execution_id,
                 plan=plan,
+                tenant_id=command.execution_context.tenant_id,
+                started_at=started_at,
+                completed_at=self._utc_now(),
                 code=exc.code,
             )
 
@@ -218,6 +226,7 @@ class ConversationInteractionExecutor:
         )
         results_by_id: dict[str, ConversationActionExecutionResult] = {}
         created_workspace_ids: dict[str, str] = {}
+        resolved_workspace_ids: dict[str, str] = {}
         for action_index in order:
             action = plan.actions[action_index]
             result = await self._execute_one(
@@ -226,6 +235,7 @@ class ConversationInteractionExecutor:
                 resolver=resolver,
                 results_by_id=results_by_id,
                 created_workspace_ids=created_workspace_ids,
+                resolved_workspace_ids=resolved_workspace_ids,
                 clarification_ids=clarification_map.get(action.action_id, ()),
                 execution_id=execution_id,
             )
@@ -255,8 +265,13 @@ class ConversationInteractionExecutor:
             for action, item in zip(plan.actions, action_results, strict=True)
             if action.action_type == "workspace.ask" and item.artifact is not None
         )
+        completed_at = self._utc_now()
         return ConversationInteractionExecutionResult(
             execution_id=execution_id,
+            tenant_id=command.execution_context.tenant_id,
+            plan_version=plan.plan_version,
+            started_at=started_at,
+            completed_at=completed_at,
             status=self._overall_status(action_results),
             action_results=action_results,
             clarifications=clarifications,
@@ -361,13 +376,16 @@ class ConversationInteractionExecutor:
         resolver: ConversationInteractionReferenceResolver,
         results_by_id: Mapping[str, ConversationActionExecutionResult],
         created_workspace_ids: dict[str, str],
+        resolved_workspace_ids: dict[str, str],
         clarification_ids: tuple[str, ...],
         execution_id: str,
     ) -> ConversationActionExecutionResult:
+        started_at = self._utc_now()
         if clarification_ids:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.BLOCKED_CLARIFICATION,
+                started_at=started_at,
                 error_code="blocked_clarification",
             )
         if any(
@@ -378,6 +396,7 @@ class ConversationInteractionExecutor:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.BLOCKED_DEPENDENCY,
+                started_at=started_at,
                 error_code="blocked_dependency",
             )
         capability = _ACTION_CAPABILITIES.get(action.action_type)
@@ -385,12 +404,14 @@ class ConversationInteractionExecutor:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.FAILED,
+                started_at=started_at,
                 error_code="interaction_action_unsupported",
             )
         if capability not in command.execution_context.allowed_product_capabilities:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.FAILED,
+                started_at=started_at,
                 error_code="conversation_capability_not_allowed",
             )
 
@@ -400,12 +421,15 @@ class ConversationInteractionExecutor:
                 command=command,
                 resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
+                resolved_workspace_ids=resolved_workspace_ids,
                 execution_id=execution_id,
             )
         except ConversationReferenceResolutionError as exc:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.FAILED,
+                started_at=started_at,
+                resolved_workspace_id=resolved_workspace_ids.get(action.action_id),
                 error_code=exc.code,
             )
         except ConversationWorkspaceSelectionError as exc:
@@ -413,6 +437,8 @@ class ConversationInteractionExecutor:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.FAILED,
+                started_at=started_at,
+                resolved_workspace_id=resolved_workspace_ids.get(action.action_id),
                 error_code=code,
             )
         except Exception as exc:  # noqa: BLE001 - every action has a safe boundary
@@ -420,6 +446,8 @@ class ConversationInteractionExecutor:
             return self._result(
                 action,
                 ConversationActionExecutionStatus.FAILED,
+                started_at=started_at,
+                resolved_workspace_id=resolved_workspace_ids.get(action.action_id),
                 error_code=code,
             )
 
@@ -427,10 +455,13 @@ class ConversationInteractionExecutor:
             workspace_id = str(artifact.data.get("workspace_id", "")).strip()
             if workspace_id:
                 created_workspace_ids[action.action_id] = workspace_id
+                resolved_workspace_ids[action.action_id] = workspace_id
         return self._result(
             action,
             ConversationActionExecutionStatus.COMPLETED,
+            started_at=started_at,
             artifact=artifact,
+            resolved_workspace_id=resolved_workspace_ids.get(action.action_id),
         )
 
     async def _dispatch(
@@ -440,6 +471,7 @@ class ConversationInteractionExecutor:
         command: ConversationInteractionExecutionCommand,
         resolver: ConversationInteractionReferenceResolver,
         created_workspace_ids: dict[str, str],
+        resolved_workspace_ids: dict[str, str],
         execution_id: str,
     ) -> ConversationExecutionArtifact:
         tenant_id = command.execution_context.tenant_id
@@ -472,19 +504,24 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, WorkspaceActivatePlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             selection = self._workspace_selection_service.select_personal_workspace(
                 execution_context=command.execution_context,
                 workspace_id=workspace_id,
             )
-            resolver.set_active_workspace(workspace_id)
+            selected_workspace_id = str(selection.selected_workspace_id)
+            resolved_workspace_ids[action.action_id] = selected_workspace_id
+            resolver.set_active_workspace(selected_workspace_id)
             return ConversationExecutionArtifact(
                 artifact_type=action.action_type,
                 data={
-                    "workspace_id": selection.selected_workspace_id,
+                    "workspace_id": selected_workspace_id,
                     "previous_workspace_id": selection.previous_workspace_id,
                     "configuration_version": selection.configuration_version,
                     "changed": selection.changed,
@@ -492,10 +529,13 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, WorkspaceDeletePlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             deleted = self._workspace_service.delete_workspace(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -509,10 +549,13 @@ class ConversationInteractionExecutor:
                 data={"workspace_id": workspace_id, "deleted": True},
             )
         if isinstance(action, SourceListPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             sources = self._workspace_service.list_sources(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -534,10 +577,13 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, SourceCandidateListPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             service = self._require_candidate_service()
             candidates = service.list_candidates(
                 tenant_id=tenant_id,
@@ -551,10 +597,13 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, SourceCandidateAttachPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             candidate = self._resolve_candidate_snapshot(
                 command.planning_request.available_source_candidates,
                 action,
@@ -580,10 +629,13 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, KnowledgeAddAttachmentsPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             if self._trusted_attachment_resolver is None:
                 raise RuntimeError("attachment_not_found")
             uploads: list[object] = []
@@ -610,10 +662,13 @@ class ConversationInteractionExecutor:
                 },
             )
         if isinstance(action, KnowledgeAddSourcesPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             objects = {item.object_id: item for item in command.interaction_plan.objects}
             source_results = []
             for object_id in action.source_object_ids:
@@ -633,10 +688,13 @@ class ConversationInteractionExecutor:
                 data={"workspace_id": workspace_id, "sources": source_results},
             )
         if isinstance(action, WorkspaceAskPlannedAction):
-            workspace_id = resolver.resolve_workspace(
-                action.workspace,
+            workspace_id = self._resolve_workspace_id(
+                action_id=action.action_id,
+                reference=action.workspace,
+                resolver=resolver,
                 created_workspace_ids=created_workspace_ids,
-            ).workspace_id
+                resolved_workspace_ids=resolved_workspace_ids,
+            )
             if self._ask_service is None:
                 raise RuntimeError("action_execution_failed")
             run = await self._ask_service.ask(
@@ -654,6 +712,23 @@ class ConversationInteractionExecutor:
                 },
             )
         raise RuntimeError("interaction_action_unsupported")
+
+    @staticmethod
+    def _resolve_workspace_id(
+        *,
+        action_id: str,
+        reference: WorkspaceReference,
+        resolver: ConversationInteractionReferenceResolver,
+        created_workspace_ids: dict[str, str],
+        resolved_workspace_ids: dict[str, str],
+    ) -> str:
+        resolved = resolver.resolve_workspace(
+            reference,
+            created_workspace_ids=created_workspace_ids,
+        )
+        workspace_id = str(resolved.workspace_id)
+        resolved_workspace_ids[action_id] = workspace_id
+        return workspace_id
 
     async def _add_source(
         self,
@@ -741,14 +816,25 @@ class ConversationInteractionExecutor:
             raise RuntimeError("source_candidate_unavailable")
         return self._source_candidate_service
 
-    @staticmethod
+    def _utc_now(self) -> datetime:
+        value = self._clock()
+        if not isinstance(value, datetime):
+            raise ValueError("clock must return a datetime")
+        if value.tzinfo is None or value.utcoffset() != timedelta(0):
+            raise ValueError("clock must return a timezone-aware UTC datetime")
+        return value
+
     def _result(
+        self,
         action: PlannedAction,
         status: ConversationActionExecutionStatus,
         *,
+        started_at: datetime,
         artifact: ConversationExecutionArtifact | None = None,
         error_code: str | None = None,
+        resolved_workspace_id: str | None = None,
     ) -> ConversationActionExecutionResult:
+        completed_at = self._utc_now()
         return ConversationActionExecutionResult(
             action_id=action.action_id,
             action_type=action.action_type,
@@ -759,6 +845,9 @@ class ConversationInteractionExecutor:
                 if error_code is not None
                 else None
             ),
+            resolved_workspace_id=resolved_workspace_id,
+            started_at=started_at,
+            completed_at=completed_at,
         )
 
     @staticmethod
@@ -789,10 +878,17 @@ class ConversationInteractionExecutor:
         *,
         execution_id: str,
         plan: ConversationInteractionPlan,
+        tenant_id: str,
+        started_at: datetime,
+        completed_at: datetime,
         code: str,
     ) -> ConversationInteractionExecutionResult:
         return ConversationInteractionExecutionResult(
             execution_id=execution_id,
+            tenant_id=tenant_id,
+            plan_version=plan.plan_version,
+            started_at=started_at,
+            completed_at=completed_at,
             status=ConversationInteractionOverallStatus.FAILED,
             clarifications=tuple(
                 ConversationExecutionClarification(
