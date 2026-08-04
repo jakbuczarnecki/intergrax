@@ -90,6 +90,7 @@ COLLABORATION.md
 FAQ.md
 ROADMAP.md
 LKW_PRODUCT_TOUR.md
+BUILDER_QUICKSTART.md
 ```
 
 | Document | Responsibility | Status |
@@ -104,6 +105,7 @@ LKW_PRODUCT_TOUR.md
 | `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **implemented in PX-5 — READY_FOR_REVIEW** |
+| `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **implemented in PX-6 — READY_FOR_REVIEW** |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
 
@@ -190,7 +192,8 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Run or inspect the bounded LKW technical proof | `docs/public-adoption/LKW_PLATFORM_PROOF.md` |
 | Explore Token Optimization | Token Optimization main guide — `docs/features/token_optimization/README.md` |
 | Review high-level architecture | `ARCHITECTURE_OVERVIEW.md` |
-| Build or evaluate with Intergrax | `BUILD_WITH_INTERGRAX.md` |
+| Start building with Intergrax | `BUILDER_QUICKSTART.md` |
+| Plan a deeper application build | `BUILD_WITH_INTERGRAX.md` |
 | Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
 | Check current proof status | `PROOFS.md` — root proof dashboard |
 | Discuss a pilot or design-partner workflow | `PARTNERS.md` |
@@ -199,6 +202,24 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Read legally authoritative rights and restrictions | `LICENSE` |
 | Read general first-contact questions | `FAQ.md` |
 | Perform deep technical review | `docs/DOCUMENTATION_MAP.md` |
+
+Reader-intent ownership is frozen as follows:
+
+```text
+BUILDER_QUICKSTART.md:
+first builder checkpoint
+
+BUILD_WITH_INTERGRAX.md:
+builder route selection and deeper planning
+
+EVALUATION_GUIDE.md:
+bounded evaluation execution
+
+docs/DOCUMENTATION_MAP.md:
+deep technical navigation
+```
+
+The Builder Quick Start does not own product trial instructions. The LKW Quick Start does not own generic builder onboarding. The Evaluation Guide does not replace the Builder Quick Start. The Technical Documentation Map is not the first builder step.
 
 ---
 

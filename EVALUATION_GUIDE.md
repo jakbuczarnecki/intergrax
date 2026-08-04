@@ -14,6 +14,18 @@ Production use, commercial use, hosted services, redistribution, and commercial 
 
 ---
 
+## Choose the route
+
+| Goal | Start here |
+|------|------------|
+| Begin building or extending an application | [Builder Quick Start](BUILDER_QUICKSTART.md) |
+| Run a bounded evaluation | This Evaluation Guide |
+| Try the LKW product | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
+
+Builder onboarding ≠ product trial ≠ broader platform evaluation.
+
+---
+
 ## At a glance
 
 | Time | Start here | Goal |

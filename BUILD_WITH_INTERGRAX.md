@@ -8,6 +8,10 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Choose the right path to evaluate Intergrax, inspect its proof, or begin building a specialized application.
 
+> New to building with Intergrax? Start with the [Builder Quick Start](BUILDER_QUICKSTART.md).
+
+This document is the deeper route-selection and planning guide. The [Builder Quick Start](BUILDER_QUICKSTART.md) provides first bounded builder orientation; the [Evaluation Guide](EVALUATION_GUIDE.md) remains the execution-oriented evaluation catalog.
+
 > [!WARNING]
 > **Evaluation does not grant production permission, commercial permission, hosting, or redistribution permission.** [LICENSE](LICENSE) is authoritative.
 

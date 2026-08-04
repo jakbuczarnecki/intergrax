@@ -33,14 +33,15 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-5 — READY_FOR_REVIEW |
+| Current phase | PX-6 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
 | Product-orientation CTA | See the LKW workflow |
 | Supported product quickstart | PX-3 — ACCEPTED / CLOSED |
 | LKW visual evidence | PX-4 — ACCEPTED / CLOSED |
-| LKW Product Tour | Implemented in PX-5 — READY_FOR_REVIEW |
+| LKW Product Tour | PX-5 — ACCEPTED / CLOSED |
+| Builder Quick Start | Implemented in PX-6 — READY_FOR_REVIEW |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -118,6 +119,14 @@ The PX-4 visual is a neutral documentation representation, not a UI screenshot. 
 
 The supported product quickstart path is accepted and closed in PX-3. It remains subject to the final executable-claim audit before external sessions and must not become a documentation-only path.
 
+### Builder CTA
+
+**Start building with Intergrax**
+
+→ `BUILDER_QUICKSTART.md`
+
+This is a secondary developer route and must not be promoted above the primary **Try LKW** product CTA.
+
 ### Product-orientation CTA
 
 **See the LKW workflow**
@@ -170,6 +179,20 @@ The following must **not** be the first product action for normal readers:
 | Contributor or deep technical reviewer | Contribution boundaries, license scope, and where deep technical material lives | Open the technical documentation map |
 
 The positioning is **not** aimed at “everyone,” generic consumers, or every possible AI project.
+
+```text
+Product user:
+Try LKW
+
+Product observer:
+See the LKW workflow
+
+Builder:
+Start building with Intergrax
+
+Technical reviewer:
+Review architecture and proofs
+```
 
 ---
 

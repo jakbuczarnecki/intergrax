@@ -36,6 +36,14 @@ Status: ACTIVE — applied to root README in PX-2 ACCEPTED / CLOSED
 Public-reader route: no
 ```
 
+**Builder Quick Start** — [`../../BUILDER_QUICKSTART.md`](../../BUILDER_QUICKSTART.md)
+
+```text
+Role: First bounded builder orientation and progressive-disclosure route
+Status: Implemented in PX-6 — READY_FOR_REVIEW
+Public-reader route: yes, through the root public documentation
+```
+
 **Public Product Experience Roadmap** — [`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
 
 ```text
@@ -59,9 +67,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-4 ACCEPTED / CLOSED
-Current phase: PX-5 READY_FOR_REVIEW
-Next after acceptance: PX-6
+Previous phase: PX-5 ACCEPTED / CLOSED
+Current phase: PX-6 READY_FOR_REVIEW
+Next after acceptance: PX-7
 External sessions: NOT_STARTED
 ```
 
@@ -85,6 +93,9 @@ The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md
 |-------|----------------|-------------|
 | Product Tour | Product orientation | `../../LKW_PRODUCT_TOUR.md` |
 | Product Quick Start | Supported executable product evaluation | `../../applications/local_workspace_application/docs/QUICKSTART.md` |
+| Builder Quick Start | First bounded builder orientation | `../../BUILDER_QUICKSTART.md` |
+| Deeper builder planning | Builder route selection and deeper planning | `../../BUILD_WITH_INTERGRAX.md` |
+| Broader evaluation | Bounded evaluation execution | `../../EVALUATION_GUIDE.md` |
 | Technical Platform Proof | Bounded technical reviewer evidence | `LKW_PLATFORM_PROOF.md` |
 | Token Optimization | Featured platform-capability proof | `../features/token_optimization/README.md` |
 

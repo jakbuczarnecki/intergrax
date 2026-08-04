@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-5 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-6 |
+| Current phase | PX-6 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-7 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -207,7 +207,12 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-5 — Product tour and certification-proof separation
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:**
+
+- Implementation: `1f4d64454d2717054dd2e87ec9658771e4c3f9a5`
+- Quick Start route-link correction: `8b2382193d4dbe14e3a115659266b5ea8c0ca565`
 
 **User-visible outcome:** Readers see a product tour before or alongside certification-style proof material; certification runbook does not replace the tour.
 
@@ -239,17 +244,43 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-6 — Builder Quick Start
 
-**Status:** BLOCKED_ON_PX_5_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Builders reach a bounded onboarding path without immediate deep reference overload.
 
-**Completion gate:** Builder route documented; progressive disclosure enforced; distinct from product trial route.
+**Delivered:**
+
+- dedicated root Builder Quick Start;
+- one simple builder-progression Mermaid diagram;
+- separate builder, product-trial, evaluation and technical-review routes;
+- first-checkpoint guidance using only existing documented setup or verification paths;
+- explicit application/platform ownership boundary;
+- progressive disclosure from quick start to deeper planning and technical documentation;
+- routing from README, BUILD_WITH_INTERGRAX, EVALUATION_GUIDE and the public documentation map;
+- no new runtime, scaffold, SDK, onboarding-time or production claim.
+
+**Completion gate:**
+
+- `BUILDER_QUICKSTART.md` exists;
+- it names AI engineers and developers as its audience;
+- it contains one Mermaid builder flow;
+- it separates application changes from reusable platform changes;
+- it gives one clear first builder checkpoint;
+- every command is copied from an existing canonical document or omitted;
+- no generated scaffold, stable SDK or universal setup is implied;
+- README has one primary builder entry;
+- BUILD_WITH_INTERGRAX is the deeper planning route;
+- EVALUATION_GUIDE remains the broader execution route;
+- public documentation map lists the Builder Quick Start separately;
+- documentation architecture records ownership and progressive disclosure;
+- public builder content contains no PX identifiers or maintainer vocabulary;
+- no code, script, test or asset is created.
 
 ---
 
 ## PX-7 — Architect, buyer and partner routes
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_6_ACCEPTANCE
 
 **User-visible outcome:** Architect, buyer, and partner intents each have one primary route with clear next action.
 

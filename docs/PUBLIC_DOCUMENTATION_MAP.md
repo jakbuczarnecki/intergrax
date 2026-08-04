@@ -16,7 +16,8 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 |------------|------------|
 | Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
 | Understand the public architecture | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
-| Build or evaluate | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
+| Start building with Intergrax | [Builder Quick Start](../BUILDER_QUICKSTART.md) |
+| Plan a deeper build | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
 | Understand Intergrax (first contact) | [README](../README.md) |
 | Understand LKW without running it | [LKW Product Tour](../LKW_PRODUCT_TOUR.md) |
 | Try LKW | [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) |
@@ -69,7 +70,8 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [README](../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
 | [WHY_INTERGRAX](../WHY_INTERGRAX.md) | Problem, value, audience, and fit without tier jargon |
 | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
-| [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Evaluation and building route selection |
+| [Builder Quick Start](../BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
+| [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Deeper builder route selection and planning |
 | [Evaluation Guide](../EVALUATION_GUIDE.md) | Bounded 5–60 minute evaluation paths |
 | [Use Cases](../USE_CASES.md) | Concrete fit map: current strongest use case, bounded fits, planned validation and not-fit boundaries |
 | [Partners](../PARTNERS.md) | Partner fit, evaluation-versus-operational pilot boundary, pilot preparation and success review |
