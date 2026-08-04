@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-5 READY_FOR_REVIEW
+Status: ACTIVE — PX-6 READY_FOR_REVIEW
 Public-reader route: no
 ```
 

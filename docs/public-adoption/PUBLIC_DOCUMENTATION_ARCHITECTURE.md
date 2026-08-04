@@ -98,13 +98,13 @@ BUILDER_QUICKSTART.md
 | `WHY_INTERGRAX.md` | Problem, value, and audience without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
-| `BUILD_WITH_INTERGRAX.md` | Bounded evaluation and builder onboarding path | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `BUILD_WITH_INTERGRAX.md` | Builder route selection and deeper planning | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
 | `PARTNERS.md` | Partner fit and pilot workflow | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `COLLABORATION.md` | Collaboration and permission-request router | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `FAQ.md` | General external-reader FAQ | **refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-8 |
 | `ROADMAP.md` | Public outcome-gated product-validation roadmap | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
-| `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **implemented in PX-5 — READY_FOR_REVIEW** |
+| `LKW_PRODUCT_TOUR.md` | Non-executable, product-first walkthrough of the supported LKW experience and its boundaries | **PX-5 — ACCEPTED / CLOSED** |
 | `BUILDER_QUICKSTART.md` | First bounded builder onboarding route: choose a workflow, identify the ownership boundary, use an existing setup or verification path and continue through progressive disclosure | **implemented in PX-6 — READY_FOR_REVIEW** |
 
 Each document owns one primary responsibility. Do not duplicate ownership across reader-intent documents.
@@ -363,7 +363,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
 | `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 ACCEPTED / CLOSED |
-| `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **implemented in PX-5 — READY_FOR_REVIEW** |
+| `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **PX-5 — ACCEPTED / CLOSED** |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
