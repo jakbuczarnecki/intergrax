@@ -980,15 +980,21 @@ Initial job identity and replay, truthful terminal replay, single PAGE_PREPARED 
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED`
 
 Strict caller-supplied job identity without durable-state inference, normalized run and candidate-inventory repository error boundaries, and zero-effect rejection for malformed continuation identity.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `CHANGES_REQUIRED`
 
 Normalized successful candidate-inventory repository output before `KnowledgeReconciliationRunCollecting` construction, exact structural versus policy error mapping with zero downstream effects, and provider-suite regression attribution with stale caller continuation-identity fixes.
+
+### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF`
+
+**Status:** `READY_FOR_REVIEW`
+
+Explicit non-sequence candidate-inventory rejection proof through `reconcile_once`, and truthful non-contradictory roadmap statuses for Review Fix 5 closeout.
 
 ### `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`
 
@@ -1019,9 +1025,10 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4` | `READY_FOR_REVIEW` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5` | `READY_FOR_REVIEW` |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending Review Fix 4 acceptance |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5` | `CHANGES_REQUIRED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF` | `READY_FOR_REVIEW` |
+| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending Review Fix 5 correction acceptance |
 | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` | `PLANNED` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |

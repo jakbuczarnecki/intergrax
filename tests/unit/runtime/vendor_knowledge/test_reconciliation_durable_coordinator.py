@@ -1061,10 +1061,13 @@ def _assert_candidate_rejection_no_side_effects(
         (("",), ""),
         (("   ",), "   "),
         ((123,), "123"),
+        ("item-1", "item-1"),
+        ({"item-1": True}, "item-1"),
+        (object(), ""),
     ],
 )
 async def test_malformed_candidate_inventory_structural_rejection(
-    inventory: tuple[object, ...],
+    inventory: object,
     rejected_value: str,
 ) -> None:
     coordinator, facade, state, checkpoint, runs, sink, _ = (
