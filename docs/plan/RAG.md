@@ -68,8 +68,8 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-2C | P1 | APPROVED | native normalization and metadata pipeline | LCI-2D |
 | LCI-2D | P1 | APPROVED | native chunking contract and derivative lineage | LCI-2E |
 | LCI-2E | P1 | APPROVED | optional LangChain recursive splitter | LCI-2F |
-| LCI-2F | P1 | READY_FOR_REVIEW | end-to-end native ingest boundary | LCI-3A |
-| LCI-3A | P1 | READY_FOR_REVIEW | native embedding contract and result | LCI-3B |
+| LCI-2F | P1 | APPROVED | end-to-end native ingest boundary | LCI-3A |
+| LCI-3A | P1 | APPROVED | native embedding contract and result | LCI-3B |
 | LCI-3B | P1 | READY_FOR_REVIEW | native indexing contract and TOC lineage | LCI-3C |
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
