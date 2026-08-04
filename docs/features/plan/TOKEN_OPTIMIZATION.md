@@ -1724,25 +1724,25 @@ Closeout:
 
 #### Planned substeps
 
-##### TOKEN-10E-1 — Contracts, policy, snapshot, candidate and safe-result models
+##### TOKEN-10E-1 — Durable contract authority, identity, stability and safety
 
-**Goal:** Extend existing UCL artifact and revision contracts with durable compaction policy over UCL — not a competing artifact repository.
+**Goal:** Define the contract-only durable compaction boundary over UCL — not a competing artifact repository or runtime execution path.
 
-**Main contracts:** `InCacheCompactionPolicy` (provisional name), `CompactionInputSnapshot`, `CompactionRequest`, `CompactionCandidate`, `CompactionResult`, `CompactionTarget`, status enum separating candidate/acceptance/activation; durable eligibility rules; review and activation requirements aligned with `ArtifactLookupKey` and `ReusableOptimizationArtifact`.
+**Main contracts:** `ContextOptimizationPolicy` with nested `DurableCompactionPolicy`, `DurableCompactionSourceIdentity`, typed stability evidence, `DurableCompactionEligibilityDecision`, `DurableCompactionActivationRequirements`, and canonical safe serialization aligned with `ArtifactLookupKey` and `ReusableOptimizationArtifact`.
 
-**Invariants:** explicit policy opt-in fields; `raw_content_included=False`; unknown-value semantics preserved; no application storage types; no duplicate Optimization Artifact Catalog contract.
+**Invariants:** the top-level context policy remains authoritative; durable eligibility enforces policy, identity, artifact-type and stability fences; evaluator-computed SHA-256 identities are the decision source of truth; `raw_content_included=False`; unknown-value semantics preserved; malformed canonical payloads fail closed; no application storage types; no duplicate Optimization Artifact Catalog contract.
 
-**Out of scope:** pipeline execution, protected-region validator implementation, receipt compiler, application wiring, storage backend.
+**Out of scope:** immutable input snapshots, candidate requests/results/status, candidate construction, pipeline execution, protected-region validator implementation, receipt compiler, application wiring, storage backend and activation execution.
 
-**Acceptance:** contracts importable from package root plan; unit tests for serialization and fail-closed policy validation; no pipeline behavior change.
+**Acceptance:** contracts importable from package root; unit tests prove policy authority, trusted identity hashes, typed stability evidence, activation-readiness separation, strict decoding and canonical round-trip; no pipeline behavior change.
 
 **Status:** **READY_FOR_REVIEW** after **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED**.
 
 ##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
 
-**Goal:** Durable candidate flow first performs artifact lookup by `ArtifactLookupKey`. Existing valid `MessageSequenceArtifact` is reused (`REUSE_ARTIFACT`). New candidate creation only on lookup miss or incompatibility (`CREATE_ARTIFACT`). New `SessionContextRevision` references the selected artifact ID/hash.
+**Goal:** Define the immutable input snapshot, candidate request/result/status contracts and candidate flow. The durable candidate flow first performs artifact lookup by `ArtifactLookupKey`. Existing valid `MessageSequenceArtifact` is reused (`REUSE_ARTIFACT`). New candidate creation only on lookup miss or incompatibility (`CREATE_ARTIFACT`). New `SessionContextRevision` references the selected artifact ID/hash.
 
-**Main contracts:** candidate builder using `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only; integration with Nexus UCL coordinator and router-selected configuration.
+**Main contracts:** `CompactionInputSnapshot`, `CompactionRequest`, `CompactionCandidate`, `CompactionResult`, candidate status, candidate builder using `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only; integration with Nexus UCL coordinator and router-selected configuration.
 
 **Invariants:** no second optimization engine; no string flattening of full conversation history; original context unchanged; candidate not active until Memory/Session CAS passes; no LLM invocation on reuse.
 

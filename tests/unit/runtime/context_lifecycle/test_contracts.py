@@ -25,6 +25,7 @@ from intergrax.runtime.context_lifecycle import (
     ContextOptimizationReasonCode,
     DurableCompactionPolicy,
     DurableCompactionSourceIdentity,
+    DurableCompactionStabilityEvidence,
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationArtifactType,
@@ -1078,6 +1079,34 @@ def _enabled_durable_policy() -> DurableCompactionPolicy:
     )
 
 
+def _durable_context_policy(**overrides: object) -> ContextOptimizationPolicy:
+    defaults: dict[str, object] = {
+        "policy_version": "policy-v1",
+        "validation_contract_version": "validation-v1",
+        "enabled": True,
+        "mode": ContextOptimizationMode.DURABLE_COMPACTION,
+        "allow_lossy": True,
+        "allow_llm_summarization": True,
+        "allowed_artifact_types": (OptimizationArtifactType.MESSAGE_SEQUENCE,),
+        "allowed_strategy_ids": ("message_sequence_summarization.v1",),
+        "require_receipt": True,
+        "require_rollback_metadata": True,
+        "durable_compaction": _enabled_durable_policy(),
+    }
+    defaults.update(overrides)
+    return ContextOptimizationPolicy(**defaults)  # type: ignore[arg-type]
+
+
+def _stability_evidence(**overrides: object) -> DurableCompactionStabilityEvidence:
+    defaults: dict[str, object] = {
+        "observed_stable_revision_count": 1,
+        "observed_source_revision": 2,
+        "observed_source_content_hash": _SHA256_HASH,
+    }
+    defaults.update(overrides)
+    return DurableCompactionStabilityEvidence(**defaults)  # type: ignore[arg-type]
+
+
 def test_durable_compaction_policy_defaults_disabled() -> None:
     policy = DurableCompactionPolicy()
     assert policy.enabled is False
@@ -1172,16 +1201,16 @@ def test_durable_compaction_eligibility_decision_requires_reason_when_ineligible
         DurableCompactionEligibilityDecision(
             eligible=False,
             reason_code=None,
-            policy_hash="policy-hash",
-            target_identity_hash="target-hash",
+            policy_hash=_SHA256_HASH,
+            target_identity_hash=_SHA256_HASH,
             evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
         )
 
     decision = DurableCompactionEligibilityDecision(
         eligible=True,
         reason_code=None,
-        policy_hash="policy-hash",
-        target_identity_hash="target-hash",
+        policy_hash=_SHA256_HASH,
+        target_identity_hash=_SHA256_HASH,
         evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
     )
     assert decision.eligible is True
@@ -1189,8 +1218,8 @@ def test_durable_compaction_eligibility_decision_requires_reason_when_ineligible
     ineligible = DurableCompactionEligibilityDecision(
         eligible=False,
         reason_code=DurableCompactionEligibilityReasonCode.DURABLE_COMPACTION_DISABLED,
-        policy_hash="policy-hash",
-        target_identity_hash="target-hash",
+        policy_hash=_SHA256_HASH,
+        target_identity_hash=_SHA256_HASH,
         evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
     )
     assert ineligible.reason_code is not None
@@ -1208,20 +1237,211 @@ def test_assess_durable_compaction_eligibility_rejects_policy_target_identity_mi
         durable_compaction=durable_policy,
     )
     target = _durable_source_identity()
-    policy_hash = compute_durable_compaction_policy_hash(durable_policy)
     target_hash = compute_durable_compaction_source_identity_hash(target)
 
     decision = assess_durable_compaction_eligibility(
         policy=policy,
         target=target,
-        policy_hash="wrong-policy-hash",
-        target_identity_hash=target_hash,
-        expected_policy_hash=policy_hash,
+        stability_evidence=_stability_evidence(),
+        expected_policy_hash="b" * 64,
         expected_target_identity_hash=target_hash,
     )
     assert decision.eligible is False
     assert decision.reason_code is not None
     assert decision.reason_code.value == "policy_target_identity_mismatch"
+
+
+def test_durable_compaction_eligibility_computes_hashes_internally() -> None:
+    policy = _durable_context_policy()
+    target = _durable_source_identity()
+    decision = assess_durable_compaction_eligibility(
+        policy=policy,
+        target=target,
+        stability_evidence=_stability_evidence(),
+    )
+
+    assert decision.eligible is True
+    assert decision.policy_hash == compute_durable_compaction_policy_hash(
+        policy.durable_compaction  # type: ignore[arg-type]
+    )
+    assert decision.target_identity_hash == compute_durable_compaction_source_identity_hash(
+        target
+    )
+
+
+@pytest.mark.parametrize(
+    ("policy_overrides", "expected_reason"),
+    [
+        (
+            {"enabled": False},
+            DurableCompactionEligibilityReasonCode.POLICY_DISABLED,
+        ),
+        (
+            {"allowed_strategy_ids": ()},
+            DurableCompactionEligibilityReasonCode.STRATEGY_NOT_ALLOWED,
+        ),
+        (
+            {
+                "durable_compaction": DurableCompactionPolicy(
+                    enabled=True,
+                    allowed_strategy_ids=("other-strategy",),
+                    allowed_lossiness_profiles=("lossy_summary",),
+                )
+            },
+            DurableCompactionEligibilityReasonCode.STRATEGY_NOT_ALLOWED,
+        ),
+        (
+            {"allowed_artifact_types": (OptimizationArtifactType.TEXT,)},
+            DurableCompactionEligibilityReasonCode.ARTIFACT_TYPE_NOT_ALLOWED,
+        ),
+        (
+            {"allow_lossy": False, "allow_llm_summarization": False},
+            DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED,
+        ),
+        (
+            {"allow_llm_summarization": False},
+            DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED,
+        ),
+    ],
+)
+def test_durable_compaction_eligibility_enforces_top_level_and_nested_fences(
+    policy_overrides: dict[str, object],
+    expected_reason: DurableCompactionEligibilityReasonCode,
+) -> None:
+    decision = assess_durable_compaction_eligibility(
+        policy=_durable_context_policy(**policy_overrides),
+        target=_durable_source_identity(),
+        stability_evidence=_stability_evidence(),
+    )
+
+    assert decision.eligible is False
+    assert decision.reason_code is expected_reason
+
+
+def test_durable_compaction_requires_message_sequence_artifact_type() -> None:
+    lookup = _durable_lookup_key(artifact_type=OptimizationArtifactType.TEXT)
+    target = _durable_source_identity(artifact_lookup_key=lookup)
+    decision = assess_durable_compaction_eligibility(
+        policy=_durable_context_policy(
+            allowed_artifact_types=(OptimizationArtifactType.TEXT,),
+        ),
+        target=target,
+        stability_evidence=_stability_evidence(),
+    )
+
+    assert decision.eligible is False
+    assert decision.reason_code is DurableCompactionEligibilityReasonCode.ARTIFACT_TYPE_NOT_ALLOWED
+
+
+def test_durable_compaction_requires_stability_evidence_and_threshold() -> None:
+    policy = _durable_context_policy(
+        durable_compaction=DurableCompactionPolicy(
+            enabled=True,
+            allowed_strategy_ids=("message_sequence_summarization.v1",),
+            allowed_lossiness_profiles=("lossy_summary",),
+            minimum_stable_revision_count=2,
+        )
+    )
+    target = _durable_source_identity()
+
+    revision_only = assess_durable_compaction_eligibility(
+        policy=policy,
+        target=target,
+    )
+    below_minimum = assess_durable_compaction_eligibility(
+        policy=policy,
+        target=target,
+        stability_evidence=_stability_evidence(observed_stable_revision_count=1),
+    )
+    at_minimum = assess_durable_compaction_eligibility(
+        policy=policy,
+        target=target,
+        stability_evidence=_stability_evidence(observed_stable_revision_count=2),
+    )
+
+    assert revision_only.reason_code is (
+        DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_UNAVAILABLE
+    )
+    assert below_minimum.reason_code is (
+        DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_NOT_MET
+    )
+    assert at_minimum.eligible is True
+
+
+@pytest.mark.parametrize(
+    "evidence_overrides",
+    [
+        {"observed_source_revision": 99},
+        {"observed_source_content_hash": "b" * 64},
+    ],
+)
+def test_durable_compaction_rejects_mismatched_stability_identity(
+    evidence_overrides: dict[str, object],
+) -> None:
+    decision = assess_durable_compaction_eligibility(
+        policy=_durable_context_policy(),
+        target=_durable_source_identity(),
+        stability_evidence=_stability_evidence(**evidence_overrides),
+    )
+
+    assert decision.eligible is False
+    assert decision.reason_code is (
+        DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_UNAVAILABLE
+    )
+
+
+def test_stability_evidence_rejects_bool_count() -> None:
+    with pytest.raises(ValueError, match="observed_stable_revision_count must be an integer"):
+        DurableCompactionStabilityEvidence(
+            observed_stable_revision_count=True,
+            observed_source_revision=2,
+            observed_source_content_hash=_SHA256_HASH,
+        )
+
+
+def test_eligibility_does_not_require_activation_requirements() -> None:
+    decision = assess_durable_compaction_eligibility(
+        policy=_durable_context_policy(),
+        target=_durable_source_identity(),
+        stability_evidence=_stability_evidence(),
+    )
+
+    assert decision.eligible is True
+    assert DurableCompactionActivationRequirements is not None
+
+
+@pytest.mark.parametrize("field", ["policy_hash", "target_identity_hash"])
+def test_durable_compaction_eligibility_decision_requires_sha256_hashes(field: str) -> None:
+    values = {
+        "eligible": True,
+        "reason_code": None,
+        "policy_hash": _SHA256_HASH,
+        "target_identity_hash": _SHA256_HASH,
+        "evaluated_mode": ContextOptimizationMode.DURABLE_COMPACTION,
+    }
+    values[field] = "not-a-sha256"
+    with pytest.raises(ValueError, match=field):
+        DurableCompactionEligibilityDecision(**values)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("argument", "value"),
+    [
+        ("expected_policy_hash", "not-a-sha256"),
+        ("expected_target_identity_hash", "not-a-sha256"),
+    ],
+)
+def test_durable_compaction_eligibility_rejects_malformed_expected_hash(
+    argument: str,
+    value: str,
+) -> None:
+    with pytest.raises(ValueError, match=argument):
+        assess_durable_compaction_eligibility(
+            policy=_durable_context_policy(),
+            target=_durable_source_identity(),
+            stability_evidence=_stability_evidence(),
+            **{argument: value},
+        )
 
 
 def test_existing_ephemeral_assembly_policy_defaults_unchanged() -> None:

@@ -396,13 +396,44 @@ def test_durable_target_round_trip_preserves_semantic_equality() -> None:
     assert restored == identity
 
 
+def test_durable_stability_evidence_round_trip_preserves_semantic_equality() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        DurableCompactionStabilityEvidence,
+        durable_compaction_stability_evidence_from_canonical_dict,
+        durable_compaction_stability_evidence_to_canonical_dict,
+    )
+
+    evidence = DurableCompactionStabilityEvidence(
+        observed_stable_revision_count=2,
+        observed_source_revision=2,
+        observed_source_content_hash=_SHA256_HASH,
+    )
+    restored = durable_compaction_stability_evidence_from_canonical_dict(
+        durable_compaction_stability_evidence_to_canonical_dict(evidence)
+    )
+
+    assert restored == evidence
+
+
 def test_durable_policy_hash_ignores_mapping_key_order() -> None:
-    from intergrax.runtime.context_lifecycle import compute_durable_compaction_policy_hash
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_policy_hash,
+        durable_compaction_policy_from_canonical_dict,
+        durable_compaction_policy_to_canonical_dict,
+    )
 
     policy = _durable_policy()
-    hash_a = compute_durable_compaction_policy_hash(policy)
-    hash_b = compute_durable_compaction_policy_hash(policy)
-    assert hash_a == hash_b
+    payload_a = durable_compaction_policy_to_canonical_dict(policy)
+    payload_b = dict(reversed(tuple(payload_a.items())))
+    policy_a = durable_compaction_policy_from_canonical_dict(payload_a)
+    policy_b = durable_compaction_policy_from_canonical_dict(payload_b)
+
+    assert durable_compaction_policy_to_canonical_dict(policy_a) == (
+        durable_compaction_policy_to_canonical_dict(policy_b)
+    )
+    assert compute_durable_compaction_policy_hash(policy_a) == (
+        compute_durable_compaction_policy_hash(policy_b)
+    )
 
 
 def test_durable_target_source_ref_order_changes_hash() -> None:
@@ -553,3 +584,113 @@ def test_durable_policy_decode_rejects_malformed_enum() -> None:
     payload["activation_mode"] = "auto_activate"
     with pytest.raises(ValueError, match="activation_mode must be a supported enum value"):
         durable_compaction_policy_from_canonical_dict(payload)
+
+
+@pytest.mark.parametrize("field", ["allowed_strategy_ids", "allowed_lossiness_profiles"])
+def test_durable_policy_decode_rejects_string_sequence(field: str) -> None:
+    from intergrax.runtime.context_lifecycle import durable_compaction_policy_from_canonical_dict
+
+    payload = {
+        "activation_mode": "compare_and_swap",
+        "allowed_strategy_ids": ["message_sequence_summarization.v1"],
+        "allowed_lossiness_profiles": ["lossy_summary"],
+        "enabled": True,
+        "minimum_stable_revision_count": 1,
+        "minimum_validation_requirement": "full",
+    }
+    payload[field] = "not-a-sequence"
+    with pytest.raises(ValueError, match=f"{field} must be a list or tuple"):
+        durable_compaction_policy_from_canonical_dict(payload)
+
+
+@pytest.mark.parametrize(
+    "items",
+    [
+        ["message_sequence_summarization.v1", 1],
+        [" message_sequence_summarization.v1"],
+        ["message_sequence_summarization.v1 "],
+        ["message_sequence_summarization.v1", "message_sequence_summarization.v1"],
+    ],
+)
+def test_durable_policy_decode_rejects_invalid_sequence_items(items: list[object]) -> None:
+    from intergrax.runtime.context_lifecycle import durable_compaction_policy_from_canonical_dict
+
+    payload = {
+        "activation_mode": "compare_and_swap",
+        "allowed_strategy_ids": items,
+        "allowed_lossiness_profiles": ["lossy_summary"],
+        "enabled": True,
+        "minimum_stable_revision_count": 1,
+        "minimum_validation_requirement": "full",
+    }
+    with pytest.raises(ValueError):
+        durable_compaction_policy_from_canonical_dict(payload)
+
+
+def test_durable_source_decode_rejects_invalid_source_refs() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_source_identity_from_canonical_dict,
+        durable_compaction_source_identity_to_canonical_dict,
+    )
+
+    payload = durable_compaction_source_identity_to_canonical_dict(_durable_identity())
+    payload["source_refs"] = "msg-1"
+    with pytest.raises(ValueError, match="source_refs must be a list or tuple"):
+        durable_compaction_source_identity_from_canonical_dict(payload)
+
+    payload = durable_compaction_source_identity_to_canonical_dict(_durable_identity())
+    payload["source_refs"] = ["msg-1", 1]
+    with pytest.raises(ValueError, match="source_refs items must be strings"):
+        durable_compaction_source_identity_from_canonical_dict(payload)
+
+    payload = durable_compaction_source_identity_to_canonical_dict(_durable_identity())
+    payload["source_refs"] = ["msg-1", "msg-1"]
+    with pytest.raises(ValueError, match="source_refs must not contain duplicates"):
+        durable_compaction_source_identity_from_canonical_dict(payload)
+
+
+def test_nested_lookup_decode_rejects_string_source_refs() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_source_identity_from_canonical_dict,
+        durable_compaction_source_identity_to_canonical_dict,
+    )
+
+    payload = durable_compaction_source_identity_to_canonical_dict(_durable_identity())
+    payload["artifact_lookup_key"]["source_refs"] = "msg-1"
+    with pytest.raises(ValueError, match="source_refs must be a list or tuple"):
+        durable_compaction_source_identity_from_canonical_dict(payload)
+
+
+@pytest.mark.parametrize("field", ["allowed_strategy_ids", "allowed_lossiness_profiles"])
+def test_durable_policy_decode_rejects_missing_required_field(field: str) -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_policy_from_canonical_dict,
+        durable_compaction_policy_to_canonical_dict,
+    )
+
+    payload = durable_compaction_policy_to_canonical_dict(_durable_policy())
+    del payload[field]
+    with pytest.raises(ValueError, match=f"missing required field: {field}"):
+        durable_compaction_policy_from_canonical_dict(payload)
+
+
+def test_durable_source_decode_preserves_supported_lookup_fields() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_source_identity_from_canonical_dict,
+        durable_compaction_source_identity_to_canonical_dict,
+    )
+
+    identity = _durable_identity(
+        artifact_lookup_key=_lookup_key(
+            source_content_hash=_SHA256_HASH,
+            strategy_id="message_sequence_summarization.v1",
+            protected_region_policy_version="protected-v1",
+            model_family="model-family",
+            locale="pl-PL",
+        )
+    )
+    restored = durable_compaction_source_identity_from_canonical_dict(
+        durable_compaction_source_identity_to_canonical_dict(identity)
+    )
+
+    assert restored == identity

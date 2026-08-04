@@ -21,6 +21,7 @@ from intergrax.runtime.context_lifecycle.contracts import (
     DurableCompactionActivationRequirements,
     DurableCompactionPolicy,
     DurableCompactionSourceIdentity,
+    DurableCompactionStabilityEvidence,
     DurableCompactionValidationRequirement,
     OptimizationArtifactType,
     OptimizationExecutionGuard,
@@ -117,9 +118,45 @@ def _to_json_safe_value(value: Any) -> Any:
 
 
 def _reject_unknown_keys(payload: Mapping[str, Any], allowed: frozenset[str]) -> None:
+    if not isinstance(payload, Mapping):
+        raise ValueError("payload must be a mapping")
     unknown = set(payload) - allowed
     if unknown:
         raise ValueError(f"unknown fields: {sorted(unknown)}")
+
+
+def _require_mapping_field(payload: Mapping[str, Any], field_name: str) -> Any:
+    if field_name not in payload:
+        raise ValueError(f"missing required field: {field_name}")
+    return payload[field_name]
+
+
+def _require_sequence_field(payload: Mapping[str, Any], field_name: str) -> tuple[str, ...]:
+    value = _require_mapping_field(payload, field_name)
+    if type(value) not in (list, tuple):
+        raise ValueError(f"{field_name} must be a list or tuple of strings")
+    items: list[str] = []
+    for item in value:
+        if type(item) is not str:
+            raise ValueError(f"{field_name} items must be strings")
+        if not item or not item.strip() or item != item.strip():
+            raise ValueError(f"{field_name} items must not be empty or whitespace")
+        items.append(item)
+    if len(items) != len(set(items)):
+        raise ValueError(f"{field_name} must not contain duplicates")
+    return tuple(items)
+
+
+def _require_enum_value(
+    payload: Mapping[str, Any],
+    field_name: str,
+    enum_type: type[Any],
+) -> Any:
+    value = _require_mapping_field(payload, field_name)
+    try:
+        return enum_type(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a supported enum value") from exc
 
 
 def durable_compaction_policy_to_canonical_dict(
@@ -168,6 +205,47 @@ def compute_durable_compaction_source_identity_hash(
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def durable_compaction_stability_evidence_to_canonical_dict(
+    evidence: DurableCompactionStabilityEvidence,
+) -> dict[str, Any]:
+    """Return canonical observed stability evidence."""
+    return {
+        "observed_source_content_hash": evidence.observed_source_content_hash,
+        "observed_source_revision": evidence.observed_source_revision,
+        "observed_stable_revision_count": evidence.observed_stable_revision_count,
+    }
+
+
+def durable_compaction_stability_evidence_from_canonical_dict(
+    payload: Mapping[str, Any],
+) -> DurableCompactionStabilityEvidence:
+    """Decode canonical observed stability evidence."""
+    _reject_unknown_keys(
+        payload,
+        frozenset(
+            {
+                "observed_source_content_hash",
+                "observed_source_revision",
+                "observed_stable_revision_count",
+            }
+        ),
+    )
+    return DurableCompactionStabilityEvidence(
+        observed_stable_revision_count=_require_mapping_field(
+            payload,
+            "observed_stable_revision_count",
+        ),
+        observed_source_revision=_require_mapping_field(
+            payload,
+            "observed_source_revision",
+        ),
+        observed_source_content_hash=_require_mapping_field(
+            payload,
+            "observed_source_content_hash",
+        ),
+    )
+
+
 def durable_compaction_activation_requirements_to_canonical_dict(
     requirements: DurableCompactionActivationRequirements,
 ) -> dict[str, Any]:
@@ -200,28 +278,32 @@ def durable_compaction_policy_from_canonical_dict(
             }
         ),
     )
-    try:
-        activation_mode = DurableCompactionActivationMode(payload["activation_mode"])
-    except (KeyError, ValueError) as exc:
-        raise ValueError("activation_mode must be a supported enum value") from exc
-    try:
-        minimum_validation_requirement = DurableCompactionValidationRequirement(
-            payload["minimum_validation_requirement"]
-        )
-    except (KeyError, ValueError) as exc:
-        raise ValueError(
-            "minimum_validation_requirement must be a supported enum value"
-        ) from exc
-    enabled = payload["enabled"]
+    activation_mode = _require_enum_value(
+        payload,
+        "activation_mode",
+        DurableCompactionActivationMode,
+    )
+    minimum_validation_requirement = _require_enum_value(
+        payload,
+        "minimum_validation_requirement",
+        DurableCompactionValidationRequirement,
+    )
+    enabled = _require_mapping_field(payload, "enabled")
     if not isinstance(enabled, bool):
         raise ValueError("enabled must be a boolean")
     return DurableCompactionPolicy(
         enabled=enabled,
         activation_mode=activation_mode,
         minimum_validation_requirement=minimum_validation_requirement,
-        allowed_strategy_ids=tuple(payload["allowed_strategy_ids"]),
-        allowed_lossiness_profiles=tuple(payload["allowed_lossiness_profiles"]),
-        minimum_stable_revision_count=payload["minimum_stable_revision_count"],
+        allowed_strategy_ids=_require_sequence_field(payload, "allowed_strategy_ids"),
+        allowed_lossiness_profiles=_require_sequence_field(
+            payload,
+            "allowed_lossiness_profiles",
+        ),
+        minimum_stable_revision_count=_require_mapping_field(
+            payload,
+            "minimum_stable_revision_count",
+        ),
     )
 
 
@@ -246,7 +328,7 @@ def durable_compaction_source_identity_from_canonical_dict(
             }
         ),
     )
-    lookup_payload = payload["artifact_lookup_key"]
+    lookup_payload = _require_mapping_field(payload, "artifact_lookup_key")
     if not isinstance(lookup_payload, Mapping):
         raise ValueError("artifact_lookup_key must be a mapping")
     _reject_unknown_keys(
@@ -264,10 +346,14 @@ def durable_compaction_source_identity_from_canonical_dict(
                 "strategy_version",
                 "tenant_id",
                 "validation_contract_version",
+                "protected_region_policy_version",
+                "model_family",
+                "locale",
+                "source_range",
             }
         ),
     )
-    compression_target_payload = lookup_payload["compression_target"]
+    compression_target_payload = _require_mapping_field(lookup_payload, "compression_target")
     if not isinstance(compression_target_payload, Mapping):
         raise ValueError("compression_target must be a mapping")
     _reject_unknown_keys(compression_target_payload, frozenset({"budget_class", "target_tokens"}))
@@ -285,30 +371,44 @@ def durable_compaction_source_identity_from_canonical_dict(
         compression_target = ArtifactCompressionTarget(
             budget_class=compression_target_payload["budget_class"]
         )
+    if "source_range" in lookup_payload:
+        raise ValueError("source_range is not supported for durable source identity")
+    try:
+        artifact_type = OptimizationArtifactType(
+            _require_mapping_field(lookup_payload, "artifact_type")
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError("artifact_type must be a supported enum value") from exc
     lookup_key = ArtifactLookupKey(
-        tenant_id=lookup_payload["tenant_id"],
-        context_scope_id=lookup_payload["context_scope_id"],
-        artifact_type=OptimizationArtifactType(lookup_payload["artifact_type"]),
-        source_content_hash=lookup_payload["source_content_hash"],
-        strategy_id=lookup_payload["strategy_id"],
-        strategy_version=lookup_payload["strategy_version"],
-        policy_version=lookup_payload["policy_version"],
-        validation_contract_version=lookup_payload["validation_contract_version"],
+        tenant_id=_require_mapping_field(lookup_payload, "tenant_id"),
+        context_scope_id=_require_mapping_field(lookup_payload, "context_scope_id"),
+        artifact_type=artifact_type,
+        source_content_hash=_require_mapping_field(lookup_payload, "source_content_hash"),
+        strategy_id=_require_mapping_field(lookup_payload, "strategy_id"),
+        strategy_version=_require_mapping_field(lookup_payload, "strategy_version"),
+        policy_version=_require_mapping_field(lookup_payload, "policy_version"),
+        validation_contract_version=_require_mapping_field(
+            lookup_payload,
+            "validation_contract_version",
+        ),
         compression_target=compression_target,
-        lossiness_profile=lookup_payload["lossiness_profile"],
-        source_refs=tuple(lookup_payload["source_refs"]),
+        lossiness_profile=_require_mapping_field(lookup_payload, "lossiness_profile"),
+        source_refs=_require_sequence_field(lookup_payload, "source_refs"),
+        protected_region_policy_version=lookup_payload.get("protected_region_policy_version"),
+        model_family=lookup_payload.get("model_family"),
+        locale=lookup_payload.get("locale"),
     )
     return DurableCompactionSourceIdentity(
-        tenant_id=payload["tenant_id"],
-        context_scope_id=payload["context_scope_id"],
-        source_revision=payload["source_revision"],
-        expected_active_revision=payload["expected_active_revision"],
-        source_refs=tuple(payload["source_refs"]),
-        source_content_hash=payload["source_content_hash"],
+        tenant_id=_require_mapping_field(payload, "tenant_id"),
+        context_scope_id=_require_mapping_field(payload, "context_scope_id"),
+        source_revision=_require_mapping_field(payload, "source_revision"),
+        expected_active_revision=_require_mapping_field(payload, "expected_active_revision"),
+        source_refs=_require_sequence_field(payload, "source_refs"),
+        source_content_hash=_require_mapping_field(payload, "source_content_hash"),
         artifact_lookup_key=lookup_key,
-        strategy_id=payload["strategy_id"],
-        strategy_version=payload["strategy_version"],
-        lossiness_profile=payload["lossiness_profile"],
+        strategy_id=_require_mapping_field(payload, "strategy_id"),
+        strategy_version=_require_mapping_field(payload, "strategy_version"),
+        lossiness_profile=_require_mapping_field(payload, "lossiness_profile"),
     )
 
 

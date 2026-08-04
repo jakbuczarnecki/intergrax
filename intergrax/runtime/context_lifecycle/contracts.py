@@ -283,19 +283,29 @@ class DurableCompactionValidationRequirement(StrEnum):
 class DurableCompactionEligibilityReasonCode(StrEnum):
     """Stable fail-closed reason codes for durable compaction eligibility."""
 
+    POLICY_DISABLED = "policy_disabled"
     DURABLE_COMPACTION_DISABLED = "durable_compaction_disabled"
     WRONG_OPTIMIZATION_MODE = "wrong_optimization_mode"
     MISSING_SOURCE_REVISION = "missing_source_revision"
     MISSING_EXPECTED_ACTIVE_REVISION = "missing_expected_active_revision"
     INVALID_SOURCE_IDENTITY = "invalid_source_identity"
     STRATEGY_NOT_ALLOWED = "strategy_not_allowed"
+    ARTIFACT_TYPE_NOT_ALLOWED = "artifact_type_not_allowed"
     LOSSINESS_NOT_ALLOWED = "lossiness_not_allowed"
+    STABILITY_REQUIREMENT_UNAVAILABLE = "stability_requirement_unavailable"
+    STABILITY_REQUIREMENT_NOT_MET = "stability_requirement_not_met"
     VALIDATION_REQUIREMENT_UNAVAILABLE = "validation_requirement_unavailable"
     LINEAGE_REQUIREMENT_UNAVAILABLE = "lineage_requirement_unavailable"
     RECEIPT_REQUIREMENT_UNAVAILABLE = "receipt_requirement_unavailable"
     ROLLBACK_REQUIREMENT_UNAVAILABLE = "rollback_requirement_unavailable"
     RAW_CONTENT_FORBIDDEN = "raw_content_forbidden"
     POLICY_TARGET_IDENTITY_MISMATCH = "policy_target_identity_mismatch"
+
+
+_DURABLE_LOSSY_LOSSINESS_PROFILES: frozenset[str] = frozenset({"lossy_summary"})
+_DURABLE_LLM_SUMMARY_STRATEGY_IDS: frozenset[str] = frozenset(
+    {"message_sequence_summarization.v1"}
+)
 
 
 def _require_sha256_hex(value: str, field_name: str) -> str:
@@ -311,12 +321,14 @@ def _require_sha256_hex(value: str, field_name: str) -> str:
     return digest
 
 
-def _require_non_empty_source_refs(refs: tuple[str, ...], field_name: str) -> tuple[str, ...]:
+def _require_non_empty_source_refs(refs: object, field_name: str) -> tuple[str, ...]:
+    if type(refs) not in (list, tuple):
+        raise ValueError(f"{field_name} must be a sequence of strings")
     if not refs:
         raise ValueError(f"{field_name} must not be empty")
     normalized: list[str] = []
     for ref in refs:
-        if not isinstance(ref, str):
+        if type(ref) is not str:
             raise ValueError(f"{field_name} items must be strings")
         if not ref or not ref.strip() or ref != ref.strip():
             raise ValueError(f"{field_name} must not contain empty or whitespace values")
@@ -395,7 +407,7 @@ class DurableCompactionPolicy:
 
 @dataclass(frozen=True, slots=True)
 class DurableCompactionSourceIdentity:
-    """Immutable durable compaction target identity bound to source revision."""
+    """Immutable durable target identity; durable sources use source_refs, not ranges."""
 
     tenant_id: str
     context_scope_id: str
@@ -478,6 +490,38 @@ class DurableCompactionSourceIdentity:
 
 
 @dataclass(frozen=True, slots=True)
+class DurableCompactionStabilityEvidence:
+    """Observed immutable evidence that a durable source has stabilized."""
+
+    observed_stable_revision_count: int
+    observed_source_revision: int
+    observed_source_content_hash: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "observed_stable_revision_count",
+            _require_positive(
+                self.observed_stable_revision_count,
+                "observed_stable_revision_count",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "observed_source_revision",
+            _require_non_negative(self.observed_source_revision, "observed_source_revision"),
+        )
+        object.__setattr__(
+            self,
+            "observed_source_content_hash",
+            _require_sha256_hex(
+                self.observed_source_content_hash,
+                "observed_source_content_hash",
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class DurableCompactionEligibilityDecision:
     """Immutable durable compaction eligibility outcome."""
 
@@ -497,12 +541,12 @@ class DurableCompactionEligibilityDecision:
         object.__setattr__(
             self,
             "policy_hash",
-            _require_non_empty(self.policy_hash, "policy_hash"),
+            _require_sha256_hex(self.policy_hash, "policy_hash"),
         )
         object.__setattr__(
             self,
             "target_identity_hash",
-            _require_non_empty(self.target_identity_hash, "target_identity_hash"),
+            _require_sha256_hex(self.target_identity_hash, "target_identity_hash"),
         )
         if self.eligible:
             if self.reason_code is not None:
@@ -570,8 +614,7 @@ def assess_durable_compaction_eligibility(
     *,
     policy: ContextOptimizationPolicy,
     target: DurableCompactionSourceIdentity,
-    policy_hash: str,
-    target_identity_hash: str,
+    stability_evidence: DurableCompactionStabilityEvidence | None = None,
     raw_content_included: bool = False,
     expected_policy_hash: str | None = None,
     expected_target_identity_hash: str | None = None,
@@ -583,10 +626,25 @@ def assess_durable_compaction_eligibility(
         DurableCompactionSourceIdentity,
         "target",
     )
+    from intergrax.runtime.context_lifecycle.serialization import (
+        compute_durable_compaction_policy_hash,
+        compute_durable_compaction_source_identity_hash,
+    )
+
+    durable_policy = policy.durable_compaction or DurableCompactionPolicy()
+    actual_policy_hash = compute_durable_compaction_policy_hash(durable_policy)
+    actual_target_hash = compute_durable_compaction_source_identity_hash(target)
+    if expected_policy_hash is not None:
+        expected_policy_hash = _require_sha256_hex(expected_policy_hash, "expected_policy_hash")
+    if expected_target_identity_hash is not None:
+        expected_target_identity_hash = _require_sha256_hex(
+            expected_target_identity_hash,
+            "expected_target_identity_hash",
+        )
     raw_content_included = _require_bool(raw_content_included, "raw_content_included")
     base_kwargs = {
-        "policy_hash": policy_hash,
-        "target_identity_hash": target_identity_hash,
+        "policy_hash": actual_policy_hash,
+        "target_identity_hash": actual_target_hash,
         "evaluated_mode": policy.mode,
     }
 
@@ -599,13 +657,13 @@ def assess_durable_compaction_eligibility(
             **base_kwargs,
         )
 
-    if expected_policy_hash is not None and policy_hash != expected_policy_hash:
+    if expected_policy_hash is not None and actual_policy_hash != expected_policy_hash:
         return _ineligible(
             DurableCompactionEligibilityReasonCode.POLICY_TARGET_IDENTITY_MISMATCH
         )
     if (
         expected_target_identity_hash is not None
-        and target_identity_hash != expected_target_identity_hash
+        and actual_target_hash != expected_target_identity_hash
     ):
         return _ineligible(
             DurableCompactionEligibilityReasonCode.POLICY_TARGET_IDENTITY_MISMATCH
@@ -614,12 +672,14 @@ def assess_durable_compaction_eligibility(
     if raw_content_included:
         return _ineligible(DurableCompactionEligibilityReasonCode.RAW_CONTENT_FORBIDDEN)
 
-    durable_policy = policy.durable_compaction
-    if durable_policy is None or not durable_policy.enabled:
-        return _ineligible(DurableCompactionEligibilityReasonCode.DURABLE_COMPACTION_DISABLED)
+    if not policy.enabled:
+        return _ineligible(DurableCompactionEligibilityReasonCode.POLICY_DISABLED)
 
     if policy.mode is not ContextOptimizationMode.DURABLE_COMPACTION:
         return _ineligible(DurableCompactionEligibilityReasonCode.WRONG_OPTIMIZATION_MODE)
+
+    if policy.durable_compaction is None or not durable_policy.enabled:
+        return _ineligible(DurableCompactionEligibilityReasonCode.DURABLE_COMPACTION_DISABLED)
 
     if target.source_revision < 0:
         return _ineligible(DurableCompactionEligibilityReasonCode.MISSING_SOURCE_REVISION)
@@ -629,8 +689,14 @@ def assess_durable_compaction_eligibility(
             DurableCompactionEligibilityReasonCode.MISSING_EXPECTED_ACTIVE_REVISION
         )
 
-    if target.source_revision < durable_policy.minimum_stable_revision_count - 1:
-        return _ineligible(DurableCompactionEligibilityReasonCode.INVALID_SOURCE_IDENTITY)
+    if target.artifact_lookup_key.artifact_type not in policy.allowed_artifact_types:
+        return _ineligible(DurableCompactionEligibilityReasonCode.ARTIFACT_TYPE_NOT_ALLOWED)
+
+    if target.artifact_lookup_key.artifact_type is not OptimizationArtifactType.MESSAGE_SEQUENCE:
+        return _ineligible(DurableCompactionEligibilityReasonCode.ARTIFACT_TYPE_NOT_ALLOWED)
+
+    if target.strategy_id not in policy.allowed_strategy_ids:
+        return _ineligible(DurableCompactionEligibilityReasonCode.STRATEGY_NOT_ALLOWED)
 
     if target.strategy_id not in durable_policy.allowed_strategy_ids:
         return _ineligible(DurableCompactionEligibilityReasonCode.STRATEGY_NOT_ALLOWED)
@@ -638,23 +704,45 @@ def assess_durable_compaction_eligibility(
     if target.lossiness_profile not in durable_policy.allowed_lossiness_profiles:
         return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)
 
-    if durable_policy.minimum_validation_requirement is DurableCompactionValidationRequirement.FULL:
-        if not policy.validation_contract_version:
-            return _ineligible(
-                DurableCompactionEligibilityReasonCode.VALIDATION_REQUIREMENT_UNAVAILABLE
-            )
+    if (
+        target.lossiness_profile in _DURABLE_LOSSY_LOSSINESS_PROFILES
+        and not policy.allow_lossy
+    ):
+        return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)
+
+    if target.strategy_id in _DURABLE_LLM_SUMMARY_STRATEGY_IDS:
+        if not policy.allow_llm_summarization:
+            return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)
+
+    if stability_evidence is None or not isinstance(
+        stability_evidence,
+        DurableCompactionStabilityEvidence,
+    ):
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_UNAVAILABLE
+        )
+
+    if (
+        stability_evidence.observed_source_revision != target.source_revision
+        or stability_evidence.observed_source_content_hash != target.source_content_hash
+    ):
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_UNAVAILABLE
+        )
+
+    if (
+        stability_evidence.observed_stable_revision_count
+        < durable_policy.minimum_stable_revision_count
+    ):
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.STABILITY_REQUIREMENT_NOT_MET
+        )
 
     if not policy.require_receipt:
         return _ineligible(DurableCompactionEligibilityReasonCode.RECEIPT_REQUIREMENT_UNAVAILABLE)
 
     if not policy.require_rollback_metadata:
         return _ineligible(DurableCompactionEligibilityReasonCode.ROLLBACK_REQUIREMENT_UNAVAILABLE)
-
-    if durable_policy.minimum_validation_requirement in {
-        DurableCompactionValidationRequirement.STRUCTURAL_AND_PROTECTED,
-        DurableCompactionValidationRequirement.FULL,
-    } and not policy.validation_contract_version:
-        return _ineligible(DurableCompactionEligibilityReasonCode.LINEAGE_REQUIREMENT_UNAVAILABLE)
 
     return DurableCompactionEligibilityDecision(
         eligible=True,
@@ -932,9 +1020,10 @@ class ContextOptimizationPolicy:
             raise ValueError("allowed_artifact_types must not contain duplicates")
         object.__setattr__(self, "allowed_artifact_types", artifact_types)
 
-        strategy_ids = tuple(self.allowed_strategy_ids)
-        if any(not strategy_id for strategy_id in strategy_ids):
-            raise ValueError("allowed_strategy_ids must not contain empty values")
+        strategy_ids = _require_non_empty_texts(
+            self.allowed_strategy_ids,
+            "allowed_strategy_ids",
+        )
         object.__setattr__(
             self,
             "allowed_strategy_ids",
