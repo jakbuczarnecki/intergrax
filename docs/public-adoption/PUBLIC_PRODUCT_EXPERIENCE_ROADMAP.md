@@ -180,7 +180,26 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 **User-visible outcome:** Reviewed real or intentionally designed neutral visuals support LKW and product introduction without fabricated UI.
 
-**Completion gate:** Visual assets meet public presentation standard; alt text and asset paths documented; no fabricated screenshots.
+**Delivered:**
+
+- light and dark neutral LKW grounded-result SVG assets;
+- root README placement through a responsive picture block;
+- LKW Quick Start placement through a responsive picture block;
+- canonical alt-text meaning and asset ownership;
+- explicit qualification that the visual is not a finished UI screenshot;
+- no fabricated UI, external asset dependency, Hybrid Ask, live-provider or production claim.
+
+**Completion gate:**
+
+- both SVG assets exist;
+- light and dark variants have the same geometry, labels and meaning;
+- root README and Quick Start use responsive picture blocks;
+- alt text describes the sample source, question, AURORA-17 answer, source reference and persisted Ask-run verification;
+- surrounding captions identify the asset as a neutral representation rather than a UI screenshot;
+- dynamic workspace and Ask-run IDs are omitted from the asset;
+- no Hybrid Ask, live-provider, production-readiness, customer or external-validation claim is introduced;
+- SVG assets have no external dependency;
+- asset ownership and placement are recorded in the documentation architecture contract.
 
 ---
 

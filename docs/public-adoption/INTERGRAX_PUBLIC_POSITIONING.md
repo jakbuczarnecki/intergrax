@@ -115,7 +115,7 @@ The PX-4 visual is a neutral documentation representation, not a UI screenshot. 
 
 **Try LKW**
 
-The supported product quickstart path is implemented in PX-3 and ready for audit. It must remain a real tested path — not documentation-only.
+The supported product quickstart path is accepted and closed in PX-3. It remains subject to the final executable-claim audit before external sessions and must not become a documentation-only path.
 
 ### Product-orientation CTA
 
@@ -306,6 +306,6 @@ Do not place license or architecture before the concrete product explanation.
 | Detailed proof claims | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
 | Collaboration permissions | `COLLABORATION.md` |
 | Architecture details | Architecture canon |
-| Root README | Consumes this contract in PX-2 and is ready for audit. |
+| Root README | Consumes this contract in PX-2 and is accepted / closed. |
 
 Do not duplicate detailed task statuses or proof tables here.

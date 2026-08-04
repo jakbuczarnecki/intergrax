@@ -327,7 +327,7 @@ Current root README may still contain pre-reconciliation promotion language; the
 
 | Current document | Current role | Target role | Future owner | Migration task |
 |------------------|--------------|-------------|--------------|------------------|
-| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 READY_FOR_REVIEW |
+| `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 ACCEPTED / CLOSED |
 | `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
@@ -407,6 +407,8 @@ Use:
 
 ### Diagrams
 
+GitHub-native Mermaid is preferred for text-native architecture, responsibility, state and workflow diagrams.
+
 Use GitHub-native Mermaid for:
 
 - architecture;
@@ -435,9 +437,18 @@ Rules:
 - never fabricate product UI;
 - provide descriptive alt text;
 - store future public assets under `docs/assets/public/`;
-- use PNG or WebP for screenshots and SVG for designed diagrams where appropriate;
+- use PNG or WebP for screenshots;
 - compress assets reasonably;
 - avoid screenshots containing credentials, private data, or local absolute paths.
+
+Reviewed SVG is appropriate for intentionally designed neutral product-result visuals when:
+
+- the asset has explicit ownership;
+- light and dark variants remain semantically identical;
+- descriptive alt text exists;
+- surrounding text preserves the essential meaning;
+- the asset is not presented as a screenshot;
+- there are no external dependencies.
 
 No binary image asset is required until a reviewed source screenshot is supplied.
 
@@ -456,7 +467,7 @@ The README must not become a gallery. Every visual must explain something.
 **Delivered in the root README redesign:**
 
 - light/dark neutral hero illustration;
-- LKW user-workflow Mermaid diagram;
+- light/dark neutral LKW grounded-result SVG visual;
 - simplified Intergrax architecture Mermaid diagram;
 - compact proof/status section;
 - Token Optimization capability spotlight and Mermaid diagram.
