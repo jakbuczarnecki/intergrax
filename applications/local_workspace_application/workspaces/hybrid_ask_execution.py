@@ -15,10 +15,6 @@ from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.serving.workspace_schemas import WorkspaceSearchHitV1
 from local_workspace_application.workspaces.hybrid_ask_models import (
@@ -38,11 +34,23 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     ValidatedEvidencePlanV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    KnowledgeAudienceEligibilityV1,
     LiveResultRetentionV1,
     QueryPolicyModeV2,
+    WorkspaceIndexedSourceBindingStatusV1,
+    WorkspaceKnowledgeConfigurationV1,
 )
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+    is_workspace_source_product_visible,
+)
+from local_workspace_application.workspaces.models import Workspace
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.search_evidence import map_search_hits
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 
 _LIVE_ERROR_CODES = frozenset(
     {
@@ -276,11 +284,28 @@ class IndexedEvidenceRetrieverPort(Protocol):
         *,
         tenant_id: str,
         workspace_id: str,
+        configuration_revision: int,
         question: str,
         directive: IndexedRetrievalDirectiveV1,
         audience_context: AudienceContextV1,
     ) -> tuple[IndexedWorkspaceEvidenceV1, ...]:
         ...
+
+
+class _RepositoryWorkspaceLookup:
+    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
+        self._repository = repository
+
+    def require_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> Workspace | None:
+        return self._repository.get_workspace(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
 
 
 class WorkspaceIndexedEvidenceRetrieverV1:
@@ -302,15 +327,17 @@ class WorkspaceIndexedEvidenceRetrieverV1:
         *,
         tenant_id: str,
         workspace_id: str,
+        configuration_revision: int,
         question: str,
         directive: IndexedRetrievalDirectiveV1,
         audience_context: AudienceContextV1,
     ) -> tuple[IndexedWorkspaceEvidenceV1, ...]:
-        from intergrax.runtime.task.task import Task, TaskContext
-        from intergrax.runtime.task.task_run_bridge import new_run_id
         from local_workspace_application.serving.run_metadata import (
             attach_lkw_evidence_metadata,
         )
+
+        from intergrax.runtime.task.task import Task, TaskContext
+        from intergrax.runtime.task.task_run_bridge import new_run_id
 
         task = Task(
             task_id=new_run_id(),
@@ -335,6 +362,20 @@ class WorkspaceIndexedEvidenceRetrieverV1:
             capability="local.workspace.search",
         )
         result = result.model_copy(update={"metadata": result_metadata})
+        configuration = WorkspaceKnowledgeConfigurationService(
+            repository=self._workspace_repository,
+            workspace_lookup=_RepositoryWorkspaceLookup(self._workspace_repository),
+        ).get_configuration(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        if (
+            configuration is None
+            or configuration.tenant_id != tenant_id
+            or configuration.workspace_id != workspace_id
+            or configuration.configuration_revision != configuration_revision
+        ):
+            raise ValueError("indexed_configuration_revision_unavailable")
         hits = map_search_hits(
             repository=self._workspace_repository,
             tenant_id=tenant_id,
@@ -347,6 +388,7 @@ class WorkspaceIndexedEvidenceRetrieverV1:
                 hit,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
+                configuration=configuration,
                 audience_context=audience_context,
             )
             for hit in hits
@@ -358,8 +400,16 @@ class WorkspaceIndexedEvidenceRetrieverV1:
         *,
         tenant_id: str,
         workspace_id: str,
+        configuration: WorkspaceKnowledgeConfigurationV1,
         audience_context: AudienceContextV1,
     ) -> IndexedWorkspaceEvidenceV1:
+        self._verify_indexed_hit(
+            hit,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            configuration=configuration,
+            audience_context=audience_context,
+        )
         metadata = hit.metadata
         chunk_id = metadata.get("chunk_id")
         chunk = chunk_id.strip() if isinstance(chunk_id, str) and chunk_id.strip() else None
@@ -392,12 +442,116 @@ class WorkspaceIndexedEvidenceRetrieverV1:
             ),
         )
 
+    def _verify_indexed_hit(
+        self,
+        hit: WorkspaceSearchHitV1,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        audience_context: AudienceContextV1,
+    ) -> None:
+        if (
+            configuration.tenant_id != tenant_id
+            or configuration.workspace_id != workspace_id
+            or not isinstance(configuration.configuration_revision, int)
+        ):
+            raise ValueError("indexed_configuration_identity_mismatch")
+
+        document = self._workspace_repository.get_document_ref(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            document_id=hit.document_id,
+        )
+        source = self._workspace_repository.get_source(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=hit.source_id,
+        )
+        if (
+            document is None
+            or source is None
+            or document.tenant_id != tenant_id
+            or document.workspace_id != workspace_id
+            or document.source_id != hit.source_id
+            or source.tenant_id != tenant_id
+            or source.workspace_id != workspace_id
+            or source.source_id != hit.source_id
+            or not is_workspace_source_product_visible(
+                source,
+                committed_configuration_revision=configuration.configuration_revision,
+            )
+        ):
+            raise ValueError("indexed_source_ownership_unverified")
+
+        bindings = tuple(
+            binding
+            for binding in getattr(configuration, "indexed_sources", ())
+            if binding.source_id == hit.source_id
+            and binding.status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+        )
+        if len(bindings) != 1:
+            raise ValueError("indexed_source_binding_ambiguous")
+        binding = bindings[0]
+        if (
+            binding.tenant_id != tenant_id
+            or binding.workspace_id != workspace_id
+            or binding.source_id != document.source_id
+            or binding.effective_revision > configuration.configuration_revision
+        ):
+            raise ValueError("indexed_source_binding_identity_mismatch")
+
+        metadata_binding_id = hit.metadata.get("indexed_source_binding_id")
+        if (
+            metadata_binding_id is not None
+            and (
+                not isinstance(metadata_binding_id, str)
+                or not metadata_binding_id.strip()
+                or metadata_binding_id.strip() != binding.indexed_source_binding_id
+            )
+        ):
+            raise ValueError("indexed_source_binding_metadata_mismatch")
+
+        requested_audience = audience_context.audience
+        if (
+            requested_audience is KnowledgeQueryAudienceV1.SHARED
+            and binding.audience_eligibility
+            is not KnowledgeAudienceEligibilityV1.SHARED_ALLOWED
+        ):
+            raise ValueError("indexed_source_shared_access_forbidden")
+
 
 def _safe_string(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     cleaned = value.strip()
     return cleaned or None
+
+
+def _validate_indexed_evidence_batch(
+    evidence_items: tuple[IndexedWorkspaceEvidenceV1, ...],
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    audience: KnowledgeQueryAudienceV1,
+) -> None:
+    expected_audience = audience.value
+    seen_ids: set[str] = set()
+    for evidence in evidence_items:
+        if not isinstance(evidence, IndexedWorkspaceEvidenceV1):
+            raise TypeError("indexed_evidence_structural_invalid")
+        if (
+            evidence.tenant_id != tenant_id
+            or evidence.workspace_id != workspace_id
+            or evidence.audience.value != expected_audience
+            or not evidence.evidence_id.startswith("idx:")
+            or evidence.evidence_id in seen_ids
+            or evidence.content_hash != _sha256(evidence.content)
+            or evidence.retrieved_at.tzinfo is None
+            or evidence.retrieved_at.utcoffset() is None
+        ):
+            raise ValueError("indexed_evidence_execution_validation_failed")
+        seen_ids.add(evidence.evidence_id)
 
 
 class LiveCapabilityExecutorV1:
@@ -793,17 +947,29 @@ class KnowledgeQueryOrchestratorV1:
                 indexed_result = self._indexed_retriever.retrieve(
                     tenant_id=plan.tenant_id,
                     workspace_id=plan.workspace_id,
+                    configuration_revision=plan.configuration_revision,
                     question=question,
                     directive=directive,
                     audience_context=plan.audience_context,
                 )
-                indexed = tuple(await indexed_result) if inspect.isawaitable(indexed_result) else tuple(indexed_result)
+                retrieved_indexed = (
+                    tuple(await indexed_result)
+                    if inspect.isawaitable(indexed_result)
+                    else tuple(indexed_result)
+                )
+                _validate_indexed_evidence_batch(
+                    retrieved_indexed,
+                    tenant_id=plan.tenant_id,
+                    workspace_id=plan.workspace_id,
+                    audience=plan.audience_context.audience,
+                )
+                indexed = retrieved_indexed
                 indexed_status = HybridAskIndexedRetrievalStatusV1.COMPLETED
             except Exception:
                 return self._result(
                     run_id=run_id,
                     plan=validated_plan,
-                    indexed=indexed,
+                    indexed=(),
                     live=live,
                     receipts=receipts,
                     indexed_status=HybridAskIndexedRetrievalStatusV1.FAILED,

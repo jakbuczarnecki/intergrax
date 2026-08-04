@@ -6,12 +6,10 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-
-from intergrax.integrations.contracts.base import IntegrationCategory
 from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeQueryExecutionResultV1,
     KnowledgeQueryOrchestratorV1,
@@ -20,6 +18,7 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
     LiveCapabilityHandlerRegistryV1,
     LiveCapabilityResultItemV1,
     LiveExecutionOutcomeV1,
+    WorkspaceIndexedEvidenceRetrieverV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_models import (
     AskAudienceV1,
@@ -38,9 +37,21 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     ValidatedEvidencePlanV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    KnowledgeAudienceEligibilityV1,
     LiveResultRetentionV1,
     QueryPolicyModeV2,
+    WorkspaceIndexedSourceBinding,
+    WorkspaceIndexedSourceBindingStatusV1,
+    WorkspaceKnowledgeConfigurationHead,
 )
+from local_workspace_application.workspaces.models import (
+    Workspace,
+    WorkspaceDocumentReference,
+    WorkspaceSource,
+)
+from pydantic import ValidationError
+
+from intergrax.integrations.contracts.base import IntegrationCategory
 
 pytestmark = pytest.mark.unit
 
@@ -97,6 +108,7 @@ def _plan(
     calls: tuple[Any, ...] = (),
     directive: IndexedRetrievalDirectiveV1 | None = None,
     budget: EffectiveLiveCallBudgetV1 | None = None,
+    audience: KnowledgeQueryAudienceV1 = KnowledgeQueryAudienceV1.PERSONAL,
 ) -> ValidatedEvidencePlanV1:
     effective_budget = budget or _budget(max_live_calls=max(len(calls), 1))
     return ValidatedEvidencePlanV1(
@@ -110,7 +122,7 @@ def _plan(
             ordered_live_call_proposals=(),
             budget_snapshot=effective_budget,
             audience_context=AudienceContextV1(
-                audience=KnowledgeQueryAudienceV1.PERSONAL
+                audience=audience
             ),
         ),
         executable_live_calls=calls,
@@ -206,21 +218,278 @@ class _NeutralRetriever:
         return self.evidence
 
 
+def _indexed_binding(
+    *,
+    audience_eligibility: KnowledgeAudienceEligibilityV1 = (
+        KnowledgeAudienceEligibilityV1.PERSONAL_ONLY
+    ),
+    status: WorkspaceIndexedSourceBindingStatusV1 = (
+        WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+    ),
+    binding_id: str = "binding-1",
+    source_id: str = "source-1",
+) -> WorkspaceIndexedSourceBinding:
+    return WorkspaceIndexedSourceBinding(
+        indexed_source_binding_id=binding_id,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        knowledge_source_binding_ref="knowledge-source-1",
+        source_id=source_id,
+        status=status,
+        audience_eligibility=audience_eligibility,
+        mutation_id="mutation-1",
+        effective_revision=1,
+        semantic_identity_hash=sha256(binding_id.encode()).hexdigest(),
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
+
+
+class _AuthoritativeRepository:
+    def __init__(
+        self,
+        binding: WorkspaceIndexedSourceBinding,
+        *,
+        document_tenant_id: str = _TENANT,
+        document_workspace_id: str = _WORKSPACE,
+        source_tenant_id: str = _TENANT,
+        source_workspace_id: str = _WORKSPACE,
+    ) -> None:
+        self.binding = binding
+        self.workspace = Workspace(
+            workspace_id=_WORKSPACE,
+            tenant_id=_TENANT,
+            name="Workspace",
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+        self.document = WorkspaceDocumentReference(
+            document_id="document-1",
+            tenant_id=document_tenant_id,
+            workspace_id=document_workspace_id,
+            source_id=binding.source_id,
+            source_path="docs/document.txt",
+            file_name="document.txt",
+            content_hash="sha256:" + "a" * 64,
+            indexed_at=_NOW,
+        )
+        self.source = WorkspaceSource(
+            source_id=binding.source_id,
+            tenant_id=source_tenant_id,
+            workspace_id=source_workspace_id,
+            path="docs",
+            created_at=_NOW,
+        )
+
+    def get_workspace(self, **kwargs: object) -> Workspace | None:
+        return self.workspace
+
+    def get_knowledge_configuration_head(
+        self, **kwargs: object
+    ) -> WorkspaceKnowledgeConfigurationHead:
+        return WorkspaceKnowledgeConfigurationHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            committed_revision=1,
+            updated_at=_NOW,
+        )
+
+    def list_knowledge_connection_attachment_versions(
+        self, **kwargs: object
+    ) -> list[object]:
+        return []
+
+    def list_knowledge_indexed_source_versions(
+        self, **kwargs: object
+    ) -> list[WorkspaceIndexedSourceBinding]:
+        return [self.binding]
+
+    def list_knowledge_live_access_versions(self, **kwargs: object) -> list[object]:
+        return []
+
+    def list_knowledge_query_policy_versions(self, **kwargs: object) -> list[object]:
+        return []
+
+    def get_document_ref(self, **kwargs: object) -> WorkspaceDocumentReference | None:
+        return self.document
+
+    def get_source(self, **kwargs: object) -> WorkspaceSource | None:
+        return self.source
+
+
+class _SearchExecution:
+    def __init__(self, evidence: list[dict[str, object]]) -> None:
+        self.structured_data = {"search_summary": {"evidence": evidence}}
+
+
+class _SearchTaskResult:
+    def __init__(self, evidence: list[dict[str, object]]) -> None:
+        self.metadata: dict[str, object] = {}
+        self.execution_result = _SearchExecution(evidence)
+
+    def model_copy(self, *, update: dict[str, object]) -> _SearchTaskResult:
+        self.metadata = dict(update["metadata"])  # type: ignore[arg-type]
+        return self
+
+
+class _SearchTaskExecutor:
+    def __init__(self, result: _SearchTaskResult) -> None:
+        self.result = result
+
+    async def execute(self, task: object) -> _SearchTaskResult:
+        return self.result
+
+
+def _authoritative_retriever(
+    binding: WorkspaceIndexedSourceBinding,
+    *,
+    metadata: dict[str, object] | None = None,
+    repository: _AuthoritativeRepository | None = None,
+) -> WorkspaceIndexedEvidenceRetrieverV1:
+    repo = repository or _AuthoritativeRepository(binding)
+    result = _SearchTaskResult(
+        [
+            {
+                "document_id": "document-1",
+                "source_id": binding.source_id,
+                "workspace_id": _WORKSPACE,
+                "source_path": "docs/document.txt",
+                "file_name": "document.txt",
+                "score": 0.9,
+                "snippet": "indexed content",
+                "metadata": metadata or {},
+            }
+        ]
+    )
+    return WorkspaceIndexedEvidenceRetrieverV1(
+        task_executor=_SearchTaskExecutor(result),  # type: ignore[arg-type]
+        workspace_repository=repo,  # type: ignore[arg-type]
+        clock=lambda: _NOW,
+    )
+
+
 def _indexed_evidence() -> IndexedWorkspaceEvidenceV1:
+    content = "indexed content"
     return IndexedWorkspaceEvidenceV1(
         evidence_id="idx:workspace-1:document-1:chunk-1",
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         safe_display_name="document.txt",
         retrieved_at=_NOW,
-        content="indexed content",
-        content_hash="a" * 64,
+        content=content,
+        content_hash=sha256(content.encode()).hexdigest(),
         audience=AskAudienceV1.PERSONAL,
         source_id="source-1",
         document_id="document-1",
         chunk_id="chunk-1",
         score=0.9,
     )
+
+
+def _retrieve_authoritative(
+    retriever: WorkspaceIndexedEvidenceRetrieverV1,
+    *,
+    audience: KnowledgeQueryAudienceV1 = KnowledgeQueryAudienceV1.PERSONAL,
+) -> tuple[IndexedWorkspaceEvidenceV1, ...]:
+    return asyncio.run(
+        retriever.retrieve(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            configuration_revision=1,
+            question="question",
+            directive=IndexedRetrievalDirectiveV1(max_results=5),
+            audience_context=AudienceContextV1(audience=audience),
+        )
+    )
+
+
+def test_indexed_retriever_accepts_personal_eligible_source() -> None:
+    binding = _indexed_binding()
+
+    evidence = _retrieve_authoritative(_authoritative_retriever(binding))
+
+    assert len(evidence) == 1
+    assert evidence[0].audience is AskAudienceV1.PERSONAL
+    assert evidence[0].indexed_source_binding_id == binding.indexed_source_binding_id
+
+
+def test_indexed_retriever_accepts_shared_eligible_source_for_shared_request() -> None:
+    binding = _indexed_binding(
+        audience_eligibility=KnowledgeAudienceEligibilityV1.SHARED_ALLOWED
+    )
+
+    evidence = _retrieve_authoritative(
+        _authoritative_retriever(binding),
+        audience=KnowledgeQueryAudienceV1.SHARED,
+    )
+
+    assert evidence[0].audience is AskAudienceV1.SHARED
+
+
+def test_indexed_retriever_rejects_personal_only_source_for_shared_request() -> None:
+    binding = _indexed_binding()
+
+    with pytest.raises(ValueError, match="indexed_source_shared_access_forbidden"):
+        _retrieve_authoritative(
+            _authoritative_retriever(binding),
+            audience=KnowledgeQueryAudienceV1.SHARED,
+        )
+
+
+def test_indexed_retriever_rejects_disabled_historical_binding() -> None:
+    binding = _indexed_binding(status=WorkspaceIndexedSourceBindingStatusV1.DISABLED)
+
+    with pytest.raises(ValueError, match="indexed_source_binding_ambiguous"):
+        _retrieve_authoritative(_authoritative_retriever(binding))
+
+
+def test_search_metadata_cannot_override_authoritative_binding_eligibility() -> None:
+    binding = _indexed_binding()
+
+    with pytest.raises(ValueError, match="indexed_source_shared_access_forbidden"):
+        _retrieve_authoritative(
+            _authoritative_retriever(
+                binding,
+                metadata={
+                    "indexed_source_binding_id": binding.indexed_source_binding_id,
+                    "shared_allowed": True,
+                    "audience": "shared",
+                },
+            ),
+            audience=KnowledgeQueryAudienceV1.SHARED,
+        )
+
+
+def test_indexed_retriever_rejects_binding_id_mismatch() -> None:
+    binding = _indexed_binding()
+
+    with pytest.raises(ValueError, match="indexed_source_binding_metadata_mismatch"):
+        _retrieve_authoritative(
+            _authoritative_retriever(
+                binding,
+                metadata={"indexed_source_binding_id": "binding-attacker"},
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("repository_kwargs", "error_match"),
+    [
+        ({"document_tenant_id": "tenant-other"}, "search_evidence_unverified"),
+        ({"source_workspace_id": "workspace-other"}, "indexed_source_ownership_unverified"),
+    ],
+)
+def test_indexed_retriever_fails_closed_on_tenant_or_workspace_mismatch(
+    repository_kwargs: dict[str, str],
+    error_match: str,
+) -> None:
+    binding = _indexed_binding()
+    repository = _AuthoritativeRepository(binding, **repository_kwargs)
+
+    with pytest.raises(Exception, match=error_match):
+        _retrieve_authoritative(
+            _authoritative_retriever(binding, repository=repository)
+        )
 
 
 def _executor(
@@ -537,6 +806,48 @@ def test_hybrid_forwards_audience_and_fails_closed_on_indexed_failure() -> None:
     )
     assert failed.error_code == "indexed_retrieval_failed"
     assert not handler.calls[1:]
+
+
+@pytest.mark.parametrize(
+    "evidence_factory",
+    [
+        lambda: (_indexed_evidence().model_copy(update={"tenant_id": "tenant-other"}),),
+        lambda: (_indexed_evidence().model_copy(update={"workspace_id": "workspace-other"}),),
+        lambda: (
+            _indexed_evidence().model_copy(update={"audience": AskAudienceV1.SHARED}),
+        ),
+        lambda: (_indexed_evidence(), _indexed_evidence()),
+        lambda: (_indexed_evidence().model_copy(update={"content_hash": "f" * 64}),),
+    ],
+    ids=("wrong-tenant", "wrong-workspace", "wrong-audience", "duplicate-id", "bad-hash"),
+)
+def test_orchestrator_indexed_result_fence_blocks_invalid_evidence_and_live(
+    evidence_factory: Any,
+) -> None:
+    indexed = _NeutralRetriever(tuple(evidence_factory()))
+    handler = _NeutralHandler((_item("item-1"),))
+    live_executor, _ = _executor(handler)
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=indexed,
+        live_executor=live_executor,
+    )
+
+    result = asyncio.run(
+        orchestrator.execute(
+            run_id="run-hybrid-invalid-indexed",
+            question="question",
+            validated_plan=_plan(
+                QueryPolicyModeV2.HYBRID,
+                calls=(_call(),),
+                directive=IndexedRetrievalDirectiveV1(max_results=5),
+            ),
+            retention=LiveResultRetentionV1.EPHEMERAL,
+        )
+    )
+
+    assert result.error_code == "indexed_retrieval_failed"
+    assert result.indexed_evidence == ()
+    assert handler.calls == []
 
 
 def test_hybrid_does_not_downgrade_after_required_live_failure() -> None:
