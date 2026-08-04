@@ -24,6 +24,7 @@ Intergrax helps teams build specialized agent applications without rebuilding th
 | Who is it for? | Teams building specialized agent-backed applications, platform engineers evaluating reusable infrastructure, and technical design partners with a concrete workflow to validate. |
 | Current proof | LKW as **Primary product proof**; Token Optimization as **Featured platform-capability proof** — both **PARTIAL**. |
 | Current maturity | **Source-available**, **active R&D**; bounded proof paths, not universal production readiness. |
+| Where does it fit? | A reusable governed application foundation — not a finished SaaS, no-code builder, single-purpose RAG component or standalone agent framework |
 
 ---
 
@@ -72,7 +73,56 @@ Intergrax is not aimed at every possible AI project, generic consumers, or teams
 
 ---
 
-## When Intergrax fits
+## Where Intergrax fits
+
+These approaches are not mutually exclusive. A real system may combine several of them, and the comparison is about primary responsibility rather than a feature scorecard or superiority claim.
+
+The right choice depends on the product and responsibility boundary the team wants to own. Consider the approach that best matches the outcome, control, and maintenance burden required for the work.
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="docs/assets/public/intergrax-category-map-dark.svg"
+  >
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="docs/assets/public/intergrax-category-map-light.svg"
+  >
+  <img
+    alt="Responsibility map comparing finished AI SaaS, workflow automation platforms, RAG or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns."
+    src="docs/assets/public/intergrax-category-map-light.svg"
+  >
+</picture>
+
+This neutral map explains primary responsibility. Categories overlap, and no universal superiority or feature parity is claimed.
+
+### Choose by your primary need
+
+| Approach | Primary value | Your team still owns | Consider it when |
+| -------- | ------------- | -------------------- | ---------------- |
+| Finished AI SaaS | Ready-made end-user product | Adoption and workflow fit | You need a ready-made end-user product |
+| Workflow automation platform | Connect systems and process steps | AI-specific behavior and evidence semantics | You need process and system automation |
+| RAG or knowledge toolkit | Retrieval, indexing and grounding components | Product, orchestration, policy and operations | You need retrieval and grounding components |
+| Agent framework | Compose agent behavior and orchestration | Product controls, runtime governance and evidence | You need agent behavior and orchestration |
+| Custom in-house foundation | Maximum design control | Every shared layer and its maintenance | You need complete design control and can maintain the platform |
+| Intergrax | Reusable governed foundation for specialized AI applications | Product workflow, UX, deployment choices, product-specific validation and all required permissions remain the product team's responsibility. | You need to build a specialized governed AI application on reusable policy, knowledge, integration, execution and evidence foundations |
+
+### A simple decision flow
+
+```mermaid
+flowchart TD
+    A[What do you need most?]
+    A -->|A ready-made end-user product| B[Finished AI SaaS]
+    A -->|Connected systems and process steps| C[Workflow automation platform]
+    A -->|Retrieval and grounding components| D[RAG or knowledge toolkit]
+    A -->|Agent behavior and orchestration| E[Agent framework]
+    A -->|Maximum control and platform capacity| F[Custom in-house foundation]
+    A -->|A specialized application on reusable governed foundations| G[Evaluate Intergrax]
+    G --> H[Check concrete use-case fit]
+    H --> I[Review current proof and limitations]
+```
+
+### Fit summary
 
 | Intergrax may fit when | Another approach may fit better when |
 | ---------------------- | ------------------------------------ |
@@ -83,6 +133,8 @@ Intergrax is not aimed at every possible AI project, generic consumers, or teams
 | Governance, policy, and evidence matter to your reviewers | You have no governance or evidence requirements |
 
 Other frameworks and tools may suit different needs. This guide does not dismiss them.
+
+Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
 ---
 
@@ -116,6 +168,9 @@ Detailed proof matrices and claim boundaries remain in [PROOFS.md](PROOFS.md).
 
 | Goal | Document |
 | ---- | -------- |
-| Understand how it works | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Check a concrete workflow fit | [USE_CASES.md](USE_CASES.md) |
+| Review current evidence | [PROOFS.md](PROOFS.md) |
+| Understand technical boundaries | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
+| Begin building | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) |
+| Discuss a bounded pilot | [PARTNERS.md](PARTNERS.md) |
 | Start evaluating or building | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Review evidence | [PROOFS.md](PROOFS.md) |

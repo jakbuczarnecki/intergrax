@@ -20,8 +20,15 @@ This FAQ answers common first-contact questions. It does not replace [LICENSE](L
 | Strongest current proof | LKW — Primary product proof · Backend Product Alpha / MVP · **PARTIAL** |
 | Current maturity | Source-available, active R&D; real-user and commercial validation incomplete |
 | Where to evaluate | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Where to compare approaches | [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
 | Where to discuss a pilot | [PARTNERS.md](PARTNERS.md) |
 | Where to check permissions | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
+
+---
+
+## How does Intergrax differ from a finished SaaS, RAG toolkit, agent framework, workflow automation platform or custom in-house foundation?
+
+The difference is primarily the responsibility boundary: Intergrax is a reusable governed application foundation, not a finished SaaS, and it does not claim universal superiority. Use the [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) for the detailed, bounded view.
 
 ---
 

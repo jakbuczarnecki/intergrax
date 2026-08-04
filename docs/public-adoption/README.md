@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-7 READY_FOR_REVIEW
+Status: ACTIVE — PX-8 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -67,9 +67,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-6 ACCEPTED / CLOSED
-Current phase: PX-7 READY_FOR_REVIEW
-Next after acceptance: PX-8
+Previous phase: PX-7 ACCEPTED / CLOSED
+Current phase: PX-8 READY_FOR_REVIEW
+Next after acceptance: PX-9
 External sessions: NOT_STARTED
 ```
 
@@ -84,6 +84,13 @@ CTO, product lead or technical buyer:
 
 Partner, integrator or design partner:
 ../../PARTNERS.md
+
+Category and alternative positioning:
+../../WHY_INTERGRAX.md#where-intergrax-fits
+
+Category map:
+../assets/public/intergrax-category-map-light.svg
+../assets/public/intergrax-category-map-dark.svg
 ```
 
 ## Validation status

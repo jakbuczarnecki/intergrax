@@ -35,6 +35,8 @@ Primary decision audience: CTO, product lead or technical buyer assessing fit, m
 
 The primary buyer next action after confirming apparent fit is to [review the current proof status](PROOFS.md) before starting a pilot or commercial discussion.
 
+Need category-level orientation before assessing a concrete workflow? See [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
+
 ```mermaid
 flowchart TD
     A[What are you trying to build?]
@@ -142,6 +144,7 @@ A good evaluation description should capture:
 | Evidence is relevant and a technical trial is justified | Use [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | A partner, pilot or operational discussion is needed | Use [PARTNERS.md](PARTNERS.md) |
 | The use case is currently not supported | Stop or choose another approach |
+| Unsure which class of solution matches the need | Compare common approaches in [WHY_INTERGRAX.md](WHY_INTERGRAX.md#where-intergrax-fits) |
 | Rights or permission are unclear | Review [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 
 **Start here:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [PROOFS.md](PROOFS.md) · [ROADMAP.md](ROADMAP.md) · [PARTNERS.md](PARTNERS.md) · [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE)

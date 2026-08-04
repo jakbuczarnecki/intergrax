@@ -202,6 +202,7 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 | Plan a deeper build | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Run a broader evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Assess fit as a CTO, product lead or technical buyer | [USE_CASES.md](USE_CASES.md) |
+| Compare Intergrax with common approaches | [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
 | Explore a partner, integrator or design-partner path | [PARTNERS.md](PARTNERS.md) |
 | Review license and permission boundaries | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 

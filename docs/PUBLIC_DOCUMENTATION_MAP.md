@@ -15,6 +15,7 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 | I want to… | Start here |
 |------------|------------|
 | Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
+| Compare Intergrax with common approaches | [Where Intergrax fits](../WHY_INTERGRAX.md#where-intergrax-fits) |
 | Review as an architect or platform engineer | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
 | Start building with Intergrax | [Builder Quick Start](../BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
@@ -68,7 +69,7 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | Document | Purpose |
 |----------|---------|
 | [README](../README.md) | First-contact landing — problem, value, quick start, maturity snapshot |
-| [WHY_INTERGRAX](../WHY_INTERGRAX.md) | Problem, value, audience, and fit without tier jargon |
+| [WHY_INTERGRAX](../WHY_INTERGRAX.md) | Problem, value, audience, category fit and fair comparison with common approaches |
 | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
 | [Builder Quick Start](../BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
 | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) | Deeper builder route selection and planning |

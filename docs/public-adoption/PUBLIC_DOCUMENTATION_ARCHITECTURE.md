@@ -95,7 +95,7 @@ BUILDER_QUICKSTART.md
 
 | Document | Responsibility | Status |
 |----------|----------------|--------|
-| `WHY_INTERGRAX.md` | Problem, value, and audience without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
+| `WHY_INTERGRAX.md` | Problem, value, audience, category fit and fair alternative positioning without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6; category positioning extended in PX-8 |
 | `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | Builder route selection and deeper planning | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
@@ -184,6 +184,7 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Reader intent | Primary destination |
 |-------------|---------------------|
 | Understand the problem and value | `WHY_INTERGRAX.md` |
+| Compare Intergrax with common solution approaches | `WHY_INTERGRAX.md#where-intergrax-fits` |
 | Review as an architect or platform engineer | `ARCHITECTURE_OVERVIEW.md` |
 | Assess fit as a CTO, product lead or technical buyer | `USE_CASES.md` |
 | Explore a partner, integrator or design-partner path | `PARTNERS.md` |
@@ -231,6 +232,30 @@ Deep evidence remains owned by `PROOFS.md`.
 Legal terms remain owned by `LICENSE`.
 
 Practical permission routing remains owned by `COLLABORATION.md`.
+
+### Category-positioning ownership
+
+```text
+WHY_INTERGRAX.md:
+category-level responsibility comparison
+
+USE_CASES.md:
+concrete workflow fit and buyer decision
+
+ARCHITECTURE_OVERVIEW.md:
+technical responsibility boundaries
+
+FAQ.md:
+concise route to the owning comparison
+```
+
+The category comparison describes primary responsibility, not verified feature parity.
+
+Generic categories may be described. Specific vendors are not compared in PX-8.
+
+No score, ranking, winner, market-leadership or universal-superiority claim is allowed.
+
+The categories may overlap and may be combined.
 
 Reader-intent ownership is frozen as follows:
 
@@ -514,6 +539,24 @@ Reviewed SVG is appropriate for intentionally designed neutral product-result vi
 - surrounding text preserves the essential meaning;
 - the asset is not presented as a screenshot;
 - there are no external dependencies.
+
+PX-8 category visual ownership:
+
+```text
+docs/assets/public/intergrax-category-map-light.svg
+docs/assets/public/intergrax-category-map-dark.svg
+
+Owner:
+WHY_INTERGRAX.md#where-intergrax-fits
+
+Purpose:
+neutral category-responsibility map
+
+Status:
+implemented in PX-8 — READY_FOR_REVIEW
+```
+
+Both variants must remain semantically identical. Surrounding text must preserve essential meaning. These assets are conceptual documentation graphics, not screenshots. Vendor logos and unsupported claims are prohibited.
 
 No binary image asset is required until a reviewed source screenshot is supplied.
 

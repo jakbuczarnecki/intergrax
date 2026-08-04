@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-7 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-8 |
+| Current phase | PX-8 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-9 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -285,7 +285,9 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-7 — Architect, buyer and partner routes
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `c2cb9122bc74c5787a5a064621e5d0d33f8046d9`
 
 **User-visible outcome:** Architect, buyer, and partner intents each have one primary route with clear next action.
 
@@ -320,17 +322,44 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-8 — Category and alternative positioning
 
-**Status:** BLOCKED_ON_PX_7_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Readers understand where Intergrax fits relative to alternatives without unfair or inflated comparisons.
 
-**Completion gate:** Category language reviewed; claims remain bounded; no fabricated market validation.
+**Delivered:**
+
+- WHY_INTERGRAX.md established as the category-positioning owner;
+- responsive light/dark category-responsibility visual;
+- accessible six-approach comparison matrix;
+- one category decision-flow Mermaid diagram;
+- clear distinction between finished SaaS, workflow automation, RAG toolkits, agent frameworks, custom foundations and Intergrax;
+- README, Use Cases, FAQ and public documentation map routing;
+- fair-comparison and visual-ownership contracts;
+- no named competitor, ranking, score, market-validation or universal-superiority claim.
+
+**Completion gate:**
+
+- WHY_INTERGRAX.md owns the category comparison;
+- the comparison covers exactly the six approved approaches;
+- every approach states primary value and remaining team responsibility;
+- light and dark SVG assets exist and are semantically identical;
+- essential meaning remains available in Markdown;
+- one Mermaid decision flow routes by primary need;
+- README links to the comparison without embedding another large visual;
+- USE_CASES.md routes category uncertainty to the owning section;
+- FAQ provides a concise category-difference answer;
+- the public documentation map exposes the comparison route;
+- category ownership is frozen in documentation architecture;
+- categories are described without vendor names;
+- no score, winner, ranking, feature-parity, market-leadership, enterprise-readiness, production-readiness or universal-superiority claim is introduced;
+- current maturity and validation limitations remain visible;
+- no code, test, script or dependency is changed.
 
 ---
 
 ## PX-9 — Public-language cleanup
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_8_ACCEPTANCE
 
 **User-visible outcome:** Public documents remove maintainer task IDs and internal vocabulary from normal reader paths.
 

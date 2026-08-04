@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 960" role="img" aria-labelledby="title desc">
+  <title id="title">Where Intergrax fits among common approaches</title>
+  <desc id="desc">A responsibility map comparing finished AI SaaS, workflow automation platforms, RAG or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns.</desc>
+  <rect width="1600" height="960" fill="#f7f9fc"/>
+  <text x="800" y="45" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="36" font-weight="700" fill="#172033">Where Intergrax fits among common approaches</text>
+
+  <text x="80" y="82" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#52667d">USE AN EXISTING PRODUCT OR PROCESS PLATFORM</text>
+  <rect x="80" y="95" width="700" height="190" rx="20" fill="#ffffff" stroke="#cad5e2" stroke-width="3"/>
+  <text x="112" y="133" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">Finished AI SaaS</text>
+  <text x="112" y="166" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="112" y="198" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Ready-made end-user product</text>
+  <text x="112" y="235" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="112" y="269" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Adoption and workflow fit</text>
+
+  <rect x="820" y="95" width="700" height="190" rx="20" fill="#ffffff" stroke="#cad5e2" stroke-width="3"/>
+  <text x="852" y="133" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">Workflow automation platform</text>
+  <text x="852" y="166" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="852" y="198" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Connect systems and process steps</text>
+  <text x="852" y="235" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="852" y="269" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">AI-specific behavior and evidence semantics</text>
+
+  <text x="80" y="310" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#52667d">USE FOCUSED BUILDING BLOCKS</text>
+  <rect x="80" y="322" width="700" height="190" rx="20" fill="#ffffff" stroke="#cad5e2" stroke-width="3"/>
+  <text x="112" y="360" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">RAG or knowledge toolkit</text>
+  <text x="112" y="393" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="112" y="425" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Retrieval, indexing and grounding components</text>
+  <text x="112" y="462" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="112" y="496" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Product, orchestration, policy and operations</text>
+
+  <rect x="820" y="322" width="700" height="190" rx="20" fill="#ffffff" stroke="#cad5e2" stroke-width="3"/>
+  <text x="852" y="360" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">Agent framework</text>
+  <text x="852" y="393" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="852" y="425" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Compose agent behavior and orchestration</text>
+  <text x="852" y="462" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="852" y="496" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Product controls, runtime governance and evidence</text>
+
+  <text x="80" y="540" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" letter-spacing="1" fill="#52667d">BUILD AN APPLICATION FOUNDATION</text>
+  <rect x="80" y="552" width="700" height="330" rx="20" fill="#ffffff" stroke="#cad5e2" stroke-width="3"/>
+  <text x="112" y="590" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">Custom in-house foundation</text>
+  <text x="112" y="626" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="112" y="658" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Maximum design control</text>
+  <text x="112" y="696" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="112" y="730" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Every shared layer and its maintenance</text>
+
+  <rect x="820" y="552" width="700" height="330" rx="20" fill="#e8f1ff" stroke="#668bc2" stroke-width="3"/>
+  <text x="852" y="590" font-family="system-ui,Segoe UI,sans-serif" font-size="30" font-weight="700" fill="#172033">Intergrax</text>
+  <text x="852" y="626" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Primary value:</text>
+  <text x="852" y="658" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Reusable governed foundation for</text>
+  <text x="852" y="686" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">specialized AI applications</text>
+  <text x="852" y="724" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Your team still owns:</text>
+  <text x="852" y="758" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Product workflow, UX, deployment and</text>
+  <text x="852" y="786" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">validation</text>
+  <text x="852" y="824" font-family="system-ui,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#52667d">Current boundary:</text>
+  <text x="852" y="856" font-family="system-ui,Segoe UI,sans-serif" font-size="24" fill="#172033">Active R&amp;D · bounded proof · not finished SaaS</text>
+
+  <text x="800" y="932" text-anchor="middle" font-family="system-ui,Segoe UI,sans-serif" font-size="22" fill="#52667d">Categories overlap. This is a responsibility map, not a ranking or feature-completeness claim.</text>
+</svg>

@@ -33,7 +33,7 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-7 — READY_FOR_REVIEW |
+| Current phase | PX-8 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
@@ -45,6 +45,9 @@ It does **not** replace:
 | Architect route | `ARCHITECTURE_OVERVIEW.md` |
 | Buyer route | `USE_CASES.md` |
 | Partner route | `PARTNERS.md` |
+| Architect, buyer and partner routes | PX-7 — ACCEPTED / CLOSED |
+| Category comparison | Implemented in PX-8 — READY_FOR_REVIEW |
+| Category comparison owner | `WHY_INTERGRAX.md#where-intergrax-fits` |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
@@ -245,6 +248,44 @@ Do not claim a measured delivery-time reduction unless supported by the proof-an
 
 ---
 
+## Category and alternative positioning
+
+The category comparison is owned by [`WHY_INTERGRAX.md#where-intergrax-fits`](../../WHY_INTERGRAX.md#where-intergrax-fits). It compares common solution categories by primary responsibility, what the adopting team still owns, and when the approach may fit.
+
+Freeze these categories:
+
+```text
+Finished AI SaaS
+Workflow automation platform
+RAG or knowledge toolkit
+Agent framework
+Custom in-house foundation
+Intergrax reusable governed application foundation
+```
+
+For every category comparison require:
+
+```text
+primary value
+what the adopting team still owns
+when the approach may fit
+```
+
+Freeze these rules:
+
+- comparisons are category-level, not vendor-level;
+- categories overlap;
+- approaches may be combined;
+- Intergrax is not universally superior;
+- no feature parity is claimed;
+- no market validation is inferred;
+- no competitor performance, pricing, security or maturity claim is made;
+- no vendor logo or trademark is used;
+- no scorecard, winner or ranking is published;
+- Intergrax maturity and proof boundaries remain visible.
+
+The comparison is a responsibility map, not a claim that Intergrax already provides every listed foundation completely or at production maturity. The detailed route is [WHY_INTERGRAX.md#where-intergrax-fits](../../WHY_INTERGRAX.md#where-intergrax-fits).
+
 ## Category clarification
 
 Intergrax is **not**:
@@ -255,7 +296,7 @@ Intergrax is **not**:
 - a no-code builder;
 - a claim to replace every existing framework.
 
-Intergrax **combines** reusable application foundations with concrete product paths and bounded proofs. Fuller comparison language belongs in PX-8; do not name or attack specific competitors here.
+Intergrax **combines** reusable application foundations with concrete product paths and bounded proofs. Category-level comparison belongs in [WHY_INTERGRAX.md#where-intergrax-fits](../../WHY_INTERGRAX.md#where-intergrax-fits); do not name or attack specific competitors here.
 
 ---
 
