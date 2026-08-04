@@ -83,6 +83,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunStatus,
 )
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
+    InMemoryCheckpointRepository,
     IdempotentRecordingSink,
     InMemoryRemoteItemStateRepository,
     RecordingBindingService,
@@ -530,6 +531,41 @@ class _GraphResolver:
         return self.integration
 
 
+class _FailingItemStateRepository:
+    def __init__(self, delegate: object, *, fail_times: int = 1) -> None:
+        self._delegate = delegate
+        self.fail_times = fail_times
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._delegate, name)
+
+    def apply_batch(self, **kwargs: Any) -> None:
+        if self.fail_times > 0:
+            self.fail_times -= 1
+            raise RuntimeError("item-state boom")
+        self._delegate.apply_batch(**kwargs)  # type: ignore[attr-defined]
+
+
+class _FailingCheckpointRepository:
+    def __init__(self, delegate: object, *, fail_times: int = 1) -> None:
+        self._delegate = delegate
+        self.fail_times = fail_times
+        self.successful_commits = 0
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._delegate, name)
+
+    def commit(self, checkpoint: object, *, expected_previous: object) -> None:
+        if self.fail_times > 0:
+            self.fail_times -= 1
+            raise RuntimeError("checkpoint boom")
+        self._delegate.commit(  # type: ignore[attr-defined]
+            checkpoint,
+            expected_previous=expected_previous,
+        )
+        self.successful_commits += 1
+
+
 def _public_blob(value: object) -> str:
     return json.dumps(value, default=str)
 
@@ -615,6 +651,10 @@ def _build_coordinator(
     calendar: MsGraphCalendar,
     binding_id: str,
     safe_display_name: str,
+    document_store: InMemoryDocumentStore | None = None,
+    checkpoint_repository: object | None = None,
+    item_state_repository: object | None = None,
+    sink: IdempotentRecordingSink | None = None,
 ):
     integration = _CalendarTestIntegration.from_client(fake, enabled=True)
     registry = KnowledgeAdapterRegistry()
@@ -624,11 +664,18 @@ def _build_coordinator(
         resolver=_GraphResolver(integration=integration),
         adapter_registry=registry,
     )
-    document_store = InMemoryDocumentStore()
+    if document_store is None:
+        document_store = InMemoryDocumentStore()
     lease_repo = DocumentStoreKnowledgeSourceLeaseRepository(document_store)
-    checkpoint_repo = DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
-    state_repo = DocumentStoreKnowledgeRemoteItemStateRepository(document_store)
-    sink = IdempotentRecordingSink()
+    checkpoint_repo = (
+        checkpoint_repository
+        or DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
+    )
+    state_repo = (
+        item_state_repository
+        or DocumentStoreKnowledgeRemoteItemStateRepository(document_store)
+    )
+    sink = sink or IdempotentRecordingSink()
     binding = KnowledgeSourceBinding(
         binding_id=binding_id,
         tenant_id="tenant-1",
@@ -672,11 +719,14 @@ async def _reconcile_until_complete(
     *,
     binding_id: str,
     operation_id: str,
+    call_trace: list[tuple[bool, str | None]] | None = None,
 ) -> list:
     results = []
     restart = True
     trigger_delivery_id: str | None = None
     while True:
+        if call_trace is not None:
+            call_trace.append((restart, trigger_delivery_id))
         result = await coordinator.reconcile_once(
             binding_id=binding_id,
             restart=restart,
@@ -797,16 +847,22 @@ async def test_msgraph_calendar_primary_facade_coordinator_reconciliation_and_in
     )
     integration_id = id(integration)
 
+    call_trace: list[tuple[bool, str | None]] = []
     results = await _reconcile_until_complete(
         coordinator,
         binding_id=_PRIMARY_BINDING_ID,
         operation_id="msgraph-calendar-primary",
+        call_trace=call_trace,
     )
     assert len(results) == 2
     assert all(result.has_more for result in results[:-1])
     assert results[-1].has_more is False
     assert len(sink.calls) == 2
     assert len({batch.delivery_id for batch in sink.calls}) == 2
+    assert call_trace == [
+        (True, None),
+        (False, results[0].delivery_id),
+    ]
 
     traversal: list[tuple[str, str | None]] = []
     for batch in sink.calls:
@@ -936,15 +992,21 @@ async def test_msgraph_calendar_non_primary_facade_coordinator_reconciliation() 
     )
     integration_id = id(integration)
 
+    call_trace: list[tuple[bool, str | None]] = []
     results = await _reconcile_until_complete(
         coordinator,
         binding_id=_NON_PRIMARY_BINDING_ID,
         operation_id="msgraph-calendar-non-primary",
+        call_trace=call_trace,
     )
     assert len(results) == 2
     assert all(result.has_more for result in results[:-1])
     assert results[-1].has_more is False
     assert len(sink.calls) == 2
+    assert call_trace == [
+        (True, None),
+        (False, results[0].delivery_id),
+    ]
 
     subjects = []
     for batch in sink.calls:
@@ -999,11 +1061,22 @@ async def test_msgraph_calendar_non_primary_facade_coordinator_reconciliation() 
             ),
             continuation_url=_SNAPSHOT_NEXT_URL,
         ),
+        _snapshot_page(
+            calendar_remote_id=_OTHER_CALENDAR_ID,
+            items=(
+                _active_event(
+                    calendar_remote_id=_OTHER_CALENDAR_ID,
+                    remote_id=_EVT_2,
+                    change_key=_CK_2,
+                ),
+            ),
+        ),
     ]
+    absence_operation_id = "msgraph-calendar-non-primary-absence"
     restart_result = await coordinator.reconcile_once(
         binding_id=_NON_PRIMARY_BINDING_ID,
         restart=True,
-        operation_id="msgraph-calendar-non-primary-absence",
+        operation_id=absence_operation_id,
     )
     assert restart_result.has_more is True
     assert len(sink.calls) == prior_sink_calls + 1
@@ -1022,9 +1095,57 @@ async def test_msgraph_calendar_non_primary_facade_coordinator_reconciliation() 
     assert still_active is not None
     assert still_active.status is KnowledgeRemoteItemStatus.ACTIVE
 
+    final_result = await coordinator.reconcile_once(
+        binding_id=_NON_PRIMARY_BINDING_ID,
+        restart=False,
+        operation_id=absence_operation_id,
+        trigger_delivery_id=restart_result.delivery_id,
+    )
+    assert final_result.has_more is False
+    assert final_result.delivery_id != restart_result.delivery_id
+    final_batch = sink.calls[-1]
+    final_deleted_ids = {
+        envelope.remote_id
+        for envelope in final_batch.envelopes
+        if envelope.change_kind.value == "deleted"
+    }
+    assert active_remote_id in final_deleted_ids
+    assert all(
+        envelope.change_kind.value == "deleted"
+        or envelope.remote_id
+        == _encode_event_remote_id(
+            calendar_remote_id=_OTHER_CALENDAR_ID,
+            event_remote_id=_EVT_2,
+        )
+        for envelope in final_batch.envelopes
+    )
+    deleted_state = state_repo.get(
+        tenant_id="tenant-1",
+        binding_id=_NON_PRIMARY_BINDING_ID,
+        remote_id=active_remote_id,
+    )
+    assert deleted_state is not None
+    assert deleted_state.status is KnowledgeRemoteItemStatus.DELETED
+    assert deleted_state.tenant_id == "tenant-1"
+    assert deleted_state.binding_id == _NON_PRIMARY_BINDING_ID
+    assert deleted_state.binding_configuration_version == 1
+    completed_checkpoint = checkpoint_repo.get(
+        tenant_id="tenant-1",
+        binding_id=_NON_PRIMARY_BINDING_ID,
+    )
+    assert completed_checkpoint is not None
+    assert completed_checkpoint.cursor is not None
+    assert completed_checkpoint.cursor.version == MSGRAPH_CALENDAR_CURSOR_VERSION
+    assert fake.snapshot_calls[-1]["continuation"] is not None
+    assert fake.snapshot_calls[-1]["continuation"].url == _SNAPSHOT_NEXT_URL
+
     public_proof = _public_blob(
         {
             "results": [result.model_dump(mode="json") for result in results],
+            "absence": [
+                restart_result.model_dump(mode="json"),
+                final_result.model_dump(mode="json"),
+            ],
             "integration_id": integration_id,
         }
     )
@@ -1275,6 +1396,143 @@ async def test_msgraph_calendar_primary_retry_same_page_after_sink_failure() -> 
 
 
 @pytest.mark.asyncio
+async def test_msgraph_calendar_primary_item_state_failure_retries_without_duplicate_sink_effect() -> (
+    None
+):
+    fake = _primary_fake(
+        delta_pages=[
+            _delta_page(
+                calendar_remote_id=_DEFAULT_CALENDAR_ID,
+                items=(
+                    _active_event(
+                        calendar_remote_id=_DEFAULT_CALENDAR_ID,
+                        remote_id=_EVT_1,
+                        change_key=_CK_1,
+                    ),
+                ),
+                continuation_kind=MsGraphKnowledgeContinuationKind.DELTA,
+                url=_DELTA_CHECKPOINT_URL,
+            )
+        ]
+    )
+    state_inner = InMemoryRemoteItemStateRepository()
+    state_repo = _FailingItemStateRepository(state_inner)
+    coordinator, sink, checkpoint_repo, _state_repo, fake, integration = (
+        _build_coordinator(
+            fake,
+            calendar=_default_calendar(),
+            binding_id=_PRIMARY_BINDING_ID,
+            safe_display_name="Primary Calendar",
+            item_state_repository=state_repo,
+        )
+    )
+    operation_id = "msgraph-calendar-item-state-retry"
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id=_PRIMARY_BINDING_ID,
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    first_delivery = sink.calls[0].delivery_id
+    assert sink.durable_delivery_ids == [first_delivery]
+    assert (
+        checkpoint_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+        )
+        is None
+    )
+    assert state_inner.applied_delivery_ids == set()
+
+    result = await coordinator.reconcile_once(
+        binding_id=_PRIMARY_BINDING_ID,
+        restart=True,
+        operation_id=operation_id,
+    )
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert result.delivery_id == first_delivery
+    assert sink.durable_delivery_ids == [first_delivery]
+    assert len(sink.calls) == 2
+    assert len(fake.delta_calls) == 2
+    assert state_inner.applied_delivery_ids == {first_delivery}
+    assert integration is not None
+
+
+@pytest.mark.asyncio
+async def test_msgraph_calendar_checkpoint_failure_retries_finalizing_without_duplicate_effects() -> (
+    None
+):
+    fake = _primary_fake(
+        delta_pages=[
+            _delta_page(
+                calendar_remote_id=_DEFAULT_CALENDAR_ID,
+                items=(
+                    _active_event(
+                        calendar_remote_id=_DEFAULT_CALENDAR_ID,
+                        remote_id=_EVT_1,
+                        change_key=_CK_1,
+                    ),
+                ),
+                continuation_kind=MsGraphKnowledgeContinuationKind.DELTA,
+                url=_DELTA_CHECKPOINT_URL,
+            )
+        ]
+    )
+    document_store = InMemoryDocumentStore()
+    checkpoint_inner = InMemoryCheckpointRepository()
+    checkpoint_repo = _FailingCheckpointRepository(checkpoint_inner)
+    coordinator, sink, _checkpoint_repo, state_repo, fake, integration = (
+        _build_coordinator(
+            fake,
+            calendar=_default_calendar(),
+            binding_id=_PRIMARY_BINDING_ID,
+            safe_display_name="Primary Calendar",
+            document_store=document_store,
+            checkpoint_repository=checkpoint_repo,
+        )
+    )
+    operation_id = "msgraph-calendar-checkpoint-retry"
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id=_PRIMARY_BINDING_ID,
+            restart=True,
+            operation_id=operation_id,
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE
+    assert exc_info.value.retryable is True
+    first_delivery = sink.calls[0].delivery_id
+    assert checkpoint_repo.successful_commits == 0
+    assert checkpoint_repo.fail_times == 0
+    assert sink.durable_delivery_ids == [first_delivery]
+    assert fake.delta_calls
+
+    result = await coordinator.reconcile_once(
+        binding_id=_PRIMARY_BINDING_ID,
+        restart=True,
+        operation_id=operation_id,
+    )
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert result.delivery_id == first_delivery
+    assert checkpoint_repo.successful_commits == 1
+    assert sink.durable_delivery_ids == [first_delivery]
+    assert len(fake.delta_calls) == 1
+    assert (
+        state_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+            remote_id=_encode_event_remote_id(
+                calendar_remote_id=_DEFAULT_CALENDAR_ID,
+                event_remote_id=_EVT_1,
+            ),
+        )
+        is not None
+    )
+    assert integration is not None
+
+
+@pytest.mark.asyncio
 async def test_msgraph_calendar_primary_no_attachment_bytes_in_sink() -> None:
     calendar_remote_id = _DEFAULT_CALENDAR_ID
     content = _event_content(
@@ -1341,3 +1599,91 @@ async def test_msgraph_calendar_primary_no_attachment_bytes_in_sink() -> None:
     assert "attachment_bytes" not in sink_blob
     assert "b64" not in sink_blob.lower()
     _assert_no_secrets(sink_blob)
+
+
+@pytest.mark.asyncio
+async def test_msgraph_calendar_incomplete_attachment_inventory_is_not_claimed_complete() -> (
+    None
+):
+    calendar_remote_id = _DEFAULT_CALENDAR_ID
+    content = _event_content(
+        calendar_remote_id=calendar_remote_id,
+        remote_id=_EVT_1,
+        content_revision=_CK_1,
+        subject="Event with paged attachments",
+        body_content="body-with-paged-attachments",
+        has_attachments=True,
+    )
+    attachment_page = _attachment_page(
+        calendar_remote_id=calendar_remote_id,
+        event_remote_id=_EVT_1,
+        event_revision=_CK_1,
+    ).model_copy(
+        update={
+            "continuation": MsGraphKnowledgeContinuation(
+                kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+                url=(
+                    f"https://graph.microsoft.com/v1.0/users/{_QUOTED_MAILBOX}/calendars/"
+                    f"{quote(_DEFAULT_CALENDAR_ID, safe='')}/events/{quote(_EVT_1, safe='')}"
+                    f"/attachments?$skiptoken={_SECRET_SKIP}"
+                ),
+            )
+        }
+    )
+    fake = _primary_fake(
+        delta_pages=[
+            _delta_page(
+                calendar_remote_id=calendar_remote_id,
+                items=(
+                    _active_event(
+                        calendar_remote_id=calendar_remote_id,
+                        remote_id=_EVT_1,
+                        change_key=_CK_1,
+                        has_attachments=True,
+                    ),
+                ),
+                continuation_kind=MsGraphKnowledgeContinuationKind.DELTA,
+                url=_DELTA_CHECKPOINT_URL,
+            )
+        ],
+        incremental_delta_page=None,
+        content={(_EVT_1, _CK_1): content},
+        attachment_pages={(_EVT_1, _CK_1): attachment_page},
+    )
+    coordinator, sink, checkpoint_repo, state_repo, fake, integration = (
+        _build_coordinator(
+            fake,
+            calendar=_default_calendar(),
+            binding_id=_PRIMARY_BINDING_ID,
+            safe_display_name="Primary Calendar",
+        )
+    )
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await coordinator.reconcile_once(
+            binding_id=_PRIMARY_BINDING_ID,
+            restart=True,
+            operation_id="msgraph-calendar-incomplete-attachments",
+        )
+    assert exc_info.value.code is VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+    assert exc_info.value.retryable is False
+    assert sink.calls == []
+    assert (
+        checkpoint_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+        )
+        is None
+    )
+    assert (
+        state_repo.get(
+            tenant_id="tenant-1",
+            binding_id=_PRIMARY_BINDING_ID,
+            remote_id=_encode_event_remote_id(
+                calendar_remote_id=calendar_remote_id,
+                event_remote_id=_EVT_1,
+            ),
+        )
+        is None
+    )
+    assert "attachment_bytes" not in fake.forbidden_calls
+    assert integration is not None

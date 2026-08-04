@@ -960,43 +960,45 @@ Exact delivery-marker payload identity binding, final synthetic tombstone templa
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED` through `REVIEW-FIX-5-REVIEW-CORRECTION-1`
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 Durable continuation lineage, fail-closed configuration, truthful active-index completeness, proof-bound recovery, exact error mapping, binding/source validation, binary fingerprinting, truthful result counts, and failure-window proofs.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 Initial job identity and replay, truthful terminal replay, single PAGE_PREPARED recovery receipt decision, corrupt receipt and checkpoint boundaries, and shared strict active-index parsing.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 Strict caller-supplied job identity without durable-state inference, normalized run and candidate-inventory repository error boundaries, and zero-effect rejection for malformed continuation identity.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5`
 
-**Status:** `CHANGES_REQUIRED`
+**Status:** `ACCEPTED`
 
 Normalized successful candidate-inventory repository output before `KnowledgeReconciliationRunCollecting` construction, exact structural versus policy error mapping with zero downstream effects, and provider-suite regression attribution with stale caller continuation-identity fixes.
 
 ### `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED`
 
 Explicit non-sequence candidate-inventory rejection proof through `reconcile_once`, and truthful non-contradictory roadmap statuses for Review Fix 5 closeout.
 
 ### `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`
+
+**Status:** `READY_FOR_REVIEW`
 
 Calendar acceptance proof only — does not own generic reconciliation lifecycle code:
 
@@ -1021,21 +1023,21 @@ Calendar acceptance proof only — does not own generic reconciliation lifecycle
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2` | `CHANGES_REQUIRED` |
 | `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-3` | `ACCEPTED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5` | `CHANGES_REQUIRED` |
-| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF` | `READY_FOR_REVIEW` |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` — blocked pending Review Fix 5 correction acceptance |
-| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` | `PLANNED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B` | `ACCEPTED` through `REVIEW-FIX-5-REVIEW-CORRECTION-1` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-1` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-2` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-3` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-4` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5` | `ACCEPTED` |
+| `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1B-REVIEW-FIX-5-REVIEW-CORRECTION-1-STATUS-TRUTH-AND-NONSEQUENCE-PROOF` | `ACCEPTED` |
+| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` | `CHANGES_REQUIRED` pending external review |
+| `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1` | `READY_FOR_REVIEW` |
 | Microsoft Graph adapter family (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`) | `IN_PROGRESS` |
 | Google Workspace knowledge workstream | independent; does not gate reconciliation finalization or Microsoft Calendar acceptance |
 
 **Next task after architecture acceptance:** `VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A`.
 
-Missing-item detection for non-primary Calendar reconciliation is **not** implemented on HEAD. Calendar adapter code exists but durable finalization semantics required for safe missing-item tombstones are **not** present until `1A` + `1B` land.
+Non-primary Calendar missing-item detection is implemented and covered by the Calendar acceptance proof; Calendar remains `CHANGES_REQUIRED` pending external review of `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR-REVIEW-FIX-1`.
 
 ---
 
