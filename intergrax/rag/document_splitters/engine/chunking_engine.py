@@ -8,7 +8,10 @@ from collections import defaultdict
 from typing import Sequence
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
+from intergrax.rag.document_splitters.chunk_document import (
+    build_derived_chunk,
+    validate_derived_chunk,
+)
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
 from intergrax.rag.document_splitters.registry.strategy_registry import ChunkingStrategyRegistry
 
@@ -55,9 +58,27 @@ class ChunkingEngine:
 
         strategy: BaseChunkingStrategy = self._registry.resolve(strategy_id)
 
-        raw_chunks = list(strategy.chunk(documents))
+        source_documents = list(documents)
+        input_by_id: dict[str, KnowledgeDocument] = {}
+        for document in source_documents:
+            if not isinstance(document, KnowledgeDocument):
+                raise TypeError(
+                    f"Chunking input must be KnowledgeDocument instances, got {type(document)!r}"
+                )
+            revalidated_source = KnowledgeDocument.model_validate(
+                document.model_dump(mode="python")
+            )
+            source_id = revalidated_source.identity.document_id
+            if source_id in input_by_id:
+                raise ValueError(f"Duplicate source document_id: {source_id}")
+            input_by_id[source_id] = revalidated_source
 
-        input_by_id = {document.identity.document_id: document for document in documents}
+        revalidated_sources = [
+            input_by_id[document.identity.document_id] for document in source_documents
+        ]
+
+        raw_chunks = list(strategy.chunk(revalidated_sources))
+
         validated_by_parent: dict[str, list[KnowledgeDocument]] = defaultdict(list)
         seen_ids: set[str] = set()
 
@@ -69,10 +90,6 @@ class ChunkingEngine:
                 )
 
             revalidated = KnowledgeDocument.model_validate(chunk.model_dump(mode="python"))
-            chunk_id = revalidated.identity.document_id
-            if chunk_id in seen_ids:
-                raise ValueError(f"Duplicate chunk document_id: {chunk_id}")
-            seen_ids.add(chunk_id)
 
             parent_id = revalidated.identity.parent_document_id
             if parent_id is None or parent_id not in input_by_id:
@@ -81,50 +98,42 @@ class ChunkingEngine:
                 )
 
             source = input_by_id[parent_id]
-            self._assert_chunk_lineage(source, revalidated)
-            validated_by_parent[parent_id].append(revalidated)
+            validated = validate_derived_chunk(
+                source, revalidated, strategy_id=strategy_id
+            )
+            chunk_id = validated.identity.document_id
+            if chunk_id in seen_ids:
+                raise ValueError(f"Duplicate chunk document_id: {chunk_id}")
+            seen_ids.add(chunk_id)
+            validated_by_parent[parent_id].append(validated)
 
-        result: list[KnowledgeDocument] = []
-        for source in documents:
+        for source in revalidated_sources:
             source_id = source.identity.document_id
-            source_chunks = validated_by_parent.get(source_id, [])
-            if source_chunks:
-                result.extend(source_chunks)
+            if validated_by_parent.get(source_id):
                 continue
 
-            result.append(
-                build_derived_chunk(
-                    source,
-                    content=source.content,
-                    strategy_id=strategy_id,
-                    chunk_index=0,
-                    metadata_updates={"chunk_fallback": True},
-                )
+            fallback = build_derived_chunk(
+                source,
+                content=source.content,
+                strategy_id=strategy_id,
+                chunk_index=0,
+                metadata_updates={"chunk_fallback": True},
             )
+            validated = validate_derived_chunk(
+                source, fallback, strategy_id=strategy_id
+            )
+            chunk_id = validated.identity.document_id
+            if chunk_id in seen_ids:
+                raise ValueError(f"Duplicate chunk document_id: {chunk_id}")
+            seen_ids.add(chunk_id)
+            validated_by_parent[source_id].append(validated)
+
+        result: list[KnowledgeDocument] = []
+        for source in revalidated_sources:
+            result.extend(validated_by_parent[source.identity.document_id])
+
+        result_ids = [chunk.identity.document_id for chunk in result]
+        if len(result_ids) != len(set(result_ids)):
+            raise ValueError("Chunking result contains duplicate document_id values")
 
         return result
-
-    @staticmethod
-    def _assert_chunk_lineage(
-        source: KnowledgeDocument,
-        chunk: KnowledgeDocument,
-    ) -> None:
-        if chunk.identity.root_document_id != source.identity.root_document_id:
-            raise ValueError(
-                "Chunk root_document_id must match the source document root_document_id"
-            )
-
-        if chunk.scope != source.scope:
-            raise ValueError("Chunk scope must match the source document scope")
-
-        source_provenance = source.provenance
-        chunk_provenance = chunk.provenance
-        if (
-            chunk_provenance.source_kind != source_provenance.source_kind
-            or chunk_provenance.source_id != source_provenance.source_id
-            or chunk_provenance.source_parent_id != source_provenance.source_parent_id
-            or chunk_provenance.provider_id != source_provenance.provider_id
-            or chunk_provenance.source_revision != source_provenance.source_revision
-            or chunk_provenance.source_uri != source_provenance.source_uri
-        ):
-            raise ValueError("Chunk provenance source fields must match the source document")

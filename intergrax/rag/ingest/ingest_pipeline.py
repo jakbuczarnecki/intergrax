@@ -163,13 +163,10 @@ class IngestPipeline:
                 "rag.ingest.chunk",
                 attributes={"rag.ingest.chunking_strategy": strategy_id},
             ):
-                try:
-                    native_chunks = self._splitter.split_documents(
-                        native_docs,
-                        strategy_id=strategy_id,
-                    )
-                except TypeError:
-                    native_chunks = self._splitter.split_documents(native_docs)
+                native_chunks = self._splitter.split_documents(
+                    native_docs,
+                    strategy_id=strategy_id,
+                )
             if not native_chunks:
                 return IngestResult(
                     used=False,

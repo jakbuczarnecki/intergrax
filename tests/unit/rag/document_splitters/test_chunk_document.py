@@ -7,6 +7,7 @@ import pytest
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
+    get_parser_native_handle,
 )
 from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
@@ -97,9 +98,50 @@ def test_build_derived_chunk_does_not_mutate_source_or_copy_runtime_handle() -> 
     source = attach_parser_native_handle(_source_document(), handle)
     before = source.model_dump(mode="python")
 
-    build_derived_chunk(source, content="chunk", strategy_id="recursive", chunk_index=0)
+    result = build_derived_chunk(source, content="chunk", strategy_id="recursive", chunk_index=0)
 
     assert source.model_dump(mode="python") == before
+    assert get_parser_native_handle(result) is None
+    assert "parser_native_handle" not in result.model_dump(mode="python")
+
+
+@pytest.mark.parametrize(
+    "canonical_key",
+    [
+        ChunkMetadataKey.CHUNK_ID.value,
+        ChunkMetadataKey.CHUNK_INDEX.value,
+        ChunkMetadataKey.CHUNK_STRATEGY.value,
+        ChunkMetadataKey.CHUNK_SIZE.value,
+    ],
+)
+def test_build_derived_chunk_rejects_canonical_metadata_override(canonical_key: str) -> None:
+    source = _source_document()
+    with pytest.raises(ValueError, match="canonical chunk metadata keys"):
+        build_derived_chunk(
+            source,
+            content="chunk",
+            strategy_id="recursive",
+            chunk_index=0,
+            metadata_updates={canonical_key: "override"},
+        )
+
+
+def test_build_derived_chunk_rejects_bool_chunk_index() -> None:
+    source = _source_document()
+    with pytest.raises(ValueError, match="non-negative int"):
+        build_derived_chunk(source, content="chunk", strategy_id="recursive", chunk_index=True)
+
+
+def test_build_derived_chunk_rejects_negative_chunk_index() -> None:
+    source = _source_document()
+    with pytest.raises(ValueError, match="non-negative int"):
+        build_derived_chunk(source, content="chunk", strategy_id="recursive", chunk_index=-1)
+
+
+def test_build_derived_chunk_rejects_empty_strategy_id() -> None:
+    source = _source_document()
+    with pytest.raises(ValueError, match="non-empty string"):
+        build_derived_chunk(source, content="chunk", strategy_id="   ", chunk_index=0)
 
 
 def test_build_derived_chunk_rejects_empty_content() -> None:

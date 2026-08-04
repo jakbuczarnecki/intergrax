@@ -198,3 +198,82 @@ def test_ingest_pipeline_converts_chunks_to_legacy_after_splitter(tmp_path: Path
     legacy_meta = embedding.received[0].metadata
     assert legacy_meta[DocumentMetadataKey.DOCUMENT_ID.value] == "docid1234567890ab"
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in legacy_meta
+
+
+def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: Path) -> None:
+    source = tmp_path / "sample.txt"
+    source.write_text("hello", encoding="utf-8")
+
+    native_doc = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "docid1234567890ab",
+                "root_document_id": "docid1234567890ab",
+            },
+            "scope": {"tenant_id": "tenant.test"},
+            "content": "hello",
+            "metadata": {
+                "source": str(source),
+                "parser": "tests.dummy",
+                "position": 0,
+            },
+            "provenance": {
+                "source_kind": "file",
+                "source_id": str(source),
+                "provider_id": "tests.dummy",
+            },
+        }
+    )
+
+    class _NativeLoader:
+        def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+            return [native_doc]
+
+    class _FailingSplitter:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def split_documents(self, docs, strategy_id=None):
+            self.calls += 1
+            raise TypeError("internal splitter failure")
+
+    class _TrackingEmbedding:
+        def __init__(self) -> None:
+            self.called = False
+
+        def embed_documents(self, docs):
+            self.called = True
+            return MagicMock(documents=docs, embeddings=[[0.0]])
+
+    class _TrackingVectorstore:
+        def __init__(self) -> None:
+            self.called = False
+
+        def add_documents(self, **kwargs: object) -> list[str]:
+            self.called = True
+            return ["id-0"]
+
+    splitter = _FailingSplitter()
+    embedding = _TrackingEmbedding()
+    vectorstore = _TrackingVectorstore()
+
+    pipeline = IngestPipeline(
+        loader=_NativeLoader(),
+        splitter=splitter,
+        embedding_manager=embedding,
+        vectorstore=vectorstore,
+    )
+
+    with pytest.raises(TypeError, match="internal splitter failure"):
+        pipeline.run(
+            IngestRequest(
+                source_path=str(source),
+                base_metadata={"tenant_id": "tenant.test"},
+                chunking_strategy_id="recursive",
+            )
+        )
+
+    assert splitter.calls == 1
+    assert embedding.called is False
+    assert vectorstore.called is False
