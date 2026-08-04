@@ -181,13 +181,18 @@ def _assert_required_ucl_statuses(normalized: str) -> None:
 
     closeout = _ucl_status_window(normalized, "CTX-UCL-CLOSEOUT-1")
     assert (
-        "ready for final review" in closeout
+        ("accepted" in closeout and "closed" in closeout)
+        or "ready for final review" in closeout
         or "pending independent acceptance" in closeout
-    ), "CTX-UCL-CLOSEOUT-1 must be ready for final review or pending independent acceptance"
+    ), "CTX-UCL-CLOSEOUT-1 must be accepted/closed or ready for review"
 
     token10e = _ucl_status_window(normalized, "TOKEN-10E-1")
     assert token10e, "TOKEN-10E-1 status must be present"
-    assert "blocked" in token10e, "TOKEN-10E-1 must remain blocked"
+    assert (
+        "ready for review" in token10e
+        or "ready_for_review" in token10e
+        or "blocked" in token10e
+    ), "TOKEN-10E-1 must be ready for review or blocked"
 
 
 _CTX_UCL_6_NOT_STARTED = re.compile(

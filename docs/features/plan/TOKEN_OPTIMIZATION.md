@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent final review of **CTX-UCL-CLOSEOUT-1**. **CTX-UCL-6** accepted/closed through **6D**; closeout **ready for final review**. **TOKEN-10E-1** blocked pending independent closeout acceptance.
+**Current next step:** Independent audit of **TOKEN-10E-1**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1** **READY_FOR_REVIEW**; candidate flow, storage adapter, and activation remain not implemented.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** review **CTX-UCL-ARCH-1-R1**; then **CTX-UCL-1** contracts. **TOKEN-10E-1** blocked until **CTX-UCL-CLOSEOUT-1**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of **TOKEN-10E-1** contracts. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **READY_FOR_REVIEW**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1670,7 +1670,7 @@ Closeout:
 - no in-cache compaction
 - no live proof execution
 
-**Next step:** Independent final review of **CTX-UCL-CLOSEOUT-1**. After acceptance: **TOKEN-10E-1** may begin. **TOKEN-10E-1** blocked pending closeout acceptance.
+**Next step:** Independent audit of **TOKEN-10E-1**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **READY_FOR_REVIEW**. Candidate flow and durable activation remain not implemented.
 
 #### TOKEN-10D-1-R1 — Public Claim Guardrail Contract and Final Stage Closure
 
@@ -1689,7 +1689,7 @@ Closeout:
 
 ### TOKEN-10E — Policy-Governed In-Cache Compaction
 
-**Status:** Architecture integration profile / ready for review. Runtime implementation **not started**. Blocked until **CTX-UCL-CLOSEOUT-1** accepted/closed. Do not mark implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
+**Status:** Architecture integration profile / **TOKEN-10E-1 READY_FOR_REVIEW**. Runtime contribution is **contract-only**: candidate flow, storage adapter, and activation are not implemented. Do not mark TOKEN-10E implemented or accepted/closed until TOKEN-10E-CLOSEOUT-1.
 
 **Architecture reference:** [TOKEN_OPTIMIZATION.md §8.10](../architecture/TOKEN_OPTIMIZATION.md#810-policy-governed-in-cache-compaction-token-10e) and [`UNIFIED_CONTEXT_LIFECYCLE.md`](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) (canonical cross-domain lifecycle; supersedes **TOKEN-10E-ARCH-1**).
 
@@ -1736,7 +1736,7 @@ Closeout:
 
 **Acceptance:** contracts importable from package root plan; unit tests for serialization and fail-closed policy validation; no pipeline behavior change.
 
-**Blocked by:** **CTX-UCL-CLOSEOUT-1** accepted/closed.
+**Status:** **READY_FOR_REVIEW** after **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED**.
 
 ##### TOKEN-10E-2 — Candidate construction over MessageSequenceArtifact
 

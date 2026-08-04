@@ -1,11 +1,11 @@
 # Unified Context Lifecycle
 
-**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **READY_FOR_FINAL_REVIEW**
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
 **Plan (1:1):** [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../plan/UNIFIED_CONTEXT_LIFECYCLE.md)
 **Related:** [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`MEMORY.md`](MEMORY.md) · [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (UCL ownership, single-budget authority, versioned projections, reusable artifact lifecycle, internal-call boundary, single-flight creation — **Accepted**) · [`ADR-MEM-001`](../adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler — superseded where UCL conflicts)
-**Last architecture/runtime pass:** 2026-08-04 — **CTX-UCL-CLOSEOUT-1** runtime truth synchronized; **EPHEMERAL_ASSEMBLY** closure-ready; **DURABLE_COMPACTION** remains planned under **TOKEN-10E**
+**Last architecture/runtime pass:** 2026-08-04 — **CTX-UCL-CLOSEOUT-1** accepted/closed; **TOKEN-10E-1** durable compaction safety contracts ready for review; **DURABLE_COMPACTION** runtime execution remains not implemented
 
 ---
 
@@ -13,11 +13,11 @@
 
 | Item | Value |
 |------|-------|
-| Task | **CTX-UCL-CLOSEOUT-1** — **READY_FOR_FINAL_REVIEW** (pending independent acceptance) |
+| Task | **CTX-UCL-CLOSEOUT-1** — **ACCEPTED / CLOSED** |
 | Implemented phases | **CTX-UCL-1** through **CTX-UCL-6D** **ACCEPTED / CLOSED** |
 | Runtime implementation | **EPHEMERAL_ASSEMBLY** integrated — `ContextEngine` → `resolve_ucl_context_plan()` → repository lookup/reservation → `MessageSequenceArtifactExecutor` on `CREATE_ARTIFACT` only |
 | Legacy migration | **Complete** for model-facing conversation history — `HistoryLayer.OFF` raw-only; non-OFF strategies fail-closed; legacy provider slicing/flattening disabled; legacy compression profiles canonical or fail-closed; history summary prompt builder/YAML removed; no application-local summary caches; no direct conversation-summary bypass |
-| TOKEN-10E implementation | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed — **DURABLE_COMPACTION** planned, not production-complete |
+| TOKEN-10E-1 | **READY_FOR_REVIEW** — durable safety contracts only; candidate flow and activation not implemented |
 | Owning domains | **MEMORY** (durable ledger/revisions) · **CONTEXT_ENGINEERING** (single budget authority) · **TOKEN_OPTIMIZATION** (transformation executor) · **NEXUS** (lifecycle coordinator) · **APPLICATION_HOSTING** (config/auth/UX) |
 | Supersedes | **TOKEN-10E-ARCH-1** as standalone compaction architecture — durable compaction now defined under UCL + TOKEN-10E |
 
@@ -1006,15 +1006,15 @@ No Python runtime, public exports, SessionStorage changes, ContextCompiler chang
 | **CTX-UCL-4** | `MessageSequenceArtifactExecutor` only on `CREATE_ARTIFACT`; internal summarizer marked `INTERNAL_OPTIMIZATION_CALL`; `OptimizationExecutionGuard` enforced; no recursive optimization of same source | **ACCEPTED / CLOSED** through R1 |
 | **CTX-UCL-5** | Canonical integration: `PRIMARY_MODEL_CALL` → CE `ContextPlan` → artifact lookup → reservation coordination → `REUSE_ARTIFACT` or `CREATE_ARTIFACT` → bounded internal call on create → final CE compile | **ACCEPTED / CLOSED** through R1/R2/R3 |
 | **CTX-UCL-6** | Legacy migration: disable independent `HistoryLayer` summarizer; remove provider-level duplicate summarization; remove application-local caches; remove direct summarizer calls bypassing reservation | **ACCEPTED / CLOSED** through **6D** |
-| **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches | **READY_FOR_FINAL_REVIEW** |
+| **CTX-UCL-CLOSEOUT-1** | Closure gates: one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches | **ACCEPTED / CLOSED** |
 
-**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` … `CTX-UCL-6D` accepted/closed → **CTX-UCL-CLOSEOUT-1** ready for final review → after acceptance **TOKEN-10E-1** may begin.
+**Dependency gate (canonical):** `CTX-UCL-ARCH-1` accepted/closed → `CTX-UCL-1` … `CTX-UCL-6D` accepted/closed → **CTX-UCL-CLOSEOUT-1 ACCEPTED / CLOSED** → **TOKEN-10E-1 READY_FOR_REVIEW**.
 
 **After CTX-UCL-CLOSEOUT-1:**
 
 | ID | Scope | Status |
 |----|-------|--------|
-| **TOKEN-10E-1** | Durable policies and contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | Blocked |
+| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **READY_FOR_REVIEW** |
 | **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | Blocked |
 | **TOKEN-10E-3** | Durable receipts and rollback metadata | Blocked |
 | **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages; delivery coordinated by TOKEN-10E-4) | Blocked |

@@ -1,6 +1,6 @@
 # Unified Context Lifecycle — Plan
 
-**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **READY_FOR_FINAL_REVIEW**
+**Status:** **CTX-UCL-6** **ACCEPTED / CLOSED** through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**
 **Architecture (1:1):** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](../architecture/UNIFIED_CONTEXT_LIFECYCLE.md)
 **ADR:** [`ADR-UCL-001`](../adr/entries/2026-08-01/ADR-UCL-001.md) (**Accepted**)
 **Hub:** [`intergrax_runtime_architecture.md`](../intergrax_runtime_architecture.md)
@@ -31,13 +31,14 @@
 | **CTX-UCL-6B** | **ACCEPTED / CLOSED** |
 | **CTX-UCL-6C** | **ACCEPTED / CLOSED** |
 | **CTX-UCL-6D** | **ACCEPTED / CLOSED** |
-| **CTX-UCL-CLOSEOUT-1** | **READY_FOR_FINAL_REVIEW** — cross-domain runtime truth, documentation sync, closure proof |
+| **CTX-UCL-CLOSEOUT-1** | **ACCEPTED / CLOSED** — cross-domain runtime truth, documentation sync, closure proof |
 | **TOKEN-10A** | Accepted / Closed |
 | **TOKEN-10B** | Accepted / Closed |
 | **TOKEN-10C** | Accepted / Closed |
 | **TOKEN-10D** | Accepted / Closed |
 | **TOKEN-10E-ARCH-1** | **Correction required / superseded** by UCL + ADR-UCL-001 |
-| **TOKEN-10E-1 … TOKEN-10E-4** | **Blocked** pending **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| **TOKEN-10E-1** | Durable compaction policy, identity, eligibility and activation safety contracts (contract-only; no runtime execution) — **READY_FOR_REVIEW** |
+| **TOKEN-10E-2 … TOKEN-10E-4** | **Blocked** pending **TOKEN-10E-1** acceptance |
 | **TOKEN-10F / G / H** | Planned |
 
 ---
@@ -115,13 +116,13 @@ TOKEN-10E-1 → may begin
 
 | ID | Deliverable | Acceptance |
 |----|-------------|------------|
-| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime + documentation sync | **READY_FOR_FINAL_REVIEW** — one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches |
+| **CTX-UCL-CLOSEOUT-1** | Cross-domain runtime + documentation sync | **ACCEPTED / CLOSED** — one canonical optimization decision point; one canonical summary creation path; internal-call recursion blocked; single-flight same-key creation proven; different-key concurrency preserved; reference repository wired; no competing summary caches |
 
 ### Phase 5 — Durable compaction (after UCL closeout)
 
 | ID | Deliverable | Blocked by |
 |----|-------------|------------|
-| **TOKEN-10E-1** | Durable policies and contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| **TOKEN-10E-1** | Durable policy, source identity, eligibility, and activation safety contracts extending UCL (reuses UCL repository and reservation contracts; no second repository) | **READY_FOR_REVIEW** |
 | **TOKEN-10E-2** | Durable candidate flow using existing lookup/reservation semantics | CTX-UCL-4, TOKEN-10E-1 |
 | **TOKEN-10E-3** | Durable receipts and rollback metadata | TOKEN-10E-1 |
 | **TOKEN-10E-4** | First durable production `OptimizationArtifactRepository` adapter and durable `SessionContextRevision` activation integration (implementation may live in Memory/Session packages) | CTX-UCL-2, TOKEN-10E-3 |

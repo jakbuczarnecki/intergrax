@@ -1052,7 +1052,7 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** Integration profile / ready for review. **Not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **DURABLE_COMPACTION** remains **planned** (not production-complete). **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **TOKEN-10E** implementation **blocked** until **CTX-UCL-CLOSEOUT-1** is accepted/closed. No runtime code, public exports, or production enablement exist for TOKEN-10E.
+**Status:** Integration profile / **TOKEN-10E-1 READY_FOR_REVIEW**. **Contract-only; candidate flow and activation are not implemented.** [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **DURABLE_COMPACTION** runtime execution remains **not implemented**. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**. No candidate flow, storage adapter, or production enablement exists for TOKEN-10E.
 
 #### 1. Status and dependency
 
@@ -1060,7 +1060,7 @@ Routing suitability remains a measured quality threshold, not a safety substitut
 |------|-------|
 | Lifecycle canon | [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
 | ADR | [ADR-UCL-001](../../adr/entries/2026-08-01/ADR-UCL-001.md) |
-| TOKEN-10E-1 start | **Blocked** until **CTX-UCL-CLOSEOUT-1** accepted/closed |
+| TOKEN-10E-1 | **READY_FOR_REVIEW** — durable policy, source identity, eligibility, and activation safety contracts |
 | TOKEN-10D | Accepted / closed — timing gate semantics unchanged |
 
 #### 2. TOKEN-10E responsibility inside UCL
@@ -1178,7 +1178,7 @@ Do **not** claim provider KV cache mutation, deletion, or inferred TTL.
 - Not a second lifecycle architecture (no duplicated ownership, flows, or activation sections here).
 - No direct Application context → CacheAwareTokenOptimizationRuntime → application activation path.
 - No Application-owned persistence or activation wording.
-- No TOKEN-10E-1 before CTX-UCL-CLOSEOUT-1.
+- TOKEN-10E-1 begins only after CTX-UCL-CLOSEOUT-1; the closeout is now **ACCEPTED / CLOSED** and TOKEN-10E-1 is **READY_FOR_REVIEW**.
 - No LKW, Slack, or application-storage dependencies inside Token Optimization.
 - No automatic production enablement.
 

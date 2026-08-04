@@ -17,6 +17,12 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ArtifactLookupKey,
     ArtifactSourceRange,
     ContextOptimizationPolicy,
+    DurableCompactionActivationMode,
+    DurableCompactionActivationRequirements,
+    DurableCompactionPolicy,
+    DurableCompactionSourceIdentity,
+    DurableCompactionValidationRequirement,
+    OptimizationArtifactType,
     OptimizationExecutionGuard,
     ReusableOptimizationArtifact,
 )
@@ -110,9 +116,214 @@ def _to_json_safe_value(value: Any) -> Any:
     return value
 
 
+def _reject_unknown_keys(payload: Mapping[str, Any], allowed: frozenset[str]) -> None:
+    unknown = set(payload) - allowed
+    if unknown:
+        raise ValueError(f"unknown fields: {sorted(unknown)}")
+
+
+def durable_compaction_policy_to_canonical_dict(
+    policy: DurableCompactionPolicy,
+) -> dict[str, Any]:
+    """Return canonical durable compaction policy identity dictionary."""
+    return {
+        "activation_mode": policy.activation_mode.value,
+        "allowed_lossiness_profiles": list(policy.allowed_lossiness_profiles),
+        "allowed_strategy_ids": list(policy.allowed_strategy_ids),
+        "enabled": policy.enabled,
+        "minimum_stable_revision_count": policy.minimum_stable_revision_count,
+        "minimum_validation_requirement": policy.minimum_validation_requirement.value,
+    }
+
+
+def compute_durable_compaction_policy_hash(policy: DurableCompactionPolicy) -> str:
+    """Return deterministic SHA-256 digest for durable compaction policy identity."""
+    canonical = _canonical_json(durable_compaction_policy_to_canonical_dict(policy))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def durable_compaction_source_identity_to_canonical_dict(
+    identity: DurableCompactionSourceIdentity,
+) -> dict[str, Any]:
+    """Return canonical durable compaction source identity dictionary."""
+    return {
+        "artifact_lookup_key": artifact_lookup_key_to_canonical_dict(identity.artifact_lookup_key),
+        "context_scope_id": identity.context_scope_id,
+        "expected_active_revision": identity.expected_active_revision,
+        "lossiness_profile": identity.lossiness_profile,
+        "source_content_hash": identity.source_content_hash,
+        "source_refs": list(identity.source_refs),
+        "source_revision": identity.source_revision,
+        "strategy_id": identity.strategy_id,
+        "strategy_version": identity.strategy_version,
+        "tenant_id": identity.tenant_id,
+    }
+
+
+def compute_durable_compaction_source_identity_hash(
+    identity: DurableCompactionSourceIdentity,
+) -> str:
+    """Return deterministic SHA-256 digest for durable compaction source identity."""
+    canonical = _canonical_json(durable_compaction_source_identity_to_canonical_dict(identity))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def durable_compaction_activation_requirements_to_canonical_dict(
+    requirements: DurableCompactionActivationRequirements,
+) -> dict[str, Any]:
+    """Return canonical durable compaction activation requirements dictionary."""
+    return {
+        "candidate_artifact_id": requirements.candidate_artifact_id,
+        "creation_receipt_reference": requirements.creation_receipt_reference,
+        "expected_active_revision": requirements.expected_active_revision,
+        "lineage_reference": requirements.lineage_reference,
+        "raw_content_included": False,
+        "rollback_source_reference": requirements.rollback_source_reference,
+        "validated_artifact_id": requirements.validated_artifact_id,
+    }
+
+
+def durable_compaction_policy_from_canonical_dict(
+    payload: Mapping[str, Any],
+) -> DurableCompactionPolicy:
+    """Decode durable compaction policy from canonical dictionary."""
+    _reject_unknown_keys(
+        payload,
+        frozenset(
+            {
+                "activation_mode",
+                "allowed_lossiness_profiles",
+                "allowed_strategy_ids",
+                "enabled",
+                "minimum_stable_revision_count",
+                "minimum_validation_requirement",
+            }
+        ),
+    )
+    try:
+        activation_mode = DurableCompactionActivationMode(payload["activation_mode"])
+    except (KeyError, ValueError) as exc:
+        raise ValueError("activation_mode must be a supported enum value") from exc
+    try:
+        minimum_validation_requirement = DurableCompactionValidationRequirement(
+            payload["minimum_validation_requirement"]
+        )
+    except (KeyError, ValueError) as exc:
+        raise ValueError(
+            "minimum_validation_requirement must be a supported enum value"
+        ) from exc
+    enabled = payload["enabled"]
+    if not isinstance(enabled, bool):
+        raise ValueError("enabled must be a boolean")
+    return DurableCompactionPolicy(
+        enabled=enabled,
+        activation_mode=activation_mode,
+        minimum_validation_requirement=minimum_validation_requirement,
+        allowed_strategy_ids=tuple(payload["allowed_strategy_ids"]),
+        allowed_lossiness_profiles=tuple(payload["allowed_lossiness_profiles"]),
+        minimum_stable_revision_count=payload["minimum_stable_revision_count"],
+    )
+
+
+def durable_compaction_source_identity_from_canonical_dict(
+    payload: Mapping[str, Any],
+) -> DurableCompactionSourceIdentity:
+    """Decode durable compaction source identity from canonical dictionary."""
+    _reject_unknown_keys(
+        payload,
+        frozenset(
+            {
+                "artifact_lookup_key",
+                "context_scope_id",
+                "expected_active_revision",
+                "lossiness_profile",
+                "source_content_hash",
+                "source_refs",
+                "source_revision",
+                "strategy_id",
+                "strategy_version",
+                "tenant_id",
+            }
+        ),
+    )
+    lookup_payload = payload["artifact_lookup_key"]
+    if not isinstance(lookup_payload, Mapping):
+        raise ValueError("artifact_lookup_key must be a mapping")
+    _reject_unknown_keys(
+        lookup_payload,
+        frozenset(
+            {
+                "artifact_type",
+                "compression_target",
+                "context_scope_id",
+                "lossiness_profile",
+                "policy_version",
+                "source_content_hash",
+                "source_refs",
+                "strategy_id",
+                "strategy_version",
+                "tenant_id",
+                "validation_contract_version",
+            }
+        ),
+    )
+    compression_target_payload = lookup_payload["compression_target"]
+    if not isinstance(compression_target_payload, Mapping):
+        raise ValueError("compression_target must be a mapping")
+    _reject_unknown_keys(compression_target_payload, frozenset({"budget_class", "target_tokens"}))
+    if ("target_tokens" in compression_target_payload) == (
+        "budget_class" in compression_target_payload
+    ):
+        raise ValueError(
+            "compression_target must contain exactly one of target_tokens or budget_class"
+        )
+    if "target_tokens" in compression_target_payload:
+        compression_target = ArtifactCompressionTarget(
+            target_tokens=compression_target_payload["target_tokens"]
+        )
+    else:
+        compression_target = ArtifactCompressionTarget(
+            budget_class=compression_target_payload["budget_class"]
+        )
+    lookup_key = ArtifactLookupKey(
+        tenant_id=lookup_payload["tenant_id"],
+        context_scope_id=lookup_payload["context_scope_id"],
+        artifact_type=OptimizationArtifactType(lookup_payload["artifact_type"]),
+        source_content_hash=lookup_payload["source_content_hash"],
+        strategy_id=lookup_payload["strategy_id"],
+        strategy_version=lookup_payload["strategy_version"],
+        policy_version=lookup_payload["policy_version"],
+        validation_contract_version=lookup_payload["validation_contract_version"],
+        compression_target=compression_target,
+        lossiness_profile=lookup_payload["lossiness_profile"],
+        source_refs=tuple(lookup_payload["source_refs"]),
+    )
+    return DurableCompactionSourceIdentity(
+        tenant_id=payload["tenant_id"],
+        context_scope_id=payload["context_scope_id"],
+        source_revision=payload["source_revision"],
+        expected_active_revision=payload["expected_active_revision"],
+        source_refs=tuple(payload["source_refs"]),
+        source_content_hash=payload["source_content_hash"],
+        artifact_lookup_key=lookup_key,
+        strategy_id=payload["strategy_id"],
+        strategy_version=payload["strategy_version"],
+        lossiness_profile=payload["lossiness_profile"],
+    )
+
+
+def _durable_compaction_policy_to_safe_dict(
+    policy: DurableCompactionPolicy,
+) -> dict[str, Any]:
+    return {
+        **durable_compaction_policy_to_canonical_dict(policy),
+        "raw_content_included": _RAW_CONTENT_INCLUDED,
+    }
+
+
 def context_optimization_policy_to_safe_dict(policy: ContextOptimizationPolicy) -> dict[str, Any]:
     """Return telemetry-safe policy serialization."""
-    return {
+    payload: dict[str, Any] = {
         "allow_administrative_refresh": policy.allow_administrative_refresh,
         "allow_artifact_reuse": policy.allow_artifact_reuse,
         "allow_llm_summarization": policy.allow_llm_summarization,
@@ -136,6 +347,11 @@ def context_optimization_policy_to_safe_dict(policy: ContextOptimizationPolicy) 
         "safe_metadata": _to_json_safe_value(policy.safe_metadata),
         "validation_contract_version": policy.validation_contract_version,
     }
+    if policy.durable_compaction is not None:
+        payload["durable_compaction"] = _durable_compaction_policy_to_safe_dict(
+            policy.durable_compaction
+        )
+    return payload
 
 
 def optimization_execution_guard_to_safe_dict(guard: OptimizationExecutionGuard) -> dict[str, Any]:

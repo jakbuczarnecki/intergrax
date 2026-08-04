@@ -59,10 +59,34 @@ def _require_int(value: object, field_name: str) -> int:
     return value
 
 
+def _require_bool(value: object, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
 def _require_non_empty(value: str, field_name: str) -> str:
     if not value:
         raise ValueError(f"{field_name} must be non-empty")
     return value
+
+
+def _require_non_empty_text(value: object, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_non_empty_texts(
+    values: object,
+    field_name: str,
+) -> tuple[str, ...]:
+    if not isinstance(values, (tuple, list)):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    normalized = tuple(
+        _require_non_empty_text(value, f"{field_name} item") for value in values
+    )
+    return _reject_duplicates(normalized, field_name)
 
 
 def _require_non_negative(value: object, field_name: str) -> int:
@@ -234,6 +258,409 @@ class ContextOptimizationReasonCode(StrEnum):
     ARTIFACT_CREATION_RESERVATION_CONFLICT = "artifact_creation_reservation_conflict"
     ARTIFACT_CREATION_LEASE_EXPIRED = "artifact_creation_lease_expired"
     ARTIFACT_CREATION_FAILED = "artifact_creation_failed"
+
+
+class DurableCompactionActivationMode(StrEnum):
+    """Frozen activation modes for durable compaction policy."""
+
+    COMPARE_AND_SWAP = "compare_and_swap"
+    MANUAL_REVIEW_THEN_COMPARE_AND_SWAP = "manual_review_then_compare_and_swap"
+
+
+_SUPPORTED_DURABLE_COMPACTION_ACTIVATION_MODES: frozenset[DurableCompactionActivationMode] = (
+    frozenset(DurableCompactionActivationMode)
+)
+
+
+class DurableCompactionValidationRequirement(StrEnum):
+    """Minimum validation stages required before durable activation."""
+
+    STRUCTURAL = "structural"
+    STRUCTURAL_AND_PROTECTED = "structural_and_protected"
+    FULL = "full"
+
+
+class DurableCompactionEligibilityReasonCode(StrEnum):
+    """Stable fail-closed reason codes for durable compaction eligibility."""
+
+    DURABLE_COMPACTION_DISABLED = "durable_compaction_disabled"
+    WRONG_OPTIMIZATION_MODE = "wrong_optimization_mode"
+    MISSING_SOURCE_REVISION = "missing_source_revision"
+    MISSING_EXPECTED_ACTIVE_REVISION = "missing_expected_active_revision"
+    INVALID_SOURCE_IDENTITY = "invalid_source_identity"
+    STRATEGY_NOT_ALLOWED = "strategy_not_allowed"
+    LOSSINESS_NOT_ALLOWED = "lossiness_not_allowed"
+    VALIDATION_REQUIREMENT_UNAVAILABLE = "validation_requirement_unavailable"
+    LINEAGE_REQUIREMENT_UNAVAILABLE = "lineage_requirement_unavailable"
+    RECEIPT_REQUIREMENT_UNAVAILABLE = "receipt_requirement_unavailable"
+    ROLLBACK_REQUIREMENT_UNAVAILABLE = "rollback_requirement_unavailable"
+    RAW_CONTENT_FORBIDDEN = "raw_content_forbidden"
+    POLICY_TARGET_IDENTITY_MISMATCH = "policy_target_identity_mismatch"
+
+
+def _require_sha256_hex(value: str, field_name: str) -> str:
+    digest = _require_non_empty_text(value, field_name)
+    if len(digest) != 64:
+        raise ValueError(f"{field_name} must be a 64-character lowercase hex SHA-256 digest")
+    try:
+        int(digest, 16)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid hex SHA-256 digest") from exc
+    if digest != digest.lower():
+        raise ValueError(f"{field_name} must be lowercase hex")
+    return digest
+
+
+def _require_non_empty_source_refs(refs: tuple[str, ...], field_name: str) -> tuple[str, ...]:
+    if not refs:
+        raise ValueError(f"{field_name} must not be empty")
+    normalized: list[str] = []
+    for ref in refs:
+        if not isinstance(ref, str):
+            raise ValueError(f"{field_name} items must be strings")
+        if not ref or not ref.strip() or ref != ref.strip():
+            raise ValueError(f"{field_name} must not contain empty or whitespace values")
+        normalized.append(ref)
+    return _reject_duplicates(tuple(normalized), field_name)
+
+
+@dataclass(frozen=True, slots=True)
+class DurableCompactionPolicy:
+    """Nested durable compaction policy governed by ContextOptimizationPolicy."""
+
+    enabled: bool = False
+    activation_mode: DurableCompactionActivationMode = (
+        DurableCompactionActivationMode.COMPARE_AND_SWAP
+    )
+    minimum_validation_requirement: DurableCompactionValidationRequirement = (
+        DurableCompactionValidationRequirement.FULL
+    )
+    allowed_strategy_ids: tuple[str, ...] = ()
+    allowed_lossiness_profiles: tuple[str, ...] = ()
+    minimum_stable_revision_count: int = 1
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "enabled", _require_bool(self.enabled, "enabled"))
+        object.__setattr__(
+            self,
+            "activation_mode",
+            _require_enum(
+                self.activation_mode,
+                DurableCompactionActivationMode,
+                "activation_mode",
+            ),
+        )
+        if self.activation_mode not in _SUPPORTED_DURABLE_COMPACTION_ACTIVATION_MODES:
+            raise ValueError("activation_mode is not supported")
+        object.__setattr__(
+            self,
+            "minimum_validation_requirement",
+            _require_enum(
+                self.minimum_validation_requirement,
+                DurableCompactionValidationRequirement,
+                "minimum_validation_requirement",
+            ),
+        )
+        stable_count = _require_positive(
+            self.minimum_stable_revision_count,
+            "minimum_stable_revision_count",
+        )
+        object.__setattr__(self, "minimum_stable_revision_count", stable_count)
+
+        strategy_ids = _require_non_empty_texts(self.allowed_strategy_ids, "allowed_strategy_ids")
+        object.__setattr__(
+            self,
+            "allowed_strategy_ids",
+            strategy_ids,
+        )
+
+        lossiness_profiles = _require_non_empty_texts(
+            self.allowed_lossiness_profiles,
+            "allowed_lossiness_profiles",
+        )
+        object.__setattr__(
+            self,
+            "allowed_lossiness_profiles",
+            lossiness_profiles,
+        )
+
+        if self.enabled:
+            if not self.allowed_strategy_ids:
+                raise ValueError("enabled durable compaction requires allowed_strategy_ids")
+            if not self.allowed_lossiness_profiles:
+                raise ValueError(
+                    "enabled durable compaction requires allowed_lossiness_profiles"
+                )
+
+
+@dataclass(frozen=True, slots=True)
+class DurableCompactionSourceIdentity:
+    """Immutable durable compaction target identity bound to source revision."""
+
+    tenant_id: str
+    context_scope_id: str
+    source_revision: int
+    expected_active_revision: int
+    source_refs: tuple[str, ...]
+    source_content_hash: str
+    artifact_lookup_key: ArtifactLookupKey
+    strategy_id: str
+    strategy_version: str
+    lossiness_profile: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty_text(self.tenant_id, "tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "context_scope_id",
+            _require_non_empty_text(self.context_scope_id, "context_scope_id"),
+        )
+        object.__setattr__(
+            self,
+            "source_revision",
+            _require_non_negative(self.source_revision, "source_revision"),
+        )
+        object.__setattr__(
+            self,
+            "expected_active_revision",
+            _require_positive(self.expected_active_revision, "expected_active_revision"),
+        )
+        object.__setattr__(
+            self,
+            "source_refs",
+            _require_non_empty_source_refs(self.source_refs, "source_refs"),
+        )
+        object.__setattr__(
+            self,
+            "source_content_hash",
+            _require_sha256_hex(self.source_content_hash, "source_content_hash"),
+        )
+        lookup_key = _require_instance(
+            self.artifact_lookup_key,
+            ArtifactLookupKey,
+            "artifact_lookup_key",
+        )
+        object.__setattr__(self, "artifact_lookup_key", lookup_key)
+        object.__setattr__(
+            self,
+            "strategy_id",
+            _require_non_empty_text(self.strategy_id, "strategy_id"),
+        )
+        object.__setattr__(
+            self,
+            "strategy_version",
+            _require_non_empty_text(self.strategy_version, "strategy_version"),
+        )
+        object.__setattr__(
+            self,
+            "lossiness_profile",
+            _require_non_empty_text(self.lossiness_profile, "lossiness_profile"),
+        )
+
+        if lookup_key.tenant_id != self.tenant_id:
+            raise ValueError("artifact_lookup_key.tenant_id must match tenant_id")
+        if lookup_key.context_scope_id != self.context_scope_id:
+            raise ValueError("artifact_lookup_key.context_scope_id must match context_scope_id")
+        if lookup_key.source_content_hash != self.source_content_hash:
+            raise ValueError("artifact_lookup_key.source_content_hash must match source_content_hash")
+        if lookup_key.strategy_id != self.strategy_id:
+            raise ValueError("artifact_lookup_key.strategy_id must match strategy_id")
+        if lookup_key.strategy_version != self.strategy_version:
+            raise ValueError("artifact_lookup_key.strategy_version must match strategy_version")
+        if lookup_key.lossiness_profile != self.lossiness_profile:
+            raise ValueError("artifact_lookup_key.lossiness_profile must match lossiness_profile")
+        if lookup_key.source_refs != self.source_refs:
+            raise ValueError("artifact_lookup_key.source_refs must match source_refs")
+
+
+@dataclass(frozen=True, slots=True)
+class DurableCompactionEligibilityDecision:
+    """Immutable durable compaction eligibility outcome."""
+
+    eligible: bool
+    reason_code: DurableCompactionEligibilityReasonCode | None
+    policy_hash: str
+    target_identity_hash: str
+    evaluated_mode: ContextOptimizationMode
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "eligible", _require_bool(self.eligible, "eligible"))
+        object.__setattr__(
+            self,
+            "evaluated_mode",
+            _require_enum(self.evaluated_mode, ContextOptimizationMode, "evaluated_mode"),
+        )
+        object.__setattr__(
+            self,
+            "policy_hash",
+            _require_non_empty(self.policy_hash, "policy_hash"),
+        )
+        object.__setattr__(
+            self,
+            "target_identity_hash",
+            _require_non_empty(self.target_identity_hash, "target_identity_hash"),
+        )
+        if self.eligible:
+            if self.reason_code is not None:
+                raise ValueError("eligible decision requires reason_code is None")
+        elif self.reason_code is None:
+            raise ValueError("ineligible decision requires reason_code")
+        elif not isinstance(self.reason_code, DurableCompactionEligibilityReasonCode):
+            raise ValueError("reason_code must be DurableCompactionEligibilityReasonCode")
+
+
+@dataclass(frozen=True, slots=True)
+class DurableCompactionActivationRequirements:
+    """Immutable activation safety prerequisites for future durable compaction."""
+
+    expected_active_revision: int
+    candidate_artifact_id: str
+    validated_artifact_id: str
+    lineage_reference: str
+    creation_receipt_reference: str
+    rollback_source_reference: str
+    raw_content_included: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "expected_active_revision",
+            _require_positive(self.expected_active_revision, "expected_active_revision"),
+        )
+        object.__setattr__(
+            self,
+            "candidate_artifact_id",
+            _require_non_empty_text(self.candidate_artifact_id, "candidate_artifact_id"),
+        )
+        object.__setattr__(
+            self,
+            "validated_artifact_id",
+            _require_non_empty_text(self.validated_artifact_id, "validated_artifact_id"),
+        )
+        object.__setattr__(
+            self,
+            "lineage_reference",
+            _require_non_empty_text(self.lineage_reference, "lineage_reference"),
+        )
+        object.__setattr__(
+            self,
+            "creation_receipt_reference",
+            _require_non_empty_text(
+                self.creation_receipt_reference,
+                "creation_receipt_reference",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "rollback_source_reference",
+            _require_non_empty_text(
+                self.rollback_source_reference,
+                "rollback_source_reference",
+            ),
+        )
+        if _require_bool(self.raw_content_included, "raw_content_included") is not False:
+            raise ValueError("raw_content_included must be False")
+
+
+def assess_durable_compaction_eligibility(
+    *,
+    policy: ContextOptimizationPolicy,
+    target: DurableCompactionSourceIdentity,
+    policy_hash: str,
+    target_identity_hash: str,
+    raw_content_included: bool = False,
+    expected_policy_hash: str | None = None,
+    expected_target_identity_hash: str | None = None,
+) -> DurableCompactionEligibilityDecision:
+    """Evaluate durable compaction eligibility without executing compaction."""
+    policy = _require_instance(policy, ContextOptimizationPolicy, "policy")
+    target = _require_instance(
+        target,
+        DurableCompactionSourceIdentity,
+        "target",
+    )
+    raw_content_included = _require_bool(raw_content_included, "raw_content_included")
+    base_kwargs = {
+        "policy_hash": policy_hash,
+        "target_identity_hash": target_identity_hash,
+        "evaluated_mode": policy.mode,
+    }
+
+    def _ineligible(
+        reason_code: DurableCompactionEligibilityReasonCode,
+    ) -> DurableCompactionEligibilityDecision:
+        return DurableCompactionEligibilityDecision(
+            eligible=False,
+            reason_code=reason_code,
+            **base_kwargs,
+        )
+
+    if expected_policy_hash is not None and policy_hash != expected_policy_hash:
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.POLICY_TARGET_IDENTITY_MISMATCH
+        )
+    if (
+        expected_target_identity_hash is not None
+        and target_identity_hash != expected_target_identity_hash
+    ):
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.POLICY_TARGET_IDENTITY_MISMATCH
+        )
+
+    if raw_content_included:
+        return _ineligible(DurableCompactionEligibilityReasonCode.RAW_CONTENT_FORBIDDEN)
+
+    durable_policy = policy.durable_compaction
+    if durable_policy is None or not durable_policy.enabled:
+        return _ineligible(DurableCompactionEligibilityReasonCode.DURABLE_COMPACTION_DISABLED)
+
+    if policy.mode is not ContextOptimizationMode.DURABLE_COMPACTION:
+        return _ineligible(DurableCompactionEligibilityReasonCode.WRONG_OPTIMIZATION_MODE)
+
+    if target.source_revision < 0:
+        return _ineligible(DurableCompactionEligibilityReasonCode.MISSING_SOURCE_REVISION)
+
+    if target.expected_active_revision <= 0:
+        return _ineligible(
+            DurableCompactionEligibilityReasonCode.MISSING_EXPECTED_ACTIVE_REVISION
+        )
+
+    if target.source_revision < durable_policy.minimum_stable_revision_count - 1:
+        return _ineligible(DurableCompactionEligibilityReasonCode.INVALID_SOURCE_IDENTITY)
+
+    if target.strategy_id not in durable_policy.allowed_strategy_ids:
+        return _ineligible(DurableCompactionEligibilityReasonCode.STRATEGY_NOT_ALLOWED)
+
+    if target.lossiness_profile not in durable_policy.allowed_lossiness_profiles:
+        return _ineligible(DurableCompactionEligibilityReasonCode.LOSSINESS_NOT_ALLOWED)
+
+    if durable_policy.minimum_validation_requirement is DurableCompactionValidationRequirement.FULL:
+        if not policy.validation_contract_version:
+            return _ineligible(
+                DurableCompactionEligibilityReasonCode.VALIDATION_REQUIREMENT_UNAVAILABLE
+            )
+
+    if not policy.require_receipt:
+        return _ineligible(DurableCompactionEligibilityReasonCode.RECEIPT_REQUIREMENT_UNAVAILABLE)
+
+    if not policy.require_rollback_metadata:
+        return _ineligible(DurableCompactionEligibilityReasonCode.ROLLBACK_REQUIREMENT_UNAVAILABLE)
+
+    if durable_policy.minimum_validation_requirement in {
+        DurableCompactionValidationRequirement.STRUCTURAL_AND_PROTECTED,
+        DurableCompactionValidationRequirement.FULL,
+    } and not policy.validation_contract_version:
+        return _ineligible(DurableCompactionEligibilityReasonCode.LINEAGE_REQUIREMENT_UNAVAILABLE)
+
+    return DurableCompactionEligibilityDecision(
+        eligible=True,
+        reason_code=None,
+        **base_kwargs,
+    )
 
 
 class ArtifactCompatibilityReason(StrEnum):
@@ -431,6 +858,7 @@ class ContextOptimizationPolicy:
     cache_policy_ref: str | None = None
     retention_policy_ref: str | None = None
     safe_metadata: Mapping[str, Any] = field(default_factory=dict)
+    durable_compaction: DurableCompactionPolicy | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -536,6 +964,24 @@ class ContextOptimizationPolicy:
             )
 
         object.__setattr__(self, "safe_metadata", _normalize_safe_metadata(self.safe_metadata))
+
+        if self.durable_compaction is not None:
+            object.__setattr__(
+                self,
+                "durable_compaction",
+                _require_instance(
+                    self.durable_compaction,
+                    DurableCompactionPolicy,
+                    "durable_compaction",
+                ),
+            )
+            if (
+                self.durable_compaction.enabled
+                and self.mode is not ContextOptimizationMode.DURABLE_COMPACTION
+            ):
+                raise ValueError(
+                    "enabled durable_compaction requires DURABLE_COMPACTION mode"
+                )
 
 
 @dataclass(frozen=True, slots=True)

@@ -20,6 +20,8 @@ from intergrax.runtime.context_lifecycle import (
     ArtifactValidationStatus,
     ArtifactValidationSummary,
     ContextOptimizationPolicy,
+    DurableCompactionPolicy,
+    DurableCompactionSourceIdentity,
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     ModelCallExecutionScope,
@@ -300,3 +302,254 @@ def test_nested_safe_metadata_serialization_survives_input_mutation() -> None:
     assert payload_before == payload_after
     assert payload_after["safe_metadata"]["outer"]["count"] == 2
     assert payload_after["safe_metadata"]["outer"]["nested"]["name"] == "safe"
+
+
+# --- TOKEN-10E-1 durable compaction serialization ---
+
+_SHA256_HASH = "a" * 64
+
+
+def _durable_policy() -> DurableCompactionPolicy:
+    return DurableCompactionPolicy(
+        enabled=True,
+        allowed_strategy_ids=("message_sequence_summarization.v1",),
+        allowed_lossiness_profiles=("lossy_summary",),
+    )
+
+
+def _durable_identity(**overrides: object) -> DurableCompactionSourceIdentity:
+    lookup_key = _lookup_key(
+        source_content_hash=_SHA256_HASH,
+        strategy_id="message_sequence_summarization.v1",
+    )
+    values: dict[str, object] = {
+        "tenant_id": lookup_key.tenant_id,
+        "context_scope_id": lookup_key.context_scope_id,
+        "source_revision": 2,
+        "expected_active_revision": 3,
+        "source_refs": lookup_key.source_refs,
+        "source_content_hash": lookup_key.source_content_hash,
+        "artifact_lookup_key": lookup_key,
+        "strategy_id": lookup_key.strategy_id,
+        "strategy_version": lookup_key.strategy_version,
+        "lossiness_profile": lookup_key.lossiness_profile,
+    }
+    values.update(overrides)
+    return DurableCompactionSourceIdentity(
+        **values,
+    )  # type: ignore[arg-type]
+
+
+def test_durable_policy_canonical_serialization_is_deterministic() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_policy_hash,
+        durable_compaction_policy_to_canonical_dict,
+    )
+
+    policy = _durable_policy()
+    first = durable_compaction_policy_to_canonical_dict(policy)
+    second = durable_compaction_policy_to_canonical_dict(policy)
+    assert first == second
+    assert compute_durable_compaction_policy_hash(policy) == compute_durable_compaction_policy_hash(
+        policy
+    )
+
+
+def test_durable_target_canonical_serialization_is_deterministic() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_source_identity_hash,
+        durable_compaction_source_identity_to_canonical_dict,
+    )
+
+    identity = _durable_identity()
+    first = durable_compaction_source_identity_to_canonical_dict(identity)
+    second = durable_compaction_source_identity_to_canonical_dict(identity)
+    assert first == second
+    assert compute_durable_compaction_source_identity_hash(
+        identity
+    ) == compute_durable_compaction_source_identity_hash(identity)
+
+
+def test_durable_policy_round_trip_preserves_semantic_equality() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_policy_from_canonical_dict,
+        durable_compaction_policy_to_canonical_dict,
+    )
+
+    policy = _durable_policy()
+    restored = durable_compaction_policy_from_canonical_dict(
+        durable_compaction_policy_to_canonical_dict(policy)
+    )
+    assert restored == policy
+
+
+def test_durable_target_round_trip_preserves_semantic_equality() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_source_identity_from_canonical_dict,
+        durable_compaction_source_identity_to_canonical_dict,
+    )
+
+    identity = _durable_identity()
+    restored = durable_compaction_source_identity_from_canonical_dict(
+        durable_compaction_source_identity_to_canonical_dict(identity)
+    )
+    assert restored == identity
+
+
+def test_durable_policy_hash_ignores_mapping_key_order() -> None:
+    from intergrax.runtime.context_lifecycle import compute_durable_compaction_policy_hash
+
+    policy = _durable_policy()
+    hash_a = compute_durable_compaction_policy_hash(policy)
+    hash_b = compute_durable_compaction_policy_hash(policy)
+    assert hash_a == hash_b
+
+
+def test_durable_target_source_ref_order_changes_hash() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_source_identity_hash,
+        DurableCompactionSourceIdentity,
+    )
+
+    identity_a = _durable_identity()
+    lookup_b = _lookup_key(
+        source_content_hash=_SHA256_HASH,
+        strategy_id="message_sequence_summarization.v1",
+        source_refs=("msg-2", "msg-1"),
+    )
+    identity_b = DurableCompactionSourceIdentity(
+        tenant_id=lookup_b.tenant_id,
+        context_scope_id=lookup_b.context_scope_id,
+        source_revision=2,
+        expected_active_revision=3,
+        source_refs=lookup_b.source_refs,
+        source_content_hash=lookup_b.source_content_hash,
+        artifact_lookup_key=lookup_b,
+        strategy_id=lookup_b.strategy_id,
+        strategy_version=lookup_b.strategy_version,
+        lossiness_profile=lookup_b.lossiness_profile,
+    )
+    assert compute_durable_compaction_source_identity_hash(
+        identity_a
+    ) != compute_durable_compaction_source_identity_hash(identity_b)
+
+
+def test_durable_target_revision_change_changes_hash() -> None:
+    from intergrax.runtime.context_lifecycle import compute_durable_compaction_source_identity_hash
+
+    identity_a = _durable_identity()
+    identity_b = _durable_identity(source_revision=3)
+    assert compute_durable_compaction_source_identity_hash(
+        identity_a
+    ) != compute_durable_compaction_source_identity_hash(identity_b)
+
+
+def test_durable_target_expected_active_revision_change_changes_hash() -> None:
+    from intergrax.runtime.context_lifecycle import compute_durable_compaction_source_identity_hash
+
+    identity_a = _durable_identity()
+    identity_b = _durable_identity(expected_active_revision=4)
+    assert compute_durable_compaction_source_identity_hash(
+        identity_a
+    ) != compute_durable_compaction_source_identity_hash(identity_b)
+
+
+def test_durable_target_strategy_version_change_changes_hash() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_source_identity_hash,
+        DurableCompactionSourceIdentity,
+    )
+
+    identity_a = _durable_identity()
+    lookup_b = _lookup_key(
+        source_content_hash=_SHA256_HASH,
+        strategy_id="message_sequence_summarization.v1",
+        strategy_version="2.0.0",
+    )
+    identity_b = DurableCompactionSourceIdentity(
+        tenant_id=lookup_b.tenant_id,
+        context_scope_id=lookup_b.context_scope_id,
+        source_revision=2,
+        expected_active_revision=3,
+        source_refs=lookup_b.source_refs,
+        source_content_hash=lookup_b.source_content_hash,
+        artifact_lookup_key=lookup_b,
+        strategy_id=lookup_b.strategy_id,
+        strategy_version=lookup_b.strategy_version,
+        lossiness_profile=lookup_b.lossiness_profile,
+    )
+    assert compute_durable_compaction_source_identity_hash(
+        identity_a
+    ) != compute_durable_compaction_source_identity_hash(identity_b)
+
+
+def test_durable_target_lossiness_change_changes_hash() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        compute_durable_compaction_source_identity_hash,
+        DurableCompactionSourceIdentity,
+    )
+
+    identity_a = _durable_identity()
+    lookup_b = _lookup_key(
+        source_content_hash=_SHA256_HASH,
+        strategy_id="message_sequence_summarization.v1",
+        lossiness_profile="lossless",
+    )
+    identity_b = DurableCompactionSourceIdentity(
+        tenant_id=lookup_b.tenant_id,
+        context_scope_id=lookup_b.context_scope_id,
+        source_revision=2,
+        expected_active_revision=3,
+        source_refs=lookup_b.source_refs,
+        source_content_hash=lookup_b.source_content_hash,
+        artifact_lookup_key=lookup_b,
+        strategy_id=lookup_b.strategy_id,
+        strategy_version=lookup_b.strategy_version,
+        lossiness_profile=lookup_b.lossiness_profile,
+    )
+    assert compute_durable_compaction_source_identity_hash(
+        identity_a
+    ) != compute_durable_compaction_source_identity_hash(identity_b)
+
+
+def test_durable_serialized_payload_excludes_raw_content_and_marks_marker_false() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_activation_requirements_to_canonical_dict,
+        DurableCompactionActivationRequirements,
+    )
+
+    requirements = DurableCompactionActivationRequirements(
+        expected_active_revision=3,
+        candidate_artifact_id="artifact-candidate",
+        validated_artifact_id="artifact-validated",
+        lineage_reference="lineage-1",
+        creation_receipt_reference="receipt-1",
+        rollback_source_reference="rollback-1",
+    )
+    payload = durable_compaction_activation_requirements_to_canonical_dict(requirements)
+    assert "raw_content" not in payload
+    assert payload["raw_content_included"] is False
+
+
+def test_durable_policy_decode_rejects_unknown_fields() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_policy_from_canonical_dict,
+        durable_compaction_policy_to_canonical_dict,
+    )
+
+    payload = durable_compaction_policy_to_canonical_dict(_durable_policy())
+    payload["unexpected"] = True
+    with pytest.raises(ValueError, match="unknown fields"):
+        durable_compaction_policy_from_canonical_dict(payload)
+
+
+def test_durable_policy_decode_rejects_malformed_enum() -> None:
+    from intergrax.runtime.context_lifecycle import (
+        durable_compaction_policy_from_canonical_dict,
+        durable_compaction_policy_to_canonical_dict,
+    )
+
+    payload = durable_compaction_policy_to_canonical_dict(_durable_policy())
+    payload["activation_mode"] = "auto_activate"
+    with pytest.raises(ValueError, match="activation_mode must be a supported enum value"):
+        durable_compaction_policy_from_canonical_dict(payload)

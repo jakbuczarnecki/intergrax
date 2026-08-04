@@ -23,12 +23,20 @@ from intergrax.runtime.context_lifecycle import (
     ContextOptimizationMode,
     ContextOptimizationPolicy,
     ContextOptimizationReasonCode,
+    DurableCompactionPolicy,
+    DurableCompactionSourceIdentity,
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    assess_durable_compaction_eligibility,
+    compute_durable_compaction_policy_hash,
+    compute_durable_compaction_source_identity_hash,
+    DurableCompactionActivationRequirements,
+    DurableCompactionEligibilityDecision,
+    DurableCompactionEligibilityReasonCode,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -1019,3 +1027,236 @@ def test_safe_metadata_accepts_explicit_enum_string_value() -> None:
     )
 
     assert policy.safe_metadata["scope"] == "primary_model_call"
+
+
+# --- TOKEN-10E-1 durable compaction contracts ---
+
+_SHA256_HASH = "a" * 64
+
+
+def _durable_lookup_key(**overrides: object) -> ArtifactLookupKey:
+    defaults: dict[str, object] = {
+        "tenant_id": "tenant-1",
+        "context_scope_id": "scope-1",
+        "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
+        "source_content_hash": _SHA256_HASH,
+        "strategy_id": "message_sequence_summarization.v1",
+        "strategy_version": "1.0.0",
+        "policy_version": "policy-v1",
+        "validation_contract_version": "validation-v1",
+        "compression_target": ArtifactCompressionTarget(target_tokens=1000),
+        "lossiness_profile": "lossy_summary",
+        "source_refs": ("msg-1", "msg-2"),
+    }
+    defaults.update(overrides)
+    return ArtifactLookupKey(**defaults)  # type: ignore[arg-type]
+
+
+def _durable_source_identity(**overrides: object) -> DurableCompactionSourceIdentity:
+    lookup_key = _durable_lookup_key()
+    defaults: dict[str, object] = {
+        "tenant_id": lookup_key.tenant_id,
+        "context_scope_id": lookup_key.context_scope_id,
+        "source_revision": 2,
+        "expected_active_revision": 3,
+        "source_refs": lookup_key.source_refs,
+        "source_content_hash": lookup_key.source_content_hash,
+        "artifact_lookup_key": lookup_key,
+        "strategy_id": lookup_key.strategy_id,
+        "strategy_version": lookup_key.strategy_version,
+        "lossiness_profile": lookup_key.lossiness_profile,
+    }
+    defaults.update(overrides)
+    return DurableCompactionSourceIdentity(**defaults)  # type: ignore[arg-type]
+
+
+def _enabled_durable_policy() -> DurableCompactionPolicy:
+    return DurableCompactionPolicy(
+        enabled=True,
+        allowed_strategy_ids=("message_sequence_summarization.v1",),
+        allowed_lossiness_profiles=("lossy_summary",),
+    )
+
+
+def test_durable_compaction_policy_defaults_disabled() -> None:
+    policy = DurableCompactionPolicy()
+    assert policy.enabled is False
+
+
+def test_durable_compaction_policy_rejects_wrong_enabled_type() -> None:
+    with pytest.raises(ValueError, match="enabled must be a boolean"):
+        DurableCompactionPolicy(enabled="false")  # type: ignore[arg-type]
+
+
+def test_durable_compaction_policy_accepts_explicit_enabled_policy() -> None:
+    policy = _enabled_durable_policy()
+    assert policy.enabled is True
+    assert policy.activation_mode.value == "compare_and_swap"
+
+
+def test_durable_compaction_policy_rejects_wrong_activation_mode_type() -> None:
+    with pytest.raises(ValueError, match="activation_mode must be DurableCompactionActivationMode"):
+        DurableCompactionPolicy(activation_mode="compare_and_swap")  # type: ignore[arg-type]
+
+
+def test_durable_compaction_policy_rejects_empty_strategy_identity_when_enabled() -> None:
+    with pytest.raises(ValueError, match="enabled durable compaction requires allowed_strategy_ids"):
+        DurableCompactionPolicy(enabled=True, allowed_lossiness_profiles=("lossy_summary",))
+
+
+def test_durable_compaction_policy_rejects_empty_lossiness_when_enabled() -> None:
+    with pytest.raises(
+        ValueError,
+        match="enabled durable compaction requires allowed_lossiness_profiles",
+    ):
+        DurableCompactionPolicy(
+            enabled=True,
+            allowed_strategy_ids=("message_sequence_summarization.v1",),
+        )
+
+
+def test_durable_compaction_policy_defensively_freezes_mutable_inputs() -> None:
+    strategy_ids = ["message_sequence_summarization.v1"]
+    lossiness_profiles = ["lossy_summary"]
+    policy = DurableCompactionPolicy(
+        enabled=True,
+        allowed_strategy_ids=tuple(strategy_ids),
+        allowed_lossiness_profiles=tuple(lossiness_profiles),
+    )
+    strategy_ids.append("other")
+    lossiness_profiles.append("lossless")
+    assert policy.allowed_strategy_ids == ("message_sequence_summarization.v1",)
+    assert policy.allowed_lossiness_profiles == ("lossy_summary",)
+
+
+def test_durable_compaction_activation_requirements_reject_raw_content_included_true() -> None:
+    with pytest.raises(ValueError, match="raw_content_included must be False"):
+        DurableCompactionActivationRequirements(
+            expected_active_revision=3,
+            candidate_artifact_id="artifact-candidate",
+            validated_artifact_id="artifact-validated",
+            lineage_reference="lineage-1",
+            creation_receipt_reference="receipt-1",
+            rollback_source_reference="rollback-1",
+            raw_content_included=True,
+        )
+
+
+def test_durable_compaction_source_identity_rejects_missing_expected_active_revision() -> None:
+    with pytest.raises(ValueError, match="expected_active_revision must be > 0"):
+        _durable_source_identity(expected_active_revision=0)
+
+
+def test_durable_compaction_source_identity_rejects_bool_revision() -> None:
+    with pytest.raises(ValueError, match="source_revision must be an integer"):
+        _durable_source_identity(source_revision=True)  # type: ignore[arg-type]
+
+
+def test_durable_compaction_source_identity_rejects_duplicate_source_refs() -> None:
+    with pytest.raises(ValueError, match="source_refs must not contain duplicates"):
+        _durable_source_identity(source_refs=("msg-1", "msg-1"))
+
+
+def test_durable_compaction_source_identity_rejects_whitespace_source_ref() -> None:
+    with pytest.raises(ValueError, match="source_refs must not contain empty or whitespace"):
+        _durable_source_identity(source_refs=(" msg-1",))
+
+
+def test_durable_compaction_source_identity_rejects_malformed_hash() -> None:
+    with pytest.raises(ValueError, match="source_content_hash"):
+        _durable_source_identity(source_content_hash="not-a-sha256")
+
+
+def test_durable_compaction_eligibility_decision_requires_reason_when_ineligible() -> None:
+    with pytest.raises(ValueError, match="ineligible decision requires reason_code"):
+        DurableCompactionEligibilityDecision(
+            eligible=False,
+            reason_code=None,
+            policy_hash="policy-hash",
+            target_identity_hash="target-hash",
+            evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
+        )
+
+    decision = DurableCompactionEligibilityDecision(
+        eligible=True,
+        reason_code=None,
+        policy_hash="policy-hash",
+        target_identity_hash="target-hash",
+        evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
+    )
+    assert decision.eligible is True
+
+    ineligible = DurableCompactionEligibilityDecision(
+        eligible=False,
+        reason_code=DurableCompactionEligibilityReasonCode.DURABLE_COMPACTION_DISABLED,
+        policy_hash="policy-hash",
+        target_identity_hash="target-hash",
+        evaluated_mode=ContextOptimizationMode.DURABLE_COMPACTION,
+    )
+    assert ineligible.reason_code is not None
+
+
+def test_assess_durable_compaction_eligibility_rejects_policy_target_identity_mismatch() -> None:
+    durable_policy = _enabled_durable_policy()
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        enabled=True,
+        mode=ContextOptimizationMode.DURABLE_COMPACTION,
+        require_receipt=True,
+        require_rollback_metadata=True,
+        durable_compaction=durable_policy,
+    )
+    target = _durable_source_identity()
+    policy_hash = compute_durable_compaction_policy_hash(durable_policy)
+    target_hash = compute_durable_compaction_source_identity_hash(target)
+
+    decision = assess_durable_compaction_eligibility(
+        policy=policy,
+        target=target,
+        policy_hash="wrong-policy-hash",
+        target_identity_hash=target_hash,
+        expected_policy_hash=policy_hash,
+        expected_target_identity_hash=target_hash,
+    )
+    assert decision.eligible is False
+    assert decision.reason_code is not None
+    assert decision.reason_code.value == "policy_target_identity_mismatch"
+
+
+def test_existing_ephemeral_assembly_policy_defaults_unchanged() -> None:
+    policy = ContextOptimizationPolicy(
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+    )
+    assert policy.enabled is False
+    assert policy.mode is ContextOptimizationMode.EPHEMERAL_ASSEMBLY
+    assert policy.durable_compaction is None
+
+
+def test_existing_summarize_oldest_policy_mapping_unchanged() -> None:
+    from intergrax.runtime.wiring.context_runtime_bridge import (
+        MESSAGE_SEQUENCE_SUMMARIZATION_STRATEGY_ID,
+        resolve_context_optimization_policy_from_profile,
+    )
+
+    class _Profile:
+        enable_rag = False
+        enable_websearch = False
+        budget_policy = None
+        assembly_options = object()
+        decision = object()
+        drift_monitoring_enabled = False
+        drift_alert_threshold = 0.0
+        semantic_compression_enabled = True
+        default_history_compression = "summarize_oldest"
+        engine_preset = "default"
+        engine_ref = None
+        context_plugin_ids: list[str] = []
+        optimization_policy = None
+
+    policy = resolve_context_optimization_policy_from_profile(_Profile())
+    assert policy is not None
+    assert policy.mode is ContextOptimizationMode.EPHEMERAL_ASSEMBLY
+    assert policy.allowed_strategy_ids == (MESSAGE_SEQUENCE_SUMMARIZATION_STRATEGY_ID,)
+    assert policy.durable_compaction is None
