@@ -88,11 +88,14 @@ MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT
   ACCEPTED through REVIEW-FIX-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR
   ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
+VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1
+  ACCEPTED
 READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT
-VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1
+VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1
+  READY_FOR_REVIEW
 CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
   correction under review
@@ -115,6 +118,15 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
 `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` freezes the complete Google Workspace knowledge architecture and proof-first roadmap so one existing `GoogleWorkspaceCollaborationSuiteIntegration` can support Drive, Docs, Sheets, Calendar, Slides, Mail and Chat through shared provider primitives, separate Vendor Knowledge adapters and provider-neutral LKW consumption immediately after the complete Slack Knowledge vertical. Status: **READY_FOR_REVIEW**. Runtime tasks below remain **PLANNED** — no Google knowledge capability is implemented.
+
+The canonical current-state classification is
+[`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
+task `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1`, status
+**READY_FOR_REVIEW**. It records the current Google `drive`, `docs` and
+`sheets` adapter implementation, the current exact Google Calendar read
+surface, and the remaining application-mode gaps without activating work.
+The historical Google status wording above is retained as a documented
+contradiction and is not capability evidence.
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
 
@@ -1267,7 +1279,7 @@ Planned tasks:
 | Task | Purpose |
 |---|---|
 | [`VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1`](VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md) | Audit adapter-family completeness and gap classification |
-| `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1` | Explicit per-provider, per-source-kind, per-mode capability matrix |
+| [`VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md) | Explicit per-provider, per-source-kind, per-mode capability matrix |
 
 #### DURABLE BRANCH
 
