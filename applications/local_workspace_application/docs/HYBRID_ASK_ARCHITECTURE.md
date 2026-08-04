@@ -1,7 +1,7 @@
 # Hybrid Ask — unified evidence, query orchestration and read-only live execution
 
-**Status:** READY_FOR_REVIEW  
-**Task:** LKW-HYBRID-ASK-ARCH-1-REVIEW-FIX-2-CROSS-VERSION-RUN-ACCESS-DECISION
+**Status:** ACCEPTED / CLOSED
+**Task:** LKW-HYBRID-ASK-ARCH-1
 **Classification:** docs-only architecture and implementation contract
 
 **Canonical references:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md`](KNOWLEDGE_ACCESS_IMPLEMENTATION_CONTRACT.md) · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`CONVERSATION_CONTEXT_ARCHITECTURE.md`](CONVERSATION_CONTEXT_ARCHITECTURE.md)
@@ -377,52 +377,25 @@ validated ExecutableLiveCallV1
 
 ## 9. First provider decision
 
-### 9.1 Selected: **Jira** (`jira` / `issue_tracker`) — one initial capability only
+### 9.1 External Vendor Knowledge proof (not LKW-owned)
 
-**First bounded live capability proof:** exactly one capability:
+The first bounded live capability proof is delivered by **Vendor Knowledge**, not by the LKW Hybrid Ask roadmap. LKW validates provider-neutral plans and executes through registered handlers; provider-specific request models, handlers and API semantics remain Vendor Knowledge scope.
 
-```text
-capability_id: jira.issue.read
-```
-
-| Field | Value |
-|-------|-------|
-| Production integration method | `JiraIssueTrackerIntegration.get_knowledge_issue(issue_key)` |
-| Typed request | `JiraIssueReadRequestV1` → `issue_key` |
-| Typed result | `JiraKnowledgeIssue` |
-
-**Required authorization (frozen):**
-
-1. Live Access Binding identifies the allowed Jira project remote resource.
-2. Server-side remote-resource resolution derives the authoritative Jira project key.
-3. Request schema validates `issue_key`.
-4. Deterministic scope validation proves the issue key belongs to the bound project.
-5. The model cannot provide or override the authoritative project scope.
-6. The same rehydrated Jira integration instance is used (no second client).
-7. No arbitrary JQL is accepted.
-
-**Deferred to a later capability task:**
+A provider such as Jira may appear only as a possible **external** Vendor Knowledge acceptance proof. LKW must not implement Jira, Confluence, Slack or Microsoft Graph handlers in Hybrid Ask slices.
 
 ```text
-jira.issues.list_bounded
-jira.issues.search
+LKW-HYBRID-ASK-1C requires at least one accepted provider-specific
+LiveCapabilityHandler implementation delivered by Vendor Knowledge.
+
+The provider is selected and implemented in the Vendor Knowledge roadmap,
+not in the LKW Hybrid Ask roadmap.
 ```
 
-Note: `search_knowledge_issues(project_key, cursor, limit)` on `JiraIssueTrackerIntegration` is **bounded project inventory/listing**, not semantic or free-form search. It is **not** part of the first Hybrid Ask proof.
+**Deferred to Vendor Knowledge capability tasks:** provider-specific inventory/search capabilities beyond the first accepted read-only proof.
 
-**Selection rationale:**
+### 9.2 Deferred provider notes (documentation only)
 
-- Production integration method exists (`JiraIssueTrackerIntegration`)
-- Read-only, typed input/output (`knowledge_read.py`)
-- Project scope enforced server-side — **no LLM-generated JQL**
-- Connection-aware instance reuse through `KnowledgeConnectionRegistry` / integration wiring
-- Deterministic fixture proof without network access (strict Pydantic parsers)
-
-### 9.2 Deferred: **Confluence**
-
-Confluence exposes `list_knowledge_pages(space_id, cursor, limit)` (inventory listing) and `get_knowledge_page(page_id, version_number)`. The legacy `search_pages(query, limit)` path accepts arbitrary query strings and is unsuitable for V1 Hybrid Ask policy. Exact read requires explicit `version_number`, increasing plan complexity. Confluence live proof follows after Jira bounded capability acceptance.
-
-Microsoft Graph live search is **not** selected and must not be simulated through delta, reconciliation or full inventory.
+Confluence and Microsoft Graph live search require separate bounded contracts in Vendor Knowledge and must not be simulated through delta, reconciliation or full inventory.
 
 ---
 
@@ -830,80 +803,74 @@ Identifiers that may contain PII or tenant-identifying material use hashing or r
 
 ## 19. Implementation decomposition
 
-Parent block: **`LKW-HYBRID-ASK-1`** — **BLOCKED_ON_ARCH_ACCEPTANCE** until this document is accepted.
+Parent block: **`LKW-HYBRID-ASK-1`** — **IN_PROGRESS**.
 
-### `LKW-HYBRID-ASK-1A` — Unified evidence, provenance, citation and Ask Run V2 contracts
+**Dependency chain:** `1A → 1B → 1C`.
+
+### Ownership boundary (frozen)
+
+```text
+LKW owns:
+- evidence and citation contracts;
+- Query Policy;
+- plan validation;
+- handler interfaces and registry;
+- integration-instance resolution;
+- live execution budgets and error normalization;
+- indexed/live/hybrid orchestration;
+- Ask persistence and API.
+
+Vendor Knowledge owns:
+- provider-specific request/result schemas;
+- provider-specific handlers;
+- Jira, Confluence, Slack, Microsoft Graph and other provider calls;
+- provider API semantics;
+- provider pagination and resource validation;
+- mapping provider responses to the provider-neutral live result boundary.
+```
+
+### `LKW-HYBRID-ASK-1A` — Provider-neutral core contracts, durable Query Policy V2 and Evidence Plan validation
 
 | | |
 |---|---|
-| **Purpose** | Freeze Pydantic/domain types for transient `WorkspaceEvidenceV1`, `PersistedAskEvidenceV2`, citations, `WorkspaceAskRunV2` |
+| **Purpose** | Freeze provider-neutral evidence/citation/run contracts; durable Query Policy V2; deterministic Evidence Plan validation |
 | **Depends on** | `LKW-KNOWLEDGE-ACCESS-1` (accepted), this architecture |
-| **Production scope** | Models, schemas, repository serialization contract |
-| **Non-goals** | Live execution, orchestrator, HTTP |
-| **Tests** | Model validation, evidence ID rules, V1/V2 run round-trip |
-| **Acceptance gate** | Types compile; V1 indexed run still deserializes |
-| **User-visible** | None (contract only) |
+| **Production scope** | `hybrid_ask_models.py`, `hybrid_ask_policy.py`, Ask repository V1/V2 detection, configuration policy V2 persistence |
+| **Non-goals** | Provider handlers, live executor, orchestrator execution, HTTP V2 routes |
+| **Tests** | V1 compatibility, V2 persistence, policy resolution, Evidence Plan validation |
+| **Status** | **READY_FOR_REVIEW** |
 
-### `LKW-HYBRID-ASK-1B` — Query Policy V2, effective policy and Evidence Plan validation
-
-| | |
-|---|---|
-| **Purpose** | `QueryPolicyModeV2` with `hybrid`; `EvidencePlanV1` validator |
-| **Depends on** | `1A`, Knowledge Configuration service |
-| **Production scope** | Policy resolution, plan builder/validator, mode intersection |
-| **Non-goals** | Provider execution |
-| **Tests** | Validation order, intersection, audience rejection, V1 policy compatibility |
-| **Acceptance gate** | Valid hybrid plan approved; invalid plans rejected with stable codes |
-| **User-visible** | None |
-
-### `LKW-HYBRID-ASK-1C` — Live Capability Executor + first Jira `jira.issue.read`
+### `LKW-HYBRID-ASK-1B` — Provider-neutral Live Capability execution and Knowledge Query orchestration
 
 | | |
 |---|---|
-| **Purpose** | `WorkspaceLiveCapabilityExecutorPort` + `jira.issue.read` capability handler |
-| **Depends on** | `1B`, `TenantLiveCapabilityCatalog`, `LiveCapabilityHandlerRegistry`, `KnowledgeConnectionRegistry`, Jira integration |
-| **Production scope** | Executor with frozen port dependencies, Jira `jira.issue.read` handler, budgets, error normalization |
-| **Non-goals** | Ask synthesis, HTTP |
-| **Tests** | Fixture-based Jira call, budget truncation, connection reuse, no persistence |
-| **Acceptance gate** | One validated call returns `LiveWorkspaceEvidenceV1`; no raw body stored |
-| **User-visible** | None (internal port) |
+| **Purpose** | `WorkspaceLiveCapabilityExecutorPort`, `LiveCapabilityHandlerRegistry`, `KnowledgeQueryOrchestrator` for `indexed_only`, `live_only`, `hybrid` |
+| **Depends on** | `1A`, `TenantLiveCapabilityCatalog`, integration resolver ports |
+| **Production scope** | Executor, orchestrator, unified in-memory evidence collection, fail-closed hybrid semantics |
+| **Non-goals** | Provider-specific handlers (Vendor Knowledge), HTTP, assembler changes beyond interface |
+| **Tests** | Per-mode orchestration, budget enforcement, no durable live bodies |
+| **Status** | **PLANNED** |
 
-### `LKW-HYBRID-ASK-1D` — Knowledge Query Orchestrator
-
-| | |
-|---|---|
-| **Purpose** | Mode-aware orchestration for `indexed_only`, `live_only`, `hybrid` |
-| **Depends on** | `1B`, `1C`, indexed retrieval port (existing search path) |
-| **Production scope** | `KnowledgeQueryOrchestrator`, plan execution, unified evidence collection |
-| **Non-goals** | HTTP, assembler changes beyond interface |
-| **Tests** | Per-mode execution, hybrid fail-closed, partial failure semantics |
-| **Acceptance gate** | Hybrid run produces ≥1 indexed + ≥1 live evidence in memory |
-| **User-visible** | None |
-
-### `LKW-HYBRID-ASK-1E` — WorkspaceAskService, repository, HTTP V1/V2 integration
+### `LKW-HYBRID-ASK-1C` — Workspace Ask integration, HTTP V2 and bounded product acceptance proof
 
 | | |
 |---|---|
-| **Purpose** | Wire orchestrator into Ask; unified citations; retention; stable errors; frozen V1/V2 path versioning |
-| **Depends on** | `1A`, `1D` |
-| **Production scope** | `WorkspaceAskService`, `ask_repository`, routes/schemas V1 (indexed-only) and V2 (hybrid/live) |
-| **Non-goals** | Conversational frontend, Slack adapter |
-| **Tests** | Indexed-only regression; hybrid HTTP proof; GET Run V1/V2 |
-| **Acceptance gate** | Indexed-only behavior unchanged; hybrid errors stable |
-| **User-visible** | Hybrid Ask via HTTP when policy allows |
+| **Purpose** | Wire orchestrator into Ask; repository/HTTP V1/V2; bounded hybrid acceptance proof |
+| **Depends on** | `1B`, at least one accepted Vendor Knowledge `LiveCapabilityHandler` |
+| **Production scope** | `WorkspaceAskService` evolution, V2 routes, retention, stable errors, acceptance proof |
+| **Non-goals** | Provider selection/implementation (Vendor Knowledge roadmap) |
+| **Tests** | Indexed-only regression; hybrid HTTP proof; GET Run V1/V2 version mismatch |
+| **Status** | **PLANNED** |
 
-### `LKW-HYBRID-ASK-1F` — Bounded acceptance proof
+**Slice status after `LKW-HYBRID-ASK-1A`:**
 
-| | |
-|---|---|
-| **Purpose** | End-to-end hybrid proof |
-| **Depends on** | `1E`, `LKW-KNOWLEDGE-ACCESS-1` configuration |
-| **Proof scenario** | One Connection, one Indexed Source, one Live Access Binding, hybrid Query Policy, one question → ≥1 indexed + ≥1 live evidence, grounded answer, indexed + live citation, same rehydrated integration instance, no durable live body, no new Document/Chunk/Vector |
-| **Tests** | Integration/acceptance test with deterministic fixtures |
-| **Acceptance gate** | Proof checklist green |
-| **User-visible** | Demonstrable hybrid Ask |
-
-**Dependency chain:** `1A → 1B → 1C → 1D → 1E → 1F`. `1C` and indexed retrieval port may proceed in parallel after `1B` where ports are defined.
+```text
+LKW-HYBRID-ASK-ARCH-1 — ACCEPTED / CLOSED
+LKW-HYBRID-ASK-1 — IN_PROGRESS
+LKW-HYBRID-ASK-1A — READY_FOR_REVIEW
+LKW-HYBRID-ASK-1B — PLANNED
+LKW-HYBRID-ASK-1C — PLANNED
+```
 
 ---
 

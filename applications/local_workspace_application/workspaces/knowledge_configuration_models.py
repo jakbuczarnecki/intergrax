@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -83,6 +83,12 @@ class LiveAccessBindingStatusV1(StrEnum):
 class QueryPolicyModeV1(StrEnum):
     INDEXED_ONLY = "indexed_only"
     LIVE_ONLY = "live_only"
+
+
+class QueryPolicyModeV2(StrEnum):
+    INDEXED_ONLY = "indexed_only"
+    LIVE_ONLY = "live_only"
+    HYBRID = "hybrid"
 
 
 class LiveResultRetentionV1(StrEnum):
@@ -285,6 +291,87 @@ class WorkspaceQueryPolicy(BaseModel):
         return self
 
 
+class WorkspaceQueryPolicyV2(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    policy_schema_version: Literal[2] = 2
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+
+    mode: QueryPolicyModeV2 = QueryPolicyModeV2.INDEXED_ONLY
+
+    allowed_connection_refs: tuple[str, ...] = ()
+    allowed_capability_ids: tuple[str, ...] = ()
+
+    max_live_calls: int = Field(default=0, ge=0, le=50)
+    max_total_duration_ms: int = Field(default=30_000, ge=1, le=300_000)
+    max_result_items: int = Field(default=50, ge=1, le=500)
+    max_result_bytes: int = Field(default=1_048_576, ge=1, le=16_777_216)
+
+    live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
+
+    mutation_id: str = Field(..., min_length=1, max_length=128)
+    effective_revision: int = Field(..., ge=1)
+
+    updated_at: datetime
+
+    @field_validator("allowed_connection_refs", mode="before")
+    @classmethod
+    def _normalize_connection_refs_v2(cls, value: Any) -> tuple[str, ...]:
+        return _canonicalize_string_tuple(value)
+
+    @field_validator("allowed_capability_ids", mode="before")
+    @classmethod
+    def _normalize_capability_ids_v2(cls, value: Any) -> tuple[str, ...]:
+        return _canonicalize_string_tuple(value)
+
+    @field_validator("allowed_connection_refs")
+    @classmethod
+    def _validate_connection_refs_v2(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        for item in value:
+            _validate_connection_ref(item)
+        return value
+
+    @model_validator(mode="after")
+    def _validate_mode_invariants_v2(self) -> Self:
+        if self.mode is QueryPolicyModeV2.INDEXED_ONLY:
+            if self.allowed_connection_refs:
+                raise ValueError("indexed_only_forbids_connection_refs")
+            if self.allowed_capability_ids:
+                raise ValueError("indexed_only_forbids_capability_ids")
+            if self.max_live_calls != 0:
+                raise ValueError("indexed_only_forbids_live_calls")
+            if self.live_result_retention is not LiveResultRetentionV1.EPHEMERAL:
+                raise ValueError("indexed_only_requires_ephemeral_retention")
+        elif self.mode is QueryPolicyModeV2.LIVE_ONLY:
+            if not self.allowed_connection_refs:
+                raise ValueError("live_only_requires_connection_refs")
+            if not self.allowed_capability_ids:
+                raise ValueError("live_only_requires_capability_ids")
+            if self.max_live_calls < 1:
+                raise ValueError("live_only_requires_live_calls")
+        elif self.mode is QueryPolicyModeV2.HYBRID:
+            if not self.allowed_connection_refs:
+                raise ValueError("hybrid_requires_connection_refs")
+            if not self.allowed_capability_ids:
+                raise ValueError("hybrid_requires_capability_ids")
+            if self.max_live_calls < 1:
+                raise ValueError("hybrid_requires_live_calls")
+        return self
+
+
+WorkspaceCommittedQueryPolicy = WorkspaceQueryPolicy | WorkspaceQueryPolicyV2
+
+
+def parse_workspace_query_policy(data: dict[str, Any]) -> WorkspaceCommittedQueryPolicy:
+    version = data.get("policy_schema_version")
+    if version is None:
+        return WorkspaceQueryPolicy.model_validate(data)
+    if version == 2:
+        return WorkspaceQueryPolicyV2.model_validate(data)
+    raise ValueError("query_policy_schema_version_unknown")
+
+
 class WorkspaceKnowledgeConfigurationHead(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -462,7 +549,7 @@ class WorkspaceKnowledgeConfigurationV1(BaseModel):
     connection_attachments: tuple[WorkspaceConnectionAttachment, ...] = ()
     indexed_sources: tuple[WorkspaceIndexedSourceBinding, ...] = ()
     live_access_bindings: tuple[WorkspaceLiveAccessBinding, ...] = ()
-    query_policy: WorkspaceQueryPolicy | None = None
+    query_policy: WorkspaceCommittedQueryPolicy | None = None
 
     updated_at: datetime
 

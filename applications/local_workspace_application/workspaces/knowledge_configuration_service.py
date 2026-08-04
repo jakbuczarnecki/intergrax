@@ -8,11 +8,11 @@ from datetime import datetime
 from typing import Protocol
 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceCommittedQueryPolicy,
     WorkspaceConnectionAttachment,
     WorkspaceIndexedSourceBinding,
     WorkspaceKnowledgeConfigurationV1,
     WorkspaceLiveAccessBinding,
-    WorkspaceQueryPolicy,
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceSource
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
@@ -94,10 +94,10 @@ def _select_highest_committed_live_access(
 
 
 def _select_highest_committed_query_policy(
-    versions: list[WorkspaceQueryPolicy],
+    versions: list[WorkspaceCommittedQueryPolicy],
     committed_revision: int,
-) -> WorkspaceQueryPolicy | None:
-    best: WorkspaceQueryPolicy | None = None
+) -> WorkspaceCommittedQueryPolicy | None:
+    best: WorkspaceCommittedQueryPolicy | None = None
     for version in versions:
         if version.effective_revision > committed_revision:
             continue
@@ -112,7 +112,7 @@ def _projection_updated_at(
     connection_attachments: tuple[WorkspaceConnectionAttachment, ...],
     indexed_sources: tuple[WorkspaceIndexedSourceBinding, ...],
     live_access_bindings: tuple[WorkspaceLiveAccessBinding, ...],
-    query_policy: WorkspaceQueryPolicy | None,
+    query_policy: WorkspaceCommittedQueryPolicy | None,
 ) -> datetime:
     timestamps: list[datetime] = []
     timestamps.extend(item.updated_at for item in connection_attachments)

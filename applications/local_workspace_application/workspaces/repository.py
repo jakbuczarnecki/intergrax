@@ -22,13 +22,14 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceSyncEnqueueIntent,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceCommittedQueryPolicy,
     WorkspaceConnectionAttachment,
     WorkspaceIndexedSourceBinding,
     WorkspaceKnowledgeConfigurationHead,
     WorkspaceKnowledgeMutationOperationV1,
     WorkspaceKnowledgeMutationRecord,
     WorkspaceLiveAccessBinding,
-    WorkspaceQueryPolicy,
+    parse_workspace_query_policy,
 )
 from local_workspace_application.workspaces.models import (
     ActiveKnowledgeIngestionLocator,
@@ -1588,7 +1589,7 @@ class ManagedWorkspaceRepository:
 
     def put_knowledge_query_policy_version_if_absent(
         self,
-        policy: WorkspaceQueryPolicy,
+        policy: WorkspaceCommittedQueryPolicy,
     ) -> bool:
         partition_key = _partition(
             policy.tenant_id,
@@ -1607,7 +1608,7 @@ class ManagedWorkspaceRepository:
         tenant_id: str,
         workspace_id: str,
         effective_revision: int,
-    ) -> WorkspaceQueryPolicy | None:
+    ) -> WorkspaceCommittedQueryPolicy | None:
         partition_key = _partition(
             tenant_id,
             _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
@@ -1620,7 +1621,12 @@ class ManagedWorkspaceRepository:
         record = self._store.get(partition_key, row_key)
         if record is None:
             return None
-        policy = WorkspaceQueryPolicy.model_validate(dict(record.data))
+        try:
+            policy = parse_workspace_query_policy(dict(record.data))
+        except ValueError as exc:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "query_policy_schema_version_unknown"
+            ) from exc
         _assert_record_identity(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -1636,22 +1642,49 @@ class ManagedWorkspaceRepository:
         *,
         tenant_id: str,
         workspace_id: str,
-    ) -> list[WorkspaceQueryPolicy]:
-        return self._list_revision_versions(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            partition_key=_partition(
-                tenant_id,
-                _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
-            ),
-            model_type=WorkspaceQueryPolicy,
-            fixed_entity_id=_QUERY_POLICY_ENTITY_ID,
-            sort_key=lambda item: (item.effective_revision,),
+    ) -> list[WorkspaceCommittedQueryPolicy]:
+        partition_key = _partition(
+            tenant_id,
+            _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY,
         )
+        result = self._store.query(
+            partition_key,
+            limit=_KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT + 1,
+            row_key_prefix=f"{workspace_id}:",
+        )
+        if len(result.documents) > _KNOWLEDGE_CONFIGURATION_REVISION_SCAN_LIMIT:
+            raise WorkspaceKnowledgeConfigurationRepositoryError(
+                "knowledge_configuration_revision_scan_limit_exceeded"
+            )
+        items: list[WorkspaceCommittedQueryPolicy] = []
+        for doc in result.documents:
+            try:
+                policy = parse_workspace_query_policy(dict(doc.data))
+            except ValueError as exc:
+                raise WorkspaceKnowledgeConfigurationRepositoryError(
+                    "query_policy_schema_version_unknown"
+                ) from exc
+            row_workspace_id, row_entity_id, row_revision = _parse_revision_row_key(doc.row_key)
+            if row_workspace_id != workspace_id:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            if row_entity_id != _QUERY_POLICY_ENTITY_ID:
+                raise ValueError("knowledge_configuration_record_identity_mismatch")
+            _assert_record_identity(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                model_tenant_id=policy.tenant_id,
+                model_workspace_id=policy.workspace_id,
+                entity_id=row_entity_id,
+                model_entity_id=_QUERY_POLICY_ENTITY_ID,
+                revision=row_revision,
+                model_revision=policy.effective_revision,
+            )
+            items.append(policy)
+        return sorted(items, key=lambda item: (item.effective_revision,))
 
     def delete_knowledge_query_policy_version_if_match(
         self,
-        policy: WorkspaceQueryPolicy,
+        policy: WorkspaceCommittedQueryPolicy,
     ) -> bool:
         partition_key = _partition(
             policy.tenant_id,
