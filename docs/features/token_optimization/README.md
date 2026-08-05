@@ -557,9 +557,12 @@ Expected: terminal summary with `final status: PASS` and reports under `build/pr
 
 ### What requires additional proof
 
-- Reproducible universal platform proof (TOKEN-10F/10G).
-- Public performance promotion (TOKEN-10H).
-- Durable in-cache compaction (TOKEN-10E; blocked until UCL closeout).
+- Accepted cross-provider proof over the required corpus,
+  providers and workloads.
+- Final public claim review with checked-in,
+  independently reviewable promotion evidence.
+- Accepted public proof of complete durable
+  in-cache compaction behavior.
 - Real-customer workload savings.
 
 ### What must not be claimed
@@ -589,7 +592,9 @@ see the [Token Optimization implementation plan](../plan/TOKEN_OPTIMIZATION.md).
 - No universal provider-tokenizer accuracy in char-budget prototype layers.
 - Evaluation packs use synthetic corpus and char-level metrics.
 - Provider cache behavior is provider-specific; vLLM proof does not prove other providers.
-- TOKEN-10F/G/H and LKW product proof (LKW-PF6) are not complete.
+- Cross-provider proof, final public promotion evidence,
+  and the LKW product-level Token Optimization proof
+  are not established by accepted public evidence.
 - Dynamic plugin loading and marketplace are out of scope.
 
 ---

@@ -434,6 +434,8 @@ the roadmap’s changing task and review status.
   ownership and promotion rules;
 - Token Optimization guide no longer maintains
   a parallel current phase snapshot;
+- residual Token Optimization phase and blocker wording
+  removed from proof-requirement and limitation sections;
 - roadmap changes explicitly separated
   from public-claim changes;
 - stable ownership-flow Mermaid added by updating
@@ -459,6 +461,10 @@ the roadmap’s changing task and review status.
 - claims model defines when a roadmap update does
   and does not propagate to public documents;
 - Token Optimization guide contains no current phase snapshot table;
+- the Token Optimization guide contains no current phase,
+  blocker or completion-status mirror outside its owning roadmap link;
+- proof requirements and limitations use outcome-based wording
+  rather than implementation phase identifiers;
 - documentation architecture freezes the ownership model;
 - positioning freezes the first-contact summary boundary;
 - `PROOFS.md` retains exactly two Mermaid diagrams;
