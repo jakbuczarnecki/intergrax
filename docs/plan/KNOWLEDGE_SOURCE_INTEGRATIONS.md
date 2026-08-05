@@ -1326,8 +1326,7 @@ Planned tasks:
 
 | Task | Purpose | LKW mapping |
 |---|---|---|
-| `VENDOR-LIVE-CAPABILITY-CONTRACT-1` | Typed live capability contracts and registry | `LKW-KNOWLEDGE-ACCESS-1` |
-| `VENDOR-LIVE-CAPABILITY-EXECUTOR-1` | Validated read-only executor with bounded limits | `LKW-HYBRID-ASK-1`, `LKW-VENDOR-ACCESS-COLLABORATION-1` |
+| `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` | Implement the provider-neutral shared live contract delta, atomic registration boundary, effective budgets, safe provenance/locators, receipts and contract tests | `LKW-KNOWLEDGE-ACCESS-1`, `LKW-HYBRID-ASK-1` |
 
 #### CONVERGENCE
 
@@ -1702,7 +1701,7 @@ Each read surface and its adapter must be independently reviewable before procee
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED / CLOSED`
 **Scope:** planning only; no runtime implementation is activated by this task.
 
 This rollout makes one shared execution boundary authoritative for all Vendor
@@ -1765,14 +1764,35 @@ primitives or durable adapters.
 #### Shared foundation status
 
 ```text
-provider-neutral capability descriptors: implemented
-tenant-safe capability catalog: implemented
-durable Live Access Binding lifecycle: implemented
-exact immutable handler registry: implemented
-validated provider-neutral executor: implemented
-timeout, item and byte budgets: implemented
-normalized live evidence: implemented
-receipt-only retention: implemented
+current production foundation:
+  LiveCapabilityDescriptorV1
+  tenant-safe capability catalog
+  durable Live Access Binding lifecycle
+  evidence-plan validation
+  LiveCapabilityHandlerV1 protocol
+  exact handler registry
+  provider-neutral executor
+  connection integration resolver
+  basic item/byte budgets
+  normalized result/evidence models
+  receipt-only retention
+
+ARCH-1 frozen shared delta: not implemented as one accepted boundary
+  canonical source_kind assertion and validation
+  contract_version across descriptor/handler/request/result/binding
+  strict capability-specific request models
+  request/result schema resolution
+  ValidatedLiveCapabilityCallV1 or equivalent typed call
+  atomic descriptor-handler-schema registration
+  missing-pair and duplicate-pair validation
+  provider page/request/upstream/content budgets
+  expanded provider-neutral error taxonomy
+  source-kind-aware result/evidence provenance
+  ordered item-identity-aware receipt hashing
+  safe-locator validation/filtering
+  shared registration bootstrap
+  shared contract test suite
+
 provider-specific production handlers: not implemented
 provider-specific production registrations: not implemented
 cross-provider production proof: not implemented
@@ -1794,7 +1814,7 @@ separately activated.
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1`
 
-**Status:** `PLANNED / NEXT`
+**Status:** `READY_FOR_REVIEW`
 **Activation:** only after this plan is accepted and external review is
 complete.
 
@@ -1828,13 +1848,82 @@ calls, duplicate credential resolution, duplicate clients, unbounded search,
 write/admin capabilities and raw provider payload exposure. Every provider
 uses the same executor, registry, normalized evidence and receipt boundary.
 
+### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`
+
+**Status:** `PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE`
+
+**Dependency:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` remains
+`READY_FOR_REVIEW`; this task is not activated before external review.
+
+This task implements only the provider-neutral runtime delta frozen by
+`ARCH-1`:
+
+```text
+descriptor identity/version/source-kind support
+strict schema registry/resolution
+typed validated call envelope
+descriptor-handler-schema registration bundle
+atomic registration validation
+effective provider-call budgets
+shared error taxonomy
+normalized provenance additions
+safe-locator enforcement
+receipt contract and ordered identity-aware hashing
+shared contract tests
+bootstrap integration needed by all provider families
+```
+
+It must not implement Microsoft Graph, Slack, Jira, Confluence or Google
+Workspace handlers, provider SDK calls, application UI/LKW behavior, durable
+synchronization, indexing, or provider credentials/clients in handlers.
+
+**Foundation acceptance gates:**
+
+```text
+canonical capability identity parser/validator; source_kind agreement across
+ID/descriptor/handler; immutable contract version; strict pre-invocation
+request validation with unknown-field rejection; resolved request/result
+schemas; typed validated call; atomic publication; missing-pair, schema
+mismatch and duplicate rejection; finite page/request/upstream-item/content
+budgets; executor-owned timeout/output limits; stable secret-free errors;
+provider/source/capability/version/binding provenance; unsafe-locator
+removal/rejection; ordered item-identity-aware receipt hashing; only
+EPHEMERAL and RECEIPT_ONLY retention; no automatic indexed-corpus writes; no
+provider clients/credentials in handlers; focused shared contract tests
+without external credentials.
+```
+
+### Provider task boundary
+
+After `FOUNDATION-1` is accepted, each provider/source-kind task owns only:
+
+```text
+operation availability matrix
+source-specific strict request models
+canonical descriptors
+source-specific handlers
+provider read primitive mapping
+bounded provider invocation
+provider error mapping
+normalized result mapping
+safe locator mapping
+provider-focused tests
+registration into the shared boundary
+```
+
+Provider tasks must not redefine or privately alter shared identity,
+versioning, schema, registration, budget, error, provenance, locator, receipt,
+retention or executor semantics. No provider task is activated by this review
+fix.
+
 ### Canonical rollout order
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
 → VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
+→ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
 
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE  # blocked by shared foundation
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT
@@ -1960,9 +2049,11 @@ commercial status
 ### Status after this task
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: PLANNED / NEXT
-Microsoft Graph live tasks: PLANNED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / BLOCKED_BY_SHARED_FOUNDATION
+other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED
 Confluence live task: PLANNED

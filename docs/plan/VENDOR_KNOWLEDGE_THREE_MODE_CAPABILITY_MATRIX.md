@@ -21,6 +21,10 @@ indexed ingestion or live access. Current repository evidence proves:
 - generic durable sink, checkpoint, reconciliation and recovery foundations;
 - generic live binding, capability, executor, limits, normalized evidence and
   receipt foundations;
+- the accepted `ARCH-1` shared live delta is not yet implemented: strict
+  schemas, typed calls, atomic registration, expanded budgets, provenance,
+  safe locators, ordered receipt hashing and shared contract tests remain
+  provider-neutral foundation work;
 - a provider-specific application indexed path only for Slack
   `slack_conversation`, with final accepted LKW closeout still unresolved;
 - no provider/source-kind live handler registration.
@@ -88,7 +92,7 @@ from the exact matrix because no source kind has been selected.
 |---|---|---|
 | Indexed | `YES` — LKW document ingestion, canonical document indexing, vector retrieval and query/Ask paths | Local-file/LKW capability is not transferred to Vendor Knowledge providers. |
 | Durable materialization | `YES` — `DocumentStore`, idempotent sink, remote-item state, checkpoints, leases, reconciliation, queue/worker and recovery | Provider adapter/sync proof is not application-owned materialization proof. |
-| Live | `YES` — typed binding/catalog contracts, exact handler registry, validated executor, limits, normalized evidence, receipts and retention | No provider/source-kind live handler registration or accepted live proof was found. |
+| Live | `YES` — current typed binding/catalog contracts, exact handler registry, validated executor, basic limits, normalized evidence, receipts and retention | `ARCH-1` freezes an additional shared delta not yet implemented as one accepted boundary; no provider/source-kind live handler registration or accepted live proof was found. |
 
 ## 5. Exact provider/source-kind matrix
 
@@ -281,14 +285,35 @@ any `FOUNDATION_ONLY` row into an implemented provider capability.
 Shared live foundation:
 
 ```text
-provider-neutral capability descriptors: implemented
-tenant-safe capability catalog: implemented
-durable Live Access Binding lifecycle: implemented
-exact immutable handler registry: implemented
-validated provider-neutral executor: implemented
-timeout, item and byte budgets: implemented
-normalized live evidence: implemented
-receipt-only retention: implemented
+current production foundation: implemented
+  LiveCapabilityDescriptorV1
+  tenant-safe capability catalog
+  durable Live Access Binding lifecycle
+  evidence-plan validation
+  LiveCapabilityHandlerV1 protocol
+  exact handler registry
+  provider-neutral executor
+  connection integration resolver
+  basic item/byte budgets
+  normalized result/evidence models
+  receipt-only retention
+
+ARCH-1 frozen shared delta: not implemented as one accepted boundary
+  canonical source_kind assertion and validation
+  contract_version across descriptor/handler/request/result/binding
+  strict capability-specific request models
+  request/result schema resolution
+  ValidatedLiveCapabilityCallV1 or equivalent typed call
+  atomic descriptor-handler-schema registration
+  missing-pair and duplicate-pair validation
+  provider page/request/upstream/content budgets
+  expanded provider-neutral error taxonomy
+  source-kind-aware result/evidence provenance
+  ordered item-identity-aware receipt hashing
+  safe-locator validation/filtering
+  shared registration bootstrap
+  shared contract test suite
+
 provider-specific production handlers: not implemented
 provider-specific production registrations: not implemented
 cross-provider production proof: not implemented
@@ -296,9 +321,10 @@ cross-provider production proof: not implemented
 
 All rows below use the same planned boundary. The `PLANNED:vk...` values in the
 legacy matrix are planning placeholders, not canonical capability IDs.
-`ARCH-1` freezes the provider-neutral request/result schemas and exact
-capability naming; provider-specific rows remain planned until their handler
-and registration proof exists.
+`ARCH-1` freezes the provider-neutral request/result contract decisions and
+exact capability naming. `FOUNDATION-1` must implement and validate the shared
+schemas, typed call, registration, budgets, provenance, locator and receipt
+boundary before any provider row can activate.
 
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -320,9 +346,8 @@ and registration proof exists.
 
 `gated` means that the exact source kind must first pass
 `GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1`; it is not an implementation
-claim. The matrix deliberately uses no numeric budgets before `ARCH-1` freezes
-the effective policy inputs and provider-specific tasks prove their bounded
-behavior.
+claim. Shared budget semantics and strict schemas are blocked on
+`FOUNDATION-1`; provider-specific tasks must then prove bounded behavior.
 
 ### Google readiness gate
 
@@ -398,6 +423,13 @@ No Google-specific executor, registry, receipt mechanism or direct LKW-to-Google
 path is allowed. No provider-specific live framework or duplicate provider
 client is allowed for any family.
 
+Provider tasks may not redefine the shared live semantics. They enter only
+through the accepted `FOUNDATION-1` boundary and own source-specific
+availability, strict request models, descriptors, handlers, provider read
+mapping, bounded invocation, error/result/locator mapping, focused tests and
+registration. No provider client or credential is introduced by the live
+handler task.
+
 Every provider family closeout verifies shared integration reuse, tenant-safe
 connection resolution, exact source-kind and resource-scope isolation,
 read-only enforcement, bounded request/results, timeout behavior, normalized
@@ -410,13 +442,15 @@ handlers reuse the existing shared `GoogleWorkspaceCollaborationSuiteIntegration
 Immediate next task:
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1 — PLANNED / NEXT
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1 — READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — NEXT AFTER ARCHITECTURE ACCEPTANCE
 ```
 
 The complete order is frozen in
-`KNOWLEDGE_SOURCE_INTEGRATIONS.md`, from this rollout plan through Graph,
-Slack, Jira, Confluence, the Google readiness gate and independently gated
-Google source tasks, to both family closeouts and:
+`KNOWLEDGE_SOURCE_INTEGRATIONS.md`, from this rollout plan through `ARCH-1`,
+the shared `FOUNDATION-1`, Graph, Slack, Jira, Confluence, the Google
+readiness gate and independently gated Google source tasks, to both family
+closeouts and:
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1 — PLANNED
@@ -432,7 +466,8 @@ source kind and its reason. Databricks remains excluded because no exact
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / BLOCKED_BY_SHARED_FOUNDATION
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

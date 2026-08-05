@@ -66,6 +66,49 @@ The existing application orchestration remains the application boundary. The
 architecture does not move it into `intergrax/` and does not create a second
 executor, registry, or receipt system.
 
+### 2.1 Review finding: production foundation versus frozen shared delta
+
+The current production foundation already provides:
+
+```text
+LiveCapabilityDescriptorV1
+tenant-safe capability catalog
+durable Live Access Binding lifecycle
+evidence-plan validation
+LiveCapabilityHandlerV1 protocol
+exact handler registry
+provider-neutral executor
+connection integration resolver
+basic item/byte budgets
+normalized result/evidence models
+receipt-only retention
+```
+
+`ARCH-1` nevertheless freezes an additional provider-neutral shared delta that
+does not yet exist as one accepted runtime boundary:
+
+```text
+canonical source_kind assertion and validation
+contract_version across descriptor/handler/request/result/binding
+strict capability-specific request models
+request/result schema resolution
+ValidatedLiveCapabilityCallV1 or equivalent typed call
+atomic descriptor-handler-schema registration
+missing-pair and duplicate-pair validation
+provider page/request/upstream/content budgets
+expanded provider-neutral error taxonomy
+source-kind-aware result/evidence provenance
+ordered item-identity-aware receipt hashing
+safe-locator validation/filtering
+shared registration bootstrap
+shared contract test suite
+```
+
+These are provider-neutral runtime changes. They must be implemented by
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` before any provider-specific
+live handler is activated; the first Microsoft Graph task must not implement
+them privately.
+
 ## 3. Ownership boundaries
 
 ### Provider/core workstreams own
@@ -768,6 +811,69 @@ Every one of the fifteen source kinds must appear as implemented, explicitly
 deferred, or blocked with evidence. No family-level “ready” value may replace
 source-kind rows.
 
+### 24.1 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`
+
+**Status:** `PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE`
+
+**Technical outcome:** implement the shared runtime delta frozen by `ARCH-1`
+before any production provider-specific live handler is activated.
+
+**User outcome:** every provider enters live access through the same validated
+and tested boundary instead of defining private rules in its first handler.
+
+**Provider-neutral scope:**
+
+```text
+descriptor identity/version/source-kind support
+strict schema registry/resolution
+typed validated call envelope
+descriptor-handler-schema registration bundle
+atomic registration validation
+effective provider-call budgets
+shared error taxonomy
+normalized provenance additions
+safe-locator enforcement
+receipt contract and ordered identity-aware hashing
+shared contract tests
+bootstrap integration needed by all provider families
+```
+
+**Explicitly out of scope:**
+
+```text
+Microsoft Graph Drive/Mail/Teams handlers
+Slack, Jira, Confluence or Google Workspace handlers
+provider SDK calls or provider-specific request models beyond test fixtures
+application UI, LKW behavior, durable synchronization or indexing
+provider credentials or provider clients in handlers
+```
+
+**Acceptance gates:**
+
+```text
+one canonical capability identity parser/validator
+source_kind cannot disagree across ID, descriptor and handler
+contract version cannot silently change
+strict request validation occurs before integration/provider invocation
+unknown request fields are rejected
+descriptor without handler is unavailable
+handler without descriptor fails registration
+schema mismatch fails registration
+duplicate identities fail closed
+registry/catalog publication is atomic
+effective budget is the minimum of all applicable limits
+provider pages/requests/upstream items/content bytes are finite
+executor remains the authoritative timeout/output-limit boundary
+provider-neutral errors are stable and secret-free
+evidence provenance includes provider/source/capability/version/binding identity
+unsafe locators are removed or rejected
+receipt hash is ordered and remote-item-identity-aware
+EPHEMERAL and RECEIPT_ONLY remain the only live retention modes
+live results never enter the indexed corpus automatically
+no provider clients or credentials enter handlers
+focused shared contract tests pass without external credentials
+```
+
 ## 25. Test architecture
 
 No tests are added by `ARCH-1`; the following pyramid is mandatory for later
@@ -840,8 +946,11 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
   READY_FOR_REVIEW
 
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
   PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
+  PLANNED / BLOCKED_BY_SHARED_FOUNDATION
 
 all other provider live tasks
   PLANNED
