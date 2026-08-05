@@ -14,7 +14,7 @@ from intergrax.rag.retrieval.retrieval_errors import (
 )
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
@@ -61,7 +61,7 @@ class RetrieverEngine:
         self,
         query: RetrieverQuery,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """Execute retrieval for a query using a registered retriever."""
         if self._fallback_enabled:
             chain = retriever_fallback_chain(retriever_id, self._registry.list_names())
@@ -148,7 +148,7 @@ class RetrieverEngine:
         query: RetrieverQuery,
         *,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         last_exc: Exception | None = None
 
         for _ in range(self._max_retries + 1):

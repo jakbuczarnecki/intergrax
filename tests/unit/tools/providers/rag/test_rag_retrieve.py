@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from collections.abc import Iterator
+from typing import List, Optional
 
 import pytest
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput
-from intergrax.tools.providers.rag.handler import RagRetrieveHandler
 from intergrax.tools.providers.rag.service import perform_rag_retrieve
 from intergrax.tools.providers.rag.bundle import rag_retrieve_contract, register_rag_tools
 from intergrax.tools.registry.bootstrap import register_default_tools, reset_default_tools_bootstrap
@@ -36,6 +37,23 @@ class FakeEmbeddingManager:
         return [[0.1, 0.2, 0.3] for _ in texts]
 
 
+def _document(
+    document_id: str,
+    content: str,
+    metadata: dict[str, object] | None = None,
+) -> KnowledgeDocument:
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": document_id, "root_document_id": document_id},
+            "scope": {"tenant_id": "t1"},
+            "content": content,
+            "metadata": metadata or {},
+            "provenance": {"source_kind": "test", "source_id": document_id},
+        }
+    )
+
+
 class FakeVectorstoreManager:
     def __init__(self, hits: Optional[List[VectorStoreHit]] = None) -> None:
         self._hits = hits or []
@@ -57,7 +75,7 @@ class FakeVectorstoreManager:
 
 
 @pytest.fixture(autouse=True)
-def _clean_catalog() -> None:
+def _clean_catalog() -> Iterator[None]:
     clear_tool_catalog()
     reset_default_tools_bootstrap()
     yield
@@ -68,9 +86,12 @@ def _clean_catalog() -> None:
 def test_rag_retrieve_returns_chunks() -> None:
     hits = [
         VectorStoreHit(
-            id="doc-1",
-            content="Intergrax is an agent runtime.",
-            metadata={"source": "readme.md"},
+            vector_id="doc-1",
+            document=_document(
+                "doc-1",
+                "Intergrax is an agent runtime.",
+                {"source": "readme.md"},
+            ),
             similarity_score=0.91,
             rank=1,
         )
@@ -89,6 +110,15 @@ def test_rag_retrieve_returns_chunks() -> None:
     assert out.used is True
     assert len(out.chunks) == 1
     assert out.chunks[0].id == "doc-1"
+    assert out.chunks[0].text == "Intergrax is an agent runtime."
+    assert out.chunks[0].scope["tenant_id"] == "t1"
+    assert out.chunks[0].provenance["source_id"] == "doc-1"
+    assert out.chunks[0].user_metadata["source"] == "readme.md"
+    assert out.chunks[0].score == 0.91
+    assert out.chunks[0].rank == 1
+    assert out.chunks[0].channel == "dense"
+    assert out.chunks[0].vector_id == "doc-1"
+    assert "embedding" not in out.chunks[0].model_dump()
     assert len(out.citations) == 1
     assert out.citations[0].chunk_id == "doc-1"
     assert out.citations[0].source_label == "readme.md"
@@ -115,9 +145,8 @@ def test_rag_tool_registered_via_catalog() -> None:
 def test_rag_retrieve_via_runtime_invoker() -> None:
     hits = [
         VectorStoreHit(
-            id="chunk-a",
-            content="Policy section 4.2",
-            metadata={},
+            vector_id="chunk-a",
+            document=_document("chunk-a", "Policy section 4.2"),
             similarity_score=0.8,
             rank=1,
         )
@@ -154,16 +183,18 @@ def test_rag_retrieve_via_runtime_invoker() -> None:
 def test_rag_retrieve_quarantines_poisoned_chunks_when_security_enabled() -> None:
     hits = [
         VectorStoreHit(
-            id="trusted",
-            content="Trusted policy excerpt.",
-            metadata={"source": "policy.md"},
+            vector_id="trusted",
+            document=_document("trusted", "Trusted policy excerpt.", {"source": "policy.md"}),
             similarity_score=0.95,
             rank=1,
         ),
         VectorStoreHit(
-            id="poisoned",
-            content="Injected malicious instruction.",
-            metadata={"source": "untrusted.md"},
+            vector_id="poisoned",
+            document=_document(
+                "poisoned",
+                "Injected malicious instruction.",
+                {"source": "untrusted.md"},
+            ),
             similarity_score=0.05,
             rank=2,
         ),
@@ -187,9 +218,8 @@ def test_rag_retrieve_quarantines_poisoned_chunks_when_security_enabled() -> Non
 def test_rag_retrieve_skips_poisoning_filter_when_security_disabled() -> None:
     hits = [
         VectorStoreHit(
-            id="poisoned",
-            content="Low trust chunk still returned.",
-            metadata={},
+            vector_id="poisoned",
+            document=_document("poisoned", "Low trust chunk still returned."),
             similarity_score=0.05,
             rank=1,
         ),
@@ -211,9 +241,8 @@ def test_rag_retrieve_skips_poisoning_filter_when_security_disabled() -> None:
 def test_rag_retrieve_all_quarantined_returns_not_used() -> None:
     hits = [
         VectorStoreHit(
-            id="poisoned-only",
-            content="Only untrusted content.",
-            metadata={},
+            vector_id="poisoned-only",
+            document=_document("poisoned-only", "Only untrusted content."),
             similarity_score=0.02,
             rank=1,
         ),

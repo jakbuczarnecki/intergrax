@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-from typing import List
 import re
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -37,11 +36,11 @@ class HybridRetriever(BaseRetriever):
         return "hybrid"
     
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         return re.findall(r"\w+", text.lower())
 
 
-    def _lexical_score(self, query_tokens: List[str], text: str) -> float:
+    def _lexical_score(self, query_tokens: list[str], text: str) -> float:
         tokens = self._tokenize(text)
 
         if not tokens:
@@ -54,10 +53,10 @@ class HybridRetriever(BaseRetriever):
     def retrieve(
         self,
         query: RetrieverQuery,
-    ) -> List[RetrieverCandidate]:
+    ) -> tuple[RetrievalHit, ...]:
 
         if not query.query_text:
-            return []
+            return ()
 
         q_vec = (
             query.query_embedding
@@ -79,17 +78,27 @@ class HybridRetriever(BaseRetriever):
                 include_embeddings=query.include_embeddings,
                 alpha=self._alpha,
             )
-            return [
-                RetrieverCandidate(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata=hit.metadata,
-                    score=float(hit.similarity_score),
-                    embedding=hit.embedding,
-                    rank=hit.rank,
+            native_hits = tuple(
+                RetrievalHit.from_vector_store_hit(
+                    hit,
+                    channel="hybrid",
+                    retriever_name=self.name(),
                 )
-                for hit in hits[:top_k]
-            ]
+                for hit in hits
+            )
+            return tuple(
+                RetrievalHit(
+                    document=hit.document,
+                    score=hit.score,
+                    rank=rank,
+                    channel=hit.channel,
+                    vector_id=hit.vector_id,
+                    embedding=hit.embedding,
+                    source_rank=hit.source_rank,
+                    retriever_name=self.name(),
+                )
+                for rank, hit in enumerate(native_hits[:top_k])
+            )
 
         hits = self._vs.query(
             query_embedding=q_vec,
@@ -98,20 +107,39 @@ class HybridRetriever(BaseRetriever):
             include_embeddings=query.include_embeddings,
         )
 
-        candidates: List[RetrieverCandidate] = []
+        candidates: list[RetrievalHit] = []
         for hit in hits:
-            lexical = self._lexical_score(query_tokens, hit.content)
+            native_hit = RetrievalHit.from_vector_store_hit(
+                hit,
+                channel="hybrid",
+                retriever_name=self.name(),
+            )
+            lexical = self._lexical_score(query_tokens, native_hit.content)
             hybrid_score = self._alpha * hit.similarity_score + (1 - self._alpha) * lexical
             candidates.append(
-                RetrieverCandidate(
-                    id=hit.id,
-                    content=hit.content,
-                    metadata=hit.metadata,
+                RetrievalHit(
+                    document=native_hit.document,
                     score=hybrid_score,
-                    embedding=hit.embedding,
-                    rank=hit.rank,
+                    rank=0,
+                    channel="hybrid",
+                    vector_id=native_hit.vector_id,
+                    embedding=native_hit.embedding,
+                    source_rank=native_hit.source_rank,
+                    retriever_name=self.name(),
                 )
             )
 
         candidates.sort(key=lambda x: x.score, reverse=True)
-        return candidates[:top_k]
+        return tuple(
+            RetrievalHit(
+                document=hit.document,
+                score=hit.score,
+                rank=rank,
+                channel=hit.channel,
+                vector_id=hit.vector_id,
+                embedding=hit.embedding,
+                source_rank=hit.source_rank,
+                retriever_name=self.name(),
+            )
+            for rank, hit in enumerate(candidates[:top_k])
+        )

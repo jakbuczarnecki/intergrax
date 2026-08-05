@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D implementation complete; closeout ready for review.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D/3 **READY_FOR_REVIEW**; LCI-4A **PLANNED / NEXT AFTER ACCEPTANCE**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **READY_FOR_REVIEW**; LCI-4B **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-4C **PLANNED**; LCI-4D **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-3D — Native vector-store provider adapters
+**Current active task:** LCI-4A — Native vector-store provider adapters
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -22,6 +22,8 @@ Use, modification, or distribution without written permission is prohibited.
 **LCI-3C decision:** Public vector-store manager contracts use immutable native records, explicit `VectorStoreScope`, and native hits containing `KnowledgeDocument`. Tenant and namespace are authoritative routing fields and cannot be supplied through user metadata. Delete and count fail closed unless tenant isolation is proven.
 
 **LCI-3D decision:** The VectorStore provider port is native. Providers map `VectorStoreRecord` directly to provider SDK payloads and return native `VectorStoreHit`. Tenant, namespace and workspace routing are system-owned at every provider boundary; LangChain document compatibility is removed from vector-store paths.
+
+**LCI-4A decision:** Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary. Graph retrieval remains LCI-4C.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 

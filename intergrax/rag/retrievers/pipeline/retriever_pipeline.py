@@ -8,7 +8,7 @@ from typing import List, Sequence
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
@@ -49,7 +49,7 @@ class RetrieverPipeline:
         top_k: int = 5,
         metadata_filter: MetadataFilter | None=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Execute retrieval for a query text.
         """
@@ -77,7 +77,7 @@ class RetrieverPipeline:
         query: RetrieverQuery,
         *,
         retriever_id: str,        
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Execute retrieval using an already constructed query.
         """

@@ -6,7 +6,7 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Sequence
 
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.resolve import resolve_retrieval_service
@@ -179,11 +179,28 @@ def _apply_retrieval_poisoning_filter(
 
 
 def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
+    metadata = dict(c.metadata or {})
+    native = metadata.pop("document_id", {})
+    document = native.get("document", {}) if isinstance(native, dict) else {}
+    document_identity = document.get("identity", {}) if isinstance(document, dict) else {}
+    scope = document.get("scope", {}) if isinstance(document, dict) else {}
+    provenance = document.get("provenance", {}) if isinstance(document, dict) else {}
+    user_metadata = document.get("metadata", metadata) if isinstance(document, dict) else metadata
     return RagChunkResult(
-        id=c.id,
-        text=c.text,
+        id=str(document_identity.get("document_id", c.id)),
+        text=str(document.get("content", c.text)),
         score=c.score,
-        metadata=dict(c.metadata or {}),
+        rank=int(native.get("rank", 0)) if isinstance(native, dict) else 0,
+        channel=str(native.get("channel", "unknown")) if isinstance(native, dict) else "unknown",
+        vector_id=(
+            str(native["vector_id"])
+            if isinstance(native, dict) and native.get("vector_id") is not None
+            else None
+        ),
+        scope=dict(scope) if isinstance(scope, dict) else {},
+        provenance=dict(provenance) if isinstance(provenance, dict) else {},
+        user_metadata=dict(user_metadata) if isinstance(user_metadata, dict) else {},
+        metadata=metadata,
     )
 
 

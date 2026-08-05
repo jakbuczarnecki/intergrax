@@ -72,14 +72,15 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-3A | P1 | APPROVED | native embedding contract and result | LCI-3B |
 | LCI-3B | P1 | APPROVED | native indexing contract and TOC lineage | LCI-3C |
 | LCI-3C | P1 | APPROVED | native vector-store records and tenant isolation | LCI-3D |
-| LCI-3D | P1 | READY_FOR_REVIEW | native provider adapters with scoped native records and hits | LCI-4A |
+| LCI-3D | P1 | APPROVED | native provider adapters with scoped native records and hits | LCI-4A |
+| LCI-4A | P1 | READY_FOR_REVIEW | native immutable retrieval hit/result contract and native RAG tool output | LCI-4B |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
 native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map
 `KnowledgeDocument` directly to provider SDK payloads, and return native
 `VectorStoreHit` values. Tenant, namespace, and workspace routing are
 system-owned at each provider boundary. LangChain `Document` compatibility is
-absent from vector-store paths. Retrieval result migration remains LCI-4A.
+absent from vector-store paths. Retrieval result migration is complete for active retrievers and RAG tools under LCI-4A; reranking remains LCI-4B and graph retrieval remains LCI-4C.
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import List, Sequence
 
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
@@ -45,7 +45,7 @@ class RetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve candidates for query text.
         """
@@ -63,7 +63,7 @@ class RetrieverManager(BaseRetrieverManager):
         self,
         query: RetrieverQuery,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """

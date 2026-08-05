@@ -24,12 +24,16 @@ Use, modification, or distribution without written permission is prohibited.
 | **Tooling definition** | Executable repository tooling or generators import LangChain, but the dependency is not part of production runtime or a documentation-only textual mention. |
 | **Generated files** | `uv.lock` summarized as one `GENERATED_LOCK_ENTRY` row (resolver output; individual transitive packages are not separate migration decisions). |
 
+## LCI-4A closeout
+
+Active retrievers and the retrieval tool now use the native immutable `RetrievalHit` contract. Graph, reranker, ingest and auxiliary legacy rows remain assigned to LCI-4C, LCI-4B and LCI-4D as applicable.
+
 ## B. Summary
 
 | Metric | Count |
 |--------|------:|
 | direct production/runtime imports | 41 |
-| direct test imports | 51 |
+| direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
@@ -40,10 +44,10 @@ Use, modification, or distribution without written permission is prohibited.
 | optional compatibility paths | 0 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
-| test-only | 51 |
+| test-only | 46 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 104 |
+| total detailed inventory rows | 99 |
 
 ## C. Detailed inventory table
 
@@ -126,11 +130,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0153 | `langchain_core.documents` | `tests/unit/rag/ingest/test_hierarchical_dual_index_wiring.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-2F | verified import |
 | LCI-INV-0156 | `langchain_core.documents` | `tests/unit/rag/profiles/test_rag_profile_query_expansion_wiring.py` | 8 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0157 | `langchain_core.documents` | `tests/unit/rag/profiles/test_rag_profile_validator.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0158 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_hybrid_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0159 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_mmr_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0160 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_multiquery_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0161 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_parent_child_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
-| LCI-INV-0162 | `langchain_core.documents` | `tests/unit/rag/retrievers/test_vector_similarity_retriever.py` | 7 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0163 | `langchain_core.documents` | `tests/unit/rag/tracking/test_rag_otel_spans.py` | 9 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0165 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_lexical_hybrid.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0166 | `langchain_core.documents` | `tests/unit/rag/vectorstore/test_vectorstore_contract.py` | 3 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |

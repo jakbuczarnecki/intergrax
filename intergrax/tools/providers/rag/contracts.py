@@ -31,6 +31,12 @@ class RagChunkResult(BaseModel):
     id: str
     text: str
     score: float
+    rank: int = 0
+    channel: str = "unknown"
+    vector_id: Optional[str] = None
+    scope: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    user_metadata: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 

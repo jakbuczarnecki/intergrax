@@ -4,20 +4,20 @@
 
 from __future__ import annotations
 
-from langchain_core.documents import Document
 import numpy as np
 from numpy.typing import NDArray
 import pytest
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
 from intergrax.rag.retrievers.providers.vector_similarity_retriever import (
     VectorSimilarityRetriever,
 )
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 
 
 pytestmark = pytest.mark.unit
@@ -36,23 +36,25 @@ class FakeEmbeddingManager(BaseEmbeddingManager):
 
     def embed_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> EmbeddingResult:
         pass
 
 
-class FakeHit:
+def _document(document_id: str) -> KnowledgeDocument:
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": document_id, "root_document_id": document_id},
+            "scope": {"tenant_id": "tenant-a", "namespace": "namespace-a"},
+            "content": f"doc-{document_id}",
+            "metadata": {"source": "test"},
+            "provenance": {"source_kind": "test", "source_id": document_id},
+        }
+    )
 
-    def __init__(self, id: str, score: float):
-        self.id = id
-        self.content = f"doc-{id}"
-        self.metadata = {"source": "test"}
-        self.similarity_score = score
-        self.embedding = None
-        self.rank = None
 
-
-class FakeVectorStoreManager(BaseVectorstoreManager):
+class FakeVectorStoreManager:
 
     def query(
         self,
@@ -63,30 +65,17 @@ class FakeVectorStoreManager(BaseVectorstoreManager):
         include_embeddings: bool = False,
     ) -> Sequence[VectorStoreHit]:
         return [
-            FakeHit("a", 0.9),
-            FakeHit("b", 0.8),
-            FakeHit("c", 0.7),
+            VectorStoreHit(
+                vector_id=identifier,
+                document=_document(identifier),
+                similarity_score=score,
+                rank=rank,
+            )
+            for rank, (identifier, score) in enumerate(
+                [("a", 0.9), ("b", 0.8), ("c", 0.7)]
+            )
         ]
     
-    def add_documents(
-        self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
-        *,
-        ids: Optional[Sequence[str]] = None,
-        base_metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        pass
-
-
-    def delete(self, ids: Sequence[str]) -> None:
-        pass
-
-    
-    def count(self) -> int:
-        pass
-
-
 def test_vector_similarity_retriever_basic():
 
     vs = FakeVectorStoreManager()
@@ -109,7 +98,12 @@ def test_vector_similarity_retriever_basic():
 
     assert len(results) == 2
 
-    assert results[0].id == "a"
-    assert results[1].id == "b"
-
-    assert results[0].metadata["source"] == "test"
+    assert isinstance(results, tuple)
+    assert all(isinstance(result, RetrievalHit) for result in results)
+    assert results[0].vector_id == "a"
+    assert results[1].vector_id == "b"
+    assert results[0].score == 0.9
+    assert results[0].rank == 0
+    assert results[0].document.scope.tenant_id == "tenant-a"
+    assert results[0].embedding is None
+    assert results[0].document.metadata["source"] == "test"

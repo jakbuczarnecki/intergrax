@@ -8,7 +8,7 @@ from abc import abstractmethod
 from typing import List, Sequence
 
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 
@@ -25,7 +25,7 @@ class BaseRetrieverManager:
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve candidates for query text.
         """
@@ -37,7 +37,7 @@ class BaseRetrieverManager:
         self,
         query: RetrieverQuery,
         retriever_id: str,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         """
         Retrieve using preconstructed RetrieverQuery.
         """

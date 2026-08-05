@@ -249,7 +249,7 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 104, f"expected 104 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 99, f"expected 99 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -270,9 +270,9 @@ def validate(text: str) -> None:
 
     summary = summary_counts(text)
     assert summary.get("direct production/runtime imports") == 41
-    assert summary.get("direct test imports") == 51
+    assert summary.get("direct test imports") == 46
     assert summary.get("provider-bound dependencies") == 15
-    assert summary.get("total detailed inventory rows") == 104
+    assert summary.get("total detailed inventory rows") == 99
     assert summary.get("unclassified occurrences") == 0
     assert summary.get("core contract leaks") == 3
     assert summary.get("core implementation dependencies") == 15
@@ -322,7 +322,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("104 unique inventory IDs")
+    print("99 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

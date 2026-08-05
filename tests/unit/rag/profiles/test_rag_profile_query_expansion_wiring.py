@@ -5,17 +5,15 @@ from __future__ import annotations
 from typing import List, Sequence
 
 import pytest
-from langchain_core.documents import Document
-
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.rag.retrievers.contracts.base_retriever import RetrieverCandidate
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_registry
 from intergrax.rag.retrievers.providers.multiquery_retriever import MultiQueryRetriever
 from intergrax.rag.routing.query_router import QueryRouter
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
 from testing_support.builder import build_fake_embedding_manager
 
@@ -33,7 +31,7 @@ class _FakeLlm:
         return LLMAdapterResponse(content="\n".join(self._variants), model="stub")
 
 
-class CountingVectorManager(BaseVectorstoreManager):
+class CountingVectorManager:
     def __init__(self) -> None:
         self.query_calls = 0
 
@@ -50,7 +48,7 @@ class CountingVectorManager(BaseVectorstoreManager):
 
     def add_documents(
         self,
-        documents: Sequence[Document],
+        documents: Sequence[KnowledgeDocument],
         embeddings: Sequence[Sequence[float]],
         *,
         ids: Sequence[str] | None = None,
@@ -98,11 +96,26 @@ class _TrackingRetrieverManager:
         top_k: int = 5,
         metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         del query_text, query_embedding, top_k, metadata_filter, include_embeddings
         self.last_retriever_id = retriever_id
         return [
-            RetrieverCandidate(id="c1", content="hit", metadata={}, score=0.9),
+            RetrievalHit(
+                document=KnowledgeDocument.model_validate(
+                    {
+                        "schema_version": 1,
+                        "identity": {"document_id": "c1", "root_document_id": "c1"},
+                        "scope": {"tenant_id": "tenant-a"},
+                        "content": "hit",
+                        "metadata": {},
+                        "provenance": {"source_kind": "test", "source_id": "c1"},
+                    }
+                ),
+                score=0.9,
+                rank=0,
+                channel="dense",
+                vector_id="c1",
+            ),
         ]
 
 

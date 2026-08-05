@@ -690,3 +690,7 @@ SDK search result
 Identity, scope and provenance are system-owned transport metadata; user metadata cannot overwrite routing keys.
 
 LCI-3D is `READY_FOR_REVIEW`. Retrieval result migration remains LCI-4A (`PLANNED / NEXT AFTER ACCEPTANCE`); no retrieval public contract is changed by this provider closeout.
+
+## LCI-4A retrieval result contract decision
+
+Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary; graph retrieval remains LCI-4C.

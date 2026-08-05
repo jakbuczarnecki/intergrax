@@ -5,13 +5,13 @@
 from __future__ import annotations
 
 import pytest
-from typing import List
+from typing import Sequence
 
-from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.retrievers.providers.fusion_retriever import FusionRetriever
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
@@ -20,35 +20,37 @@ from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegist
 pytestmark = pytest.mark.unit
 
 
+def _hit(identifier: str, score: float, rank: int) -> RetrievalHit:
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": identifier, "root_document_id": identifier},
+            "scope": {"tenant_id": "tenant-a", "namespace": "namespace-a"},
+            "content": f"doc-{identifier}",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": identifier},
+        }
+    )
+    return RetrievalHit(
+        document=document,
+        score=score,
+        rank=rank,
+        channel="dense",
+        vector_id=identifier,
+    )
+
+
 class FakeRetrieverA(BaseRetriever):
 
     @classmethod
     def name(cls) -> str:
         return "fake_a"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> Sequence[RetrievalHit]:
 
         return [
-            RetrieverCandidate(
-                id="a",
-                content="doc-a",
-                metadata={
-                    ChunkMetadataKey.PARENT_CHUNK_ID: "docA"
-                },
-                score=0.9,
-                embedding=None,
-                rank=0,
-            ),
-            RetrieverCandidate(
-                id="b",
-                content="doc-b",
-                metadata={
-                    ChunkMetadataKey.PARENT_CHUNK_ID: "docB"
-                },
-                score=0.8,
-                embedding=None,
-                rank=1,
-            ),
+            _hit("a", 0.9, 0),
+            _hit("b", 0.8, 1),
         ]
 
 
@@ -58,29 +60,11 @@ class FakeRetrieverB(BaseRetriever):
     def name(cls) -> str:
         return "fake_b"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> Sequence[RetrievalHit]:
 
         return [
-            RetrieverCandidate(
-                id="a",
-                content="doc-a",
-                metadata={
-                    ChunkMetadataKey.PARENT_CHUNK_ID: "docA"
-                },
-                score=0.7,
-                embedding=None,
-                rank=0,
-            ),
-            RetrieverCandidate(
-                id="c",
-                content="doc-c",
-                metadata={
-                    ChunkMetadataKey.PARENT_CHUNK_ID: "docC"
-                },
-                score=0.85,
-                embedding=None,
-                rank=1,
-            ),
+            _hit("a", 0.7, 0),
+            _hit("c", 0.85, 1),
         ]
 
 
@@ -108,11 +92,13 @@ def test_fusion_retriever_merges_and_deduplicates():
 
     assert len(results) == 2
 
-    ids = {r.id for r in results}
+    assert isinstance(results, tuple)
+    assert all(isinstance(result, RetrievalHit) for result in results)
+    ids = {r.vector_id for r in results}
 
     # ensure merged and deduplicated
     assert ids.issubset({"a", "b", "c"})
 
     # ensure metadata propagated
-    for r in results:
-        assert r.metadata is not None
+    assert [result.rank for result in results] == [0, 1]
+    assert all(result.channel == "hybrid" for result in results)
