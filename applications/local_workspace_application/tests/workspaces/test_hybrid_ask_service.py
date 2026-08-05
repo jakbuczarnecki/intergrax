@@ -6,25 +6,20 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from hashlib import sha256
-from typing import Any, Sequence
+from typing import Any
 
 import pytest
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from pydantic import BaseModel, ConfigDict
 from local_workspace_application.workspaces.ask_models import AskRunStatus
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
 from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeQueryOrchestratorV1,
     LiveCapabilityExecutionResultV1,
-    LiveExecutionOutcomeV1,
     LiveCapabilityResultItemV1,
+    LiveExecutionOutcomeV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_models import (
     AskAudienceV1,
@@ -56,6 +51,18 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSource,
 )
 
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import evidence_id_for_call
+from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+
 pytestmark = pytest.mark.unit
 
 _NOW = datetime(2026, 8, 4, 10, 0, tzinfo=UTC)
@@ -63,7 +70,18 @@ _TENANT = "tenant-neutral"
 _WORKSPACE = "workspace-neutral"
 _KIND = IntegrationCategory.WIKI_KNOWLEDGE
 _CONTENT = "Live result body exists only during synthesis."
-_LIVE_ID = f"live:call-1:{sha256(b'item-1').hexdigest()}"
+_LIVE_ID = evidence_id_for_call(
+    provider_id="neutral_provider",
+    integration_kind=_KIND,
+    source_kind="issues",
+    capability_id="vendor.neutral_provider.issues.read",
+    contract_version="1",
+    live_access_binding_id="binding-1",
+    connection_ref="connection-1",
+    remote_resource_id=None,
+    call_id="call-1",
+    remote_item_id="item-1",
+)
 
 
 class _RecordingLLM(LLMAdapter):
@@ -169,8 +187,8 @@ class _Configuration:
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
             connection_ref="connection-1",
-            allowed_capability_ids=("cap.read",),
-            derived_provider_id="neutral-provider",
+            allowed_capability_ids=("vendor.neutral_provider.issues.read",),
+            derived_provider_id="neutral_provider",
             derived_integration_kind=_KIND,
             derived_safe_display_label="Neutral Connection",
             status=LiveAccessBindingStatusV1.ACTIVE,
@@ -197,7 +215,7 @@ class _Configuration:
                     else ()
                 ),
                 allowed_capability_ids=(
-                    ("cap.read",)
+                    ("vendor.neutral_provider.issues.read",)
                     if mode is not QueryPolicyModeV2.INDEXED_ONLY
                     else ()
                 ),
@@ -228,14 +246,16 @@ class _Catalog:
 
         return (
             LiveCapabilityDescriptorV1(
-                capability_id="cap.read",
-                provider_id="neutral-provider",
+                capability_id="vendor.neutral_provider.issues.read",
+                provider_id="neutral_provider",
                 integration_kind=_KIND,
+                source_kind="issues",
+                contract_version="1",
                 effect=CapabilityEffectV1.READ,
                 read_only=True,
                 resource_scope_required=True,
-                request_schema_ref="neutral.request.v1",
-                result_schema_ref="neutral.result.v1",
+                request_schema_ref="schema://vendor-knowledge/live/neutral_provider/issues/read/request/v1",
+                result_schema_ref="schema://vendor-knowledge/live/neutral_provider/issues/read/result/v1",
                 max_result_items=50,
                 max_result_bytes=1_048_576,
             ),
@@ -243,8 +263,13 @@ class _Catalog:
 
 
 class _EnvelopeValidator:
-    def validate_request_envelope(self, **kwargs: object) -> dict[str, object]:
-        return {"item_key": "ITEM-1"}
+    def validate_request_envelope(self, **kwargs: object) -> BaseModel:
+        class _Request(BaseModel):
+            model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+            item_key: str
+
+        return _Request(item_key="ITEM-1")
 
 
 class _ScopeValidator:
@@ -253,7 +278,7 @@ class _ScopeValidator:
         *,
         binding: WorkspaceLiveAccessBinding,
         capability_id: str,
-        validated_request: dict[str, object],
+        validated_request: BaseModel,
     ) -> ResolvedLiveResourceScopeV1:
         del capability_id, validated_request
         return ResolvedLiveResourceScopeV1(
@@ -285,12 +310,15 @@ class _LiveExecutor:
                 run_id=run_id,
                 call_id=call.call_id,
                 live_access_binding_id=call.live_access_binding_id,
+                provider_id=call.provider_id,
+                source_kind=call.source_kind,
                 capability_id=call.capability_id,
+                contract_version=call.contract_version,
                 started_at=_NOW,
                 completed_at=_NOW,
                 item_count=1,
                 byte_count=len(_CONTENT.encode()),
-                content_hash=sha256(_CONTENT.encode()).hexdigest(),
+                result_hash=sha256(_CONTENT.encode()).hexdigest(),
                 normalized_outcome="completed",
             )
         item = LiveCapabilityResultItemV1(
@@ -372,13 +400,15 @@ def _command(
     del retention
     proposals = ()
     if mode in (QueryPolicyModeV2.LIVE_ONLY, QueryPolicyModeV2.HYBRID):
-        from local_workspace_application.workspaces.hybrid_ask_policy import LiveCallProposalV1
+        from local_workspace_application.workspaces.hybrid_ask_policy import (
+            LiveCallProposalV1,
+        )
 
         proposals = (
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="binding-1",
-                capability_id="cap.read",
+                capability_id="vendor.neutral_provider.issues.read",
                 typed_capability_request={"item_key": "ITEM-1"},
             ),
         )

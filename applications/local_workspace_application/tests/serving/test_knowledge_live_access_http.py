@@ -11,21 +11,6 @@ from datetime import UTC, datetime
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
-    RemoteResourceAvailabilityV1,
-    RemoteResourceDescriptorV1,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    CapabilityEffectV1,
-    LiveCapabilityDescriptorV1,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connections import (
-    SafeTenantConnectionV1,
-    TenantConnectionAdministrativeStatus,
-)
 from local_workspace_application.serving.knowledge_configuration_http import (
     hash_knowledge_configuration_idempotency_key,
     require_knowledge_configuration_idempotency_key,
@@ -35,10 +20,6 @@ from local_workspace_application.serving.knowledge_live_access_routes import (
 )
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_live_access_handlers import (
-    CreateLiveAccessBindingMutationHandler,
-    DisableLiveAccessBindingMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_hashing import (
     live_access_binding_id_from_semantic_hash,
@@ -56,17 +37,38 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
     WorkspaceConnectionAttachmentService,
 )
+from local_workspace_application.workspaces.knowledge_live_access_handlers import (
+    CreateLiveAccessBindingMutationHandler,
+    DisableLiveAccessBindingMutationHandler,
+)
 from local_workspace_application.workspaces.knowledge_live_access_service import (
     WorkspaceLiveAccessBindingService,
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
+    RemoteResourceAvailabilityV1,
+    RemoteResourceDescriptorV1,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    CapabilityEffectV1,
+    LiveCapabilityDescriptorV1,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnectionAdministrativeStatus,
+)
+
 pytestmark = pytest.mark.unit
 
 _PREFIX = "/v1/local_workspace"
 _TENANT, _WORKSPACE, _CONNECTION = "tenant-a", "workspace-1", "conn.primary"
-_CAP = "cap.read"
+_CAP = "vendor.provider_slack.slack_conversation.read"
 _NOW = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
 _IDEM_HASH = hashlib.sha256(b"idem-1").hexdigest()
 _SEMANTIC = semantic_identity_hash_for_live_access_binding(
@@ -85,7 +87,7 @@ class _FakeConnectionPort:
             return SafeTenantConnectionV1(
                 connection_ref=_CONNECTION,
                 tenant_id=_TENANT,
-                provider_id="provider.slack",
+                provider_id="provider_slack",
                 integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
                 safe_display_name="Primary Connection",
                 administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
@@ -106,13 +108,15 @@ class _FakeCatalog:
         return (
             LiveCapabilityDescriptorV1(
                 capability_id=_CAP,
-                provider_id="provider.slack",
+                provider_id="provider_slack",
                 integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+                source_kind="slack_conversation",
+                contract_version="1",
                 effect=CapabilityEffectV1.READ,
                 read_only=True,
                 resource_scope_required=False,
-                request_schema_ref="schema://req",
-                result_schema_ref="schema://res",
+                request_schema_ref="schema://vendor-knowledge/live/provider_slack/slack_conversation/read/request/v1",
+                result_schema_ref="schema://vendor-knowledge/live/provider_slack/slack_conversation/read/result/v1",
                 available=True,
             ),
         )
@@ -127,7 +131,7 @@ class _FakeLookup:
             availability=RemoteResourceAvailabilityV1.AVAILABLE,
             supported_capability_ids=(_CAP,),
             connection_ref=connection_ref,
-            provider_id="provider.slack",
+            provider_id="provider_slack",
             integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
             source_kind="slack_conversation",
             discovered_at=_NOW,
@@ -225,7 +229,7 @@ def test_create_returns_201_and_safe_payload() -> None:
     assert response.status_code == 201
     payload = response.json()
     assert payload["live_access_binding_id"] == _BINDING_ID
-    assert payload["derived_provider_id"] == "provider.slack"
+    assert payload["derived_provider_id"] == "provider_slack"
     assert payload["configuration_revision"] == rev + 1
     assert "credential" not in json.dumps(payload).lower()
     assert "idem-1" not in json.dumps(payload)

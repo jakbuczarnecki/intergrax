@@ -12,48 +12,6 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingService,
-    KnowledgeSourceBindingStatus,
-    KnowledgeSourceScope,
-)
-from intergrax.runtime.vendor_knowledge.connections import (
-    ConnectionAwareVendorResolver,
-    KnowledgeConnectionRegistry,
-)
-from intergrax.runtime.vendor_knowledge.errors import (
-    VendorKnowledgeError,
-    VendorKnowledgeErrorCode,
-)
-from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef, KnowledgeSourceScope as FacadeScope
-from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    CapabilityEffectV1,
-    LiveCapabilityDescriptorV1,
-    RepositoryTenantConnectionPort,
-    TenantLiveCapabilityCatalog,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
-    DocumentStoreTenantConnectionRepository,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
-    TenantConnectionRehydrationStatus,
-    TenantConnectionRehydrator,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connections import (
-    SafeTenantConnectionV1,
-    TenantConnection,
-    TenantConnectionAdministrativeStatus,
-    TenantConnectionService,
-)
 from local_workspace_application.serving.knowledge_live_access_routes import (
     mount_knowledge_live_access_routes,
 )
@@ -103,9 +61,60 @@ from local_workspace_application.workspaces.knowledge_live_access_service import
     DisableWorkspaceLiveAccessBindingCommand,
     WorkspaceLiveAccessBindingService,
 )
-from local_workspace_application.workspaces.models import Workspace, WorkspaceSourceType, WorkspaceStatus
+from local_workspace_application.workspaces.models import (
+    Workspace,
+    WorkspaceSourceType,
+    WorkspaceStatus,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingService,
+    KnowledgeSourceBindingStatus,
+    KnowledgeSourceScope,
+)
+from intergrax.runtime.vendor_knowledge.connections import (
+    ConnectionAwareVendorResolver,
+    KnowledgeConnectionRegistry,
+)
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
+from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
+from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeSourceScope as FacadeScope,
+)
+from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    CapabilityEffectV1,
+    LiveCapabilityDescriptorV1,
+    RepositoryTenantConnectionPort,
+    TenantLiveCapabilityCatalog,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionRehydrationStatus,
+    TenantConnectionRehydrator,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+    TenantConnectionService,
+)
 from tests.unit.runtime.vendor_knowledge._fakes import FakeAdapter, FakeIntegration
 
 pytestmark = pytest.mark.integration
@@ -118,7 +127,7 @@ _BINDING_REF = "bind-proof-1"
 _CREDENTIAL_REF = "secrets/tenant-proof/conn-proof-1"
 _SECRET = "proof-runtime-secret"
 _PROVIDER = "example"
-_CAP_READ = "proof.read"
+_CAP_READ = "vendor.example.issues.read"
 _NOW = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
 _SHA256_A = "a" * 64
 _SHA256_B = "b" * 64
@@ -532,11 +541,13 @@ def _build_proof_context(
             capability_id=_CAP_READ,
             provider_id=_PROVIDER,
             integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            contract_version="1",
             effect=CapabilityEffectV1.READ,
             read_only=True,
             resource_scope_required=False,
-            request_schema_ref="schema://proof/read/request",
-            result_schema_ref="schema://proof/read/result",
+            request_schema_ref="schema://vendor-knowledge/live/example/issues/read/request/v1",
+            result_schema_ref="schema://vendor-knowledge/live/example/issues/read/result/v1",
             available=True,
         )
     )

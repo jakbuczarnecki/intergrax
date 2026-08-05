@@ -8,9 +8,27 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    EffectiveLiveCallBudgetV1,
+    evidence_id_for_call,
+    result_hash_for_items,
+    safe_locator_or_none,
+)
+from intergrax.runtime.vendor_knowledge.live.identity import (
+    parse_capability_id,
+    validate_capability_identity,
+)
+from intergrax.runtime.vendor_knowledge.live.registration import (
+    LiveRegistrationBundleV1,
+    publish_live_registration_bundles,
+)
+from intergrax.runtime.vendor_knowledge.live.schemas import (
+    SchemaRegistrationV1,
+    SchemaRoleV1,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
     LiveCapabilityDescriptorV1,
@@ -70,7 +88,7 @@ def _connection(
 
 def _descriptor(
     *,
-    capability_id: str = "mail.read",
+    capability_id: str = "vendor.ms365_graph.mail.read",
     provider_id: str = "ms365_graph",
     integration_kind: IntegrationCategory = IntegrationCategory.COLLABORATION_SUITE,
     effect: CapabilityEffectV1 = CapabilityEffectV1.READ,
@@ -78,15 +96,19 @@ def _descriptor(
     available: bool = True,
     **extra: object,
 ) -> LiveCapabilityDescriptorV1:
+    if provider_id != "ms365_graph" and capability_id == "vendor.ms365_graph.mail.read":
+        capability_id = f"vendor.{provider_id}.mail.read"
     return LiveCapabilityDescriptorV1(
         capability_id=capability_id,
         provider_id=provider_id,
         integration_kind=integration_kind,
+        source_kind="mail",
+        contract_version="1",
         effect=effect,
         read_only=read_only,
         resource_scope_required=False,
-        request_schema_ref="schema://mail.read/request",
-        result_schema_ref="schema://mail.read/result",
+        request_schema_ref="schema://vendor-knowledge/live/ms365_graph/mail/read/request/v1",
+        result_schema_ref="schema://vendor-knowledge/live/ms365_graph/mail/read/result/v1",
         available=available,
         **extra,
     )
@@ -122,14 +144,16 @@ def test_valid_descriptor() -> None:
 def test_descriptor_unknown_fields_rejected() -> None:
     with pytest.raises(ValidationError):
         LiveCapabilityDescriptorV1(
-            capability_id="mail.read",
+            capability_id="vendor.ms365_graph.mail.read",
             provider_id="ms365_graph",
             integration_kind=IntegrationCategory.COLLABORATION_SUITE,
             effect=CapabilityEffectV1.READ,
             read_only=True,
             resource_scope_required=False,
-            request_schema_ref="schema://mail.read/request",
-            result_schema_ref="schema://mail.read/result",
+            source_kind="mail",
+            contract_version="1",
+            request_schema_ref="schema://vendor-knowledge/live/ms365_graph/mail/read/request/v1",
+            result_schema_ref="schema://vendor-knowledge/live/ms365_graph/mail/read/result/v1",
             unexpected="nope",
         )
 
@@ -146,14 +170,16 @@ def test_descriptor_unknown_fields_rejected() -> None:
 )
 def test_descriptor_blank_required_strings_rejected(field_name: str, value: str) -> None:
     kwargs = {
-        "capability_id": "mail.read",
+        "capability_id": "vendor.ms365_graph.mail.read",
         "provider_id": "ms365_graph",
         "integration_kind": IntegrationCategory.COLLABORATION_SUITE,
         "effect": CapabilityEffectV1.READ,
         "read_only": True,
         "resource_scope_required": False,
-        "request_schema_ref": "schema://mail.read/request",
-        "result_schema_ref": "schema://mail.read/result",
+        "source_kind": "mail",
+        "contract_version": "1",
+        "request_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mail/read/request/v1",
+        "result_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mail/read/result/v1",
         field_name: value,
     }
     with pytest.raises(ValidationError):
@@ -172,14 +198,16 @@ def test_descriptor_blank_required_strings_rejected(field_name: str, value: str)
 )
 def test_descriptor_length_limits(field_name: str, value: str) -> None:
     kwargs = {
-        "capability_id": "mail.read",
+        "capability_id": "vendor.ms365_graph.mail.read",
         "provider_id": "ms365_graph",
         "integration_kind": IntegrationCategory.COLLABORATION_SUITE,
         "effect": CapabilityEffectV1.READ,
         "read_only": True,
         "resource_scope_required": False,
-        "request_schema_ref": "schema://mail.read/request",
-        "result_schema_ref": "schema://mail.read/result",
+        "source_kind": "mail",
+        "contract_version": "1",
+        "request_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mail/read/request/v1",
+        "result_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mail/read/result/v1",
         field_name: value,
     }
     with pytest.raises(ValidationError):
@@ -197,13 +225,24 @@ def test_descriptor_limits_below_one_rejected(field_name: str) -> None:
 @pytest.mark.parametrize(
     ("effect", "read_only", "available", "capability_id", "expected"),
     [
-        (CapabilityEffectV1.READ, True, True, "mail.read", True),
-        (CapabilityEffectV1.WRITE, True, True, "mail.read", False),
-        (CapabilityEffectV1.EXECUTE, True, True, "job.run", False),
-        (CapabilityEffectV1.ADMIN, True, True, "tenant.admin", False),
-        (CapabilityEffectV1.READ, False, True, "mail.read", False),
-        (CapabilityEffectV1.READ, True, False, "mail.read", False),
-        (CapabilityEffectV1.READ, True, True, "mail.delete", False),
+        (CapabilityEffectV1.READ, True, True, "vendor.ms365_graph.mail.read", True),
+        (CapabilityEffectV1.WRITE, True, True, "vendor.ms365_graph.mail.read", False),
+        (
+            CapabilityEffectV1.EXECUTE,
+            True,
+            True,
+            "vendor.ms365_graph.mail.read",
+            False,
+        ),
+        (
+            CapabilityEffectV1.ADMIN,
+            True,
+            True,
+            "vendor.ms365_graph.mail.read",
+            False,
+        ),
+        (CapabilityEffectV1.READ, False, True, "vendor.ms365_graph.mail.read", False),
+            (CapabilityEffectV1.READ, True, False, "vendor.ms365_graph.mail.read", False),
     ],
 )
 def test_bindable_read_only_classification(
@@ -225,7 +264,7 @@ def test_bindable_read_only_classification(
 @pytest.mark.unit
 def test_non_read_effect_rejected_without_dangerous_suffix() -> None:
     descriptor = _descriptor(
-        capability_id="mail.send",
+        capability_id="vendor.ms365_graph.mail.read",
         effect=CapabilityEffectV1.WRITE,
         read_only=True,
     )
@@ -241,6 +280,137 @@ def test_repository_port_get_returns_safe_projection() -> None:
     dumped = safe.model_dump()
     assert "credential_ref" not in dumped
     assert "validated_secret_free_config" not in dumped
+
+
+class _FoundationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    query: str
+
+
+class _FoundationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    call_id: str
+    normalized_outcome: str
+    items: tuple[object, ...] = ()
+    item_count: int
+    byte_count: int
+
+
+class _FoundationHandler:
+    provider_id = "fake_provider"
+    integration_kind = IntegrationCategory.ISSUE_TRACKER
+    source_kind = "issues"
+    capability_id = "vendor.fake_provider.issues.read"
+    contract_version = "1"
+    request_schema_ref = (
+        "schema://vendor-knowledge/live/fake_provider/issues/read/request/v1"
+    )
+    result_schema_ref = (
+        "schema://vendor-knowledge/live/fake_provider/issues/read/result/v1"
+    )
+    expected_request_model = _FoundationRequest
+
+
+def test_live_foundation_identity_locator_and_ordered_hash_contracts() -> None:
+    assert parse_capability_id("vendor.fake_provider.issues.read")[1] == "issues"
+    validate_capability_identity(
+        capability_id="vendor.fake_provider.issues.read",
+        provider_id="fake_provider",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        contract_version="1",
+    )
+    assert safe_locator_or_none("https://provider.example/items/1") is not None
+    assert safe_locator_or_none("https://provider.example/items/1?access_token=x") is None
+
+    class _Item:
+        remote_item_id = "item-1"
+        content_hash = "a" * 64
+        truncated = False
+
+    first = result_hash_for_items(
+        items=(_Item(),),
+        normalized_outcome="completed",
+        error_code=None,
+        item_count=1,
+        byte_count=1,
+    )
+    second = result_hash_for_items(
+        items=(_Item(),),
+        normalized_outcome="failed",
+        error_code="live_execution_failed",
+        item_count=1,
+        byte_count=1,
+    )
+    assert first != second
+    assert evidence_id_for_call(
+        provider_id="fake_provider",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        capability_id="vendor.fake_provider.issues.read",
+        contract_version="1",
+        live_access_binding_id="binding",
+        connection_ref="connection",
+        remote_resource_id=None,
+        call_id="call",
+        remote_item_id="item-1",
+    ).startswith("live:")
+
+
+def test_live_foundation_atomic_registration_and_finite_budget() -> None:
+    descriptor = LiveCapabilityDescriptorV1(
+        capability_id="vendor.fake_provider.issues.read",
+        provider_id="fake_provider",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        contract_version="1",
+        effect=CapabilityEffectV1.READ,
+        read_only=True,
+        resource_scope_required=False,
+        request_schema_ref=_FoundationHandler.request_schema_ref,
+        result_schema_ref=_FoundationHandler.result_schema_ref,
+    )
+    bundle = LiveRegistrationBundleV1(
+        descriptor=descriptor,
+        handler=_FoundationHandler(),
+        request_schema=SchemaRegistrationV1(
+            schema_ref=_FoundationHandler.request_schema_ref,
+            role=SchemaRoleV1.REQUEST,
+            model=_FoundationRequest,
+            contract_version="1",
+        ),
+        result_schema=SchemaRegistrationV1(
+            schema_ref=_FoundationHandler.result_schema_ref,
+            role=SchemaRoleV1.RESULT,
+            model=_FoundationResult,
+            contract_version="1",
+        ),
+    )
+    published = publish_live_registration_bundles((bundle,))
+    assert published.resolve_handler(
+        provider_id="fake_provider",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        capability_id="vendor.fake_provider.issues.read",
+        contract_version="1",
+    )
+    budget = EffectiveLiveCallBudgetV1(
+        max_live_calls=1,
+        max_total_duration_ms=1000,
+        max_result_items=1,
+        max_result_bytes=100,
+    )
+    assert budget.max_provider_pages > 0
+    with pytest.raises(ValueError):
+        publish_live_registration_bundles(
+            (bundle, LiveRegistrationBundleV1(
+                descriptor=descriptor,
+                handler=_FoundationHandler(),
+                request_schema=bundle.request_schema,
+                result_schema=bundle.result_schema,
+            )),
+        )
 
 
 @pytest.mark.unit
@@ -283,16 +453,16 @@ def test_catalog_register_and_duplicate_rejected() -> None:
 def test_catalog_filters_provider_and_integration_kind() -> None:
     _, catalog, _, admin, _ = _stack()
     admin.create(_connection())
-    catalog.register(_descriptor(capability_id="alpha.read"))
+    catalog.register(_descriptor(capability_id="vendor.ms365_graph.mail.search"))
     catalog.register(
         _descriptor(
-            capability_id="beta.read",
+            capability_id="vendor.other_provider.mail.read",
             provider_id="other_provider",
         )
     )
     catalog.register(
         _descriptor(
-            capability_id="gamma.read",
+            capability_id="vendor.ms365_graph.mail.list",
             integration_kind=IntegrationCategory.ISSUE_TRACKER,
         )
     )
@@ -301,7 +471,7 @@ def test_catalog_filters_provider_and_integration_kind() -> None:
         connection_ref="conn-1",
         remote_resource_id=None,
     )
-    assert [item.capability_id for item in listed] == ["alpha.read"]
+    assert [item.capability_id for item in listed] == ["vendor.ms365_graph.mail.search"]
 
 
 @pytest.mark.unit
@@ -375,33 +545,33 @@ def test_read_service_missing_connection() -> None:
 def test_read_service_returns_only_bindable_read_capabilities() -> None:
     _, catalog, service, admin, _ = _stack()
     admin.create(_connection())
-    catalog.register(_descriptor(capability_id="alpha.read"))
+    catalog.register(_descriptor(capability_id="vendor.ms365_graph.mail.search"))
     catalog.register(
         _descriptor(
-            capability_id="beta.write",
+            capability_id="vendor.ms365_graph.mail.read",
             effect=CapabilityEffectV1.WRITE,
         )
     )
     catalog.register(
         _descriptor(
-            capability_id="gamma.execute",
+            capability_id="vendor.ms365_graph.mail.list",
             effect=CapabilityEffectV1.EXECUTE,
         )
     )
     catalog.register(
         _descriptor(
-            capability_id="delta.admin",
+            capability_id="vendor.ms365_graph.mail.thread.read",
             effect=CapabilityEffectV1.ADMIN,
         )
     )
     catalog.register(
         _descriptor(
-            capability_id="epsilon.read",
+            capability_id="vendor.ms365_graph.mail.child.read",
             available=False,
         )
     )
     listed = service.list_read_only_capabilities(connection_ref="conn-1")
-    assert [item.capability_id for item in listed] == ["alpha.read"]
+    assert [item.capability_id for item in listed] == ["vendor.ms365_graph.mail.search"]
     dumped = str([item.model_dump() for item in listed])
     assert "credential_ref" not in dumped
     assert "validated_secret_free_config" not in dumped

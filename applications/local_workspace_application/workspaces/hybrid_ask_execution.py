@@ -16,7 +16,9 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from uuid import uuid4
 
 if TYPE_CHECKING:
-    from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
+    from local_workspace_application.host.task_executor import (
+        LocalWorkspaceTaskExecutor,
+    )
 
 from local_workspace_application.serving.workspace_schemas import WorkspaceSearchHitV1
 from local_workspace_application.workspaces.hybrid_ask_models import (
@@ -53,16 +55,22 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    content_sha256,
+    evidence_id_for_call,
+    result_hash_for_items,
+    safe_locator_or_none,
+)
+from intergrax.runtime.vendor_knowledge.live.errors import LiveErrorCodeV1
+from intergrax.runtime.vendor_knowledge.live.identity import (
+    validate_capability_identity,
+)
+from intergrax.runtime.vendor_knowledge.live.registration import (
+    PublishedLiveRegistrationV1,
+)
 
 _LIVE_ERROR_CODES = frozenset(
-    {
-        "live_binding_unavailable",
-        "live_capability_unavailable",
-        "live_execution_timeout",
-        "live_execution_failed",
-        "live_result_invalid",
-        "live_result_too_large",
-    }
+    code.value for code in LiveErrorCodeV1
 )
 
 
@@ -118,7 +126,7 @@ class LiveCapabilityResultItemV1(BaseModel):
     remote_item_id: str = Field(..., min_length=1, max_length=512)
     safe_display_name: str = Field(..., min_length=1, max_length=512)
     content: str = Field(..., max_length=16_777_216)
-    content_hash: str = Field(..., min_length=1, max_length=128)
+    content_hash: str = Field(..., min_length=64, max_length=64)
     retrieved_at: datetime
     remote_updated_at: datetime | None = None
     safe_locator: str | None = Field(default=None, max_length=2048)
@@ -132,6 +140,9 @@ class LiveCapabilityResultItemV1(BaseModel):
     )
     _validate_remote_updated_at = field_validator("remote_updated_at")(
         lambda value: None if value is None else _require_aware(value, "remote_updated_at")
+    )
+    _validate_locator = field_validator("safe_locator")(
+        lambda value: safe_locator_or_none(value)
     )
 
 
@@ -148,6 +159,14 @@ class LiveCapabilityExecutionResultV1(BaseModel):
     truncated: bool = False
     error_code: str | None = None
     receipt: LiveExecutionReceiptV1 | None = None
+    provider_id: str | None = None
+    integration_kind: IntegrationCategory | None = None
+    source_kind: str | None = None
+    capability_id: str | None = None
+    contract_version: str | None = None
+    live_access_binding_id: str | None = None
+    connection_ref: str | None = None
+    remote_resource_id: str | None = None
 
     _validate_call_id = field_validator("call_id")(
         lambda value: _require_nonblank(value, "call_id")
@@ -164,8 +183,12 @@ class LiveCapabilityExecutionResultV1(BaseModel):
 class LiveCapabilityHandlerV1(Protocol):
     provider_id: str
     integration_kind: IntegrationCategory
+    source_kind: str
     capability_id: str
     contract_version: str
+    request_schema_ref: str
+    result_schema_ref: str
+    expected_request_model: type[BaseModel]
 
     async def execute(
         self,
@@ -204,6 +227,13 @@ class LiveCapabilityHandlerRegistryV1:
             entries[key] = handler
         self._handlers = MappingProxyType(entries)
 
+    @classmethod
+    def from_published_registration(
+        cls,
+        published: PublishedLiveRegistrationV1,
+    ) -> "LiveCapabilityHandlerRegistryV1":
+        return cls(tuple(published.handlers.values()))
+
     @staticmethod
     def _key_for_handler(
         handler: LiveCapabilityHandlerV1,
@@ -215,7 +245,22 @@ class LiveCapabilityHandlerRegistryV1:
                 capability_id=handler.capability_id,
                 contract_version=handler.contract_version,
             )
-        except (AttributeError, TypeError, ValidationError) as exc:
+            validate_capability_identity(
+                capability_id=key.capability_id,
+                provider_id=key.provider_id,
+                integration_kind=key.integration_kind,
+                source_kind=handler.source_kind,
+                contract_version=key.contract_version,
+            )
+            if not isinstance(handler.expected_request_model, type) or not issubclass(
+                handler.expected_request_model, BaseModel
+            ):
+                raise ValueError("invalid_live_handler_request_model")
+            if not isinstance(handler.request_schema_ref, str) or not isinstance(
+                handler.result_schema_ref, str
+            ):
+                raise ValueError("invalid_live_handler_schema_reference")
+        except (AttributeError, TypeError, ValidationError, ValueError) as exc:
             raise ValueError("invalid_live_handler_identity") from exc
         return (
             key.provider_id,
@@ -562,13 +607,22 @@ class LiveCapabilityExecutorV1:
     def __init__(
         self,
         *,
-        handler_registry: LiveCapabilityHandlerRegistryV1,
+        handler_registry: LiveCapabilityHandlerRegistryV1 | None = None,
+        published_registration: PublishedLiveRegistrationV1 | None = None,
         integration_resolver: TenantConnectionIntegrationResolverPort,
         clock: Callable[[], datetime] = _utc_now,
         monotonic: Callable[[], float] = time.monotonic,
         id_factory: Callable[[], str] = lambda: str(uuid4()),
     ) -> None:
-        self._handler_registry = handler_registry
+        if handler_registry is not None and published_registration is not None:
+            raise ValueError("live_handler_registry_sources_conflict")
+        self._handler_registry = (
+            LiveCapabilityHandlerRegistryV1.from_published_registration(
+                published_registration
+            )
+            if published_registration is not None
+            else handler_registry or LiveCapabilityHandlerRegistryV1()
+        )
         self._integration_resolver = integration_resolver
         self._clock = clock
         self._monotonic = monotonic
@@ -601,16 +655,27 @@ class LiveCapabilityExecutorV1:
         )
 
         try:
+            call.assert_identity()
             handler = self._handler_registry.resolve(
                 provider_id=call.provider_id,
                 integration_kind=call.integration_kind,
                 capability_id=call.capability_id,
+                contract_version=call.contract_version,
             )
         except (LookupError, ValueError):
             return self._failure(
                 call=call,
                 started_at=started_at,
                 error_code="live_capability_unavailable",
+                run_id=run_id,
+                retention=retention,
+            )
+
+        if not isinstance(call.validated_request, handler.expected_request_model):
+            return self._failure(
+                call=call,
+                started_at=started_at,
+                error_code="live_request_invalid",
                 run_id=run_id,
                 retention=retention,
             )
@@ -650,7 +715,7 @@ class LiveCapabilityExecutorV1:
             if not inspect.isawaitable(raw_result):
                 raise TypeError("handler must return an awaitable result")
             handler_result = await asyncio.wait_for(raw_result, timeout=remaining)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return self._failure(
                 call=call,
                 started_at=started_at,
@@ -699,6 +764,7 @@ class LiveCapabilityExecutorV1:
                 handler_result.items,
                 max_items=call.effective_budget.max_result_items,
                 max_bytes=call.effective_budget.max_result_bytes,
+                max_content_bytes_per_item=call.effective_budget.max_content_bytes_per_item,
             )
         except ValidationError:
             return self._failure(
@@ -748,6 +814,14 @@ class LiveCapabilityExecutorV1:
             completed_at=completed_at,
             truncated=outcome is LiveExecutionOutcomeV1.TRUNCATED,
             receipt=receipt,
+            provider_id=call.provider_id,
+            integration_kind=call.integration_kind,
+            source_kind=call.source_kind,
+            capability_id=call.capability_id,
+            contract_version=call.contract_version,
+            live_access_binding_id=call.live_access_binding_id,
+            connection_ref=call.connection_ref,
+            remote_resource_id=call.remote_resource_id,
         )
 
     def _bound_items(
@@ -756,6 +830,7 @@ class LiveCapabilityExecutorV1:
         *,
         max_items: int,
         max_bytes: int,
+        max_content_bytes_per_item: int,
     ) -> tuple[tuple[LiveCapabilityResultItemV1, ...], bool]:
         seen: set[str] = set()
         bounded: list[LiveCapabilityResultItemV1] = []
@@ -765,12 +840,29 @@ class LiveCapabilityExecutorV1:
             if item.remote_item_id in seen:
                 raise ValueError("duplicate_remote_item_id")
             seen.add(item.remote_item_id)
-            if item.content_hash != _sha256(item.content):
+            if item.content_hash != content_sha256(item.content):
                 raise ValueError("content_hash_mismatch")
             if len(bounded) >= max_items:
                 truncated = True
                 break
             content_bytes = item.content.encode("utf-8")
+            if len(content_bytes) > max_content_bytes_per_item:
+                content = content_bytes[:max_content_bytes_per_item].decode(
+                    "utf-8", errors="ignore"
+                )
+                if not content:
+                    truncated = True
+                    break
+                item = item.model_copy(
+                    update={
+                        "content": content,
+                        "content_hash": content_sha256(content),
+                        "safe_locator": safe_locator_or_none(item.safe_locator),
+                        "truncated": True,
+                    }
+                )
+                content_bytes = content.encode("utf-8")
+                truncated = True
             remaining = max_bytes - used_bytes
             if len(content_bytes) > remaining:
                 if remaining <= 0:
@@ -784,14 +876,17 @@ class LiveCapabilityExecutorV1:
                     item.model_copy(
                         update={
                             "content": content,
-                            "content_hash": _sha256(content),
+                            "content_hash": content_sha256(content),
+                            "safe_locator": safe_locator_or_none(item.safe_locator),
                             "truncated": True,
                         }
                     )
                 )
                 truncated = True
                 break
-            bounded.append(item)
+            bounded.append(
+                item.model_copy(update={"safe_locator": safe_locator_or_none(item.safe_locator)})
+            )
             used_bytes += len(content_bytes)
             if item.truncated:
                 truncated = True
@@ -823,6 +918,7 @@ class LiveCapabilityExecutorV1:
             truncated=False,
             normalized_outcome=LiveExecutionOutcomeV1.FAILED,
             retention=retention,
+            error_code=error_code,
         )
         return LiveCapabilityExecutionResultV1(
             call_id=call.call_id,
@@ -833,6 +929,14 @@ class LiveCapabilityExecutorV1:
             completed_at=finished,
             error_code=error_code,
             receipt=receipt,
+            provider_id=call.provider_id,
+            integration_kind=call.integration_kind,
+            source_kind=call.source_kind,
+            capability_id=call.capability_id,
+            contract_version=call.contract_version,
+            live_access_binding_id=call.live_access_binding_id,
+            connection_ref=call.connection_ref,
+            remote_resource_id=call.remote_resource_id,
         )
 
     def _receipt(
@@ -848,23 +952,34 @@ class LiveCapabilityExecutorV1:
         truncated: bool,
         normalized_outcome: LiveExecutionOutcomeV1,
         retention: LiveResultRetentionV1,
+        error_code: str | None = None,
     ) -> LiveExecutionReceiptV1 | None:
         if retention is not LiveResultRetentionV1.RECEIPT_ONLY:
             return None
-        result_hash = _sha256("|".join(item.content_hash for item in items))
+        result_hash = result_hash_for_items(
+            items=items,
+            normalized_outcome=normalized_outcome.value,
+            error_code=error_code,
+            item_count=item_count,
+            byte_count=byte_count,
+        )
         return LiveExecutionReceiptV1(
             receipt_id=self._id_factory(),
             run_id=run_id,
             call_id=call.call_id,
             live_access_binding_id=call.live_access_binding_id,
+            provider_id=call.provider_id,
+            source_kind=call.source_kind,
             capability_id=call.capability_id,
+            contract_version=call.contract_version,
             started_at=started_at,
             completed_at=completed_at,
             item_count=item_count,
             byte_count=byte_count,
-            content_hash=result_hash,
+            result_hash=result_hash,
             truncated=truncated,
             normalized_outcome=normalized_outcome.value,
+            error_code=error_code,
         )
 
 
@@ -1035,7 +1150,18 @@ class KnowledgeQueryOrchestratorV1:
                 for item in outcome.items:
                     live.append(
                         LiveWorkspaceEvidenceV1(
-                            evidence_id=f"live:{call.call_id}:{_sha256(item.remote_item_id)}",
+                            evidence_id=evidence_id_for_call(
+                                provider_id=call.provider_id,
+                                integration_kind=call.integration_kind,
+                                source_kind=call.source_kind,
+                                capability_id=call.capability_id,
+                                contract_version=call.contract_version,
+                                live_access_binding_id=call.live_access_binding_id,
+                                connection_ref=call.connection_ref,
+                                remote_resource_id=call.remote_resource_id,
+                                call_id=call.call_id,
+                                remote_item_id=item.remote_item_id,
+                            ),
                             tenant_id=plan.tenant_id,
                             workspace_id=plan.workspace_id,
                             safe_display_name=item.safe_display_name,
@@ -1046,6 +1172,8 @@ class KnowledgeQueryOrchestratorV1:
                             live_access_binding_id=call.live_access_binding_id,
                             connection_ref=call.connection_ref,
                             capability_id=call.capability_id,
+                            source_kind=call.source_kind,
+                            contract_version=call.contract_version,
                             remote_resource_id=call.resolved_resource_scope.remote_resource_id,
                             remote_item_id=item.remote_item_id,
                             provider_id=call.provider_id,

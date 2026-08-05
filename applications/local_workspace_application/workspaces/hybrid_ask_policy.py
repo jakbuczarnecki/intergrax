@@ -7,14 +7,6 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    LiveCapabilityDescriptorV1,
-    TenantLiveCapabilityCatalogPort,
-    is_bindable_read_only_capability,
-)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     KnowledgeAudienceEligibilityV1,
     LiveAccessBindingStatusV1,
@@ -27,6 +19,27 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     WorkspaceLiveAccessBinding,
     WorkspaceQueryPolicy,
     WorkspaceQueryPolicyV2,
+)
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    HARD_MAX_CONTENT_BYTES_PER_ITEM,
+    HARD_MAX_PROVIDER_PAGE_SIZE,
+    HARD_MAX_PROVIDER_PAGES,
+    HARD_MAX_PROVIDER_REQUESTS,
+    HARD_MAX_UPSTREAM_ITEMS,
+    EffectiveLiveCallBudgetV1,
+    ValidatedLiveCapabilityCallV1,
+)
+from intergrax.runtime.vendor_knowledge.live.identity import (
+    validate_capability_identity,
+)
+from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    LiveCapabilityDescriptorV1,
+    TenantLiveCapabilityCatalogPort,
+    is_bindable_read_only_capability,
 )
 
 _FORBIDDEN_MODEL_CONTROLLED_FIELDS = frozenset(
@@ -183,15 +196,6 @@ class LiveCallProposalV1(BaseModel):
         return _reject_forbidden_model_controlled_fields(data)
 
 
-class EffectiveLiveCallBudgetV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    max_live_calls: int = Field(..., ge=0, le=50)
-    max_total_duration_ms: int = Field(..., ge=1, le=300_000)
-    max_result_items: int = Field(..., ge=1, le=500)
-    max_result_bytes: int = Field(..., ge=1, le=16_777_216)
-
-
 class EvidencePlanV1(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -218,18 +222,15 @@ class ResolvedLiveResourceScopeV1(BaseModel):
     scope_token: str | None = None
 
 
-class ExecutableLiveCallV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    call_id: str = Field(..., min_length=1, max_length=128)
-    live_access_binding_id: str = Field(..., min_length=1, max_length=128)
-    connection_ref: str = Field(..., min_length=1, max_length=128)
-    provider_id: str = Field(..., min_length=1, max_length=64)
-    integration_kind: IntegrationCategory
-    capability_id: str = Field(..., min_length=1, max_length=128)
-    validated_request: dict[str, Any]
+class ExecutableLiveCallV1(ValidatedLiveCapabilityCallV1):
     resolved_resource_scope: ResolvedLiveResourceScopeV1
-    effective_budget: EffectiveLiveCallBudgetV1
+
+    @model_validator(mode="after")
+    def _validate_call_identity(self) -> ExecutableLiveCallV1:
+        self.assert_identity()
+        if self.remote_resource_id != self.resolved_resource_scope.remote_resource_id:
+            raise ValueError("live_resource_scope_identity_mismatch")
+        return self
 
 
 class ValidatedEvidencePlanV1(BaseModel):
@@ -247,7 +248,7 @@ class CapabilityRequestEnvelopeValidationPort(Protocol):
         *,
         descriptor: LiveCapabilityDescriptorV1,
         typed_request: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> BaseModel:
         ...
 
 
@@ -258,7 +259,7 @@ class LiveResourceScopeValidationPort(Protocol):
         *,
         binding: WorkspaceLiveAccessBinding,
         capability_id: str,
-        validated_request: dict[str, Any],
+        validated_request: BaseModel,
     ) -> ResolvedLiveResourceScopeV1:
         ...
 
@@ -285,6 +286,18 @@ def _run_effective_budget(
         ),
         max_result_items=min(policy.max_result_items, proposal_budget.max_result_items),
         max_result_bytes=min(policy.max_result_bytes, proposal_budget.max_result_bytes),
+        max_provider_pages=min(proposal_budget.max_provider_pages, HARD_MAX_PROVIDER_PAGES),
+        max_provider_requests=min(
+            proposal_budget.max_provider_requests, HARD_MAX_PROVIDER_REQUESTS
+        ),
+        max_upstream_items=min(proposal_budget.max_upstream_items, HARD_MAX_UPSTREAM_ITEMS),
+        max_provider_page_size=min(
+            proposal_budget.max_provider_page_size, HARD_MAX_PROVIDER_PAGE_SIZE
+        ),
+        max_content_bytes_per_item=min(
+            proposal_budget.max_content_bytes_per_item,
+            HARD_MAX_CONTENT_BYTES_PER_ITEM,
+        ),
     )
 
 
@@ -302,7 +315,19 @@ def _per_call_effective_budget(
         ),
         max_result_bytes=min(
             run_budget.max_result_bytes,
-            descriptor.max_result_bytes or run_budget.max_result_bytes,
+            descriptor.max_result_bytes,
+        ),
+        max_provider_pages=min(run_budget.max_provider_pages, descriptor.max_provider_pages),
+        max_provider_requests=min(
+            run_budget.max_provider_requests, descriptor.max_provider_requests
+        ),
+        max_upstream_items=min(run_budget.max_upstream_items, descriptor.max_upstream_items),
+        max_provider_page_size=min(
+            run_budget.max_provider_page_size, descriptor.max_provider_page_size
+        ),
+        max_content_bytes_per_item=min(
+            run_budget.max_content_bytes_per_item,
+            descriptor.max_content_bytes_per_item,
         ),
     )
 
@@ -336,6 +361,16 @@ def _resolve_live_capability_descriptor(
     descriptor = matches[0]
     if not is_bindable_read_only_capability(descriptor):
         raise HybridAskPolicyError("live_capability_unavailable")
+    try:
+        validate_capability_identity(
+            capability_id=descriptor.capability_id,
+            provider_id=descriptor.provider_id,
+            integration_kind=descriptor.integration_kind,
+            source_kind=descriptor.source_kind,
+            contract_version=descriptor.contract_version,
+        )
+    except ValueError:
+        raise HybridAskPolicyError("live_capability_unavailable") from None
     return descriptor
 
 
@@ -370,6 +405,7 @@ def validate_evidence_plan(
     capability_catalog: TenantLiveCapabilityCatalogPort,
     request_envelope_validator: CapabilityRequestEnvelopeValidationPort,
     resource_scope_validator: LiveResourceScopeValidationPort,
+    schema_registry: SchemaRegistryV1 | None = None,
 ) -> ValidatedEvidencePlanV1:
     if plan.tenant_id != configuration.tenant_id:
         raise HybridAskPolicyError("tenant_workspace_mismatch")
@@ -468,16 +504,30 @@ def validate_evidence_plan(
             provider_id=binding.derived_provider_id,
             integration_kind=binding.derived_integration_kind,
         )
-
-        validated_request = request_envelope_validator.validate_request_envelope(
-            descriptor=descriptor,
-            typed_request=proposal.typed_capability_request,
-        )
-        resolved_scope = resource_scope_validator.validate_resource_scope(
-            binding=binding,
-            capability_id=proposal.capability_id,
-            validated_request=validated_request,
-        )
+        try:
+            if schema_registry is not None:
+                request_model = schema_registry.resolve_request(
+                    descriptor.request_schema_ref, descriptor.contract_version
+                )
+                request_model.model_validate(proposal.typed_capability_request)
+            validated_request = request_envelope_validator.validate_request_envelope(
+                descriptor=descriptor,
+                typed_request=proposal.typed_capability_request,
+            )
+            if not isinstance(validated_request, BaseModel):
+                raise TypeError("live_request_model_required")
+        except (ValidationError, TypeError, ValueError, LookupError):
+            raise HybridAskPolicyError("live_request_invalid") from None
+        try:
+            resolved_scope = resource_scope_validator.validate_resource_scope(
+                binding=binding,
+                capability_id=proposal.capability_id,
+                validated_request=validated_request,
+            )
+        except HybridAskPolicyError:
+            raise
+        except Exception:
+            raise HybridAskPolicyError("live_resource_scope_invalid") from None
         call_effective_budget = _per_call_effective_budget(
             run_budget=run_effective_budget,
             descriptor=descriptor,
@@ -491,6 +541,10 @@ def validate_evidence_plan(
                 provider_id=binding.derived_provider_id,
                 integration_kind=binding.derived_integration_kind,
                 capability_id=proposal.capability_id,
+                contract_version=descriptor.contract_version,
+                source_kind=descriptor.source_kind,
+                remote_resource_id=binding.remote_resource_id,
+                audience_context_ref=plan.audience_context.audience.value,
                 validated_request=validated_request,
                 resolved_resource_scope=resolved_scope,
                 effective_budget=call_effective_budget,

@@ -9,15 +9,6 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    CapabilityEffectV1,
-    LiveCapabilityDescriptorV1,
-)
 from local_workspace_application.workspaces.ask_models import AskRunStatus
 from local_workspace_application.workspaces.ask_repository import (
     AskRunSchemaVersion,
@@ -66,10 +57,6 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
     WorkspaceKnowledgeConfigurationMutationError,
     WorkspaceKnowledgeMutationExecutionDispositionV1,
 )
-from local_workspace_application.workspaces.knowledge_query_policy_service import (
-    UpdateWorkspaceQueryPolicyV2Command,
-    WorkspaceQueryPolicyService,
-)
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
 )
@@ -79,9 +66,24 @@ from local_workspace_application.workspaces.knowledge_configuration_validation i
 from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
     UpdateQueryPolicyMutationHandler,
 )
+from local_workspace_application.workspaces.knowledge_query_policy_service import (
+    UpdateWorkspaceQueryPolicyV2Command,
+    WorkspaceQueryPolicyService,
+)
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    CapabilityEffectV1,
+    LiveCapabilityDescriptorV1,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -92,6 +94,16 @@ _MUTATION = "mutation-1"
 _SHA256 = "a" * 64
 _IDEMPOTENCY = "b" * 64
 _POLICY_HANDLER = UpdateQueryPolicyMutationHandler()
+_PROVIDER = "provider_neutral"
+_CAP_READ = "vendor.provider_neutral.issues.read"
+_CAP_A = "vendor.provider_neutral.issues.search"
+_CAP_B = "vendor.provider_neutral.issues.list"
+
+
+class _Request(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    item_key: str
 
 
 def _v1_policy(**overrides: object) -> WorkspaceQueryPolicy:
@@ -120,7 +132,7 @@ def _v2_policy(**overrides: object) -> WorkspaceQueryPolicyV2:
         "workspace_id": _WORKSPACE,
         "mode": QueryPolicyModeV2.HYBRID,
         "allowed_connection_refs": ("conn.live",),
-        "allowed_capability_ids": ("cap.read",),
+        "allowed_capability_ids": (_CAP_READ,),
         "max_live_calls": 2,
         "max_total_duration_ms": 30_000,
         "max_result_items": 50,
@@ -157,8 +169,8 @@ def _live_binding(**overrides: object) -> WorkspaceLiveAccessBinding:
         "tenant_id": _TENANT,
         "workspace_id": _WORKSPACE,
         "connection_ref": "conn.live",
-        "allowed_capability_ids": ("cap.read",),
-        "derived_provider_id": "provider-neutral",
+        "allowed_capability_ids": (_CAP_READ,),
+        "derived_provider_id": _PROVIDER,
         "derived_integration_kind": IntegrationCategory.WIKI_KNOWLEDGE,
         "derived_safe_display_label": "Neutral Provider",
         "status": LiveAccessBindingStatusV1.ACTIVE,
@@ -191,18 +203,22 @@ def _configuration(
 
 def _descriptor(**overrides: object) -> LiveCapabilityDescriptorV1:
     payload = {
-        "capability_id": "cap.read",
-        "provider_id": "provider-neutral",
+        "capability_id": _CAP_READ,
+        "provider_id": _PROVIDER,
         "integration_kind": IntegrationCategory.WIKI_KNOWLEDGE,
+        "source_kind": "issues",
+        "contract_version": "1",
         "effect": CapabilityEffectV1.READ,
         "read_only": True,
         "resource_scope_required": True,
-        "request_schema_ref": "test.request.v1",
-        "result_schema_ref": "test.result.v1",
+        "request_schema_ref": "schema://vendor-knowledge/live/provider_neutral/issues/read/request/v1",
+        "result_schema_ref": "schema://vendor-knowledge/live/provider_neutral/issues/read/result/v1",
         "max_result_items": 25,
         "max_result_bytes": 512_000,
     }
     payload.update(overrides)
+    if payload["provider_id"] != _PROVIDER and payload["capability_id"] == _CAP_READ:
+        payload["capability_id"] = f"vendor.{payload['provider_id']}.issues.read"
     return LiveCapabilityDescriptorV1(**payload)
 
 
@@ -233,10 +249,10 @@ class _FakeEnvelopeValidator:
         *,
         descriptor: LiveCapabilityDescriptorV1,
         typed_request: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> BaseModel:
         if "item_key" not in typed_request:
             raise HybridAskPolicyError("live_request_invalid")
-        return {"item_key": str(typed_request["item_key"]).strip()}
+        return _Request(item_key=str(typed_request["item_key"]).strip())
 
 
 class _FakeScopeValidator:
@@ -245,11 +261,11 @@ class _FakeScopeValidator:
         *,
         binding: WorkspaceLiveAccessBinding,
         capability_id: str,
-        validated_request: dict[str, Any],
+        validated_request: BaseModel,
     ) -> ResolvedLiveResourceScopeV1:
         return ResolvedLiveResourceScopeV1(
             remote_resource_id=binding.remote_resource_id,
-            scope_token=f"{binding.live_access_binding_id}:{validated_request['item_key']}",
+            scope_token=f"{binding.live_access_binding_id}:{validated_request.item_key}",
         )
 
 
@@ -288,7 +304,7 @@ def _live_plan() -> EvidencePlanV1:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "ITEM-1"},
             ),
         ),
@@ -309,7 +325,7 @@ def _hybrid_plan() -> EvidencePlanV1:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "ITEM-1"},
             ),
         ),
@@ -345,9 +361,9 @@ def _v2_run(**overrides: object) -> WorkspaceAskRunV2:
                 evidence_id="live:call-1:item-1",
                 safe_display_name="Live item",
                 retrieved_at=_NOW,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 connection_safe_label="Live Connection",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 call_id="call-1",
             ),
         ],
@@ -368,10 +384,10 @@ def _v2_run(**overrides: object) -> WorkspaceAskRunV2:
                 retrieved_at=_NOW,
                 content_hash=_SHA256,
                 audience=AskAudienceV1.PERSONAL,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 live_access_binding_id="live-1",
                 connection_ref="conn.live",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 call_id="call-1",
             ),
         ],
@@ -385,7 +401,9 @@ def _v2_run(**overrides: object) -> WorkspaceAskRunV2:
 
 
 def test_v1_ask_run_still_round_trips() -> None:
-    from local_workspace_application.tests.workspaces.test_ask_workspace_persistence import _run
+    from local_workspace_application.tests.workspaces.test_ask_workspace_persistence import (
+        _run,
+    )
 
     store = InMemoryDocumentStore()
     repo = WorkspaceAskRepository(store)
@@ -495,7 +513,7 @@ def test_v2_query_policy_modes_and_invalid_combinations() -> None:
         _v2_policy(
             mode=QueryPolicyModeV2.HYBRID,
             allowed_connection_refs=(),
-            allowed_capability_ids=("cap.read",),
+            allowed_capability_ids=(_CAP_READ,),
             max_live_calls=1,
         )
 
@@ -503,10 +521,10 @@ def test_v2_query_policy_modes_and_invalid_combinations() -> None:
 def test_query_policy_canonical_sorting_and_deduplication() -> None:
     policy = _v2_policy(
         allowed_connection_refs=("conn.b", "conn.a", "conn.b"),
-        allowed_capability_ids=("cap.b", "cap.a", "cap.b"),
+        allowed_capability_ids=(_CAP_B, _CAP_A, _CAP_B),
     )
     assert policy.allowed_connection_refs == ("conn.a", "conn.b")
-    assert policy.allowed_capability_ids == ("cap.a", "cap.b")
+    assert policy.allowed_capability_ids == (_CAP_B, _CAP_A)
 
 
 def test_v1_and_v2_query_policy_coexist_in_repository() -> None:
@@ -645,7 +663,7 @@ def test_evidence_plan_rejects_forbidden_model_fields_and_disabled_binding() -> 
         LiveCallProposalV1(
             call_id="call-1",
             live_access_binding_id="live-1",
-            capability_id="cap.read",
+            capability_id=_CAP_READ,
             typed_capability_request={"item_key": "ITEM-1"},
             connection_ref="conn.live",
         )
@@ -747,7 +765,9 @@ def test_serialized_hybrid_run_has_indexed_excerpt_but_no_live_excerpt() -> None
 
 
 def test_mixed_v1_v2_ask_partition_listing() -> None:
-    from local_workspace_application.tests.workspaces.test_ask_workspace_persistence import _run
+    from local_workspace_application.tests.workspaces.test_ask_workspace_persistence import (
+        _run,
+    )
 
     store = InMemoryDocumentStore()
     repo = WorkspaceAskRepository(store)
@@ -771,7 +791,7 @@ def test_descriptor_provider_mismatch_fails_closed() -> None:
     catalog = _FakeCatalog(
         {
             "conn.live": _descriptor(
-                provider_id="other-provider",
+                provider_id="other_provider",
                 integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
             )
         }
@@ -840,7 +860,7 @@ def test_live_binding_not_found_vs_unavailable() -> None:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="missing-binding",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "ITEM-1"},
             ),
         ),
@@ -868,13 +888,13 @@ def _two_call_plan(*, reverse: bool = False) -> EvidencePlanV1:
         LiveCallProposalV1(
             call_id="call-a",
             live_access_binding_id="live-1",
-            capability_id="cap.a",
+            capability_id=_CAP_A,
             typed_capability_request={"item_key": "A"},
         ),
         LiveCallProposalV1(
             call_id="call-b",
             live_access_binding_id="live-1",
-            capability_id="cap.b",
+            capability_id=_CAP_B,
             typed_capability_request={"item_key": "B"},
         ),
     )
@@ -895,7 +915,7 @@ def _two_call_plan(*, reverse: bool = False) -> EvidencePlanV1:
 
 def _two_call_configuration() -> WorkspaceKnowledgeConfigurationV1:
     binding = _live_binding(
-        allowed_capability_ids=("cap.a", "cap.b"),
+        allowed_capability_ids=(_CAP_A, _CAP_B),
     )
     return WorkspaceKnowledgeConfigurationV1(
         tenant_id=_TENANT,
@@ -906,7 +926,7 @@ def _two_call_configuration() -> WorkspaceKnowledgeConfigurationV1:
         live_access_bindings=(binding,),
         query_policy=_v2_policy(
             mode=QueryPolicyModeV2.LIVE_ONLY,
-            allowed_capability_ids=("cap.a", "cap.b"),
+            allowed_capability_ids=(_CAP_A, _CAP_B),
             max_live_calls=2,
             effective_revision=1,
         ),
@@ -919,12 +939,12 @@ def test_per_call_budgets_are_independent_of_proposal_order() -> None:
         {
             "conn.live": (
                 _descriptor(
-                    capability_id="cap.a",
+                    capability_id=_CAP_A,
                     max_result_items=10,
                     max_result_bytes=1_000,
                 ),
                 _descriptor(
-                    capability_id="cap.b",
+                    capability_id=_CAP_B,
                     max_result_items=20,
                     max_result_bytes=2_000,
                 ),
@@ -960,10 +980,10 @@ def test_per_call_budgets_are_independent_of_proposal_order() -> None:
         call.capability_id: call.effective_budget for call in reverse.executable_live_calls
     }
     assert forward_by_capability == reverse_by_capability
-    assert forward_by_capability["cap.a"].max_result_items == 10
-    assert forward_by_capability["cap.a"].max_result_bytes == 1_000
-    assert forward_by_capability["cap.b"].max_result_items == 20
-    assert forward_by_capability["cap.b"].max_result_bytes == 2_000
+    assert forward_by_capability[_CAP_A].max_result_items == 10
+    assert forward_by_capability[_CAP_A].max_result_bytes == 1_000
+    assert forward_by_capability[_CAP_B].max_result_items == 20
+    assert forward_by_capability[_CAP_B].max_result_bytes == 2_000
     assert forward.effective_budget.max_result_items == 50
     assert reverse.effective_budget.max_result_items == 50
 
@@ -978,7 +998,10 @@ def test_per_call_budgets_are_independent_of_proposal_order() -> None:
                     run_id="other-run",
                     call_id="call-1",
                     live_access_binding_id="live-1",
-                    capability_id="cap.read",
+                    provider_id=_PROVIDER,
+                    source_kind="issues",
+                    capability_id=_CAP_READ,
+                    contract_version="1",
                     started_at=_NOW,
                     completed_at=_NOW,
                     item_count=1,
@@ -1030,10 +1053,10 @@ def test_per_call_budgets_are_independent_of_proposal_order() -> None:
                     retrieved_at=_NOW,
                     content_hash=_SHA256,
                     audience=AskAudienceV1.PERSONAL,
-                    provider_id="provider-neutral",
+                    provider_id=_PROVIDER,
                     live_access_binding_id="live-1",
                     connection_ref="conn.live",
-                    capability_id="cap.read",
+                    capability_id=_CAP_READ,
                     call_id="call-1",
                 ),
                 PersistedLiveEvidenceProvenanceV2(
@@ -1073,7 +1096,7 @@ def test_nested_forbidden_model_controlled_fields_rejected() -> None:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request=typed_request,
             )
 
@@ -1095,7 +1118,7 @@ def _v2_query_policy_cmd(**overrides: object) -> UpdateWorkspaceQueryPolicyV2Com
         "workspace_id": _WORKSPACE,
         "mode": QueryPolicyModeV2.HYBRID,
         "allowed_connection_refs": ("conn.live",),
-        "allowed_capability_ids": ("cap.read",),
+        "allowed_capability_ids": (_CAP_READ,),
         "max_live_calls": 2,
         "max_total_duration_ms": 30_000,
         "max_result_items": 50,
@@ -1230,10 +1253,10 @@ def test_two_live_evidence_items_same_call_succeed() -> None:
                 retrieved_at=_NOW,
                 content_hash=_SHA256,
                 audience=AskAudienceV1.PERSONAL,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 live_access_binding_id="live-1",
                 connection_ref="conn.live",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-a",
                 call_id="call-1",
             ),
@@ -1243,10 +1266,10 @@ def test_two_live_evidence_items_same_call_succeed() -> None:
                 retrieved_at=_NOW,
                 content_hash=_SHA256,
                 audience=AskAudienceV1.PERSONAL,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 live_access_binding_id="live-1",
                 connection_ref="conn.live",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-b",
                 call_id="call-1",
             ),
@@ -1267,9 +1290,9 @@ def test_two_live_evidence_items_same_call_succeed() -> None:
                 evidence_id="live:call-1:item-a",
                 safe_display_name="Item A",
                 retrieved_at=_NOW,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 connection_safe_label="Live Connection",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-a",
                 call_id="call-1",
             ),
@@ -1277,9 +1300,9 @@ def test_two_live_evidence_items_same_call_succeed() -> None:
                 evidence_id="live:call-1:item-b",
                 safe_display_name="Item B",
                 retrieved_at=_NOW,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 connection_safe_label="Live Connection",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-b",
                 call_id="call-1",
             ),
@@ -1308,10 +1331,10 @@ def test_one_receipt_supports_multiple_live_evidence_items() -> None:
                 retrieved_at=_NOW,
                 content_hash=_SHA256,
                 audience=AskAudienceV1.PERSONAL,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 live_access_binding_id="live-1",
                 connection_ref="conn.live",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-a",
                 call_id="call-1",
             ),
@@ -1321,10 +1344,10 @@ def test_one_receipt_supports_multiple_live_evidence_items() -> None:
                 retrieved_at=_NOW,
                 content_hash=_SHA256,
                 audience=AskAudienceV1.PERSONAL,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 live_access_binding_id="live-1",
                 connection_ref="conn.live",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-b",
                 call_id="call-1",
             ),
@@ -1335,7 +1358,10 @@ def test_one_receipt_supports_multiple_live_evidence_items() -> None:
                 run_id="run-v2-1",
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                provider_id=_PROVIDER,
+                source_kind="issues",
+                capability_id=_CAP_READ,
+                contract_version="1",
                 started_at=_NOW,
                 completed_at=_NOW,
                 item_count=2,
@@ -1360,9 +1386,9 @@ def test_one_receipt_supports_multiple_live_evidence_items() -> None:
                 evidence_id="live:call-1:item-a",
                 safe_display_name="Item A",
                 retrieved_at=_NOW,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 connection_safe_label="Live Connection",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-a",
                 call_id="call-1",
                 receipt_id="receipt-1",
@@ -1371,9 +1397,9 @@ def test_one_receipt_supports_multiple_live_evidence_items() -> None:
                 evidence_id="live:call-1:item-b",
                 safe_display_name="Item B",
                 retrieved_at=_NOW,
-                provider_id="provider-neutral",
+                provider_id=_PROVIDER,
                 connection_safe_label="Live Connection",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 remote_item_id="item-b",
                 call_id="call-1",
                 receipt_id="receipt-1",
@@ -1404,10 +1430,10 @@ def test_two_receipts_for_one_call_fail() -> None:
                     retrieved_at=_NOW,
                     content_hash=_SHA256,
                     audience=AskAudienceV1.PERSONAL,
-                    provider_id="provider-neutral",
+                    provider_id=_PROVIDER,
                     live_access_binding_id="live-1",
                     connection_ref="conn.live",
-                    capability_id="cap.read",
+                    capability_id=_CAP_READ,
                     call_id="call-1",
                 ),
             ],
@@ -1417,7 +1443,10 @@ def test_two_receipts_for_one_call_fail() -> None:
                     run_id="run-v2-1",
                     call_id="call-1",
                     live_access_binding_id="live-1",
-                    capability_id="cap.read",
+                    provider_id=_PROVIDER,
+                    source_kind="issues",
+                    capability_id=_CAP_READ,
+                    contract_version="1",
                     started_at=_NOW,
                     completed_at=_NOW,
                     item_count=1,
@@ -1430,7 +1459,10 @@ def test_two_receipts_for_one_call_fail() -> None:
                     run_id="run-v2-1",
                     call_id="call-1",
                     live_access_binding_id="live-1",
-                    capability_id="cap.read",
+                    provider_id=_PROVIDER,
+                    source_kind="issues",
+                    capability_id=_CAP_READ,
+                    contract_version="1",
                     started_at=_NOW,
                     completed_at=_NOW,
                     item_count=1,
@@ -1502,7 +1534,7 @@ def test_oversized_plan_budget_is_clamped_not_rejected() -> None:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "ITEM-1"},
             ),
         ),
@@ -1533,19 +1565,19 @@ def test_oversized_plan_budget_is_clamped_not_rejected() -> None:
             LiveCallProposalV1(
                 call_id="call-1",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "A"},
             ),
             LiveCallProposalV1(
                 call_id="call-2",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "B"},
             ),
             LiveCallProposalV1(
                 call_id="call-3",
                 live_access_binding_id="live-1",
-                capability_id="cap.read",
+                capability_id=_CAP_READ,
                 typed_capability_request={"item_key": "C"},
             ),
         ),

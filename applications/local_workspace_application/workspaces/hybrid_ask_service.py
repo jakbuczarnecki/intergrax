@@ -9,13 +9,6 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
-
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    LiveCapabilityDescriptorV1,
-    TenantLiveCapabilityCatalogPort,
-)
 from local_workspace_application.workspaces.ask_models import (
     AskAnswerAssemblyError,
     AskAnswerAssemblyStatus,
@@ -48,8 +41,8 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     LiveCallProposalV1,
     LiveResourceScopeValidationPort,
     ValidatedEvidencePlanV1,
-    validate_evidence_plan,
     resolve_effective_query_policy,
+    validate_evidence_plan,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
@@ -61,6 +54,14 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    LiveCapabilityDescriptorV1,
+    TenantLiveCapabilityCatalogPort,
+)
 
 
 class WorkspaceAskV2Error(RuntimeError):
@@ -96,16 +97,25 @@ class UnavailableTenantLiveCapabilityCatalog:
 class SafeCapabilityRequestEnvelopeValidator:
     """Narrow default validator for a typed, already bounded logical envelope."""
 
+    def __init__(self, schema_registry: SchemaRegistryV1 | None = None) -> None:
+        self._schema_registry = schema_registry
+
     def validate_request_envelope(
         self,
         *,
         descriptor: LiveCapabilityDescriptorV1,
         typed_request: dict[str, Any],
-    ) -> dict[str, Any]:
-        del descriptor
-        if not isinstance(typed_request, dict):
+    ) -> BaseModel:
+        if self._schema_registry is None or not isinstance(typed_request, dict):
             raise HybridAskPolicyError("live_request_invalid")
-        return dict(typed_request)
+        try:
+            request_model = self._schema_registry.resolve_request(
+                descriptor.request_schema_ref,
+                descriptor.contract_version,
+            )
+            return request_model.model_validate(typed_request)
+        except (ValidationError, LookupError, ValueError):
+            raise HybridAskPolicyError("live_request_invalid") from None
 
 
 class BindingResourceScopeValidator:
@@ -145,7 +155,7 @@ class WorkspaceAskCommandV2(BaseModel):
     run_id: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
-    def _question_not_blank(self) -> "WorkspaceAskCommandV2":
+    def _question_not_blank(self) -> WorkspaceAskCommandV2:
         if not self.question.strip():
             raise ValueError("question_must_not_be_blank")
         return self
@@ -165,6 +175,7 @@ class WorkspaceAskServiceV2:
         request_envelope_validator: CapabilityRequestEnvelopeValidationPort,
         resource_scope_validator: LiveResourceScopeValidationPort,
         orchestrator: KnowledgeQueryOrchestratorV1,
+        schema_registry: SchemaRegistryV1 | None = None,
         llm_adapter: LLMAdapter | None = None,
         llm_adapter_factory: Callable[[], LLMAdapter] | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
@@ -178,6 +189,7 @@ class WorkspaceAskServiceV2:
         self._capability_catalog = capability_catalog
         self._request_envelope_validator = request_envelope_validator
         self._resource_scope_validator = resource_scope_validator
+        self._schema_registry = schema_registry
         self._orchestrator = orchestrator
         self._llm = llm_adapter
         self._llm_factory = llm_adapter_factory
@@ -226,6 +238,7 @@ class WorkspaceAskServiceV2:
             capability_catalog=self._capability_catalog,
             request_envelope_validator=self._request_envelope_validator,
             resource_scope_validator=self._resource_scope_validator,
+            schema_registry=self._schema_registry,
         )
         run_id = command.run_id or self._run_id_factory()
         initial = self._initial_run(run_id, command, configuration, validated_plan)

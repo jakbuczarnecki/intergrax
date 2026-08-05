@@ -8,13 +8,15 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 from local_workspace_application.workspaces.ask_models import AskError, AskRunStatus
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    safe_locator_or_none,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV2,
 )
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _EVIDENCE_ID_INDEXED_PREFIX = "idx:"
 _EVIDENCE_ID_LIVE_PREFIX = "live:"
@@ -79,6 +81,8 @@ class LiveWorkspaceEvidenceV1(BaseModel):
     live_access_binding_id: str = Field(..., min_length=1)
     connection_ref: str = Field(..., min_length=1)
     capability_id: str = Field(..., min_length=1)
+    source_kind: str = Field(..., min_length=1)
+    contract_version: str = Field(..., min_length=1)
     remote_resource_id: str | None = None
     remote_item_id: str | None = None
     provider_id: str = Field(..., min_length=1)
@@ -95,6 +99,25 @@ class LiveWorkspaceEvidenceV1(BaseModel):
         if not value.startswith(_EVIDENCE_ID_LIVE_PREFIX):
             raise ValueError("live_evidence_id_prefix_required")
         return value
+
+    @field_validator("retrieved_at", "remote_updated_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime | None) -> datetime | None:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("live_evidence_timestamp_must_be_timezone_aware")
+        return value
+
+    @field_validator("content_hash")
+    @classmethod
+    def _content_hash_valid(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("live_evidence_content_hash_invalid")
+        return value
+
+    @field_validator("safe_locator")
+    @classmethod
+    def _safe_locator(cls, value: str | None) -> str | None:
+        return safe_locator_or_none(value)
 
 
 WorkspaceEvidenceV1 = Annotated[
@@ -223,14 +246,41 @@ class LiveExecutionReceiptV1(BaseModel):
     run_id: str = Field(..., min_length=1)
     call_id: str = Field(..., min_length=1)
     live_access_binding_id: str = Field(..., min_length=1)
+    provider_id: str = Field(..., min_length=1)
+    source_kind: str = Field(..., min_length=1)
     capability_id: str = Field(..., min_length=1)
+    contract_version: str = Field(..., min_length=1)
     started_at: datetime
     completed_at: datetime
     item_count: int = Field(..., ge=0)
     byte_count: int = Field(..., ge=0)
-    content_hash: str = Field(..., min_length=1)
+    result_hash: str = Field(..., min_length=64, max_length=64)
     truncated: bool = False
     normalized_outcome: str = Field(..., min_length=1)
+    error_code: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy_content_hash_adapter(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "result_hash" not in data and "content_hash" in data:
+            migrated = dict(data)
+            migrated["result_hash"] = migrated.pop("content_hash")
+            return migrated
+        return data
+
+    @field_validator("started_at", "completed_at")
+    @classmethod
+    def _timestamps_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("receipt_timestamp_must_be_timezone_aware")
+        return value
+
+    @field_validator("result_hash")
+    @classmethod
+    def _sha256_result_hash(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("receipt_result_hash_invalid")
+        return value
 
 
 class HybridAskIndexedRetrievalStatusV1(StrEnum):

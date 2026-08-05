@@ -49,7 +49,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceDocumentReference,
     WorkspaceSource,
 )
-from pydantic import ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 
@@ -59,6 +59,14 @@ _NOW = datetime(2026, 8, 4, 10, 0, tzinfo=UTC)
 _TENANT = "tenant-1"
 _WORKSPACE = "workspace-1"
 _KIND = IntegrationCategory.WIKI_KNOWLEDGE
+_PROVIDER = "neutral_provider"
+_CAPABILITY = "vendor.neutral_provider.issues.read"
+
+
+class _Request(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    query: str
 
 
 def _budget(
@@ -80,7 +88,7 @@ def _call(
     call_id: str = "call-1",
     *,
     budget: EffectiveLiveCallBudgetV1 | None = None,
-    capability_id: str = "cap.read",
+    capability_id: str = _CAPABILITY,
 ) -> Any:
     from local_workspace_application.workspaces.hybrid_ask_policy import (
         ExecutableLiveCallV1,
@@ -90,10 +98,13 @@ def _call(
         call_id=call_id,
         live_access_binding_id="binding-1",
         connection_ref="connection-1",
-        provider_id="neutral-provider",
+        provider_id=_PROVIDER,
         integration_kind=_KIND,
         capability_id=capability_id,
-        validated_request={"query": "validated"},
+            contract_version="1",
+            source_kind="issues",
+        validated_request=_Request(query="validated"),
+        remote_resource_id="resource-1",
         resolved_resource_scope=ResolvedLiveResourceScopeV1(
             remote_resource_id="resource-1",
             scope_token="validated-scope",
@@ -167,7 +178,7 @@ def _live_result(
 
 
 class _NeutralIntegration:
-    provider_id = "neutral-provider"
+    provider_id = _PROVIDER
     integration_kind = _KIND.value
 
 
@@ -182,10 +193,14 @@ class _RecordingResolver:
 
 
 class _NeutralHandler:
-    provider_id = "neutral-provider"
+    provider_id = _PROVIDER
     integration_kind = _KIND
-    capability_id = "cap.read"
+    source_kind = "issues"
+    capability_id = _CAPABILITY
     contract_version = "1"
+    request_schema_ref = "schema://vendor-knowledge/live/neutral_provider/issues/read/request/v1"
+    result_schema_ref = "schema://vendor-knowledge/live/neutral_provider/issues/read/result/v1"
+    expected_request_model = _Request
 
     def __init__(
         self,
@@ -205,7 +220,7 @@ class _NeutralHandler:
             await asyncio.sleep(self.delay)
         if self.failure is not None:
             raise self.failure
-        return _live_result(getattr(call, "call_id"), self.items)
+        return _live_result(call.call_id, self.items)
 
 
 class _NeutralRetriever:
@@ -523,19 +538,26 @@ def test_registry_requires_exact_identity_and_isolates_capability_collisions() -
     first = _NeutralHandler()
 
     class _OtherProvider(_NeutralHandler):
-        provider_id = "other-provider"
+        provider_id = "other_provider"
+        capability_id = "vendor.other_provider.issues.read"
+        request_schema_ref = (
+            "schema://vendor-knowledge/live/other_provider/issues/read/request/v1"
+        )
+        result_schema_ref = (
+            "schema://vendor-knowledge/live/other_provider/issues/read/result/v1"
+        )
 
     registry = LiveCapabilityHandlerRegistryV1((first, _OtherProvider()))
     assert registry.resolve(
-        provider_id="neutral-provider",
+        provider_id=_PROVIDER,
         integration_kind=_KIND,
-        capability_id="cap.read",
+        capability_id=_CAPABILITY,
     ) is first
     with pytest.raises(LookupError, match="live_capability_unavailable"):
         registry.resolve(
             provider_id="missing-provider",
             integration_kind=_KIND,
-            capability_id="cap.read",
+            capability_id=_CAPABILITY,
         )
 
     with pytest.raises(ValueError, match="duplicate_live_handler_identity"):
@@ -563,14 +585,14 @@ def test_executor_resolves_exact_tenant_connection_and_forwards_validated_call()
         {
             "tenant_id": _TENANT,
             "connection_ref": "connection-1",
-            "provider_id": "neutral-provider",
+            "provider_id": _PROVIDER,
             "integration_kind": _KIND,
         }
     ]
     assert handler.calls[0][0] is resolver.integration
-    assert getattr(handler.calls[0][1], "validated_request") == {"query": "validated"}
+    assert handler.calls[0][1].validated_request == _Request(query="validated")
     assert (
-        getattr(handler.calls[0][1], "resolved_resource_scope").scope_token
+        handler.calls[0][1].resolved_resource_scope.scope_token
         == "validated-scope"
     )
 
@@ -614,7 +636,7 @@ def test_live_execution_normalizes_items_ids_receipts_and_ephemeral_retention() 
 
     assert result.receipt is None
     assert result.item_count == 2
-    assert result.byte_count == len("live content".encode()) * 2
+    assert result.byte_count == len(b"live content") * 2
     assert [item.remote_item_id for item in result.items] == ["item-1", "item-2"]
 
 
@@ -679,10 +701,14 @@ def test_handler_exception_and_malformed_result_are_safe() -> None:
     assert "secret" not in str(failure)
 
     class _Malformed:
-        provider_id = "neutral-provider"
+        provider_id = _PROVIDER
         integration_kind = _KIND
-        capability_id = "cap.read"
+        source_kind = "issues"
+        capability_id = _CAPABILITY
         contract_version = "1"
+        request_schema_ref = _NeutralHandler.request_schema_ref
+        result_schema_ref = _NeutralHandler.result_schema_ref
+        expected_request_model = _Request
 
         def __init__(self) -> None:
             self.calls: list[tuple[object, object, object]] = []

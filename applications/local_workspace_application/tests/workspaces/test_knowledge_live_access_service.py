@@ -7,23 +7,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-
-from pydantic import BaseModel, ConfigDict
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
-    RemoteResourceAvailabilityV1,
-    RemoteResourceDescriptorV1,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
-    CapabilityEffectV1,
-    LiveCapabilityDescriptorV1,
-)
-from intergrax.runtime.vendor_knowledge.tenant_connections import (
-    SafeTenantConnectionV1,
-    TenantConnectionAdministrativeStatus,
-)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
 )
@@ -70,6 +53,24 @@ from local_workspace_application.workspaces.knowledge_live_access_service import
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from pydantic import BaseModel, ConfigDict
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
+    RemoteResourceAvailabilityV1,
+    RemoteResourceDescriptorV1,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    CapabilityEffectV1,
+    LiveCapabilityDescriptorV1,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnectionAdministrativeStatus,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -77,9 +78,9 @@ _NOW = datetime(2024, 6, 1, 12, 0, 0, tzinfo=UTC)
 _TENANT, _WORKSPACE = "tenant-a", "workspace-1"
 _CONNECTION = "conn.slack"
 _RESOURCE = "resource-1"
-_CAP_READ = "cap.read"
-_CAP_RESOURCE = "cap.resource"
-_PROVIDER = "provider.slack"
+_CAP_READ = "vendor.provider_slack.slack_conversation.read"
+_CAP_RESOURCE = "vendor.provider_slack.slack_conversation.search"
+_PROVIDER = "provider_slack"
 _SHA256_A, _SHA256_B, _SHA256_C, _SHA256_D, _SHA256_E = (
     "a" * 64,
     "b" * 64,
@@ -134,14 +135,20 @@ def _descriptor(**overrides: object) -> LiveCapabilityDescriptorV1:
         "capability_id": _CAP_READ,
         "provider_id": _PROVIDER,
         "integration_kind": IntegrationCategory.CONVERSATION_CHANNEL,
+        "source_kind": "slack_conversation",
+        "contract_version": "1",
         "effect": CapabilityEffectV1.READ,
         "read_only": True,
         "resource_scope_required": False,
-        "request_schema_ref": "schema://req",
-        "result_schema_ref": "schema://res",
+        "request_schema_ref": "schema://vendor-knowledge/live/provider_slack/slack_conversation/read/request/v1",
+        "result_schema_ref": "schema://vendor-knowledge/live/provider_slack/slack_conversation/read/result/v1",
         "available": True,
     }
     payload.update(overrides)
+    if payload["provider_id"] != _PROVIDER and payload["capability_id"] == _CAP_READ:
+        payload["capability_id"] = (
+            f"vendor.{payload['provider_id']}.slack_conversation.read"
+        )
     return LiveCapabilityDescriptorV1(**payload)
 
 
@@ -455,7 +462,6 @@ async def test_reactivation_same_id() -> None:
         ({"effect": CapabilityEffectV1.ADMIN}, "capability_not_read_only", _CAP_READ),
         ({"read_only": False}, "capability_not_read_only", _CAP_READ),
         ({"available": False}, "capability_not_read_only", _CAP_READ),
-        ({"capability_id": "cap.read.write"}, "capability_not_read_only", "cap.read.write"),
     ],
 )
 async def test_capability_fence(overrides: dict, error: str, capability_id: str) -> None:

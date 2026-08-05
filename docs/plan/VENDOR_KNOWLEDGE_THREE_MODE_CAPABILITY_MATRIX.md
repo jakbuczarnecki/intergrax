@@ -298,7 +298,7 @@ current production foundation: implemented
   normalized result/evidence models
   receipt-only retention
 
-ARCH-1 frozen shared delta: not implemented as one accepted boundary
+FOUNDATION-1 frozen shared delta: implemented and READY_FOR_REVIEW
   canonical source_kind assertion and validation
   contract_version across descriptor/handler/request/result/binding
   strict capability-specific request models
@@ -322,9 +322,10 @@ cross-provider production proof: not implemented
 All rows below use the same planned boundary. The `PLANNED:vk...` values in the
 legacy matrix are planning placeholders, not canonical capability IDs.
 `ARCH-1` freezes the provider-neutral request/result contract decisions and
-exact capability naming. `FOUNDATION-1` must implement and validate the shared
+exact capability naming. `FOUNDATION-1` implements and validates the shared
 schemas, typed call, registration, budgets, provenance, locator and receipt
-boundary before any provider row can activate.
+boundary; provider rows remain `FOUNDATION_ONLY` until their provider task is
+accepted.
 
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -443,7 +444,7 @@ Immediate next task:
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1 — READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — NEXT AFTER ARCHITECTURE ACCEPTANCE
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — READY_FOR_REVIEW
 ```
 
 The complete order is frozen in
@@ -466,8 +467,8 @@ source kind and its reason. Databricks remains excluded because no exact
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / BLOCKED_BY_SHARED_FOUNDATION
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / NEXT AFTER FOUNDATION ACCEPTANCE
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta, timezone
-from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -15,7 +15,10 @@ from pydantic import ValidationError
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
 from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
     RemoteResourceAvailabilityV1,
     RemoteResourceCandidatePageV1,
@@ -72,14 +75,16 @@ def _connection(**overrides: Any) -> TenantConnection:
 
 def _descriptor(**overrides: Any) -> LiveCapabilityDescriptorV1:
     payload = {
-        "capability_id": "mail.read",
+        "capability_id": "vendor.ms365_graph.mailbox.read",
         "provider_id": "ms365_graph",
         "integration_kind": IntegrationCategory.COLLABORATION_SUITE,
+        "source_kind": "mailbox",
+        "contract_version": "1",
         "effect": CapabilityEffectV1.READ,
         "read_only": True,
         "resource_scope_required": False,
-        "request_schema_ref": "schema://mail.read/request",
-        "result_schema_ref": "schema://mail.read/result",
+        "request_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mailbox/read/request/v1",
+        "result_schema_ref": "schema://vendor-knowledge/live/ms365_graph/mailbox/read/result/v1",
         "available": True,
     }
     payload.update(overrides)
@@ -92,7 +97,7 @@ def _candidate(**overrides: Any) -> RemoteResourceCandidateV1:
         "resource_type": "mailbox",
         "safe_display_label": "Inbox",
         "availability": RemoteResourceAvailabilityV1.AVAILABLE,
-        "supported_capability_ids": ("mail.read",),
+        "supported_capability_ids": ("vendor.ms365_graph.mailbox.read",),
     }
     payload.update(overrides)
     return RemoteResourceCandidateV1(**payload)
@@ -466,7 +471,16 @@ async def test_capability_intersection_and_catalog_validation() -> None:
     provider = _default_provider(
         pages={
             None: RemoteResourceCandidatePageV1(
-                resources=(_candidate(supported_capability_ids=("mail.read", "mail.write", "mail.unavailable", "mail.unknown")),),
+                resources=(
+                    _candidate(
+                        supported_capability_ids=(
+                            "vendor.ms365_graph.mailbox.read",
+                            "vendor.ms365_graph.mailbox.list",
+                            "vendor.ms365_graph.mailbox.search",
+                            "vendor.ms365_graph.mailbox.content.read",
+                        )
+                    ),
+                ),
                 snapshot_version="snap-1",
             )
         }
@@ -474,10 +488,22 @@ async def test_capability_intersection_and_catalog_validation() -> None:
     service, admin, _, catalog, connection_registry, _, _, _ = _stack(provider)
     _wire(service, admin, catalog, connection_registry, register_capability=False)
     catalog.register(_descriptor())
-    catalog.register(_descriptor(capability_id="mail.write", effect=CapabilityEffectV1.WRITE))
-    catalog.register(_descriptor(capability_id="mail.unavailable", available=False))
+    catalog.register(
+        _descriptor(
+            capability_id="vendor.ms365_graph.mailbox.list",
+            effect=CapabilityEffectV1.WRITE,
+        )
+    )
+    catalog.register(
+        _descriptor(
+            capability_id="vendor.ms365_graph.mailbox.search",
+            available=False,
+        )
+    )
     page = await service.list_remote_resources(connection_ref="conn-1", source_kind="mailbox")
-    assert page.resources[0].supported_capability_ids == ("mail.read",)
+    assert page.resources[0].supported_capability_ids == (
+        "vendor.ms365_graph.mailbox.read",
+    )
 
     class _BadCatalog(TenantLiveCapabilityCatalog):
         def list_capabilities(self, **kwargs: Any) -> tuple[LiveCapabilityDescriptorV1, ...]:
