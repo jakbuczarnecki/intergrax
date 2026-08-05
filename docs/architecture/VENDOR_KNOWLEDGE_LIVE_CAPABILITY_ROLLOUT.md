@@ -967,10 +967,13 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1-REVIEW-FIX-2
   ACCEPTED / CLOSED
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
-  READY_FOR_REVIEW
+  ACCEPTED / CLOSED
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
-  PLANNED / NEXT AFTER DRIVE ACCEPTANCE
+  READY_FOR_REVIEW
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL
+  PLANNED / NEXT AFTER MAIL ACCEPTANCE
 
 all other provider live tasks
   PLANNED
@@ -995,6 +998,21 @@ bounded content read: DEFERRED
 Content read remains deferred because the current provider surface returns
 binary bytes, while the shared live result is textual and the adapter does not
 propagate the live per-item byte budget.
+
+### Microsoft Graph Mail live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED through read_mail_messages_delta_page
+exact item read: UNSUPPORTED_BY_PROVIDER
+thread read: UNSUPPORTED_BY_PROVIDER
+child read / attachment inventory: DEFERRED
+bounded content read: DEFERRED
+```
+
+Mail live access is bound to one canonical opaque mailbox-folder scope and
+performs exactly one adapter page read. Message bodies, threads, attachment
+inventory/content and real-credential external proof remain out of scope.
 
 Acceptance requires proof that later tasks use:
 

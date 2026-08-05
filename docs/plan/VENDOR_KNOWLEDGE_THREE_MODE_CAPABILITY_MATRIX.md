@@ -322,9 +322,12 @@ FOUNDATION-1-REVIEW-FIX-2: implemented and READY_FOR_REVIEW
   runtime live modules have no LKW application import
   runtime-only handler construction and strict outcome proof
 
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / BLOCKED_BY_SHARED_FOUNDATION
-  no Graph Drive handler, registration bundle or provider implementation is
-  included in the shared-foundation ownership correction
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
+  bounded Drive list/query is registered through the shared live executor
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
+  bounded mailbox-folder message list/query is registered through the same
+  shared live executor; body, thread and attachment reads remain deferred
 
 provider-specific production handlers: not implemented
 provider-specific production registrations: not implemented
@@ -342,7 +345,7 @@ accepted.
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Microsoft Graph | `drive` | `vendor.ms365_graph.drive.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / not applicable child / deferred content | one known drive ID from binding | `MsGraphDriveListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `READY_FOR_REVIEW` | search and exact item read are unsupported; child read is not applicable; content read is deferred because provider bytes do not fit the textual live result boundary |
-| Microsoft Graph | `mail` | `PLANNED:vk.msgraph.mail.search/read` | planned | planned | mailbox + folder | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `mail` | `vendor.ms365_graph.mail.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / deferred thread / deferred child and content | one binding-derived opaque mailbox-folder scope | `MsGraphMailListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `READY_FOR_REVIEW` | search, exact read and thread read are unsupported; attachment inventory/content and bounded content read remain deferred |
 | Microsoft Graph | `teams_channel` | `PLANNED:vk.msgraph.teams_channel.search/read` | planned | planned | one team + channel | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Microsoft Graph | `teams_chat` | `PLANNED:vk.msgraph.teams_chat.search/read` | planned | planned | one chat + bounded window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Microsoft Graph | `calendar` | `PLANNED:vk.msgraph.calendar.search/read` | planned | planned | mailbox calendar + UTC window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
@@ -377,6 +380,22 @@ The supported list/query operation uses the existing
 text. Content remains deferred because the provider surface returns binary
 bytes, the shared live result is textual, and the adapter does not propagate
 the live per-item byte budget.
+
+### Microsoft Graph Mail live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED through read_mail_messages_delta_page
+exact item read: UNSUPPORTED_BY_PROVIDER
+thread read: UNSUPPORTED_BY_PROVIDER
+child read / attachment inventory: DEFERRED
+bounded content read: DEFERRED
+```
+
+The Mail capability reads exactly one adapter page for one opaque
+mailbox-folder binding and emits metadata-only deterministic JSON. It does not
+follow or expose continuation, read message bodies, infer global deletion, or
+claim attachment inventory/content from `has_attachments`.
 
 ### Google readiness gate
 
@@ -471,8 +490,10 @@ handlers reuse the existing shared `GoogleWorkspaceCollaborationSuiteIntegration
 Immediate next task:
 
 ```text
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1 — READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — READY_FOR_REVIEW
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL — READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL — PLANNED / NEXT AFTER MAIL ACCEPTANCE
 ```
 
 The complete order is frozen in
@@ -495,8 +516,10 @@ source kind and its reason. Databricks remains excluded because no exact
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / NEXT AFTER FOUNDATION ACCEPTANCE
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: PLANNED / NEXT AFTER MAIL ACCEPTANCE
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

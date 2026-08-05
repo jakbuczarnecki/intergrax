@@ -20,6 +20,13 @@ from .drive import (
     MsGraphDriveListLiveRequestV1,
     build_msgraph_drive_list_descriptor,
 )
+from .mail import (
+    MSGRAPH_MAIL_LIST_REQUEST_SCHEMA_REF,
+    MSGRAPH_MAIL_LIST_RESULT_SCHEMA_REF,
+    MsGraphMailListLiveHandlerV1,
+    MsGraphMailListLiveRequestV1,
+    build_msgraph_mail_list_descriptor,
+)
 
 
 def build_msgraph_drive_live_registration_bundles() -> (
@@ -41,6 +48,33 @@ def build_msgraph_drive_live_registration_bundles() -> (
             ),
             result_schema=SchemaRegistrationV1(
                 schema_ref=MSGRAPH_DRIVE_LIST_RESULT_SCHEMA_REF,
+                role=SchemaRoleV1.RESULT,
+                model=LiveCapabilityExecutionResultV1,
+                contract_version="1",
+            ),
+        ),
+    )
+
+
+def build_msgraph_live_registration_bundles() -> (
+    tuple[LiveRegistrationBundleV1, ...]
+):
+    """Return the complete deterministic Microsoft Graph live family."""
+
+    mail_descriptor = build_msgraph_mail_list_descriptor()
+    return (
+        *build_msgraph_drive_live_registration_bundles(),
+        LiveRegistrationBundleV1(
+            descriptor=mail_descriptor,
+            handler=MsGraphMailListLiveHandlerV1(),
+            request_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_MAIL_LIST_REQUEST_SCHEMA_REF,
+                role=SchemaRoleV1.REQUEST,
+                model=MsGraphMailListLiveRequestV1,
+                contract_version="1",
+            ),
+            result_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_MAIL_LIST_RESULT_SCHEMA_REF,
                 role=SchemaRoleV1.RESULT,
                 model=LiveCapabilityExecutionResultV1,
                 contract_version="1",

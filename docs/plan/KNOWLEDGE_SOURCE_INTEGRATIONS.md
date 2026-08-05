@@ -132,10 +132,11 @@ and the Google readiness gate remains independently **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
 provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
-`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **READY_FOR_REVIEW** with one
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **ACCEPTED / CLOSED** with one
 bounded Drive list/query capability; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`
-is **PLANNED / NEXT AFTER DRIVE ACCEPTANCE**. Other provider live capability
-tasks remain **PLANNED**.
+is **READY_FOR_REVIEW** with one bounded mailbox-folder list/query capability.
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL` is **PLANNED / NEXT AFTER
+MAIL ACCEPTANCE**. Other provider live capability tasks remain **PLANNED**.
 
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
@@ -294,6 +295,21 @@ Drive live list returns deterministic textual metadata only. Content read is
 deferred because the current provider surface returns binary bytes, the shared
 live result is textual, and the existing adapter does not propagate the live
 per-item byte budget.
+
+The accepted Mail live operation matrix is:
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED through read_mail_messages_delta_page
+exact item read: UNSUPPORTED_BY_PROVIDER
+thread read: UNSUPPORTED_BY_PROVIDER
+child read / attachment inventory: DEFERRED
+bounded content read: DEFERRED
+```
+
+Mail live list is one page over one binding-derived opaque mailbox-folder scope.
+It returns deterministic metadata only; message bodies, threads, attachment
+inventory/content and continuation persistence remain excluded.
 
 Drive permission capability remains false because the current low-level
 permission projection explicitly does not prove a complete ACL or complete
@@ -1950,9 +1966,9 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
 → VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
 → VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
 
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE  # next after foundation acceptance
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE  # ACCEPTED / CLOSED
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL  # READY_FOR_REVIEW
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL  # next after mail acceptance
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
@@ -2079,8 +2095,9 @@ commercial status
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: PLANNED / NEXT AFTER DRIVE ACCEPTANCE
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: PLANNED / NEXT AFTER MAIL ACCEPTANCE
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED
