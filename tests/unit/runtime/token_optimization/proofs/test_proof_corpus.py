@@ -5,9 +5,13 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.token_optimization.proofs.config import (
+    load_universal_token_optimization_proof_config,
+)
 from intergrax.runtime.token_optimization.proofs.corpus import load_proof_corpus
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     EvaluationConfigurationError,
+    expand_proof_config_with_corpus,
 )
 
 _ROOT = Path(__file__).resolve().parents[5]
@@ -42,6 +46,75 @@ def test_checked_in_corpus_is_strict_and_covers_required_categories() -> None:
     )
     assert all(
         "SYNTHETIC_SECRET_MARKER" not in case.description for case in corpus.cases
+    )
+
+
+def test_corpus_inputs_are_representative_and_expectations_are_assertive(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VLLM_API_KEY", "test-only")
+    corpus = load_proof_corpus(_CORPUS)
+    proof_config = load_universal_token_optimization_proof_config(
+        _ROOT / "configs/token_optimization/proof_vllm.toml"
+    )
+    expanded = expand_proof_config_with_corpus(proof_config, corpus)
+    cases = {case.case_id: case for case in expanded.cases}
+    expectations = {case.case_id: case for case in corpus.cases}
+
+    assert len({case.input_case_id for case in corpus.cases}) == 16
+    assert all(case.input_case_id != "smoke-exact-dedup" for case in corpus.cases)
+    assert cases["case-short-clean-prompt"].request.content == (
+        "Return current deployment status."
+    )
+    assert cases["case-exact-duplicate-content"].request.content.splitlines().count(
+        "line-a"
+    ) == 2
+    assert len(cases["case-noisy-tool-output"].request.content.splitlines()) >= 50
+    assert "[031] execute error=E_SYNTHETIC_TERMINAL" in cases[
+        "case-terminal-log-output"
+    ].request.content
+    assert cases["case-noisy-tool-output"].request.source_type.value == "tool_output"
+    assert (
+        cases["case-terminal-log-output"].request.source_type.value
+        == "terminal_output"
+    )
+    assert cases["case-rag-context-pack"].request.source_type.value == "rag_context_pack"
+    assert cases["case-code-heavy-content"].request.source_type.value == "structured_data"
+    assert cases["case-reordered-tools"].request.source_type.value == "tool_catalog"
+    assert cases["case-rag-context-pack"].request.content.count("[evidence-001]") == 2
+    assert "def verify_artifact" in cases["case-code-heavy-content"].request.content
+    assert "sha256" in cases["case-code-heavy-content"].request.content
+    assert len(expectations["case-protected-values"].protected_regions) == 4
+    assert len(expectations["case-high-risk-lossy-content"].protected_regions) == 2
+    assert cases["case-policy-disabled"].request.policy.enabled is False
+    assert cases["case-measure-only"].request.policy.profile.value == "measure_only"
+
+    assert sum(
+        bool(
+            case.router.allowed_configuration_ids
+            and case.router.allowed_reason_codes
+        )
+        for case in corpus.cases
+    ) >= 6
+    assert sum(
+        bool(
+            case.pipeline.required_layer_ids
+            or case.pipeline.forbidden_layer_ids
+            or case.pipeline.expected_completion is not None
+        )
+        for case in corpus.cases
+    ) >= 5
+    assert sum(
+        case.measurement.baseline.value == "required"
+        and case.measurement.optimized.value == "required"
+        and case.measurement.ordering_required
+        for case in corpus.cases
+    ) >= 3
+    assert sum(case.prefix.identity_required for case in corpus.cases) >= 2
+    assert sum(case.cache.mode.value != "not_applicable" for case in corpus.cases) >= 2
+    assert all(
+        case.router.allowed_statuses != frozenset({"routed", "blocked"})
+        for case in corpus.cases
     )
 
 

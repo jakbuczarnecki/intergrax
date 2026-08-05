@@ -179,6 +179,49 @@ def _cache() -> ProviderCacheEvidence:
     )
 
 
+def _changed_prefix_fixture() -> tuple[
+    UniversalProofRunResult, ProofCorpus, EvaluationConfiguration
+]:
+    run, corpus, config = _fixture()
+    first_case = corpus.cases[0]
+    second_case = replace(
+        first_case,
+        case_id="case-two",
+        input_case_id="input-two",
+        prefix=PrefixExpectation(
+            identity_required=True,
+            different_from_case_id="case-one",
+        ),
+        cache=CacheExpectation(
+            mode=CacheExpectationMode.CHANGED_PREFIX_NEGATIVE_CONTROL,
+            same_as_case_id="case-one",
+        ),
+    )
+    second_result = replace(
+        run.cases[0],
+        case_id="case-two",
+        prefix_identity_evidence=replace(
+            run.cases[0].prefix_identity_evidence,
+            stable_prefix_identity="b" * 64,
+        ),
+    )
+    run = replace(
+        run,
+        case_count=2,
+        completed_count=2,
+        cases=(run.cases[0], second_result),
+        artifact_manifest=UniversalProofArtifactManifest(
+            files=(
+                ProofArtifactRef("run.json", _DIGEST),
+                ProofArtifactRef("cases/case-one.json", _DIGEST),
+                ProofArtifactRef("cases/case-two.json", _DIGEST),
+            )
+        ),
+    )
+    corpus = replace(corpus, cases=(first_case, second_case))
+    return run, corpus, config
+
+
 def test_all_required_gates_pass_from_recorded_evidence() -> None:
     run, corpus, config = _fixture()
     evaluation = UniversalProofEvaluator().evaluate(
@@ -192,6 +235,61 @@ def test_all_required_gates_pass_from_recorded_evidence() -> None:
         for gate in case.gates
         if gate.required and gate.status is GateStatus.FAIL
     ]
+
+
+def test_changed_prefix_cache_evidence_passes_from_typed_fixtures() -> None:
+    run, corpus, config = _changed_prefix_fixture()
+    changed = ProviderCacheEvidence(
+        case_id="case-two",
+        provider="vllm",
+        model="synthetic-model",
+        stable_prefix_identity="b" * 64,
+        prompt_token_count=100,
+        cached_prompt_token_count=0,
+        cache_attribution=CacheAttribution.MISS_CONFIRMED,
+        role=CacheEvidenceRole.CHANGED_PREFIX_NEGATIVE_CONTROL,
+        reason_code="PROVIDER_REPORTED_MISS",
+    )
+
+    evaluation = UniversalProofEvaluator().evaluate(
+        run,
+        corpus,
+        config,
+        cache_evidence=(_cache(), changed),
+    )
+
+    assert evaluation.success is True
+    gates = [
+        gate
+        for case in evaluation.cases
+        for gate in case.gates
+        if gate.case_id == "case-two"
+    ]
+    assert any(
+        gate.gate_id == "CHANGED_PREFIX_NEGATIVE_CONTROL"
+        and gate.status is GateStatus.PASS
+        for gate in gates
+    )
+
+
+def test_conflicting_cache_evidence_fails_closed() -> None:
+    run, corpus, config = _fixture()
+    conflicting = replace(
+        _cache(),
+        cache_attribution=CacheAttribution.CONFLICTING,
+    )
+
+    evaluation = UniversalProofEvaluator().evaluate(
+        run, corpus, config, cache_evidence=(conflicting,)
+    )
+
+    assert evaluation.success is False
+    assert {
+        gate.gate_id
+        for case in evaluation.cases
+        for gate in case.gates
+        if gate.status is GateStatus.FAIL
+    } >= {"WARM_CACHE_REUSE", "CHANGED_PREFIX_NEGATIVE_CONTROL"}
 
 
 @pytest.mark.parametrize(
@@ -262,6 +360,72 @@ def test_missing_prefix_and_latency_only_cache_are_not_pass() -> None:
     )
     assert any(
         gate.gate_id == "WARM_CACHE_REUSE" and gate.status is GateStatus.FAIL
+        for case in evaluation.cases
+        for gate in case.gates
+    )
+
+
+def _protected_fixture() -> tuple[
+    UniversalProofRunResult, ProofCorpus, EvaluationConfiguration
+]:
+    run, corpus, config = _fixture()
+    protected_expectation = ProtectedRegionExpectation(
+        expected_input_count=1,
+        expected_preserved_count=1,
+        expected_validation_status="passed",
+        digest_equality_required=True,
+    )
+    corpus = replace(
+        corpus,
+        cases=(replace(corpus.cases[0], protected=protected_expectation),),
+    )
+    evidence = ProofProtectedRegionEvidence(
+        input_protected_region_count=1,
+        validated_protected_region_count=1,
+        preserved_protected_region_count=1,
+        protected_region_validation_status="passed",
+        input_identity_digest=_DIGEST,
+        preserved_identity_digest=_DIGEST,
+    )
+    run = replace(
+        run,
+        cases=(replace(run.cases[0], protected_region_evidence=evidence),),
+    )
+    return run, corpus, config
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda evidence: replace(evidence, input_protected_region_count=0),
+        lambda evidence: replace(
+            evidence, preserved_identity_digest="b" * 64
+        ),
+        lambda evidence: replace(
+            evidence, protected_region_validation_status="failed"
+        ),
+    ],
+)
+def test_protected_region_negative_evidence_fails_closed(mutation) -> None:
+    run, corpus, config = _protected_fixture()
+    evidence = mutation(run.cases[0].protected_region_evidence)
+    run = replace(
+        run,
+        cases=(replace(run.cases[0], protected_region_evidence=evidence),),
+    )
+
+    evaluation = UniversalProofEvaluator().evaluate(
+        run, corpus, config, cache_evidence=(_cache(),)
+    )
+
+    assert evaluation.success is False
+    assert any(
+        gate.gate_id in {
+            "PROTECTED_REGION_COUNT",
+            "PROTECTED_REGION_PRESERVATION",
+            "PROTECTED_REGION_VALIDATION",
+        }
+        and gate.status is GateStatus.FAIL
         for case in evaluation.cases
         for gate in case.gates
     )
