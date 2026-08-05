@@ -96,19 +96,6 @@ Accepted technical proof:
 
 **Role:** Featured platform-capability proof
 
-Accepted lifecycle status:
-
-- CTX-UCL-5 — **ACCEPTED / CLOSED**
-- CTX-UCL-6 — **ACCEPTED / CLOSED**
-- CTX-UCL-6A — **ACCEPTED / CLOSED**
-- CTX-UCL-6B — **ACCEPTED / CLOSED**
-- CTX-UCL-6C — **ACCEPTED / CLOSED**
-- CTX-UCL-6D — **ACCEPTED / CLOSED**
-- CTX-UCL-CLOSEOUT-1 — **ACCEPTED / CLOSED**
-- TOKEN-10E / TOKEN-10E-1 — **ACCEPTED / CLOSED**
-
-These statuses cover accepted UCL contracts and bounded implementation only. They do not claim production rollout, live provider proof, rollback execution, human-review UX completion, application migration, or numeric savings.
-
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | Deterministic optimization pipeline | ✅ **IMPLEMENTED** | Layer registry, pipeline runner, built-in catalog, plugin contract | Not globally auto-enabled |
@@ -118,7 +105,7 @@ These statuses cover accepted UCL contracts and bounded implementation only. The
 | Cache-stable prompt assembly | ✅ **IMPLEMENTED** | Stable prefix, dynamic tail, append-only rules | Does not prove provider cache behavior alone |
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
-| Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete |
+| Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete; numeric savings are not claimed |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
 | Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |

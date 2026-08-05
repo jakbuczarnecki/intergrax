@@ -20,22 +20,10 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Overall public classification** | PARTIAL |
 | **Implemented foundation** | Existing deterministic engine mechanisms |
 | **Accepted bounded proof** | Named vLLM prefix-cache proof |
+| **Durable in-cache compaction** | Implemented as a bounded mechanism; live provider proof, production rollout, and rollback execution remain incomplete; numeric savings are not claimed |
 | **Public limitations** | No provider-independent, universal or production-proven savings claim |
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
 | **Public proof dashboard** | [`../../../PROOFS.md`](../../../PROOFS.md) |
-
-Accepted lifecycle status:
-
-- CTX-UCL-5 — **ACCEPTED / CLOSED**
-- CTX-UCL-6 — **ACCEPTED / CLOSED**
-- CTX-UCL-6A — **ACCEPTED / CLOSED**
-- CTX-UCL-6B — **ACCEPTED / CLOSED**
-- CTX-UCL-6C — **ACCEPTED / CLOSED**
-- CTX-UCL-6D — **ACCEPTED / CLOSED**
-- CTX-UCL-CLOSEOUT-1 — **ACCEPTED / CLOSED**
-- TOKEN-10E / TOKEN-10E-1 — **ACCEPTED / CLOSED**
-
-These statuses cover accepted UCL contracts and bounded implementation only. They do not claim production rollout, live provider proof, rollback execution, human-review UX completion, application migration, or numeric savings.
 
 Detailed phase, dependency and review status is maintained only
 in the Token Optimization implementation plan and is not repeated here.
@@ -106,7 +94,10 @@ input
 ## 2. Current maturity
 
 The guide documents an implemented deterministic engine foundation, a named
-bounded vLLM prefix-cache proof, and an overall **PARTIAL** public status.
+bounded vLLM prefix-cache proof, a bounded durable in-cache compaction
+mechanism, and an overall **PARTIAL** public status. Live provider proof,
+production rollout, and rollback execution remain incomplete; numeric savings
+are not claimed.
 Provider-independent behavior, universal savings, and production-proven
 savings are not claimed.
 

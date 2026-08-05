@@ -182,7 +182,10 @@ _TOKEN_10E_PUBLIC_CONTRACTS = {
 _TOKEN_10E_CANONICAL_SURFACES = (
     _TOKEN_OPT_ARCH,
     _REPO_ROOT / "docs" / "features" / "plan" / "TOKEN_OPTIMIZATION.md",
-    _CLAIMS_DOC,
+)
+_UCL_CANONICAL_STATUS_SURFACES = (
+    _UCL_PLAN,
+    _UCL_ARCH,
 )
 
 
@@ -206,7 +209,6 @@ _UCL_PUBLIC_SURFACES = (
     ("PROOFS.md", _PROOFS_DOC),
     ("token_optimization/README.md", _TOKEN_OPT_README),
     ("PUBLIC_PROOF_AND_CLAIMS_MODEL.md", _PUBLIC_PROOF_MODEL),
-    ("TOKEN_OPTIMIZATION_CLAIMS.md", _CLAIMS_DOC),
 )
 
 _CTX_UCL_6_MILESTONE = re.compile(r"ctx-ucl-6(?!a)", re.IGNORECASE)
@@ -263,35 +265,19 @@ def _assert_required_ucl_statuses(normalized: str) -> None:
     ), "TOKEN-10E-1 must be ready for review or blocked"
 
 
-_CTX_UCL_6_NOT_STARTED = re.compile(
-    r"ctx-ucl-6(?!a)\b[^;|]{0,40}\bnot started\b",
-    re.IGNORECASE,
-)
+def _assert_public_ucl_claim_semantics(normalized: str) -> None:
+    assert "implemented" in normalized
+    assert "bounded" in normalized
+    assert re.search(r"durable.{0,80}compaction", normalized)
 
-
-def _assert_no_stale_ucl_wording(normalized: str) -> None:
-    ucl5_segment = _ucl_status_segment(normalized, "CTX-UCL-5")
-    assert not (
-        ("ready for review" in ucl5_segment or "in review" in ucl5_segment)
-        and "accepted" not in ucl5_segment
-    ), "CTX-UCL-5 must not be described as ready for review or in review"
-
-    stale_patterns = (
-        _CTX_UCL_6_NOT_STARTED,
-        re.compile(r"ctx-ucl-6(?!a).{0,60}\bin progress\b", re.IGNORECASE),
-        re.compile(r"ctx-ucl-6a.{0,60}\bready for review\b", re.IGNORECASE),
-        re.compile(r"ctx-ucl-6b.{0,60}\bready for review\b", re.IGNORECASE),
-        re.compile(r"ctx-ucl-closeout-1.{0,60}\bnot started\b", re.IGNORECASE),
-        re.compile(r"token-10e.{0,60}\bimplementation started\b", re.IGNORECASE),
-        re.compile(
-            r"token-10e(?:\s+is|\s+runtime|\s+implementation)?\s+implemented\b",
-            re.IGNORECASE,
-        ),
+    limitation_patterns = (
+        r"live provider(?:-wide)? proof.{0,120}(?:incomplete|not established|not claimable)",
+        r"production rollout.{0,120}(?:incomplete|not established|not claimable)",
+        r"rollback execution.{0,120}(?:incomplete|not established|not claimable)",
+        r"numeric savings.{0,120}(?:not claimed|not established|not claimable)",
     )
-    for pattern in stale_patterns:
-        assert not pattern.search(normalized), (
-            f"Stale UCL wording matched pattern: {pattern.pattern!r}"
-        )
+    for pattern in limitation_patterns:
+        assert re.search(pattern, normalized), f"Missing bounded claim limitation: {pattern!r}"
 
 
 def test_token_10e_public_contracts_are_frozen_at_package_root() -> None:
@@ -335,6 +321,13 @@ def test_token_10e_canonical_documents_are_ready_for_independent_acceptance() ->
         )
         for phrase in stale_phrases:
             assert phrase not in normalized
+
+
+def test_detailed_ucl_statuses_remain_in_canonical_documents() -> None:
+    canonical_text = "\n".join(
+        _read_public_doc(path) for path in _UCL_CANONICAL_STATUS_SURFACES
+    )
+    _assert_required_ucl_statuses(_normalize_public_text(canonical_text))
 
 
 def test_token_10e_closeout_status_guard_rejects_unrelated_statuses() -> None:
@@ -688,21 +681,30 @@ def test_claims_doc_does_not_claim_runtime_single_flight_or_recursion_protection
 
 
 @pytest.mark.parametrize("surface_name, surface_path", _UCL_PUBLIC_SURFACES)
-def test_ucl_public_surface_reports_current_status(
+def test_ucl_public_surface_reports_bounded_claim_semantics(
     surface_name: str,
     surface_path: Path,
 ) -> None:
     normalized = _normalize_public_text(_read_public_doc(surface_path))
-    _assert_required_ucl_statuses(normalized)
+    _assert_public_ucl_claim_semantics(normalized)
 
 
 @pytest.mark.parametrize("surface_name, surface_path", _UCL_PUBLIC_SURFACES)
-def test_ucl_public_surface_rejects_stale_status_wording(
+def test_ucl_public_surface_does_not_mirror_ucl_roadmap_checklist(
     surface_name: str,
     surface_path: Path,
 ) -> None:
     normalized = _normalize_public_text(_read_public_doc(surface_path))
-    _assert_no_stale_ucl_wording(normalized)
+    assert "accepted lifecycle status" not in normalized
+    mirrored_milestones = (
+        "ctx-ucl-5",
+        "ctx-ucl-6a",
+        "ctx-ucl-6b",
+        "ctx-ucl-6c",
+        "ctx-ucl-6d",
+        "ctx-ucl-closeout-1",
+    )
+    assert not all(milestone in normalized for milestone in mirrored_milestones)
 
 
 def test_public_adoption_reading_order_is_zero_through_nine_unique() -> None:
