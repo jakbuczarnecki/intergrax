@@ -8,6 +8,7 @@ def knowledge_document(
     *,
     tenant_id: str = "tenant-a",
     namespace: str | None = None,
+    workspace_id: str | None = None,
     document_id: str = "doc-1",
     metadata: dict[str, object] | None = None,
 ) -> KnowledgeDocument:
@@ -18,7 +19,11 @@ def knowledge_document(
                 "document_id": document_id,
                 "root_document_id": document_id,
             },
-            "scope": {"tenant_id": tenant_id, "namespace": namespace},
+            "scope": {
+                "tenant_id": tenant_id,
+                "namespace": namespace,
+                "workspace_id": workspace_id,
+            },
             "content": content,
             "metadata": metadata or {},
             "provenance": {

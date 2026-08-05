@@ -90,7 +90,10 @@ LCI-4B reranking preserves the native `KnowledgeDocument`, identity, scope,
 provenance and user metadata while adding only rerank/fusion scores and final
 rank. LCI-4C Graph RAG indexers and graph isolation contracts accept native
 `KnowledgeDocument` values, and graph retrieval uses the existing native
-`RetrievalHit` contract. GraphStore backend internals remain unchanged.
+`RetrievalHit` contract. GraphStore backends remain tenant-bound where applicable;
+namespace and workspace isolation are enforced by the bound Graph indexer scope
+fence before writes. A single indexer instance cannot switch tenant, namespace or
+workspace after binding. GraphStore backend internals remain unchanged.
 
 LCI-4D remains planned for auxiliary memory, multimedia, legacy RAG,
 evaluation and soak paths after LCI-4C acceptance.

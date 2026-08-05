@@ -54,6 +54,7 @@ RESERVED_METADATA_KEYS: frozenset[str] = frozenset(
         "parent_document_id",
         "tenant_id",
         "namespace",
+        "workspace_id",
         "source_kind",
         "source_id",
         "source_parent_id",
@@ -108,6 +109,7 @@ class KnowledgeDocumentScope(BaseModel):
 
     tenant_id: StrictKnowledgeString
     namespace: OptionalStrictKnowledgeString = None
+    workspace_id: OptionalStrictKnowledgeString = None
 
     @field_validator("tenant_id")
     @classmethod

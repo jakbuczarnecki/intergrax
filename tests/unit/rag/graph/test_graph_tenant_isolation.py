@@ -54,14 +54,22 @@ def test_tenant_metadata_is_not_an_authoritative_graph_scope() -> None:
             tenant_id="tenant-a",
             metadata={"tenant_id": "tenant-b"},
         )
+    with pytest.raises(ValueError):
+        knowledge_document(
+            "Spoofed workspace metadata must be rejected.",
+            tenant_id="tenant-a",
+            metadata={"workspace_id": "workspace-b"},
+        )
 
     document = knowledge_document(
         "Acme Corp trusts Beta Labs; user metadata cannot change graph scope.",
         tenant_id="tenant-a",
-        metadata={"tenant_hint": "tenant-b"},
+        workspace_id="workspace-a",
+        metadata={"tenant_hint": "tenant-b", "workspace_hint": "workspace-b"},
     )
     store = InMemoryGraphStore(tenant_id="tenant-a")
     HeuristicGraphIndexer(store).index_documents([document], chunk_ids=["chunk-scope"])
 
     assert document.scope.tenant_id == "tenant-a"
+    assert document.scope.workspace_id == "workspace-a"
     assert store.node_ids_for_chunks({"chunk-scope"})

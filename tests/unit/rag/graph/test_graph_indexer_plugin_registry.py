@@ -28,10 +28,27 @@ def test_register_and_resolve_graph_indexer_plugin() -> None:
     profile = RagProfile(graph_indexer_plugin_id="lab_heuristic")
     indexer = resolve_graph_indexer(InMemoryGraphStore(), profile)
     count = indexer.index_documents(
-        [knowledge_document("Acme Corp uses Intergrax Harness.")],
+        [
+            knowledge_document(
+                "Acme Corp uses Intergrax Harness.",
+                namespace="namespace-a",
+                workspace_id="workspace-a",
+            )
+        ],
         chunk_ids=["chunk-plugin"],
     )
     assert count >= 1
+    with pytest.raises(ValueError, match="cannot change"):
+        indexer.index_documents(
+            [
+                knowledge_document(
+                    "Acme Corp uses Intergrax Harness.",
+                    namespace="namespace-b",
+                    workspace_id="workspace-a",
+                )
+            ],
+            chunk_ids=["chunk-plugin-2"],
+        )
 
 
 def test_graph_indexer_contracts_are_native() -> None:
@@ -102,6 +119,89 @@ def test_graph_indexer_validates_batch_before_first_write() -> None:
         indexer.index_documents([valid, object()], chunk_ids=["chunk-a", "chunk-b"])  # type: ignore[list-item]
 
     assert store.find_nodes(label_contains="Acme", limit=5) == []
+
+
+def test_graph_indexer_scope_fence_rejects_workspace_mixing_before_write() -> None:
+    store = InMemoryGraphStore(tenant_id="tenant-a")
+    indexer = HeuristicGraphIndexer(store)
+    writes: list[str] = []
+    original_upsert_node = store.upsert_node
+
+    def record_upsert_node(node) -> None:
+        writes.append(node.id)
+        original_upsert_node(node)
+
+    store.upsert_node = record_upsert_node  # type: ignore[method-assign]
+    try:
+        assert indexer.index_documents([]) == 0
+        with pytest.raises(ValueError, match="chunk_ids length"):
+            indexer.index_documents(
+                [
+                    knowledge_document(
+                        "Acme Corp uses Intergrax Harness.",
+                        namespace="namespace-a",
+                        workspace_id="workspace-a",
+                    )
+                ],
+                chunk_ids=[],
+            )
+        assert writes == []
+
+        with pytest.raises(ValueError, match="workspace"):
+            indexer.index_documents(
+                [
+                    knowledge_document(
+                        "Acme Corp uses Intergrax Harness.",
+                        workspace_id=None,
+                    ),
+                    knowledge_document(
+                        "Beta Labs uses Intergrax Harness.",
+                        workspace_id="workspace-a",
+                        document_id="other-doc",
+                    ),
+                ],
+                chunk_ids=["chunk-a", "chunk-b"],
+            )
+        assert writes == []
+
+        valid = knowledge_document(
+            "Acme Corp uses Intergrax Harness.",
+            namespace="namespace-a",
+            workspace_id="workspace-a",
+        )
+        assert indexer.index_documents([valid], chunk_ids=["chunk-valid"]) >= 1
+        write_count = len(writes)
+        assert indexer.index_documents([valid], chunk_ids=["chunk-valid-2"]) >= 1
+        assert len(writes) > write_count
+        writes_before_scope_conflicts = len(writes)
+
+        with pytest.raises(ValueError, match="cannot change"):
+            indexer.index_documents(
+                [
+                    knowledge_document(
+                        "Beta Labs uses Intergrax Harness.",
+                        namespace="namespace-b",
+                        workspace_id="workspace-a",
+                        document_id="namespace-doc",
+                    )
+                ],
+                chunk_ids=["chunk-namespace"],
+            )
+        with pytest.raises(ValueError, match="cannot change"):
+            indexer.index_documents(
+                [
+                    knowledge_document(
+                        "Gamma Systems uses Intergrax Harness.",
+                        namespace="namespace-a",
+                        workspace_id="workspace-b",
+                        document_id="workspace-doc",
+                    )
+                ],
+                chunk_ids=["chunk-workspace"],
+            )
+        assert len(writes) == writes_before_scope_conflicts
+    finally:
+        store.upsert_node = original_upsert_node  # type: ignore[method-assign]
 
 
 def test_graph_indexer_uses_stable_identity_without_mutating_document() -> None:

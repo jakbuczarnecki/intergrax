@@ -164,6 +164,7 @@ KnowledgeDocumentIdentity
 KnowledgeDocumentScope
 ├── tenant_id: str
 └── namespace: str | None
+    workspace_id: str | None
 
 KnowledgeDocumentProvenance
 ├── source_kind: str
@@ -210,8 +211,9 @@ class KnowledgeDocument(BaseModel): ...
 |-------|------|
 | `tenant_id` | Required, non-empty. No implicit `"default"`. |
 | `namespace` | Optional neutral partition id (collection, index partition, logical bucket). |
+| `workspace_id` | Optional workspace partition id; `None` is distinct from a concrete workspace. |
 
-**Not canonical fields** (may appear in `metadata` only): `workspace_id`, `slack_workspace_id`, `application_id`.
+**Not canonical fields** (may appear in `metadata` only): `slack_workspace_id`, `application_id`.
 
 ### 4.5 KnowledgeDocumentProvenance
 
@@ -245,16 +247,16 @@ class KnowledgeDocument(BaseModel): ...
 ### 6.1 Canonical document identity key
 
 ```text
-Canonical document identity key: (tenant_id, namespace, document_id)
+Canonical document identity key: (tenant_id, namespace, workspace_id, document_id)
 ```
 
 Rules:
 
-1. `document_id` is persistent and unique within `(tenant_id, namespace)`.
+1. `document_id` is persistent and unique within `(tenant_id, namespace, workspace_id)`.
 2. It does not need to be globally unique across tenants.
 3. `namespace=None` is an explicit absence of an additional partition; it must not be silently coerced to the string `"default"`.
-4. `root_document_id` and `parent_document_id` are resolved only within the same `(tenant_id, namespace)`.
-5. Cross-tenant and cross-namespace lineage is forbidden.
+4. `root_document_id` and `parent_document_id` are resolved only within the same `(tenant_id, namespace, workspace_id)`.
+5. Cross-tenant, cross-namespace, and cross-workspace lineage is forbidden.
 6. The storage layer must either include scope in the physical key or guarantee equivalent isolation via partition/collection.
 7. This contract does not generate a physical storage key. Do not add a `global_document_id` field.
 
@@ -346,6 +348,7 @@ root_document_id
 parent_document_id
 tenant_id
 namespace
+workspace_id
 source_kind
 source_id
 source_parent_id
@@ -425,6 +428,7 @@ Bridge implementation: **LCI-1C** (`intergrax/compat/langchain/`). Conversion ru
 | metadata `parent_document_id` | `identity.parent_document_id` | Optional; `None` for source |
 | metadata `tenant_id` | `scope.tenant_id` | Required; missing → error |
 | metadata `namespace` | `scope.namespace` | Optional |
+| metadata `workspace_id` | `scope.workspace_id` | Optional; `None` is distinct from a concrete workspace |
 | metadata `source_kind` | `provenance.source_kind` | Required |
 | metadata `source_id` or legacy `source` | `provenance.source_id` | Both present with different values → error |
 | metadata `provider_id` | `provenance.provider_id` | Optional |
@@ -691,6 +695,8 @@ Identity, scope and provenance are system-owned transport metadata; user metadat
 ### Native Graph RAG boundary (LCI-4C)
 
 Graph RAG indexers and graph isolation contracts accept only the canonical KnowledgeDocument sequence. They read document.content, preserve native identity, tenant scope, namespace, provenance and user metadata at the document boundary, and reject mixed or store-incompatible scopes before the first GraphStore write. User metadata is never an authoritative tenant scope.
+
+GraphStore backends remain tenant-bound where applicable. Namespace and workspace isolation are enforced by the bound Graph indexer scope fence before writes. A single indexer boundary cannot switch tenant, namespace or workspace after its scope is bound. The workspace value is authoritative only when read from `KnowledgeDocument.scope`; user metadata cannot provide or override it.
 
 The active graph retrieval boundary returns the existing native RetrievalHit containing the KnowledgeDocument, score, rank, channel and optional vector ID. No parallel graph document or retrieval result type is introduced. GraphStore backend internals remain unchanged.
 
