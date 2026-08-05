@@ -3,7 +3,8 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor, supports_uaep
+from intergrax.agents import supports_uaep
+from intergrax.agents.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
