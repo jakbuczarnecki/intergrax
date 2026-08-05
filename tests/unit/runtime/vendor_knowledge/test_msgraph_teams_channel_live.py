@@ -147,6 +147,7 @@ def test_teams_channel_registration_uses_canonical_identity_and_schema_refs() ->
         "vendor.ms365_graph.mail.list",
         "vendor.ms365_graph.teams_channel.list",
         "vendor.ms365_graph.teams_chat.list",
+        "vendor.ms365_graph.calendar.list",
     )
     provider_id, source_kind, operation = parse_capability_id(
         MSGRAPH_TEAMS_CHANNEL_LIST_CAPABILITY_ID

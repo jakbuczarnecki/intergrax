@@ -188,13 +188,14 @@ def _removed_change(remote_id: str = "opaque-message-removed") -> KnowledgeChang
 @pytest.mark.asyncio
 async def test_mail_registration_is_canonical_combined_and_duplicate_safe() -> None:
     bundles = build_msgraph_live_registration_bundles()
-    assert len(bundles) == 4
+    assert len(bundles) == 5
     published = publish_live_registration_bundles(bundles)
     assert {key[2] for key in published.descriptors} == {
         "vendor.ms365_graph.drive.list",
         MSGRAPH_MAIL_LIST_CAPABILITY_ID,
         "vendor.ms365_graph.teams_channel.list",
         "vendor.ms365_graph.teams_chat.list",
+        "vendor.ms365_graph.calendar.list",
     }
     descriptor = published.resolve_handler(
         provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,

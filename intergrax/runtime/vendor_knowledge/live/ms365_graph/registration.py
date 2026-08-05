@@ -41,6 +41,13 @@ from .teams_chat import (
     MsGraphTeamsChatListLiveRequestV1,
     build_msgraph_teams_chat_list_descriptor,
 )
+from .calendar import (
+    MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF,
+    MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF,
+    MsGraphCalendarListLiveHandlerV1,
+    MsGraphCalendarListLiveRequestV1,
+    build_msgraph_calendar_list_descriptor,
+)
 
 
 def build_msgraph_drive_live_registration_bundles() -> (
@@ -78,6 +85,7 @@ def build_msgraph_live_registration_bundles() -> (
     mail_descriptor = build_msgraph_mail_list_descriptor()
     teams_channel_descriptor = build_msgraph_teams_channel_list_descriptor()
     teams_chat_descriptor = build_msgraph_teams_chat_list_descriptor()
+    calendar_descriptor = build_msgraph_calendar_list_descriptor()
     return (
         *build_msgraph_drive_live_registration_bundles(),
         LiveRegistrationBundleV1(
@@ -123,6 +131,22 @@ def build_msgraph_live_registration_bundles() -> (
             ),
             result_schema=SchemaRegistrationV1(
                 schema_ref=MSGRAPH_TEAMS_CHAT_LIST_RESULT_SCHEMA_REF,
+                role=SchemaRoleV1.RESULT,
+                model=LiveCapabilityExecutionResultV1,
+                contract_version="1",
+            ),
+        ),
+        LiveRegistrationBundleV1(
+            descriptor=calendar_descriptor,
+            handler=MsGraphCalendarListLiveHandlerV1(),
+            request_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF,
+                role=SchemaRoleV1.REQUEST,
+                model=MsGraphCalendarListLiveRequestV1,
+                contract_version="1",
+            ),
+            result_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF,
                 role=SchemaRoleV1.RESULT,
                 model=LiveCapabilityExecutionResultV1,
                 contract_version="1",

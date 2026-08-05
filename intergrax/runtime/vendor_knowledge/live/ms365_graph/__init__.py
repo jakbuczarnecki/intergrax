@@ -1,5 +1,13 @@
 """Microsoft Graph Vendor Knowledge live capabilities."""
 
+from .calendar import (
+    MSGRAPH_CALENDAR_LIST_CAPABILITY_ID,
+    MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF,
+    MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF,
+    MsGraphCalendarListLiveHandlerV1,
+    MsGraphCalendarListLiveRequestV1,
+    build_msgraph_calendar_list_descriptor,
+)
 from .drive import (
     MSGRAPH_DRIVE_LIST_CAPABILITY_ID,
     MSGRAPH_DRIVE_LIST_REQUEST_SCHEMA_REF,
@@ -50,6 +58,11 @@ __all__ = [
     "MSGRAPH_TEAMS_CHAT_LIST_CAPABILITY_ID",
     "MSGRAPH_TEAMS_CHAT_LIST_REQUEST_SCHEMA_REF",
     "MSGRAPH_TEAMS_CHAT_LIST_RESULT_SCHEMA_REF",
+    "MSGRAPH_CALENDAR_LIST_CAPABILITY_ID",
+    "MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF",
+    "MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF",
+    "MsGraphCalendarListLiveHandlerV1",
+    "MsGraphCalendarListLiveRequestV1",
     "MsGraphDriveListLiveHandlerV1",
     "MsGraphDriveListLiveRequestV1",
     "MsGraphMailListLiveHandlerV1",
@@ -64,4 +77,5 @@ __all__ = [
     "build_msgraph_mail_list_descriptor",
     "build_msgraph_teams_channel_list_descriptor",
     "build_msgraph_teams_chat_list_descriptor",
+    "build_msgraph_calendar_list_descriptor",
 ]
