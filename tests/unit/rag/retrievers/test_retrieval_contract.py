@@ -11,6 +11,7 @@ from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrievalResult,
+    retrieval_hit_to_chunk,
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreHit
 
@@ -95,6 +96,38 @@ def test_retrieval_hit_maps_native_provider_result_without_reconstructing_shape(
     assert hit.vector_id == "vector-1"
     assert hit.source_rank == 4
     assert hit.rank == 4
+
+
+def test_retrieval_hit_serialization_has_explicit_document_and_no_metadata_tunnel() -> None:
+    document = _document()
+    hit = RetrievalHit(
+        document=document,
+        score=0.9,
+        rank=0,
+        channel="dense",
+        vector_id="vector-1",
+    )
+    before = document.model_dump(mode="json")
+
+    payload = hit.to_dict()
+    retrieval_hit_to_chunk(hit)
+
+    assert not hasattr(hit, "metadata")
+    assert document.model_dump(mode="json") == before
+    assert isinstance(payload["document"]["identity"]["document_id"], str)
+    assert payload["document"]["identity"]["document_id"] == "doc-1"
+    assert payload["document"]["metadata"] == {"source": "test"}
+    assert payload["score"] == 0.9
+    assert payload["rank"] == 0
+    assert payload["channel"] == "dense"
+    assert payload["vector_id"] == "vector-1"
+
+    chunk = retrieval_hit_to_chunk(hit)
+    assert chunk.id == "doc-1"
+    assert chunk.metadata == {"source": "test"}
+    assert chunk.user_metadata == {"source": "test"}
+    assert chunk.scope["tenant_id"] == "tenant-a"
+    assert chunk.provenance["source_id"] == "doc-1"
 
 
 def test_retrieval_result_serialization_is_stable() -> None:

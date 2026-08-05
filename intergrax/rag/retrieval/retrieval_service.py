@@ -17,6 +17,7 @@ from intergrax.rag.retrieval.citation import citations_from_chunks
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
@@ -137,14 +138,15 @@ class RetrievalService:
             if use_rerank and self._reranker_manager is not None:
                 reranker_id = self._profile.reranker_id
                 trace.reranker_id = reranker_id
+                chunks_by_id = {chunk.id: chunk for chunk in chunks}
                 rerank_candidates = [
                     RerankerCandidate(
                         id=c.id,
-                        text=c.content,
-                        metadata=c.metadata,
+                        text=c.text,
+                        metadata=dict(c.user_metadata or c.metadata),
                         original_score=c.score,
                     )
-                    for c in candidates
+                    for c in chunks
                 ]
                 t1 = time.perf_counter()
                 reranked = self._reranker_manager.rerank(
@@ -154,15 +156,24 @@ class RetrievalService:
                     reranker_id=reranker_id,
                 )
                 trace.rerank_latency_ms = (time.perf_counter() - t1) * 1000.0
-                chunks = [
-                    RetrievalChunk(
-                        id=r.candidate.id,
-                        text=r.candidate.text,
-                        score=float(r.rerank_score),
-                        metadata=dict(r.candidate.metadata or {}),
+                reranked_chunks: list[RetrievalChunk] = []
+                for r in reranked:
+                    source = chunks_by_id.get(r.candidate.id)
+                    reranked_chunks.append(
+                        RetrievalChunk(
+                            id=r.candidate.id,
+                            text=r.candidate.text,
+                            score=float(r.rerank_score),
+                            rank=source.rank if source is not None else 0,
+                            channel=source.channel if source is not None else "rerank",
+                            vector_id=source.vector_id if source is not None else None,
+                            scope=dict(source.scope) if source is not None else {},
+                            provenance=dict(source.provenance) if source is not None else {},
+                            user_metadata=dict(r.candidate.metadata or {}),
+                            metadata=dict(r.candidate.metadata or {}),
+                        )
                     )
-                    for r in reranked
-                ]
+                chunks = reranked_chunks
                 trace.candidates_after_rerank = len(chunks)
             else:
                 chunks = chunks[:final_k]
@@ -254,15 +265,21 @@ def _record_retrieval_metrics(
 def _candidates_to_chunks(candidates: List[Any]) -> List[RetrievalChunk]:
     out: List[RetrievalChunk] = []
     for c in candidates:
+        if isinstance(c, RetrievalHit):
+            out.append(retrieval_hit_to_chunk(c))
+            continue
         text = (attribute_access.optional(c, "content", None) or "").strip()
         if not text:
             continue
+        metadata = dict(attribute_access.optional(c, "metadata", None) or {})
         out.append(
             RetrievalChunk(
                 id=str(attribute_access.optional(c, "id", "unknown")),
                 text=text,
                 score=float(attribute_access.optional(c, "score", 0.0) or 0.0),
-                metadata=dict(attribute_access.optional(c, "metadata", None) or {}),
+                rank=int(attribute_access.optional(c, "rank", 0) or 0),
+                user_metadata=dict(metadata),
+                metadata=metadata,
             )
         )
     return out

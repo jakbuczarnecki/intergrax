@@ -8,7 +8,7 @@ import json
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Sequence
+from typing import TYPE_CHECKING, Any, Dict, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,6 +16,9 @@ from numpy.typing import NDArray
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreHit
+
+if TYPE_CHECKING:
+    from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 
 
 @dataclass(frozen=True)
@@ -164,24 +167,11 @@ class RetrievalHit:
     @property
     def id(self) -> str:
         """Compatibility accessor for the retrieval service during LCI-4A."""
-        return self.vector_id or self.document.identity.document_id
+        return self.document.identity.document_id
 
     @property
     def content(self) -> str:
         return self.document.content
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return {
-            **dict(self.document.metadata),
-            "document_id": {
-                "document": self.document.model_dump(mode="json"),
-                "score": self.score,
-                "rank": self.rank,
-                "channel": self.channel,
-                "vector_id": self.vector_id,
-            },
-        }
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -211,6 +201,29 @@ class RetrievalHit:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+# Temporary typed adapter retained for LCI-4B reranker boundary.
+def retrieval_hit_to_chunk(hit: RetrievalHit) -> RetrievalChunk:
+    """Adapt a native hit without tunneling retrieval fields through metadata."""
+    if not isinstance(hit, RetrievalHit):
+        raise TypeError("hit must be a RetrievalHit")
+
+    from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
+
+    user_metadata = dict(hit.document.metadata)
+    return RetrievalChunk(
+        id=hit.document.identity.document_id,
+        text=hit.document.content,
+        score=hit.score,
+        rank=hit.rank,
+        channel=hit.channel,
+        vector_id=hit.vector_id,
+        scope=hit.document.scope.model_dump(mode="json"),
+        provenance=hit.document.provenance.model_dump(mode="json"),
+        user_metadata=dict(user_metadata),
+        metadata=dict(user_metadata),
+    )
 
 
 @dataclass(frozen=True)

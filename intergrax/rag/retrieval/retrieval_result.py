@@ -14,6 +14,12 @@ class RetrievalChunk:
     id: str
     text: str
     score: float
+    rank: int = 0
+    channel: str = "unknown"
+    vector_id: Optional[str] = None
+    scope: Dict[str, Any] = field(default_factory=dict)
+    provenance: Dict[str, Any] = field(default_factory=dict)
+    user_metadata: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
