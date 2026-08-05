@@ -31,6 +31,7 @@ def logical_document_id(
     source_id: str,
     normalized_source_path: str,
     content_hash: str,
+    materialization_scope: str | None = None,
 ) -> str:
     payload = "|".join(
         (
@@ -39,6 +40,7 @@ def logical_document_id(
             source_id.strip(),
             normalized_source_path.strip(),
             content_hash.strip(),
+            (materialization_scope or "").strip(),
         )
     )
     return f"lkwdoc:{hashlib.sha256(payload.encode('utf-8')).hexdigest()[:32]}"

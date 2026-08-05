@@ -9,11 +9,15 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReconciliationStateV1,
 )
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationOwnershipModeV1,
+    KnowledgeMaterializationOwnershipV1,
+    KnowledgeMaterializationVisibilityAuthorityTypeV1,
+)
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _SUBMISSION_METADATA_MAX_ENTRIES = 16
 _SUBMISSION_METADATA_MAX_KEY_LEN = 64
@@ -269,6 +273,51 @@ class WorkspaceDocumentReference(BaseModel):
     file_name: str = Field(..., min_length=1)
     content_hash: str = Field(..., min_length=1)
     indexed_at: datetime
+    materialization_ownership: KnowledgeMaterializationOwnershipV1 | None = None
+    visibility_authority_type: KnowledgeMaterializationVisibilityAuthorityTypeV1 = (
+        KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
+    )
+    visibility_authority_ref: str | None = None
+
+    @model_validator(mode="after")
+    def _validate_materialization_authority(self) -> WorkspaceDocumentReference:
+        ownership = self.materialization_ownership
+        authority = self.visibility_authority_type
+        if ownership is not None:
+            if (
+                ownership.tenant_id != self.tenant_id
+                or ownership.workspace_id != self.workspace_id
+                or ownership.source_id != self.source_id
+            ):
+                raise ValueError("materialization_ownership_identity_mismatch")
+        if authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE:
+            if (
+                ownership is not None
+                and ownership.ownership_mode
+                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+            ):
+                raise ValueError("connected_source_cannot_use_legacy_visibility")
+            if self.visibility_authority_ref is not None:
+                raise ValueError("legacy_visibility_authority_ref_forbidden")
+        elif authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT:
+            if (
+                ownership is None
+                or ownership.ownership_mode
+                is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                or ownership.delivery_id is None
+                or self.visibility_authority_ref != ownership.delivery_id
+            ):
+                raise ValueError("delivery_visibility_authority_invalid")
+        elif authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.MATERIALIZATION_GENERATION:
+            if (
+                ownership is None
+                or ownership.ownership_mode
+                is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                or ownership.materialization_generation is None
+                or self.visibility_authority_ref != ownership.materialization_generation
+            ):
+                raise ValueError("generation_visibility_authority_invalid")
+        return self
 
 
 class ManagedFileObjectStatus(StrEnum):

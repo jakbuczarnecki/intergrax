@@ -234,6 +234,11 @@ class _ConnectedSourceIndexingService:
             documents_indexed=0 if unchanged else 1,
         )
 
+    async def index_connected_source_one(
+        self, **kwargs: Any
+    ) -> WorkspaceDocumentIndexingResult:
+        return await self.index_one(**kwargs)
+
 
 @dataclass
 class _SyncEnv:

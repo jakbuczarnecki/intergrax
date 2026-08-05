@@ -10,6 +10,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
+from local_workspace_application.workspaces.idempotency import logical_document_id
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationOwnershipModeV1,
+    KnowledgeMaterializationOwnershipV1,
+    KnowledgeMaterializationVisibilityAuthorityTypeV1,
+)
+from local_workspace_application.workspaces.models import WorkspaceDocumentReference
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.integrations.contracts.document_store import (
@@ -17,9 +25,6 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
 )
 from intergrax.runtime.task.task import Task, TaskContext
-from local_workspace_application.workspaces.idempotency import logical_document_id
-from local_workspace_application.workspaces.models import WorkspaceDocumentReference
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 
 class TaskExecutorPort(Protocol):
@@ -114,6 +119,7 @@ class _WorkspaceDocumentIndexReceipt(BaseModel):
     num_chunks: int = Field(default=0, ge=0)
     created_at: datetime
     completed_at: datetime | None = None
+    materialization_scope: str | None = None
 
 
 def _index_receipt_partition(tenant_id: str) -> str:
@@ -127,6 +133,7 @@ def _index_receipt_row_key(
     source_id: str,
     logical_source_path: str,
     content_hash: str,
+    materialization_scope: str | None = None,
 ) -> str:
     canonical = json.dumps(
         {
@@ -135,6 +142,7 @@ def _index_receipt_row_key(
             "source_id": source_id,
             "logical_source_path": logical_source_path,
             "content_hash": content_hash,
+            "materialization_scope": materialization_scope or "",
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -161,6 +169,7 @@ class WorkspaceDocumentIndexingService:
         source_id: str,
         logical_source_path: str,
         content_hash: str,
+        materialization_scope: str | None,
     ) -> tuple[DocumentRecord, _WorkspaceDocumentIndexReceipt] | None:
         row_key = _index_receipt_row_key(
             tenant_id=tenant_id,
@@ -168,6 +177,7 @@ class WorkspaceDocumentIndexingService:
             source_id=source_id,
             logical_source_path=logical_source_path,
             content_hash=content_hash,
+            materialization_scope=materialization_scope,
         )
         record = self._repository.document_store.get(
             _index_receipt_partition(tenant_id),
@@ -185,6 +195,7 @@ class WorkspaceDocumentIndexingService:
             or receipt.source_id != source_id
             or receipt.logical_source_path != logical_source_path
             or receipt.content_hash != content_hash
+            or receipt.materialization_scope != materialization_scope
         ):
             raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
         return record, receipt
@@ -204,6 +215,7 @@ class WorkspaceDocumentIndexingService:
                 source_id=receipt.source_id,
                 logical_source_path=receipt.logical_source_path,
                 content_hash=receipt.content_hash,
+                materialization_scope=receipt.materialization_scope,
             ),
             data=receipt.model_dump(mode="json"),
         )
@@ -234,6 +246,7 @@ class WorkspaceDocumentIndexingService:
                 source_id=receipt.source_id,
                 logical_source_path=receipt.logical_source_path,
                 content_hash=receipt.content_hash,
+                materialization_scope=receipt.materialization_scope,
             )
             if reloaded is None or reloaded[1].status != "completed":
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
@@ -252,12 +265,83 @@ class WorkspaceDocumentIndexingService:
         safe_file_name: str,
         content_hash: str,
     ) -> WorkspaceDocumentIndexingResult:
+        return await self._index_one(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            operation_id=operation_id,
+            physical_path=physical_path,
+            logical_source_path=logical_source_path,
+            safe_file_name=safe_file_name,
+            content_hash=content_hash,
+            materialization_ownership=KnowledgeMaterializationOwnershipV1.legacy(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+            ),
+        )
+
+    async def index_connected_source_one(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        operation_id: str,
+        physical_path: Path,
+        logical_source_path: str,
+        safe_file_name: str,
+        content_hash: str,
+        materialization_ownership: KnowledgeMaterializationOwnershipV1,
+    ) -> WorkspaceDocumentIndexingResult:
+        if (
+            materialization_ownership.ownership_mode
+            is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+            or materialization_ownership.tenant_id != tenant_id
+            or materialization_ownership.workspace_id != workspace_id
+            or materialization_ownership.source_id != source_id
+        ):
+            raise WorkspaceDocumentIndexingError(
+                "connected_materialization_ownership_required"
+            )
+        return await self._index_one(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            operation_id=operation_id,
+            physical_path=physical_path,
+            logical_source_path=logical_source_path,
+            safe_file_name=safe_file_name,
+            content_hash=content_hash,
+            materialization_ownership=materialization_ownership,
+        )
+
+    async def _index_one(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        operation_id: str,
+        physical_path: Path,
+        logical_source_path: str,
+        safe_file_name: str,
+        content_hash: str,
+        materialization_ownership: KnowledgeMaterializationOwnershipV1,
+    ) -> WorkspaceDocumentIndexingResult:
+        materialization_scope = (
+            materialization_ownership.identity_scope
+            if materialization_ownership.ownership_mode
+            is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+            else None
+        )
         document_id = logical_document_id(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
             normalized_source_path=logical_source_path,
             content_hash=content_hash,
+            materialization_scope=materialization_scope,
         )
         receipt_record = self._get_index_receipt(
             tenant_id=tenant_id,
@@ -265,9 +349,10 @@ class WorkspaceDocumentIndexingService:
             source_id=source_id,
             logical_source_path=logical_source_path,
             content_hash=content_hash,
+            materialization_scope=materialization_scope,
         )
         if receipt_record is not None:
-            record, receipt = receipt_record
+            _, receipt = receipt_record
             if receipt.document_id != document_id:
                 raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
             if receipt.status == "in_progress":
@@ -282,6 +367,19 @@ class WorkspaceDocumentIndexingService:
                     file_name=receipt.safe_file_name,
                     content_hash=content_hash,
                     indexed_at=receipt.completed_at or receipt.created_at,
+                    materialization_ownership=materialization_ownership,
+                    visibility_authority_type=(
+                        KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                        if materialization_ownership.ownership_mode
+                        is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                        else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
+                    ),
+                    visibility_authority_ref=(
+                        materialization_ownership.delivery_id
+                        if materialization_ownership.ownership_mode
+                        is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                        else None
+                    ),
                 )
             )
             if receipt.operation_id == operation_id:
@@ -309,6 +407,21 @@ class WorkspaceDocumentIndexingService:
             source_path=logical_source_path,
         )
         if existing is not None and existing.content_hash == content_hash:
+            if (
+                materialization_ownership.ownership_mode
+                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+            ):
+                self._repository.put_document_ref(
+                    existing.model_copy(
+                        update={
+                            "materialization_ownership": materialization_ownership,
+                            "visibility_authority_type": (
+                                KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                            ),
+                            "visibility_authority_ref": materialization_ownership.delivery_id,
+                        }
+                    )
+                )
             return WorkspaceDocumentIndexingResult(
                 indexed=False,
                 unchanged=True,
@@ -329,6 +442,7 @@ class WorkspaceDocumentIndexingService:
             document_id=document_id,
             status="in_progress",
             created_at=_utc_now(),
+            materialization_scope=materialization_scope,
         )
         if not self._put_index_receipt_if_absent(receipt):
             reloaded = self._get_index_receipt(
@@ -337,13 +451,14 @@ class WorkspaceDocumentIndexingService:
                 source_id=source_id,
                 logical_source_path=logical_source_path,
                 content_hash=content_hash,
+                materialization_scope=materialization_scope,
             )
             if reloaded is None:
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
             _, existing_receipt = reloaded
             if existing_receipt.status != "completed":
                 raise WorkspaceDocumentIndexingError("index_recovery_required")
-            return await self.index_one(
+            return await self._index_one(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 source_id=source_id,
@@ -352,6 +467,7 @@ class WorkspaceDocumentIndexingService:
                 logical_source_path=logical_source_path,
                 safe_file_name=safe_file_name,
                 content_hash=content_hash,
+                materialization_ownership=materialization_ownership,
             )
 
         task = Task(
@@ -388,6 +504,7 @@ class WorkspaceDocumentIndexingService:
                 source_id=source_id,
                 logical_source_path=logical_source_path,
                 content_hash=content_hash,
+                materialization_scope=materialization_scope,
             )[0],
             receipt=receipt,
             num_chunks=int(ingest_summary.get("num_chunks") or 0),
@@ -402,6 +519,19 @@ class WorkspaceDocumentIndexingService:
                 file_name=safe_file_name,
                 content_hash=content_hash,
                 indexed_at=completed_receipt.completed_at or completed_receipt.created_at,
+                materialization_ownership=materialization_ownership,
+                visibility_authority_type=(
+                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                    if materialization_ownership.ownership_mode
+                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                    else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
+                ),
+                visibility_authority_ref=(
+                    materialization_ownership.delivery_id
+                    if materialization_ownership.ownership_mode
+                    is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                    else None
+                ),
             )
         )
         return WorkspaceDocumentIndexingResult(

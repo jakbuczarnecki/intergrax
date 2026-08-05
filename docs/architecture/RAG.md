@@ -116,3 +116,29 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../plan/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 
 ---
+
+## Materialized knowledge visibility
+
+Physical storage or vector indexing is not query visibility. Workspace documents now carry
+immutable `KnowledgeMaterializationOwnershipV1` metadata and an explicit visibility authority.
+Legacy local-file and web records use `LEGACY_IMMEDIATE`; connected-source records require the
+exact tenant, workspace, source, indexed binding, binding reference, delivery and remote identity.
+
+Connected-source retrieval is visible only when the durable delivery receipt is `COMPLETED`,
+has `completed_at`, has zero failed items, and matches every ownership identity. A durable active
+materialization pointer selects the current committed version for each remote item. A prepared
+delivery leaves that pointer unchanged; a committed newer version replaces it; an aborted or
+malformed version cannot replace the current version. Missing, malformed, cross-scope or
+incompatible authority fails closed.
+
+Filtering occurs in the shared search-evidence mapping boundary before Ask evidence, citations or
+context assembly. Current vector backends use bounded candidate post-filtering rather than a
+backend-specific predicate; hidden candidates are never substituted and the requested result
+limit remains deterministic. The ownership keys also preserve tenant/workspace/source/binding/
+delivery dimensions for later binding-scoped purge.
+
+Historical records without the new metadata remain parseable only through explicit legacy
+compatibility. A connected source cannot use that compatibility path and remains hidden until
+authoritative ownership is repaired. Recovery relies on durable receipt and pointer state, not
+in-memory state. The next task is fenced atomic materialization commit; the later lifecycle task
+will implement binding-scoped purge orchestration.

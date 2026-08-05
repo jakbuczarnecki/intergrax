@@ -8,6 +8,10 @@ from typing import Any
 
 from local_workspace_application.serving.workspace_schemas import WorkspaceSearchHitV1
 from local_workspace_application.workspaces.idempotency import normalize_source_path
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationOwnershipV1,
+    RepositoryKnowledgeMaterializationVisibility,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 
@@ -43,6 +47,9 @@ def map_search_hits(
 
     hits: list[WorkspaceSearchHitV1] = []
     incomplete = False
+    visibility_filtered = False
+    visibility = RepositoryKnowledgeMaterializationVisibility(repository)
+    visibility_cache: dict[str, bool] = {}
     for item in evidence:
         if not isinstance(item, dict):
             continue
@@ -67,17 +74,37 @@ def map_search_hits(
         if item_workspace_id != workspace_id:
             continue
 
-        ref = repository.get_document_ref(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            document_id=document_id,
-        )
+        try:
+            ref = repository.get_document_ref(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                document_id=document_id,
+            )
+        except (TypeError, ValueError, AttributeError):
+            visibility_filtered = True
+            continue
         if ref is None:
             continue
         if ref.source_id != source_id or ref.tenant_id != tenant_id:
             continue
         if normalize_source_path(ref.source_path) != normalize_source_path(source_path):
             # Provenance mismatch — drop rather than fabricate.
+            continue
+        ownership = ref.materialization_ownership or KnowledgeMaterializationOwnershipV1.legacy(
+            tenant_id=ref.tenant_id,
+            workspace_id=ref.workspace_id,
+            source_id=ref.source_id,
+        )
+        ownership_key = ownership.identity_scope
+        if ownership_key not in visibility_cache:
+            try:
+                visibility_cache[ownership_key] = visibility.is_visible(
+                    ownership=ownership
+                )
+            except (TypeError, ValueError, AttributeError):
+                visibility_cache[ownership_key] = False
+        if not visibility_cache[ownership_key]:
+            visibility_filtered = True
             continue
 
         hits.append(
@@ -97,6 +124,8 @@ def map_search_hits(
 
     if not hits and incomplete:
         raise SearchEvidenceIncompleteError("search_evidence_incomplete")
+    if not hits and visibility_filtered:
+        return []
     if not hits and evidence:
         raise SearchEvidenceIncompleteError("search_evidence_unverified")
     return hits

@@ -9,13 +9,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypeVar
 
-from pydantic import BaseModel
-
-from intergrax.integrations.contracts.document_store import (
-    ConditionalDocumentStore,
-    DocumentRecord,
-    DocumentStore,
-)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
     ConnectedSourceOperationDeliveryAccounting,
@@ -31,6 +24,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     WorkspaceLiveAccessBinding,
     parse_workspace_query_policy,
 )
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationActivePointerV1,
+)
 from local_workspace_application.workspaces.models import (
     ActiveKnowledgeIngestionLocator,
     IntakeBatch,
@@ -43,6 +39,13 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceOperationType,
     WorkspaceSource,
+)
+from pydantic import BaseModel
+
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+    DocumentStore,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -88,6 +91,7 @@ _ENTITY_MANAGED_FILE = "managed_file"
 _ENTITY_WEB_URL_LOCATOR = "web_url_locator"
 _ENTITY_INTAKE_BATCH = "intake_batch"
 _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT = "connected_source_delivery_receipt"
+_ENTITY_MATERIALIZATION_ACTIVE_POINTER = "materialization_active_pointer"
 _ACTIVE_KNOWLEDGE_INGESTION_PARTITION = "lkw.managed_workspace:active_knowledge_ingestion"
 
 
@@ -359,6 +363,92 @@ class ManagedWorkspaceRepository:
             _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
             f"{workspace_id}:{source_id}:{delivery_id}",
             ConnectedSourceDeliveryReceipt,
+        )
+
+    def put_active_materialization_pointer_if_absent(
+        self,
+        pointer: KnowledgeMaterializationActivePointerV1,
+    ) -> bool:
+        return self._put_if_absent(
+            pointer,
+            partition_key=_partition(
+                pointer.tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER
+            ),
+            row_key=self._active_materialization_pointer_key(
+                workspace_id=pointer.workspace_id,
+                source_id=pointer.source_id,
+                indexed_source_binding_id=pointer.indexed_source_binding_id,
+                remote_id=pointer.remote_id,
+            ),
+        )
+
+    def get_active_materialization_pointer(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        remote_id: str,
+    ) -> KnowledgeMaterializationActivePointerV1 | None:
+        return self._get(
+            _partition(tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER),
+            self._active_materialization_pointer_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                remote_id=remote_id,
+            ),
+            KnowledgeMaterializationActivePointerV1,
+        )
+
+    def replace_active_materialization_pointer(
+        self,
+        *,
+        expected: KnowledgeMaterializationActivePointerV1,
+        replacement: KnowledgeMaterializationActivePointerV1,
+    ) -> bool:
+        if (
+            expected.tenant_id != replacement.tenant_id
+            or self._active_materialization_pointer_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+                remote_id=expected.remote_id,
+            )
+            != self._active_materialization_pointer_key(
+                workspace_id=replacement.workspace_id,
+                source_id=replacement.source_id,
+                indexed_source_binding_id=replacement.indexed_source_binding_id,
+                remote_id=replacement.remote_id,
+            )
+        ):
+            raise ValueError("active_materialization_pointer_identity_mismatch")
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(
+                expected.tenant_id, _ENTITY_MATERIALIZATION_ACTIVE_POINTER
+            ),
+            row_key=self._active_materialization_pointer_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+                remote_id=expected.remote_id,
+            ),
+        )
+
+    @staticmethod
+    def _active_materialization_pointer_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        remote_id: str,
+    ) -> str:
+        return (
+            f"{workspace_id}:{source_id}:"
+            f"{indexed_source_binding_id}:{remote_id}"
         )
 
     def delete_connected_source_delivery_receipt(

@@ -9,35 +9,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-)
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SLACK_CONVERSATION_SOURCE_KIND,
-)
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingStatus,
-)
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.models import (
-    KnowledgeChangeKind,
-    KnowledgeContent,
-    KnowledgeContentMode,
-    KnowledgeSourceRef,
-    KnowledgeSourceScope,
-)
-from intergrax.runtime.vendor_knowledge.sync_models import (
-    KnowledgeSyncBatch,
-    KnowledgeSyncEnvelope,
-    KnowledgeSyncMode,
-)
-from tests.unit.runtime.vendor_knowledge._fakes import make_descriptor
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryStatus,
 )
@@ -45,12 +16,16 @@ from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     indexed_source_binding_id,
 )
-from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceSyncSinkError,
+)
 from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
     WorkspaceConnectedSourceKnowledgeSyncSink,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingResult
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingResult,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
     IndexedSourceSyncModeV1,
@@ -75,6 +50,37 @@ from local_workspace_application.workspaces.models import (
     WorkspaceStatus,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SLACK_CONVERSATION_SOURCE_KIND,
+)
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeChangeKind,
+    KnowledgeContent,
+    KnowledgeContentMode,
+    KnowledgeSourceRef,
+    KnowledgeSourceScope,
+)
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeSyncBatch,
+    KnowledgeSyncEnvelope,
+    KnowledgeSyncMode,
+)
+from tests.unit.runtime.vendor_knowledge._fakes import make_descriptor
 
 pytestmark = pytest.mark.unit
 
@@ -301,7 +307,7 @@ def sink_env(tmp_path: Path):
     binding_repo.create(_TenantBindingPort().get_binding(tenant_id=_TENANT, binding_id=_BINDING))
     config = WorkspaceKnowledgeConfigurationService(repo, _Lookup())
     indexing = AsyncMock()
-    indexing.index_one = AsyncMock(
+    indexing.index_connected_source_one = AsyncMock(
         return_value=WorkspaceDocumentIndexingResult(
             indexed=True,
             unchanged=False,
@@ -381,18 +387,18 @@ async def test_permissions_change_rejected(sink_env) -> None:
 
 @pytest.mark.asyncio
 async def test_completed_replay_is_idempotent(sink_env) -> None:
-    repo, sink, indexing = sink_env
+    _repo, sink, indexing = sink_env
     batch = _batch(envelopes=(_envelope(KnowledgeChangeKind.UPSERT),))
     first = await sink.apply_batch(batch=batch)
     second = await sink.apply_batch(batch=batch)
     assert first.replayed is False
     assert second.replayed is True
-    assert indexing.index_one.await_count == 1
+    assert indexing.index_connected_source_one.await_count == 1
 
 
 @pytest.mark.asyncio
 async def test_temp_file_cleaned_up_after_success(sink_env, monkeypatch) -> None:
-    repo, sink, indexing = sink_env
+    _repo, sink, _indexing = sink_env
     import tempfile as tempfile_module
 
     created: list[Path] = []
@@ -429,7 +435,7 @@ async def test_temp_file_cleaned_up_after_indexing_failure(sink_env, monkeypatch
         "local_workspace_application.workspaces.connected_source_sync_sink.tempfile.mkstemp",
         _mkstemp,
     )
-    indexing.index_one = AsyncMock(side_effect=__import__(
+    indexing.index_connected_source_one = AsyncMock(side_effect=__import__(
         "local_workspace_application.workspaces.document_indexing",
         fromlist=["WorkspaceDocumentIndexingError"],
     ).WorkspaceDocumentIndexingError("failed"))
@@ -459,7 +465,7 @@ async def test_reactivated_binding_batch_validation_succeeds(sink_env) -> None:
     )
     _bump_head(repo, committed_revision=3)
     await sink.apply_batch(batch=_batch(envelopes=(_envelope(KnowledgeChangeKind.UPSERT),)))
-    assert indexing.index_one.await_count == 1
+    assert indexing.index_connected_source_one.await_count == 1
 
 
 @pytest.mark.asyncio

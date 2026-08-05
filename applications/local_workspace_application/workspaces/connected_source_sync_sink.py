@@ -7,20 +7,10 @@ from __future__ import annotations
 import os
 import tempfile
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Protocol
 
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingStatus,
-    to_source_ref,
-)
-from intergrax.runtime.vendor_knowledge.models import KnowledgeChangeKind, KnowledgeContentMode
-from intergrax.runtime.vendor_knowledge.sync_models import (
-    KnowledgeSyncBatch,
-    KnowledgeSyncSinkReceipt,
-    KnowledgeSyncSinkReceiptStatus,
-)
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
     begin_delivery_receipt,
@@ -51,12 +41,31 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
     WorkspaceKnowledgeConfigurationService,
     is_workspace_source_product_visible,
 )
+from local_workspace_application.workspaces.materialization_visibility import (
+    KnowledgeMaterializationActivePointerV1,
+    KnowledgeMaterializationOwnershipV1,
+)
 from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceOperationType,
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+    to_source_ref,
+)
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeChangeKind,
+    KnowledgeContentMode,
+)
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeSyncBatch,
+    KnowledgeSyncSinkReceipt,
+    KnowledgeSyncSinkReceiptStatus,
+)
 
 _ALLOWED_CHANGE_KINDS = frozenset(
     {
@@ -176,6 +185,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             operation_id=self._context.operation_id,
         )
         if completed is not None:
+            self._activate_delivery_documents(delivery_id=completed.delivery_id)
             return ConnectedSourceDeliveryApplyResult(
                 documents_indexed=completed.documents_indexed,
                 documents_unchanged=completed.documents_unchanged,
@@ -211,6 +221,9 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         documents_indexed = 0
         documents_unchanged = 0
         items_processed = 0
+        materialized_documents: list[
+            tuple[KnowledgeMaterializationOwnershipV1, str]
+        ] = []
 
         for envelope in batch.envelopes:
             if envelope.change_kind not in _ALLOWED_CHANGE_KINDS:
@@ -231,7 +244,25 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 remote_id=envelope.remote_id,
                 content=envelope.content,
             )
-            result = await self._index_materialized_document(materialized)
+            result = await self._index_materialized_document(
+                materialized,
+                delivery_id=batch.delivery_id,
+                remote_id=envelope.remote_id,
+            )
+            materialized_documents.append(
+                (
+                    KnowledgeMaterializationOwnershipV1.connected(
+                        tenant_id=self._context.tenant_id,
+                        workspace_id=self._context.workspace_id,
+                        source_id=self._context.source_id,
+                        indexed_source_binding_id=self._context.indexed_source_binding_id,
+                        knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+                        delivery_id=batch.delivery_id,
+                        remote_id=envelope.remote_id,
+                    ),
+                    result.document_id,
+                )
+            )
             items_processed += 1
             if result.indexed:
                 documents_indexed += 1
@@ -248,6 +279,12 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_processed=items_processed,
             items_failed=0,
         )
+        for ownership, document_id in materialized_documents:
+            self._activate_materialization(
+                ownership=ownership,
+                document_id=document_id,
+                committed_at=completed_receipt.completed_at or completed_receipt.created_at,
+            )
         return ConnectedSourceDeliveryApplyResult(
             documents_indexed=completed_receipt.documents_indexed,
             documents_unchanged=completed_receipt.documents_unchanged,
@@ -364,7 +401,13 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         if operation.status is not WorkspaceOperationStatus.RUNNING:
             raise ConnectedSourceSyncSinkError("connected_source_operation_not_running")
 
-    async def _index_materialized_document(self, materialized):
+    async def _index_materialized_document(
+        self,
+        materialized,
+        *,
+        delivery_id: str,
+        remote_id: str,
+    ):
         allowed_roots = tuple(
             item.strip()
             for item in os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS", "").split(os.pathsep)
@@ -380,7 +423,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         try:
             with open(fd, "w", encoding="utf-8") as handle:
                 handle.write(materialized.markdown)
-            return await self._indexing_service.index_one(
+            return await self._indexing_service.index_connected_source_one(
                 tenant_id=self._context.tenant_id,
                 workspace_id=self._context.workspace_id,
                 source_id=self._context.source_id,
@@ -389,9 +432,75 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 logical_source_path=materialized.logical_source_path,
                 safe_file_name=materialized.safe_file_name,
                 content_hash=materialized.content_hash,
+                materialization_ownership=KnowledgeMaterializationOwnershipV1.connected(
+                    tenant_id=self._context.tenant_id,
+                    workspace_id=self._context.workspace_id,
+                    source_id=self._context.source_id,
+                    indexed_source_binding_id=self._context.indexed_source_binding_id,
+                    knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+                    delivery_id=delivery_id,
+                    remote_id=remote_id,
+                ),
             )
         except WorkspaceDocumentIndexingError as exc:
             raise ConnectedSourceSyncSinkError("connected_source_indexing_failed") from exc
         finally:
             if temp_path.exists():
                 temp_path.unlink(missing_ok=True)
+
+    def _activate_delivery_documents(self, *, delivery_id: str) -> None:
+        for ref in self._repository.list_document_refs(
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+        ):
+            ownership = ref.materialization_ownership
+            if ownership is None or ownership.delivery_id != delivery_id:
+                continue
+            self._activate_materialization(
+                ownership=ownership,
+                document_id=ref.document_id,
+                committed_at=ref.indexed_at,
+            )
+
+    def _activate_materialization(
+        self,
+        *,
+        ownership: KnowledgeMaterializationOwnershipV1,
+        document_id: str,
+        committed_at: datetime,
+    ) -> None:
+        pointer = KnowledgeMaterializationActivePointerV1.for_ownership(
+            ownership=ownership,
+            document_id=document_id,
+            committed_at=committed_at,
+        )
+        assert ownership.indexed_source_binding_id is not None
+        assert ownership.remote_id is not None
+        current = self._repository.get_active_materialization_pointer(
+            tenant_id=ownership.tenant_id,
+            workspace_id=ownership.workspace_id,
+            source_id=ownership.source_id,
+            indexed_source_binding_id=ownership.indexed_source_binding_id,
+            remote_id=ownership.remote_id,
+        )
+        if current is None:
+            if self._repository.put_active_materialization_pointer_if_absent(pointer):
+                return
+            current = self._repository.get_active_materialization_pointer(
+                tenant_id=ownership.tenant_id,
+                workspace_id=ownership.workspace_id,
+                source_id=ownership.source_id,
+                indexed_source_binding_id=ownership.indexed_source_binding_id,
+                remote_id=ownership.remote_id,
+            )
+        if current is None or current == pointer:
+            return
+        if current.committed_at > pointer.committed_at:
+            return
+        if not self._repository.replace_active_materialization_pointer(
+            expected=current,
+            replacement=pointer,
+        ):
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_active_pointer_conflict"
+            )
