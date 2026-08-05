@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-11 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-12 |
+| Current phase | PX-12 — CHANGES_REQUIRED |
+| Next phase after acceptance | PX-13 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -487,7 +487,9 @@ the roadmap’s changing task and review status.
 
 ## PX-11 — Calls to action and conversion paths
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `b942121d0a509d059681d6f1df55ff09d7aaf6a2`
 
 **User-visible outcome:** Every major reader path has one primary CTA; LKW remains the primary product route and Token Optimization remains a secondary capability route.
 
@@ -541,25 +543,38 @@ the roadmap’s changing task and review status.
 
 ---
 
-## PX-12 — Editorial consistency and readiness review
+## PX-12 — Editorial, factual, link and executable readiness audit
 
-**Status:** BLOCKED_ON_PX_11_ACCEPTANCE
+**Status:** CHANGES_REQUIRED
 
-**User-visible outcome:** The complete public journey receives a final human editorial, factual and cross-document consistency review before external sessions.
+**User-visible outcome:** The complete public journey received a human editorial, factual and cross-document consistency review before external sessions.
 
-**Completion gate:** The main reader paths are manually reviewed against the positioning, proof-status and roadmap sources of truth; links and commands are checked using normal repository tooling where appropriate; no Python copywriting tests, regex wording contracts or mutation tests are introduced.
+**Delivered:**
 
-Before external sessions, executable public claims must be run or supported by reviewed evidence against a pinned repository revision.
+- complete public reader journeys manually reviewed;
+- public wording compared with proof, claim and legal owners;
+- stale durable-compaction summary corrected;
+- Token Optimization claim guardrails no longer mirror implementation phases;
+- bounded durable-compaction implementation distinguished from live or production proof;
+- LKW Platform Proof first-screen terminology clarified without changing technical evidence;
+- public local links, required anchors and assets checked;
+- public setup and gate commands executed;
+- LKW certification matrix checked against committed evidence;
+- Token Optimization CI-safe published proof commands executed;
+- deep LKW and vLLM claims reviewed against named evidence;
+- exact pinned audit base recorded;
+- technical execution and evidence review labeled separately;
+- no new readiness document, copy test, regex contract or mutation test created;
+- no code, test, script, dependency, evidence or asset changed;
+- external reader validation remains `NOT_STARTED`.
 
-Technical failures are assigned to their owning technical sessions.
-
-Unsupported claims must be corrected, qualified or removed before PX-13.
+**Completion gate:** Not met. The global gate suite failed during collection with 150 errors caused by a `transformers`/metadata `TypeError`; the supported Windows LKW Product Quick Start failed at `stack_start`; and the Token unit gate had two existing public-claims contract test failures because those tests require the removed roadmap-phase wording. These are technical blockers owned by the shared test/dependency environment, LKW stack startup/infrastructure, and the existing public-claims contract test respectively; runtime and test repairs are outside PX-12.
 
 ---
 
 ## PX-13 — External comprehension and trial sessions
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_12_ACCEPTANCE
 
 **User-visible outcome:** Real independent external sessions test comprehension and trial paths against pinned revision.
 

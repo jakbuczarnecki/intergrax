@@ -185,7 +185,7 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 
 **Implemented today:** deterministic optimization pipeline, approved-configuration routing, protected-region validation, receipts and fallback, cache-stable prompt assembly, exact-send integrity, and cache-aware execution.
 
-**Not complete:** durable in-cache compaction is incomplete; final cross-provider proof gates are incomplete; **universal savings not claimed**; production-proven savings are not claimed.
+**Bounded mechanism:** the durable in-cache compaction repository, validation, and CAS activation are implemented. **Not established:** live provider-wide proof, rollback execution, production rollout, final cross-provider proof, universal savings, or production-proven savings.
 
 **Secondary capability route:** [Explore Token Optimization](docs/features/token_optimization/README.md)
 

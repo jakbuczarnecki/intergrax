@@ -33,7 +33,7 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-11 — READY_FOR_REVIEW |
+| Current phase | PX-12 — CHANGES_REQUIRED |
 | Proof ownership and roadmap deduplication | PX-10 — ACCEPTED / CLOSED |
 | Public-language cleanup | PX-9 — ACCEPTED / CLOSED |
 | Primary product path | Local Knowledge Workspace (LKW) |

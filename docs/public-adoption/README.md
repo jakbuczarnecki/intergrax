@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-11 READY_FOR_REVIEW
+Status: ACTIVE — PX-12 CHANGES_REQUIRED
 Public-reader route: no
 ```
 
@@ -87,9 +87,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-10 ACCEPTED / CLOSED
-Current phase: PX-11 READY_FOR_REVIEW
-Next after acceptance: PX-12
+Previous phase: PX-11 ACCEPTED / CLOSED
+Current phase: PX-12 CHANGES_REQUIRED
+Next after acceptance: PX-13
 External sessions: NOT_STARTED
 ```
 
@@ -101,6 +101,18 @@ Normal public-reader navigation:
 
 Maintainer contracts and claim controls:
 this directory
+
+Internal readiness evidence:
+PUBLIC_LAUNCH_CHECKLIST.md#px-12-internal-readiness-evidence
+
+External session methodology:
+EXTERNAL_READER_VALIDATION_PROTOCOL.md
+
+Public proof owner:
+../../PROOFS.md
+
+The launch checklist is the single internal readiness record. It is not a
+product roadmap and does not constitute an external-validation result.
 
 CTA and reader progression:
 `INTERGRAX_PUBLIC_POSITIONING.md#calls-to-action`

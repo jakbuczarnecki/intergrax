@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary product proof** — classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** are incomplete. The [LICENSE](LICENSE) is legally authoritative for permitted use.
 
-This guide provides time-boxed evaluation paths for technical reviewers, design partners, and integration builders. This guide is a reader-facing evaluation companion. It does not claim that external validation has occurred.
+This guide provides time-boxed, reader-facing evaluation paths for technical reviewers, design partners, and integration builders; it does not claim that external validation has occurred.
 
 Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
 

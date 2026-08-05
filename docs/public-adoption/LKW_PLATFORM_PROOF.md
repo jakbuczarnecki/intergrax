@@ -35,7 +35,7 @@ reviewer's operating system.
 Skipping an OS-specific interaction proof does not invalidate
 the Core Platform Proof.
 
-MongoDB-backed ProofReceipt documents are authoritative.
+Persisted execution receipts (`ProofReceipt` documents) are authoritative.
 Structured ProofReceipt documents persisted through the platform DocumentStore
 are the live source of truth for recorded proof outcomes.
 Terminal output is reviewer convenience.
@@ -53,7 +53,7 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 |---|---|
 | **Role** | Primary product proof |
 | **Product status** | Backend Product Alpha / MVP |
-| **Current proof scope** | Bounded Tier-3 application and platform behavior |
+| **Current proof scope** | Bounded application and platform behavior |
 | **Primary evidence** | Core Platform Proof claims, certification matrix, ProofReceipt documents in MongoDB |
 | **Does not prove** | Complete Hybrid Ask, complete vendor portfolio, real-user validation, commercial validation, or finished SaaS |
 
@@ -68,7 +68,7 @@ flowchart LR
     B --> C[Worker processing]
     C --> D[Persisted index]
     D --> E[Search or proof action]
-    E --> F[ProofReceipt]
+    E --> F[Persisted execution receipt]
     F --> G[Inspect evidence]
 ```
 
@@ -79,7 +79,7 @@ This flow reflects workflows supported by the existing Core Platform Proof. Opti
 ## Core platform claims
 
 ```text
-1. LKW starts as a real Tier-3 Intergrax application.
+1. LKW starts as a real Intergrax application.
 2. LKW emits policy-safe observability records into Elasticsearch/Kibana.
 3. LKW emits controlled problem signals into local Sentry.
 4. LKW persists indexed local knowledge across a non-destructive restart.

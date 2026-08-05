@@ -248,7 +248,8 @@ A neutral root README capability mention and main-guide link are allowed when:
 - no universal performance claim is used;
 - current status is qualified;
 - bounded-proof language is preserved;
-- in-cache compaction is not presented as complete.
+- The bounded mechanism may be described as IMPLEMENTED only with its exact limitation.
+- README must not present complete live-provider, provider-wide, rollback, production-rollout or generally available durable compaction behavior.
 
 ### Outcome-based promotion gates
 
@@ -267,6 +268,14 @@ The following remain prohibited:
 - production-proven savings;
 - promotion of universal proof results;
 - provider-independent generalization from a named proof.
+
+Frozen boundary:
+
+```text
+Bounded implementation claim
+≠ BOUNDED LIVE PROOF
+≠ production capability
+```
 
 Detail: [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md) § README discovery and promotion boundary.
 

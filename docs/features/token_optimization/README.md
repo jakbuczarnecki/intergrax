@@ -20,7 +20,7 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Overall public classification** | PARTIAL |
 | **Implemented foundation** | Existing deterministic engine mechanisms |
 | **Accepted bounded proof** | Named vLLM prefix-cache proof |
-| **Durable in-cache compaction** | Implemented as a bounded mechanism; live provider proof, production rollout, and rollback execution remain incomplete; numeric savings are not claimed |
+| **Bounded durable mechanism** | Durable repository, validation and CAS activation are implemented; live provider-wide proof, rollback execution and production rollout are not established |
 | **Public limitations** | No provider-independent, universal or production-proven savings claim |
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
 | **Public proof dashboard** | [`../../../PROOFS.md`](../../../PROOFS.md) |
@@ -516,6 +516,7 @@ Detail: [TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md](../architecture/TOKEN
 | Extractive filtering evaluation | Lossy filtering quality gates | synthetic evaluation | `test_extractive_filtering_evaluation_pack.py` | synthetic evaluation |
 | Protected-region preservation | Parser + validator | unit/contract | `test_protected_regions.py` | unit/contract proven |
 | Cache-prefix stability | Stable prefix / append-only rules | unit/contract | `test_prompt_cache_prefix_stability.py`, `test_cache_stable_prompt_assembly.py` | unit/contract proven |
+| Durable in-cache compaction mechanism | Durable repository, validation and CAS activation contracts | unit / contract / bounded implementation evidence | `intergrax/runtime/context_lifecycle/sqlite_repository.py`, `intergrax/runtime/nexus/session/context_revision.py`, `tests/unit/runtime/token_optimization/test_durable_compaction_closeout.py` | **IMPLEMENTED (bounded)**; does not prove live provider-wide behavior, rollback execution, production rollout or general availability |
 | Ollama router live E2E | Router on real Ollama models | live-verified (gated) | `tests/e2e/token_optimization/test_llm_router_ollama_live.py` | live-verified |
 | vLLM prefix-cache live proof | Cold/warm/changed-prefix provider reuse | live-verified (manual) | [VLLM_PREFIX_CACHE_LIVE_PROOF.md](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md), `vllm_prefix_cache_live.py` | live-verified |
 | vLLM proof gates | Evaluation gates without live server | unit/contract | `test_vllm_prefix_cache_proof.py`, `test_vllm_prefix_cache_live.py` | unit/contract proven |
@@ -530,7 +531,7 @@ Detail: [TOKEN_OPTIMIZATION_CACHE_PREFIX_STABILIZATION.md](../architecture/TOKEN
 | ---------- | ------- | ---------------- | ------- |
 | Unit gate suite | `uv run pytest tests/unit/runtime/token_optimization -m gate -q` | No | Yes |
 | Third-party plugin contract | `uv run pytest tests/unit/runtime/token_optimization/test_third_party_plugin_adapter_contract.py -q` | No | Yes |
-| Evaluation packs | `uv run pytest tests/unit/runtime/token_optimization/test_*_evaluation_pack.py -q` | No | Yes |
+| Evaluation packs | `uv run pytest tests/unit/runtime/token_optimization/test_pipeline_configuration_evaluation_pack.py tests/unit/runtime/token_optimization/test_extractive_filtering_evaluation_pack.py tests/unit/runtime/token_optimization/test_stronger_optimizer_evaluation_pack.py -q` | No | Yes |
 | vLLM proof gates (no server) | `uv run pytest tests/unit/runtime/token_optimization/test_vllm_prefix_cache_proof.py tests/unit/runtime/token_optimization/proofs/test_vllm_prefix_cache_live.py -q` | No | Yes |
 | Ollama router live E2E | `INTERGRAX_TOKEN_OPTIMIZATION_OLLAMA_E2E=1 uv run pytest tests/e2e/token_optimization/test_llm_router_ollama_live.py -m e2e -q` | Ollama | No (`no_ci`) |
 | vLLM prefix-cache live | See [proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md](proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md) | Docker + NVIDIA GPU + vLLM | No (`no_ci`) |
@@ -556,6 +557,7 @@ Expected: terminal summary with `final status: PASS` and reports under `build/pr
 - Deterministic pipeline with built-in layers and plugin contract proof.
 - Policy-governed LLM configuration routing with approved catalog.
 - Protected-region validation, receipts, and fallback metadata.
+- A bounded durable in-cache compaction mechanism exists with durable repository, validation, and CAS activation contracts; this does not establish live provider-wide behavior, rollback execution, production rollout, or general availability.
 - Char-level / synthetic evaluation results with documented workload bounds.
 - vLLM prefix-cache mechanism verified in documented live environment (not universal).
 
@@ -583,9 +585,8 @@ Full guardrails: [TOKEN_OPTIMIZATION_CLAIMS.md](../../public-adoption/TOKEN_OPTI
 
 ## 16. Current roadmap
 
-For the current implementation phase,
-accepted slices, dependencies and next work,
-see the [Token Optimization implementation plan](../plan/TOKEN_OPTIMIZATION.md).
+Detailed implementation phases, dependencies and review state:
+[Token Optimization implementation plan](../plan/TOKEN_OPTIMIZATION.md).
 
 ---
 

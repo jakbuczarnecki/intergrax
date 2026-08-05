@@ -146,6 +146,41 @@ Review fix:
 18626e91a24aa770f4011ab5294219fdfdcf6144
 ```
 
+### PX-11 closeout
+
+```text
+PX-11 — ACCEPTED / CLOSED
+
+Acceptance evidence:
+b942121d0a509d059681d6f1df55ff09d7aaf6a2
+```
+
+## Internal readiness-review ownership
+
+```text
+PUBLIC_LAUNCH_CHECKLIST.md
+→ single internal readiness record
+
+PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md
+→ PX phase state
+
+EXTERNAL_READER_VALIDATION_PROTOCOL.md
+→ external-session methodology
+
+Product roadmaps
+→ detailed implementation progress
+
+PROOFS.md
+→ public claims
+```
+
+PX-12 does not create another readiness report. Readiness checks are pinned
+to one commit. Successful command execution and evidence review are different
+modes and must be labeled. A technical failure is routed to its technical
+owner; documentation must not hide a failed executable path. The final task
+commit may become a PX-13 candidate only after independent acceptance.
+PX-12 does not constitute external validation.
+
 ---
 
 ## 2. Public documentation layers
@@ -587,8 +622,8 @@ Do not include numeric savings. Do not claim:
 - production-proven savings;
 - automatic cost reduction for every model;
 - universal provider cache behavior;
-- completed in-cache compaction;
-- completed TOKEN-10G or TOKEN-10H unless later verified.
+- complete live-provider, provider-wide, rollback, production-rollout or generally available durable compaction behavior;
+- universal or production-proven savings.
 
 The first public link must point to `docs/features/token_optimization/README.md`.
 
@@ -622,7 +657,9 @@ The final wording and any proof links in root README remain governed by `PUBLIC_
 - **Neutral discovery** (capability name, qualified status, main-guide link) is allowed before TOKEN-10H when no numeric savings or universal performance claims are used.
 - **Performance promotion** (badges, percentages, universal savings, production-proven claims) remains gated by TOKEN-10G hard gates and TOKEN-10H completion.
 
-Current root README may still contain pre-reconciliation promotion language; the future README rewrite must align with the frozen rule. Do not weaken the performance gate.
+The current root README is aligned with the frozen rule: it describes the
+bounded durable-compaction mechanism with explicit limitations. Do not weaken
+the performance gate.
 
 ---
 
