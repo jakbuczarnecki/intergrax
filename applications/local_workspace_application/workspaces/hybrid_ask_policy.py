@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from local_workspace_application.workspaces.knowledge_configuration_models import (
@@ -30,6 +29,7 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     HARD_MAX_PROVIDER_REQUESTS,
     HARD_MAX_UPSTREAM_ITEMS,
     EffectiveLiveCallBudgetV1,
+    KnowledgeQueryAudienceV1,
     ValidatedLiveCapabilityCallV1,
 )
 from intergrax.runtime.vendor_knowledge.live.identity import (
@@ -163,11 +163,6 @@ def resolve_effective_query_policy(
         raise HybridAskPolicyError("query_mode_not_allowed")
 
     return effective
-
-
-class KnowledgeQueryAudienceV1(StrEnum):
-    PERSONAL = "personal"
-    SHARED = "shared"
 
 
 class AudienceContextV1(BaseModel):

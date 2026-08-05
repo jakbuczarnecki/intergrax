@@ -314,6 +314,16 @@ FOUNDATION-1 frozen shared delta: implemented and READY_FOR_REVIEW
   shared registration bootstrap
   shared contract test suite
 
+FOUNDATION-1-REVIEW-FIX-2: implemented and READY_FOR_REVIEW
+  canonical live execution contracts owned by Vendor Knowledge runtime
+  application executor consumes the exact runtime contracts
+  runtime live modules have no LKW application import
+  runtime-only handler construction and strict outcome proof
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / BLOCKED_BY_SHARED_FOUNDATION
+  no Graph Drive handler, registration bundle or provider implementation is
+  included in the shared-foundation ownership correction
+
 provider-specific production handlers: not implemented
 provider-specific production registrations: not implemented
 cross-provider production proof: not implemented

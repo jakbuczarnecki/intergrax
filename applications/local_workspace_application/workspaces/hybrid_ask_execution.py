@@ -10,7 +10,6 @@ import inspect
 import time
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
-from enum import StrEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from uuid import uuid4
@@ -27,7 +26,6 @@ from local_workspace_application.workspaces.hybrid_ask_models import (
     HybridAskLiveExecutionStatusV1,
     HybridAskTruncationStateV1,
     IndexedWorkspaceEvidenceV1,
-    LiveExecutionReceiptV1,
     LiveWorkspaceEvidenceV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_policy import (
@@ -56,6 +54,12 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.live.contracts import (
+    LiveCapabilityExecutionContextV1,
+    LiveCapabilityExecutionResultV1,
+    LiveCapabilityHandlerV1,
+    LiveCapabilityResultItemV1,
+    LiveExecutionOutcomeV1,
+    LiveExecutionReceiptV1,
     content_sha256,
     evidence_id_for_call,
     result_hash_for_items,
@@ -93,111 +97,6 @@ def _require_aware(value: datetime, field_name: str) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
         raise ValueError(f"{field_name}_must_be_timezone_aware")
     return value
-
-
-class LiveExecutionOutcomeV1(StrEnum):
-    COMPLETED = "completed"
-    TRUNCATED = "truncated"
-    FAILED = "failed"
-
-
-class LiveCapabilityExecutionContextV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    run_id: str = Field(..., min_length=1, max_length=128)
-    tenant_id: str = Field(..., min_length=1, max_length=128)
-    workspace_id: str = Field(..., min_length=1, max_length=128)
-    audience: KnowledgeQueryAudienceV1
-    started_at: datetime
-    deadline_monotonic: float = Field(..., ge=0)
-    retention: LiveResultRetentionV1
-
-    _validate_ids = field_validator("run_id", "tenant_id", "workspace_id")(
-        lambda value, info: _require_nonblank(value, info.field_name)
-    )
-    _validate_started_at = field_validator("started_at")(
-        lambda value: _require_aware(value, "started_at")
-    )
-
-
-class LiveCapabilityResultItemV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    remote_item_id: str = Field(..., min_length=1, max_length=512)
-    safe_display_name: str = Field(..., min_length=1, max_length=512)
-    content: str = Field(..., max_length=16_777_216)
-    content_hash: str = Field(..., min_length=64, max_length=64)
-    retrieved_at: datetime
-    remote_updated_at: datetime | None = None
-    safe_locator: str | None = Field(default=None, max_length=2048)
-    truncated: bool = False
-
-    _validate_ids = field_validator("remote_item_id", "safe_display_name")(
-        lambda value, info: _require_nonblank(value, info.field_name)
-    )
-    _validate_retrieved_at = field_validator("retrieved_at")(
-        lambda value: _require_aware(value, "retrieved_at")
-    )
-    _validate_remote_updated_at = field_validator("remote_updated_at")(
-        lambda value: None if value is None else _require_aware(value, "remote_updated_at")
-    )
-    _validate_locator = field_validator("safe_locator")(
-        lambda value: safe_locator_or_none(value)
-    )
-
-
-class LiveCapabilityExecutionResultV1(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    call_id: str = Field(..., min_length=1, max_length=128)
-    normalized_outcome: LiveExecutionOutcomeV1
-    items: tuple[LiveCapabilityResultItemV1, ...] = ()
-    item_count: int = Field(..., ge=0)
-    byte_count: int = Field(..., ge=0)
-    started_at: datetime
-    completed_at: datetime
-    truncated: bool = False
-    error_code: str | None = None
-    receipt: LiveExecutionReceiptV1 | None = None
-    provider_id: str | None = None
-    integration_kind: IntegrationCategory | None = None
-    source_kind: str | None = None
-    capability_id: str | None = None
-    contract_version: str | None = None
-    live_access_binding_id: str | None = None
-    connection_ref: str | None = None
-    remote_resource_id: str | None = None
-
-    _validate_call_id = field_validator("call_id")(
-        lambda value: _require_nonblank(value, "call_id")
-    )
-    _validate_timestamps = field_validator("started_at", "completed_at")(
-        lambda value, info: _require_aware(value, info.field_name)
-    )
-    _validate_error_code = field_validator("error_code")(
-        lambda value: None if value is None else _require_nonblank(value, "error_code")
-    )
-
-
-@runtime_checkable
-class LiveCapabilityHandlerV1(Protocol):
-    provider_id: str
-    integration_kind: IntegrationCategory
-    source_kind: str
-    capability_id: str
-    contract_version: str
-    request_schema_ref: str
-    result_schema_ref: str
-    expected_request_model: type[BaseModel]
-
-    async def execute(
-        self,
-        *,
-        integration: object,
-        call: ExecutableLiveCallV1,
-        context: LiveCapabilityExecutionContextV1,
-    ) -> LiveCapabilityExecutionResultV1:
-        ...
 
 
 class LiveCapabilityHandlerKeyV1(BaseModel):

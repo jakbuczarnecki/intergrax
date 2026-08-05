@@ -15,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.live.contracts import (
     EffectiveLiveCallBudgetV1,
+    LiveCapabilityExecutionResultV1,
+    LiveExecutionOutcomeV1,
     evidence_id_for_call,
     result_hash_for_items,
     safe_locator_or_none,
@@ -290,14 +292,8 @@ class _FoundationRequest(BaseModel):
     query: str
 
 
-class _FoundationResult(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-
-    call_id: str
-    normalized_outcome: str
-    items: tuple[object, ...] = ()
-    item_count: int
-    byte_count: int
+class _FoundationResult(LiveCapabilityExecutionResultV1):
+    pass
 
 
 class _FoundationMetadata:
@@ -316,8 +312,21 @@ class _FoundationMetadata:
 
 
 class _FoundationHandler(_FoundationMetadata):
-    def execute(self, request: BaseModel) -> BaseModel:
-        return request
+    async def execute(
+        self,
+        *,
+        integration: object,
+        call,
+        context,
+    ) -> LiveCapabilityExecutionResultV1:
+        return LiveCapabilityExecutionResultV1(
+            call_id=call.call_id,
+            normalized_outcome=LiveExecutionOutcomeV1.COMPLETED,
+            item_count=0,
+            byte_count=0,
+            started_at=context.started_at,
+            completed_at=context.started_at,
+        )
 
 
 class _IdentityOnlyHandler(_FoundationMetadata):
@@ -518,6 +527,19 @@ def test_live_registration_requires_both_schemas(missing_schema: str) -> None:
     )
     with pytest.raises(ValueError, match="live_registration_bundle_incomplete"):
         publish_live_registration_bundles((incomplete,))
+
+
+def test_live_registration_result_schema_targets_canonical_runtime_result() -> None:
+    bundle = _foundation_bundle()
+    incompatible = replace(
+        bundle,
+        result_schema=bundle.result_schema.model_copy(
+            update={"model": _FoundationRequest}
+        ),
+    )
+
+    with pytest.raises(ValueError, match="live_result_schema_incompatible"):
+        publish_live_registration_bundles((incompatible,))
 
 
 def test_live_registration_rejects_invalid_entry_without_partial_publication() -> None:

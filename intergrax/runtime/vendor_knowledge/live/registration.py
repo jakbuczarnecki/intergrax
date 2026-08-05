@@ -3,11 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Protocol
 
 from pydantic import BaseModel
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    LiveCapabilityExecutionResultV1,
+    LiveCapabilityHandlerV1,
+)
 from intergrax.runtime.vendor_knowledge.live.identity import (
     CapabilityIdentityV1,
     exact_capability_key,
@@ -22,24 +25,14 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
 )
 
-
-class LiveCapabilityHandlerProtocolV1(Protocol):
-    provider_id: str
-    integration_kind: IntegrationCategory
-    source_kind: str
-    capability_id: str
-    contract_version: str
-    request_schema_ref: str
-    result_schema_ref: str
-    expected_request_model: type[BaseModel]
-
-    def execute(self, request: BaseModel) -> BaseModel: ...
+# Backwards-compatible name; the runtime protocol is the sole authority.
+LiveCapabilityHandlerProtocolV1 = LiveCapabilityHandlerV1
 
 
 @dataclass(frozen=True, slots=True)
 class LiveRegistrationBundleV1:
     descriptor: LiveCapabilityDescriptorV1
-    handler: LiveCapabilityHandlerProtocolV1
+    handler: LiveCapabilityHandlerV1
     request_schema: SchemaRegistrationV1
     result_schema: SchemaRegistrationV1
 
@@ -82,7 +75,7 @@ class PublishedLiveRegistrationV1:
         integration_kind: IntegrationCategory,
         capability_id: str,
         contract_version: str,
-    ) -> LiveCapabilityHandlerProtocolV1:
+    ) -> LiveCapabilityHandlerV1:
         key = (provider_id, integration_kind, capability_id, contract_version)
         handler = self.handlers.get(key)
         if handler is None:
@@ -108,7 +101,7 @@ class PublishedLiveRegistrationV1:
         raise LookupError("live_capability_unavailable")
 
 
-def _handler_identity(handler: LiveCapabilityHandlerProtocolV1) -> CapabilityIdentityV1:
+def _handler_identity(handler: LiveCapabilityHandlerV1) -> CapabilityIdentityV1:
     try:
         return validate_capability_identity(
             capability_id=handler.capability_id,
@@ -170,6 +163,11 @@ def _validate_bundle(
     }.issubset(bundle.result_schema.model.model_fields):
         raise ValueError("live_result_schema_incompatible")
     try:
+        if not issubclass(bundle.result_schema.model, LiveCapabilityExecutionResultV1):
+            raise ValueError("live_result_schema_incompatible")
+    except TypeError as exc:
+        raise ValueError("live_result_schema_incompatible") from exc
+    try:
         expected_model = bundle.handler.expected_request_model
         if expected_model is not bundle.request_schema.model:
             raise ValueError("live_handler_request_model_mismatch")
@@ -186,7 +184,7 @@ def publish_live_registration_bundles(
     bundles: Iterable[LiveRegistrationBundleV1],
     *,
     additional_descriptors: Iterable[LiveCapabilityDescriptorV1] = (),
-    additional_handlers: Iterable[LiveCapabilityHandlerProtocolV1] = (),
+    additional_handlers: Iterable[LiveCapabilityHandlerV1] = (),
 ) -> PublishedLiveRegistrationV1:
     """Validate everything first, then publish one immutable snapshot."""
     if tuple(additional_descriptors) or tuple(additional_handlers):
@@ -196,7 +194,7 @@ def publish_live_registration_bundles(
         tuple[str, IntegrationCategory, str, str], LiveCapabilityDescriptorV1
     ] = {}
     handlers: dict[
-        tuple[str, IntegrationCategory, str, str], LiveCapabilityHandlerProtocolV1
+        tuple[str, IntegrationCategory, str, str], LiveCapabilityHandlerV1
     ] = {}
     schema_entries: list[SchemaRegistrationV1] = []
     bundle_list = tuple(bundles)

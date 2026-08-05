@@ -834,6 +834,8 @@ shared error taxonomy
 normalized provenance additions
 safe-locator enforcement
 receipt contract and ordered identity-aware hashing
+provider-neutral execution context, outcome, item/result and handler contracts
+canonical runtime ownership independent of the LKW application tier
 shared contract tests
 bootstrap integration needed by all provider families
 ```
@@ -873,6 +875,18 @@ live results never enter the indexed corpus automatically
 no provider clients or credentials enter handlers
 focused shared contract tests pass without external credentials
 ```
+
+**Review-fix ownership resolution:**
+
+The first production-handler review exposed an invalid dependency direction:
+the runtime handler contract previously required application-owned execution
+models from `local_workspace_application`. The canonical outcome enum,
+execution context, result item, execution result, receipt and async handler
+protocol now live under `intergrax/runtime/vendor_knowledge/live/`. The LKW
+executor remains the application-owned orchestrator and creates receipts after
+validating provider results; it consumes the exact runtime classes and passes
+the canonical validated call subtype without exposing application policy or
+configuration to handlers.
 
 ## 25. Test architecture
 
@@ -949,8 +963,11 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
   READY_FOR_REVIEW
 
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1-REVIEW-FIX-2
+  READY_FOR_REVIEW
+
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
-  PLANNED / NEXT AFTER FOUNDATION ACCEPTANCE
+  PLANNED / BLOCKED_BY_SHARED_FOUNDATION
 
 all other provider live tasks
   PLANNED

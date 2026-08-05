@@ -12,6 +12,7 @@ from typing import Any, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.runtime.vendor_knowledge.live.contracts import LiveResultRetentionV1
 
 _CONNECTION_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -89,11 +90,6 @@ class QueryPolicyModeV2(StrEnum):
     INDEXED_ONLY = "indexed_only"
     LIVE_ONLY = "live_only"
     HYBRID = "hybrid"
-
-
-class LiveResultRetentionV1(StrEnum):
-    EPHEMERAL = "ephemeral"
-    RECEIPT_ONLY = "receipt_only"
 
 
 class WorkspaceConnectionAttachmentStatusV1(StrEnum):

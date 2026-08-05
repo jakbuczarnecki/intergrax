@@ -7,9 +7,10 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
+from typing import Any, Protocol, runtime_checkable
 from urllib.parse import parse_qsl, urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.live.identity import (
@@ -57,6 +58,11 @@ _FORBIDDEN_LOCATOR_QUERY_KEYS = frozenset(
 class LiveResultRetentionV1(StrEnum):
     EPHEMERAL = "ephemeral"
     RECEIPT_ONLY = "receipt_only"
+
+
+class KnowledgeQueryAudienceV1(StrEnum):
+    PERSONAL = "personal"
+    SHARED = "shared"
 
 
 def _nonblank(value: str, field_name: str, maximum: int) -> str:
@@ -153,6 +159,153 @@ class ValidatedLiveCapabilityCallV1(BaseModel):
             source_kind=self.source_kind,
             contract_version=self.contract_version,
         )
+
+
+class LiveExecutionOutcomeV1(StrEnum):
+    COMPLETED = "completed"
+    TRUNCATED = "truncated"
+    FAILED = "failed"
+
+
+class LiveCapabilityExecutionContextV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    run_id: str = Field(..., min_length=1, max_length=128)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    audience: KnowledgeQueryAudienceV1
+    started_at: datetime
+    deadline_monotonic: float = Field(..., ge=0)
+    retention: LiveResultRetentionV1
+
+    _validate_ids = field_validator("run_id", "tenant_id", "workspace_id")(
+        lambda value, info: _nonblank(value, info.field_name, 128)
+    )
+    _validate_started_at = field_validator("started_at")(
+        lambda value: _aware(value, "started_at")
+    )
+
+
+class LiveCapabilityResultItemV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    remote_item_id: str = Field(..., min_length=1, max_length=512)
+    safe_display_name: str = Field(..., min_length=1, max_length=512)
+    content: str = Field(..., max_length=16_777_216)
+    content_hash: str = Field(..., min_length=64, max_length=64)
+    retrieved_at: datetime
+    remote_updated_at: datetime | None = None
+    safe_locator: str | None = Field(default=None, max_length=2048)
+    truncated: bool = False
+
+    _validate_ids = field_validator("remote_item_id", "safe_display_name")(
+        lambda value, info: _nonblank(value, info.field_name, 512)
+    )
+    _validate_retrieved_at = field_validator("retrieved_at")(
+        lambda value: _aware(value, "retrieved_at")
+    )
+    _validate_remote_updated_at = field_validator("remote_updated_at")(
+        lambda value: None if value is None else _aware(value, "remote_updated_at")
+    )
+    _validate_locator = field_validator("safe_locator")(
+        lambda value: safe_locator_or_none(value)
+    )
+
+
+class LiveExecutionReceiptV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    receipt_id: str = Field(..., min_length=1)
+    run_id: str = Field(..., min_length=1)
+    call_id: str = Field(..., min_length=1)
+    live_access_binding_id: str = Field(..., min_length=1)
+    provider_id: str = Field(..., min_length=1)
+    source_kind: str = Field(..., min_length=1)
+    capability_id: str = Field(..., min_length=1)
+    contract_version: str = Field(..., min_length=1)
+    started_at: datetime
+    completed_at: datetime
+    item_count: int = Field(..., ge=0)
+    byte_count: int = Field(..., ge=0)
+    result_hash: str = Field(..., min_length=64, max_length=64)
+    truncated: bool = False
+    normalized_outcome: str = Field(..., min_length=1)
+    error_code: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy_content_hash_adapter(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "result_hash" not in data and "content_hash" in data:
+            migrated = dict(data)
+            migrated["result_hash"] = migrated.pop("content_hash")
+            return migrated
+        return data
+
+    @field_validator("started_at", "completed_at")
+    @classmethod
+    def _timestamps_aware(cls, value: datetime) -> datetime:
+        return _aware(value, "receipt_timestamp")
+
+    @field_validator("result_hash")
+    @classmethod
+    def _sha256_result_hash(cls, value: str) -> str:
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError("receipt_result_hash_invalid")
+        return value
+
+
+class LiveCapabilityExecutionResultV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    call_id: str = Field(..., min_length=1, max_length=128)
+    normalized_outcome: LiveExecutionOutcomeV1
+    items: tuple[LiveCapabilityResultItemV1, ...] = ()
+    item_count: int = Field(..., ge=0)
+    byte_count: int = Field(..., ge=0)
+    started_at: datetime
+    completed_at: datetime
+    truncated: bool = False
+    error_code: str | None = None
+    receipt: LiveExecutionReceiptV1 | None = None
+    provider_id: str | None = None
+    integration_kind: IntegrationCategory | None = None
+    source_kind: str | None = None
+    capability_id: str | None = None
+    contract_version: str | None = None
+    live_access_binding_id: str | None = None
+    connection_ref: str | None = None
+    remote_resource_id: str | None = None
+
+    _validate_call_id = field_validator("call_id")(
+        lambda value: _nonblank(value, "call_id", 128)
+    )
+    _validate_timestamps = field_validator("started_at", "completed_at")(
+        lambda value, info: _aware(value, info.field_name)
+    )
+    _validate_error_code = field_validator("error_code")(
+        lambda value: None if value is None else _nonblank(value, "error_code", 128)
+    )
+
+
+@runtime_checkable
+class LiveCapabilityHandlerV1(Protocol):
+    provider_id: str
+    integration_kind: IntegrationCategory
+    source_kind: str
+    capability_id: str
+    contract_version: str
+    request_schema_ref: str
+    result_schema_ref: str
+    expected_request_model: type[BaseModel]
+
+    async def execute(
+        self,
+        *,
+        integration: object,
+        call: ValidatedLiveCapabilityCallV1,
+        context: LiveCapabilityExecutionContextV1,
+    ) -> LiveCapabilityExecutionResultV1:
+        ...
 
 
 def _locator_has_forbidden_query(url: str) -> bool:
