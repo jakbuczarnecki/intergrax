@@ -35,9 +35,9 @@ def test_checked_in_corpus_is_strict_and_covers_required_categories() -> None:
         "policy_disabled",
         "measure_only",
         "prefix_stable_repeat",
-        "changed_stable_prefix",
-        "reordered_tool_schemas",
-        "canonical_inner_dictionary_order",
+        "changed_dynamic_tail",
+        "tool_payload_order",
+        "canonical_inner_payload_order",
         "warm_cache_evidence",
         "changed_prefix_negative_control",
     } == {case.category for case in corpus.cases}
@@ -116,6 +116,26 @@ def test_corpus_inputs_are_representative_and_expectations_are_assertive(
         case.router.allowed_statuses != frozenset({"routed", "blocked"})
         for case in corpus.cases
     )
+
+
+def test_full_run_corpus_leaves_identity_controls_to_evaluate_only_fixtures() -> None:
+    corpus = load_proof_corpus(_CORPUS)
+    cases = {case.case_id: case for case in corpus.cases}
+
+    assert cases["case-prefix-stable-repeat"].prefix.same_as_case_id == (
+        "case-exact-duplicate-content"
+    )
+    assert cases["case-prefix-changed"].category == "changed_dynamic_tail"
+    assert cases["case-prefix-changed"].prefix.identity_required is False
+
+    for case_id in (
+        "case-reordered-tools",
+        "case-inner-dictionary-order",
+        "case-warm-cache",
+        "case-changed-prefix-cache-control",
+    ):
+        assert cases[case_id].prefix.identity_required is False
+        assert cases[case_id].prefix.tool_schema_identity is None
 
 
 def test_corpus_rejects_unknown_fields_duplicate_ids_and_unsafe_ids(

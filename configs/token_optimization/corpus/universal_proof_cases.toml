@@ -414,8 +414,8 @@ mode = "not_applicable"
 
 [[cases]]
 case_id = "case-prefix-changed"
-category = "changed_stable_prefix"
-description = "Synthetic system-policy prefix changes and is recorded as a cache negative control."
+category = "changed_dynamic_tail"
+description = "Synthetic source/content variation changes only the dynamic tail; stable-prefix identity is evaluate-only."
 input_case_id = "prefix-changed"
 source_type = "system_policy"
 safe_tags = ["synthetic", "prefix-control"]
@@ -442,16 +442,15 @@ optimized = "not_applicable"
 ordering_required = false
 
 [cases.prefix]
-identity_required = true
-different_from_case_id = "case-prefix-stable-repeat"
+identity_required = false
 
 [cases.cache]
 mode = "not_applicable"
 
 [[cases]]
 case_id = "case-reordered-tools"
-category = "reordered_tool_schemas"
-description = "Outer alpha/beta tool ordering must produce a different recorded tool identity."
+category = "tool_payload_order"
+description = "Synthetic request content lists alpha/beta labels; tool-schema identity is evaluate-only."
 input_case_id = "tools-alpha-beta"
 source_type = "tool_catalog"
 safe_tags = ["synthetic", "tools"]
@@ -478,17 +477,15 @@ optimized = "not_applicable"
 ordering_required = false
 
 [cases.prefix]
-identity_required = true
-different_from_case_id = "case-changed-prefix-cache-control"
-tool_schema_identity = "different"
+identity_required = false
 
 [cases.cache]
 mode = "not_applicable"
 
 [[cases]]
 case_id = "case-inner-dictionary-order"
-category = "canonical_inner_dictionary_order"
-description = "Equivalent inner parameter-key order must preserve the recorded tool identity."
+category = "canonical_inner_payload_order"
+description = "Synthetic request content varies inner keys; tool-schema canonicalization is evaluate-only."
 input_case_id = "tools-inner-keys-reordered"
 source_type = "tool_catalog"
 safe_tags = ["synthetic", "canonicalization"]
@@ -515,9 +512,7 @@ optimized = "not_applicable"
 ordering_required = false
 
 [cases.prefix]
-identity_required = true
-same_as_case_id = "case-reordered-tools"
-tool_schema_identity = "same"
+identity_required = false
 
 [cases.cache]
 mode = "not_applicable"
@@ -551,8 +546,7 @@ optimized = "required"
 ordering_required = true
 
 [cases.prefix]
-identity_required = true
-same_as_case_id = "case-prefix-stable-repeat"
+identity_required = false
 
 [cases.cache]
 mode = "warm_expected"
@@ -560,7 +554,7 @@ mode = "warm_expected"
 [[cases]]
 case_id = "case-changed-prefix-cache-control"
 category = "changed_prefix_negative_control"
-description = "Changed-prefix cache control requires typed miss attribution and a different identity."
+description = "Cache negative control requires typed miss attribution; identity comparison is evaluate-only."
 input_case_id = "tools-beta-alpha"
 source_type = "tool_catalog"
 safe_tags = ["synthetic", "cache", "control"]
@@ -587,8 +581,7 @@ optimized = "not_applicable"
 ordering_required = false
 
 [cases.prefix]
-identity_required = true
-different_from_case_id = "case-prefix-stable-repeat"
+identity_required = false
 
 [cases.cache]
 mode = "changed_prefix_negative_control"

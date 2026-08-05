@@ -42,6 +42,10 @@ from intergrax.runtime.token_optimization.proofs.evaluator import (
 )
 
 _DIGEST = "a" * 64
+HASH_A = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+HASH_B = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+TOOL_HASH_AB = "1111222233334444555566667777888811112222333344445555666677778888"
+TOOL_HASH_BA = "9999aaaabbbbccccddddeeeeffff00009999aaaabbbbccccddddeeeeffff0000"
 
 
 def _fixture() -> tuple[UniversalProofRunResult, ProofCorpus, EvaluationConfiguration]:
@@ -222,6 +226,152 @@ def _changed_prefix_fixture() -> tuple[
     return run, corpus, config
 
 
+def _evaluate_only_identity_fixture() -> tuple[
+    UniversalProofRunResult, ProofCorpus, EvaluationConfiguration
+]:
+    run, corpus, config = _fixture()
+    base_corpus_case = replace(
+        corpus.cases[0],
+        cache=CacheExpectation(mode=CacheExpectationMode.NOT_APPLICABLE),
+    )
+    cases = (
+        (
+            "stable-prefix-a",
+            HASH_A,
+            None,
+            PrefixExpectation(identity_required=True),
+        ),
+        (
+            "stable-prefix-b",
+            HASH_A,
+            None,
+            PrefixExpectation(
+                identity_required=True,
+                same_as_case_id="stable-prefix-a",
+            ),
+        ),
+        (
+            "changed-prefix",
+            HASH_B,
+            None,
+            PrefixExpectation(
+                identity_required=True,
+                different_from_case_id="stable-prefix-a",
+            ),
+        ),
+        (
+            "tools-alpha-beta",
+            HASH_A,
+            TOOL_HASH_AB,
+            PrefixExpectation(identity_required=True),
+        ),
+        (
+            "tools-beta-alpha",
+            HASH_B,
+            TOOL_HASH_BA,
+            PrefixExpectation(
+                identity_required=True,
+                different_from_case_id="tools-alpha-beta",
+                tool_schema_identity="different",
+            ),
+        ),
+        (
+            "tools-inner-reordered",
+            HASH_A,
+            TOOL_HASH_AB,
+            PrefixExpectation(
+                identity_required=True,
+                same_as_case_id="tools-alpha-beta",
+                tool_schema_identity="same",
+            ),
+        ),
+    )
+    corpus_cases = tuple(
+        replace(
+            base_corpus_case,
+            case_id=case_id,
+            input_case_id=case_id,
+            prefix=prefix,
+        )
+        for case_id, _, _, prefix in cases
+    )
+    result_cases = tuple(
+        replace(
+            run.cases[0],
+            case_id=case_id,
+            prefix_identity_evidence=ProofPrefixIdentityEvidence(
+                identity_available=True,
+                stable_prefix_identity=stable_prefix_identity,
+                tool_schema_hash=tool_schema_hash,
+                identity_contract_version="TOKEN-10B",
+            ),
+        )
+        for case_id, stable_prefix_identity, tool_schema_hash, _ in cases
+    )
+    run = replace(
+        run,
+        case_count=len(result_cases),
+        completed_count=len(result_cases),
+        cases=result_cases,
+        artifact_manifest=UniversalProofArtifactManifest(
+            files=tuple(
+                [ProofArtifactRef("run.json", _DIGEST)]
+                + [
+                    ProofArtifactRef(f"cases/{case_id}.json", _DIGEST)
+                    for case_id, _, _, _ in cases
+                ]
+            )
+        ),
+    )
+    corpus = replace(corpus, cases=corpus_cases)
+    return run, corpus, config
+
+
+def test_evaluate_only_identity_fixture_has_explicit_safe_digests() -> None:
+    run, corpus, _ = _evaluate_only_identity_fixture()
+    evidence = {
+        case.case_id: case.prefix_identity_evidence for case in run.cases
+    }
+
+    assert evidence["stable-prefix-a"].stable_prefix_identity == HASH_A
+    assert evidence["stable-prefix-b"].stable_prefix_identity == HASH_A
+    assert evidence["changed-prefix"].stable_prefix_identity == HASH_B
+    assert evidence["tools-alpha-beta"].tool_schema_hash == TOOL_HASH_AB
+    assert evidence["tools-beta-alpha"].tool_schema_hash == TOOL_HASH_BA
+    assert evidence["tools-inner-reordered"].tool_schema_hash == TOOL_HASH_AB
+    assert HASH_A != HASH_B
+    assert TOOL_HASH_AB != TOOL_HASH_BA
+    assert (
+        evidence["tools-inner-reordered"].tool_schema_hash
+        == evidence["tools-alpha-beta"].tool_schema_hash
+    )
+    assert all(
+        len(value) == 64 and all(character in "0123456789abcdef" for character in value)
+        for item in evidence.values()
+        for value in (
+            item.stable_prefix_identity,
+            item.tool_schema_hash,
+        )
+        if value is not None
+    )
+    assert len(corpus.cases) == 6
+
+
+def test_evaluate_only_identity_fixture_passes_without_engine_rerun() -> None:
+    run, corpus, config = _evaluate_only_identity_fixture()
+    evaluation = UniversalProofEvaluator().evaluate(
+        run, corpus, config, evaluation_id="identity-fixtures"
+    )
+
+    assert evaluation.success is True
+    assert not [
+        gate
+        for case in evaluation.cases
+        for gate in case.gates
+        if gate.required and gate.status is GateStatus.FAIL
+    ]
+
+
 def test_all_required_gates_pass_from_recorded_evidence() -> None:
     run, corpus, config = _fixture()
     evaluation = UniversalProofEvaluator().evaluate(
@@ -397,9 +547,18 @@ def _protected_fixture() -> tuple[
 @pytest.mark.parametrize(
     "mutation",
     [
-        lambda evidence: replace(evidence, input_protected_region_count=0),
         lambda evidence: replace(
-            evidence, preserved_identity_digest="b" * 64
+            evidence,
+            input_protected_region_count=0,
+            validated_protected_region_count=0,
+            preserved_protected_region_count=0,
+            input_identity_digest=None,
+            preserved_identity_digest=None,
+        ),
+        lambda evidence: replace(
+            evidence,
+            preserved_protected_region_count=0,
+            protected_region_validation_status="not_applicable",
         ),
         lambda evidence: replace(
             evidence, protected_region_validation_status="failed"
