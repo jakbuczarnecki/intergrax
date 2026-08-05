@@ -84,6 +84,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 
 _ACTIVE_RUN_PHASES: frozenset[KnowledgeReconciliationRunPhase] = frozenset(
@@ -265,7 +266,8 @@ class VendorKnowledgeReconciliationEngine:
         utc_clock: UtcClock | None = None,
         run_id_factory: RunIdFactory | None = None,
         publication_fence_validator: Callable[
-            [KnowledgeSyncPublicationFenceV1 | None], None
+            [KnowledgeSyncPublicationFenceV1 | None, KnowledgeSyncPublicationPermitV1 | None],
+            None,
         ]
         | None = None,
     ) -> None:
@@ -283,6 +285,7 @@ class VendorKnowledgeReconciliationEngine:
         self._run_id_factory = run_id_factory or _default_run_id_factory
         self._publication_fence_validator = publication_fence_validator
         self._invocation_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None
+        self._invocation_publication_permit: KnowledgeSyncPublicationPermitV1 | None = None
 
     async def reconcile_page(
         self,
@@ -293,6 +296,7 @@ class VendorKnowledgeReconciliationEngine:
         restart: bool,
         trigger_delivery_id: str | None,
         publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> KnowledgeSyncRunResult:
         if page_size < 1 or page_size > 1000:
             raise ValueError("page_size must be in range 1..1000")
@@ -303,6 +307,7 @@ class VendorKnowledgeReconciliationEngine:
                 retryable=False,
             )
         self._invocation_publication_fence = publication_fence
+        self._invocation_publication_permit = publication_permit
         binding, source = self._load_binding_and_source(binding_id=binding_id)
         run_id = self._run_id_factory(
             self._tenant_id,
@@ -411,13 +416,19 @@ class VendorKnowledgeReconciliationEngine:
     def execute_recovery_command(
         self,
         command: KnowledgeReconciliationRecoveryCommand,
+        *,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> KnowledgeReconciliationRun:
+        self._invocation_publication_permit = publication_permit
         return self._execute_recovery_command_sync(command)
 
     async def execute_recovery_command_async(
         self,
         command: KnowledgeReconciliationRecoveryCommand,
+        *,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> KnowledgeReconciliationRun:
+        self._invocation_publication_permit = publication_permit
         if command.kind is KnowledgeReconciliationRecoveryCommandKind.RESUME_EXACT:
             return await self._resume_exact_async(command)
         return self._execute_recovery_command_sync(command)
@@ -829,6 +840,7 @@ class VendorKnowledgeReconciliationEngine:
             envelopes=envelopes,
             has_more=run.has_more,
             publication_fence=run.publication_fence,
+            publication_permit=self._invocation_publication_permit,
         )
         await self._apply_sink(batch=batch, source=source)
         states = self._states_from_templates(run=run, binding=binding, source=source)
@@ -875,6 +887,7 @@ class VendorKnowledgeReconciliationEngine:
                     intended,
                     expected_previous=expected_previous,
                     expected_publication_fence=run.publication_fence,
+                    publication_permit=self._invocation_publication_permit,
                 )
             except KnowledgeSyncCheckpointConflict:
                 raise VendorKnowledgeError(
@@ -2067,6 +2080,7 @@ class VendorKnowledgeReconciliationEngine:
                 states=states,
                 prepared_state_mutations_fingerprint=run.prepared_state_mutations_fingerprint,
                 expected_publication_fence=run.publication_fence,
+                publication_permit=self._invocation_publication_permit,
             )
         except VendorKnowledgeError:
             raise
@@ -2126,6 +2140,7 @@ class VendorKnowledgeReconciliationEngine:
                 expected=expected,
                 replacement=replacement,
                 expected_publication_fence=expected.publication_fence,
+                publication_permit=self._invocation_publication_permit,
             )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
@@ -2158,6 +2173,7 @@ class VendorKnowledgeReconciliationEngine:
                 expected=expected,
                 replacement=replacement,
                 expected_publication_fence=expected.publication_fence,
+                publication_permit=self._invocation_publication_permit,
             )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
@@ -2191,6 +2207,7 @@ class VendorKnowledgeReconciliationEngine:
                 expected=expected,
                 replacement=replacement,
                 expected_publication_fence=expected.publication_fence,
+                publication_permit=self._invocation_publication_permit,
             )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
@@ -2220,9 +2237,15 @@ class VendorKnowledgeReconciliationEngine:
     def _ensure_publication(
         self,
         expected: KnowledgeSyncPublicationFenceV1 | None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
         if self._publication_fence_validator is not None:
-            self._publication_fence_validator(expected)
+            self._publication_fence_validator(
+                expected,
+                self._invocation_publication_permit
+                if publication_permit is None
+                else publication_permit,
+            )
 
     def _load_binding_and_source(
         self, *, binding_id: str

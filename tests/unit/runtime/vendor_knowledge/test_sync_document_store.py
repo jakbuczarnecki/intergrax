@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+from datetime import UTC, datetime
 from typing import Optional
 
 import pytest
@@ -42,6 +43,8 @@ from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     DocumentStoreKnowledgeSyncPublicationFenceRepository,
     KnowledgeSyncPublicationFenceConflict,
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationInProgress,
+    KnowledgeSyncPublicationPermitV1,
 )
 
 
@@ -150,6 +153,208 @@ def test_publication_fence_revision_cas_rejects_stale_writer() -> None:
     ) == second
     with pytest.raises(KnowledgeSyncPublicationFenceConflict):
         repository.write_fence(first, expected_revision=1)
+
+
+@pytest.mark.unit
+def test_publication_permit_linearizes_lifecycle_and_recovers_after_expiry() -> None:
+    store = InMemoryDocumentStore()
+    now = {"value": datetime(2026, 1, 1, 12, 0, tzinfo=UTC)}
+    repository_a = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        clock=lambda: now["value"],
+        permit_id_factory=lambda: "permit-a",
+    )
+    repository_b = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        clock=lambda: now["value"],
+        permit_id_factory=lambda: "permit-b",
+    )
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    repository_a.write_fence(fence, expected_revision=None)
+
+    permit_a = repository_a.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=1,
+        expected_token="token-a",
+        owner_id="worker-a",
+        ttl_seconds=5,
+    )
+    assert permit_a is not None
+    assert isinstance(permit_a, KnowledgeSyncPublicationPermitV1)
+    assert repository_b.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=1,
+        expected_token="token-a",
+        owner_id="worker-b",
+        ttl_seconds=5,
+    ) is None
+
+    with pytest.raises(KnowledgeSyncPublicationInProgress, match="publication_in_progress"):
+        repository_b.disable(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=2,
+            lifecycle_token="token-b",
+            expected_revision=1,
+        )
+
+    assert repository_a.release_publication_permit(permit=permit_a) is True
+    assert repository_a.release_publication_permit(permit=permit_a) is True
+    disabled = repository_b.disable(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=2,
+        lifecycle_token="token-b",
+        expected_revision=1,
+    )
+    assert disabled.detached is False
+    assert disabled.enabled is False
+    enabled = repository_b.enable(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=3,
+        lifecycle_token="token-c",
+        expected_revision=2,
+    )
+    assert enabled.enabled is True
+    assert repository_a.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=1,
+        expected_token="token-a",
+        owner_id="stale-worker",
+        ttl_seconds=5,
+    ) is None
+    permit_c = repository_a.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=3,
+        expected_token="token-c",
+        owner_id="worker-c",
+        ttl_seconds=5,
+    )
+    assert permit_c is not None
+    with pytest.raises(KnowledgeSyncPublicationInProgress):
+        repository_b.detach(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=4,
+            lifecycle_token="token-d",
+            expected_revision=3,
+        )
+    assert repository_a.release_publication_permit(permit=permit_c) is True
+    detached = repository_b.detach(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=4,
+        lifecycle_token="token-d",
+        expected_revision=3,
+    )
+    assert detached.detached is True
+
+
+@pytest.mark.unit
+def test_publication_permit_stale_owner_cannot_release_newer_permit() -> None:
+    store = InMemoryDocumentStore()
+    now = {"value": datetime(2026, 1, 1, 12, 0, tzinfo=UTC)}
+    permits = iter(("permit-a", "permit-b"))
+    repository_a = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        clock=lambda: now["value"],
+        permit_id_factory=lambda: next(permits),
+    )
+    repository_b = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        clock=lambda: now["value"],
+        permit_id_factory=lambda: "unused",
+    )
+    repository_a.write_fence(
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=1,
+            lifecycle_token="token-a",
+            enabled=True,
+            detached=False,
+        ),
+        expected_revision=None,
+    )
+    first = repository_a.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=1,
+        expected_token="token-a",
+        owner_id="worker-a",
+        ttl_seconds=5,
+    )
+    assert first is not None
+    now["value"] = datetime(2026, 1, 1, 12, 0, 6, tzinfo=UTC)
+    second = repository_a.acquire_publication_permit(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        expected_revision=1,
+        expected_token="token-a",
+        owner_id="worker-b",
+        ttl_seconds=5,
+    )
+    assert second is not None
+    assert repository_b.release_publication_permit(permit=first) is False
+    assert repository_a.is_current_publication_permit(permit=second) is True
+    now["value"] = datetime(2026, 1, 1, 12, 0, 12, tzinfo=UTC)
+    assert repository_a.is_current_publication_permit(permit=second) is False
+    assert repository_a.release_publication_permit(permit=second) is True
+
+
+@pytest.mark.unit
+def test_two_independent_repositories_have_one_permit_winner() -> None:
+    store = InMemoryDocumentStore()
+    repository = DocumentStoreKnowledgeSyncPublicationFenceRepository(store)
+    repository.write_fence(
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=1,
+            lifecycle_token="token-a",
+            enabled=True,
+            detached=False,
+        ),
+        expected_revision=None,
+    )
+    repositories = [
+        DocumentStoreKnowledgeSyncPublicationFenceRepository(store),
+        DocumentStoreKnowledgeSyncPublicationFenceRepository(store),
+    ]
+    results: list[KnowledgeSyncPublicationPermitV1 | None] = []
+    lock = threading.Lock()
+
+    def _acquire(repo: DocumentStoreKnowledgeSyncPublicationFenceRepository) -> None:
+        permit = repo.acquire_publication_permit(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            expected_revision=1,
+            expected_token="token-a",
+            owner_id="independent-worker",
+            ttl_seconds=30,
+        )
+        with lock:
+            results.append(permit)
+
+    threads = [threading.Thread(target=_acquire, args=(repo,)) for repo in repositories]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len([permit for permit in results if permit is not None]) == 1
 
 
 @pytest.mark.unit

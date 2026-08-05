@@ -8,9 +8,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Annotated, Any, Literal, Mapping, Union
+from typing import Annotated, Any, Literal, Union
 
 from pydantic import (
     BaseModel,
@@ -33,6 +34,7 @@ from intergrax.runtime.vendor_knowledge.models import (
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -486,6 +488,9 @@ class KnowledgeSyncBatch(BaseModel):
     publication_fence: KnowledgeSyncPublicationFenceV1 | None = Field(
         default=None, repr=False
     )
+    publication_permit: KnowledgeSyncPublicationPermitV1 | None = Field(
+        default=None, repr=False
+    )
 
     @field_validator("tenant_id", "binding_id")
     @classmethod
@@ -514,6 +519,24 @@ class KnowledgeSyncBatch(BaseModel):
             or self.publication_fence.binding_id != self.binding_id
         ):
             raise ValueError("publication_fence identity must match sync batch")
+        if self.publication_permit is not None and (
+            self.publication_permit.tenant_id != self.tenant_id
+            or self.publication_permit.binding_id != self.binding_id
+        ):
+            raise ValueError("publication_permit identity must match sync batch")
+        if self.publication_fence is None and self.publication_permit is not None:
+            raise ValueError("publication_permit requires publication_fence")
+        if (
+            self.publication_fence is not None
+            and self.publication_permit is not None
+            and (
+                self.publication_permit.lifecycle_revision
+                != self.publication_fence.lifecycle_revision
+                or self.publication_permit.lifecycle_token
+                != self.publication_fence.lifecycle_token
+            )
+        ):
+            raise ValueError("publication_permit lifecycle must match publication_fence")
         return self
 
 

@@ -10,7 +10,8 @@ import json
 import re
 import secrets
 import time
-from typing import Any, Callable, Mapping
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -56,6 +57,7 @@ from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     KnowledgeSyncPublicationFenceConflict,
     KnowledgeSyncPublicationFencePort,
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 
 _LEASE_SCHEMA = "vendor_knowledge.source_lease.v1"
@@ -573,23 +575,37 @@ def _data_as_dict(data: Mapping[str, Any]) -> dict[str, Any]:
     return dict(data)
 
 
-def _require_current_publication_fence(
+def _require_current_publication_permit(
     *,
     port: KnowledgeSyncPublicationFencePort | None,
-    expected: KnowledgeSyncPublicationFenceV1 | None,
+    expected_fence: KnowledgeSyncPublicationFenceV1 | None,
+    permit: KnowledgeSyncPublicationPermitV1 | None,
 ) -> None:
-    if expected is None:
+    if expected_fence is None:
+        if permit is not None:
+            raise KnowledgeSyncPublicationFenceConflict(
+                "publication permit requires a publication fence"
+            )
         return
-    if port is None:
+    if port is None or permit is None:
         raise KnowledgeSyncPublicationFenceConflict(
-            "publication fence authority is not configured"
+            "publication permit authority is not configured"
         )
-    current = port.read_fence(
-        tenant_id=expected.tenant_id,
-        binding_id=expected.binding_id,
-    )
-    if current != expected or not expected.enabled or expected.detached:
-        raise KnowledgeSyncPublicationFenceConflict("publication fence no longer matches")
+    if (
+        permit.tenant_id != expected_fence.tenant_id
+        or permit.binding_id != expected_fence.binding_id
+        or permit.lifecycle_revision != expected_fence.lifecycle_revision
+        or permit.lifecycle_token != expected_fence.lifecycle_token
+    ):
+        raise KnowledgeSyncPublicationFenceConflict("publication permit does not match fence")
+    try:
+        current = port.is_current_publication_permit(permit=permit)
+    except (AttributeError, TypeError):
+        raise KnowledgeSyncPublicationFenceConflict(
+            "publication permit authority is not configured"
+        ) from None
+    if not current:
+        raise KnowledgeSyncPublicationFenceConflict("publication permit is no longer current")
 
 
 class DocumentStoreKnowledgeSourceLeaseRepository:
@@ -828,10 +844,12 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _require_current_publication_fence(
+        _require_current_publication_permit(
             port=self._publication_fence_port,
-            expected=expected_publication_fence,
+            expected_fence=expected_publication_fence,
+            permit=publication_permit,
         )
         cleaned_tenant = _require_non_empty(
             checkpoint.tenant_id, field_name="tenant_id"
@@ -1187,10 +1205,12 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _require_current_publication_fence(
+        _require_current_publication_permit(
             port=self._publication_fence_port,
-            expected=expected_publication_fence,
+            expected_fence=expected_publication_fence,
+            permit=publication_permit,
         )
         cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
@@ -2211,10 +2231,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _require_current_publication_fence(
+        _require_current_publication_permit(
             port=self._publication_fence_port,
-            expected=expected_publication_fence,
+            expected_fence=expected_publication_fence,
+            permit=publication_permit,
         )
         self._validate_run_identity_keys(expected)
         self._validate_run_identity_keys(replacement)
@@ -2264,10 +2286,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _require_current_publication_fence(
+        _require_current_publication_permit(
             port=self._publication_fence_port,
-            expected=expected_publication_fence,
+            expected_fence=expected_publication_fence,
+            permit=publication_permit,
         )
         if replacement.tenant_id != expected.tenant_id:
             raise KnowledgeSyncCorruptState(
@@ -2344,10 +2368,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _require_current_publication_fence(
+        _require_current_publication_permit(
             port=self._publication_fence_port,
-            expected=expected_publication_fence,
+            expected_fence=expected_publication_fence,
+            permit=publication_permit,
         )
         self._validate_run_identity_keys(expected)
         self._validate_run_identity_keys(replacement)

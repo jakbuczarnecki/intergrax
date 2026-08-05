@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.bindings import (
@@ -53,6 +54,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 from tests.unit.runtime.vendor_knowledge._fakes import make_content
 
@@ -238,10 +240,15 @@ class InMemoryCheckpointRepository:
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _ = expected_publication_fence
+        _ = expected_publication_fence, publication_permit
         self.commit_calls.append(
-            {"checkpoint": checkpoint, "expected_previous": expected_previous}
+            {
+                "checkpoint": checkpoint,
+                "expected_previous": expected_previous,
+                "publication_permit": publication_permit,
+            }
         )
         self.order.append("checkpoint")
         if self.fail_commit_times > 0:
@@ -290,8 +297,9 @@ class InMemoryRemoteItemStateRepository:
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _ = expected_publication_fence
+        _ = expected_publication_fence, publication_permit
         self.apply_calls.append(
             {
                 "tenant_id": tenant_id,
@@ -299,6 +307,7 @@ class InMemoryRemoteItemStateRepository:
                 "delivery_id": delivery_id,
                 "states": states,
                 "prepared_state_mutations_fingerprint": prepared_state_mutations_fingerprint,
+                "publication_permit": publication_permit,
             }
         )
         self.order.append("state")
@@ -607,8 +616,9 @@ class InMemoryReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _ = expected_publication_fence
+        _ = expected_publication_fence, publication_permit
         if expected.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
             raise KnowledgeSyncCorruptState(
                 "recovery_required run cannot exit through generic cas_replace"
@@ -624,8 +634,9 @@ class InMemoryReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRunCollecting,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _ = expected_publication_fence
+        _ = expected_publication_fence, publication_permit
         current = self.runs.get((expected.tenant_id, expected.binding_id))
         if current != expected:
             raise KnowledgeReconciliationRunConflict("supersede conflict")
@@ -637,8 +648,9 @@ class InMemoryReconciliationRunRepository:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None:
-        _ = expected_publication_fence
+        _ = expected_publication_fence, publication_permit
         current = self.runs.get((expected.tenant_id, expected.binding_id))
         if current != expected:
             raise KnowledgeReconciliationRunConflict("cas conflict")

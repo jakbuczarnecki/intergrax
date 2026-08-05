@@ -5,8 +5,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
     VendorKnowledgeErrorCode,
@@ -29,7 +34,10 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunStatus,
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationInProgress,
+    KnowledgeSyncPublicationPermitV1,
 )
 from tests.unit.runtime.vendor_knowledge._fakes import (
     FakeAdapter,
@@ -115,6 +123,7 @@ def _coordinator(
 class _MutablePublicationFencePort:
     def __init__(self, fence: KnowledgeSyncPublicationFenceV1) -> None:
         self.fence = fence
+        self.permit: KnowledgeSyncPublicationPermitV1 | None = None
 
     def read_fence(
         self,
@@ -125,6 +134,65 @@ class _MutablePublicationFencePort:
         if self.fence.tenant_id != tenant_id or self.fence.binding_id != binding_id:
             return None
         return self.fence
+
+    def acquire_publication_permit(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        expected_revision: int,
+        expected_token: str,
+        owner_id: str,
+        ttl_seconds: int,
+    ) -> KnowledgeSyncPublicationPermitV1 | None:
+        if (
+            self.fence.tenant_id != tenant_id
+            or self.fence.binding_id != binding_id
+            or self.fence.lifecycle_revision != expected_revision
+            or self.fence.lifecycle_token != expected_token
+            or not self.fence.enabled
+            or self.fence.detached
+            or self.permit is not None
+        ):
+            return None
+        now = datetime.now(UTC)
+        self.permit = KnowledgeSyncPublicationPermitV1(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+            lifecycle_revision=expected_revision,
+            lifecycle_token=expected_token,
+            permit_id=f"permit-{owner_id}",
+            owner_id=owner_id,
+            acquired_at=now,
+            expires_at=now + timedelta(seconds=ttl_seconds),
+        )
+        return self.permit
+
+    def release_publication_permit(
+        self,
+        *,
+        permit: KnowledgeSyncPublicationPermitV1,
+    ) -> bool:
+        if self.permit is None:
+            return True
+        if self.permit != permit:
+            return False
+        self.permit = None
+        return True
+
+    def is_current_publication_permit(
+        self,
+        *,
+        permit: KnowledgeSyncPublicationPermitV1,
+    ) -> bool:
+        return (
+            self.permit == permit
+            and self.fence.lifecycle_revision == permit.lifecycle_revision
+            and self.fence.lifecycle_token == permit.lifecycle_token
+            and self.fence.enabled
+            and not self.fence.detached
+            and permit.expires_at > datetime.now(UTC)
+        )
 
 
 @pytest.mark.unit
@@ -270,6 +338,91 @@ async def test_lease_loss_rejects_fenced_publication() -> None:
     assert checkpoint.commit_calls == []
     assert state.apply_calls == []
     assert sink.calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_publication_permit_is_carried_through_page_and_released() -> None:
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    facade = RecordingFacade(
+        default_page=make_page(proposed_checkpoint=KnowledgeCursor(value="cp-1"))
+    )
+    port = _MutablePublicationFencePort(fence)
+    coordinator, _, _, _, checkpoint, state, sink = _coordinator(
+        facade=facade,
+        publication_fence_port=port,
+        require_fenced_publication=True,
+    )
+
+    result = await coordinator.sync_once(binding_id="binding-1")
+
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert sink.calls[0].publication_permit is not None
+    assert state.apply_calls[0]["publication_permit"] is not None
+    assert checkpoint.commit_calls[0]["publication_permit"] is not None
+    assert port.permit is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_lifecycle_mutation_conflicts_between_sink_and_state_stages() -> None:
+    store = InMemoryDocumentStore()
+    fence_repository = DocumentStoreKnowledgeSyncPublicationFenceRepository(store)
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    fence_repository.write_fence(fence, expected_revision=None)
+
+    class _RacingSink:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+            self.disable_conflict = False
+
+        async def apply_batch(self, *, batch: object) -> None:
+            self.calls.append(batch)
+            try:
+                fence_repository.disable(
+                    tenant_id="tenant-1",
+                    binding_id="binding-1",
+                    lifecycle_revision=2,
+                    lifecycle_token="token-b",
+                    expected_revision=1,
+                )
+            except KnowledgeSyncPublicationInProgress:
+                self.disable_conflict = True
+
+    sink = _RacingSink()
+    facade = RecordingFacade(
+        default_page=make_page(proposed_checkpoint=KnowledgeCursor(value="cp-1"))
+    )
+    coordinator, _, _, _, checkpoint, state, _ = _coordinator(
+        facade=facade,
+        sink=sink,  # type: ignore[arg-type]
+        publication_fence_port=fence_repository,
+        require_fenced_publication=True,
+    )
+
+    result = await coordinator.sync_once(binding_id="binding-1")
+
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert sink.disable_conflict is True
+    assert checkpoint.commit_calls
+    assert state.apply_calls
+    assert fence_repository.read_fence(
+        tenant_id="tenant-1", binding_id="binding-1"
+    ) == fence
 
 
 @pytest.mark.unit

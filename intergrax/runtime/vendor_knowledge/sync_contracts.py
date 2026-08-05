@@ -18,6 +18,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     KnowledgeSyncPublicationFenceV1,
+    KnowledgeSyncPublicationPermitV1,
 )
 
 
@@ -96,6 +97,7 @@ class KnowledgeSyncCheckpointRepository(Protocol):
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None: ...
 
 
@@ -120,6 +122,7 @@ class KnowledgeRemoteItemStateRepository(Protocol):
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None: ...
 
     def inspect_delivery_receipt(
@@ -165,6 +168,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None: ...
 
     def cas_supersede_terminal(
@@ -173,6 +177,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None: ...
 
     def cas_recovery(
@@ -181,6 +186,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
         expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
+        publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
     ) -> None: ...
 
 
