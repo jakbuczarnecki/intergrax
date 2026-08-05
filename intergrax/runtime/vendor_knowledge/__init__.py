@@ -27,6 +27,18 @@ from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeErrorCode,
 )
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
+from intergrax.runtime.vendor_knowledge.indexed_source_eligibility import (
+    IndexedSourceBindingPlanV1,
+    IndexedSourceDescriptorV1,
+    IndexedSourceEligibilityPort,
+    IndexedSourceEligibilityProofV1,
+    IndexedSourceEligibilityRequestV1,
+    IndexedSourceEligibilityResolverV1,
+    IndexedSourceEligibilityStatusV1,
+    IndexedSourceMaterializationProvider,
+    IndexedSourceMaterializationRegistry,
+    canonical_indexed_source_ref,
+)
 from intergrax.runtime.vendor_knowledge.live.contracts import (
     EffectiveLiveCallBudgetV1,
     KnowledgeQueryAudienceV1,
@@ -234,6 +246,15 @@ __all__ = [
     "DocumentStoreTenantConnectionRepository",
     "EffectiveLiveCallBudgetV1",
     "IntegrationProfileVendorResolver",
+    "IndexedSourceBindingPlanV1",
+    "IndexedSourceDescriptorV1",
+    "IndexedSourceEligibilityPort",
+    "IndexedSourceEligibilityProofV1",
+    "IndexedSourceEligibilityRequestV1",
+    "IndexedSourceEligibilityResolverV1",
+    "IndexedSourceEligibilityStatusV1",
+    "IndexedSourceMaterializationProvider",
+    "IndexedSourceMaterializationRegistry",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
     "KnowledgeChange",
@@ -352,6 +373,7 @@ __all__ = [
     "VendorKnowledgeSyncScheduler",
     "VendorKnowledgeSyncWorkerOutput",
     "build_vendor_knowledge_sync_runtime",
+    "canonical_indexed_source_ref",
     "canonical_prepared_state_mutations_fingerprint",
     "content_sha256",
     "decode_vendor_knowledge_sync_job",

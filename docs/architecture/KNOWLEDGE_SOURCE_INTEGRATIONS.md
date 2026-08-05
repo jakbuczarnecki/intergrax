@@ -461,6 +461,24 @@ idempotent processing
 checkpoint commit after durable page completion
 ```
 
+### 3.7.1 Provider-neutral Indexed Source eligibility
+
+Discovery, live capability support and durable materialization are separate
+decisions. The Vendor Knowledge
+`IndexedSourceEligibilityResolverV1` is the authoritative read-only boundary
+for the durable decision: it revalidates the tenant-owned active Connection,
+the exact Remote Resource and discovery snapshot, then requires a complete
+provider-neutral materialization registration and an available synchronization
+handler for the exact `(provider_id, integration_kind, source_kind)` key.
+
+The resolver returns a bounded immutable eligibility proof and an opaque
+canonical binding plan. The proof is not an authorization grant, does not
+persist a binding or start synchronization, and must be revalidated by the
+consuming application during attach. Applications must not infer Indexed
+Source support from provider names, source kinds, discovery-provider presence,
+live capability IDs or adapter class names. The next consumer is
+`LKW-INDEXED-SOURCE-LIFECYCLE-1`.
+
 ### 3.8 Layer 8 — live capability adapter and executor
 
 The live capability path is a **sibling** of the durable path, not a branch of the sync runtime.
