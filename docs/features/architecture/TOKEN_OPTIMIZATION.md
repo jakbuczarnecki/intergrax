@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete; ACCEPTED / CLOSED**; **TOKEN-10F READY_FOR_REVIEW**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G READY_FOR_REVIEW**; **TOKEN-10H PLANNED / NOT STARTED**.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
@@ -991,7 +991,7 @@ As-built behavior:
 - expose provider-owned `/health`, `/version`, and `/metrics` diagnostics with fail-closed required-metric parsing;
 - distinguish missing `prompt_tokens_details` from a genuine zero via `VllmProviderExtensions`;
 - evaluate cold / warm / changed-prefix proof gates through cache-stable prompt assembly and `VllmChatAdapter`;
-- gate live proof behind `INTERGRAX_TOKEN_OPTIMIZATION_VLLM_E2E=1` (`tests/e2e/token_optimization/test_vllm_prefix_cache_live.py`).
+- gate live proof behind `INTERGRAX_TOKEN_OPTIMIZATION_VLLM_E2E=1` (`tests/e2e/token_optimization/test_vllm_prefix_cache_live_e2e.py`).
 
 The TOKEN-10F harness does not introduce a second inference client.
 
@@ -1056,8 +1056,36 @@ canonical JSON (`run.json`, per-case JSON, and `manifest.json`).
 
 TOKEN-10F intentionally adds no benchmark corpus, Markdown proof report,
 evaluation framework, warm-cache matrix, changed-prefix controls, numeric
-savings claims, or hard pass/fail gates. Those belong to TOKEN-10G.
-README and public claim promotion remains deferred to TOKEN-10H.
+savings claims, or hard pass/fail gates. TOKEN-10G owns the checked-in
+synthetic corpus, typed evaluation contracts, deterministic JSON/Markdown
+reporting and fail-closed gates. It consumes the accepted TOKEN-10F result and
+evidence contracts without rerunning runtime components. Optional provider
+cache evidence is the only basis for warm reuse and changed-prefix controls;
+latency is never a cache proof. README and public claim promotion remain
+deferred to TOKEN-10H.
+
+### 8.9 Deterministic proof evaluation (TOKEN-10G)
+
+TOKEN-10G is an evaluation boundary, not a second runner or optimization
+engine. The evaluator consumes `UniversalProofRunResult`,
+`UniversalProofCaseResult`, router/pipeline/protected-region evidence and
+TOKEN-10B prefix identities. It never invokes the router, pipeline, adapter,
+prompt assembly or a new prefix hasher.
+
+The checked-in corpus is versioned as
+`token-optimization-proof-corpus.v1`, references canonical TOKEN-10F inputs,
+contains only synthetic values and carries immutable typed expectations for
+router, pipeline, protected regions, measurements, prefixes and cache roles.
+Required gates fail closed: `FAIL` and disallowed `UNAVAILABLE` make the
+evaluation unsuccessful, while `UNAVAILABLE` is never converted into `PASS`.
+Cross-field contradictions are failures.
+
+Evaluation output is canonical and atomic:
+`evaluation.json`, escaped deterministic `report.md` and
+`evaluation-manifest.json` with SHA-256 references. Offline execution leaves
+provider cache gates unavailable unless typed cache evidence is supplied.
+Live provider execution, numeric savings claims, checked-in live results and
+public promotion are TOKEN-10H scope.
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
@@ -1204,7 +1232,7 @@ Full ephemeral (EPHEMERAL_ASSEMBLY) and durable (DURABLE_COMPACTION) flows, doma
 
 **Compaction target model** (policy allowlist — unchanged semantics): DYNAMIC_TAIL, COLD_HISTORY, SELECTED_HISTORY_RANGE, FULL_THREAD with review defaults for high-risk targets. See plan §TOKEN-10E for task decomposition.
 
-**Next step:** Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. TOKEN-10F, TOKEN-10G, and TOKEN-10H remain planned.
+**Next step:** Independent GitHub audit of **TOKEN-10G**. TOKEN-10H remains planned.
 
 ---
 

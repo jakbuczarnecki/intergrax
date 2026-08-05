@@ -387,7 +387,7 @@ uv run python -m intergrax.runtime.token_optimization.proofs.vllm_prefix_cache_l
 
 ```powershell
 $env:INTERGRAX_TOKEN_OPTIMIZATION_VLLM_E2E = "1"
-uv run pytest tests/e2e/token_optimization/test_vllm_prefix_cache_live.py -m e2e -q
+uv run pytest tests/e2e/token_optimization/test_vllm_prefix_cache_live_e2e.py -m e2e -q
 ```
 
 **Expected terminal summary (example when all gates pass on a manually started server):**
