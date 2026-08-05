@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete; ACCEPTED / CLOSED**; **TOKEN-10F READY_FOR_REVIEW**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION READY_FOR_REVIEW**; **TOKEN-10G BLOCKED PENDING INDEPENDENT AUDIT**; **TOKEN-10H PLANNED / NOT STARTED**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent GitHub audit of **TOKEN-10F**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Independent audit of **TOKEN-10F-EVIDENCE-EXTENSION**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1847,7 +1847,7 @@ Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. Do not wire LKW, Slack, or
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
-**Status:** **READY_FOR_REVIEW**.
+**Status:** **ACCEPTED / CLOSED** (baseline); **TOKEN-10F-EVIDENCE-EXTENSION READY_FOR_REVIEW**.
 
 Delivered a strict versioned TOML loader with immutable contracts and a
 universal runner composing the real `LLMAdapterRegistry`,
@@ -1873,11 +1873,26 @@ Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
 Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
 claims, and TOKEN-10H public proof or README promotion.
 
-**Current next step:** Independent GitHub audit of **TOKEN-10F**.
+**Current next step:** Independent audit of **TOKEN-10F-EVIDENCE-EXTENSION**.
+
+#### TOKEN-10F-EVIDENCE-EXTENSION — Safe evaluation evidence contract
+
+The compatible evaluation-evidence extension is **READY_FOR_REVIEW**. It
+preserves typed router decision evidence (`review_required`, confidence, risk,
+reason and transport), canonical pipeline completion/fallback/validation
+evidence, protected-region counts with aggregate SHA-256 identities, and
+TOKEN-10B prefix identity availability. Evidence is immutable, deterministic,
+and redaction-safe: raw content, protected values, provider payloads and
+secrets are never persisted.
+
+The extension keeps `token-optimization-proof.v1`: all new JSON fields are
+additive and have safe defaults, so existing fields and old fixtures remain
+compatible. TOKEN-10G remains **BLOCKED PENDING INDEPENDENT AUDIT** and its
+corpus, evaluator, report, claims and hard-gate framework are not implemented.
 
 ### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
 
-**Status:** **PLANNED / NOT STARTED**.
+**Status:** **BLOCKED PENDING INDEPENDENT AUDIT**.
 
 Safe-mode checked-in proof with executive summary and per-case auditable trace; hard gates for router, pipeline, protected regions, prefix stability, warm cache reuse, and changed-prefix negative control.
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime
+import math
 from pathlib import Path
 
 import pytest
@@ -11,6 +13,7 @@ from intergrax.runtime.token_optimization.proofs.config import (
 )
 from intergrax.runtime.token_optimization.proofs.contracts import (
     ProofArtifactError,
+    ProofRouterEvidence,
 )
 from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
@@ -96,6 +99,18 @@ def test_artifacts_are_canonical_redaction_safe_and_manifested(tmp_path: Path) -
     run_payload = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     assert manifest["raw_content_included"] is False
     assert run_payload["raw_content_included"] is False
+    case_payload = json.loads(
+        (run_dir / "cases" / "safe-case.json").read_text(encoding="utf-8")
+    )
+    assert set(
+        (
+            "router_evidence",
+            "pipeline_evidence",
+            "protected_region_evidence",
+            "prefix_identity_evidence",
+        )
+    ).issubset(case_payload)
+    assert case_payload["prefix_identity_evidence"]["identity_available"] is True
     assert "TOP_SECRET_PROMPT" not in (run_dir / "run.json").read_text(encoding="utf-8")
     assert result.artifact_manifest.files
     for file_ref in manifest["files"]:
@@ -104,6 +119,17 @@ def test_artifacts_are_canonical_redaction_safe_and_manifested(tmp_path: Path) -
         assert file_ref["sha256"]
     assert (run_dir / "cases" / "safe-case.json").is_file()
     assert (run_dir / "run.json").read_bytes().endswith(b"\n")
+
+
+def test_evidence_contract_is_immutable_bounded_and_finite() -> None:
+    evidence = ProofRouterEvidence(review_required=True, confidence=0.75)
+
+    with pytest.raises(FrozenInstanceError):
+        evidence.confidence = 0.5
+    with pytest.raises(ValueError):
+        ProofRouterEvidence(confidence=math.inf)
+    with pytest.raises(ValueError):
+        ProofRouterEvidence(confidence=1.1)
 
 
 def test_checked_in_sample_uses_repository_root_artifact_directory(monkeypatch) -> None:

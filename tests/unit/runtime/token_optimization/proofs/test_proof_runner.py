@@ -21,7 +21,14 @@ from intergrax.runtime.token_optimization.proofs.contracts import (
 )
 from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
+    _protected_identity_digest,
+    _protected_region_evidence,
+    _prefix_identity_evidence,
     _measurements_from_pipeline,
+)
+from intergrax.runtime.token_optimization.contracts import (
+    ProtectedRegion,
+    ProtectedRegionKind,
 )
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterConfigurationId,
@@ -132,6 +139,13 @@ def test_offline_runner_uses_real_composition_and_deterministic_order(
     assert result.cases[0].selected_configuration_id == "exact_only"
     assert result.cases[0].applied_layer_ids == ("builtin.exact_deduplication",)
     assert all(case.raw_content_included is False for case in result.cases)
+    assert result.cases[0].router_evidence.review_required is False
+    assert result.cases[0].router_evidence.confidence == 1.0
+    assert result.cases[0].pipeline_evidence.completed is True
+    assert result.cases[0].pipeline_evidence.fallback_applied is False
+    assert result.cases[0].protected_region_evidence.input_protected_region_count == 0
+    assert result.cases[0].prefix_identity_evidence.identity_available is True
+    assert result.cases[0].prefix_identity_evidence.stable_prefix_identity
 
 
 def test_offline_runner_is_network_free_and_has_no_second_engine() -> None:
@@ -272,6 +286,38 @@ def test_measurements_preserve_independent_baseline_and_optimized_values() -> No
     assert missing_optimized.available is False
 
 
+def test_protected_identity_is_deterministic_and_redaction_safe(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    regions = (
+        ProtectedRegion(ProtectedRegionKind.URL, "https://secret.example"),
+        ProtectedRegion(ProtectedRegionKind.PATH, "/sensitive/path"),
+    )
+    request = config.cases[0].request
+    request_with_regions = type(request)(
+        content=request.content,
+        source_type=request.source_type,
+        policy=request.policy,
+        attribution=request.attribution,
+        strategy=request.strategy,
+        protected_regions=regions,
+        metadata=request.metadata,
+    )
+
+    first = _protected_identity_digest(regions)
+    second = _protected_identity_digest(regions)
+    evidence = _protected_region_evidence(request_with_regions, None)
+
+    assert first == second
+    assert first is not None
+    assert "secret.example" not in first
+    assert "/sensitive/path" not in first
+    assert evidence.input_protected_region_count == 2
+    assert evidence.protected_region_validation_status == "not_run"
+    assert evidence.input_identity_digest == first
+    assert evidence.preserved_identity_digest is None
+    assert _prefix_identity_evidence(None).identity_available is False
+
+
 def test_offline_runs_are_concurrent_and_do_not_mutate_global_registry(
     tmp_path: Path,
 ) -> None:
@@ -334,4 +380,7 @@ def test_failed_offline_composition_and_execution_preserve_global_registry(
 
     assert result.success is False
     assert result.cases[0].error_reason_code == "PIPELINE_EXECUTION_FAILED"
+    assert result.cases[0].router_evidence.review_required is None
+    assert result.cases[0].router_evidence.confidence is None
+    assert result.cases[0].pipeline_evidence.fallback_applied is None
     assert dict(LLMAdapterRegistry._factories) == before

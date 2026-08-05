@@ -46,6 +46,7 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterReasonCode,
     TokenOptimizationRouterRisk,
     TokenOptimizationRouterStatus,
+    TokenOptimizationRouterTransport,
 )
 from intergrax.runtime.token_optimization.llm_router import (
     token_optimization_router_result_to_safe_dict,
@@ -58,7 +59,11 @@ from intergrax.runtime.token_optimization.proofs.contracts import (
     ProofExecutionError,
     ProofError,
     ProofMeasurement,
+    ProofPipelineEvidence,
+    ProofPrefixIdentityEvidence,
+    ProofProtectedRegionEvidence,
     ProofProviderUnavailableError,
+    ProofRouterEvidence,
     SCHEMA_VERSION,
     UniversalProofArtifactManifest,
     UniversalProofCaseResult,
@@ -139,6 +144,136 @@ def _measurements_from_pipeline(
     return baseline_measurement, optimized_measurement
 
 
+def _router_evidence(result) -> ProofRouterEvidence:
+    return ProofRouterEvidence(
+        status=result.status.value,
+        configuration_id=(
+            result.configuration_id.value
+            if result.configuration_id is not None
+            else None
+        ),
+        reason_code=result.reason_code.value if result.reason_code is not None else None,
+        review_required=result.review_required,
+        confidence=result.confidence,
+        risk=result.risk.value if result.risk is not None else None,
+        transport=result.transport.value,
+        structured_output_fallback_used=(
+            result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+        ),
+    )
+
+
+def _prefix_identity_evidence(report) -> ProofPrefixIdentityEvidence:
+    if report is None:
+        return ProofPrefixIdentityEvidence()
+    return ProofPrefixIdentityEvidence(
+        identity_available=True,
+        stable_prefix_identity=report.prefix_hash,
+        tool_schema_hash=report.tool_envelope_hash,
+        identity_contract_version="TOKEN-10B",
+    )
+
+
+def _protected_identity_digest(regions) -> str | None:
+    if not regions:
+        return None
+    digest = hashlib.sha256()
+    for ordinal, region in enumerate(regions):
+        value_digest = hashlib.sha256(region.value.encode("utf-8")).hexdigest()
+        digest.update(region.kind.value.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(ordinal).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(value_digest.encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _latest_validation(pipeline_result):
+    if pipeline_result is None:
+        return None
+    for layer_result in reversed(pipeline_result.layer_results):
+        if layer_result.validation is not None:
+            return layer_result.validation
+    return None
+
+
+def _safe_receipt_code(value: object) -> str | None:
+    if isinstance(value, str) and _SAFE_ID_RE.fullmatch(value):
+        return value
+    return None
+
+
+def _pipeline_evidence(pipeline_result) -> ProofPipelineEvidence:
+    if pipeline_result is None:
+        return ProofPipelineEvidence()
+    completed = pipeline_result.receipt_metadata.get("completed")
+    completed = completed if type(completed) is bool else None
+    required_failure = pipeline_result.receipt_metadata.get(
+        "required_failure_layer_id"
+    )
+    required_failure = required_failure if isinstance(required_failure, str) else None
+    validation = _latest_validation(pipeline_result)
+    receipt_validation_status = _safe_receipt_code(
+        pipeline_result.receipt_metadata.get("validation_status")
+    )
+    validation_status = (
+        receipt_validation_status
+        if receipt_validation_status is not None
+        else validation.status.value if validation is not None else None
+    )
+    receipt_validation_reason = _safe_receipt_code(
+        pipeline_result.receipt_metadata.get("validation_reason_code")
+    )
+    validation_reason_code = (
+        receipt_validation_reason
+        if isinstance(receipt_validation_reason, str)
+        else "VALIDATION_FAILED"
+        if validation_status == "failed"
+        else None
+    )
+    return ProofPipelineEvidence(
+        completed=completed,
+        fallback_applied=pipeline_result.fallback_used,
+        validation_status=validation_status,
+        validation_reason_code=validation_reason_code,
+        required_layer_failure=required_failure,
+        receipt_completion_status=completed,
+    )
+
+
+def _protected_region_evidence(case_request, pipeline_result) -> ProofProtectedRegionEvidence:
+    regions = tuple(case_request.protected_regions)
+    input_count = len(regions)
+    input_digest = _protected_identity_digest(regions)
+    validation = _latest_validation(pipeline_result)
+    if input_count == 0:
+        return ProofProtectedRegionEvidence(
+            protected_region_validation_status="not_applicable",
+        )
+    if validation is None:
+        return ProofProtectedRegionEvidence(
+            input_protected_region_count=input_count,
+            protected_region_validation_status="not_run",
+            input_identity_digest=input_digest,
+        )
+    status = validation.status.value
+    preserved_digest = (
+        input_digest
+        if status == "passed"
+        and validation.regions_preserved == input_count
+        else None
+    )
+    return ProofProtectedRegionEvidence(
+        input_protected_region_count=input_count,
+        validated_protected_region_count=validation.regions_checked,
+        preserved_protected_region_count=validation.regions_preserved,
+        protected_region_validation_status=status,
+        input_identity_digest=input_digest,
+        preserved_identity_digest=preserved_digest,
+    )
+
+
 def _case_to_dict(result: UniversalProofCaseResult) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -159,6 +294,61 @@ def _case_to_dict(result: UniversalProofCaseResult) -> dict[str, Any]:
         },
         "receipt_refs": list(result.receipt_refs),
         "error_reason_code": result.error_reason_code,
+        "router_evidence": {
+            "status": result.router_evidence.status,
+            "configuration_id": result.router_evidence.configuration_id,
+            "reason_code": result.router_evidence.reason_code,
+            "review_required": result.router_evidence.review_required,
+            "confidence": result.router_evidence.confidence,
+            "risk": result.router_evidence.risk,
+            "transport": result.router_evidence.transport,
+            "structured_output_fallback_used": (
+                result.router_evidence.structured_output_fallback_used
+            ),
+        },
+        "pipeline_evidence": {
+            "completed": result.pipeline_evidence.completed,
+            "fallback_applied": result.pipeline_evidence.fallback_applied,
+            "validation_status": result.pipeline_evidence.validation_status,
+            "validation_reason_code": result.pipeline_evidence.validation_reason_code,
+            "required_layer_failure": result.pipeline_evidence.required_layer_failure,
+            "receipt_completion_status": (
+                result.pipeline_evidence.receipt_completion_status
+            ),
+        },
+        "protected_region_evidence": {
+            "input_protected_region_count": (
+                result.protected_region_evidence.input_protected_region_count
+            ),
+            "validated_protected_region_count": (
+                result.protected_region_evidence.validated_protected_region_count
+            ),
+            "preserved_protected_region_count": (
+                result.protected_region_evidence.preserved_protected_region_count
+            ),
+            "protected_region_validation_status": (
+                result.protected_region_evidence.protected_region_validation_status
+            ),
+            "input_identity_digest": (
+                result.protected_region_evidence.input_identity_digest
+            ),
+            "preserved_identity_digest": (
+                result.protected_region_evidence.preserved_identity_digest
+            ),
+        },
+        "prefix_identity_evidence": {
+            "identity_available": result.prefix_identity_evidence.identity_available,
+            "stable_prefix_identity": (
+                result.prefix_identity_evidence.stable_prefix_identity
+            ),
+            "tool_schema_hash": result.prefix_identity_evidence.tool_schema_hash,
+            "message_envelope_hash": (
+                result.prefix_identity_evidence.message_envelope_hash
+            ),
+            "identity_contract_version": (
+                result.prefix_identity_evidence.identity_contract_version
+            ),
+        },
         "raw_content_included": False,
     }
 
@@ -497,6 +687,7 @@ class UniversalTokenOptimizationProofRunner:
                     request_id=request_id,
                 )
             )
+            router_evidence = _router_evidence(routed)
             safe_router = token_optimization_router_result_to_safe_dict(routed)
             router_status = str(safe_router["status"])
             router_reason = safe_router["reason"]
@@ -515,6 +706,14 @@ class UniversalTokenOptimizationProofRunner:
                     ),
                     pipeline_status="not_started",
                     error_reason_code="ROUTER_EXECUTION_FAILED",
+                    router_evidence=router_evidence,
+                    protected_region_evidence=_protected_region_evidence(
+                        case.request,
+                        None,
+                    ),
+                    prefix_identity_evidence=_prefix_identity_evidence(
+                        routed.prompt_assembly_report
+                    ),
                 )
             selected_id = TokenOptimizationRouterConfigurationId(selected_raw)
         else:
@@ -523,6 +722,7 @@ class UniversalTokenOptimizationProofRunner:
             )
             router_status = "disabled"
             router_reason = None
+            router_evidence = ProofRouterEvidence(status="disabled")
 
         if composition.router_catalog.get(selected_id) is None:
             raise ProofCompositionError("UNKNOWN_ROUTER_CONFIGURATION")
@@ -556,6 +756,17 @@ class UniversalTokenOptimizationProofRunner:
             baseline_measurement=baseline_measurement,
             optimized_measurement=optimized_measurement,
             error_reason_code=None if completed else "PIPELINE_INCOMPLETE",
+            router_evidence=router_evidence,
+            pipeline_evidence=_pipeline_evidence(pipeline_result),
+            protected_region_evidence=_protected_region_evidence(
+                case.request,
+                pipeline_result,
+            ),
+            prefix_identity_evidence=(
+                _prefix_identity_evidence(routed.prompt_assembly_report)
+                if config.router.enabled
+                else ProofPrefixIdentityEvidence()
+            ),
         )
 
     def run(
@@ -585,6 +796,10 @@ class UniversalTokenOptimizationProofRunner:
                         selected_configuration_id=None,
                         pipeline_status="not_started",
                         error_reason_code="FAIL_FAST_AFTER_CASE_FAILURE",
+                        protected_region_evidence=_protected_region_evidence(
+                            case.request,
+                            None,
+                        ),
                     )
                 )
                 continue
@@ -608,6 +823,10 @@ class UniversalTokenOptimizationProofRunner:
                         pipeline_status="not_started",
                         applied_layer_ids=(),
                         error_reason_code=exc.reason_code,
+                        protected_region_evidence=_protected_region_evidence(
+                            case.request,
+                            None,
+                        ),
                     )
                 )
             except Exception as exc:

@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+import math
 from pathlib import Path
+import re
 
 from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationRequest,
@@ -145,6 +147,185 @@ class UniversalProofEnvironmentSummary:
             raise ValueError("proof environment must remain redaction-safe")
 
 
+_SAFE_EVIDENCE_STRING_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _validate_evidence_string(value: str | None, field_name: str) -> None:
+    if value is not None and (
+        not value or len(value) > 128 or not _SAFE_EVIDENCE_STRING_RE.fullmatch(value)
+    ):
+        raise ValueError(f"{field_name} must be a bounded safe evidence string")
+
+
+def _validate_optional_digest(value: str | None, field_name: str) -> None:
+    if value is not None and not _SHA256_RE.fullmatch(value):
+        raise ValueError(f"{field_name} must be a lowercase SHA-256 digest")
+
+
+def _validate_count(value: int, field_name: str) -> None:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{field_name} must be an exact non-negative int")
+
+
+@dataclass(frozen=True, slots=True)
+class ProofRouterEvidence:
+    """Redaction-safe snapshot of the typed router decision."""
+
+    status: str | None = None
+    configuration_id: str | None = None
+    reason_code: str | None = None
+    review_required: bool | None = None
+    confidence: float | None = None
+    risk: str | None = None
+    transport: str | None = None
+    structured_output_fallback_used: bool | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "status",
+            "configuration_id",
+            "reason_code",
+            "risk",
+            "transport",
+        ):
+            _validate_evidence_string(getattr(self, field_name), field_name)
+        if self.review_required is not None and type(self.review_required) is not bool:
+            raise ValueError("review_required must be bool or None")
+        if self.structured_output_fallback_used is not None and (
+            type(self.structured_output_fallback_used) is not bool
+        ):
+            raise ValueError("structured_output_fallback_used must be bool or None")
+        if self.confidence is not None:
+            if isinstance(self.confidence, bool) or not math.isfinite(self.confidence):
+                raise ValueError("confidence must be finite")
+            if not 0.0 <= self.confidence <= 1.0:
+                raise ValueError("confidence must be between 0.0 and 1.0")
+
+
+@dataclass(frozen=True, slots=True)
+class ProofPipelineEvidence:
+    """Redaction-safe snapshot of canonical pipeline completion metadata."""
+
+    completed: bool | None = None
+    fallback_applied: bool | None = None
+    validation_status: str | None = None
+    validation_reason_code: str | None = None
+    required_layer_failure: str | None = None
+    receipt_completion_status: bool | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "validation_status",
+            "validation_reason_code",
+            "required_layer_failure",
+        ):
+            _validate_evidence_string(getattr(self, field_name), field_name)
+        for field_name in (
+            "completed",
+            "fallback_applied",
+            "receipt_completion_status",
+        ):
+            value = getattr(self, field_name)
+            if value is not None and type(value) is not bool:
+                raise ValueError(f"{field_name} must be bool or None")
+
+
+@dataclass(frozen=True, slots=True)
+class ProofProtectedRegionEvidence:
+    """Counts and aggregate identity only; never protected values."""
+
+    input_protected_region_count: int = 0
+    validated_protected_region_count: int = 0
+    preserved_protected_region_count: int = 0
+    protected_region_validation_status: str | None = None
+    input_identity_digest: str | None = None
+    preserved_identity_digest: str | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in (
+            "input_protected_region_count",
+            "validated_protected_region_count",
+            "preserved_protected_region_count",
+        ):
+            _validate_count(getattr(self, field_name), field_name)
+        if self.validated_protected_region_count > self.input_protected_region_count:
+            raise ValueError("validated protected-region count exceeds input count")
+        if self.preserved_protected_region_count > self.input_protected_region_count:
+            raise ValueError("preserved protected-region count exceeds input count")
+        _validate_evidence_string(
+            self.protected_region_validation_status,
+            "protected_region_validation_status",
+        )
+        _validate_optional_digest(self.input_identity_digest, "input_identity_digest")
+        _validate_optional_digest(
+            self.preserved_identity_digest,
+            "preserved_identity_digest",
+        )
+        if self.input_protected_region_count == 0 and (
+            self.input_identity_digest is not None
+            or self.preserved_identity_digest is not None
+        ):
+            raise ValueError("zero protected regions cannot have identity digests")
+        if self.preserved_identity_digest is not None and (
+            self.preserved_identity_digest != self.input_identity_digest
+        ):
+            raise ValueError("preserved identity digest must match input identity digest")
+        if (
+            self.protected_region_validation_status == "passed"
+            and self.input_protected_region_count > 0
+            and (
+                self.preserved_protected_region_count
+                != self.input_protected_region_count
+                or self.preserved_identity_digest is None
+            )
+        ):
+            raise ValueError("passed protected validation requires complete preservation")
+
+
+@dataclass(frozen=True, slots=True)
+class ProofPrefixIdentityEvidence:
+    """Redaction-safe propagation of TOKEN-10B prefix identity."""
+
+    identity_available: bool = False
+    stable_prefix_identity: str | None = None
+    tool_schema_hash: str | None = None
+    message_envelope_hash: str | None = None
+    identity_contract_version: str | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.identity_available) is not bool:
+            raise ValueError("identity_available must be bool")
+        for field_name in (
+            "stable_prefix_identity",
+            "tool_schema_hash",
+            "message_envelope_hash",
+        ):
+            _validate_optional_digest(
+                getattr(self, field_name),
+                field_name,
+            )
+        _validate_evidence_string(
+            self.identity_contract_version,
+            "identity_contract_version",
+        )
+        if not self.identity_available and any(
+            value is not None
+            for value in (
+                self.stable_prefix_identity,
+                self.tool_schema_hash,
+                self.message_envelope_hash,
+                self.identity_contract_version,
+            )
+        ):
+            raise ValueError("unavailable prefix identity cannot carry identity values")
+        if self.identity_available and (
+            self.stable_prefix_identity is None
+            or self.identity_contract_version is None
+        ):
+            raise ValueError("available prefix identity requires digest and version")
+
+
 @dataclass(frozen=True, slots=True)
 class UniversalProofCaseResult:
     case_id: str
@@ -159,6 +340,16 @@ class UniversalProofCaseResult:
     receipt_refs: tuple[str, ...] = ()
     error_reason_code: str | None = None
     raw_content_included: bool = False
+    router_evidence: ProofRouterEvidence = field(default_factory=ProofRouterEvidence)
+    pipeline_evidence: ProofPipelineEvidence = field(
+        default_factory=ProofPipelineEvidence
+    )
+    protected_region_evidence: ProofProtectedRegionEvidence = field(
+        default_factory=ProofProtectedRegionEvidence
+    )
+    prefix_identity_evidence: ProofPrefixIdentityEvidence = field(
+        default_factory=ProofPrefixIdentityEvidence
+    )
 
     def __post_init__(self) -> None:
         if self.raw_content_included:
