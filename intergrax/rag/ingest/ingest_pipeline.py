@@ -13,7 +13,6 @@ from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentSc
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     copy_parser_runtime_state,
-    to_legacy_rag_document,
 )
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
@@ -236,9 +235,6 @@ class IngestPipeline:
                         scope=VectorStoreScope.from_document(records[0].document),
                     )
                     vector_ids = list(stored_ids) if stored_ids is not None else ids
-                    aligned_docs = [
-                        to_legacy_rag_document(chunk) for chunk in native_chunks
-                    ]
 
             if self._graph_store is not None and self._profile.graph_rag_enabled:
                 with rag_span("rag.ingest.graph_index"):
@@ -247,15 +243,7 @@ class IngestPipeline:
                         self._profile,
                         llm=self._llm_for_graph,
                     )
-                    graph_documents = (
-                        [
-                            to_legacy_rag_document(chunk)
-                            for chunk in native_chunks
-                        ]
-                        if self._uses_dual_index()
-                        else aligned_docs
-                    )
-                    indexer.index_documents(graph_documents, chunk_ids=vector_ids)
+                    indexer.index_documents(native_chunks, chunk_ids=vector_ids)
 
             return IngestResult(
                 used=True,
