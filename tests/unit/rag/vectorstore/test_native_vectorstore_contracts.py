@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import FrozenInstanceError
 
 import numpy as np
@@ -175,6 +176,83 @@ def test_manager_maps_records_and_returns_native_hits() -> None:
     assert hits[0].document.scope.tenant_id == "tenant-a"
     assert hits[0].vector_id == "external-1"
     assert hits[0].embedding is not None
+
+
+def test_manager_derives_namespace_for_tenant_bound_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = InMemoryVectorStore(tenant_id="tenant-a")
+    received_scopes: list[VectorStoreScope] = []
+    real_add_records = provider.add_records
+
+    def capture_add_records(
+        records: Sequence[VectorStoreRecord],
+        *,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        received_scopes.append(scope)
+        return real_add_records(records, scope=scope)
+
+    monkeypatch.setattr(provider, "add_records", capture_add_records)
+    manager = VectorstoreManager(provider)
+    record = VectorStoreRecord(
+        document=_document(namespace="rag"),
+        embedding=[1.0, 0.0],
+        vector_id="namespace-record",
+    )
+
+    manager.add_records([record])
+
+    assert received_scopes == [VectorStoreScope(tenant_id="tenant-a", namespace="rag")]
+    assert received_scopes[0].namespace == "rag"
+    assert record.document.scope.namespace == "rag"
+    hits = manager.query(
+        [1.0, 0.0],
+        scope=VectorStoreScope(tenant_id="tenant-a", namespace="rag"),
+        top_k=1,
+    )
+    assert [hit.vector_id for hit in hits] == ["namespace-record"]
+    assert hits[0].document.scope.namespace == "rag"
+
+
+def test_manager_uses_bound_workspace_and_ignores_metadata_spoof(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = InMemoryVectorStore(tenant_id="tenant-a")
+    received_scopes: list[VectorStoreScope] = []
+    real_add_records = provider.add_records
+
+    def capture_add_records(
+        records: Sequence[VectorStoreRecord],
+        *,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        received_scopes.append(scope)
+        return real_add_records(records, scope=scope)
+
+    monkeypatch.setattr(provider, "add_records", capture_add_records)
+    bound_scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="rag",
+        workspace_id="workspace-a",
+    )
+    manager = VectorstoreManager(provider, scope=bound_scope)
+    record = VectorStoreRecord(
+        document=_document(
+            namespace="rag",
+            metadata={"workspace_id": "workspace-b"},
+        ),
+        embedding=[1.0, 0.0],
+        vector_id="workspace-record",
+    )
+    original_metadata = dict(record.document.metadata)
+
+    manager.add_records([record])
+
+    hits = manager.query([1.0, 0.0], scope=bound_scope, top_k=1)
+    assert received_scopes == [bound_scope]
+    assert hits[0].document.metadata["workspace_id"] == "workspace-a"
+    assert record.document.metadata == original_metadata
 
 
 def test_manager_rejects_mixed_tenant_before_provider() -> None:

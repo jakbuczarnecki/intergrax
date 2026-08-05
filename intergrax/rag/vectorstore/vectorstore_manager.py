@@ -126,7 +126,6 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         scope: VectorStoreScope | None = None,
     ) -> Sequence[str] | None:
-        resolved_scope = self._resolve_scope(scope)
         materialized = list(records)
         if not materialized:
             return []
@@ -150,6 +149,38 @@ class VectorstoreManager(BaseVectorstoreManager):
         ):
             raise VectorStoreContractError(
                 "records must share the same document tenant and namespace"
+            )
+
+        document_scope = VectorStoreScope(
+            tenant_id=first_document_scope.tenant_id,
+            namespace=first_document_scope.namespace,
+        )
+        if scope is not None:
+            resolved_scope = self._resolve_scope(scope)
+        else:
+            bound_scope = self._bound_scope
+            if bound_scope is not None:
+                if bound_scope.tenant_id != document_scope.tenant_id:
+                    raise VectorStoreContractError(
+                        "document tenant_id differs from bound scope"
+                    )
+                if (
+                    bound_scope.namespace is not None
+                    and bound_scope.namespace != document_scope.namespace
+                ):
+                    raise VectorStoreContractError(
+                        "document namespace differs from bound scope"
+                    )
+            resolved_scope = self._resolve_scope(
+                VectorStoreScope(
+                    tenant_id=document_scope.tenant_id,
+                    namespace=document_scope.namespace,
+                    workspace_id=(
+                        bound_scope.workspace_id
+                        if bound_scope is not None
+                        else None
+                    ),
+                )
             )
 
         if any(

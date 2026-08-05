@@ -203,3 +203,21 @@ def test_bound_tenant_rejects_mismatched_document_before_provider() -> None:
         manager.add_records([_record(tenant_id="tenant-b", namespace="rag")])
 
     assert provider.records == []
+
+
+def test_bound_namespace_rejects_mismatched_document_before_provider() -> None:
+    provider = _NativeProvider()
+    manager = VectorstoreManager(
+        provider,
+        scope=VectorStoreScope(
+            tenant_id="tenant-a",
+            namespace="finance",
+            workspace_id="workspace-a",
+        ),
+    )
+
+    with pytest.raises(VectorStoreContractError, match="namespace"):
+        manager.add_records([_record(tenant_id="tenant-a", namespace="rag")])
+
+    assert provider.records == []
+    assert provider.scopes == []
