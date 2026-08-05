@@ -6,16 +6,24 @@ from __future__ import annotations
 
 import json
 import math
-import uuid
 from typing import Any, Optional, Sequence
-
-from langchain_core.documents import Document
 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
 from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 
 class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
@@ -36,31 +44,20 @@ class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
             self._connection = self._open_connection()
             self._ensure_schema()
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
         if self._connection is None:
-            super().add_documents(documents, embeddings, ids=ids)
-            return
+            return super().add_records(records, scope=scope)
 
-        if len(documents) == 0:
-            return
-        if len(documents) != len(embeddings):
-            raise ValueError("documents and embeddings length mismatch")
-
-        id_list = list(ids) if ids else [str(uuid.uuid4()) for _ in range(len(documents))]
+        validated = validate_records(records, scope=scope, tenant_id=self._tenant_id)
+        id_list = [record.vector_id for record in validated]
         with self._connection.cursor() as cursor:
-            for index, doc in enumerate(documents):
-                payload = dict(doc.metadata or {})
-                if EmbeddingMetadataKey.VECTOR in payload:
-                    payload.pop(EmbeddingMetadataKey.VECTOR, None)
-                payload["tenant_id"] = self._tenant_id
-                payload["text"] = doc.page_content or ""
-                vector = [float(v) for v in embeddings[index]]
+            for record in validated:
+                payload = provider_metadata(record.document, scope=scope)
                 cursor.execute(
                     f"""
                     INSERT INTO {self._TABLE} (id, tenant_id, embedding, payload, text_content)
@@ -71,19 +68,23 @@ class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
                         text_content = EXCLUDED.text_content
                     """,
                     (
-                        id_list[index],
+                        record.vector_id,
                         self._tenant_id,
-                        json.dumps(vector),
+                        json.dumps(record.embedding.tolist()),
                         json.dumps(payload),
-                        doc.page_content or "",
+                        record.document.content,
                     ),
                 )
+                self._payloads[record.vector_id] = dict(payload)
+                self._documents[record.vector_id] = record.document
             self._connection.commit()
+        return id_list
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -91,16 +92,17 @@ class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
         if self._connection is None:
             return super().query(
                 query_embedding,
+                scope=scope,
                 top_k=top_k,
                 metadata_filter=metadata_filter,
                 include_embeddings=include_embeddings,
             )
 
-        vector = [float(v) for v in query_embedding]
-        effective_where: dict[str, Any] = (
-            dict(metadata_filter.conditions) if metadata_filter is not None else {}
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self._tenant_id)
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
         )
-        effective_where["tenant_id"] = self._tenant_id
 
         with self._connection.cursor() as cursor:
             cursor.execute(
@@ -120,38 +122,51 @@ class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
 
         candidates.sort(key=lambda item: item[1], reverse=True)
         hits: list[VectorStoreHit] = []
-        for rank, (row_id, score, payload, text, emb) in enumerate(candidates[:top_k]):
+        for rank, (row_id, score, payload, text, emb) in enumerate(candidates[:limit]):
             hits.append(
-                VectorStoreHit(
-                    id=row_id,
-                    content=text or str(payload.get("text", "")),
+                native_hit(
+                    vector_id=row_id,
+                    content=text,
                     metadata=payload,
                     similarity_score=float(score),
                     rank=rank,
+                    scope=scope,
                     embedding=emb if include_embeddings else None,
                 )
             )
         return hits
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if self._connection is None:
-            super().delete(ids)
+            super().delete(ids, scope=scope)
             return
+        validate_scope(scope, tenant_id=self._tenant_id)
         with self._connection.cursor() as cursor:
             for row_id in ids:
                 cursor.execute(
-                    f"DELETE FROM {self._TABLE} WHERE id = %s AND tenant_id = %s",
-                    (row_id, self._tenant_id),
+                    f"""
+                    DELETE FROM {self._TABLE}
+                    WHERE id = %s AND tenant_id = %s
+                      AND payload->>'namespace' IS NOT DISTINCT FROM %s
+                      AND payload->>'workspace_id' IS NOT DISTINCT FROM %s
+                    """,
+                    (row_id, self._tenant_id, scope.namespace, scope.workspace_id),
                 )
             self._connection.commit()
 
-    def count(self) -> int:
+    def count(self, *, scope: VectorStoreScope) -> int:
         if self._connection is None:
-            return super().count()
+            return super().count(scope=scope)
+        validate_scope(scope, tenant_id=self._tenant_id)
         with self._connection.cursor() as cursor:
             cursor.execute(
-                f"SELECT COUNT(*) FROM {self._TABLE} WHERE tenant_id = %s",
-                (self._tenant_id,),
+                f"""
+                SELECT COUNT(*) FROM {self._TABLE}
+                WHERE tenant_id = %s
+                  AND payload->>'namespace' IS NOT DISTINCT FROM %s
+                  AND payload->>'workspace_id' IS NOT DISTINCT FROM %s
+                """,
+                (self._tenant_id, scope.namespace, scope.workspace_id),
             )
             row = cursor.fetchone()
         return int(row[0]) if row else 0

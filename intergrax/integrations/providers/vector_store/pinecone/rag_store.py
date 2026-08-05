@@ -6,13 +6,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
-import uuid
-
-from langchain_core.documents import Document
 
 from intergrax.rag.vectorstore.config.vector_config import Metric
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 try:
     from pinecone import Pinecone
@@ -112,40 +121,30 @@ class PineconeVectorStore(BaseVectorStore):
             self._collection.upsert(items=vectors)
     
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        if len(documents) != len(embeddings):
-            raise ValueError("documents and embeddings must have the same length.")
-
-        if not documents:
-            return
-
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        validated = validate_records(records, scope=scope, tenant_id=self.cfg.tenant_id)
+        if not validated:
+            return []
         if self._dim is None:
-            self._dim = len(embeddings[0])
-
-        ids_list = list(ids) if ids else [str(uuid.uuid4()) for _ in documents]
-
+            self._dim = len(validated[0].embedding)
+        ids_list = [record.vector_id for record in validated]
         metadatas: List[Dict[str, Any]] = []
-
-        for doc in documents:
-            metadata = dict(doc.metadata or {})
-            existing = metadata.get("tenant_id")
-            if existing is not None and existing != self.cfg.tenant_id:
-                raise ValueError(
-                    f"Upsert tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-                )
-            metadata["tenant_id"] = self.cfg.tenant_id
-            metadata["text"] = doc.page_content
+        for record in validated:
+            metadata = provider_metadata(record.document, scope=scope)
+            metadata["text"] = record.document.content
             metadatas.append(metadata)
 
         for i in range(0, len(ids_list), self.cfg.batch_size):
             batch_ids = ids_list[i : i + self.cfg.batch_size]
-            batch_embeddings = embeddings[i : i + self.cfg.batch_size]
+            batch_embeddings = [
+                record.embedding.tolist()
+                for record in validated[i : i + self.cfg.batch_size]
+            ]
             batch_metadatas = metadatas[i : i + self.cfg.batch_size]
 
             self._upsert_pinecone(
@@ -153,26 +152,29 @@ class PineconeVectorStore(BaseVectorStore):
                 batch_embeddings,
                 batch_metadatas,
             )
+        return ids_list
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> List[VectorStoreHit]:
-        vector = list(map(float, query_embedding))
-
-        effective_where = dict(metadata_filter or {})
-        effective_where.update({"tenant_id": self.cfg.tenant_id})
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
+        )
 
         self._ensure_pinecone_index()
 
         qr = self._collection.query(
             vector=vector,
-            top_k=top_k,
-            include_values=False,
+            top_k=limit,
+            include_values=include_embeddings,
             include_metadata=True,
             filter=effective_where,
         )
@@ -195,29 +197,38 @@ class PineconeVectorStore(BaseVectorStore):
             text = str(metadata.get("text", ""))
 
             hits.append(
-                VectorStoreHit(
-                    id=str(_id),
-                    score=score,  # Pinecone: higher score = better
+                native_hit(
+                    vector_id=str(_id),
+                    content=text,
                     metadata=metadata,
-                    document=text,
+                    similarity_score=score,
+                    rank=len(hits),
+                    scope=scope,
+                    embedding=(
+                        m.get("values")
+                        if isinstance(m, dict) and include_embeddings
+                        else None
+                    ),
                 )
             )
 
         return hits
     
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if not ids:
             return
-        self._ensure_pinecone_index()
-        self._collection.delete(ids=list(ids))
-
-
-    def count(self) -> int:
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
         self._ensure_pinecone_index()
         try:
-            stats = self._collection.describe_index_stats()
-            return int(stats.get("total_vector_count", 0))
-        except Exception:
-            stats = self._client.describe_index_stats(index_name=self.collection_name)
-            return int(stats.get("total_vector_count", 0))
+            self._collection.delete(
+                ids=list(ids),
+                filter=dict(MetadataFilter.for_scope(scope, None).conditions),
+            )
+        except TypeError as exc:
+            raise RuntimeError("pinecone scoped delete is unsupported") from exc
+
+
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        raise RuntimeError("pinecone scoped count is unsupported")

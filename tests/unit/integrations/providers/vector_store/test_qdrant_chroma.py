@@ -5,13 +5,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator, Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations._shared.conformance import assert_vector_store
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
@@ -27,6 +27,7 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord, VectorStoreScope
 
 pytestmark = pytest.mark.unit
 
@@ -35,44 +36,62 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 class _FakeVectorStore(VectorStore):
     def __init__(self) -> None:
-        self.documents: list[Document] = []
+        self.records: list[VectorStoreRecord] = []
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        self.documents.extend(documents)
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        self.records.extend(records)
+        return [record.vector_id for record in records]
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
     ) -> list[VectorStoreHit]:
+        document = _document(tenant_id=scope.tenant_id)
         return [
             VectorStoreHit(
-                id="doc-1",
-                content="hello",
-                metadata={},
+                vector_id="doc-1",
+                document=document,
                 similarity_score=0.9,
                 rank=0,
             )
         ]
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         return None
 
-    def count(self) -> int:
-        return len(self.documents)
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return len(self.records)
+
+
+def _document(*, tenant_id: str = "t1") -> KnowledgeDocument:
+    return KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": tenant_id},
+            "content": "hello",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-1"},
+        }
+    )
+
+
+def _record() -> VectorStoreRecord:
+    return VectorStoreRecord(document=_document(), embedding=[0.1, 0.2], vector_id="doc-1")
 
 
 @pytest.fixture(autouse=True)
-def _clean_catalog() -> None:
+def _clean_catalog() -> Iterator[None]:
     clear_catalog()
     reset_default_integrations_state()
     yield
@@ -198,12 +217,12 @@ def test_chromadb_only_in_opens_module() -> None:
 def test_create_qdrant_vector_store_delegates() -> None:
     factory, inner = _store_factory()
     store = create_qdrant_vector_store(collection_name="c1", tenant_id="t1", store_factory=factory)
-    store.add_documents([Document(page_content="x")], [[0.1, 0.2]])
-    assert inner.documents
+    store.add_records([_record()], scope=VectorStoreScope(tenant_id="t1"))
+    assert inner.records
 
 
 def test_create_chroma_vector_store_delegates() -> None:
     factory, inner = _store_factory()
     store = create_chroma_vector_store(collection_name="c1", tenant_id="t1", store_factory=factory)
-    store.add_documents([Document(page_content="x")], [[0.1, 0.2]])
-    assert inner.documents
+    store.add_records([_record()], scope=VectorStoreScope(tenant_id="t1"))
+    assert inner.records

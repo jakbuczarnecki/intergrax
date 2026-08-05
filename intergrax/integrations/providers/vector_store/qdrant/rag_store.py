@@ -9,13 +9,23 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence
 import uuid
 
-from langchain_core.documents import Document
-
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
 from intergrax.rag.vectorstore.config.vector_config import Metric
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreContractError,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.hybrid.lexical_hybrid import LexicalHybridSupport
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 try:
     from qdrant_client import QdrantClient
@@ -25,6 +35,8 @@ try:
         PointStruct,
         Filter as QFilter,
         PointIdsList,
+        FilterSelector,
+        HasIdCondition,
     )
 except ImportError:
     QdrantClient = None  # type: ignore
@@ -33,6 +45,8 @@ except ImportError:
     PointStruct = None   # type: ignore
     QFilter = None       # type: ignore
     PointIdsList = None  # type: ignore
+    FilterSelector = None  # type: ignore
+    HasIdCondition = None  # type: ignore
 
 try:
     from qdrant_client.http.models import (  # type: ignore[no-redef]
@@ -212,67 +226,46 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._client.upsert(collection_name=self.collection_name, points=points)
 
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        if len(documents) == 0:
-            return
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        validated = validate_records(records, scope=scope, tenant_id=self.cfg.tenant_id)
+        if not validated:
+            return []
+        ids_list = [record.vector_id for record in validated]
+        X = [record.embedding.tolist() for record in validated]
+        self._dim = self._dim or len(X[0])
 
-        
-        X = self._to_list_of_lists(embeddings)
-        if len(X) != len(documents):
-            raise ValueError("Number of documents must match number of embeddings")
-
-        n = len(documents)
-        ids_list = list(ids) if ids else [str(uuid.uuid4()) for _ in range(n)]
-        if len(ids_list) != n:
-            raise ValueError("Length of `ids` must match number of documents")
-
-        first_dim = len(X[0]) if X and X[0] else None
-        if first_dim is None:
-            raise ValueError("Embeddings appear empty/corrupt; cannot infer dimension.")
-        self._dim = self._dim or first_dim
-
-        for start in range(0, n, self.cfg.batch_size):
-            end = min(start + self.cfg.batch_size, n)
+        for start in range(0, len(validated), self.cfg.batch_size):
+            end = min(start + self.cfg.batch_size, len(validated))
             ids_batch = ids_list[start:end]
             embeddings_batch = X[start:end]
             self._ensure_dim_consistency(embeddings_batch)
 
-            docs_batch = documents[start:end]
-            metas_batch = self._doc_payloads(docs_batch, base=None)
-
-            for i in range(len(metas_batch)):
-                if EmbeddingMetadataKey.VECTOR in metas_batch[i]:
-                    metas_batch[i].pop(EmbeddingMetadataKey.VECTOR, None)
-
-            # Tenant metadata enforcement
-            for i in range(len(metas_batch)):
-                existing = metas_batch[i].get("tenant_id")
-                if existing is not None and existing != self.cfg.tenant_id:
-                    raise ValueError(
-                        f"Metadata tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-                    )
-                metas_batch[i]["tenant_id"] = self.cfg.tenant_id
-
-            # Store raw text inside metadata (Qdrant branch behavior)
-            for i, d in enumerate(docs_batch):
-                metas_batch[i] = dict(metas_batch[i], text=d.page_content or "")
+            records_batch = validated[start:end]
+            metas_batch = [
+                {
+                    **provider_metadata(record.document, scope=scope),
+                    "text": record.document.content,
+                }
+                for record in records_batch
+            ]
 
             self._upsert_qdrant(ids_batch, embeddings_batch, metas_batch)
             for doc_id, meta in zip(ids_batch, metas_batch):
                 self._payloads[str(doc_id)] = dict(meta)
                 self._index_lexical(str(doc_id), str(meta.get("text", "")))
+        return ids_list
     
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -280,21 +273,11 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         if QFilter is None:
             raise RuntimeError("Qdrant client is not available.")
 
-        # Convert embedding to float list (exactly as in manager)
-        vector = list(map(float, query_embedding))
-
-        # Enforce tenant filter (exact logic from manager)
-        effective_where: Dict[str, Any] = (
-            dict(metadata_filter.conditions)
-            if metadata_filter is not None
-            else {}
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
         )
-        existing = effective_where.get("tenant_id")
-        if existing is not None and existing != self.cfg.tenant_id:
-            raise ValueError(
-                f"Query tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-            )
-        effective_where["tenant_id"] = self.cfg.tenant_id
 
         qfilter = self._qdrant_filter(effective_where)
         using = _DENSE_VECTOR_NAME if self._sparse_enabled else None
@@ -304,7 +287,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 query=vector,
                 using=using,
                 query_filter=qfilter,
-                limit=top_k,
+                limit=limit,
                 with_payload=True,
                 with_vectors=include_embeddings,
             )
@@ -318,13 +301,22 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             text = payload.get("text", "")
 
             hits.append(
-                VectorStoreHit(
-                    id=str(r.id),
+                native_hit(
+                    vector_id=str(payload.get(_LOGICAL_ID_METADATA_KEY) or r.id),
                     content=text,
                     metadata=payload,
                     similarity_score=float(r.score),
                     rank=rank,
-                    embedding=list(r.vector) if include_embeddings else None,
+                    scope=scope,
+                    embedding=(
+                        (
+                            list(r.vector.values())
+                            if isinstance(r.vector, dict)
+                            else r.vector
+                        )
+                        if include_embeddings
+                        else None
+                    ),
                 )
             )
 
@@ -335,6 +327,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
@@ -349,6 +342,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             hits = self._query_qdrant_fusion(
                 query_embedding,
                 query_text,
+                scope=scope,
                 top_k=top_k,
                 metadata_filter=metadata_filter,
                 include_embeddings=include_embeddings,
@@ -358,6 +352,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         return super().query_hybrid(
             query_embedding,
             query_text,
+            scope=scope,
             top_k=top_k,
             metadata_filter=metadata_filter,
             include_embeddings=include_embeddings,
@@ -369,21 +364,22 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter],
         include_embeddings: bool,
     ) -> List[VectorStoreHit]:
         assert self._client is not None
-        vector = list(map(float, query_embedding))
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
         sparse = self._sparse_encoder.encode(query_text)
 
-        effective_where: Dict[str, Any] = (
-            dict(metadata_filter.conditions) if metadata_filter is not None else {}
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
         )
-        effective_where["tenant_id"] = self.cfg.tenant_id
         qfilter = self._qdrant_filter(effective_where)
 
-        prefetch_k = max(top_k * 3, top_k)
+        prefetch_k = max(limit * 3, limit)
         try:
             results = self._client.query_points(
                 collection_name=self.collection_name,
@@ -402,7 +398,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                     ),
                 ],
                 query=FusionQuery(fusion=Fusion.RRF),
-                limit=top_k,
+                limit=limit,
                 with_payload=True,
                 with_vectors=include_embeddings,
             )
@@ -413,44 +409,69 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         for rank, r in enumerate(results.points):
             payload = r.payload or {}
             hits.append(
-                VectorStoreHit(
-                    id=str(r.id),
+                native_hit(
+                    vector_id=str((r.payload or {}).get(_LOGICAL_ID_METADATA_KEY) or r.id),
                     content=str(payload.get("text", "")),
                     metadata={**payload, "qdrant_hybrid": True},
                     similarity_score=float(r.score),
                     rank=rank,
-                    embedding=list(r.vector) if include_embeddings and r.vector else None,
+                    scope=scope,
+                    embedding=(
+                        (
+                            list(r.vector.values())
+                            if isinstance(r.vector, dict)
+                            else r.vector
+                        )
+                        if include_embeddings and r.vector
+                        else None
+                    ),
                 )
             )
         return hits
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if not ids:
             return
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
         self._ensure_qdrant_collection()
         point_ids = [_normalize_point_id(str(point_id)) for point_id in ids]
+        qfilter = self._qdrant_filter(
+            dict(MetadataFilter.for_scope(scope, None).conditions)
+        )
         try:
-            if PointIdsList is not None:
+            if FilterSelector is not None and HasIdCondition is not None and qfilter is not None:
+                qfilter.must.append(HasIdCondition(has_id=point_ids))
+                self._client.delete(
+                    collection_name=self.collection_name,
+                    points_selector=FilterSelector(filter=qfilter),
+                )
+            elif PointIdsList is not None and scope.namespace is None and scope.workspace_id is None:
                 self._client.delete(
                     collection_name=self.collection_name,
                     points_selector=PointIdsList(points=point_ids),
                 )
             else:
-                self._client.delete(
-                    self.collection_name,
-                    points_selector={"points": point_ids},
+                raise VectorStoreContractError(
+                    "qdrant scoped delete is unsupported"
                 )
-        except TypeError:
-            self._client.delete(
-                self.collection_name,
-                points_selector={"points": point_ids},
-            )
+        except TypeError as exc:
+            raise VectorStoreContractError(
+                "qdrant scoped delete is unsupported"
+            ) from exc
 
 
-    def count(self) -> int:
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
         try:
             self._ensure_qdrant_collection()
-            c = self._client.count(self.collection_name, exact=True)
+            qfilter = self._qdrant_filter(
+                dict(MetadataFilter.for_scope(scope, None).conditions)
+            )
+            c = self._client.count(
+                self.collection_name,
+                count_filter=qfilter,
+                exact=True,
+            )
             return int(attribute_access.optional(c, "count", 0))
         except Exception:            
             return 0
@@ -571,7 +592,9 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             raise ValueError(
                 f"Purge tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{tenant_id}'."
             )
-        document_count = self.count()
+        document_count = self.count(
+            scope=VectorStoreScope(tenant_id=self.cfg.tenant_id)
+        )
         if dry_run:
             return {
                 "dry_run": True,
@@ -583,7 +606,10 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             more = self.list_document_ids(limit=500, offset=0)
             if not more:
                 break
-            self.delete(more)
+            self.delete(
+                more,
+                scope=VectorStoreScope(tenant_id=self.cfg.tenant_id),
+            )
             deleted += len(more)
             if len(more) < 500:
                 break

@@ -6,16 +6,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
-import uuid
+from typing import Any, Dict, List, Literal, Optional, Sequence
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
-from langchain_core.documents import Document
-import numpy as np
 
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 
 @dataclass(frozen=True)
@@ -45,17 +54,22 @@ class ChromaVectorStore(BaseVectorStore):
     No behavioral changes.
     """
 
-    def __init__(self, cfg: ChromaConfig) -> None:
+    def __init__(self, cfg: ChromaConfig, *, client: Any = None) -> None:
         self.cfg = cfg
         self.collection_name = f"{cfg.collection_name}__tenant__{cfg.tenant_id}"
 
-        self._client = None
+        self._client = client
         self._collection = None
         self._dim: Optional[int] = None
 
         self._init_chroma()
 
     def _init_chroma(self) -> None:
+        if self._client is not None:
+            self._collection = self._client.get_or_create_collection(
+                name=self.collection_name,
+            )
+            return
         settings = self.cfg.settings or ChromaSettings()
 
         if self.cfg.mode == "http":
@@ -107,86 +121,64 @@ class ChromaVectorStore(BaseVectorStore):
             )
 
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        if len(documents) == 0:
-            return
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        validated = validate_records(records, scope=scope, tenant_id=self.cfg.tenant_id)
+        if not validated:
+            return []
+        ids_list = [record.vector_id for record in validated]
+        X = [record.embedding.tolist() for record in validated]
+        self._dim = self._dim or len(X[0])
 
-        X = self._to_list_of_lists(
-            np.asarray(list(embeddings), dtype=np.float32)
-        )
-
-        if len(X) != len(documents):
-            raise ValueError("Number of documents must match number of embeddings")
-
-        n = len(documents)
-        ids_list = list(ids) if ids else self._make_ids(n)
-
-        if len(ids_list) != n:
-            raise ValueError("Length of `ids` must match number of documents")
-
-        first_dim = len(X[0]) if X and X[0] else None
-        if first_dim is None:
-            raise ValueError(
-                "Embeddings appear empty/corrupt; cannot infer dimension."
-            )
-
-        self._dim = self._dim or first_dim        
-
-        for start in range(0, n, self.cfg.batch_size):
-            end = min(start + self.cfg.batch_size, n)
+        for start in range(0, len(validated), self.cfg.batch_size):
+            end = min(start + self.cfg.batch_size, len(validated))
 
             ids_batch = ids_list[start:end]
             embeddings_batch = X[start:end]
             self._ensure_dim_consistency(embeddings_batch)
 
-            docs_batch = documents[start:end]
-            metas_batch = self._doc_payloads(docs_batch, base=None)
-
-            # tenant enforcement (legacy behavior)
-            for i in range(len(metas_batch)):
-                existing = metas_batch[i].get("tenant_id")
-                if existing is not None and existing != self.cfg.tenant_id:
-                    raise ValueError(
-                        f"Metadata tenant_id mismatch: expected '{self.cfg.tenant_id}', got '{existing}'."
-                    )
-                metas_batch[i]["tenant_id"] = self.cfg.tenant_id
+            records_batch = validated[start:end]
+            metas_batch = [
+                provider_metadata(record.document, scope=scope)
+                for record in records_batch
+            ]
 
             self._upsert_chroma(
                 ids_batch,
                 embeddings_batch,
                 metas_batch,
-                self._doc_texts(docs_batch),
+                [record.document.content for record in records_batch],
             )
+        return ids_list
 
     def query(
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> List[VectorStoreHit]:
-        Q = [list(map(float, query_embedding))]
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        Q = [vector.tolist()]
 
         include = ["metadatas", "documents", "distances"]
         if include_embeddings:
             include.append("embeddings")
 
-        where = metadata_filter.conditions if metadata_filter else None
-
-        tenant_filter = {"tenant_id": self.cfg.tenant_id}
-        effective_where = dict(where or {})
-        effective_where.update(tenant_filter)
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
+        )
 
         res = self._collection.query(
             query_embeddings=Q,
-            n_results=top_k,
+            n_results=limit,
             where=self._normalize_chroma_where(effective_where),
             include=include,
         )
@@ -220,14 +212,15 @@ class ChromaVectorStore(BaseVectorStore):
             min(len(row_ids), len(row_scores), len(row_metas), len(row_docs))
         ):
             hits.append(
-                VectorStoreHit(
-                    id=str(row_ids[rank]),
+                native_hit(
+                    vector_id=str(row_ids[rank]),
                     content=str(row_docs[rank]),
                     metadata=dict(row_metas[rank] or {}),
                     similarity_score=float(row_scores[rank]),
                     rank=rank,
+                    scope=scope,
                     embedding=(
-                        list(row_embs[rank])
+                        row_embs[rank]
                         if include_embeddings and row_embs
                         else None
                     ),
@@ -270,13 +263,26 @@ class ChromaVectorStore(BaseVectorStore):
         return {"$and": and_terms}
     
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if not ids:
             return
-        self._collection.delete(ids=list(ids))
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        self._collection.delete(
+            ids=list(ids),
+            where=self._normalize_chroma_where(
+                MetadataFilter.for_scope(scope, None).conditions
+            ),
+        )
 
-    def count(self) -> int:
-        return int(self._collection.count())
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        result = self._collection.get(
+            where=self._normalize_chroma_where(
+                MetadataFilter.for_scope(scope, None).conditions
+            ),
+            include=[],
+        )
+        return len(result.get("ids", []))
 
     def list_collections(self) -> List[str]:
         if self._client is None:

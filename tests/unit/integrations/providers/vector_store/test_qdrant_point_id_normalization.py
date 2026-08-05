@@ -10,14 +10,15 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Sequence
 
 import pytest
-from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
     QdrantConfig,
     QdrantVectorStore,
     _LOGICAL_ID_METADATA_KEY,
     _normalize_point_id,
 )
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord, VectorStoreScope
 
 pytestmark = pytest.mark.unit
 
@@ -63,6 +64,20 @@ def _store_with_fake_client() -> tuple[QdrantVectorStore, _FakeQdrantClient]:
     return store, client
 
 
+def _record(vector_id: str) -> VectorStoreRecord:
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": vector_id, "root_document_id": vector_id},
+            "scope": {"tenant_id": "t1"},
+            "content": "chunk text",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": vector_id},
+        }
+    )
+    return VectorStoreRecord(document=document, embedding=[0.1, 0.2, 0.3], vector_id=vector_id)
+
+
 def test_normalize_point_id_invalid_string_is_deterministic_uuid() -> None:
     raw = "ingest-lkw-live-smoke-0"
     first = _normalize_point_id(raw)
@@ -85,11 +100,7 @@ def test_upsert_normalizes_invalid_string_id() -> None:
     store, client = _store_with_fake_client()
     logical_id = "ingest-lkw-live-smoke-0"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     assert len(client.last_upsert_points) == 1
     point = client.last_upsert_points[0]
@@ -101,11 +112,7 @@ def test_upsert_preserves_logical_id_in_metadata() -> None:
     store, client = _store_with_fake_client()
     logical_id = "ingest-lkw-live-smoke-0"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     payload = client.last_upsert_points[0].payload
     assert payload[_LOGICAL_ID_METADATA_KEY] == logical_id
@@ -115,26 +122,23 @@ def test_upsert_valid_uuid_id_remains_valid() -> None:
     store, client = _store_with_fake_client()
     logical_id = "550e8400-e29b-41d4-a716-446655440000"
 
-    store.add_documents(
-        [Document(page_content="chunk text")],
-        [[0.1, 0.2, 0.3]],
-        ids=[logical_id],
-    )
+    store.add_records([_record(logical_id)], scope=VectorStoreScope(tenant_id="t1"))
 
     point = client.last_upsert_points[0]
     assert str(point.id) == logical_id
     assert point.payload[_LOGICAL_ID_METADATA_KEY] == logical_id
 
 
-def test_add_documents_without_ids_generates_valid_uuid() -> None:
-    store, client = _store_with_fake_client()
-
-    store.add_documents(
-        [Document(page_content="auto id")],
-        [[0.1, 0.2, 0.3]],
+def test_add_records_requires_explicit_vector_id() -> None:
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {"document_id": "doc-1", "root_document_id": "doc-1"},
+            "scope": {"tenant_id": "t1"},
+            "content": "auto id",
+            "metadata": {},
+            "provenance": {"source_kind": "test", "source_id": "doc-1"},
+        }
     )
-
-    point = client.last_upsert_points[0]
-    generated_id = str(point.id)
-    uuid.UUID(generated_id)
-    assert point.payload[_LOGICAL_ID_METADATA_KEY] == generated_id
+    with pytest.raises(ValueError, match="vector_id"):
+        VectorStoreRecord(document=document, embedding=[0.1, 0.2, 0.3], vector_id="")
