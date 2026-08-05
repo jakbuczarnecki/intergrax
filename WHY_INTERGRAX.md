@@ -19,12 +19,12 @@ Intergrax helps teams build specialized agent applications without rebuilding th
 
 | Question | Answer |
 | -------- | ------ |
-| What is Intergrax? | A reusable Harness AI foundation for governed agent applications. |
+| What is Intergrax? | A reusable foundation for governed AI applications. |
 | What problem does it address? | Teams repeatedly rebuild permissions, policy, knowledge, tools, evidence, and operational boundaries for every new agent product. |
 | Who is it for? | Teams building specialized agent-backed applications, platform engineers evaluating reusable infrastructure, and technical design partners with a concrete workflow to validate. |
 | Current proof | LKW as **Primary product proof**; Token Optimization as **Featured platform-capability proof** — both **PARTIAL**. |
 | Current maturity | **Source-available**, **active R&D**; bounded proof paths, not universal production readiness. |
-| Where does it fit? | A reusable governed application foundation — not a finished SaaS, no-code builder, single-purpose RAG component or standalone agent framework |
+| Where does it fit? | A reusable governed application foundation — not a finished SaaS, no-code builder, single-purpose retrieval component or standalone agent framework |
 
 ---
 
@@ -89,7 +89,7 @@ The right choice depends on the product and responsibility boundary the team wan
     srcset="docs/assets/public/intergrax-category-map-light.svg"
   >
   <img
-    alt="Responsibility map comparing finished AI SaaS, workflow automation platforms, RAG or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns."
+    alt="Responsibility map comparing finished AI SaaS, workflow automation platforms, retrieval or knowledge toolkits, agent frameworks, custom in-house foundations and Intergrax by their primary value and what the adopting team still owns."
     src="docs/assets/public/intergrax-category-map-light.svg"
   >
 </picture>
@@ -102,7 +102,7 @@ This neutral map explains primary responsibility. Categories overlap, and no uni
 | -------- | ------------- | -------------------- | ---------------- |
 | Finished AI SaaS | Ready-made end-user product | Adoption and workflow fit | You need a ready-made end-user product |
 | Workflow automation platform | Connect systems and process steps | AI-specific behavior and evidence semantics | You need process and system automation |
-| RAG or knowledge toolkit | Retrieval, indexing and grounding components | Product, orchestration, policy and operations | You need retrieval and grounding components |
+| Retrieval or knowledge toolkit | Retrieval, indexing and grounding components | Product, orchestration, policy and operations | You need retrieval and grounding components |
 | Agent framework | Compose agent behavior and orchestration | Product controls, runtime governance and evidence | You need agent behavior and orchestration |
 | Custom in-house foundation | Maximum design control | Every shared layer and its maintenance | You need complete design control and can maintain the platform |
 | Intergrax | Reusable governed foundation for specialized AI applications | Product workflow, UX, deployment choices, product-specific validation and all required permissions remain the product team's responsibility. | You need to build a specialized governed AI application on reusable policy, knowledge, integration, execution and evidence foundations |
@@ -114,7 +114,7 @@ flowchart TD
     A[What do you need most?]
     A -->|A ready-made end-user product| B[Finished AI SaaS]
     A -->|Connected systems and process steps| C[Workflow automation platform]
-    A -->|Retrieval and grounding components| D[RAG or knowledge toolkit]
+    A -->|Retrieval and grounding components| D[Retrieval or knowledge toolkit]
     A -->|Agent behavior and orchestration| E[Agent framework]
     A -->|Maximum control and platform capacity| F[Custom in-house foundation]
     A -->|A specialized application on reusable governed foundations| G[Evaluate Intergrax]

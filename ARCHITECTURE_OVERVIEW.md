@@ -34,9 +34,9 @@ Primary audience: Architect or platform engineer evaluating responsibility bound
 
 | Part | Owns | Does not own |
 | ---- | ---- | ------------ |
-| **Specialized application** | User workflow, product context, product permissions, and acceptance criteria | Governed execution internals, provider wiring, or evidence substrate |
+| **Specialized application** | User workflow, product context, product permissions, and acceptance criteria | Governed execution internals, provider integration details, or shared evidence infrastructure |
 | **Orchestration** | Coordinating work across agents and steps | Domain decisions or product UX |
-| **Agent** | Domain decisions inside a bounded session | Policy enforcement, tool I/O substrate, or cross-product hosting |
+| **Agent** | Domain decisions inside a bounded session | Policy enforcement, shared tool-execution infrastructure, or cross-product hosting |
 | **Governed execution harness** | Execution cycle, policy, budgets, trace, and evidence collection | Product-specific business rules outside shared boundaries |
 | **Knowledge, tools and model systems** | Retrieval, integrations, and model access behind shared boundaries | The product workflow or end-user experience |
 | **Trace and evidence** | Receipts, observability, and reviewable execution records | Product certification or commercial validation |
@@ -96,9 +96,9 @@ The separation matters because product-specific rules stay in the product; agent
 | Intergrax reusable foundation | Product application |
 | ----------------------------- | ------------------- |
 | Governed execution | User workflow |
-| Policy and HITL | Identity and tenant context |
+| Policy and human approval | Identity and tenant context |
 | Trace and evidence | Product permissions |
-| Knowledge, RAG, and memory | Product configuration |
+| Knowledge, retrieval, grounding, and memory | Product configuration |
 | Tool and integration boundaries | User experience |
 | Model portability | Product acceptance criteria |
 | Runtime verification | Product-specific business rules |
@@ -120,7 +120,7 @@ flowchart LR
     I --> K[Persistent knowledge index]
     K --> Q[Ask over indexed knowledge]
     Q --> R[Grounded result and evidence]
-    R --> T[Trace and ProofReceipt]
+    R --> T[Trace and persisted evidence]
 ```
 
 LKW does not demonstrate finished SaaS, complete Hybrid Ask, or completed commercial validation. Bounded proof details: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md).
@@ -141,7 +141,7 @@ It operates inside the harness execution path alongside policy, protected-region
 
 | Topic | Document |
 | ----- | -------- |
-| Harness AI narrative | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) |
+| Foundation architecture narrative | [INTERGRAX_HARNESS_NARRATIVE.md](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) |
 | Technical documentation map | [DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) |
 | Public proof dashboard | [PROOFS.md](PROOFS.md) |
 | LKW product proof | [LKW_PLATFORM_PROOF.md](docs/public-adoption/LKW_PLATFORM_PROOF.md) |

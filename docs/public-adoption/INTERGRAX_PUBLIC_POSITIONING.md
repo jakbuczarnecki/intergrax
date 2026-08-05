@@ -33,7 +33,7 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-8 — READY_FOR_REVIEW |
+| Current phase | PX-9 — READY_FOR_REVIEW |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
@@ -46,7 +46,7 @@ It does **not** replace:
 | Buyer route | `USE_CASES.md` |
 | Partner route | `PARTNERS.md` |
 | Architect, buyer and partner routes | PX-7 — ACCEPTED / CLOSED |
-| Category comparison | Implemented in PX-8 — READY_FOR_REVIEW |
+| Category comparison | PX-8 — ACCEPTED / CLOSED |
 | Category comparison owner | `WHY_INTERGRAX.md#where-intergrax-fits` |
 | Root README application | APPLIED IN PX-2 — ACCEPTED / CLOSED |
 | External reader validation | NOT_STARTED |
@@ -78,6 +78,41 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 Intergrax is a reusable foundation for governed AI applications.
 
 The category descriptor appears after the concrete problem, outcome, and LKW explanation — not as the opening headline.
+
+---
+
+## Public reader language
+
+Freeze these rules for normal public-reader copy:
+
+- user outcome before subsystem name;
+- responsibility before implementation detail;
+- one plain-language explanation before a necessary acronym;
+- reader-friendly visible link labels even when the target filename is technical;
+- provider names only where they identify actual proof scope;
+- task IDs only in maintainer and deep technical material;
+- current limitations remain visible after simplification;
+- simplification must not weaken legal, proof or maturity boundaries;
+- diagrams and visuals remain part of the public product surface.
+
+Prohibit in Layer 1–3 normal reader copy:
+
+```text
+PX task identifiers
+TOKEN phase identifiers
+CTX-UCL identifiers
+Tier-number architecture labels
+READY_FOR_REVIEW
+ACCEPTED / CLOSED
+BLOCKED_ON_*
+Cursor operators
+lab host
+README Quick start
+```
+
+ProofReceipt is a deep technical term. Normal reader pages use persisted execution evidence or execution receipt where needed.
+
+Harness AI is not first-contact or at-a-glance terminology. It may remain in intentionally deep architecture material.
 
 ---
 

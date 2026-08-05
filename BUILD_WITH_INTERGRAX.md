@@ -25,7 +25,7 @@ This document is the deeper route-selection and planning guide. The [Builder Qui
 | Question | Answer |
 | -------- | ------ |
 | **Current stage** | Source-available, active R&D, bounded proof paths |
-| **Best first step** | [README Quick start](README.md#quick-start) |
+| **Best first step** | [Builder Quick Start](BUILDER_QUICKSTART.md) |
 | **Primary product proof** | LKW |
 | **Featured platform capability** | Token Optimization |
 | **Permission boundary** | Production/commercial use requires written permission |
@@ -36,47 +36,54 @@ This document is the deeper route-selection and planning guide. The [Builder Qui
 
 | Goal | Recommended path | What you will learn |
 | ---- | ---------------- | ------------------- |
-| First technical contact | [README Quick start](README.md#quick-start) | Install, lab host, one bounded execution, trace inspection |
-| See the primary product proof | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) | Bounded application and platform behavior via LKW |
-| Explore Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) | Deterministic mechanisms and bounded vLLM proof scope |
-| Inspect current evidence | [PROOFS.md](PROOFS.md) | Public proof status and claim boundaries |
-| Build a specialized application | [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) and [application usage docs](applications/USAGE.md) | How to compose product workflow on shared foundations |
-| Perform deep technical review | [Technical Documentation Map](docs/DOCUMENTATION_MAP.md) | Architecture canon, plans, and implementation navigation |
+| First builder orientation | [Builder Quick Start](BUILDER_QUICKSTART.md) | Choose a concrete workflow, ownership boundary and nearest existing verification path |
+| Try the primary LKW product path | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) | Run the supported indexed product evaluation |
+| Review bounded LKW technical evidence | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) | Review bounded application and platform evidence |
+| Run a broader evaluation | [Evaluation Guide](EVALUATION_GUIDE.md) | Follow a time-boxed evaluation across product and platform paths |
+| Explore Token Optimization | [Token Optimization guide](docs/features/token_optimization/README.md) | Review deterministic mechanisms and bounded vLLM proof scope |
+| Inspect current evidence | [PROOFS.md](PROOFS.md) | Review public proof status and claim boundaries |
+| Build a specialized application | [Agent Creation Guide](docs/guides/AGENT_CREATION_GUIDE.md) and [application usage docs](applications/USAGE.md) | Compose a product workflow on shared foundations |
+| Perform deep technical review | [Technical Documentation Map](docs/DOCUMENTATION_MAP.md) | Navigate architecture, plans and implementation detail |
 
 ```mermaid
 flowchart TD
-    S[What do you want to evaluate?]
-    S -->|First contact| Q[README Quick start]
-    S -->|Real product workflow| L[LKW Platform Proof]
-    S -->|Platform capability| T[Token Optimization]
-    S -->|Build an application| B[Agent Creation Guide]
-    S -->|Deep review| D[Technical Documentation Map]
+    S[What do you want to do?]
+    S -->|Begin building| B[Builder Quick Start]
+    S -->|Try the LKW product| Q[LKW Quick Start]
+    S -->|Review LKW evidence| L[LKW Platform Proof]
+    S -->|Run a broader evaluation| E[Evaluation Guide]
+    S -->|Explore a platform capability| T[Token Optimization]
+    S -->|Perform deep technical review| D[Technical Documentation Map]
 ```
 
 ---
 
-## Path 1 — First technical contact
+## Path 1 — First builder orientation
 
-Start at [README Quick start](README.md#quick-start).
+Start at [Builder Quick Start](BUILDER_QUICKSTART.md).
 
-You verify:
+Use it to:
 
-- installation and repository health;
-- lab host startup;
-- one bounded execution;
-- trace inspection.
+- choose a concrete workflow;
+- identify the application and platform ownership boundary;
+- find the nearest existing setup or verification path;
+- continue to deeper planning only when the workflow justifies it.
 
-The README owns the command sequence. This document routes you there without duplicating it.
+Builder Quick Start owns the first checkpoint. This document routes you there without duplicating its onboarding guidance.
 
 ---
 
-## Path 2 — LKW product proof
+## Path 2 — LKW product evaluation and technical evidence
 
-**Primary product proof:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)
+**Supported product evaluation:** [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md)
 
-This path is more involved than quick start. It validates bounded application and platform behavior through Local Knowledge Workspace — ingest, indexed knowledge, hosting, observability, and ProofReceipt — in a guided reviewer flow.
+The LKW Quick Start is the supported product path for trying the indexed workspace workflow.
 
-It does **not** prove finished SaaS, completed Hybrid Ask, or commercial readiness. LKW remains **PARTIAL** at **Backend Product Alpha / MVP**.
+**Bounded technical reviewer evidence:** [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)
+
+The Platform Proof is the deeper reviewer route for bounded application and platform behavior through Local Knowledge Workspace — ingest, indexed knowledge, hosting, observability, and persisted execution evidence.
+
+Neither route proves finished SaaS, completed Hybrid Ask, or commercial readiness. LKW remains **PARTIAL** at **Backend Product Alpha / MVP**.
 
 ---
 
@@ -144,7 +151,7 @@ Full public proof dashboard: [PROOFS.md](PROOFS.md).
 | Document | Role |
 | -------- | ---- |
 | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Detailed bounded execution companion — timed evaluation passes |
-| [README Quick start](README.md#quick-start) | First technical contact commands |
+| [README](README.md) | Repository overview and first-contact context |
 | [PROOFS.md](PROOFS.md) | Proof status and verification paths |
 | [Public Documentation Map](docs/PUBLIC_DOCUMENTATION_MAP.md) | Reader-intent routing across public docs |
 

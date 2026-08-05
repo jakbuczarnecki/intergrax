@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-8 READY_FOR_REVIEW
+Status: ACTIVE — PX-9 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -67,11 +67,20 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-7 ACCEPTED / CLOSED
-Current phase: PX-8 READY_FOR_REVIEW
-Next after acceptance: PX-9
+Previous phase: PX-8 ACCEPTED / CLOSED
+Current phase: PX-9 READY_FOR_REVIEW
+Next after acceptance: PX-10
 External sessions: NOT_STARTED
 ```
+
+Public-language boundary:
+`PUBLIC_DOCUMENTATION_ARCHITECTURE.md#public-language-boundary`
+
+Normal public-reader navigation:
+`../PUBLIC_DOCUMENTATION_MAP.md`
+
+Maintainer contracts and claim controls:
+this directory
 
 ## Audience-route summary
 

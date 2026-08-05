@@ -38,15 +38,15 @@ flowchart TB
     SPF -.->|"supports both"| TO
 ```
 
-LKW and Token Optimization answer different reviewer questions. LKW demonstrates a real Tier-3 application workflow; Token Optimization demonstrates a reusable platform mechanism.
+LKW and Token Optimization answer different reviewer questions. LKW demonstrates a real end-to-end application workflow; Token Optimization demonstrates a reusable platform mechanism.
 
 ## At a glance
 
 | Proof path | Classification | Current public status | What it demonstrates | Verify |
 |------------|----------------|----------------------|----------------------|--------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded Tier-3 platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](docs/features/token_optimization/README.md) |
-| **Shared platform foundations** | Supporting evidence | ✅ **IMPLEMENTED** (bounded) | RAG, observability, proof receipts, application hosting contracts exercised by LKW | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) |
+| **Shared platform foundations** | Supporting evidence | ✅ **IMPLEMENTED** (bounded) | Retrieval and grounding, observability, persisted execution evidence, application hosting contracts exercised by LKW | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) |
 
 ---
 
@@ -56,13 +56,13 @@ LKW and Token Optimization answer different reviewer questions. LKW demonstrates
 
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
-| Core Tier-3 platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, ProofReceipt persistence | Bounded to documented certification profiles; not full live platform proof |
+| Core application and platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence | Bounded to documented certification profiles; not full live platform proof |
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, indexing, grounded Ask over indexed content | Not live external-website certification |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 | Current Slack DM path | 🟡 **PARTIAL** | Operate LKW through Slack DM for knowledge already in the selected workspace | Durable bindings, shared channels, and full conversational runtime not complete |
-| Slack connected source | 🟡 **PARTIAL** | Platform can read and synchronize Slack conversations; workspace attachment in progress | Connected-source slice not accepted; Hybrid Ask not available |
+| Slack connected source | 🟡 **PARTIAL** | Platform can read and synchronize Slack conversations; workspace attachment in progress | Workspace attachment and complete product validation remain incomplete |
 | Hybrid Ask | 🗓️ **PLANNED** | Indexed + live evidence in one grounded answer | Not implemented |
-| Google Workspace LKW proof | 🗓️ **PLANNED** | Governed Google Workspace knowledge in LKW | Blocked on prior Slack proof acceptance |
+| Google Workspace LKW proof | 🗓️ **PLANNED** | Governed Google Workspace knowledge in LKW | Depends on completion of the prerequisite Slack product proof |
 | Final live platform proof | 🗓️ **PLANNED** | Multi-source live demonstration in one workspace | Not completed |
 | Real-user validation | ⛔ **NOT CLAIMABLE** | — | No completed real-user validation program |
 | Commercial validation | ⛔ **NOT CLAIMABLE** | — | No completed commercial validation |
@@ -85,11 +85,11 @@ Deeper detail: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) 
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
-| Unified Context Lifecycle | 🟡 **PARTIAL** | CTX-UCL-5 accepted/closed; CTX-UCL-6 accepted/closed through 6D; EPHEMERAL_ASSEMBLY closure-ready; CTX-UCL-CLOSEOUT-1 ready for final review | TOKEN-10E-1 blocked pending closeout acceptance; durable production integration not complete |
-| Durable in-cache compaction | 🗓️ **PLANNED** | TOKEN-10E architecture defined | Runtime blocked until UCL closeout |
-| Universal proof and hard gates | 🗓️ **PLANNED** | TOKEN-10F / TOKEN-10G harness and corpus | Hard gates not passed |
+| Unified Context Lifecycle | 🟡 **PARTIAL** | Ephemeral assembly and lifecycle foundations exist with bounded implementation evidence. | Final closeout and durable production integration remain incomplete. |
+| Durable in-cache compaction | 🗓️ **PLANNED** | The architecture is defined; durable runtime integration remains planned. | Durable runtime integration remains planned. |
+| Cross-provider proof and final claim gates | 🗓️ **PLANNED** | The required cross-provider corpus, proof execution and final promotion gates are incomplete. | The required cross-provider corpus, proof execution and final promotion gates are incomplete. |
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
-| Production-proven savings | ⛔ **NOT CLAIMABLE** | — | TOKEN-10G / TOKEN-10H not complete |
+| Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |
 
 Deeper detail: [Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
 

@@ -455,6 +455,52 @@ The historical names 9B and 9C do not define an additional active execution path
 
 ---
 
+## Public language boundary
+
+Freeze the following language ownership:
+
+```text
+Layer 1–3 public-reader documents:
+lead with user outcome, responsibility and next action
+
+Layer 4 deep technical documents:
+may use exact architecture terms, code symbols and provider details
+
+Layer 5 maintainer controls:
+may retain PX, TOKEN, CTX and other task identifiers
+```
+
+Product and capability proper nouns are allowed when they identify real public concepts:
+LKW, Token Optimization, Hybrid Ask, Slack, Google Workspace, Ollama and vLLM.
+
+Internal task identifiers, implementation-stage labels, review states and maintainer workflow vocabulary are not normal public-reader language.
+
+Freeze these normal-reader replacements:
+
+```text
+ProofReceipt
+→ persisted execution evidence
+  or execution receipt when technically necessary
+
+Tier-3
+→ end-to-end application and platform workflow
+
+Harness AI
+→ reusable governed application foundation
+  unless the reader intentionally entered deep technical material
+
+HITL
+→ human approval or human review
+
+RAG
+→ retrieval and grounding
+  unless defined in a deep technical context
+```
+
+Filenames and deep destination paths do not need to be renamed merely because they contain technical vocabulary. Visible link labels should remain reader-friendly.
+
+---
+
 ## 8. Link and duplication rules
 
 1. One primary route per reader intent.
@@ -467,6 +513,10 @@ The historical names 9B and 9C do not define an additional active execution path
 8. Archived documents are never normal navigation targets.
 9. Public documents must not duplicate the complete technical documentation map.
 10. Every new reader-facing Layer 1–3 document must be added to both this architecture contract and `docs/PUBLIC_DOCUMENTATION_MAP.md`. A new Layer 5 maintainer control must be added to this architecture contract and `docs/public-adoption/README.md`, but must not become a normal public-reader route unless its role is intentionally changed.
+
+`docs/PUBLIC_DOCUMENTATION_MAP.md` must not list Layer 5 positioning contracts, claim guardrails or maintainer controls as normal public documents.
+
+Those remain owned by `docs/public-adoption/README.md`.
 
 ---
 
@@ -553,12 +603,21 @@ Purpose:
 neutral category-responsibility map
 
 Status:
-implemented in PX-8 — READY_FOR_REVIEW
+PX-8 — ACCEPTED / CLOSED
+
+Acceptance evidence:
+0580270902ec265b6d7523e9b00d50acb074d815
 ```
 
 Both variants must remain semantically identical. Surrounding text must preserve essential meaning. These assets are conceptual documentation graphics, not screenshots. Vendor logos and unsupported claims are prohibited.
 
 No binary image asset is required until a reviewed source screenshot is supplied.
+
+### PX-9 visual preservation
+
+Language cleanup must not flatten the public visual experience. Existing reviewed pictures, SVG families, tables and Mermaid diagrams remain unless factually incorrect or owned by a later redesign task. Diagram labels should be simplified before a diagram is removed.
+
+PX-9 updates the existing `BUILD_WITH_INTERGRAX.md` route diagram without adding a new diagram or visual asset.
 
 ### Minimum future root README visual set
 

@@ -54,7 +54,7 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 - indexed knowledge and background ingest;
 - persisted knowledge across documented restart paths;
 - grounded Ask over documented indexed content;
-- hosting, observability and ProofReceipt evidence.
+- hosting, observability and persisted execution evidence.
 
 **Not complete:**
 
@@ -156,7 +156,7 @@ flowchart LR
     E --> APP
 ```
 
-**Deep dive:** [Architecture overview](ARCHITECTURE_OVERVIEW.md) · [Harness AI narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/DOCUMENTATION_MAP.md)
+**Deep dive:** [Architecture overview](ARCHITECTURE_OVERVIEW.md) · [Foundation architecture narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/DOCUMENTATION_MAP.md)
 
 ---
 
@@ -183,7 +183,7 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 
 **Implemented today:** deterministic optimization pipeline, approved-configuration routing, protected-region validation, receipts and fallback, cache-stable prompt assembly, exact-send integrity, and cache-aware execution.
 
-**Not complete:** durable in-cache compaction is incomplete; universal hard gates are incomplete; **universal savings not claimed**; production-proven savings are not claimed.
+**Not complete:** durable in-cache compaction is incomplete; final cross-provider proof gates are incomplete; **universal savings not claimed**; production-proven savings are not claimed.
 
 **Go deeper:** [Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
 

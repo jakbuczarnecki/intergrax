@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary product proof** — classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** are incomplete. The [LICENSE](LICENSE) is legally authoritative for permitted use.
 
-This guide provides time-boxed evaluation paths for technical reviewers, design partners, and integration builders. It is a reader-facing companion — not a maintainer validation protocol, not a product brochure, and not proof that external validation has occurred.
+This guide provides time-boxed evaluation paths for technical reviewers, design partners, and integration builders. This guide is a reader-facing evaluation companion. It does not claim that external validation has occurred.
 
 Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](LICENSE), [COLLABORATION.md](COLLABORATION.md), and [PARTNERS.md](PARTNERS.md).
 
@@ -42,9 +42,10 @@ Builder onboarding ≠ product trial ≠ broader platform evaluation.
 Use this guide if you are:
 
 - evaluating whether Intergrax addresses a governed-agent or knowledge-workflow problem;
-- reviewing the Harness AI architecture for the first time;
+- reviewing the public architecture and responsibility boundaries;
 - checking whether a documented proof path is understandable;
-- assessing trace, evidence, policy, HITL, RAG, memory, tools, or orchestration surfaces;
+- assessing trace, evidence, policy, human approval, retrieval and grounding,
+  memory, tools, or orchestration;
 - considering design-partner or selected integration feedback;
 - deciding which evaluation path fits your available time.
 
@@ -143,7 +144,7 @@ Choose the path that matches your interest:
 Useful review questions:
 
 - Which current problem does Intergrax address clearly?
-- Which runtime boundary is most valuable?
+- Which product or execution boundary is most valuable?
 - What is missing for a serious technical evaluation?
 - Which proof path should be easier?
 - Which claims are unclear or too strong?
@@ -170,7 +171,7 @@ Good feedback also includes:
 
 - the exact document, section, or command you evaluated;
 - which use case or evaluation track you were following;
-- whether you are reporting documentation clarity, proof-path friction, integration feedback, or design-partner interest.
+- whether you are reporting documentation clarity, evaluation-path friction, integration feedback, or design-partner interest.
 
 Avoid broad feature requests unless they are tied to a specific use case and current evaluation track.
 

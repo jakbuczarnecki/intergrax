@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-8 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-9 |
+| Current phase | PX-9 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-10 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -322,7 +322,9 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-8 — Category and alternative positioning
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `0580270902ec265b6d7523e9b00d50acb074d815`
 
 **User-visible outcome:** Readers understand where Intergrax fits relative to alternatives without unfair or inflated comparisons.
 
@@ -359,17 +361,59 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-9 — Public-language cleanup
 
-**Status:** BLOCKED_ON_PX_8_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
 **User-visible outcome:** Public documents remove maintainer task IDs and internal vocabulary from normal reader paths.
 
-**Completion gate:** A scoped cross-document review confirms that targeted public-reader documents no longer expose maintainer task IDs or unnecessary internal vocabulary. Maintainer controls may retain those identifiers where needed.
+**Delivered:**
+
+- reader-facing task identifiers and architecture tiers removed;
+- ProofReceipt translated to persisted execution evidence
+  in normal reader paths;
+- first-contact Harness AI language replaced
+  with the canonical governed-foundation description;
+- unexplained HITL and RAG acronyms translated
+  into human approval, retrieval and grounding;
+- obsolete README Quick Start and lab-host language removed
+  from the deeper builder guide;
+- BUILD_WITH_INTERGRAX route diagram updated
+  to the accepted product, builder, evaluation and proof routes;
+- PROOFS.md preserves technical status while removing
+  CTX-UCL and TOKEN phase bookkeeping;
+- public documentation map no longer advertises
+  maintainer contracts as normal reader documents;
+- all accepted public graphics and diagram counts preserved;
+- no command, runtime, proof classification,
+  legal boundary or product status intentionally changed.
+
+**Completion gate:**
+
+- targeted Layer 1–3 files contain no PX, CTX-UCL,
+  TOKEN phase or Tier-number task vocabulary;
+- ProofReceipt does not appear in targeted normal-reader files;
+- README and WHY_INTERGRAX use canonical public terminology;
+- Architecture Overview explains human approval,
+  retrieval and grounding without unexplained acronyms;
+- BUILD_WITH_INTERGRAX no longer refers to README Quick start,
+  lab host or old first-contact execution;
+- BUILD_WITH_INTERGRAX retains exactly one updated Mermaid route diagram;
+- EVALUATION_GUIDE commands and route structure remain unchanged;
+- PROOFS.md retains status classifications and provider scope
+  while removing internal closeout bookkeeping;
+- FAQ uses reader-facing architecture language;
+- public documentation map contains no Cursor-operator wording
+  and does not list Layer 5 controls as normal public documents;
+- existing picture blocks, SVG references and Mermaid counts
+  are preserved outside the intentionally updated diagram labels;
+- no code, test, script, dependency or visual asset is changed;
+- no PX-10 status synchronization or PX-11 CTA redesign
+  is performed prematurely.
 
 ---
 
 ## PX-10 — Product-status synchronization
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_9_ACCEPTANCE
 
 **User-visible outcome:** Product status descriptions are consistent across public reader documents.
 

@@ -60,8 +60,6 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 
 [Open the Token Optimization Engine guide](features/token_optimization/README.md)
 
-Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
-
 ---
 
 ## Public documents
@@ -84,9 +82,11 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 | [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](features/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
-| [Token Optimization claim guardrails](public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) | Safe public wording boundaries |
-| [Public positioning](public-adoption/INTERGRAX_PUBLIC_POSITIONING.md) | Canonical public problem, value, and claim boundaries |
 | [Intergrax Proofs](../PROOFS.md) | Public proof dashboard — status legend and verification paths |
+
+Maintainer contracts and claim controls are intentionally excluded
+from normal reader navigation and remain indexed
+from docs/public-adoption/README.md.
 
 **Proof status legend:** see [Intergrax Proofs](../PROOFS.md#status-legend) (✅ IMPLEMENTED · 🧪 BOUNDED PROOF · 🟡 PARTIAL · 🗓️ PLANNED · ⛔ NOT CLAIMABLE).
 
@@ -94,7 +94,8 @@ Secondary control: [Read the public claim guardrails](public-adoption/TOKEN_OPTI
 
 ## Technical documentation
 
-Developers, architects, Cursor operators, and deep technical reviewers should use the technical map — not this public map:
+Developers, architects,
+and deep technical reviewers should use the technical map — not this public map:
 
 [Technical Documentation Map](DOCUMENTATION_MAP.md)
 

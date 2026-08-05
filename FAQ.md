@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Intergrax is **source-available** and under **active R&D**. LKW is **Backend Product Alpha / MVP** and remains **PARTIAL**. Real-user and commercial validation are incomplete.
 
-This FAQ answers common first-contact questions. It does not replace [LICENSE](LICENSE), [PARTNERS.md](PARTNERS.md), or the full architecture canon.
+This FAQ answers common first-contact questions. It does not replace [LICENSE](LICENSE), [PARTNERS.md](PARTNERS.md), or the complete technical architecture.
 
 ---
 
@@ -26,7 +26,7 @@ This FAQ answers common first-contact questions. It does not replace [LICENSE](L
 
 ---
 
-## How does Intergrax differ from a finished SaaS, RAG toolkit, agent framework, workflow automation platform or custom in-house foundation?
+## How does Intergrax differ from a finished SaaS, retrieval toolkit, agent framework, workflow automation platform or custom in-house foundation?
 
 The difference is primarily the responsibility boundary: Intergrax is a reusable governed application foundation, not a finished SaaS, and it does not claim universal superiority. Use the [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) for the detailed, bounded view.
 
