@@ -40,3 +40,7 @@ class TaskExecutionRegistry:
             )
 
         return self._handlers[task_name]
+
+    def unregister(self, task_name: str) -> bool:
+        """Remove a task handler and report whether it was registered."""
+        return self._handlers.pop(task_name, None) is not None
