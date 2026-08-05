@@ -21,6 +21,9 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeCapabilitiesListPlannedAction,
+    KnowledgeConnectionsListPlannedAction,
+    KnowledgeResourcesListPlannedAction,
     WorkspaceReferenceKind,
     collect_user_text_context,
     request_attachment_ids,
@@ -142,6 +145,61 @@ def validate_plan_against_request(
                 if obj.object_type not in _ALLOWED_SOURCE_OBJECT_TYPES:
                     raise PlanRequestValidationError("invalid object type for knowledge.add_sources")
                 referenced_object_ids.add(source_id)
+
+        configuration = request.knowledge_plugin_configuration
+        if isinstance(
+            action,
+            (
+                KnowledgeConnectionsListPlannedAction,
+                KnowledgeResourcesListPlannedAction,
+                KnowledgeCapabilitiesListPlannedAction,
+            ),
+        ):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            assert configuration is not None
+        if isinstance(action, KnowledgeResourcesListPlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+            if action.source_kind not in connection.available_source_kinds:
+                raise PlanRequestValidationError("unknown knowledge discovery selector")
+            if action.page_token is not None:
+                raise PlanRequestValidationError("unapproved knowledge pagination token")
+        if isinstance(action, KnowledgeCapabilitiesListPlannedAction):
+            if configuration is None:
+                raise PlanRequestValidationError(
+                    "knowledge configuration snapshot unavailable"
+                )
+            connection = next(
+                (
+                    item
+                    for item in configuration.available_connections
+                    if item.connection_ref == action.connection_ref
+                ),
+                None,
+            )
+            if connection is None or connection.administrative_status.value != "active":
+                raise PlanRequestValidationError("unknown knowledge connection reference")
+            if action.remote_resource_id is not None and not any(
+                item.connection_ref == action.connection_ref
+                and item.remote_resource_id == action.remote_resource_id
+                for item in configuration.available_remote_resources
+            ):
+                raise PlanRequestValidationError("unknown knowledge resource reference")
 
         workspace = getattr(action, "workspace", None)
         if workspace is not None and workspace.kind == WorkspaceReferenceKind.name:

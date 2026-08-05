@@ -525,6 +525,28 @@ Do not claim automatic token refresh or provider-specific authentication behavio
 
 A resource becomes durable only after an explicit operation creates a `KnowledgeSourceBinding`, `WorkspaceIndexedSourceBinding`, `WorkspaceLiveAccessBinding`, or a separately approved `RemoteResourceSnapshot`. Do not add automatic provider inventory mirroring.
 
+### 4.11.1 LKW plugin capability configuration discovery
+
+`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` is **READY_FOR_REVIEW** for the
+read-only configuration-discovery slice. LKW adapts the existing safe tenant
+connection read service, registered live capability catalog and remote
+resource discovery service into a bounded immutable planner snapshot.
+
+The snapshot is personal, tenant-scoped and dynamically derived from currently
+registered capabilities. LKW does not contain a vendor catalog, branch on
+`provider_id`, `source_kind` or `integration_kind`, instantiate integrations,
+persist discovery results, create Indexed Sources or execute live capabilities.
+Planner actions use only references present in the authoritative snapshot, and
+the deterministic executor calls the LKW configuration service once per
+read-only discovery action.
+
+The shared core currently exposes live capability semantics but no generic
+durable/indexed-source eligibility descriptor. LKW therefore reports indexed
+eligibility as `UNKNOWN`; it does not infer eligibility from capability names or
+source kinds. This is a bounded platform problem-radar finding. Indexed Source
+lifecycle remains the next direct LKW task, while Live Access execution remains
+later work.
+
 ### 4.12 Explicitly rejected configuration designs
 
 The following are **rejected**:

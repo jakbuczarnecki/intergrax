@@ -8,7 +8,7 @@ import inspect
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
-from typing import Protocol
+from typing import Protocol, cast
 
 from local_workspace_application.conversation.interaction_execution_models import (
     ConversationActionExecutionResult,
@@ -25,6 +25,9 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeCapabilitiesListPlannedAction,
+    KnowledgeConnectionsListPlannedAction,
+    KnowledgeResourcesListPlannedAction,
     LocalFileReferenceExtractedObject,
     PlannedAction,
     SourceCandidateAttachPlannedAction,
@@ -55,6 +58,12 @@ from local_workspace_application.workspaces.conversation_workspace_selection_ser
     ConversationWorkspaceSelectionService,
 )
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
+    KnowledgeCapabilitySummaryV1,
+    KnowledgeConnectionSummaryV1,
+    KnowledgeRemoteResourcePageV1,
+    KnowledgePluginConfigurationService,
+)
 from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateIntakeService,
 )
@@ -121,6 +130,9 @@ _ACTION_CAPABILITIES: dict[str, ConversationProductCapability] = {
     "knowledge.add_attachments": ConversationProductCapability.ATTACHMENT_INTAKE,
     "knowledge.add_sources": ConversationProductCapability.SOURCE_INTAKE,
     "workspace.ask": ConversationProductCapability.READ_ONLY_ASK,
+    "knowledge.connections.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
+    "knowledge.resources.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
+    "knowledge.capabilities.list": ConversationProductCapability.KNOWLEDGE_CONFIGURATION_DISCOVERY,
 }
 
 _SAFE_ERROR_CODES = frozenset(
@@ -151,6 +163,15 @@ _SAFE_ERROR_CODES = frozenset(
         "unknown_attachment",
         "evidence_not_grounded",
         "conversation_execution_context_mismatch",
+        "knowledge_connection_not_found",
+        "knowledge_connection_not_active",
+        "knowledge_resource_discovery_unavailable",
+        "knowledge_resource_not_found",
+        "knowledge_resource_not_available",
+        "knowledge_capability_not_found",
+        "knowledge_capability_not_bindable",
+        "knowledge_configuration_snapshot_stale",
+        "knowledge_plugin_configuration_unavailable",
     }
 )
 
@@ -186,6 +207,7 @@ class ConversationInteractionExecutor:
         web_url_intake_service: WebUrlIntakeServiceProtocol | None = None,
         local_reference_intake_service: LocalReferenceIntakeService | None = None,
         ask_service: WorkspaceAskService | None = None,
+        knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
         execution_id_factory: Callable[[], str] | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -197,6 +219,7 @@ class ConversationInteractionExecutor:
         self._web_url_intake_service = web_url_intake_service
         self._local_reference_intake_service = local_reference_intake_service
         self._ask_service = ask_service
+        self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
         self._execution_id_factory = execution_id_factory or (lambda: str(uuid.uuid4()))
         self._clock = clock or (lambda: datetime.now(UTC))
 
@@ -475,6 +498,68 @@ class ConversationInteractionExecutor:
         execution_id: str,
     ) -> ConversationExecutionArtifact:
         tenant_id = command.execution_context.tenant_id
+        if isinstance(action, KnowledgeConnectionsListPlannedAction):
+            service = self._require_knowledge_plugin_configuration()
+            connections = cast(
+                Sequence[KnowledgeConnectionSummaryV1],
+                await _maybe_await(
+                service.list_connections(
+                    tenant_id=tenant_id,
+                    execution_context=command.execution_context,
+                )
+                ),
+            )
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "connections": [
+                        item.model_dump(mode="json") for item in connections
+                    ]
+                },
+            )
+        if isinstance(action, KnowledgeResourcesListPlannedAction):
+            service = self._require_knowledge_plugin_configuration()
+            page = cast(
+                KnowledgeRemoteResourcePageV1,
+                await _maybe_await(
+                service.list_remote_resources(
+                    tenant_id=tenant_id,
+                    execution_context=command.execution_context,
+                    connection_ref=action.connection_ref,
+                    source_kind=action.source_kind,
+                    page_token=action.page_token,
+                )
+                ),
+            )
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "resources": [item.model_dump(mode="json") for item in page.resources],
+                    "next_page_token": page.next_page_token,
+                    "snapshot_version": page.snapshot_version,
+                },
+            )
+        if isinstance(action, KnowledgeCapabilitiesListPlannedAction):
+            service = self._require_knowledge_plugin_configuration()
+            capabilities = cast(
+                Sequence[KnowledgeCapabilitySummaryV1],
+                await _maybe_await(
+                service.list_resource_capabilities(
+                    tenant_id=tenant_id,
+                    execution_context=command.execution_context,
+                    connection_ref=action.connection_ref,
+                    remote_resource_id=action.remote_resource_id,
+                )
+                ),
+            )
+            return ConversationExecutionArtifact(
+                artifact_type=action.action_type,
+                data={
+                    "capabilities": [
+                        item.model_dump(mode="json") for item in capabilities
+                    ]
+                },
+            )
         if isinstance(action, WorkspaceListPlannedAction):
             workspaces = self._workspace_service.list_workspaces(tenant_id=tenant_id)
             return ConversationExecutionArtifact(
@@ -820,6 +905,13 @@ class ConversationInteractionExecutor:
         if self._source_candidate_service is None:
             raise RuntimeError("source_candidate_unavailable")
         return self._source_candidate_service
+
+    def _require_knowledge_plugin_configuration(
+        self,
+    ) -> KnowledgePluginConfigurationService:
+        if self._knowledge_plugin_configuration is None:
+            raise RuntimeError("knowledge_plugin_configuration_unavailable")
+        return self._knowledge_plugin_configuration
 
     def _utc_now(self) -> datetime:
         value = self._clock()

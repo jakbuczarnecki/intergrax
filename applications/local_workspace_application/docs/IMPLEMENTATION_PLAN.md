@@ -19,6 +19,7 @@ CURRENT PRODUCT LEVEL
 Backend Product Alpha — LKW MVP / Hybrid Knowledge Workspace
 
 LAST ACCEPTED PRODUCT BLOCK
+LKW-CONVERSATION-CONTEXT-1C — ACCEPTED / CLOSED
 LKW-CONVERSATIONAL-FRONTEND-1 — ACCEPTED / CLOSED
 Supporting accepted blocks:
   LKW-KNOWLEDGE-ACCESS-1 — ACCEPTED / CLOSED
@@ -33,11 +34,10 @@ Supporting accepted blocks:
   LKW-CONVERSATION-CONTEXT-1B3 — ACCEPTED / CLOSED
 
 CURRENT DIRECT LKW TASK
-LKW-CONVERSATION-CONTEXT-1C — READY_FOR_REVIEW
+LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 — READY_FOR_REVIEW
 
 NEXT DIRECT LKW TASKS
-Complete the bounded remaining LKW-CONVERSATION-CONTEXT-1C scope,
-then execute the plugin-neutral direct roadmap below.
+LKW-INDEXED-SOURCE-LIFECYCLE-1 — PLANNED
 
 PARALLEL NON-BLOCKING PLATFORM/PLUGIN TRACKS
 Vendor Knowledge core session; individual vendor-plugin sessions;
@@ -169,7 +169,7 @@ Required outcome:
 
 ### B. Generic plugin capability consumption
 
-`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` — **PLANNED**.
+`LKW-PLUGIN-CAPABILITY-CONFIGURATION-1` — **READY_FOR_REVIEW**.
 
 The product must be able to:
 
@@ -186,6 +186,22 @@ The product must be able to:
 This extends the accepted `LKW-KNOWLEDGE-ACCESS-1` foundation where the
 remaining product behavior is not already proven. It must not be marked
 implemented unless the complete outcome is independently accepted.
+
+Implementation status: **READY_FOR_REVIEW** for the read-only configuration
+discovery slice. LKW consumes the registered provider-neutral Tenant Connection,
+Remote Resource discovery and capability catalog boundaries. Discovery is
+dynamic: adding or removing a conforming plugin changes the safe snapshot
+without LKW domain changes or a named-vendor branch.
+
+This slice exposes bounded personal conversational inspection only:
+connections, remote resources and registered capabilities. It does not create
+Indexed Sources, execute Live Access, mutate Query Policy or persist discovered
+resources. Indexed Source lifecycle is the next direct task
+(`LKW-INDEXED-SOURCE-LIFECYCLE-1`); Live Access execution remains a later task.
+The shared core currently does not expose a generic durable/indexed eligibility
+descriptor, so LKW reports that dimension as `UNKNOWN` rather than inferring it
+from capability IDs or source kinds. This is a bounded Vendor Knowledge
+problem-radar finding, not an LKW vendor blocker.
 
 ### C. Generic Indexed Source lifecycle
 

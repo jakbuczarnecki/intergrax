@@ -10,6 +10,10 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
+from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
+    KnowledgePluginConfigurationSnapshotV1,
+)
+
 _MAX_MESSAGE_TEXT_LEN = 16_000
 _MAX_ATTACHMENTS = 50
 _MAX_WORKSPACES = 100
@@ -23,6 +27,7 @@ _MAX_EVIDENCE_QUOTES = 20
 _MAX_OBJECTS = 50
 _MAX_SOURCE_OBJECT_IDS_PER_ACTION = 50
 _MAX_ATTACHMENT_IDS_PER_ACTION = 50
+_MAX_PAGE_TOKEN_LEN = 4096
 
 _ASCII_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
@@ -177,6 +182,7 @@ class ConversationPlanningRequest(BaseModel):
     available_workspaces: tuple[ConversationPlanningWorkspace, ...] = ()
     active_workspace_id: OpaqueId | None = Field(default=None, max_length=_MAX_ACTION_ID_LEN)
     available_source_candidates: tuple[ConversationPlanningSourceCandidate, ...] = ()
+    knowledge_plugin_configuration: KnowledgePluginConfigurationSnapshotV1 | None = None
     recent_turns: tuple[ConversationPlanningTurn, ...] = ()
 
     @model_validator(mode="after")
@@ -214,7 +220,7 @@ class ConversationPlanningRequest(BaseModel):
 
 class WorkspaceReferenceKind(str, Enum):
     active = "active"
-    name = "name"
+    name = "name"  # pyright: ignore[reportIncompatibleMethodOverride, reportAssignmentType]
     ordinal = "ordinal"
     created_by_action = "created_by_action"
 
@@ -365,6 +371,35 @@ class KnowledgeAddSourcesPlannedAction(_PlannedActionBase):
         return self
 
 
+class KnowledgeConnectionsListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.connections.list"]
+
+
+class KnowledgeResourcesListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.resources.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    page_token: str | None = Field(default=None, max_length=_MAX_PAGE_TOKEN_LEN)
+
+    @model_validator(mode="after")
+    def _validate_page_token(self) -> Self:
+        if self.page_token is not None and not self.page_token.strip():
+            raise ValueError("page_token must not be blank")
+        return self
+
+
+class KnowledgeCapabilitiesListPlannedAction(_PlannedActionBase):
+    action_type: Literal["knowledge.capabilities.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    remote_resource_id: str | None = Field(default=None, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_resource_id(self) -> Self:
+        if self.remote_resource_id is not None and not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
 class WorkspaceAskPlannedAction(_PlannedActionBase):
     action_type: Literal["workspace.ask"]
     workspace: WorkspaceReference
@@ -381,6 +416,9 @@ PlannedAction = Annotated[
     | SourceCandidateAttachPlannedAction
     | KnowledgeAddAttachmentsPlannedAction
     | KnowledgeAddSourcesPlannedAction
+    | KnowledgeConnectionsListPlannedAction
+    | KnowledgeResourcesListPlannedAction
+    | KnowledgeCapabilitiesListPlannedAction
     | WorkspaceAskPlannedAction,
     Field(discriminator="action_type"),
 ]

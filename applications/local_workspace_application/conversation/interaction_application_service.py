@@ -64,6 +64,9 @@ from local_workspace_application.workspaces.conversation_context_models import (
     ConversationObservedAudience,
     ConversationProductCapability,
 )
+from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
+    KnowledgePluginConfigurationService,
+)
 from local_workspace_application.workspaces.conversation_context_resolution import (
     ConversationContextResolutionError,
     ConversationContextResolver,
@@ -135,6 +138,7 @@ class ConversationInteractionApplicationService:
         attachment_loader: TrustedAttachmentLoader | None = None,
         attachment_max_bytes: int = 25 * 1024 * 1024,
         thread_memory_service: ConversationThreadMemoryService | None = None,
+        knowledge_plugin_configuration_service: KnowledgePluginConfigurationService | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not personal_allowed_capabilities:
@@ -149,6 +153,7 @@ class ConversationInteractionApplicationService:
         self._attachment_loader = attachment_loader
         self._attachment_max_bytes = attachment_max_bytes
         self._thread_memory = thread_memory_service
+        self._knowledge_plugin_configuration = knowledge_plugin_configuration_service
         self._clock = clock or (lambda: datetime.now(UTC))
         self._configured_personal_capabilities = personal_allowed_capabilities
         self._attachment_registry: contextvars.ContextVar[dict[str, object]] = (
@@ -380,6 +385,15 @@ class ConversationInteractionApplicationService:
             except Exception:  # noqa: BLE001 - optional snapshot boundary
                 logger.warning("conversation source candidate snapshot unavailable")
 
+        knowledge_plugin_configuration = None
+        if self._knowledge_plugin_configuration is not None:
+            knowledge_plugin_configuration = (
+                await self._knowledge_plugin_configuration.get_configuration_snapshot(
+                    tenant_id=command.tenant_id,
+                    execution_context=execution_context,
+                )
+            )
+
         return ConversationPlanningRequest(
             message_text=command.message_text.strip(),
             attachments=tuple(
@@ -394,6 +408,7 @@ class ConversationInteractionApplicationService:
             available_workspaces=planning_workspaces,
             active_workspace_id=execution_context.workspace_id,
             available_source_candidates=candidates,
+            knowledge_plugin_configuration=knowledge_plugin_configuration,
             recent_turns=recent_turns,
         )
 

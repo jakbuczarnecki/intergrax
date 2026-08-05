@@ -40,6 +40,11 @@ _ERROR_MESSAGES = {
     "source_candidate_ambiguous": "The source candidate reference is ambiguous.",
     "source_reference_unsupported": "That source type is not supported.",
     "action_execution_failed": "This operation could not be completed.",
+    "knowledge_connection_not_found": "The requested knowledge connection is not available.",
+    "knowledge_connection_not_active": "The requested knowledge connection is not active.",
+    "knowledge_resource_discovery_unavailable": "Remote resources are temporarily unavailable.",
+    "knowledge_resource_not_found": "The requested remote resource is not available.",
+    "knowledge_plugin_configuration_unavailable": "Knowledge integrations are temporarily unavailable.",
 }
 
 
@@ -141,6 +146,64 @@ class ConversationInteractionResponseRenderer:
             sources = data.get("sources")
             count = len(sources) if isinstance(sources, list) else 0
             return [f"Sources: {count}"]
+        if action_type == "knowledge.connections.list":
+            connections = data.get("connections")
+            if not isinstance(connections, list):
+                return ["Configured connections: 0"]
+            lines = [f"Configured connections: {len(connections)}"]
+            for index, item in enumerate(connections, start=1):
+                connection = _mapping(item)
+                label = _safe_text(connection.get("safe_display_label"), limit=120)
+                status = _safe_text(connection.get("administrative_status"), limit=40)
+                modes = connection.get("available_configuration_modes")
+                mode_text = ", ".join(
+                    _safe_text(mode, limit=60)
+                    for mode in modes
+                ) if isinstance(modes, list) else "UNKNOWN"
+                lines.append(f"{index}. {label} [{status}] — {mode_text}")
+            return lines
+        if action_type == "knowledge.resources.list":
+            resources = data.get("resources")
+            if not isinstance(resources, list):
+                return ["Remote resources: 0"]
+            lines = [f"Remote resources: {len(resources)}"]
+            for index, item in enumerate(resources, start=1):
+                resource = _mapping(item)
+                label = _safe_text(resource.get("safe_display_label"), limit=120)
+                resource_type = _safe_text(resource.get("resource_type"), limit=60)
+                availability = _safe_text(resource.get("availability"), limit=40)
+                modes = resource.get("configuration_modes")
+                mode_text = ", ".join(
+                    _safe_text(mode, limit=60)
+                    for mode in modes
+                ) if isinstance(modes, list) else "UNKNOWN"
+                connection_ref = _safe_text(resource.get("connection_ref"), limit=100)
+                lines.append(
+                    f"{index}. {label} ({resource_type}) [{availability}] "
+                    f"— {mode_text}; connection {connection_ref}"
+                )
+            return lines
+        if action_type == "knowledge.capabilities.list":
+            capabilities = data.get("capabilities")
+            if not isinstance(capabilities, list):
+                return ["Capabilities: 0"]
+            lines = [f"Capabilities: {len(capabilities)}"]
+            for item in capabilities:
+                capability = _mapping(item)
+                capability_id = _safe_text(capability.get("capability_id"), limit=120)
+                read_only = bool(capability.get("read_only", False))
+                bindable = bool(capability.get("bindable_read_only", False))
+                scope = "resource-scoped" if capability.get("resource_scope_required") else "connection-scoped"
+                limits = (
+                    f"{_safe_count(capability.get('max_result_items'))} items/"
+                    f"{_safe_count(capability.get('max_result_bytes'))} bytes"
+                )
+                live = "live access eligible" if bindable else "not live-bindable"
+                lines.append(
+                    f"{capability_id} — {'read-only' if read_only else 'non-read-only'}, "
+                    f"{scope}, {limits}, {live}"
+                )
+            return lines
         if action_type == "source_candidate.list":
             candidates = data.get("candidates")
             count = len(candidates) if isinstance(candidates, list) else 0

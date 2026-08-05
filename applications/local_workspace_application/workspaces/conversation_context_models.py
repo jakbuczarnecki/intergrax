@@ -301,6 +301,7 @@ class ConversationProductCapability(StrEnum):
     SOURCE_DISCOVERY = "source_discovery"
     SOURCE_INTAKE = "source_intake"
     ATTACHMENT_INTAKE = "attachment_intake"
+    KNOWLEDGE_CONFIGURATION_DISCOVERY = "knowledge_configuration_discovery"
 
 
 _SHARED_ONLY_CAPABILITIES = frozenset({ConversationProductCapability.READ_ONLY_ASK})

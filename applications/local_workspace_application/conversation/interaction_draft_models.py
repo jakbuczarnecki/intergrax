@@ -7,9 +7,7 @@ from __future__ import annotations
 import re
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StrictStr, field_validator, model_validator
-
-from local_workspace_application.conversation.interaction_models import WorkspaceReferenceKind
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StrictStr, model_validator
 
 _MAX_ACTIONS = 50
 _MAX_CLARIFICATIONS = 20
@@ -118,17 +116,17 @@ class DraftWorkspaceReferenceBase(BaseModel):
 
 
 class ActiveDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.active]
+    kind: Literal["active"]
     value: None = None
 
 
 class NameDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.name]
+    kind: Literal["name"]
     value: ExactWorkspaceReferenceText
 
 
 class OrdinalDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.ordinal]
+    kind: Literal["ordinal"]
     value: Annotated[
         StrictStr,
         Field(
@@ -140,7 +138,7 @@ class OrdinalDraftWorkspaceReference(DraftWorkspaceReferenceBase):
 
 
 class CreatedByActionDraftWorkspaceReference(DraftWorkspaceReferenceBase):
-    kind: Literal[WorkspaceReferenceKind.created_by_action]
+    kind: Literal["created_by_action"]
     value: ExactWorkspaceReferenceText
 
 
@@ -262,6 +260,35 @@ class KnowledgeAddSourcesDraftAction(_DraftActionBase):
     )
 
 
+class KnowledgeConnectionsListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.connections.list"]
+
+
+class KnowledgeResourcesListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.resources.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    source_kind: OpaqueId = Field(max_length=64)
+    page_token: str | None = Field(default=None, max_length=4096)
+
+    @model_validator(mode="after")
+    def _validate_page_token(self) -> Self:
+        if self.page_token is not None and not self.page_token.strip():
+            raise ValueError("page_token must not be blank")
+        return self
+
+
+class KnowledgeCapabilitiesListDraftAction(_DraftActionBase):
+    action_type: Literal["knowledge.capabilities.list"]
+    connection_ref: OpaqueId = Field(max_length=128)
+    remote_resource_id: str | None = Field(default=None, max_length=256)
+
+    @model_validator(mode="after")
+    def _validate_resource_id(self) -> Self:
+        if self.remote_resource_id is not None and not self.remote_resource_id.strip():
+            raise ValueError("remote_resource_id must not be blank")
+        return self
+
+
 class WorkspaceAskDraftAction(_DraftActionBase):
     action_type: Literal["workspace.ask"]
     workspace: DraftWorkspaceReference
@@ -278,6 +305,9 @@ DraftPlannedAction = Annotated[
     | SourceCandidateAttachDraftAction
     | KnowledgeAddAttachmentsDraftAction
     | KnowledgeAddSourcesDraftAction
+    | KnowledgeConnectionsListDraftAction
+    | KnowledgeResourcesListDraftAction
+    | KnowledgeCapabilitiesListDraftAction
     | WorkspaceAskDraftAction,
     Field(discriminator="action_type"),
 ]

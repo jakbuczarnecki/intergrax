@@ -464,6 +464,11 @@ def _build_conversation_interaction_application_service(
         clock=lambda: datetime.now(UTC),
     )
     ask_service = app.state.lkw_ask_service
+    knowledge_plugin_configuration = getattr(
+        app.state,
+        "lkw_knowledge_plugin_configuration_service",
+        None,
+    )
     planner = ConversationInteractionPlanner(ask_service.llm_adapter)
     bridge = _AttachmentResolverBridge()
     executor = ConversationInteractionExecutor(
@@ -482,6 +487,7 @@ def _build_conversation_interaction_application_service(
         trusted_attachment_resolver=bridge.resolve,
         web_url_intake_service=getattr(app.state, "lkw_web_url_intake_service", None),
         ask_service=ask_service,
+        knowledge_plugin_configuration_service=knowledge_plugin_configuration,
     )
     def clock() -> datetime:
         return datetime.now(UTC)
@@ -510,6 +516,7 @@ def _build_conversation_interaction_application_service(
             if isinstance(integration.backend, ConversationAttachmentFetcher)
             else None
         ),
+        knowledge_plugin_configuration_service=knowledge_plugin_configuration,
         personal_allowed_capabilities=frozenset(ConversationProductCapability),
         attachment_max_bytes=runtime.attachment_max_bytes,
         thread_memory_service=thread_memory,

@@ -40,6 +40,12 @@ Rules:
 19. Use occurrence only to distinguish repeated exact values in message_text (one-based: 1 = first occurrence).
 20. Use one-based action numbers in depends_on_action_numbers and blocks_action_numbers
     (1 = first action in the returned actions sequence).
+21. Knowledge plugin discovery actions may use only references present in
+    knowledge_plugin_configuration. Never invent connection refs, resource IDs,
+    discovery selectors, capabilities or pagination tokens.
+22. Use knowledge.connections.list for configured connections,
+    knowledge.resources.list for a registered discovery selector, and
+    knowledge.capabilities.list for a registered connection/resource scope.
 
 Example — different workspace targets:
 User message:
@@ -134,6 +140,11 @@ def build_safe_planning_context(request: ConversationPlanningRequest) -> dict[st
             }
             for candidate in request.available_source_candidates
         ],
+        "knowledge_plugin_configuration": (
+            request.knowledge_plugin_configuration.model_dump(mode="json")
+            if request.knowledge_plugin_configuration is not None
+            else None
+        ),
         "recent_turns": [
             {"role": turn.role, "text": turn.text} for turn in request.recent_turns
         ],

@@ -20,6 +20,9 @@ from local_workspace_application.conversation.interaction_draft_models import (
     DraftWorkspaceReferenceBase,
     KnowledgeAddAttachmentsDraftAction,
     KnowledgeAddSourcesDraftAction,
+    KnowledgeCapabilitiesListDraftAction,
+    KnowledgeConnectionsListDraftAction,
+    KnowledgeResourcesListDraftAction,
     SourceCandidateAttachDraftAction,
     SourceCandidateListDraftAction,
     NameDraftWorkspaceReference,
@@ -38,6 +41,9 @@ from local_workspace_application.conversation.interaction_models import (
     ExtractedObject,
     KnowledgeAddAttachmentsPlannedAction,
     KnowledgeAddSourcesPlannedAction,
+    KnowledgeCapabilitiesListPlannedAction,
+    KnowledgeConnectionsListPlannedAction,
+    KnowledgeResourcesListPlannedAction,
     LocalFileReferenceExtractedObject,
     MessageTextEvidenceSpan,
     PlannedAction,
@@ -318,7 +324,7 @@ def _compile_workspace_reference(
     if isinstance(workspace, NameDraftWorkspaceReference):
         return (
             WorkspaceReference(
-                kind=WorkspaceReferenceKind.name,
+                kind=WorkspaceReferenceKind("name"),
                 value=workspace.value,
             ),
             (),
@@ -421,6 +427,26 @@ def _compile_action(
             action_type="knowledge.add_sources",
             workspace=workspace,
             source_object_ids=source_object_ids,
+            **common,
+        )
+    if isinstance(action, KnowledgeConnectionsListDraftAction):
+        return KnowledgeConnectionsListPlannedAction(
+            action_type="knowledge.connections.list",
+            **common,
+        )
+    if isinstance(action, KnowledgeResourcesListDraftAction):
+        return KnowledgeResourcesListPlannedAction(
+            action_type="knowledge.resources.list",
+            connection_ref=action.connection_ref,
+            source_kind=action.source_kind,
+            page_token=action.page_token,
+            **common,
+        )
+    if isinstance(action, KnowledgeCapabilitiesListDraftAction):
+        return KnowledgeCapabilitiesListPlannedAction(
+            action_type="knowledge.capabilities.list",
+            connection_ref=action.connection_ref,
+            remote_resource_id=action.remote_resource_id,
             **common,
         )
     if isinstance(action, WorkspaceAskDraftAction):
