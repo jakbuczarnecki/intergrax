@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete; ACCEPTED / CLOSED**; **TOKEN-10F READY_FOR_REVIEW**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Independent GitHub audit of **TOKEN-10F**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1847,19 +1847,37 @@ Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. Do not wire LKW, Slack, or
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
-**Status:** Planned.
+**Status:** **READY_FOR_REVIEW**.
 
-Canonical paths: `intergrax/runtime/token_optimization/proofs/`, `configs/token_optimization/proof_vllm.toml`, `scripts/token_optimization/run_universal_proof.py`, `infra/docker/vllm/docker-compose.yml`, `.artifacts/token_optimization/proof/`. Proof uses real `LLMAdapterRegistry`, router, catalog, registry, runner — no test-only alternative engine.
+Delivered a strict versioned TOML loader with immutable contracts, a
+backend-neutral runner composing the real `LLMAdapterRegistry`,
+`TokenOptimizationLLMRouter`, router catalog, built-in layer catalog, layer
+registry, and `TokenOptimizationPipelineRunner`, plus redaction-safe canonical
+JSON artifacts and a thin CLI. `offline_smoke` is network-free and
+`live_adapter` is explicit; it never silently falls back. The local vLLM
+compose path and operator README are provided, but live vLLM execution was not
+performed in this task.
+
+Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
+`configs/token_optimization/proof_vllm.toml`,
+`scripts/token_optimization/run_universal_proof.py`,
+`infra/docker/vllm/docker-compose.yml`,
+`.artifacts/token_optimization/proof/`.
+
+Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
+claims, and TOKEN-10H public proof or README promotion.
+
+**Current next step:** Independent GitHub audit of **TOKEN-10F**.
 
 ### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
 
-**Status:** Planned.
+**Status:** **PLANNED / NOT STARTED**.
 
 Safe-mode checked-in proof with executive summary and per-case auditable trace; hard gates for router, pipeline, protected regions, prefix stability, warm cache reuse, and changed-prefix negative control.
 
 ### TOKEN-10H — Checked-In Proof, README Promotion and Public Claims
 
-**Status:** Planned.
+**Status:** **PLANNED / NOT STARTED**.
 
 Only phase allowed to promote Token Optimization in main README with reproducible run command, proof link, and evidence-supported measurements. Updates [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) with proof-gated wording.
 

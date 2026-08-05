@@ -1,0 +1,43 @@
+schema_version = "token-optimization-proof.v1"
+proof_id = "token-optimization-vllm-smoke"
+run_mode = "live_adapter"
+
+[adapter]
+adapter_id = "local-vllm"
+provider = "vllm"
+type = "openai_compatible"
+model = "Qwen/Qwen2.5-3B-Instruct"
+base_url = "http://127.0.0.1:8100/v1"
+api_key_env = "VLLM_API_KEY"
+timeout_seconds = 120.0
+max_output_tokens = 256
+temperature = 0.0
+
+[router]
+enabled = true
+configuration_id = "exact_only"
+minimum_confidence = 0.6
+allow_structured_output_fallback = true
+require_review_for_protected_lossy_content = true
+
+[pipeline]
+mode = "replace"
+layer_ids = ["builtin.exact_deduplication"]
+failure_policy = "continue"
+
+[output]
+directory = ".artifacts/token_optimization/proof"
+fail_if_exists = true
+
+[[cases]]
+case_id = "smoke-exact-dedup"
+source_type = "prompt"
+content = "alpha\nalpha\nbeta"
+tags = ["smoke", "offline-compatible"]
+
+[cases.policy]
+enabled = true
+profile = "balanced"
+allow_lossy = false
+require_validation = true
+fallback_on_validation_failure = true

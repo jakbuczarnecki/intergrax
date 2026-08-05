@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Architecture
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E implementation complete; ACCEPTED / CLOSED**; **TOKEN-10F READY_FOR_REVIEW**.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
@@ -999,24 +999,28 @@ vLLM proof demonstrates: repeated KV-prefix reuse; lower repeated prefill work; 
 
 vLLM proof does **not** demonstrate: managed-provider billing discount; Anthropic `cache_control` behavior; Claude cache pricing; guaranteed cache retention; universal savings for every model or workload.
 
-### 8.9 Universal proof harness (**TOKEN-10F**–**TOKEN-10G**)
+### 8.9 Universal proof harness (**TOKEN-10F**)
 
 The proof harness is a universal Token Optimization capability, not an application.
 
-Canonical planned paths:
+Canonical paths:
 
 ```text
-intergrax/runtime/token_optimization/proof/
+intergrax/runtime/token_optimization/proofs/
 configs/token_optimization/proof_vllm.toml
 scripts/token_optimization/run_universal_proof.py
 infra/docker/vllm/docker-compose.yml
-docs/features/proofs/token_optimization/TOKEN_OPTIMIZATION_ENGINE_PROOF.md
 .artifacts/token_optimization/proof/
 ```
 
-Proof TOML owns: proof ID and title; report mode; content classification; provider; model; base URL; model/runtime options; router policy; allowed configuration IDs; pipeline policy; cache policy; stable-prefix policy; tool-envelope policy; measurement options; hard-gate thresholds; synthetic input cases; protected values; typed packing fragments; repetition counts; output paths.
+TOKEN-10F TOML owns strict versioned configuration for the adapter, router,
+pipeline, cases, and output path. It supports inline cases and a later
+external case source without accepting arbitrary Python import paths.
 
-**Proof modes:** `audit` (complete input/intermediate/final — synthetic/public data only) and `safe` (hashes, lengths, measurements, decisions, receipts, statuses without raw content). Checked-in canonical proof must use public synthetic content and `safe` mode for repository publication.
+**Proof modes:** `offline_smoke` is a network-free composition check using a
+deterministic adapter only through the real adapter registry; it is not a
+provider proof. `live_adapter` resolves the configured provider explicitly and
+does not silently fall back.
 
 **Proof execution** uses the real production path:
 
@@ -1032,35 +1036,20 @@ receipt builders
 usage envelope
 ```
 
-Sequence: load TOML → create adapter → verify model/capabilities → verify vLLM health and cache metrics → construct stable prompt and tool envelope → cold request → warm request (same prefix) → changed-prefix negative control → collect cache evidence → router per case → compile configuration → cache-aware gate → deterministic pipeline → layer measurements → protected-region validation → receipts → aggregate content and cache metrics separately → hard gates → Markdown and machine-readable result.
+Sequence: load TOML → resolve the adapter through the real registry → invoke
+the real router and router catalog when enabled → resolve the built-in layer
+catalog and layer registry → build the canonical pipeline config → execute
+the real pipeline runner → collect only safe scalar results → write atomic
+canonical JSON (`run.json`, per-case JSON, and `manifest.json`).
 
-**Hard proof gates** (safety/cache-evidence failures fail the proof):
-
-```text
-valid router decisions:                100%
-native tool-call validity:             100%
-forbidden configuration execution:       0
-policy bypasses:                          0
-protected unsafe executions:              0
-pipeline correctness:                  100%
-execution correctness:                 100%
-receipt correctness:                   100%
-protected-region preservation:         100%
-stable-prefix validation:              100%
-append-only validation:                100%
-stable-tool-envelope validation:       100%
-warm prefix-cache reuse:               required
-changed-prefix negative control:       required
-raw private content in safe report:       0
-```
-
-Routing suitability remains a measured quality threshold, not a safety substitute.
-
-**README promotion** is deferred to **TOKEN-10H** only.
+TOKEN-10F intentionally adds no benchmark corpus, Markdown proof report,
+evaluation framework, warm-cache matrix, changed-prefix controls, numeric
+savings claims, or hard pass/fail gates. Those belong to TOKEN-10G.
+README and public claim promotion remains deferred to TOKEN-10H.
 
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
-**Status:** **TOKEN-10E implementation complete / READY_FOR_REVIEW**, pending independent acceptance. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
+**Status:** **TOKEN-10E implementation complete; ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
 
 #### 1. Status and dependency
 
