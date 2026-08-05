@@ -30,12 +30,14 @@ from local_workspace_application.conversation.interaction_application_service im
 from local_workspace_application.conversation.interaction_event_receipt import (
     ConversationEventReceipt,
     ConversationEventReceiptError,
+    ConversationEventMemoryStatus,
     ConversationEventReceiptStatus,
     ConversationInteractionEventReceiptRepository,
     _MAX_RESPONSE_LENGTH,
 )
 from local_workspace_application.conversation.conversation_thread_memory_service import (
     ConversationThreadMemoryService,
+    ConversationThreadMemoryServiceError,
 )
 from local_workspace_application.conversation.interaction_execution_models import (
     ConversationActionExecutionResult,
@@ -182,6 +184,122 @@ class _SlackSender:
 
     async def __call__(self, message: OutboundConversationMessage) -> None:
         self.messages.append(message)
+
+
+class _CountingThreadMemory:
+    def __init__(
+        self,
+        store: InMemoryDocumentStore,
+        *,
+        failures_remaining: int = 0,
+        always_fail: bool = False,
+    ) -> None:
+        self.append_calls = 0
+        self._failures_remaining = failures_remaining
+        self._always_fail = always_fail
+        self._now = datetime(2026, 8, 5, 8, 0, tzinfo=UTC)
+        self._last_context = None
+        self._service = ConversationThreadMemoryService(
+            adapter=SessionHistorySnapshotConversationThreadMemoryAdapter(
+                port=DocumentStoreThreadMemoryLifecyclePort(store),
+            ),
+            limits=ConversationThreadMemoryLimitsV1(
+                max_messages=20,
+                max_bytes=16 * 1024,
+                max_age_seconds=24 * 60 * 60,
+            ),
+            clock=lambda: self._now,
+        )
+
+    def load_recent_turns(self, *, context, now):
+        return self._service.load_recent_turns(context=context, now=now)
+
+    def append_exchange(
+        self,
+        *,
+        context,
+        user_text: str,
+        assistant_text: str,
+        user_created_at: datetime,
+        assistant_created_at: datetime,
+        exchange_id: str,
+    ):
+        self.append_calls += 1
+        self._last_context = context
+        if self._always_fail or self._failures_remaining:
+            if self._failures_remaining:
+                self._failures_remaining -= 1
+            raise ConversationThreadMemoryServiceError("memory_append_failed")
+        return self._service.append_exchange(
+            context=context,
+            user_text=user_text,
+            assistant_text=assistant_text,
+            user_created_at=user_created_at,
+            assistant_created_at=assistant_created_at,
+            exchange_id=exchange_id,
+        )
+
+    def persisted_turns(self):
+        assert self._last_context is not None
+        return self._service.load_recent_turns(
+            context=self._last_context,
+            now=self._now,
+        )
+
+
+class _MarkerFailureReceiptRepository(ConversationInteractionEventReceiptRepository):
+    def __init__(
+        self,
+        store: InMemoryDocumentStore,
+        *,
+        completion_failures: int = 0,
+        failure_marker_failures: int = 0,
+    ) -> None:
+        super().__init__(store)
+        self._completion_failures = completion_failures
+        self._failure_marker_failures = failure_marker_failures
+
+    def mark_memory_completed(self, *, receipt, revision_id):
+        if self._completion_failures:
+            self._completion_failures -= 1
+            raise ConversationEventReceiptError(
+                "conversation_receipt_update_conflict"
+            )
+        return super().mark_memory_completed(
+            receipt=receipt,
+            revision_id=revision_id,
+        )
+
+    def mark_memory_failed(self, *, receipt, error_code):
+        if self._failure_marker_failures:
+            self._failure_marker_failures -= 1
+            raise ConversationEventReceiptError(
+                "conversation_receipt_update_conflict"
+            )
+        return super().mark_memory_failed(
+            receipt=receipt,
+            error_code=error_code,
+        )
+
+
+def _service_with_memory(
+    *,
+    repository: ConversationInteractionEventReceiptRepository,
+    planner: _Planner,
+    executor: _Executor,
+    memory: _CountingThreadMemory,
+) -> ConversationInteractionApplicationService:
+    return ConversationInteractionApplicationService(
+        context_resolver=_Resolver(),  # type: ignore[arg-type]
+        planner=planner,  # type: ignore[arg-type]
+        executor=executor,  # type: ignore[arg-type]
+        renderer=_Renderer(),  # type: ignore[arg-type]
+        receipt_repository=repository,
+        workspace_service=_WorkspaceService(),
+        personal_allowed_capabilities=frozenset(ConversationProductCapability),
+        thread_memory_service=memory,  # type: ignore[arg-type]
+        clock=lambda: datetime(2026, 8, 5, 8, 0, tzinfo=UTC),
+    )
 
 
 def _slack_event(*, audience_metadata: str) -> InboundConversationEvent:
@@ -385,6 +503,11 @@ def _receipt(
     safe_response: str | None = None,
     completed_at: datetime | None = None,
     created_at: datetime | None = None,
+    memory_status: ConversationEventMemoryStatus = (
+        ConversationEventMemoryStatus.NOT_REQUIRED
+    ),
+    memory_revision_id: str | None = None,
+    memory_error_code: str | None = None,
 ) -> ConversationEventReceipt:
     response_hash = (
         hashlib.sha256(safe_response.encode("utf-8")).hexdigest()
@@ -399,6 +522,9 @@ def _receipt(
         execution_id="execution-1",
         safe_response=safe_response,
         response_hash=response_hash,
+        memory_status=memory_status,
+        memory_revision_id=memory_revision_id,
+        memory_error_code=memory_error_code,
         created_at=created_at or datetime.now(UTC),
         completed_at=completed_at,
     )
@@ -406,11 +532,13 @@ def _receipt(
 
 def _claimed_receipt(
     repository: ConversationInteractionEventReceiptRepository,
+    *,
+    event_ref: str = "event-1",
 ) -> ConversationEventReceipt:
     return repository.claim(
         tenant_id="tenant-a",
         conversation_connection_ref="slack",
-        provider_event_ref="event-1",
+        provider_event_ref=event_ref,
         execution_id="execution-1",
     ).receipt
 
@@ -476,6 +604,40 @@ def test_receipt_rejects_incomplete_or_inconsistent_response_states() -> None:
             status=ConversationEventReceiptStatus.RESPONSE_SENT,
             safe_response="response",
         )
+
+
+def test_receipt_rejects_sent_pending_memory() -> None:
+    with pytest.raises(ValidationError):
+        _receipt(
+            status=ConversationEventReceiptStatus.RESPONSE_SENT,
+            safe_response="response",
+            memory_status=ConversationEventMemoryStatus.PENDING,
+        )
+
+
+@pytest.mark.parametrize(
+    ("memory_status", "memory_revision_id", "memory_error_code"),
+    (
+        (ConversationEventMemoryStatus.NOT_REQUIRED, None, None),
+        (ConversationEventMemoryStatus.COMPLETED, "revision-1", None),
+        (ConversationEventMemoryStatus.FAILED, None, "memory_append_failed"),
+    ),
+)
+def test_receipt_accepts_sent_terminal_memory(
+    memory_status: ConversationEventMemoryStatus,
+    memory_revision_id: str | None,
+    memory_error_code: str | None,
+) -> None:
+    receipt = _receipt(
+        status=ConversationEventReceiptStatus.RESPONSE_SENT,
+        safe_response="response",
+        memory_status=memory_status,
+        memory_revision_id=memory_revision_id,
+        memory_error_code=memory_error_code,
+        completed_at=datetime.now(UTC),
+    )
+
+    assert receipt.status is ConversationEventReceiptStatus.RESPONSE_SENT
 
 
 @pytest.mark.parametrize(
@@ -623,6 +785,58 @@ def test_receipt_invalid_transition_does_not_write() -> None:
     assert _claimed_receipt(repository).status is ConversationEventReceiptStatus.PROCESSING
 
 
+def test_receipt_sent_transition_rejects_pending_memory_without_write() -> None:
+    repository = ConversationInteractionEventReceiptRepository(
+        InMemoryDocumentStore()
+    )
+    pending = repository.mark_response_pending(
+        receipt=_claimed_receipt(repository),
+        response="safe response",
+        memory_required=True,
+    )
+
+    with pytest.raises(ConversationEventReceiptError) as error:
+        repository.mark_response_sent(receipt=pending)
+
+    assert error.value.error_code == "conversation_receipt_memory_not_terminal"
+    assert _claimed_receipt(repository) == pending
+
+
+@pytest.mark.parametrize(
+    "memory_status",
+    (
+        ConversationEventMemoryStatus.COMPLETED,
+        ConversationEventMemoryStatus.FAILED,
+    ),
+)
+def test_receipt_sent_transition_accepts_terminal_memory(
+    memory_status: ConversationEventMemoryStatus,
+) -> None:
+    repository = ConversationInteractionEventReceiptRepository(
+        InMemoryDocumentStore()
+    )
+    pending = repository.mark_response_pending(
+        receipt=_claimed_receipt(repository),
+        response="safe response",
+        memory_required=True,
+    )
+    if memory_status is ConversationEventMemoryStatus.COMPLETED:
+        pending = repository.mark_memory_completed(
+            receipt=pending,
+            revision_id="revision-1",
+        )
+    else:
+        pending = repository.mark_memory_failed(
+            receipt=pending,
+            error_code="memory_append_failed",
+        )
+
+    sent = repository.mark_response_sent(receipt=pending)
+
+    assert sent.status is ConversationEventReceiptStatus.RESPONSE_SENT
+    assert sent.memory_status is memory_status
+
+
 def test_receipt_cas_conflict_preserves_winner() -> None:
     store = InMemoryDocumentStore()
     first_repository = ConversationInteractionEventReceiptRepository(store)
@@ -670,6 +884,124 @@ def test_malformed_stored_receipt_is_rejected_safely(monkeypatch) -> None:
         )
 
     assert error.value.error_code == "conversation_receipt_malformed"
+
+
+@pytest.mark.asyncio
+async def test_memory_completion_marker_failure_recovers_without_reexecution() -> None:
+    store = InMemoryDocumentStore()
+    repository = _MarkerFailureReceiptRepository(store, completion_failures=1)
+    memory = _CountingThreadMemory(store)
+    planner = _Planner()
+    executor = _Executor()
+    service = _service_with_memory(
+        repository=repository,
+        planner=planner,
+        executor=executor,
+        memory=memory,
+    )
+
+    first = await service.handle(_command(event_ref="memory-marker-conflict"))
+    assert first.receipt is not None
+    assert first.receipt.memory_status is ConversationEventMemoryStatus.PENDING
+    service.mark_response_sent(first)
+    assert (
+        _claimed_receipt(
+            repository,
+            event_ref="memory-marker-conflict",
+        ).status
+        is ConversationEventReceiptStatus.RESPONSE_PENDING
+    )
+
+    duplicate = await service.handle(_command(event_ref="memory-marker-conflict"))
+    assert duplicate.receipt is not None
+    assert (
+        duplicate.receipt.memory_status
+        is ConversationEventMemoryStatus.COMPLETED
+    )
+    service.mark_response_sent(duplicate)
+    final = _claimed_receipt(
+        repository,
+        event_ref="memory-marker-conflict",
+    )
+
+    assert final.status is ConversationEventReceiptStatus.RESPONSE_SENT
+    assert final.memory_status is ConversationEventMemoryStatus.COMPLETED
+    assert len(memory.persisted_turns()) == 2
+    assert memory.append_calls == 2
+    assert planner.calls == 1
+    assert executor.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_memory_append_and_failure_marker_failure_remain_recoverable() -> None:
+    store = InMemoryDocumentStore()
+    repository = _MarkerFailureReceiptRepository(store, failure_marker_failures=1)
+    memory = _CountingThreadMemory(store, failures_remaining=1)
+    planner = _Planner()
+    executor = _Executor()
+    service = _service_with_memory(
+        repository=repository,
+        planner=planner,
+        executor=executor,
+        memory=memory,
+    )
+
+    first = await service.handle(_command(event_ref="memory-append-failure"))
+    assert first.receipt is not None
+    assert first.receipt.memory_status is ConversationEventMemoryStatus.PENDING
+    assert first.response_text == "Workspaces: 1"
+    service.mark_response_sent(first)
+    assert (
+        _claimed_receipt(
+            repository,
+            event_ref="memory-append-failure",
+        ).memory_status
+        is ConversationEventMemoryStatus.PENDING
+    )
+
+    duplicate = await service.handle(_command(event_ref="memory-append-failure"))
+    assert duplicate.receipt is not None
+    assert (
+        duplicate.receipt.memory_status
+        is ConversationEventMemoryStatus.COMPLETED
+    )
+    assert memory.append_calls == 2
+    assert planner.calls == 1
+    assert executor.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_terminal_memory_failure_allows_sent_and_needs_no_duplicate_recovery() -> None:
+    store = InMemoryDocumentStore()
+    repository = ConversationInteractionEventReceiptRepository(store)
+    memory = _CountingThreadMemory(store, always_fail=True)
+    planner = _Planner()
+    executor = _Executor()
+    service = _service_with_memory(
+        repository=repository,
+        planner=planner,
+        executor=executor,
+        memory=memory,
+    )
+
+    first = await service.handle(_command(event_ref="memory-terminal-failure"))
+    assert first.receipt is not None
+    assert first.receipt.memory_status is ConversationEventMemoryStatus.FAILED
+    service.mark_response_sent(first)
+    final = _claimed_receipt(
+        repository,
+        event_ref="memory-terminal-failure",
+    )
+
+    assert final.status is ConversationEventReceiptStatus.RESPONSE_SENT
+    assert final.memory_status is ConversationEventMemoryStatus.FAILED
+    assert final.memory_error_code == "memory_append_failed"
+
+    duplicate = await service.handle(_command(event_ref="memory-terminal-failure"))
+    assert duplicate.should_send is False
+    assert memory.append_calls == 1
+    assert planner.calls == 1
+    assert executor.calls == 1
 
 
 def test_renderer_bound_fits_receipt_bound() -> None:

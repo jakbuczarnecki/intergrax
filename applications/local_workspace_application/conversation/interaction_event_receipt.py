@@ -120,6 +120,11 @@ class ConversationEventReceipt(BaseModel):
             or self.completed_at is None
         ):
             raise ValueError("completed receipt response fields are inconsistent")
+        if (
+            self.status is ConversationEventReceiptStatus.RESPONSE_SENT
+            and self.memory_status is ConversationEventMemoryStatus.PENDING
+        ):
+            raise ValueError("sent receipt memory must be terminal")
         return self
 
 
@@ -381,6 +386,10 @@ class ConversationInteractionEventReceiptRepository:
             receipt,
             ConversationEventReceiptStatus.RESPONSE_SENT,
         )
+        if receipt.memory_status is ConversationEventMemoryStatus.PENDING:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_memory_not_terminal"
+            )
         replacement = self._transition(
             receipt,
             update={"status": ConversationEventReceiptStatus.RESPONSE_SENT},
