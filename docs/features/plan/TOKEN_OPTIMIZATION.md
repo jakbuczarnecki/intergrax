@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION READY_FOR_REVIEW**; **TOKEN-10G BLOCKED PENDING INDEPENDENT AUDIT**; **TOKEN-10H PLANNED / NOT STARTED**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G READY_FOR_REVIEW**; **TOKEN-10H PLANNED / NOT STARTED**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of **TOKEN-10F-EVIDENCE-EXTENSION**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Independent audit of **TOKEN-10G**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of **TOKEN-10E-1** contracts. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **READY_FOR_REVIEW**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of **TOKEN-10G**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1843,11 +1843,11 @@ automatic production enablement
 
 #### Current next step
 
-Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. Do not wire LKW, Slack, or application storage; TOKEN-10F, TOKEN-10G, and TOKEN-10H remain planned.
+Independent GitHub audit of **TOKEN-10G**. Do not wire LKW, Slack, or application storage; TOKEN-10H remains planned.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
-**Status:** **ACCEPTED / CLOSED** (baseline); **TOKEN-10F-EVIDENCE-EXTENSION READY_FOR_REVIEW**.
+**Status:** **ACCEPTED / CLOSED** (baseline); **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**.
 
 Delivered a strict versioned TOML loader with immutable contracts and a
 universal runner composing the real `LLMAdapterRegistry`,
@@ -1873,7 +1873,7 @@ Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
 Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
 claims, and TOKEN-10H public proof or README promotion.
 
-**Current next step:** Independent audit of **TOKEN-10F-EVIDENCE-EXTENSION**.
+**Current next step:** Independent audit of **TOKEN-10G**.
 
 #### TOKEN-10F-EVIDENCE-EXTENSION — Safe evaluation evidence contract
 
@@ -1887,14 +1887,26 @@ secrets are never persisted.
 
 The extension keeps `token-optimization-proof.v1`: all new JSON fields are
 additive and have safe defaults, so existing fields and old fixtures remain
-compatible. TOKEN-10G remains **BLOCKED PENDING INDEPENDENT AUDIT** and its
-corpus, evaluator, report, claims and hard-gate framework are not implemented.
+compatible. TOKEN-10F-EVIDENCE-EXTENSION is **ACCEPTED / CLOSED**.
 
 ### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
 
-**Status:** **BLOCKED PENDING INDEPENDENT AUDIT**.
+**Status:** **READY_FOR_REVIEW**.
 
-Safe-mode checked-in proof with executive summary and per-case auditable trace; hard gates for router, pipeline, protected regions, prefix stability, warm cache reuse, and changed-prefix negative control.
+TOKEN-10G delivers a strict, versioned, synthetic and redaction-safe corpus in
+`configs/token_optimization/corpus/universal_proof_cases.toml`, typed
+expectations and a deterministic evaluator consuming only the accepted
+TOKEN-10F `UniversalProofRunResult` and its evidence fields. It does not rerun
+the router, pipeline, adapter or prompt assembly. The evaluator provides
+fail-closed router, pipeline, protected-region, measurement, prefix, cache,
+raw-content and manifest gates, with optional typed provider cache evidence.
+
+`scripts/token_optimization/evaluate_universal_proof.py` supports offline full
+mode and evaluate-only mode. `report.py` writes canonical JSON, escaped
+deterministic Markdown and a SHA-256 manifest with atomic, duplicate-safe
+writes. Offline mode never claims warm-cache reuse or changed-prefix control
+without provider evidence; numeric savings, live provider execution, checked-in
+results and public promotion remain outside this phase.
 
 ### TOKEN-10H — Checked-In Proof, README Promotion and Public Claims
 
@@ -2383,8 +2395,10 @@ TOKEN-DOCS-1   token optimization documentation hub and relocation — Implement
 TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
 TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
 TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
-TOKEN-10F universal proof harness — Ready for Review
-TOKEN-10G..10H corpus, gates, README promotion — Planned
+TOKEN-10F universal proof harness — Accepted / Closed
+TOKEN-10F-EVIDENCE-EXTENSION — Accepted / Closed
+TOKEN-10G corpus, gates and evaluation — Ready for Review
+TOKEN-10H checked-in public proof and README promotion — Planned
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

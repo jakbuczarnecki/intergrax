@@ -1,0 +1,617 @@
+schema_version = "token-optimization-proof-corpus.v1"
+corpus_id = "universal-safe-synthetic-v1"
+evaluation_version = "token-10g.v1"
+
+[[cases]]
+case_id = "case-short-clean-prompt"
+category = "short_clean_prompt"
+description = "Synthetic short prompt with no protected values."
+input_case_id = "smoke-exact-dedup"
+safe_tags = ["synthetic", "lossless"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-exact-duplicate-content"
+category = "exact_duplicate_content"
+description = "Synthetic repeated lines exercise exact deduplication."
+input_case_id = "smoke-exact-dedup"
+safe_tags = ["synthetic", "deduplication"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-noisy-tool-output"
+category = "noisy_tool_output"
+description = "Synthetic tool output category with deterministic routing evidence."
+input_case_id = "smoke-exact-dedup"
+source_type = "tool_output"
+safe_tags = ["synthetic", "tool-output"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-terminal-log-output"
+category = "terminal_log_output"
+description = "Synthetic terminal and log category without machine paths."
+input_case_id = "smoke-exact-dedup"
+source_type = "terminal_output"
+safe_tags = ["synthetic", "terminal"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-rag-context-pack"
+category = "rag_context_pack"
+description = "Synthetic retrieval context pack with safe evidence expectations."
+input_case_id = "smoke-exact-dedup"
+source_type = "rag_context_pack"
+safe_tags = ["synthetic", "rag"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-protected-values"
+category = "protected_url_path_hash_error"
+description = "Protected-region expectation uses synthetic URL path hash and error contracts."
+input_case_id = "smoke-exact-dedup"
+safe_tags = ["synthetic", "protected"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-code-heavy-content"
+category = "code_heavy_content"
+description = "Synthetic code-heavy category with lossless expectations."
+input_case_id = "smoke-exact-dedup"
+source_type = "structured_data"
+safe_tags = ["synthetic", "code"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-high-risk-lossy-content"
+category = "high_risk_lossy_content"
+description = "High-risk category keeps optional lossy behavior explicitly disabled."
+input_case_id = "smoke-exact-dedup"
+allow_lossy = false
+safe_tags = ["synthetic", "high-risk"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-policy-disabled"
+category = "policy_disabled"
+description = "Policy-disabled case is measured without optimization claims."
+input_case_id = "smoke-exact-dedup"
+policy_enabled = false
+policy_profile = "off"
+safe_tags = ["synthetic", "disabled"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-measure-only"
+category = "measure_only"
+description = "Measure-only profile separates observation from optimization."
+input_case_id = "smoke-exact-dedup"
+policy_profile = "measure_only"
+safe_tags = ["synthetic", "measure-only"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-prefix-stable-repeat"
+category = "prefix_stable_repeat"
+description = "Repeated stable prefix case compares recorded identities only."
+input_case_id = "smoke-exact-dedup"
+safe_tags = ["synthetic", "prefix"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+same_as_case_id = "case-exact-duplicate-content"
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-prefix-changed"
+category = "changed_stable_prefix"
+description = "Changed-prefix control requires recorded identity change evidence."
+input_case_id = "smoke-exact-dedup"
+source_type = "system_policy"
+safe_tags = ["synthetic", "prefix-control"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-reordered-tools"
+category = "reordered_tool_schemas"
+description = "Tool envelope identity remains order-sensitive while inner keys are canonicalized."
+input_case_id = "smoke-exact-dedup"
+source_type = "tool_catalog"
+safe_tags = ["synthetic", "tools"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-inner-dictionary-order"
+category = "canonical_inner_dictionary_order"
+description = "Equivalent inner dictionary order preserves recorded tool identity."
+input_case_id = "smoke-exact-dedup"
+source_type = "tool_catalog"
+safe_tags = ["synthetic", "canonicalization"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "not_applicable"
+
+[[cases]]
+case_id = "case-warm-cache"
+category = "warm_cache_evidence"
+description = "Warm reuse passes only with typed provider cache evidence."
+input_case_id = "smoke-exact-dedup"
+safe_tags = ["synthetic", "cache", "evidence"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+[cases.prefix]
+identity_required = false
+[cases.cache]
+mode = "warm_expected"
+
+[[cases]]
+case_id = "case-changed-prefix-cache-control"
+category = "changed_prefix_negative_control"
+description = "Negative cache control requires identity change and typed miss attribution."
+input_case_id = "smoke-exact-dedup"
+source_type = "system_policy"
+safe_tags = ["synthetic", "cache", "control"]
+
+[cases.router]
+allowed_statuses = ["routed", "blocked"]
+allowed_configuration_ids = []
+allowed_reason_codes = []
+
+
+
+allowed_risk = []
+allowed_transport = []
+
+
+[cases.pipeline]
+
+required_layer_ids = []
+allowed_layer_ids = []
+forbidden_layer_ids = []
+
+
+
+[cases.protected]
+expected_input_count = 0
+expected_preserved_count = 0
+expected_validation_status = "not_applicable"
+digest_equality_required = false
+no_raw_protected_values = true
+
+[cases.measurement]
+baseline = "not_applicable"
+optimized = "not_applicable"
+ordering_required = false
+
+[cases.prefix]
+identity_required = false
+
+[cases.cache]
+mode = "changed_prefix_negative_control"
+same_as_case_id = "case-prefix-stable-repeat"
+
