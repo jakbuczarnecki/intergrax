@@ -128,17 +128,19 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
 [live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
 It is **READY_FOR_REVIEW**; Microsoft Graph Drive is **ACCEPTED / CLOSED**,
-Microsoft Graph Mail is **READY_FOR_REVIEW**, Teams Channel is
-**PLANNED / NEXT AFTER MAIL ACCEPTANCE**, and all other provider/source-kind
-live tasks plus the Google readiness gate remain **PLANNED**.
+Microsoft Graph Mail and Teams Channel are **READY_FOR_REVIEW**, and all other
+provider/source-kind live tasks plus the Google readiness gate remain
+**PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
 provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
 `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **ACCEPTED / CLOSED** with one
 bounded Drive list/query capability; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`
 is **READY_FOR_REVIEW** with one bounded mailbox-folder list/query capability.
-`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL` is **PLANNED / NEXT AFTER
-MAIL ACCEPTANCE**. Other provider live capability tasks remain **PLANNED**.
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL` is
+**READY_FOR_REVIEW** with one bounded Teams Channel list capability. The v1
+capability returns at most one root post; it does not list replies or all
+channel messages. Other provider live capability tasks remain **PLANNED**.
 
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
@@ -2107,7 +2109,7 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: PLANNED / NEXT AFTER MAIL ACCEPTANCE
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: READY_FOR_REVIEW
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED
