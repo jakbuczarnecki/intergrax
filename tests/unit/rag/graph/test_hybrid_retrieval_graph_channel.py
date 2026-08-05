@@ -1,14 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 
 class _Emb:
@@ -20,9 +22,9 @@ class _Emb:
 def test_graph_rag_exposes_three_channel_contributions() -> None:
     store = InMemoryVectorStore(tenant_id="hybrid")
     manager = VectorstoreManager(store=store)
-    doc = Document(
-        page_content="Nimbus Analytics uses Intergrax Harness for retrieval fusion.",
-        metadata={"tenant_id": "hybrid"},
+    doc = knowledge_document(
+        "Nimbus Analytics uses Intergrax Harness for retrieval fusion.",
+        tenant_id="hybrid",
     )
     manager.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-nimbus"])
     graph = InMemoryGraphStore()
@@ -38,3 +40,6 @@ def test_graph_rag_exposes_three_channel_contributions() -> None:
     assert trace.channel_contributions["vector"]
     assert "keyword" in trace.channel_contributions
     assert trace.channel_contributions["keyword"]
+    assert all(hit.channel == "hybrid" for hit in retriever.retrieve(
+        RetrieverQuery(query_text="Nimbus Analytics", query_embedding=None, top_k=2)
+    ))

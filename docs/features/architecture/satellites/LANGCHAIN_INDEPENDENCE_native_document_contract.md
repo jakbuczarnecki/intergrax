@@ -688,11 +688,16 @@ SDK search result
 ```
 
 Identity, scope and provenance are system-owned transport metadata; user metadata cannot overwrite routing keys.
+### Native Graph RAG boundary (LCI-4C)
 
-LCI-3D — `APPROVED`. LCI-4A is the current active task and is `READY_FOR_REVIEW`; its typed retrieval hit/result boundary is the next review target.
+Graph RAG indexers and graph isolation contracts accept only the canonical KnowledgeDocument sequence. They read document.content, preserve native identity, tenant scope, namespace, provenance and user metadata at the document boundary, and reject mixed or store-incompatible scopes before the first GraphStore write. User metadata is never an authoritative tenant scope.
+
+The active graph retrieval boundary returns the existing native RetrievalHit containing the KnowledgeDocument, score, rank, channel and optional vector ID. No parallel graph document or retrieval result type is introduced. GraphStore backend internals remain unchanged.
+
+LCI-3D — APPROVED. LCI-4A — APPROVED. LCI-4B — APPROVED. LCI-4C — READY_FOR_REVIEW. LCI-4D — PLANNED / NEXT AFTER ACCEPTANCE.
 
 ## LCI-4A retrieval result contract decision
 
 Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary; graph retrieval remains LCI-4C.
 
-Roadmap state: LCI-3D — `APPROVED`; LCI-4A — `READY_FOR_REVIEW`; LCI-4B — `PLANNED / NEXT AFTER ACCEPTANCE`; LCI-4C — `PLANNED`.
+Roadmap state: LCI-3D — APPROVED; LCI-4A — APPROVED; LCI-4B — APPROVED; LCI-4C — READY_FOR_REVIEW; LCI-4D — PLANNED / NEXT AFTER ACCEPTANCE.

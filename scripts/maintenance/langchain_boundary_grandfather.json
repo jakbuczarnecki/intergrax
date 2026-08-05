@@ -120,60 +120,6 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0080",
-      "path": "intergrax/rag/graph/indexer/community_report_graph_indexer.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0081",
-      "path": "intergrax/rag/graph/indexer/graph_indexer_factory.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0082",
-      "path": "intergrax/rag/graph/indexer/heuristic_graph_indexer.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0083",
-      "path": "intergrax/rag/graph/indexer/llm_graph_indexer.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0084",
-      "path": "intergrax/rag/graph/indexer/plugin_registry.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0085",
-      "path": "intergrax/rag/graph/tenant/graph_isolation_contract.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0104",
       "path": "intergrax/supervisor/supervisor_to_state_graph.py",
       "kind": "from",

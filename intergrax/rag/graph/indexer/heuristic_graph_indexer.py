@@ -6,12 +6,11 @@
 from __future__ import annotations
 
 import re
-import uuid
-from typing import Iterable, List, Sequence
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
+from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
 
 _ENTITY_RE = re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,3})\b")
 
@@ -20,20 +19,27 @@ class HeuristicGraphIndexer:
     def __init__(self, store: GraphStore) -> None:
         self._store = store
 
-    def index_documents(self, documents: Sequence[Document], *, chunk_ids: Sequence[str] | None = None) -> int:
+    def index_documents(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        *,
+        chunk_ids: Sequence[str] | None = None,
+    ) -> int:
+        validated_documents, resolved_ids = validate_graph_index_batch(
+            self._store, documents, chunk_ids
+        )
         count = 0
-        ids = list(chunk_ids) if chunk_ids else [str(uuid.uuid4()) for _ in documents]
-        for doc, chunk_id in zip(documents, ids):
+        for doc, chunk_id in zip(validated_documents, resolved_ids):
             count += self._index_one(doc, chunk_id)
         return count
 
-    def _index_one(self, doc: Document, chunk_id: str) -> int:
-        text = doc.page_content or ""
+    def _index_one(self, doc: KnowledgeDocument, chunk_id: str) -> int:
+        text = doc.content
         entities = _ENTITY_RE.findall(text)[:12]
         if len(entities) < 2:
             return 0
 
-        node_ids: List[str] = []
+        node_ids: list[str] = []
         for label in entities:
             node_id = f"ent:{label.lower().replace(' ', '_')}"
             self._store.upsert_node(GraphNode(id=node_id, label=label, node_type="entity"))

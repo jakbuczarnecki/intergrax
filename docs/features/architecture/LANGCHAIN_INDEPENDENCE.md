@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **READY_FOR_REVIEW**; LCI-4C **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-4D **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C **READY_FOR_REVIEW**; LCI-4D **PLANNED / NEXT AFTER ACCEPTANCE**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-4B — Native reranker candidate/result contract migration
+**Current active task:** LCI-4C — Native Graph RAG document contract migration
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -26,6 +26,8 @@ Use, modification, or distribution without written permission is prohibited.
 **LCI-4A decision:** Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary. Graph retrieval remains LCI-4C.
 
 **LCI-4B decision:** Reranking uses one immutable native `RerankerCandidate` containing `KnowledgeDocument` and original retrieval score/rank. `RerankerResult` preserves the original candidate and adds only rerank/fusion score and final rank. Active core rerankers and integration providers do not accept or return LangChain `Document`. Reranking cannot alter document identity, scope, provenance or user metadata. Graph RAG remains LCI-4C.
+
+**LCI-4C decision:** Graph RAG indexers and graph isolation contracts accept native `KnowledgeDocument` values. Document identity, tenant scope, namespace, provenance and user metadata remain owned by the native document boundary. Graph indexers read `document.content` and do not accept or construct LangChain `Document`. Graph retrieval uses the existing native `RetrievalHit` contract. GraphStore backend internals remain unchanged. Auxiliary memory, multimedia, legacy RAG, evaluation and soak paths remain LCI-4D.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 

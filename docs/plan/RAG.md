@@ -74,19 +74,25 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-3C | P1 | APPROVED | native vector-store records and tenant isolation | LCI-3D |
 | LCI-3D | P1 | APPROVED | native provider adapters with scoped native records and hits | LCI-4A |
 | LCI-4A | P1 | APPROVED | native immutable retrieval hit/result contract and native RAG tool output | LCI-4B |
-| LCI-4B | P1 | READY_FOR_REVIEW | native immutable reranker candidate/result contract and RetrievalHit boundary | LCI-4C |
+| LCI-4B | P1 | APPROVED | native immutable reranker candidate/result contract and RetrievalHit boundary | LCI-4C |
+| LCI-4C | P1 | READY_FOR_REVIEW | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
 native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map
 `KnowledgeDocument` directly to provider SDK payloads, and return native
 `VectorStoreHit` values. Tenant, namespace, and workspace routing are
 system-owned at each provider boundary. LangChain `Document` compatibility is
-absent from vector-store paths. Retrieval result migration is complete for active retrievers and RAG tools under LCI-4A; reranking remains LCI-4B and graph retrieval remains LCI-4C.
+absent from vector-store paths. Retrieval result migration is complete for active retrievers and RAG tools under LCI-4A; reranking is complete under LCI-4B; graph retrieval is the active LCI-4C review target.
 
 **Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../features/plan/LANGCHAIN_INDEPENDENCE.md)
 
 LCI-4B reranking preserves the native `KnowledgeDocument`, identity, scope,
 provenance and user metadata while adding only rerank/fusion scores and final
-rank. Graph retrieval remains LCI-4C.
+rank. LCI-4C Graph RAG indexers and graph isolation contracts accept native
+`KnowledgeDocument` values, and graph retrieval uses the existing native
+`RetrievalHit` contract. GraphStore backend internals remain unchanged.
+
+LCI-4D remains planned for auxiliary memory, multimedia, legacy RAG,
+evaluation and soak paths after LCI-4C acceptance.
 
 ---

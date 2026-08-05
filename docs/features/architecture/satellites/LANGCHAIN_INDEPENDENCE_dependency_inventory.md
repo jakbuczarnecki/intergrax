@@ -37,14 +37,14 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 34 |
+| direct production/runtime imports | 28 |
 | direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
 | generated lock rows | 1 |
-| core contract leaks | 1 |
-| core implementation dependencies | 12 |
+| core contract leaks | 0 |
+| core implementation dependencies | 7 |
 | provider-bound dependencies | 13 |
 | optional compatibility paths | 0 |
 | legacy optional paths | 8 |
@@ -52,7 +52,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | test-only | 46 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 92 |
+| total detailed inventory rows | 86 |
 
 ## C. Detailed inventory table
 
@@ -85,12 +85,6 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | LCI-INV-0077 | `langchain_openai` | `intergrax/rag/embedding/providers/vllm_embedding_provider.py` | 12 | `OpenAIEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
 | LCI-INV-0078 | `langchain_core.documents` | `intergrax/rag/evaluation/golden_harness.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
 | LCI-INV-0079 | `langchain_core.documents` | `intergrax/rag/evaluation/load_soak.py` | 15 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
-| LCI-INV-0080 | `langchain_core.documents` | `intergrax/rag/graph/indexer/community_report_graph_indexer.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
-| LCI-INV-0081 | `langchain_core.documents` | `intergrax/rag/graph/indexer/graph_indexer_factory.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
-| LCI-INV-0082 | `langchain_core.documents` | `intergrax/rag/graph/indexer/heuristic_graph_indexer.py` | 12 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
-| LCI-INV-0083 | `langchain_core.documents` | `intergrax/rag/graph/indexer/llm_graph_indexer.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
-| LCI-INV-0084 | `langchain_core.documents` | `intergrax/rag/graph/indexer/plugin_registry.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
-| LCI-INV-0085 | `langchain_core.documents` | `intergrax/rag/graph/tenant/graph_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4C | verified import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |

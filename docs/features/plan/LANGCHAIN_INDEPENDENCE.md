@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-4B — Native reranker candidate/result contract migration
-**Next task after acceptance:** LCI-4C
+**Current active task:** LCI-4C — Native Graph RAG document contract migration
+**Next task after acceptance:** LCI-4D
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -356,7 +356,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Single immutable native RerankerCandidate and RerankerResult; no LangChain Document in active rerank contracts. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/INTEGRATIONS.md |
 | **Dependencies** | LCI-4A |
@@ -374,14 +374,16 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | Graph indexers and graph isolation use native document. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Graph indexers, graph isolation and the active graph retrieval boundary use native documents. |
 | **Owning domain plan** | docs/plan/RAG.md |
-| **Dependencies** | LCI-3B |
-| **Exact scope** | intergrax/rag/graph/** |
-| **Explicit out of scope** | Neo4j internals |
-| **Acceptance criteria** | Graph indexer and isolation tests green |
+| **Dependencies** | LCI-4B |
+| **Exact scope** | intergrax/rag/graph/**, active Graph RAG retriever boundary, corresponding tests, inventory and documentation |
+| **Explicit out of scope** | Neo4j, Memgraph, FalkorDB and other GraphStore internals; auxiliary memory, multimedia, legacy RAG, evaluation and soak paths |
+| **Acceptance criteria** | Native KnowledgeDocument indexer/isolation contracts, native RetrievalHit graph results, no active Graph RAG LangChain document shapes, targeted tests and boundary audits pass |
 | **User-visible outcome** | Graph channel native at contract |
+
+**Decision:** Graph RAG indexers and graph isolation contracts accept native `KnowledgeDocument` values. Identity, tenant scope, namespace, provenance and user metadata remain owned by the native document boundary; user metadata cannot become authoritative graph scope. Graph retrieval uses the existing native `RetrievalHit` contract. GraphStore backend internals remain unchanged.
 
 ---
 
@@ -393,7 +395,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Status** | PLANNED |
 | **Purpose** | Remaining auxiliary leaks: memory indexing, multimedia loaders, legacy rag_answers, evaluation harness, soak tooling. |
 | **Owning domain plan** | docs/plan/MEMORY.md + docs/plan/MODALITY.md + docs/plan/RAG.md |
-| **Dependencies** | LCI-3A |
+| **Dependencies** | LCI-4C |
 | **Exact scope** | session_turn_index_service, user_profile_manager, multimedia loaders, legacy/rag_answers, evaluation/, vectorstore/soak/ |
 | **Explicit out of scope** | Doc generators; test fixtures (migrate with owning feature) |
 | **Acceptance criteria** | Target modules import no langchain_core; soak/evaluation smoke pass |

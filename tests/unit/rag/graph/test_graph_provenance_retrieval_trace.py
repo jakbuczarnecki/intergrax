@@ -1,16 +1,20 @@
 # © Artur Czarnecki. All rights reserved.
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
+    create_default_retriever_manager,
+)
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 
 class _Emb:
@@ -22,9 +26,9 @@ class _Emb:
 def test_retrieval_trace_includes_structured_graph_provenance() -> None:
     store = InMemoryVectorStore(tenant_id="trace")
     manager = VectorstoreManager(store=store)
-    doc = Document(
-        page_content="Vertex Corp deploys Intergrax GraphRAG on Neo4j.",
-        metadata={"tenant_id": "trace"},
+    doc = knowledge_document(
+        "Vertex Corp deploys Intergrax GraphRAG on Neo4j.",
+        tenant_id="trace",
     )
     manager.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-vertex"])
     graph = InMemoryGraphStore()

@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-from langchain_core.documents import Document
 
-from intergrax.llm.messages import ChatMessage
 from intergrax.rag.graph.indexer.llm_graph_indexer import LlmGraphIndexer
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
+from tests.unit.rag.graph.fixtures import knowledge_document
 
 pytestmark = pytest.mark.unit
 
@@ -29,7 +28,7 @@ def test_llm_graph_indexer_extracts_entities() -> None:
     store = InMemoryGraphStore()
     indexer = LlmGraphIndexer(store, _FakeLlm())
     n = indexer.index_documents(
-        [Document(page_content="Intergrax Harness provides agent runtime.")],
+        [knowledge_document("Intergrax Harness provides agent runtime.")],
         chunk_ids=["c1"],
     )
     assert n >= 2
