@@ -28,6 +28,7 @@ from local_workspace_application.workspaces.conversation_context_models import (
 )
 from local_workspace_application.workspaces.knowledge_plugin_configuration_service import (
     KnowledgeConnectionSummaryV1,
+    KnowledgeCapabilitySummaryV1,
     KnowledgeConfigurationModeV1,
     KnowledgePluginConfigurationService,
     KnowledgePluginConfigurationSnapshotV1,
@@ -37,8 +38,15 @@ from local_workspace_application.conversation.interaction_draft_models import (
     KnowledgeResourcesListDraftAction,
 )
 from local_workspace_application.conversation.interaction_execution_models import (
+    ConversationActionExecutionResult,
     ConversationActionExecutionStatus,
+    ConversationExecutionArtifact,
     ConversationInteractionExecutionCommand,
+    ConversationInteractionExecutionResult,
+    ConversationInteractionOverallStatus,
+)
+from local_workspace_application.conversation.interaction_response_renderer import (
+    ConversationInteractionResponseRenderer,
 )
 from local_workspace_application.conversation.interaction_executor import ConversationInteractionExecutor
 from local_workspace_application.conversation.interaction_models import (
@@ -88,8 +96,13 @@ def _connection(ref: str, provider: str, status: TenantConnectionAdministrativeS
     )
 
 
-def _capability(provider: str) -> LiveCapabilityDescriptorV1:
-    return LiveCapabilityDescriptorV1(
+def _capability(
+    provider: str,
+    *,
+    max_result_items: int | None = None,
+    max_result_bytes: int | None = None,
+) -> LiveCapabilityDescriptorV1:
+    values = dict(
         capability_id=f"vendor.{provider}.issues.read",
         provider_id=provider,
         integration_kind=IntegrationCategory.ISSUE_TRACKER,
@@ -100,7 +113,12 @@ def _capability(provider: str) -> LiveCapabilityDescriptorV1:
         resource_scope_required=True,
         request_schema_ref=f"schema://{provider}/request/v1",
         result_schema_ref=f"schema://{provider}/result/v1",
+        max_result_items=max_result_items,
+        max_result_bytes=max_result_bytes,
     )
+    if max_result_items is None or max_result_bytes is None:
+        return LiveCapabilityDescriptorV1.model_construct(**values)
+    return LiveCapabilityDescriptorV1(**values)
 
 
 class _Connections:
@@ -133,7 +151,11 @@ class _Discovery:
         return self.pages[connection_ref]
 
 
-def _service() -> KnowledgePluginConfigurationService:
+def _service(
+    *,
+    first_limits: tuple[int | None, int | None] = (25, 4096),
+    second_limits: tuple[int | None, int | None] = (None, None),
+) -> KnowledgePluginConfigurationService:
     first = _connection("connection-a", "provider_a", TenantConnectionAdministrativeStatus.ACTIVE)
     second = _connection("connection-b", "provider_b", TenantConnectionAdministrativeStatus.ACTIVE)
     resources = {
@@ -161,8 +183,20 @@ def _service() -> KnowledgePluginConfigurationService:
     connections = _Connections((second, first))
     catalog = _Catalog(
         {
-            "connection-a": (_capability("provider_a"),),
-            "connection-b": (_capability("provider_b"),),
+            "connection-a": (
+                _capability(
+                    "provider_a",
+                    max_result_items=first_limits[0],
+                    max_result_bytes=first_limits[1],
+                ),
+            ),
+            "connection-b": (
+                _capability(
+                    "provider_b",
+                    max_result_items=second_limits[0],
+                    max_result_bytes=second_limits[1],
+                ),
+            ),
         }
     )
     discovery = _Discovery(resources)
@@ -194,6 +228,11 @@ async def test_snapshot_is_dynamic_safe_and_provider_neutral() -> None:
         "vendor.provider_a.issues.read",
         "vendor.provider_b.issues.read",
     }
+    by_connection = {
+        item.connection_ref: item for item in snapshot.available_resource_capabilities
+    }
+    assert by_connection["connection-b"].max_result_items is None
+    assert by_connection["connection-b"].max_result_bytes is None
     assert all(
         item.configuration_mode is KnowledgeConfigurationModeV1.LIVE_ACCESS_ELIGIBLE
         for item in snapshot.available_resource_capabilities
@@ -203,6 +242,119 @@ async def test_snapshot_is_dynamic_safe_and_provider_neutral() -> None:
         for item in snapshot.available_resource_capabilities
     )
     assert "credential_ref" not in snapshot.model_dump()
+
+
+@pytest.mark.parametrize(
+    ("max_result_items", "max_result_bytes"),
+    (
+        (25, 4096),
+        (None, 4096),
+        (25, None),
+        (None, None),
+    ),
+)
+@pytest.mark.asyncio
+async def test_optional_result_limits_survive_lkw_output_boundaries(
+    max_result_items: int | None,
+    max_result_bytes: int | None,
+) -> None:
+    service = _service(
+        first_limits=(max_result_items, max_result_bytes),
+        second_limits=(None, None),
+    )
+    snapshot = await service.get_configuration_snapshot(
+        tenant_id="tenant-a",
+        execution_context=_context(),
+    )
+    capability = next(
+        item
+        for item in snapshot.available_resource_capabilities
+        if item.connection_ref == "connection-a"
+    )
+
+    assert capability.max_result_items == max_result_items
+    assert capability.max_result_bytes == max_result_bytes
+    request = ConversationPlanningRequest(
+        message_text="show capabilities",
+        knowledge_plugin_configuration=snapshot,
+    )
+    assert request.knowledge_plugin_configuration == snapshot
+
+    artifact = ConversationExecutionArtifact(
+        artifact_type="knowledge.capabilities.list",
+        data={"capabilities": [capability.model_dump(mode="json")]},
+    )
+    serialized_artifact = artifact.model_dump(mode="json")
+    assert serialized_artifact["data"]["capabilities"][0]["max_result_items"] == max_result_items
+    assert serialized_artifact["data"]["capabilities"][0]["max_result_bytes"] == max_result_bytes
+
+    now = _NOW
+    result = ConversationInteractionExecutionResult(
+        execution_id="execution-1",
+        tenant_id="tenant-a",
+        plan_version="2",
+        started_at=now,
+        completed_at=now,
+        status=ConversationInteractionOverallStatus.COMPLETED,
+        action_results=(
+            ConversationActionExecutionResult(
+                action_id="capabilities",
+                action_type="knowledge.capabilities.list",
+                status=ConversationActionExecutionStatus.COMPLETED,
+                artifact=artifact,
+                error=None,
+                started_at=now,
+                completed_at=now,
+            ),
+        ),
+        clarifications=(),
+        error=None,
+    )
+    rendered = ConversationInteractionResponseRenderer().render(result)
+
+    assert len(rendered) <= 3_900
+    assert "Capabilities:" in rendered
+    assert "None" not in rendered
+    assert (
+        "item limit: not declared" in rendered
+        if max_result_items is None
+        else f"item limit: {max_result_items}" in rendered
+    )
+    assert (
+        "byte limit: not declared" in rendered
+        if max_result_bytes is None
+        else f"byte limit: {max_result_bytes}" in rendered
+    )
+    assert rendered == ConversationInteractionResponseRenderer().render(result)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("max_result_items", 0),
+        ("max_result_items", -1),
+        ("max_result_bytes", 0),
+        ("max_result_bytes", -1),
+        ("max_result_items", True),
+        ("max_result_bytes", False),
+    ),
+)
+def test_declared_result_limits_must_be_positive_non_boolean_integers(
+    field: str,
+    value: object,
+) -> None:
+    with pytest.raises(ValueError):
+        KnowledgeCapabilitySummaryV1(
+            connection_ref="connection-a",
+            capability_id="vendor.synthetic.issues.read",
+            effect=CapabilityEffectV1.READ,
+            read_only=True,
+            resource_scope_required=True,
+            available=True,
+            bindable_read_only=True,
+            configuration_mode=KnowledgeConfigurationModeV1.LIVE_ACCESS_ELIGIBLE,
+            **{field: value},
+        )
 
 
 def test_empty_catalog_is_valid() -> None:

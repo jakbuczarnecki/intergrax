@@ -136,12 +136,21 @@ class KnowledgeCapabilitySummaryV1(BaseModel):
     supported_resource_types: tuple[str, ...] = ()
     available: bool
     bindable_read_only: bool
-    max_result_items: int
-    max_result_bytes: int
+    max_result_items: int | None = Field(default=None, gt=0)
+    max_result_bytes: int | None = Field(default=None, gt=0)
     configuration_mode: KnowledgeConfigurationModeV1
     indexed_source_eligibility: KnowledgeConfigurationModeV1 = (
         KnowledgeConfigurationModeV1.UNKNOWN
     )
+
+    @field_validator("max_result_items", "max_result_bytes", mode="before")
+    @classmethod
+    def _validate_declared_limit(cls, value: object) -> object:
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, int)
+        ):
+            raise ValueError("declared result limits must be positive integers")
+        return value
 
 
 class KnowledgeRemoteResourcePageV1(BaseModel):

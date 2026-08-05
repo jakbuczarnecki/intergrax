@@ -56,8 +56,12 @@ def _safe_text(value: object, *, limit: int = 500) -> str:
     return text
 
 
-def _safe_count(value: object) -> int:
-    return value if isinstance(value, int) and not isinstance(value, bool) else 0
+def _safe_limit(value: object) -> str:
+    if value is None:
+        return "not declared"
+    if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+        return str(value)
+    return "not declared"
 
 
 def _mapping(value: object) -> Mapping[str, object]:
@@ -195,8 +199,8 @@ class ConversationInteractionResponseRenderer:
                 bindable = bool(capability.get("bindable_read_only", False))
                 scope = "resource-scoped" if capability.get("resource_scope_required") else "connection-scoped"
                 limits = (
-                    f"{_safe_count(capability.get('max_result_items'))} items/"
-                    f"{_safe_count(capability.get('max_result_bytes'))} bytes"
+                    f"item limit: {_safe_limit(capability.get('max_result_items'))}; "
+                    f"byte limit: {_safe_limit(capability.get('max_result_bytes'))}"
                 )
                 live = "live access eligible" if bindable else "not live-bindable"
                 lines.append(
