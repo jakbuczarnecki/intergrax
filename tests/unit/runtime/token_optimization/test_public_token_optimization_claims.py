@@ -75,6 +75,13 @@ _FORBIDDEN_CONTEXT_MARKERS = (
     "x%",
 )
 
+_TOKEN_10E_CLOSEOUT_READY = re.compile(
+    r"token-10e-closeout-1"
+    r"(?:(?!\b(?:blocked|not\s+started)\b).){0,280}"
+    r"(?:readyforreview|ready_for_review|ready for review)",
+    re.IGNORECASE | re.DOTALL,
+)
+
 # CTX-UCL-ARCH-1-R1: ownership regression guardrails (canonical TOKEN-10E / UCL docs).
 _OWNERSHIP_FORBIDDEN_PHRASES = (
     "application-owned persistence and activation",
@@ -312,12 +319,7 @@ def test_token_10e_canonical_documents_are_ready_for_independent_acceptance() ->
         for phase in ("TOKEN-10E-1", "TOKEN-10E-2", "TOKEN-10E-3", "TOKEN-10E-4"):
             status = _ucl_status_window(normalized, phase)
             assert "accepted" in status and "closed" in status
-        assert "token-10e-closeout-1" in normalized
-        assert (
-            "readyforreview" in normalized
-            or "ready_for_review" in normalized
-            or "ready for review" in normalized
-        )
+        assert _TOKEN_10E_CLOSEOUT_READY.search(normalized)
         assert "token-10e-closeout-1 not started" not in normalized
         assert "independent github audit" in normalized
         assert (
@@ -333,6 +335,27 @@ def test_token_10e_canonical_documents_are_ready_for_independent_acceptance() ->
         )
         for phrase in stale_phrases:
             assert phrase not in normalized
+
+
+def test_token_10e_closeout_status_guard_rejects_unrelated_statuses() -> None:
+    assert not _TOKEN_10E_CLOSEOUT_READY.search(
+        _normalize_public_text(
+            "TOKEN-10E-CLOSEOUT-1 BLOCKED\n"
+            "TOKEN-10F READY_FOR_REVIEW"
+        )
+    )
+    assert not _TOKEN_10E_CLOSEOUT_READY.search(
+        _normalize_public_text(
+            "TOKEN-10E-CLOSEOUT-1 NOT STARTED\n"
+            "TOKEN-10E implementation complete / READY_FOR_REVIEW"
+        )
+    )
+    assert _TOKEN_10E_CLOSEOUT_READY.search(
+        _normalize_public_text(
+            "TOKEN-10E-CLOSEOUT-1 READY_FOR_REVIEW\n"
+            "TOKEN-10F PLANNED"
+        )
+    )
 
 
 def test_claims_distinguish_internal_completion_from_public_claimability() -> None:
