@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 import pytest
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -298,7 +300,7 @@ class _FoundationResult(BaseModel):
     byte_count: int
 
 
-class _FoundationHandler:
+class _FoundationMetadata:
     provider_id = "fake_provider"
     integration_kind = IntegrationCategory.ISSUE_TRACKER
     source_kind = "issues"
@@ -311,6 +313,60 @@ class _FoundationHandler:
         "schema://vendor-knowledge/live/fake_provider/issues/read/result/v1"
     )
     expected_request_model = _FoundationRequest
+
+
+class _FoundationHandler(_FoundationMetadata):
+    def execute(self, request: BaseModel) -> BaseModel:
+        return request
+
+
+class _IdentityOnlyHandler(_FoundationMetadata):
+    pass
+
+
+class _AlternateFoundationHandler(_FoundationHandler):
+    capability_id = "vendor.fake_provider.issues.search"
+    request_schema_ref = (
+        "schema://vendor-knowledge/live/fake_provider/issues/search/request/v1"
+    )
+    result_schema_ref = (
+        "schema://vendor-knowledge/live/fake_provider/issues/search/result/v1"
+    )
+
+
+def _foundation_bundle(
+    *,
+    handler: _FoundationMetadata | None = None,
+) -> LiveRegistrationBundleV1:
+    resolved_handler = handler or _FoundationHandler()
+    descriptor = LiveCapabilityDescriptorV1(
+        capability_id=resolved_handler.capability_id,
+        provider_id=resolved_handler.provider_id,
+        integration_kind=resolved_handler.integration_kind,
+        source_kind=resolved_handler.source_kind,
+        contract_version=resolved_handler.contract_version,
+        effect=CapabilityEffectV1.READ,
+        read_only=True,
+        resource_scope_required=False,
+        request_schema_ref=resolved_handler.request_schema_ref,
+        result_schema_ref=resolved_handler.result_schema_ref,
+    )
+    return LiveRegistrationBundleV1(
+        descriptor=descriptor,
+        handler=resolved_handler,
+        request_schema=SchemaRegistrationV1(
+            schema_ref=resolved_handler.request_schema_ref,
+            role=SchemaRoleV1.REQUEST,
+            model=_FoundationRequest,
+            contract_version="1",
+        ),
+        result_schema=SchemaRegistrationV1(
+            schema_ref=resolved_handler.result_schema_ref,
+            role=SchemaRoleV1.RESULT,
+            model=_FoundationResult,
+            contract_version="1",
+        ),
+    )
 
 
 def test_live_foundation_identity_locator_and_ordered_hash_contracts() -> None:
@@ -395,6 +451,14 @@ def test_live_foundation_atomic_registration_and_finite_budget() -> None:
         capability_id="vendor.fake_provider.issues.read",
         contract_version="1",
     )
+    assert published.schemas.resolve_request(
+        _FoundationHandler.request_schema_ref, "1"
+    ) is _FoundationRequest
+    assert published.schemas.resolve_result(
+        _FoundationHandler.result_schema_ref, "1"
+    ) is _FoundationResult
+    assert set(published.descriptors) == set(published.handlers)
+    assert len(published.schemas.registrations) == 2
     budget = EffectiveLiveCallBudgetV1(
         max_live_calls=1,
         max_total_duration_ms=1000,
@@ -411,6 +475,94 @@ def test_live_foundation_atomic_registration_and_finite_budget() -> None:
                 result_schema=bundle.result_schema,
             )),
         )
+
+
+def test_live_registration_rejects_descriptor_only_input() -> None:
+    with pytest.raises(
+        ValueError, match="live_additional_registration_inputs_not_supported"
+    ):
+        publish_live_registration_bundles(
+            (),
+            additional_descriptors=(_foundation_bundle().descriptor,),
+        )
+
+
+def test_live_registration_rejects_handler_only_input() -> None:
+    with pytest.raises(
+        ValueError, match="live_additional_registration_inputs_not_supported"
+    ):
+        publish_live_registration_bundles(
+            (),
+            additional_handlers=(_FoundationHandler(),),
+        )
+
+
+def test_live_registration_rejects_matching_descriptor_handler_without_schemas() -> None:
+    bundle = _foundation_bundle()
+    with pytest.raises(
+        ValueError, match="live_additional_registration_inputs_not_supported"
+    ):
+        publish_live_registration_bundles(
+            (),
+            additional_descriptors=(bundle.descriptor,),
+            additional_handlers=(bundle.handler,),
+        )
+
+
+@pytest.mark.parametrize("missing_schema", ["request_schema", "result_schema"])
+def test_live_registration_requires_both_schemas(missing_schema: str) -> None:
+    bundle = _foundation_bundle()
+    incomplete = replace(
+        bundle,
+        **{missing_schema: cast(SchemaRegistrationV1, None)},
+    )
+    with pytest.raises(ValueError, match="live_registration_bundle_incomplete"):
+        publish_live_registration_bundles((incomplete,))
+
+
+def test_live_registration_rejects_invalid_entry_without_partial_publication() -> None:
+    valid_bundle = _foundation_bundle()
+    invalid_bundle = replace(
+        _foundation_bundle(handler=_AlternateFoundationHandler()),
+        result_schema=cast(SchemaRegistrationV1, None),
+    )
+    with pytest.raises(ValueError, match="live_registration_bundle_incomplete"):
+        publish_live_registration_bundles((valid_bundle, invalid_bundle))
+
+
+def test_live_registration_requires_callable_execution_surface() -> None:
+    with pytest.raises(ValueError, match="live_handler_execution_missing"):
+        publish_live_registration_bundles(
+            (_foundation_bundle(handler=_IdentityOnlyHandler()),)
+        )
+
+    non_callable_handler = _FoundationHandler()
+    setattr(non_callable_handler, "execute", "not-callable")
+    with pytest.raises(ValueError, match="live_handler_execution_not_callable"):
+        publish_live_registration_bundles(
+            (_foundation_bundle(handler=non_callable_handler),)
+        )
+
+
+def test_live_registration_publishes_one_immutable_complete_snapshot() -> None:
+    bundles = (
+        _foundation_bundle(),
+        _foundation_bundle(handler=_AlternateFoundationHandler()),
+    )
+    published = publish_live_registration_bundles(bundles)
+
+    assert len(published.descriptors) == 2
+    assert len(published.handlers) == 2
+    assert len(published.schemas.registrations) == 4
+    for bundle in bundles:
+        assert published.schemas.resolve_request(
+            bundle.request_schema.schema_ref, "1"
+        ) is _FoundationRequest
+        assert published.schemas.resolve_result(
+            bundle.result_schema.schema_ref, "1"
+        ) is _FoundationResult
+    with pytest.raises(TypeError):
+        published.descriptors[next(iter(published.descriptors))] = bundles[0].descriptor
 
 
 @pytest.mark.unit

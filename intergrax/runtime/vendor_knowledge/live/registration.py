@@ -33,6 +33,8 @@ class LiveCapabilityHandlerProtocolV1(Protocol):
     result_schema_ref: str
     expected_request_model: type[BaseModel]
 
+    def execute(self, request: BaseModel) -> BaseModel: ...
+
 
 @dataclass(frozen=True, slots=True)
 class LiveRegistrationBundleV1:
@@ -122,6 +124,18 @@ def _handler_identity(handler: LiveCapabilityHandlerProtocolV1) -> CapabilityIde
 def _validate_bundle(
     bundle: LiveRegistrationBundleV1,
 ) -> tuple[CapabilityIdentityV1, type[BaseModel], type[BaseModel]]:
+    if not isinstance(bundle, LiveRegistrationBundleV1):
+        raise ValueError("invalid_live_registration_bundle")
+    if not isinstance(bundle.descriptor, LiveCapabilityDescriptorV1) or not isinstance(
+        bundle.request_schema, SchemaRegistrationV1
+    ) or not isinstance(bundle.result_schema, SchemaRegistrationV1):
+        raise ValueError("live_registration_bundle_incomplete")
+    try:
+        execute = bundle.handler.execute
+    except AttributeError as exc:
+        raise ValueError("live_handler_execution_missing") from exc
+    if not callable(execute):
+        raise ValueError("live_handler_execution_not_callable")
     descriptor = bundle.descriptor
     identity = validate_capability_identity(
         capability_id=descriptor.capability_id,
@@ -175,6 +189,8 @@ def publish_live_registration_bundles(
     additional_handlers: Iterable[LiveCapabilityHandlerProtocolV1] = (),
 ) -> PublishedLiveRegistrationV1:
     """Validate everything first, then publish one immutable snapshot."""
+    if tuple(additional_descriptors) or tuple(additional_handlers):
+        raise ValueError("live_additional_registration_inputs_not_supported")
 
     descriptors: dict[
         tuple[str, IntegrationCategory, str, str], LiveCapabilityDescriptorV1
@@ -193,28 +209,6 @@ def publish_live_registration_bundles(
         descriptors[key] = bundle.descriptor
         handlers[key] = bundle.handler
         schema_entries.extend((bundle.request_schema, bundle.result_schema))
-
-    for descriptor in additional_descriptors:
-        identity = validate_capability_identity(
-            capability_id=descriptor.capability_id,
-            provider_id=descriptor.provider_id,
-            integration_kind=descriptor.integration_kind,
-            source_kind=descriptor.source_kind,
-            contract_version=descriptor.contract_version,
-        )
-        key = exact_capability_key(identity)
-        if key in descriptors:
-            raise ValueError("descriptor_without_handler")
-        descriptors[key] = descriptor
-
-    for handler in additional_handlers:
-        identity = _handler_identity(handler)
-        key = exact_capability_key(identity)
-        if key in handlers:
-            raise ValueError("duplicate_live_handler_identity")
-        if key not in descriptors:
-            raise ValueError("handler_without_descriptor")
-        handlers[key] = handler
 
     if set(descriptors) != set(handlers):
         if set(descriptors) - set(handlers):
