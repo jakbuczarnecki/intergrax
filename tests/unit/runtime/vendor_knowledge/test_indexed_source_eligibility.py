@@ -19,6 +19,9 @@ from intergrax.runtime.vendor_knowledge import (
     TenantConnectionAdministrativeStatus,
     canonical_indexed_source_ref,
 )
+from intergrax.runtime.vendor_knowledge.sync_task import (
+    VendorKnowledgeSyncHandlerRegistry,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -165,7 +168,10 @@ class _Provider:
 
 
 class _NonCallableHandlerProvider(_Provider):
-    sync_handler_ref = "not-callable"
+    handler_for_registry = object()
+
+    def sync_handler_ref(self) -> str:
+        return "not-callable"
 
 
 def _request(
@@ -190,15 +196,28 @@ def _resolver(
     connections: tuple[SafeTenantConnectionV1, ...],
     discovery: _Discovery,
     providers: tuple[_Provider, ...] = (),
+    sync_handler_registry: VendorKnowledgeSyncHandlerRegistry | None = None,
     now: datetime = _NOW,
 ) -> IndexedSourceEligibilityResolverV1:
     registry = IndexedSourceMaterializationRegistry()
     for provider in providers:
         registry.register(provider)
+    handler_registry = sync_handler_registry or VendorKnowledgeSyncHandlerRegistry()
+    if sync_handler_registry is None:
+        for provider in providers:
+            handler_registry.register(
+                provider_id=provider.provider_id,
+                integration_kind=provider.integration_kind,
+                source_kind=provider.source_kind,
+                handler_ref=provider.sync_handler_ref(),
+                handler=getattr(provider, "handler_for_registry", lambda: None),
+                registration_version="registration-1",
+            )
     return IndexedSourceEligibilityResolverV1(
         connection_port=_Connections(*connections),
         discovery_service_factory=lambda _tenant_id: discovery,
         materialization_registry=registry,
+        sync_handler_availability_port=handler_registry,
         clock=lambda: now,
     )
 
@@ -213,10 +232,26 @@ async def test_two_neutral_plugins_produce_same_canonical_plan_shape() -> None:
     )
     first_provider = _Provider(first_connection, source_kind="issues")
     second_provider = _Provider(second_connection, source_kind="documents")
+    shared_handler_registry = VendorKnowledgeSyncHandlerRegistry()
+    shared_handler_registry.register(
+        provider_id=first_provider.provider_id,
+        integration_kind=first_provider.integration_kind,
+        source_kind=first_provider.source_kind,
+        handler_ref=first_provider.sync_handler_ref(),
+        handler=lambda: None,
+    )
+    shared_handler_registry.register(
+        provider_id=second_provider.provider_id,
+        integration_kind=second_provider.integration_kind,
+        source_kind=second_provider.source_kind,
+        handler_ref=second_provider.sync_handler_ref(),
+        handler=lambda: None,
+    )
     first = _resolver(
         connections=(first_connection, second_connection),
         discovery=_Discovery((_resource(first_connection),)),
         providers=(first_provider,),
+        sync_handler_registry=shared_handler_registry,
     )
     second = _resolver(
         connections=(first_connection, second_connection),
@@ -230,6 +265,7 @@ async def test_two_neutral_plugins_produce_same_canonical_plan_shape() -> None:
             )
         ),
         providers=(second_provider,),
+        sync_handler_registry=shared_handler_registry,
     )
 
     first_proof = await first.resolve(_request())
@@ -274,6 +310,41 @@ async def test_qualification_is_deterministic_and_proof_expires() -> None:
         ).resolve(_request(snapshot_version="snapshot-2"))
     assert first.proof_revision != changed_snapshot.proof_revision
 
+    def handler() -> None:
+        return None
+
+    version_one_registry = VendorKnowledgeSyncHandlerRegistry()
+    version_one_registry.register(
+        provider_id=connection.provider_id,
+        integration_kind=connection.integration_kind,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        handler=handler,
+        registration_version="registration-1",
+    )
+    version_two_registry = VendorKnowledgeSyncHandlerRegistry()
+    version_two_registry.register(
+        provider_id=connection.provider_id,
+        integration_kind=connection.integration_kind,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        handler=handler,
+        registration_version="registration-2",
+    )
+    version_one = await _resolver(
+        connections=(connection,),
+        discovery=_Discovery((_resource(connection),)),
+        providers=(_Provider(connection, source_kind="issues"),),
+        sync_handler_registry=version_one_registry,
+    ).resolve(_request())
+    version_two = await _resolver(
+        connections=(connection,),
+        discovery=_Discovery((_resource(connection),)),
+        providers=(_Provider(connection, source_kind="issues"),),
+        sync_handler_registry=version_two_registry,
+    ).resolve(_request())
+    assert version_one.proof_revision != version_two.proof_revision
+
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -297,14 +368,6 @@ async def test_qualification_is_deterministic_and_proof_expires() -> None:
             _request(),
             IndexedSourceEligibilityStatusV1.RESOURCE_UNAVAILABLE,
             "indexed_source_eligibility_resource_unavailable",
-        ),
-        (
-            _connection(),
-            _resource(_connection()),
-            _Provider(_connection(), source_kind="issues", handler_available=False),
-            _request(),
-            IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE,
-            "indexed_source_eligibility_handler_unavailable",
         ),
         (
             _connection(),
@@ -375,10 +438,19 @@ async def test_cross_tenant_missing_resource_and_non_callable_handler_fail_close
         discovery=_Discovery(()),
         providers=(_Provider(connection, source_kind="issues"),),
     )
+    non_callable_registry = VendorKnowledgeSyncHandlerRegistry()
+    non_callable_registry.register(
+        provider_id=connection.provider_id,
+        integration_kind=connection.integration_kind,
+        source_kind="issues",
+        handler_ref="not-callable",
+        handler=object(),
+    )
     non_callable_handler = _resolver(
         connections=(connection,),
         discovery=_Discovery((_resource(connection),)),
         providers=(_NonCallableHandlerProvider(connection, source_kind="issues"),),
+        sync_handler_registry=non_callable_registry,
     )
 
     cross_tenant_proof = await cross_tenant.resolve(_request(tenant_id="tenant-b"))
@@ -393,6 +465,82 @@ async def test_cross_tenant_missing_resource_and_non_callable_handler_fail_close
     )
     assert missing_resource_proof.status is IndexedSourceEligibilityStatusV1.RESOURCE_UNAVAILABLE
     assert non_callable_proof.status is IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE
+
+
+@pytest.mark.asyncio
+async def test_declared_but_unregistered_handler_is_unavailable() -> None:
+    connection = _connection()
+    provider = _Provider(connection, source_kind="issues", handler_available=True)
+    proof = await _resolver(
+        connections=(connection,),
+        discovery=_Discovery((_resource(connection),)),
+        providers=(provider,),
+        sync_handler_registry=VendorKnowledgeSyncHandlerRegistry(),
+    ).resolve(_request())
+
+    assert proof.status is IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE
+    assert proof.safe_reason_code == "indexed_source_eligibility_handler_unavailable"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("registered_provider", "registered_source"),
+    (("provider-b", "issues"), ("provider-a", "documents")),
+)
+async def test_handler_registration_dimensions_must_match(
+    registered_provider: str,
+    registered_source: str,
+) -> None:
+    connection = _connection()
+    handler_registry = VendorKnowledgeSyncHandlerRegistry()
+    handler_registry.register(
+        provider_id=registered_provider,
+        integration_kind=connection.integration_kind,
+        source_kind=registered_source,
+        handler_ref="synthetic.sync.v1",
+        handler=lambda: None,
+    )
+
+    proof = await _resolver(
+        connections=(connection,),
+        discovery=_Discovery((_resource(connection),)),
+        providers=(_Provider(connection, source_kind="issues"),),
+        sync_handler_registry=handler_registry,
+    ).resolve(_request())
+
+    assert proof.status is IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE
+    assert proof.safe_reason_code == "indexed_source_eligibility_handler_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_handler_removal_invalidates_next_resolution() -> None:
+    connection = _connection()
+    handler_registry = VendorKnowledgeSyncHandlerRegistry()
+    handler_registry.register(
+        provider_id=connection.provider_id,
+        integration_kind=connection.integration_kind,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        handler=lambda: None,
+    )
+    resolver = _resolver(
+        connections=(connection,),
+        discovery=_Discovery((_resource(connection),)),
+        providers=(_Provider(connection, source_kind="issues"),),
+        sync_handler_registry=handler_registry,
+    )
+
+    eligible = await resolver.resolve(_request())
+    assert eligible.status is IndexedSourceEligibilityStatusV1.ELIGIBLE
+    assert handler_registry.unregister(
+        provider_id=connection.provider_id,
+        integration_kind=connection.integration_kind,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    )
+
+    unavailable = await resolver.resolve(_request())
+    assert unavailable.status is IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE
 
 
 def test_registry_is_complete_deterministic_and_removable() -> None:

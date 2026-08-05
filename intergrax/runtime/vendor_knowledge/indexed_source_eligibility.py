@@ -328,7 +328,17 @@ class IndexedSourceMaterializationProvider(Protocol):
 
     def sync_handler_ref(self) -> str: ...
 
-    def sync_handler_available(self) -> bool: ...
+
+@runtime_checkable
+class IndexedSourceSyncHandlerAvailabilityPort(Protocol):
+    def resolve_handler(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        source_kind: str,
+        handler_ref: str,
+    ) -> object | None: ...
 
 
 type IndexedSourceMaterializationRegistryKey = tuple[str, IntegrationCategory, str]
@@ -354,8 +364,22 @@ class IndexedSourceMaterializationRegistry:
             raise ValueError("materialization_contract_version_required")
         if not callable(getattr(provider, "qualify", None)):
             raise ValueError("materialization_qualifier_required")
-        if not hasattr(provider, "sync_handler_ref") or not hasattr(
-            provider, "sync_handler_available"
+        handler_ref = getattr(provider, "sync_handler_ref", None)
+        if not callable(handler_ref):
+            raise ValueError("materialization_handler_registration_incomplete")
+        try:
+            declared_handler_value = handler_ref()
+            if not isinstance(declared_handler_value, str):
+                raise ValueError("materialization_handler_registration_incomplete")
+            declared_handler_ref = _safe_text(
+                declared_handler_value,
+                field_name="sync_handler_ref",
+            )
+        except Exception as exc:
+            raise ValueError("materialization_handler_registration_incomplete") from exc
+        if (
+            not isinstance(declared_handler_ref, str)
+            or not declared_handler_ref.strip()
         ):
             raise ValueError("materialization_handler_registration_incomplete")
         key = (provider_id, integration_kind, source_kind)
@@ -422,6 +446,7 @@ class IndexedSourceEligibilityResolverV1:
         connection_port: TenantConnectionPort,
         discovery_service_factory: Callable[[str], IndexedSourceDiscoveryPort],
         materialization_registry: IndexedSourceMaterializationRegistry,
+        sync_handler_availability_port: IndexedSourceSyncHandlerAvailabilityPort | None = None,
         clock: Callable[[], datetime] | None = None,
         proof_ttl_seconds: int = 300,
     ) -> None:
@@ -430,6 +455,7 @@ class IndexedSourceEligibilityResolverV1:
         self._connection_port = connection_port
         self._discovery_service_factory = discovery_service_factory
         self._materialization_registry = materialization_registry
+        self._sync_handler_availability_port = sync_handler_availability_port
         self._clock = clock or (lambda: datetime.now(UTC))
         self._proof_ttl_seconds = proof_ttl_seconds
 
@@ -515,16 +541,15 @@ class IndexedSourceEligibilityResolverV1:
             )
 
         try:
-            handler_ref = provider.sync_handler_ref()
-            handler_available = provider.sync_handler_available()
+            handler_ref = _safe_text(
+                provider.sync_handler_ref(),
+                field_name="sync_handler_ref",
+            )
         except Exception:
             handler_ref = ""
-            handler_available = False
         if (
             not isinstance(handler_ref, str)
             or not handler_ref.strip()
-            or not isinstance(handler_available, bool)
-            or not handler_available
         ):
             return self._negative(
                 request=request,
@@ -532,6 +557,25 @@ class IndexedSourceEligibilityResolverV1:
                 reason="indexed_source_eligibility_handler_unavailable",
                 evaluated_at=evaluated_at,
             )
+        resolved_handler = self._resolve_sync_handler(
+            provider_id=connection.provider_id,
+            integration_kind=connection.integration_kind,
+            source_kind=request.source_kind,
+            handler_ref=handler_ref.strip(),
+        )
+        if resolved_handler is None or not callable(resolved_handler):
+            return self._negative(
+                request=request,
+                status=IndexedSourceEligibilityStatusV1.HANDLER_UNAVAILABLE,
+                reason="indexed_source_eligibility_handler_unavailable",
+                evaluated_at=evaluated_at,
+            )
+        handler_registration_version = self._handler_registration_version(
+            provider_id=connection.provider_id,
+            integration_kind=connection.integration_kind,
+            source_kind=request.source_kind,
+            handler_ref=handler_ref.strip(),
+        )
 
         try:
             descriptor = provider.qualify(connection=connection, resource=resource)
@@ -567,6 +611,7 @@ class IndexedSourceEligibilityResolverV1:
             {
                 **plan_without_revision,
                 "discovery_snapshot_version": request.discovery_snapshot_version,
+                "handler_registration_version": handler_registration_version,
             }
         )
         plan = IndexedSourceBindingPlanV1(
@@ -578,6 +623,53 @@ class IndexedSourceEligibilityResolverV1:
             evaluated_at=evaluated_at,
             proof_revision=proof_revision,
         )
+
+    def _resolve_sync_handler(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        source_kind: str,
+        handler_ref: str,
+    ) -> object | None:
+        port = self._sync_handler_availability_port
+        if port is None:
+            return None
+        try:
+            return port.resolve_handler(
+                provider_id=provider_id,
+                integration_kind=integration_kind,
+                source_kind=source_kind,
+                handler_ref=handler_ref,
+            )
+        except Exception:
+            return None
+
+    def _handler_registration_version(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        source_kind: str,
+        handler_ref: str,
+    ) -> str | None:
+        port = self._sync_handler_availability_port
+        version_resolver = getattr(port, "handler_registration_version", None)
+        if not callable(version_resolver):
+            return None
+        try:
+            version = version_resolver(
+                provider_id=provider_id,
+                integration_kind=integration_kind,
+                source_kind=source_kind,
+                handler_ref=handler_ref,
+            )
+        except Exception:
+            return None
+        if not isinstance(version, str):
+            return None
+        cleaned = version.strip()
+        return cleaned or None
 
     async def _find_resource(
         self,

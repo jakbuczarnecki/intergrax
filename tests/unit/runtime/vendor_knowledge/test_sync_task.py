@@ -14,6 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.queueing.contracts.task_queue import TaskHandle
 from intergrax.queueing.providers.document_store import (
     DocumentStoreTaskQueue,
@@ -36,6 +37,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
 from intergrax.runtime.vendor_knowledge.sync_task import (
     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
     VendorKnowledgeSyncDispatcher,
+    VendorKnowledgeSyncHandlerRegistry,
     VendorKnowledgeSyncJob,
     VendorKnowledgeSyncWorkerOutput,
     decode_vendor_knowledge_sync_job,
@@ -370,3 +372,81 @@ def test_registry_and_worker_schedules_continuation() -> None:
     assert output.continuation_task_id is not None
     assert worker.drain_once() == 1
     assert len(calls) == 2
+
+
+@pytest.mark.unit
+def test_sync_handler_registry_requires_exact_dimensions_and_executable_handler() -> None:
+    registry = VendorKnowledgeSyncHandlerRegistry()
+
+    def handler() -> None:
+        return None
+
+    registry.register(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+        handler=handler,
+        registration_version="registration-7",
+    )
+
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        is handler
+    )
+    assert (
+        registry.handler_registration_version(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        == "registration-7"
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-b",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="issues",
+            handler_ref="synthetic.sync.v1",
+        )
+        is None
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="documents",
+            handler_ref="synthetic.sync.v1",
+        )
+        is None
+    )
+
+    registry.register(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="broken",
+        handler_ref="broken.sync.v1",
+        handler=object(),
+        active=False,
+    )
+    assert (
+        registry.resolve_handler(
+            provider_id="provider-a",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            source_kind="broken",
+            handler_ref="broken.sync.v1",
+        )
+        is None
+    )
+    assert registry.unregister(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    )
