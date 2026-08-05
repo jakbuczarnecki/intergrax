@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
@@ -41,6 +42,58 @@ class ConversationEventReceipt(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_identity_fields(cls, value: object) -> object:
+        if not isinstance(value, Mapping):
+            return value
+        payload = dict(value)
+        for field_name in (
+            "tenant_id",
+            "conversation_connection_ref",
+            "provider_event_ref",
+            "execution_id",
+        ):
+            field_value = payload.get(field_name)
+            if isinstance(field_value, str):
+                payload[field_name] = field_value.strip()
+        return payload
+
+    @model_validator(mode="after")
+    def _validate_invariants(self) -> "ConversationEventReceipt":
+        identity_values = (
+            self.tenant_id,
+            self.conversation_connection_ref,
+            self.provider_event_ref,
+            self.execution_id,
+        )
+        if any(not value.strip() for value in identity_values):
+            raise ValueError("receipt identity fields must be nonblank")
+        if not _is_utc_timestamp(self.created_at) or (
+            self.completed_at is not None
+            and not _is_utc_timestamp(self.completed_at)
+        ):
+            raise ValueError("receipt timestamps must be timezone-aware UTC")
+
+        if self.status is ConversationEventReceiptStatus.PROCESSING:
+            if (
+                self.safe_response is not None
+                or self.response_hash is not None
+                or self.completed_at is not None
+            ):
+                raise ValueError("processing receipt cannot contain a response")
+            return self
+
+        if (
+            not self.safe_response
+            or not self.safe_response.strip()
+            or self.response_hash
+            != hashlib.sha256(self.safe_response.encode("utf-8")).hexdigest()
+            or self.completed_at is None
+        ):
+            raise ValueError("completed receipt response fields are inconsistent")
+        return self
+
 
 class ConversationEventReceiptError(RuntimeError):
     """Stable receipt-storage failure without storage/provider details."""
@@ -59,6 +112,10 @@ class ConversationEventReceiptClaim(BaseModel):
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
+
+
+def _is_utc_timestamp(value: datetime) -> bool:
+    return value.tzinfo is not None and value.utcoffset() == UTC.utcoffset(value)
 
 
 def _row_key(*, tenant_id: str, connection_ref: str, event_ref: str) -> str:
@@ -157,14 +214,58 @@ class ConversationInteractionEventReceiptRepository:
         ):
             raise ConversationEventReceiptError("conversation_receipt_update_conflict")
 
+    @staticmethod
+    def _transition(
+        receipt: ConversationEventReceipt,
+        *,
+        update: dict[str, object],
+    ) -> ConversationEventReceipt:
+        payload = receipt.model_dump(mode="python")
+        payload.update(update)
+        return ConversationEventReceipt.model_validate(payload)
+
+    @staticmethod
+    def _ensure_transition(
+        receipt: ConversationEventReceipt,
+        target: ConversationEventReceiptStatus,
+    ) -> None:
+        allowed = {
+            ConversationEventReceiptStatus.PROCESSING: {
+                ConversationEventReceiptStatus.RESPONSE_PENDING
+            },
+            ConversationEventReceiptStatus.RESPONSE_PENDING: {
+                ConversationEventReceiptStatus.RESPONSE_SENT,
+                ConversationEventReceiptStatus.RESPONSE_FAILED,
+            },
+            ConversationEventReceiptStatus.RESPONSE_FAILED: {
+                ConversationEventReceiptStatus.RESPONSE_SENT,
+                ConversationEventReceiptStatus.RESPONSE_FAILED,
+            },
+            ConversationEventReceiptStatus.RESPONSE_SENT: set(),
+        }
+        if target not in allowed[receipt.status]:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_transition_invalid"
+            )
+
     def mark_response_pending(
         self,
         *,
         receipt: ConversationEventReceipt,
         response: str,
     ) -> ConversationEventReceipt:
-        safe_response = response.strip()[:_MAX_RESPONSE_LENGTH]
-        replacement = receipt.model_copy(
+        self._ensure_transition(
+            receipt,
+            ConversationEventReceiptStatus.RESPONSE_PENDING,
+        )
+        safe_response = response.strip()
+        if not safe_response:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_response_empty"
+            )
+        safe_response = safe_response[:_MAX_RESPONSE_LENGTH]
+        replacement = self._transition(
+            receipt,
             update={
                 "status": ConversationEventReceiptStatus.RESPONSE_PENDING,
                 "safe_response": safe_response,
@@ -172,26 +273,42 @@ class ConversationInteractionEventReceiptRepository:
                     safe_response.encode("utf-8")
                 ).hexdigest(),
                 "completed_at": _utcnow(),
-            }
+            },
         )
         self._replace(receipt, replacement)
         return replacement
 
-    def mark_response_sent(self, *, receipt: ConversationEventReceipt) -> None:
-        self._replace(
+    def mark_response_sent(
+        self,
+        *,
+        receipt: ConversationEventReceipt,
+    ) -> ConversationEventReceipt:
+        self._ensure_transition(
             receipt,
-            receipt.model_copy(
-                update={"status": ConversationEventReceiptStatus.RESPONSE_SENT}
-            ),
+            ConversationEventReceiptStatus.RESPONSE_SENT,
         )
+        replacement = self._transition(
+            receipt,
+            update={"status": ConversationEventReceiptStatus.RESPONSE_SENT},
+        )
+        self._replace(receipt, replacement)
+        return replacement
 
-    def mark_response_failed(self, *, receipt: ConversationEventReceipt) -> None:
-        self._replace(
+    def mark_response_failed(
+        self,
+        *,
+        receipt: ConversationEventReceipt,
+    ) -> ConversationEventReceipt:
+        self._ensure_transition(
             receipt,
-            receipt.model_copy(
-                update={"status": ConversationEventReceiptStatus.RESPONSE_FAILED}
-            ),
+            ConversationEventReceiptStatus.RESPONSE_FAILED,
         )
+        replacement = self._transition(
+            receipt,
+            update={"status": ConversationEventReceiptStatus.RESPONSE_FAILED},
+        )
+        self._replace(receipt, replacement)
+        return replacement
 
 
 __all__ = [

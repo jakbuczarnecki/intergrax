@@ -120,7 +120,10 @@ class ConversationInteractionResponseRenderer:
             name = _safe_text(activation.get("name"), limit=200)
             if name and not any(line.startswith("Active workspace:") for line in lines):
                 lines.insert(0, f"Active workspace: {name}")
-        return _bounded(lines, preserved=failures + blocked + clarification_lines)
+        return _bounded(
+            lines,
+            preserved=clarification_lines + failures + blocked,
+        )
 
     @staticmethod
     def _completed_lines(
@@ -179,17 +182,51 @@ class ConversationInteractionResponseRenderer:
 
 
 def _bounded(lines: list[str], *, preserved: list[str] | None = None) -> str:
-    normalized = [_safe_text(line, limit=MAX_RESPONSE_CHARS) for line in lines if line]
-    text = "\n".join(normalized).strip()
-    if len(text) <= MAX_RESPONSE_CHARS:
-        return text
+    normalized: list[str] = []
+    for line in lines:
+        if line:
+            safe_line = _safe_text(line, limit=MAX_RESPONSE_CHARS)
+            if safe_line:
+                normalized.append(safe_line)
 
-    preserved_lines = [_safe_text(line) for line in (preserved or []) if line]
-    prefix = "\n".join(dict.fromkeys(preserved_lines)).strip()
-    if prefix:
-        remaining = max(0, MAX_RESPONSE_CHARS - len(prefix) - 2)
-        return (prefix + "\n\n" + text[:remaining].rstrip() + "…").strip()
-    return text[: MAX_RESPONSE_CHARS - 1].rstrip() + "…"
+    preserved_lines = []
+    for line in preserved or []:
+        if line:
+            safe_line = _safe_text(line, limit=MAX_RESPONSE_CHARS)
+            if safe_line and safe_line not in preserved_lines:
+                preserved_lines.append(safe_line)
+    preserved_values = set(preserved_lines)
+    remaining_lines = [
+        line for line in normalized if line not in preserved_values
+    ]
+
+    output: list[str] = []
+    used = 0
+    truncated = False
+
+    for line in [*preserved_lines, *remaining_lines]:
+        separator_length = 1 if output else 0
+        available = MAX_RESPONSE_CHARS - used - separator_length
+        if available <= 0:
+            break
+        if len(line) <= available:
+            output.append(line)
+            used += separator_length + len(line)
+            continue
+
+        if available == 1:
+            output.append("…")
+        else:
+            output.append(line[: available - 1].rstrip() + "…")
+        truncated = True
+        break
+
+    result = "\n".join(output).strip()
+    if not result:
+        result = _GENERIC_ERROR[:MAX_RESPONSE_CHARS] or "…"
+    if truncated and len(result) > MAX_RESPONSE_CHARS:
+        result = result[:MAX_RESPONSE_CHARS]
+    return result[:MAX_RESPONSE_CHARS] or "…"
 
 
 __all__ = [

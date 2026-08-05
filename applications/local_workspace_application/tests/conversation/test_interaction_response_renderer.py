@@ -14,6 +14,7 @@ from local_workspace_application.conversation.interaction_execution_models impor
 from local_workspace_application.conversation.interaction_response_renderer import (
     ConversationInteractionResponseRenderer,
     MAX_RESPONSE_CHARS,
+    _bounded,
 )
 
 
@@ -154,3 +155,134 @@ def test_renderer_maps_top_level_failure_without_exception_details() -> None:
 
     assert text == "I could not understand the requested workspace operation safely."
     assert "conversation_planning_failed" not in text
+
+
+def test_renderer_bounds_many_long_failure_lines() -> None:
+    text = ConversationInteractionResponseRenderer().render(
+        _result(
+            status=ConversationInteractionOverallStatus.PARTIALLY_COMPLETED,
+            actions=(
+                _action(
+                    action_id="completed",
+                    action_type="workspace.create",
+                    status=ConversationActionExecutionStatus.COMPLETED,
+                    data={"name": "Project Alfa"},
+                ),
+                *(
+                    _action(
+                        action_id=f"failure-{index}",
+                        action_type="workspace.ask",
+                        status=ConversationActionExecutionStatus.FAILED,
+                        error=ConversationExecutionError(
+                            code=(
+                                "conversation_execution_failed"
+                                if index % 2
+                                else "conversation_planning_failed"
+                            ),
+                            action_id=f"failure-{index}",
+                        ),
+                    )
+                    for index in range(50)
+                ),
+            ),
+        )
+    )
+
+    assert 0 < len(text) <= MAX_RESPONSE_CHARS
+    assert "Failed:" in text
+
+
+def test_renderer_bounds_many_long_clarifications_and_keeps_priority() -> None:
+    result = _result(
+        status=ConversationInteractionOverallStatus.PARTIALLY_COMPLETED,
+        clarifications=tuple(
+            ConversationExecutionClarification(
+                clarification_id=f"clarify-{index}",
+                question=f"Question {index}: " + "x" * 1_000,
+                blocks_action_ids=(),
+            )
+            for index in range(50)
+        ),
+        actions=(
+            _action(
+                action_id="completed",
+                action_type="workspace.create",
+                status=ConversationActionExecutionStatus.COMPLETED,
+                data={"name": "Project Alfa"},
+            ),
+            _action(
+                action_id="failure",
+                action_type="workspace.ask",
+                status=ConversationActionExecutionStatus.FAILED,
+                error=ConversationExecutionError(
+                    code="active_workspace_required",
+                    action_id="failure",
+                ),
+            ),
+        ),
+    )
+
+    text = ConversationInteractionResponseRenderer().render(result)
+
+    assert 0 < len(text) <= MAX_RESPONSE_CHARS
+    assert "Clarification needed:" in text
+
+
+def test_renderer_mixed_content_is_bounded_and_deterministic() -> None:
+    result = _result(
+        status=ConversationInteractionOverallStatus.PARTIALLY_COMPLETED,
+        actions=(
+            _action(
+                action_id="completed",
+                action_type="workspace.create",
+                status=ConversationActionExecutionStatus.COMPLETED,
+                data={"name": "Project Alfa"},
+            ),
+            _action(
+                action_id="failed",
+                action_type="workspace.ask",
+                status=ConversationActionExecutionStatus.FAILED,
+                error=ConversationExecutionError(
+                    code="active_workspace_required",
+                    action_id="failed",
+                ),
+            ),
+            _action(
+                action_id="blocked",
+                action_type="workspace.ask",
+                status=ConversationActionExecutionStatus.BLOCKED_DEPENDENCY,
+                error=ConversationExecutionError(
+                    code="blocked_dependency",
+                    action_id="blocked",
+                ),
+            ),
+        ),
+        clarifications=(
+            ConversationExecutionClarification(
+                clarification_id="clarify",
+                question="Which workspace should I use? " + "y" * 1_900,
+                blocks_action_ids=("blocked",),
+            ),
+        ),
+    )
+
+    first = ConversationInteractionResponseRenderer().render(result)
+    second = ConversationInteractionResponseRenderer().render(result)
+
+    assert first == second
+    assert 0 < len(first) <= MAX_RESPONSE_CHARS
+    assert "Clarification needed:" in first or "Failed:" in first
+
+
+def test_bounded_prefix_regression_and_ellipsis_stay_within_limit() -> None:
+    text = _bounded(
+        ["Completed: " + "c" * MAX_RESPONSE_CHARS],
+        preserved=[
+            f"Clarification needed: {index} " + "q" * MAX_RESPONSE_CHARS
+            for index in range(50)
+        ],
+    )
+
+    assert 0 < len(text) <= MAX_RESPONSE_CHARS
+    assert text.startswith("Clarification needed:")
+    assert text.endswith("…")
