@@ -127,20 +127,24 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
 [live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
-It is **READY_FOR_REVIEW**; Microsoft Graph Drive is **ACCEPTED / CLOSED**,
-Microsoft Graph Mail and Teams Channel are **READY_FOR_REVIEW**, and all other
-provider/source-kind live tasks plus the Google readiness gate remain
+It is **READY_FOR_REVIEW**; the Microsoft Graph Drive, Mail, Teams Channel,
+Teams Chat and Calendar live list capabilities are **ACCEPTED / CLOSED**, and
+all other provider/source-kind live tasks plus the Google readiness gate remain
 **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
 provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
 `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **ACCEPTED / CLOSED** with one
 bounded Drive list/query capability; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`
-is **READY_FOR_REVIEW** with one bounded mailbox-folder list/query capability.
+is **ACCEPTED / CLOSED** with one bounded mailbox-folder list/query capability.
 `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL` is
-**READY_FOR_REVIEW** with one bounded Teams Channel list capability. The v1
+**ACCEPTED / CLOSED** with one bounded Teams Channel list capability. The v1
 capability returns at most one root post; it does not list replies or all
-channel messages. Other provider live capability tasks remain **PLANNED**.
+channel messages.
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT` and
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR` are **ACCEPTED / CLOSED** with
+one binding-scoped metadata-only list page each. Other provider live capability
+tasks remain **PLANNED**.
 
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
@@ -419,9 +423,9 @@ Authoritative ACL: not implemented
 
 LKW connected-source bridge: not implemented
 
-Live capability layer: not implemented
+Live capability layer: bounded list implemented; body/content reads deferred
 
-Live search: not implemented
+Live search: unsupported by provider
 
 Calendar capability matrix (`MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`):
 
@@ -465,7 +469,7 @@ Every selected user calendar, including non-default and shared caller-visible
 calendars, supports a complete paged calendar-view snapshot for an explicit
 fixed time window.
 
-A later Vendor Knowledge adapter can use delta for the primary calendar and
+The Vendor Knowledge adapter uses delta for the primary calendar and
 full-snapshot reconciliation for other calendars.
 
 Event content, recurring occurrences and exceptions, participants, locations,
@@ -483,6 +487,12 @@ The Microsoft Graph Calendar Vendor Knowledge adapter is **ACCEPTED**
 its prior review fix remains **CHANGES_REQUIRED**. Non-primary missing-item
 detection is implemented and proven only after the final snapshot page.
 Calendar ACL is not implemented.
+
+The Calendar live capability is one initial metadata-only page over the
+binding-selected opaque scope. Primary-delta and non-primary-snapshot strategy
+selection remains authoritative in the adapter; continuation replay and
+complete traversal are deferred. Event bodies, attendees and attachment
+content are excluded.
 
 Microsoft Graph Teams Chat low-level knowledge-read support is complete using
 stable Graph v1.0 contracts.
@@ -508,8 +518,10 @@ implemented.
 The Microsoft Graph Teams Chat Vendor Knowledge adapter and its review correction
 are implemented.
 
-The Teams Chat live capability layer, provider-neutral live search and LKW
-connected-source bridge are not implemented.
+The Teams Chat live capability is one binding-scoped metadata-only list page.
+Provider-neutral live search and the LKW connected-source bridge are not
+implemented. Message bodies, mentions, reactions, attachment inventory/bytes
+and hosted content remain excluded.
 
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
@@ -653,7 +665,7 @@ provider-neutral live capability/executor: not implemented
 
 ```text
 durable adapter: implemented
-bounded live list/query: READY_FOR_REVIEW
+bounded live list/query: ACCEPTED / CLOSED
 bounded live search: unsupported by provider
 exact live item read: unsupported by provider
 child live read: not applicable
@@ -666,7 +678,9 @@ LKW bridge: not implemented
 ```text
 durable adapter: implemented
 exact live read foundation: available where an exact message is known
-bounded provider-neutral live search: not implemented
+bounded provider-neutral live list: ACCEPTED / CLOSED
+bounded provider-neutral live search: unsupported by provider
+message body/thread/attachment reads: deferred or unsupported
 LKW bridge: not implemented
 ```
 
@@ -675,7 +689,8 @@ LKW bridge: not implemented
 ```text
 durable reconciliation adapter: implemented
 exact message/thread read foundation: available
-provider-neutral live search/discovery capability: not implemented
+provider-neutral live bounded list: ACCEPTED / CLOSED
+provider-neutral live search/discovery capability: unsupported by provider
 LKW bridge: not implemented
 ```
 
@@ -684,7 +699,8 @@ LKW bridge: not implemented
 ```text
 durable reconciliation adapter: implemented
 exact message read foundation: implemented
-provider-neutral live search/discovery capability: not implemented
+provider-neutral live bounded list: ACCEPTED / CLOSED
+provider-neutral live search/discovery capability: unsupported by provider
 LKW bridge: not implemented
 ```
 
@@ -694,7 +710,8 @@ LKW bridge: not implemented
 low-level read foundation: implemented
 Vendor Knowledge adapter: ACCEPTED through REVIEW-FIX-1-REVIEW-CORRECTION-1
 non-primary missing-item detection: implemented; final-page proof accepted
-provider-neutral live capability: not implemented
+provider-neutral live bounded list: ACCEPTED / CLOSED
+continuation/delta replay: deferred
 LKW bridge: not implemented
 ```
 
@@ -1841,10 +1858,10 @@ ARCH-1 frozen shared delta: implemented as the FOUNDATION-1 review boundary
   shared contract test suite
 
 provider-specific production handlers:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 provider-specific production registrations:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 all other provider/source-kind live handlers and registrations:
   not implemented
@@ -1908,7 +1925,7 @@ uses the same executor, registry, normalized evidence and receipt boundary.
 
 **Dependency:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` remains
 `READY_FOR_REVIEW`; this foundation task is complete and its boundary is used
-by the accepted Drive and review-ready Mail implementations.
+by the accepted five-capability Microsoft Graph family.
 
 This task implements only the provider-neutral runtime delta frozen by
 `ARCH-1`:
@@ -1979,11 +1996,11 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
 → VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
 
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE  # ACCEPTED / CLOSED
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL  # READY_FOR_REVIEW
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL  # next after mail acceptance
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL  # ACCEPTED / CLOSED
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL  # ACCEPTED / CLOSED
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT  # ACCEPTED / CLOSED
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR  # ACCEPTED / CLOSED
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT  # READY_FOR_REVIEW
 
 → SLACK-KNOWLEDGE-LIVE-CAPABILITY-1
 → JIRA-KNOWLEDGE-LIVE-CAPABILITY-1
@@ -2108,8 +2125,11 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT: READY_FOR_REVIEW
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

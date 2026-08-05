@@ -1,6 +1,6 @@
 # Microsoft Graph Teams Channel Live Capability 1C
 
-STATUS: READY_FOR_REVIEW
+STATUS: ACCEPTED / CLOSED
 
 The v1 Teams Channel list capability returns at most one root post.
 It does not list replies or all channel messages.
@@ -62,8 +62,12 @@ Graph family publication order is deterministic:
 vendor.ms365_graph.drive.list
 vendor.ms365_graph.mail.list
 vendor.ms365_graph.teams_channel.list
+vendor.ms365_graph.teams_chat.list
+vendor.ms365_graph.calendar.list
 ```
 
 The live result may contain root-post metadata and explicit deletion evidence;
 it does not contain reply traversal, full-channel traversal, message bodies,
-or attachment/hosted-content bytes.
+or attachment/hosted-content bytes. The complete Microsoft Graph live family
+now publishes five deterministic list bundles through one shared registry and
+executor; Teams Chat and Calendar use their own binding-scoped opaque scopes.

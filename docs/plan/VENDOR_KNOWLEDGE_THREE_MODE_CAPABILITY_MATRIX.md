@@ -25,12 +25,13 @@ indexed ingestion or live access. Current repository evidence proves:
   `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`;
 - a provider-specific application indexed path only for Slack
   `slack_conversation`, with final accepted LKW closeout still unresolved;
-- provider/source-kind live handlers and registrations are implemented only for
-  Microsoft Graph Drive list and Mail list;
+- provider/source-kind live handlers and registrations are implemented for the
+  five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
+  Teams Chat and Calendar;
 
-Microsoft Graph Drive live access is `ACCEPTED / CLOSED`, while Microsoft
-Graph Mail remains `READY_FOR_REVIEW`; all other live provider/source-kind
-rows remain conservative and unimplemented.
+Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar live access
+are `ACCEPTED / CLOSED`; all other live provider/source-kind rows remain
+conservative and unimplemented.
 
 ## 2. Mode definitions
 
@@ -92,17 +93,17 @@ from the exact matrix because no source kind has been selected.
 |---|---|---|
 | Indexed | `YES` — LKW document ingestion, canonical document indexing, vector retrieval and query/Ask paths | Local-file/LKW capability is not transferred to Vendor Knowledge providers. |
 | Durable materialization | `YES` — `DocumentStore`, idempotent sink, remote-item state, checkpoints, leases, reconciliation, queue/worker and recovery | Provider adapter/sync proof is not application-owned materialization proof. |
-| Live | `YES` — current typed binding/catalog contracts, exact handler registry, validated executor, basic limits, normalized evidence, receipts and retention | `FOUNDATION-1` provides the accepted shared boundary; production provider-specific handlers and registrations exist only for Microsoft Graph Drive list and Mail list. |
+| Live | `YES` — current typed binding/catalog contracts, exact handler registry, validated executor, bounded limits, normalized evidence, receipts and retention | `FOUNDATION-1` provides the accepted shared boundary; the Graph family closeout verifies five provider-specific list handlers on the same integration and executor. |
 
 ## 5. Exact provider/source-kind matrix
 
 | provider_family | integration_identity | source_kind | adapter_status | indexed_status | indexed_platform_foundation | indexed_provider_wiring | indexed_application_wiring | indexed_refresh | indexed_removal | indexed_provenance | indexed_proof | indexed_gap | durable_status | durable_platform_foundation | durable_provider_wiring | durable_application_sink | durable_checkpoint | durable_recovery | durable_proof | durable_gap | live_status | live_platform_foundation | live_provider_wiring | live_executor | live_limits | live_evidence | live_receipt | live_application_wiring | live_proof | live_gap | commercially_supported_modes | primary_evidence | next_action |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `drive` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Graph-to-index bridge or application query proof; preserve accepted delta/full-reconciliation and ACL limits. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted adapter/reconciliation exists, but no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Drive list/query only; search and exact read are unsupported, child read is not applicable, content read is deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE`; focused live tests | Preserve the accepted Drive list proof and exact operation matrix. |
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `mail` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No folder-scoped Graph Mail index bridge; attachment presence is not attachment inventory or bytes. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted reconciliation is folder-scoped; no production application-owned sink was found. | `READY_FOR_REVIEW` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Mail live handler and registration are implemented; review remains open, and body, thread and attachment reads remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`; accepted audit input; Mail semantics in roadmap | Preserve folder-scoped delta/removal and attachment non-goals. |
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_channel` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No channel-to-index bridge or application proof; deletion evidence remains explicit `deletedDateTime`. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter snapshot/reconciliation is proven, but application sink ownership is absent. | `READY_FOR_REVIEW` | YES | YES | YES | YES | YES | YES | NO | FOCUSED_TESTS | No production application call path; live remains limited to one root post and does not list replies or all channel messages. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`; `MSGRAPH_KNOWLEDGE_LIVE_CAPABILITY_1C_TEAMS_CHANNEL.md`; focused live tests | Review the bounded Teams Channel list proof and preserve explicit deletion semantics. |
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No chat-to-index bridge or application proof; fixed-window scope does not prove live or indexed lifecycle. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application sink ownership is absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No provider live registration or application call path. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`; accepted audit input | Preserve fixed-window and explicit-deletion semantics. |
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `calendar` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Calendar-to-index bridge or application proof; primary delta and non-primary snapshot paths must remain separate. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted primary/non-primary reconciliation exists, but no production application-owned sink was found. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No provider/source-kind live handler. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; accepted review correction; audit input | Preserve primary delta versus non-primary snapshot semantics. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `mail` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No folder-scoped Graph Mail index bridge; attachment presence is not attachment inventory or bytes. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted reconciliation is folder-scoped; no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Mail live handler and registration are implemented; body, thread and attachment reads remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`; focused live tests | Preserve folder-scoped delta/removal and attachment non-goals. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_channel` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No channel-to-index bridge or application proof; deletion evidence remains explicit `deletedDateTime`. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter snapshot/reconciliation is proven, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Live remains limited to one root post and does not list replies or all channel messages. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL`; focused live tests | Preserve explicit deletion semantics and the bounded root-post list. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No chat-to-index bridge or application proof; fixed-window scope does not prove live or indexed lifecycle. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Fixed-window metadata-only list; bodies, mentions, reactions, attachments and hosted content remain excluded. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT`; focused live tests | Preserve fixed-window and explicit-deletion semantics. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `calendar` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Calendar-to-index bridge or application proof; primary delta and non-primary snapshot paths must remain separate. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted primary/non-primary reconciliation exists, but no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | One binding-selected initial metadata-only page; complete traversal, replay and event content remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR`; focused live tests | Preserve primary-delta versus non-primary-snapshot semantics and window removals. |
 | Slack | `slack / conversation_channel` | `slack_conversation` | `IMPLEMENTED_UNREVIEWED` | `IMPLEMENTED_UNREVIEWED` | YES | YES | YES | PARTIAL | NO | YES | PARTIAL | Current HTTP→sync→index→Search/Ask proof exists; final accepted LKW/recovery closeout and removal propagation remain unresolved. | `PARTIAL` | YES | YES | YES | YES | PARTIAL | PARTIAL | Connected-source application sink and retry path exist; final crash-safe recovery/closeout is still unresolved. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Slack live handler registration; exact reads alone are insufficient. | NONE | `test_slack_connected_source_end_to_end.py`; `connected_source_wiring.py`; `connected_source_materializer.py`; `LKW-SLACK-CONNECTED-SOURCE-1` remains `CHANGES_REQUIRED` | Complete the already-routed Slack LKW proof before any commercial indexed claim; keep live unimplemented. |
 | Google Workspace | `google_workspace / collaboration_suite` | `drive` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Adapter and sync tests exist, but no Google application binding, index bridge or indexed proof exists. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Provider adapter/reconciliation exists; application-owned materialization is not wired. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Drive live handler or application invocation. | NONE | `google_workspace_drive` adapter/sync tests named by accepted audit; roadmap Google status is stale | Correct status only through matrix routing; route application proof separately if product support is approved. |
 | Google Workspace | `google_workspace / collaboration_suite` | `docs` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Known-document adapter does not establish indexed discovery, lifecycle or application query wiring. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | One-item reconciliation exists; broad discovery, deletion semantics and application sink are absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Docs live handler or application invocation. | NONE | `google_workspace_docs` adapter/sync tests named by accepted audit; current integration | Keep exact-known-resource limits explicit; do not copy stale “no adapters” wording as capability evidence. |
@@ -326,15 +327,24 @@ FOUNDATION-1-REVIEW-FIX-2: implemented and ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
   bounded Drive list/query is registered through the shared live executor
 
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: ACCEPTED / CLOSED
   bounded mailbox-folder message list/query is registered through the same
   shared live executor; body, thread and attachment reads remain deferred
 
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: ACCEPTED / CLOSED
+  bounded root-post metadata list is registered through the same shared live executor
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT: ACCEPTED / CLOSED
+  bounded fixed-window metadata-only message list is registered through the same shared live executor
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR: ACCEPTED / CLOSED
+  bounded binding-selected initial metadata-only page is registered through the same shared live executor
+
 provider-specific production handlers:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 provider-specific production registrations:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 all other provider/source-kind live handlers and registrations:
   not implemented
@@ -348,17 +358,17 @@ placeholders, not canonical capability IDs.
 `ARCH-1` freezes the provider-neutral request/result contract decisions and
 exact capability naming. `FOUNDATION-1` implements and validates the shared
 schemas, typed call, registration, budgets, provenance, locator and receipt
-boundary; the Microsoft Graph Drive row is accepted, the Mail row is ready for
-review, and other provider/source-kind rows remain `FOUNDATION_ONLY` until
-their provider task is accepted.
+boundary; all five Microsoft Graph live rows are accepted and closed, while
+other provider/source-kind rows remain `FOUNDATION_ONLY` until their provider
+task is accepted.
 
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Microsoft Graph | `drive` | `vendor.ms365_graph.drive.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / not applicable child / deferred content | one known drive ID from binding | `MsGraphDriveListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `ACCEPTED / CLOSED` | search and exact item read are unsupported; child read is not applicable; content read is deferred because provider bytes do not fit the textual live result boundary |
-| Microsoft Graph | `mail` | `vendor.ms365_graph.mail.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / deferred thread / deferred child and content | one binding-derived opaque mailbox-folder scope | `MsGraphMailListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `READY_FOR_REVIEW` | search, exact read and thread read are unsupported; attachment inventory/content and bounded content read remain deferred |
-| Microsoft Graph | `teams_channel` | `vendor.ms365_graph.teams_channel.list` | bounded list, at most one root post | search unsupported; replies/thread/content/attachment reads deferred | one binding-fixed team + channel | `MsGraphTeamsChannelListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | one call | one result item | one provider item | root-post metadata/deletion | provider-safe locator only | receipt only | ephemeral/receipt-only | registered | registered | `READY_FOR_REVIEW` | `MSGRAPH_KNOWLEDGE_LIVE_CAPABILITY_1C_TEAMS_CHANNEL.md` |
-| Microsoft Graph | `teams_chat` | `PLANNED:vk.msgraph.teams_chat.search/read` | planned | planned | one chat + bounded window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
-| Microsoft Graph | `calendar` | `PLANNED:vk.msgraph.calendar.search/read` | planned | planned | mailbox calendar + UTC window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `mail` | `vendor.ms365_graph.mail.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / deferred thread / deferred child and content | one binding-derived opaque mailbox-folder scope | `MsGraphMailListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `ACCEPTED / CLOSED` | search, exact read and thread read are unsupported; attachment inventory/content and bounded content read remain deferred |
+| Microsoft Graph | `teams_channel` | `vendor.ms365_graph.teams_channel.list` | bounded list, at most one root post | search unsupported; replies/thread/content/attachment reads deferred | one binding-fixed team + channel | `MsGraphTeamsChannelListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | one call | one result item | one provider item | root-post metadata/deletion | provider-safe locator only | receipt only | ephemeral/receipt-only | registered | registered | `ACCEPTED / CLOSED` | bounded root-post metadata list; replies, full traversal and content remain deferred |
+| Microsoft Graph | `teams_chat` | `vendor.ms365_graph.teams_chat.list` | bounded fixed-window list | exact read unsupported; content/attachments deferred | one binding-derived opaque chat/window scope | `MsGraphTeamsChatListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | one call | 50 items | 50 provider items | metadata/deletion | provider-safe locator only | receipt only | ephemeral/receipt-only | registered | registered | `ACCEPTED / CLOSED` | metadata-only message list; bodies, mentions, reactions and hosted content excluded |
+| Microsoft Graph | `calendar` | `vendor.ms365_graph.calendar.list` | bounded initial list; primary delta or non-primary snapshot selected by adapter | exact read unsupported; content/attachments deferred | one binding-derived opaque calendar/window scope | `MsGraphCalendarListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | one call | 200 items | 200 provider items | metadata/window-removal | provider-safe locator only | receipt only | ephemeral/receipt-only | registered | registered | `ACCEPTED / CLOSED` | one initial page only; complete traversal and continuation replay deferred |
 | Slack | `slack_conversation` | `PLANNED:vk.slack.slack_conversation.search/read` | planned | planned | one authorized conversation | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Jira | `issues` | `PLANNED:vk.jira.issues.search/read` | planned | planned | one Jira project | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Confluence | `pages` | `PLANNED:vk.confluence.pages.search/read` | planned | planned | one Confluence space | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
@@ -502,8 +512,11 @@ Immediate next task:
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE — ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL — READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL — READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR — ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT — READY_FOR_REVIEW
 ```
 
 The complete order is frozen in
@@ -528,8 +541,11 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT: READY_FOR_REVIEW
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

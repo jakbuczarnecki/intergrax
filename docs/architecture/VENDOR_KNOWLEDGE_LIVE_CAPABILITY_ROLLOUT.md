@@ -863,8 +863,9 @@ activated.
 
 **User outcome:** every provider enters live access through the same validated
 and tested boundary instead of defining private rules in its first handler.
-Current provider-specific production handlers and registrations are limited to
-Microsoft Graph Drive list and Mail list.
+At the family closeout, provider-specific production handlers and registrations
+cover the five bounded Microsoft Graph list capabilities: Drive, Mail, Teams
+Channel, Teams Chat and Calendar.
 
 **Provider-neutral scope:**
 
@@ -889,10 +890,10 @@ bootstrap integration needed by all provider families
 
 ```text
 provider-specific production handlers:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 provider-specific production registrations:
-  implemented for Microsoft Graph Drive list and Mail list only
+  implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
 
 all other provider/source-kind live handlers and registrations:
   not implemented
@@ -1028,9 +1029,18 @@ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
   ACCEPTED / CLOSED
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
-  READY_FOR_REVIEW
+  ACCEPTED / CLOSED
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL
+  ACCEPTED / CLOSED
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT
+  ACCEPTED / CLOSED
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR
+  ACCEPTED / CLOSED
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
   READY_FOR_REVIEW
 
 all other provider live tasks
@@ -1071,6 +1081,43 @@ bounded content read: DEFERRED
 Mail live access is bound to one canonical opaque mailbox-folder scope and
 performs exactly one adapter page read. Message bodies, threads, attachment
 inventory/content and real-credential external proof remain out of scope.
+
+### Microsoft Graph Teams Chat live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list: SUPPORTED through one fixed-window snapshot page
+exact message read: UNSUPPORTED_BY_PROVIDER
+thread read: NOT_APPLICABLE / unsupported
+content read: DEFERRED
+attachment inventory/content: DEFERRED
+hosted/reference content: DEFERRED
+```
+
+Teams Chat live access uses one binding-derived opaque chat/window scope and
+one adapter page read. It returns metadata-only message records, including
+explicit provider tombstones. Bodies, mentions, reactions, attachment
+inventory/bytes, hosted content, continuation and cursor state remain excluded.
+
+### Microsoft Graph Calendar live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list: SUPPORTED through one binding-selected calendar page
+primary calendar initial delta page: SUPPORTED
+non-primary calendar snapshot page: SUPPORTED
+continuation/delta replay: DEFERRED
+exact event read: UNSUPPORTED_BY_PROVIDER
+content read: DEFERRED
+attachment inventory/content: DEFERRED
+```
+
+Calendar live access uses one binding-derived opaque calendar/window scope and
+one initial adapter page. The adapter selects primary-delta versus non-primary
+snapshot from the binding. A removal means only
+`removed_from_synchronized_calendar_window_view`; absence is not deletion.
+Complete traversal, delta replay, event bodies, attendees and attachment
+content are not claimed.
 
 Acceptance requires proof that later tasks use:
 
