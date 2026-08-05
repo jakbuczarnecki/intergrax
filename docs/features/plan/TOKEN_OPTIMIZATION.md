@@ -1849,14 +1849,20 @@ Independent GitHub audit of **TOKEN-10E-CLOSEOUT-1**. Do not wire LKW, Slack, or
 
 **Status:** **READY_FOR_REVIEW**.
 
-Delivered a strict versioned TOML loader with immutable contracts, a
-backend-neutral runner composing the real `LLMAdapterRegistry`,
+Delivered a strict versioned TOML loader with immutable contracts and a
+universal runner composing the real `LLMAdapterRegistry`,
 `TokenOptimizationLLMRouter`, router catalog, built-in layer catalog, layer
 registry, and `TokenOptimizationPipelineRunner`, plus redaction-safe canonical
 JSON artifacts and a thin CLI. `offline_smoke` is network-free and
-`live_adapter` is explicit; it never silently falls back. The local vLLM
-compose path and operator README are provided, but live vLLM execution was not
-performed in this task.
+`live_adapter` is explicit; it never silently falls back. The shared
+Token Optimization composition is provider-neutral, while the TOKEN-10F v1
+live transport profile supports canonical OpenAI-compatible adapters, including
+local vLLM. It accepts only providers present in the canonical registry and
+rejects incompatible families such as Ollama, Claude, Gemini, or Bedrock.
+Support for other adapter families can be added through later versioned
+profiles without changing the proof runner. The local vLLM compose path and
+operator README are provided, but live vLLM execution was not performed in
+this task.
 
 Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
 `configs/token_optimization/proof_vllm.toml`,
@@ -2362,7 +2368,8 @@ TOKEN-DOCS-1   token optimization documentation hub and relocation — Implement
 TOKEN-10D-1..10D-3 cache-aware orchestration, normalization, runtime — Accepted / Closed
 TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
 TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
-TOKEN-10F..10H universal proof harness, corpus, README promotion — Planned
+TOKEN-10F universal proof harness — Ready for Review
+TOKEN-10G..10H corpus, gates, README promotion — Planned
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

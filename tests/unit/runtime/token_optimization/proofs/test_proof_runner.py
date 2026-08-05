@@ -7,6 +7,10 @@ from types import SimpleNamespace
 
 import pytest
 
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.runtime.token_optimization.proofs.config import (
     load_universal_token_optimization_proof_config,
@@ -19,16 +23,26 @@ from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
     _measurements_from_pipeline,
 )
+from intergrax.runtime.token_optimization.llm_router_contracts import (
+    TokenOptimizationRouterConfigurationId,
+    TokenOptimizationRouterReasonCode,
+    TokenOptimizationRouterRisk,
+)
 
 
-def _config(tmp_path: Path, *, provider: str = "vllm"):
+def _config(
+    tmp_path: Path,
+    *,
+    provider: str = "vllm",
+    run_mode: str = "offline_smoke",
+):
     tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "proof.toml"
     path.write_text(
         f"""
 schema_version = "token-optimization-proof.v1"
 proof_id = "runner-proof"
-run_mode = "offline_smoke"
+run_mode = "{run_mode}"
 
 [adapter]
 adapter_id = "offline"
@@ -134,13 +148,107 @@ def test_offline_runner_is_network_free_and_has_no_second_engine() -> None:
     assert "class AlternativePipelineRunner" not in source
 
 
-@pytest.mark.parametrize("provider", ("vllm", "ollama", "openai"))
+@pytest.mark.parametrize("provider", ("vllm", "openai", "groq"))
 def test_loader_accepts_canonical_provider_ids_without_network_call(
     tmp_path: Path,
     provider: str,
 ) -> None:
     config = _config(tmp_path / provider, provider=provider)
     assert config.adapter.provider == provider
+
+
+class _RecordingLiveAdapter(LLMAdapter):
+    def __init__(self, *, provider: str, **kwargs) -> None:
+        super().__init__()
+        self.provider = LLMProvider(provider)
+        self.model = kwargs["model"]
+        self.model_name_for_token_estimation = self.model
+        self.create_kwargs = kwargs
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 32768
+
+    def supports_structured_output(self) -> bool:
+        return True
+
+    def generate_messages(self, messages, **kwargs) -> LLMAdapterResponse:
+        return LLMAdapterResponse(
+            content="controlled-live-composition",
+            model=self.model,
+            provider=self.provider.value,
+        )
+
+    def generate_structured(
+        self,
+        messages,
+        output_model: type,
+        **kwargs,
+    ) -> LLMStructuredResult:
+        decision = output_model(
+            configuration_id=TokenOptimizationRouterConfigurationId("exact_only"),
+            reason_code=TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
+            risk=TokenOptimizationRouterRisk.LOW,
+            review_required=False,
+            confidence=1.0,
+        )
+        return LLMStructuredResult(
+            parsed=decision,
+            response=LLMAdapterResponse(
+                content="controlled-live-composition",
+                model=self.model,
+                provider=self.provider.value,
+            ),
+        )
+
+
+@pytest.mark.parametrize("provider", ("vllm", "openai"))
+def test_live_runner_uses_injected_registry_contract_without_network(
+    tmp_path: Path,
+    monkeypatch,
+    provider: str,
+) -> None:
+    monkeypatch.setenv("RUNNER_UNUSED_KEY", "controlled-test-key")
+    created: list[_RecordingLiveAdapter] = []
+
+    class ScopedLiveRegistry(LLMAdapterRegistry):
+        _factories = {}
+        create_calls = []
+
+        @classmethod
+        def create(cls, requested_provider, **kwargs):
+            cls.create_calls.append((requested_provider, kwargs))
+            return super().create(requested_provider, **kwargs)
+
+    def factory(**kwargs):
+        adapter = _RecordingLiveAdapter(provider=provider, **kwargs)
+        created.append(adapter)
+        return adapter
+
+    ScopedLiveRegistry.register(provider, factory)
+    result = UniversalTokenOptimizationProofRunner(
+        adapter_registry=ScopedLiveRegistry,
+    ).run(
+        _config(tmp_path, provider=provider, run_mode="live_adapter"),
+        persist_artifacts=False,
+    )
+
+    assert result.success is True
+    assert len(ScopedLiveRegistry.create_calls) == 1
+    requested_provider, create_kwargs = ScopedLiveRegistry.create_calls[0]
+    assert requested_provider == provider
+    assert create_kwargs == {
+        "model": "offline-model",
+        "base_url": "offline://local",
+        "api_key": "controlled-test-key",
+        "timeout_sec": 5.0,
+        "max_tokens": 32,
+        "temperature": 0.0,
+    }
+    assert len(created) == 1
+    assert created[0].create_kwargs == create_kwargs
+    assert type(created[0]).__name__ == "_RecordingLiveAdapter"
+    assert result.environment.provider == provider
 
 
 def test_loader_rejects_unknown_provider_closed(tmp_path: Path) -> None:

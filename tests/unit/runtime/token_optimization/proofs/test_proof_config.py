@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.runtime.token_optimization.proofs.config import (
+    _OPENAI_COMPATIBLE_PROVIDERS,
     load_universal_token_optimization_proof_config,
 )
 from intergrax.runtime.token_optimization.proofs.contracts import (
@@ -12,7 +15,13 @@ from intergrax.runtime.token_optimization.proofs.contracts import (
 )
 
 
-def _toml(*, proof_id: str = "proof-smoke", output: str = ".artifacts/proof") -> str:
+def _toml(
+    *,
+    proof_id: str = "proof-smoke",
+    output: str = ".artifacts/proof",
+    provider: str = "vllm",
+    adapter_type: str = "openai_compatible",
+) -> str:
     return f"""
 schema_version = "token-optimization-proof.v1"
 proof_id = "{proof_id}"
@@ -20,8 +29,8 @@ run_mode = "offline_smoke"
 
 [adapter]
 adapter_id = "offline"
-provider = "vllm"
-type = "openai_compatible"
+provider = "{provider}"
+type = "{adapter_type}"
 model = "offline-model"
 base_url = "http://127.0.0.1:8100/v1"
 api_key_env = "TEST_PROOF_KEY"
@@ -73,8 +82,34 @@ def test_valid_toml_loads_immutable_config(tmp_path: Path) -> None:
 
     assert config.proof_id == "proof-smoke"
     assert config.cases[0].case_id == "case-one"
-    assert config.output.directory == (tmp_path / ".artifacts/proof").resolve()
+    assert config.output.directory == (Path.cwd() / ".artifacts/proof").resolve()
     assert "secret prompt value" not in repr(config.cases[0])
+
+
+@pytest.mark.parametrize("provider", ("vllm", "openai", "groq"))
+def test_openai_compatible_v1_profile_matches_canonical_registry(
+    tmp_path: Path,
+    provider: str,
+) -> None:
+    config = load_universal_token_optimization_proof_config(
+        _write(tmp_path, _toml(provider=provider))
+    )
+
+    assert LLMProvider(provider).value == provider
+    assert provider in LLMAdapterRegistry.registered_providers()
+    assert provider in _OPENAI_COMPATIBLE_PROVIDERS
+    assert config.adapter.adapter_type == "openai_compatible"
+
+
+@pytest.mark.parametrize("provider", ("ollama", "claude", "unknown"))
+def test_non_compatible_or_unknown_provider_is_rejected(
+    tmp_path: Path,
+    provider: str,
+) -> None:
+    with pytest.raises(ProofConfigurationError, match="UNSUPPORTED_ADAPTER"):
+        load_universal_token_optimization_proof_config(
+            _write(tmp_path, _toml(provider=provider))
+        )
 
 
 @pytest.mark.parametrize(

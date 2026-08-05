@@ -993,7 +993,7 @@ As-built behavior:
 - evaluate cold / warm / changed-prefix proof gates through cache-stable prompt assembly and `VllmChatAdapter`;
 - gate live proof behind `INTERGRAX_TOKEN_OPTIMIZATION_VLLM_E2E=1` (`tests/e2e/token_optimization/test_vllm_prefix_cache_live.py`).
 
-Later TOKEN-10F harness work must not introduce a second inference client.
+The TOKEN-10F harness does not introduce a second inference client.
 
 vLLM proof demonstrates: repeated KV-prefix reuse; lower repeated prefill work; cached-token reuse where exposed; prefix-cache hit metrics; latency or prefill improvement; stable-prefix correctness.
 
@@ -1002,6 +1002,11 @@ vLLM proof does **not** demonstrate: managed-provider billing discount; Anthropi
 ### 8.9 Universal proof harness (**TOKEN-10F**)
 
 The proof harness is a universal Token Optimization capability, not an application.
+TOKEN-10F executes the shared production Token Optimization runtime: router,
+catalog, registry, and pipeline composition remain provider-neutral. Its
+`live_adapter` transport profile is intentionally narrower: v1 accepts only
+canonical providers whose registered adapter is OpenAI-compatible, including
+local vLLM. This profile is not a copy of the global provider registry.
 
 Canonical paths:
 
@@ -1019,8 +1024,15 @@ external case source without accepting arbitrary Python import paths.
 
 **Proof modes:** `offline_smoke` is a network-free composition check using a
 deterministic adapter only through the real adapter registry; it is not a
-provider proof. `live_adapter` resolves the configured provider explicitly and
-does not silently fall back.
+provider proof. `live_adapter` resolves the configured provider explicitly
+through the canonical registry and does not silently fall back. TOKEN-10F v1
+accepts `openai`, `vllm`, `groq`, `together`, `fireworks`, `openrouter`,
+`deepseek`, `xai`, `llama_cpp`, `cohere`, and `azure_ai_inference` when present
+in that registry; non-compatible families such as `ollama`, `claude`, `gemini`,
+and `bedrock` are rejected even when they exist in `LLMProvider`.
+
+Support for other adapter families can be added through later versioned
+profiles without changing the proof runner.
 
 **Proof execution** uses the real production path:
 

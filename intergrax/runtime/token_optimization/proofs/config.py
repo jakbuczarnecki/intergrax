@@ -35,6 +35,22 @@ _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RUN_MODES = frozenset({"offline_smoke", "live_adapter"})
 _ADAPTER_TYPES = frozenset({"openai_compatible"})
+# TOKEN-10F v1 transport profile, not global registry inventory.
+_OPENAI_COMPATIBLE_PROVIDERS = frozenset(
+    {
+        LLMProvider.OPENAI.value,
+        LLMProvider.VLLM.value,
+        LLMProvider.GROQ.value,
+        LLMProvider.TOGETHER.value,
+        LLMProvider.FIREWORKS.value,
+        LLMProvider.OPENROUTER.value,
+        LLMProvider.DEEPSEEK.value,
+        LLMProvider.XAI.value,
+        LLMProvider.LLAMA_CPP.value,
+        LLMProvider.COHERE.value,
+        LLMProvider.AZURE_AI_INFERENCE.value,
+    }
+)
 _PIPELINE_MODES = frozenset({"default", "replace"})
 _FAILURE_POLICIES = frozenset({"continue", "fail_fast"})
 
@@ -116,7 +132,10 @@ def _canonical_provider(value: object) -> str:
         canonical = LLMProvider(provider)
     except ValueError as exc:
         raise _fail("UNSUPPORTED_ADAPTER") from exc
-    if canonical.value not in LLMAdapterRegistry.registered_providers():
+    if (
+        canonical.value not in LLMAdapterRegistry.registered_providers()
+        or canonical.value not in _OPENAI_COMPATIBLE_PROVIDERS
+    ):
         raise _fail("UNSUPPORTED_ADAPTER")
     return canonical.value
 
