@@ -3,51 +3,6 @@
   "policy": "LCI-0B",
   "entries": [
     {
-      "inventory_id": "LCI-INV-0031",
-      "path": "intergrax/memory/session_turn_index_service.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0032",
-      "path": "intergrax/memory/user_profile_manager.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0033",
-      "path": "intergrax/multimedia/audio_smart_loader.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0034",
-      "path": "intergrax/multimedia/image_smart_loader.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0035",
-      "path": "intergrax/multimedia/video_smart_loader.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0054",
       "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
       "kind": "from",
@@ -99,24 +54,6 @@
       "module": "langchain_openai",
       "names": [
         "OpenAIEmbeddings"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0078",
-      "path": "intergrax/rag/evaluation/golden_harness.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0079",
-      "path": "intergrax/rag/evaluation/load_soak.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
       ]
     },
     {

@@ -6,14 +6,16 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **READY_FOR_REVIEW**; LCI-4C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-4C-A1 — Canonical workspace document scope ABI migration
-**Next task after acceptance:** LCI-4D
+**Current active task:** LCI-4D — Auxiliary native document leak cleanup
+**Next task after acceptance:** LCI-5A
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
+
+**LCI-4D decision:** Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical `KnowledgeDocument` boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain `Document`. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6.
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -394,14 +396,14 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Remaining auxiliary leaks: memory indexing, multimedia loaders, legacy rag_answers, evaluation harness, soak tooling. |
 | **Owning domain plan** | docs/plan/MEMORY.md + docs/plan/MODALITY.md + docs/plan/RAG.md |
 | **Dependencies** | LCI-4C |
 | **Exact scope** | session_turn_index_service, user_profile_manager, multimedia loaders, legacy/rag_answers, evaluation/, vectorstore/soak/ |
 | **Explicit out of scope** | Doc generators; test fixtures (migrate with owning feature) |
 | **Acceptance criteria** | Target modules import no langchain_core; soak/evaluation smoke pass |
-| **User-visible outcome** | Auxiliary runtime paths LangChain-free |
+| **User-visible outcome** | Auxiliary runtime paths use the canonical native document boundary |
 
 ---
 

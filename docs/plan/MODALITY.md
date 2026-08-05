@@ -6,7 +6,9 @@
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
 
-**Last updated:** 2026-06-20 — **P2-ARCH-14** Modality production boundary.
+**Last updated:** 2026-08-05 — **LCI-4D READY_FOR_REVIEW** (audio, image and video smart loaders use the canonical native document boundary).
+
+**LCI-4D decision:** Multimedia outputs preserve deterministic identity and lineage, tenant, namespace, workspace, provenance and source metadata. OCR, caption, transcription, MIME and frame behavior remain unchanged; no provider SDK or new extraction format is introduced.
 
 ---
 

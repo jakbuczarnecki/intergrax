@@ -254,7 +254,7 @@ def validate(text: str) -> None:
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
     assert not REMOVED_LCI_4B_INVENTORY_IDS.intersection(ids), "closed LCI-4B rows reintroduced"
-    assert len(ids) == 86, f"expected 86 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 73, f"expected 73 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -274,13 +274,13 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 28
+    assert summary.get("direct production/runtime imports") == 15
     assert summary.get("direct test imports") == 46
     assert summary.get("provider-bound dependencies") == 13
-    assert summary.get("total detailed inventory rows") == 86
+    assert summary.get("total detailed inventory rows") == 73
     assert summary.get("unclassified occurrences") == 0
     assert summary.get("core contract leaks") == 0
-    assert summary.get("core implementation dependencies") == 7
+    assert summary.get("core implementation dependencies") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
@@ -327,7 +327,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("86 unique inventory IDs")
+    print("73 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

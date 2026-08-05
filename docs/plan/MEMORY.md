@@ -10,7 +10,9 @@
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../features/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../features/plan/TOKEN_OPTIMIZATION.md). MEMORY owns persistent summary compression only where staging, validation, compression receipts, and rollback metadata exist.
 
-**Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion + MEM-VEC/MEM-DEPTH closeout).
+**Last updated:** 2026-08-05 — **LCI-4D READY_FOR_REVIEW** (session-turn and user-profile vector indexing use `KnowledgeDocument`, explicit scope and native vector-store records).
+
+**LCI-4D decision:** Memory indexing preserves stable identity, tenant, namespace, workspace, provenance and user metadata without using user metadata as system scope transport. Session and profile vector writes use `VectorStoreRecord` with `VectorStoreScope`; LCI-5A remains planned for the next native text-loader stream.
 
 ---
 

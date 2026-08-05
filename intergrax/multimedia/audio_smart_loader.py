@@ -4,12 +4,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
 
-from langchain_core.documents import Document
-
-from intergrax.rag.document_loaders.integration.catalog_parser import CatalogDocumentParser
-from intergrax.rag.document_loaders.integration.resolver import resolve_document_parser
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class AudioSmartLoader:
@@ -34,6 +30,16 @@ class AudioSmartLoader:
             "audio_format": audio_format,
         }
 
-    def load(self) -> List[Document]:
+    def load(self) -> list[KnowledgeDocument]:
+        from intergrax.rag.document_loaders.integration.catalog_parser import (
+            CatalogDocumentParser,
+        )
+        from intergrax.rag.document_loaders.integration.resolver import (
+            resolve_document_parser,
+        )
+
         backend = resolve_document_parser("whisper", **self._options)
-        return list(CatalogDocumentParser(backend).load(self.path))
+        documents = list(CatalogDocumentParser(backend).load(self.path))
+        if not all(isinstance(document, KnowledgeDocument) for document in documents):
+            raise TypeError("audio parser must return KnowledgeDocument values")
+        return documents

@@ -4,9 +4,7 @@
 
 from __future__ import annotations
 
-from typing import List
-
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.legacy.rag_answers.answer_manager import AnswerManager
 from intergrax.legacy.rag_answers.contracts.answer_request import AnswerRequest
@@ -64,24 +62,23 @@ class WindowedAnswerer:
         # 2. Convert candidates → Documents
         # -------------------------------------------------
 
-        docs: List[Document] = [
-            Document(
-                page_content=c.content,
-                metadata=c.metadata,
-            )
-            for c in candidates
-        ]
+        docs: list[KnowledgeDocument] = []
+        for candidate in candidates:
+            document = getattr(candidate, "document", None)
+            if not isinstance(document, KnowledgeDocument):
+                raise TypeError("retriever must return native documents")
+            docs.append(document)
 
         # -------------------------------------------------
         # 3. Window splitting
         # -------------------------------------------------
 
-        windows: List[List[Document]] = [
-            docs[i:i + window_size]
+        windows: list[tuple[KnowledgeDocument, ...]] = [
+            tuple(docs[i:i + window_size])
             for i in range(0, len(docs), window_size)
         ]
 
-        partial_answers: List[str] = []
+        partial_answers: list[str] = []
 
         # -------------------------------------------------
         # 4. MAP phase

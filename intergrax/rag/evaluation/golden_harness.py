@@ -10,16 +10,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.evaluation.metrics import recall_at_k
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
 from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -89,16 +90,7 @@ def _run_graph_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseR
         case, profile=profile, graph_store=graph, tenant_id=tenant_id
     )
     if case.get("graph_index", True):
-        docs = [
-            Document(
-                page_content=item["text"],
-                metadata={
-                    "doc_id": item["id"],
-                    "tenant_id": str(item.get("tenant_id", tenant_id)),
-                },
-            )
-            for item in case["documents"]
-        ]
+        docs = _documents_from_case(case, tenant_id=tenant_id)
         ids = [item["id"] for item in case["documents"]]
         HeuristicGraphIndexer(built_graph).index_documents(docs, chunk_ids=ids)
     pre_delete = [str(chunk_id) for chunk_id in case.get("pre_delete_chunk_ids", [])]
@@ -109,12 +101,15 @@ def _run_graph_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseR
 
 
 def _run_multi_hop_case(case: Dict[str, Any], *, profile: RagProfile) -> GoldenCaseResult:
-    graph = InMemoryGraphStore()
-    service, _, _manager = _build_service(case, profile=profile, graph_store=graph)
-    docs = [
-        Document(page_content=item["text"], metadata={"doc_id": item["id"]})
-        for item in case["documents"]
-    ]
+    tenant_id = str(case.get("tenant_id", "golden"))
+    graph = InMemoryGraphStore(tenant_id=tenant_id)
+    service, _, _manager = _build_service(
+        case,
+        profile=profile,
+        graph_store=graph,
+        tenant_id=tenant_id,
+    )
+    docs = _documents_from_case(case, tenant_id=tenant_id)
     ids = [item["id"] for item in case["documents"]]
     HeuristicGraphIndexer(graph).index_documents(docs, chunk_ids=ids)
     for edge in case.get("graph_edges", []):
@@ -151,22 +146,36 @@ def _build_service(
     graph_store: InMemoryGraphStore | None,
     tenant_id: str = "golden",
 ):
+    from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+        InMemoryVectorStore,
+    )
+
     store = InMemoryVectorStore(tenant_id=tenant_id)
-    manager = VectorstoreManager(store=store)
-    docs = [
-        Document(
-            page_content=item["text"],
-            metadata={
-                "doc_id": item["id"],
-                "tenant_id": str(item.get("tenant_id", tenant_id)),
-            },
-        )
-        for item in case["documents"]
-    ]
-    texts = [d.page_content for d in docs]
+    scope = VectorStoreScope(
+        tenant_id=tenant_id,
+        namespace=case.get("namespace"),
+        workspace_id=case.get("workspace_id"),
+    )
+    manager = VectorstoreManager(store=store, scope=scope)
+    docs = _documents_from_case(case, tenant_id=tenant_id)
+    texts = [d.content for d in docs]
     embeddings = [[0.1, 0.2, 0.3] for _ in texts]
     ids = [item["id"] for item in case["documents"]]
-    manager.add_documents(docs, embeddings, ids=ids)
+    manager.add_records(
+        [
+            VectorStoreRecord(
+                document=document,
+                embedding=embedding,
+                vector_id=doc_id,
+            )
+            for document, embedding, doc_id in zip(docs, embeddings, ids)
+        ],
+        scope=scope,
+    )
+
+    from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
+        create_default_retriever_manager,
+    )
 
     retriever_manager = create_default_retriever_manager(
         vector_store=manager,
@@ -180,6 +189,36 @@ def _build_service(
         profile=profile,
     )
     return service, graph_store, manager
+
+
+def _documents_from_case(
+    case: Dict[str, Any],
+    *,
+    tenant_id: str,
+) -> list[KnowledgeDocument]:
+    return [
+        KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": str(item["id"]),
+                    "root_document_id": str(item["id"]),
+                },
+                "scope": {
+                    "tenant_id": tenant_id,
+                    "namespace": case.get("namespace"),
+                    "workspace_id": case.get("workspace_id"),
+                },
+                "content": str(item["text"]),
+                "metadata": {"doc_id": str(item["id"])},
+                "provenance": {
+                    "source_kind": "golden_fixture",
+                    "source_id": str(item["id"]),
+                },
+            }
+        )
+        for item in case["documents"]
+    ]
 
 
 def _evaluate_case(

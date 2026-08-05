@@ -3,12 +3,9 @@
 """Default episodic session turn vector index (Phase MEM-VEC-2.1–2.2)."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 from typing import Any, Sequence
-
-from langchain_core.documents import Document
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
@@ -18,7 +15,13 @@ from intergrax.memory.memory_vector_namespace import (
     resolve_memory_index_collection,
 )
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 
 def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -46,12 +49,14 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         index_roles: Sequence[str] = ("user", "assistant"),
         tenant_id: str = "default",
         vector_index_namespace: str | None = None,
+        workspace_id: str | None = None,
     ) -> None:
         self._embedding_manager = embedding_manager
         self._vectorstore_manager = vectorstore_manager
         self._index_roles = tuple(index_roles)
         self._tenant_id = tenant_id
         self._vector_index_namespace = vector_index_namespace
+        self._workspace_id = workspace_id
         self._collection_name = resolve_memory_index_collection(
             vector_index_namespace=vector_index_namespace,
             tenant_id=tenant_id,
@@ -65,18 +70,29 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         session_id: str,
         user_id: str | None,
         message: ChatMessage,
+        namespace: str | None = None,
+        workspace_id: str | None = None,
     ) -> None:
         if message.deleted:
-            await self.tombstone_turn(message.entry_id)
+            await self.tombstone_turn(
+                message.entry_id,
+                tenant_id=tenant_id,
+                namespace=namespace,
+                workspace_id=workspace_id,
+            )
             return
         if message.role not in self._index_roles:
             return
         text = (message.content or "").strip()
         if not text:
             return
+        scope = self._scope(
+            tenant_id=tenant_id,
+            namespace=namespace,
+            workspace_id=workspace_id,
+        )
         meta = _sanitize_metadata(
             {
-                "tenant_id": tenant_id,
                 "session_id": session_id,
                 "user_id": user_id or "",
                 "entry_id": message.entry_id,
@@ -86,18 +102,70 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
                 "collection_name": self._collection_name,
             }
         )
-        doc = Document(page_content=text, metadata=meta)
+        doc = KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": message.entry_id,
+                    "root_document_id": message.entry_id,
+                },
+                "scope": {
+                    "tenant_id": scope.tenant_id,
+                    "namespace": scope.namespace,
+                    "workspace_id": scope.workspace_id,
+                },
+                "content": text,
+                "metadata": meta,
+                "provenance": {
+                    "source_kind": "conversation_turn",
+                    "source_id": message.entry_id,
+                    "source_parent_id": session_id,
+                },
+            }
+        )
         embeddings = self._embedding_manager.embed_texts([text])
-        self._vectorstore_manager.add_documents(
-            documents=[doc],
-            embeddings=embeddings,
-            ids=[message.entry_id],
+        self._vectorstore_manager.add_records(
+            [
+                VectorStoreRecord(
+                    document=doc,
+                    embedding=embeddings[0],
+                    vector_id=message.entry_id,
+                )
+            ],
+            scope=scope,
         )
 
-    async def tombstone_turn(self, entry_id: str) -> None:
+    def _scope(
+        self,
+        *,
+        tenant_id: str | None = None,
+        namespace: str | None = None,
+        workspace_id: str | None = None,
+    ) -> VectorStoreScope:
+        return VectorStoreScope(
+            tenant_id=tenant_id or self._tenant_id,
+            namespace=namespace if namespace is not None else self._vector_index_namespace,
+            workspace_id=workspace_id if workspace_id is not None else self._workspace_id,
+        )
+
+    async def tombstone_turn(
+        self,
+        entry_id: str,
+        *,
+        tenant_id: str | None = None,
+        namespace: str | None = None,
+        workspace_id: str | None = None,
+    ) -> None:
         if not entry_id:
             return
-        self._vectorstore_manager.delete([entry_id])
+        self._vectorstore_manager.delete(
+            [entry_id],
+            scope=self._scope(
+                tenant_id=tenant_id,
+                namespace=namespace,
+                workspace_id=workspace_id,
+            ),
+        )
 
     async def search_turns(
         self,
@@ -109,12 +177,18 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         top_k: int = 8,
         score_threshold: float | None = None,
         include_cross_session: bool = False,
+        namespace: str | None = None,
+        workspace_id: str | None = None,
     ) -> list[dict[str, Any]]:
         q = (query or "").strip()
         if not q:
             return []
+        scope = self._scope(
+            tenant_id=tenant_id,
+            namespace=namespace,
+            workspace_id=workspace_id,
+        )
         where: dict[str, Any] = {
-            "tenant_id": tenant_id,
             "deleted": 0,
             "index_domain": EPISODIC_INDEX_DOMAIN,
             "collection_name": self._collection_name,
@@ -126,26 +200,25 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
 
         q_emb = self._embedding_manager.embed_texts([q])
         embedding = q_emb[0].tolist() if hasattr(q_emb[0], "tolist") else list(q_emb[0])
-        from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-
         raw_hits = self._vectorstore_manager.query(
             embedding,
+            scope=scope,
             top_k=top_k,
             metadata_filter=MetadataFilter(conditions=where),
         )
 
         hits: list[dict[str, Any]] = []
         for hit in raw_hits:
-            score = float(attribute_access.optional(hit, "similarity_score", None) or attribute_access.optional(hit, "score", 0.0) or 0.0)
+            score = float(hit.similarity_score)
             if score_threshold is not None and score < score_threshold:
                 continue
-            meta = dict(hit.metadata or {})
-            text = str(attribute_access.optional(hit, "content", None) or attribute_access.optional(hit, "text", "") or "")
+            document = hit.document
+            meta = dict(document.metadata)
             hits.append(
                 {
-                    "text": text,
+                    "text": document.content,
                     "score": score,
-                    "message_id": str(hit.id or meta.get("entry_id") or ""),
+                    "message_id": document.identity.document_id,
                     "session_id": str(meta.get("session_id") or ""),
                     "role": str(meta.get("role") or ""),
                 }

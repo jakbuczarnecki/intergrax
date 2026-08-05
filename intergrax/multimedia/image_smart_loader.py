@@ -5,12 +5,13 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 import json
+import hashlib
 import os
+from pathlib import Path
 from typing import Literal, Optional
 from PIL import Image, ExifTags
-from langchain_core.documents import Document
 
-from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 try:
@@ -43,6 +44,9 @@ class ImageSmartLoader:
         text_mode: Literal["ocr", "caption", "both"] = "both",
         caption_llm: Optional[LLMAdapter] = None,
         both_joiner: str = "\n\n---\n\n",
+        tenant_id: str = "default",
+        namespace: str | None = None,
+        workspace_id: str | None = None,
     ):
         self.path = path
         self.ocr_lang = ocr_lang
@@ -54,6 +58,9 @@ class ImageSmartLoader:
         self.text_mode = text_mode
         self.caption_llm = caption_llm
         self.both_joiner = both_joiner
+        self.tenant_id = tenant_id
+        self.namespace = namespace
+        self.workspace_id = workspace_id
 
     # ---------- helpers ----------
     def _resize_if_needed(self, img: Image) -> Image:
@@ -86,6 +93,8 @@ class ImageSmartLoader:
         - Prefer adapter.defaults.get("model")
         - Fallbacks are possible (chat.model), else None
         """
+        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+
         if not isinstance(self.caption_llm, LangChainOllamaAdapter):
             return None
         defaults = attribute_access.optional(self.caption_llm, "defaults", {}) or {}
@@ -141,6 +150,8 @@ class ImageSmartLoader:
         """
         if self.caption_llm is None:
             return ""
+        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+
         # 1) Native helper, if adapter ją posiada
         if hasattr(self.caption_llm, "describe_image"):
             try:
@@ -168,7 +179,7 @@ class ImageSmartLoader:
         return out
 
     # ---------- main ----------
-    def load(self) -> list[Document]:
+    def load(self) -> list[KnowledgeDocument]:
         if Image is None:
             raise ImportError("Pillow (PIL) is required for ImageSmartLoader")
 
@@ -202,6 +213,15 @@ class ImageSmartLoader:
             else:
                 content = "(No caption nor OCR text produced.)"
 
+        caption_model = (
+            self._infer_ollama_model()
+            if (
+                self.text_mode in ("caption", "both")
+                and self.caption_llm is not None
+            )
+            else None
+        )
+
         # Metadata
         meta = {
             "source_name": os.path.basename(self.path),
@@ -216,9 +236,33 @@ class ImageSmartLoader:
             "image_text_mode": self.text_mode,                 # "ocr" | "caption" | "both"
             "ocr_lang": self.ocr_lang if (self.text_mode in ("ocr", "both")) else None,
             "caption_llm": type(self.caption_llm).__name__ if (self.text_mode in ("caption", "both") and self.caption_llm) else None,
-            "caption_model_inferred": (self._infer_ollama_model() or "llava-llama3:latest")
-                if (self.text_mode in ("caption", "both") and isinstance(self.caption_llm, LangChainOllamaAdapter))
-                else None,
+            "caption_model_inferred": (
+                caption_model or "llava-llama3:latest"
+                if caption_model is not None
+                else None
+            ),
         }
 
-        return [Document(page_content=content, metadata=meta)]
+        source_id = str(Path(self.path).resolve())
+        document_id = "image:" + hashlib.sha256(source_id.encode("utf-8")).hexdigest()
+        document = KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": document_id,
+                    "root_document_id": document_id,
+                },
+                "scope": {
+                    "tenant_id": self.tenant_id,
+                    "namespace": self.namespace,
+                    "workspace_id": self.workspace_id,
+                },
+                "content": content,
+                "metadata": meta,
+                "provenance": {
+                    "source_kind": "image",
+                    "source_id": source_id,
+                },
+            }
+        )
+        return [document]

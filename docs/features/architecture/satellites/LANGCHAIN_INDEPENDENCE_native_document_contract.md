@@ -720,3 +720,7 @@ LCI-3D — APPROVED. LCI-4A — APPROVED. LCI-4B — APPROVED. LCI-4C — READY_
 Retrieval uses a native immutable hit/result contract containing `KnowledgeDocument`, score and rank. Active retrievers and RAG tools do not expose LangChain `Document`. `VectorStoreHit` remains the provider/vector-store result and is mapped at the retriever boundary. Reranking remains a separate LCI-4B boundary; graph retrieval remains LCI-4C.
 
 Roadmap state: LCI-3D — APPROVED; LCI-4A — APPROVED; LCI-4B — APPROVED; LCI-4C — READY_FOR_REVIEW; LCI-4D — PLANNED / NEXT AFTER ACCEPTANCE.
+
+## LCI-4D consumer closeout
+
+The auxiliary consumers covered by LCI-4D use this canonical KnowledgeDocument ABI. Memory indexing, multimedia loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling preserve identity, lineage, scope, provenance and metadata through the native document and vector-store contracts; they do not introduce a consumer-specific document type or a LangChain conversion bridge.

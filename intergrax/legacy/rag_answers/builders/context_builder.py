@@ -3,9 +3,10 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import Optional
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.legacy.rag_answers.contracts.base_context_builder import BaseContextBuilder
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
@@ -33,27 +34,27 @@ class DefaultContextBuilder(BaseContextBuilder):
 
     def build(
         self,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
         tokenizer_id: Optional[str] = None,
         max_tokens: int = 4000,
     ) -> str:
 
-        context_parts: List[str] = []
+        context_parts: list[str] = []
 
         total_tokens = 0
 
         for doc in documents:
 
-            text = (doc.page_content or "").strip()
+            text = doc.content.strip()
 
             if not text:
                 continue
 
-            metadata = doc.metadata or {}
+            metadata = doc.metadata
 
             source = metadata.get(
                 DocumentMetadataKey.SOURCE_NAME,
-                "unknown",
+                doc.provenance.source_id,
             )
 
             block = f"[Source: {source}]\n{text}"

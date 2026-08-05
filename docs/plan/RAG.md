@@ -77,6 +77,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-4B | P1 | APPROVED | native immutable reranker candidate/result contract and RetrievalHit boundary | LCI-4C |
 | LCI-4C-A1 | P1 | READY_FOR_REVIEW | canonical workspace-aware KnowledgeDocumentScope ABI propagation | LCI-4D |
 | LCI-4C | P1 | READY_FOR_REVIEW | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
+| LCI-4D | P1 | READY_FOR_REVIEW | native auxiliary memory, multimedia, legacy answer, evaluation and soak document paths | LCI-5A |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
 native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map
@@ -96,8 +97,11 @@ namespace and workspace isolation are enforced by the bound Graph indexer scope
 fence before writes. A single indexer instance cannot switch tenant, namespace or
 workspace after binding. GraphStore backend internals remain unchanged.
 
-LCI-4D remains planned for auxiliary memory, multimedia, legacy RAG,
-evaluation and soak paths after LCI-4C acceptance.
+LCI-4D is READY_FOR_REVIEW for auxiliary memory, multimedia, legacy RAG,
+evaluation and soak paths. These paths use `KnowledgeDocument` and native
+`VectorStoreRecord`/`VectorStoreScope` boundaries while preserving identity,
+scope, provenance and source metadata. LCI-5A remains PLANNED / NEXT AFTER
+ACCEPTANCE.
 
 LCI-4C-A1 records that `workspace_id` is a canonical system-owned
 `KnowledgeDocumentScope` field. The canonical identity boundary is

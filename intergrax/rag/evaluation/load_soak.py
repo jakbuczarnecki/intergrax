@@ -12,14 +12,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence
 
-from langchain_core.documents import Document
-
-from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.evaluation.metrics import recall_at_k
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
@@ -79,25 +80,56 @@ def build_soak_retrieval_service(
     scenarios: frozenset[str] = frozenset({"retrieval"}),
 ) -> RetrievalService:
     """Merge golden retrieval documents into one in-memory service for load probes."""
+    from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+        InMemoryVectorStore,
+    )
+
     resolved = profile or RagProfile(enable_rerank=False, route_mode="off", retriever_id="hybrid")
-    docs_by_id: Dict[str, Document] = {}
+    docs_by_id: Dict[str, KnowledgeDocument] = {}
     for case in cases:
         scenario = str(case.get("scenario", "retrieval")).lower()
         if scenario not in scenarios:
             continue
         for item in case.get("documents", []):
             doc_id = str(item["id"])
-            docs_by_id[doc_id] = Document(
-                page_content=str(item["text"]),
-                metadata={"doc_id": doc_id, "tenant_id": "soak"},
+            docs_by_id[doc_id] = KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {
+                        "document_id": doc_id,
+                        "root_document_id": doc_id,
+                    },
+                    "scope": {"tenant_id": "soak"},
+                    "content": str(item["text"]),
+                    "metadata": {"doc_id": doc_id},
+                    "provenance": {
+                        "source_kind": "load_soak_fixture",
+                        "source_id": doc_id,
+                    },
+                }
             )
 
     store = InMemoryVectorStore(tenant_id="soak")
-    manager = VectorstoreManager(store=store)
+    scope = VectorStoreScope(tenant_id="soak")
+    manager = VectorstoreManager(store=store, scope=scope)
     docs = list(docs_by_id.values())
     ids = list(docs_by_id.keys())
     embeddings = [[0.1, 0.2, 0.3] for _ in docs]
-    manager.add_documents(docs, embeddings, ids=ids)
+    manager.add_records(
+        [
+            VectorStoreRecord(
+                document=document,
+                embedding=embedding,
+                vector_id=doc_id,
+            )
+            for document, embedding, doc_id in zip(docs, embeddings, ids)
+        ],
+        scope=scope,
+    )
+
+    from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
+        create_default_retriever_manager,
+    )
 
     retriever_manager = create_default_retriever_manager(
         vector_store=manager,

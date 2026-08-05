@@ -4,9 +4,9 @@
 
 from __future__ import annotations
 
-from typing import List
+from collections.abc import Sequence
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 
@@ -34,25 +34,25 @@ class ContextBuilder:
 
     def build(
         self,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
     ) -> str:
 
-        context_parts: List[str] = []
+        context_parts: list[str] = []
 
         total_tokens = 0
 
         for doc in documents:
 
-            text = (doc.page_content or "").strip()
+            text = doc.content.strip()
 
             if not text:
                 continue
 
-            metadata = doc.metadata or {}
+            metadata = doc.metadata
 
             source = metadata.get(
                 DocumentMetadataKey.SOURCE_NAME,
-                "unknown",
+                doc.provenance.source_id,
             )
 
             block = f"[Source: {source}]\n{text}"

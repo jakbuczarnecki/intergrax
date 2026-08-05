@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import Optional
 
-from langchain_core.documents import Document
+from intergrax.knowledge.contracts import KnowledgeDocument
 
 
 class BaseContextBuilder(ABC):
@@ -15,7 +16,7 @@ class BaseContextBuilder(ABC):
     @abstractmethod
     def build(
         self,
-        documents: List[Document],
+        documents: Sequence[KnowledgeDocument],
         tokenizer_id: Optional[str] = None,
         max_tokens: int = 4000,
     ) -> str:
