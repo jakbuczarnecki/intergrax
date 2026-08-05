@@ -16,6 +16,9 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncCheckpoint,
     KnowledgeSyncSinkReceipt,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+)
 
 
 class KnowledgeSyncCheckpointConflict(Exception):
@@ -71,6 +74,10 @@ class KnowledgeSourceLeaseRepository(Protocol):
         lease: KnowledgeSourceLeaseToken,
     ) -> None: ...
 
+    def is_owned(self, *, lease: KnowledgeSourceLeaseToken) -> bool:
+        """Return true only while this exact, unexpired lease is authoritative."""
+        ...
+
 
 @runtime_checkable
 class KnowledgeSyncCheckpointRepository(Protocol):
@@ -88,6 +95,7 @@ class KnowledgeSyncCheckpointRepository(Protocol):
         checkpoint: KnowledgeSyncCheckpoint,
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None: ...
 
 
@@ -111,6 +119,7 @@ class KnowledgeRemoteItemStateRepository(Protocol):
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None: ...
 
     def inspect_delivery_receipt(
@@ -155,6 +164,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None: ...
 
     def cas_supersede_terminal(
@@ -162,6 +172,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None: ...
 
     def cas_recovery(
@@ -169,6 +180,7 @@ class KnowledgeReconciliationRunRepository(Protocol):
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None: ...
 
 

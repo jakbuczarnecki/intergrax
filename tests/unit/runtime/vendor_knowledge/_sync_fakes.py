@@ -51,6 +51,9 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncSinkReceipt,
     KnowledgeSyncSinkReceiptStatus,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+)
 from tests.unit.runtime.vendor_knowledge._fakes import make_content
 
 
@@ -198,6 +201,10 @@ class InMemoryLeaseRepository:
         if current is not None and current.token == lease.token:
             del self.held[key]
 
+    def is_owned(self, *, lease: KnowledgeSourceLeaseToken) -> bool:
+        current = self.held.get((lease.tenant_id, lease.binding_id))
+        return current == lease
+
 
 @dataclass
 class InMemoryCheckpointRepository:
@@ -230,7 +237,9 @@ class InMemoryCheckpointRepository:
         checkpoint: KnowledgeSyncCheckpoint,
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence
         self.commit_calls.append(
             {"checkpoint": checkpoint, "expected_previous": expected_previous}
         )
@@ -280,7 +289,9 @@ class InMemoryRemoteItemStateRepository:
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence
         self.apply_calls.append(
             {
                 "tenant_id": tenant_id,
@@ -595,7 +606,9 @@ class InMemoryReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence
         if expected.phase is KnowledgeReconciliationRunPhase.RECOVERY_REQUIRED:
             raise KnowledgeSyncCorruptState(
                 "recovery_required run cannot exit through generic cas_replace"
@@ -610,7 +623,9 @@ class InMemoryReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRunCollecting,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence
         current = self.runs.get((expected.tenant_id, expected.binding_id))
         if current != expected:
             raise KnowledgeReconciliationRunConflict("supersede conflict")
@@ -621,7 +636,9 @@ class InMemoryReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _ = expected_publication_fence
         current = self.runs.get((expected.tenant_id, expected.binding_id))
         if current != expected:
             raise KnowledgeReconciliationRunConflict("cas conflict")

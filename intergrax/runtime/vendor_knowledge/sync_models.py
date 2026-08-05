@@ -31,6 +31,9 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgePermissions,
     KnowledgeSourceRef,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+)
 
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 _OPERATOR_REASON_CODE_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
@@ -341,6 +344,11 @@ class KnowledgeRemoteItemStatus(StrEnum):
 class KnowledgeSyncRunStatus(StrEnum):
     COMPLETED = "completed"
     LEASE_BUSY = "lease_busy"
+    PUBLICATION_FENCE_LOST = "publication_fence_lost"
+    PUBLICATION_LEASE_LOST = "publication_lease_lost"
+    PUBLICATION_BINDING_MISSING = "publication_binding_missing"
+    PUBLICATION_DISABLED = "publication_disabled"
+    PUBLICATION_DETACHED = "publication_detached"
 
 
 class KnowledgeSourceLeaseToken(BaseModel):
@@ -475,6 +483,9 @@ class KnowledgeSyncBatch(BaseModel):
     delivery_id: str
     envelopes: tuple[KnowledgeSyncEnvelope, ...] = ()
     has_more: bool = False
+    publication_fence: KnowledgeSyncPublicationFenceV1 | None = Field(
+        default=None, repr=False
+    )
 
     @field_validator("tenant_id", "binding_id")
     @classmethod
@@ -498,6 +509,11 @@ class KnowledgeSyncBatch(BaseModel):
     def _tenant_matches_source(self) -> KnowledgeSyncBatch:
         if self.source.tenant_id != self.tenant_id:
             raise ValueError("source.tenant_id must match batch tenant_id")
+        if self.publication_fence is not None and (
+            self.publication_fence.tenant_id != self.tenant_id
+            or self.publication_fence.binding_id != self.binding_id
+        ):
+            raise ValueError("publication_fence identity must match sync batch")
         return self
 
 
@@ -550,6 +566,18 @@ class KnowledgeSyncRunResult(BaseModel):
                 raise ValueError("completed result requires delivery_id")
             if self.retryable:
                 raise ValueError("completed result must not be retryable")
+            return self
+        if self.status in {
+            KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST,
+            KnowledgeSyncRunStatus.PUBLICATION_LEASE_LOST,
+            KnowledgeSyncRunStatus.PUBLICATION_BINDING_MISSING,
+            KnowledgeSyncRunStatus.PUBLICATION_DISABLED,
+            KnowledgeSyncRunStatus.PUBLICATION_DETACHED,
+        }:
+            if self.delivery_id is not None:
+                raise ValueError("publication rejection must not expose delivery_id")
+            if self.checkpoint_advanced or self.retryable:
+                raise ValueError("publication rejection cannot be successful or retryable")
             return self
         raise ValueError(f"unsupported sync run status: {self.status!r}")
 
@@ -989,6 +1017,9 @@ class _ReconciliationRunIdentity(BaseModel):
     last_applied_parent_delivery_id: str | None = None
     superseded_run_id: str | None = None
     expected_base_completed_checkpoint: KnowledgeSyncCheckpoint | None = None
+    publication_fence: KnowledgeSyncPublicationFenceV1 | None = Field(
+        default=None, repr=False
+    )
 
     @field_validator(
         "tenant_id",
@@ -1033,6 +1064,11 @@ class _ReconciliationRunIdentity(BaseModel):
             tenant_id=self.tenant_id,
             binding_id=self.binding_id,
         )
+        if self.publication_fence is not None and (
+            self.publication_fence.tenant_id != self.tenant_id
+            or self.publication_fence.binding_id != self.binding_id
+        ):
+            raise ValueError("publication_fence identity must match reconciliation run")
         return self
 
     @property

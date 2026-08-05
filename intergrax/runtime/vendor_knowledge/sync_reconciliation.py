@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any
+from typing import Any, NoReturn
 
 from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
@@ -74,13 +74,16 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunStatus,
     KnowledgeSyncSinkReceiptStatus,
     canonical_prepared_state_mutations_fingerprint,
+    canonical_reconciliation_candidate_inventory_bytes,
     knowledge_cursor_fingerprint_sha256,
     knowledge_sync_checkpoint_fingerprint_sha256,
     reconciliation_delivery_id,
     reconciliation_prepared_batch_payload_fingerprint,
     reconciliation_provider_page_fingerprint,
     recovery_evidence_from_run,
-    canonical_reconciliation_candidate_inventory_bytes,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
 )
 
 _ACTIVE_RUN_PHASES: frozenset[KnowledgeReconciliationRunPhase] = frozenset(
@@ -176,7 +179,7 @@ _CANDIDATE_PAYLOAD_LIMIT_MESSAGE = (
 )
 
 
-def _raise_corrupt_candidate_inventory(*, source: KnowledgeSourceRef) -> None:
+def _raise_corrupt_candidate_inventory(*, source: KnowledgeSourceRef) -> NoReturn:
     raise VendorKnowledgeError(
         code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
         safe_message=_CANDIDATE_INVENTORY_CORRUPT_MESSAGE,
@@ -261,6 +264,10 @@ class VendorKnowledgeReconciliationEngine:
         limit_policy: KnowledgeReconciliationLimitPolicy | None = None,
         utc_clock: UtcClock | None = None,
         run_id_factory: RunIdFactory | None = None,
+        publication_fence_validator: Callable[
+            [KnowledgeSyncPublicationFenceV1 | None], None
+        ]
+        | None = None,
     ) -> None:
         self._tenant_id = _require_non_empty(tenant_id, field_name="tenant_id")
         self._binding_service = binding_service
@@ -274,6 +281,8 @@ class VendorKnowledgeReconciliationEngine:
         self._policy = limit_policy or KnowledgeReconciliationLimitPolicy()
         self._utc_clock = utc_clock or _default_utc_clock
         self._run_id_factory = run_id_factory or _default_run_id_factory
+        self._publication_fence_validator = publication_fence_validator
+        self._invocation_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None
 
     async def reconcile_page(
         self,
@@ -283,6 +292,7 @@ class VendorKnowledgeReconciliationEngine:
         page_size: int,
         restart: bool,
         trigger_delivery_id: str | None,
+        publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> KnowledgeSyncRunResult:
         if page_size < 1 or page_size > 1000:
             raise ValueError("page_size must be in range 1..1000")
@@ -292,6 +302,7 @@ class VendorKnowledgeReconciliationEngine:
                 safe_message="Knowledge reconciliation receipt inspection is not configured",
                 retryable=False,
             )
+        self._invocation_publication_fence = publication_fence
         binding, source = self._load_binding_and_source(binding_id=binding_id)
         run_id = self._run_id_factory(
             self._tenant_id,
@@ -354,6 +365,7 @@ class VendorKnowledgeReconciliationEngine:
                 source_kind=source.source_kind,
                 retryable=False,
             )
+        self._ensure_publication(run.publication_fence)
         if run.phase is KnowledgeReconciliationRunPhase.COLLECTING:
             assert isinstance(run, KnowledgeReconciliationRunCollecting)
             return await self._process_collecting(
@@ -816,6 +828,7 @@ class VendorKnowledgeReconciliationEngine:
             delivery_id=run.delivery_id,
             envelopes=envelopes,
             has_more=run.has_more,
+            publication_fence=run.publication_fence,
         )
         await self._apply_sink(batch=batch, source=source)
         states = self._states_from_templates(run=run, binding=binding, source=source)
@@ -831,6 +844,7 @@ class VendorKnowledgeReconciliationEngine:
         binding: KnowledgeSourceBinding,
         source: KnowledgeSourceRef,
     ) -> KnowledgeSyncRunResult:
+        self._ensure_publication(run.publication_fence)
         if run.binding_configuration_version != binding.configuration_version:
             return await self._enter_recovery(
                 run=run,
@@ -860,6 +874,7 @@ class VendorKnowledgeReconciliationEngine:
                 self._checkpoint_repository.commit(
                     intended,
                     expected_previous=expected_previous,
+                    expected_publication_fence=run.publication_fence,
                 )
             except KnowledgeSyncCheckpointConflict:
                 raise VendorKnowledgeError(
@@ -978,11 +993,18 @@ class VendorKnowledgeReconciliationEngine:
                 delivery_id=run.delivery_id,
                 templates=run.prepared_state_mutation_templates,
             )
+        proposed_checkpoint = run.prepared_proposed_checkpoint
+        if proposed_checkpoint is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge reconciliation prepared checkpoint is missing",
+                retryable=False,
+            )
         intended_checkpoint = KnowledgeSyncCheckpoint(
             tenant_id=self._tenant_id,
             binding_id=binding.binding_id,
             binding_configuration_version=binding.configuration_version,
-            cursor=run.prepared_proposed_checkpoint,
+            cursor=proposed_checkpoint,
         )
         finalizing = KnowledgeReconciliationRunFinalizing(
             **run.model_dump(
@@ -1366,6 +1388,7 @@ class VendorKnowledgeReconciliationEngine:
             created_at=now,
             updated_at=now,
             expected_base_completed_checkpoint=loaded_checkpoint,
+            publication_fence=self._invocation_publication_fence,
             superseded_run_id=superseded_run.run_id
             if superseded_run is not None
             else None,
@@ -1380,6 +1403,7 @@ class VendorKnowledgeReconciliationEngine:
             )
             return collecting
         try:
+            self._ensure_publication(collecting.publication_fence)
             self._run_repository.create_initial_run(collecting)
         except KnowledgeReconciliationRunConflict:
             existing = self._read_run(binding_id=binding.binding_id)
@@ -1509,10 +1533,10 @@ class VendorKnowledgeReconciliationEngine:
             )
         if isinstance(evidence, KnowledgeReconciliationRecoveryEvidenceFinalizing):
             current_checkpoint = self._read_checkpoint(binding_id=run.binding_id)
-            if current_checkpoint not in {
-                evidence.expected_previous_completed_checkpoint,
-                evidence.intended_final_completed_checkpoint,
-            }:
+            if not (
+                current_checkpoint == evidence.expected_previous_completed_checkpoint
+                or current_checkpoint == evidence.intended_final_completed_checkpoint
+            ):
                 raise VendorKnowledgeError(
                     code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
                     safe_message="Knowledge reconciliation checkpoint does not match finalizing evidence",
@@ -2008,6 +2032,7 @@ class VendorKnowledgeReconciliationEngine:
     async def _apply_sink(
         self, *, batch: KnowledgeSyncBatch, source: KnowledgeSourceRef
     ) -> None:
+        self._ensure_publication(batch.publication_fence)
         try:
             await self._sink.apply_batch(batch=batch)
         except VendorKnowledgeError:
@@ -2033,6 +2058,7 @@ class VendorKnowledgeReconciliationEngine:
         run: KnowledgeReconciliationRunPagePrepared,
         states: tuple[KnowledgeRemoteItemState, ...],
     ) -> None:
+        self._ensure_publication(run.publication_fence)
         try:
             self._item_state_repository.apply_batch(
                 tenant_id=self._tenant_id,
@@ -2040,6 +2066,7 @@ class VendorKnowledgeReconciliationEngine:
                 delivery_id=run.delivery_id,
                 states=states,
                 prepared_state_mutations_fingerprint=run.prepared_state_mutations_fingerprint,
+                expected_publication_fence=run.publication_fence,
             )
         except VendorKnowledgeError:
             raise
@@ -2066,6 +2093,7 @@ class VendorKnowledgeReconciliationEngine:
         delivery_id: str,
         templates: tuple[KnowledgeReconciliationPreparedStateMutationTemplate, ...],
     ) -> KnowledgeSyncRunResult:
+        self._ensure_publication(run.publication_fence)
         active_count = sum(
             1
             for template in templates
@@ -2092,8 +2120,13 @@ class VendorKnowledgeReconciliationEngine:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
     ) -> None:
+        self._ensure_publication(expected.publication_fence)
         try:
-            self._run_repository.cas_replace(expected=expected, replacement=replacement)
+            self._run_repository.cas_replace(
+                expected=expected,
+                replacement=replacement,
+                expected_publication_fence=expected.publication_fence,
+            )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
                 code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
@@ -2119,9 +2152,12 @@ class VendorKnowledgeReconciliationEngine:
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
     ) -> None:
+        self._ensure_publication(expected.publication_fence)
         try:
             self._run_repository.cas_recovery(
-                expected=expected, replacement=replacement
+                expected=expected,
+                replacement=replacement,
+                expected_publication_fence=expected.publication_fence,
             )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
@@ -2149,10 +2185,12 @@ class VendorKnowledgeReconciliationEngine:
         replacement: KnowledgeReconciliationRunCollecting,
         source: KnowledgeSourceRef,
     ) -> None:
+        self._ensure_publication(expected.publication_fence)
         try:
             self._run_repository.cas_supersede_terminal(
                 expected=expected,
                 replacement=replacement,
+                expected_publication_fence=expected.publication_fence,
             )
         except KnowledgeReconciliationRunConflict:
             raise VendorKnowledgeError(
@@ -2178,6 +2216,13 @@ class VendorKnowledgeReconciliationEngine:
                 source_kind=source.source_kind,
                 retryable=True,
             ) from None
+
+    def _ensure_publication(
+        self,
+        expected: KnowledgeSyncPublicationFenceV1 | None,
+    ) -> None:
+        if self._publication_fence_validator is not None:
+            self._publication_fence_validator(expected)
 
     def _load_binding_and_source(
         self, *, binding_id: str

@@ -12,9 +12,17 @@ from typing import Optional
 
 import pytest
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.document_store import DocumentQueryResult, DocumentRecord
-from intergrax.runtime.vendor_knowledge.models import KnowledgeCursor, KnowledgeItemRevision
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.document_store import (
+    DocumentQueryResult,
+    DocumentRecord,
+)
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeCursor,
+    KnowledgeItemRevision,
+)
 from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncCheckpointConflict,
     KnowledgeSyncCorruptState,
@@ -29,6 +37,11 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeRemoteItemStatus,
     KnowledgeSourceLeaseToken,
     KnowledgeSyncCheckpoint,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+    KnowledgeSyncPublicationFenceConflict,
+    KnowledgeSyncPublicationFenceV1,
 )
 
 
@@ -113,6 +126,30 @@ def test_repositories_require_conditional_document_store() -> None:
     DocumentStoreKnowledgeSourceLeaseRepository(store)
     DocumentStoreKnowledgeSyncCheckpointRepository(store)
     DocumentStoreKnowledgeRemoteItemStateRepository(store)
+
+
+@pytest.mark.unit
+def test_publication_fence_revision_cas_rejects_stale_writer() -> None:
+    store = InMemoryDocumentStore()
+    repository = DocumentStoreKnowledgeSyncPublicationFenceRepository(store)
+    first = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    second = first.model_copy(
+        update={"lifecycle_revision": 2, "lifecycle_token": "token-b"}
+    )
+    repository.write_fence(first, expected_revision=None)
+    repository.write_fence(second, expected_revision=1)
+    assert repository.read_fence(
+        tenant_id="tenant-1", binding_id="binding-1"
+    ) == second
+    with pytest.raises(KnowledgeSyncPublicationFenceConflict):
+        repository.write_fence(first, expected_revision=1)
 
 
 @pytest.mark.unit

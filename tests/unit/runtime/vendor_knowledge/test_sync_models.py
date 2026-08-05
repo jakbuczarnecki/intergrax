@@ -36,6 +36,9 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncRunResult,
     KnowledgeSyncRunStatus,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+)
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     InMemoryCheckpointRepository,
@@ -91,6 +94,39 @@ def test_identifiers_must_be_non_empty() -> None:
             owner_id="owner-1",
             token="opaque",
         )
+
+
+@pytest.mark.unit
+def test_publication_fence_is_strict_frozen_and_lifecycle_safe() -> None:
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="opaque-token",
+        enabled=True,
+        detached=False,
+    )
+    with pytest.raises(ValidationError):
+        fence.lifecycle_revision = 2  # type: ignore[misc]
+    with pytest.raises(ValidationError):
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=True,  # type: ignore[arg-type]
+            lifecycle_token="opaque-token",
+            enabled=True,
+            detached=False,
+        )
+    with pytest.raises(ValidationError):
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            lifecycle_revision=1,
+            lifecycle_token="opaque-token",
+            enabled=True,
+            detached=True,
+        )
+    assert "opaque-token" not in repr(fence)
 
 
 @pytest.mark.unit

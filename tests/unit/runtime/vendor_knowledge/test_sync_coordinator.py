@@ -28,12 +28,15 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncMode,
     KnowledgeSyncRunStatus,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceV1,
+)
 from tests.unit.runtime.vendor_knowledge._fakes import (
     FakeAdapter,
     FakeIntegration,
     RecordingResolver,
-    make_page as make_facade_page,
 )
+from tests.unit.runtime.vendor_knowledge._fakes import make_page as make_facade_page
 from tests.unit.runtime.vendor_knowledge._sync_fakes import (
     IdempotentRecordingSink,
     InMemoryCandidateInventoryRepository,
@@ -62,6 +65,8 @@ def _coordinator(
     facade=None,
     binding_service=None,
     durable: bool = False,
+    publication_fence_port=None,
+    require_fenced_publication: bool = False,
 ) -> tuple[
     VendorKnowledgeSyncCoordinator,
     RecordingBindingService,
@@ -90,6 +95,8 @@ def _coordinator(
         "item_state_repository": state,
         "sink": sink,
         "lease_ttl_seconds": 30,
+        "publication_fence_port": publication_fence_port,
+        "require_fenced_publication": require_fenced_publication,
     }
     if durable:
         coordinator_kwargs.update(
@@ -103,6 +110,21 @@ def _coordinator(
         )
     coordinator = VendorKnowledgeSyncCoordinator(**coordinator_kwargs)  # type: ignore[arg-type]
     return coordinator, binding_service, facade, lease, checkpoint, state, sink
+
+
+class _MutablePublicationFencePort:
+    def __init__(self, fence: KnowledgeSyncPublicationFenceV1) -> None:
+        self.fence = fence
+
+    def read_fence(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSyncPublicationFenceV1 | None:
+        if self.fence.tenant_id != tenant_id or self.fence.binding_id != binding_id:
+            return None
+        return self.fence
 
 
 @pytest.mark.unit
@@ -130,6 +152,124 @@ async def test_lease_busy_skips_dependencies() -> None:
     assert checkpoint.get_calls == []
     assert sink.calls == []
     assert state.apply_calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_disable_after_read_rejects_all_new_publication() -> None:
+    initial = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    disabled = initial.model_copy(
+        update={
+            "lifecycle_revision": 2,
+            "lifecycle_token": "token-b",
+            "enabled": False,
+        }
+    )
+    fence_port = _MutablePublicationFencePort(initial)
+    facade = RecordingFacade()
+
+    def _read_page(cursor, limit):
+        fence_port.fence = disabled
+        return make_page(proposed_checkpoint=KnowledgeCursor(value="cp-stale"))
+
+    facade.page_factory = _read_page
+    coordinator, _, _, _, checkpoint, state, sink = _coordinator(
+        facade=facade,
+        publication_fence_port=fence_port,
+        require_fenced_publication=True,
+    )
+
+    result = await coordinator.sync_once(binding_id="binding-1")
+
+    assert result.status is KnowledgeSyncRunStatus.PUBLICATION_DISABLED
+    assert result.delivery_id is None
+    assert checkpoint.commit_calls == []
+    assert state.apply_calls == []
+    assert sink.calls == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_reenable_rejects_old_token_and_allows_new_coordinator() -> None:
+    fence_a = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    fence_b = fence_a.model_copy(
+        update={"lifecycle_revision": 2, "lifecycle_token": "token-b"}
+    )
+    port = _MutablePublicationFencePort(fence_a)
+    facade = RecordingFacade()
+
+    def _rotate_before_publication(cursor, limit):
+        port.fence = fence_b
+        return make_page(proposed_checkpoint=KnowledgeCursor(value="old"))
+
+    facade.page_factory = _rotate_before_publication
+    old, binding_service, _, lease, checkpoint, state, sink = _coordinator(
+        facade=facade,
+        publication_fence_port=port,
+        require_fenced_publication=True,
+    )
+    old_result = await old.sync_once(binding_id="binding-1")
+
+    port.fence = fence_b
+    new, *_ = _coordinator(
+        binding_service=binding_service,
+        lease=lease,
+        checkpoint=checkpoint,
+        state=state,
+        sink=sink,
+        publication_fence_port=port,
+        require_fenced_publication=True,
+    )
+    new_result = await new.sync_once(binding_id="binding-1")
+
+    assert old_result.status is KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST
+    assert old_result.delivery_id is None
+    assert new_result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert checkpoint.commit_calls
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_lease_loss_rejects_fenced_publication() -> None:
+    class _LeaseLost(InMemoryLeaseRepository):
+        def is_owned(self, *, lease: KnowledgeSourceLeaseToken) -> bool:
+            return False
+
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        lifecycle_revision=1,
+        lifecycle_token="token-a",
+        enabled=True,
+        detached=False,
+    )
+    lease = _LeaseLost()
+    coordinator, _, _, _, checkpoint, state, sink = _coordinator(
+        lease=lease,
+        publication_fence_port=_MutablePublicationFencePort(fence),
+        require_fenced_publication=True,
+    )
+
+    result = await coordinator.sync_once(binding_id="binding-1")
+
+    assert result.status is KnowledgeSyncRunStatus.PUBLICATION_LEASE_LOST
+    assert checkpoint.commit_calls == []
+    assert state.apply_calls == []
+    assert sink.calls == []
 
 
 @pytest.mark.unit
@@ -713,11 +853,11 @@ async def test_result_counts_and_has_more() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_tenant_binding_source_consistency() -> None:
+    from intergrax.integrations.contracts.base import IntegrationCategory
     from intergrax.runtime.vendor_knowledge.models import (
         KnowledgeSourceRef,
         KnowledgeSourceScope,
     )
-    from intergrax.integrations.contracts.base import IntegrationCategory
 
     binding = make_binding()
     bad_source = KnowledgeSourceRef(

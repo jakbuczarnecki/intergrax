@@ -34,6 +34,48 @@ ephemeral evidence and optionally a receipt. It is not:
 - a provider SDK boundary exposed to an application;
 - a durable continuation or synchronization job.
 
+## 1.1 Durable synchronization publication fence
+
+The separate Vendor Knowledge synchronization runtime uses two independent
+ownership predicates:
+
+```text
+source lease
+  = one worker may execute a page
+
+publication fence
+  = the application-authoritative tenant/binding lifecycle revision and
+    opaque publication token still permit durable visibility
+```
+
+The fence is provider-neutral and contains only tenant identity, binding
+identity, a positive lifecycle revision, an opaque bounded token, `enabled`,
+and `detached`. A run captures the exact fence at start; recovery preserves
+that captured snapshot from durable run state and never adopts the latest
+token. The lease and fence are both revalidated immediately before sink
+delivery, remote-item state, checkpoint, reconciliation CAS, and final result
+boundaries. A mismatch produces an auditable non-success outcome such as
+`publication_fence_lost`, `publication_lease_lost`, `publication_disabled`,
+`publication_detached`, or `publication_binding_missing`.
+
+Enable/attach publishes a new active token and revision. Disable rotates the
+revision/token to an inactive fence; detach rotates it to a terminal revoked
+fence. A stale worker holding the previous token cannot advance a checkpoint,
+complete a reconciliation run, or report successful terminal publication.
+Existing unrelated consumers remain available only through an explicit
+unfenced/legacy runtime configuration; the next consumer is
+`LKW-INDEXED-SOURCE-LIFECYCLE-1`.
+
+The current generic sink contract carries the captured fence but does not
+atomically stage and commit arbitrary already-visible local document writes.
+Therefore a sink implementation must honor the fence in its own materialized
+write/receipt boundary for full stale-output safety; checkpoint, remote-state,
+reconciliation, and result publication are independently fence-checked and
+CAS-protected by Vendor Knowledge. The generic `ConditionalDocumentStore`
+primitive is single-record only; deployments requiring a strict cross-record
+linearization point must provide that transaction/conditional primitive at the
+store or sink boundary before claiming complete stale-output prevention.
+
 This task creates no handlers, descriptors, registrations, runtime models,
 provider wiring, application orchestration, tests, or Hybrid Ask changes.
 

@@ -43,8 +43,8 @@ from intergrax.runtime.vendor_knowledge.sync_contracts import (
     KnowledgeSyncSinkReceiptInspector,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
-    KnowledgeReconciliationRun,
     KnowledgeReconciliationRecoveryCommand,
+    KnowledgeReconciliationRun,
     KnowledgeReconciliationRunPhase,
     KnowledgeRemoteItemState,
     KnowledgeRemoteItemStatus,
@@ -55,6 +55,11 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncMode,
     KnowledgeSyncRunResult,
     KnowledgeSyncRunStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceConflict,
+    KnowledgeSyncPublicationFencePort,
+    KnowledgeSyncPublicationFenceV1,
 )
 from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
     VendorKnowledgeReconciliationEngine,
@@ -83,6 +88,12 @@ _TOMBSTONE_CHANGE_KINDS: frozenset[KnowledgeChangeKind] = frozenset(
         KnowledgeChangeKind.REVOKED,
     }
 )
+
+
+class _PublicationRejected(Exception):
+    def __init__(self, status: KnowledgeSyncRunStatus) -> None:
+        self.status = status
+        super().__init__(status.value)
 
 
 def _require_non_empty(value: str, *, field_name: str) -> str:
@@ -126,6 +137,7 @@ def _build_delivery_id(
     mode: KnowledgeSyncMode,
     input_cursor: KnowledgeCursor | None,
     page: KnowledgePage,
+    publication_fence: KnowledgeSyncPublicationFenceV1 | None,
 ) -> str:
     payload = {
         "tenant_id": tenant_id,
@@ -135,6 +147,14 @@ def _build_delivery_id(
         "input_cursor": _cursor_fingerprint(input_cursor),
         "proposed_checkpoint": _cursor_fingerprint(page.proposed_checkpoint),
         "next_cursor": _cursor_fingerprint(page.next_cursor),
+        "publication_fence": (
+            {
+                "lifecycle_revision": publication_fence.lifecycle_revision,
+                "lifecycle_token": publication_fence.lifecycle_token,
+            }
+            if publication_fence is not None
+            else None
+        ),
         "changes": [
             {
                 "kind": change.kind.value,
@@ -178,6 +198,8 @@ class VendorKnowledgeSyncCoordinator:
             KnowledgeReconciliationCandidateInventoryRepository | None
         ) = None,
         sink_receipt_inspector: KnowledgeSyncSinkReceiptInspector | None = None,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
+        require_fenced_publication: bool = False,
     ) -> None:
         self._tenant_id = _require_non_empty(tenant_id, field_name="tenant_id")
         self._owner_id = _require_non_empty(owner_id, field_name="owner_id")
@@ -198,6 +220,13 @@ class VendorKnowledgeSyncCoordinator:
         ):
             resolved_inspector = sink
         self._sink_receipt_inspector = resolved_inspector
+        if require_fenced_publication and publication_fence_port is None:
+            raise ValueError(
+                "require_fenced_publication requires publication_fence_port"
+            )
+        self._publication_fence_port = publication_fence_port
+        self._require_fenced_publication = require_fenced_publication
+        self._active_lease: KnowledgeSourceLeaseToken | None = None
         self._reconciliation_engine: VendorKnowledgeReconciliationEngine | None = None
         if (
             reconciliation_run_repository is not None
@@ -214,6 +243,7 @@ class VendorKnowledgeSyncCoordinator:
                 item_state_repository=item_state_repository,
                 sink=sink,
                 sink_receipt_inspector=resolved_inspector,
+                publication_fence_validator=self._validate_publication,
             )
 
     async def sync_once(
@@ -267,13 +297,37 @@ class VendorKnowledgeSyncCoordinator:
         operation_error: BaseException | None = None
         result: KnowledgeSyncRunResult | None = None
         try:
-            assert self._reconciliation_engine is not None
-            result = await self._reconciliation_engine.reconcile_page(
+            publication_fence, rejected = self._capture_publication_fence(
                 binding_id=cleaned_binding_id,
-                operation_id=cleaned_operation,
-                page_size=page_size,
-                restart=restart,
-                trigger_delivery_id=trigger_delivery_id,
+                mode=KnowledgeSyncMode.RECONCILIATION,
+            )
+            if rejected is not None:
+                result = rejected
+            else:
+                self._active_lease = lease
+                try:
+                    assert self._reconciliation_engine is not None
+                    result = await self._reconciliation_engine.reconcile_page(
+                        binding_id=cleaned_binding_id,
+                        operation_id=cleaned_operation,
+                        page_size=page_size,
+                        restart=restart,
+                        trigger_delivery_id=trigger_delivery_id,
+                        publication_fence=publication_fence,
+                    )
+                finally:
+                    self._active_lease = None
+        except _PublicationRejected as exc:
+            result = self._rejected_result(
+                mode=KnowledgeSyncMode.RECONCILIATION,
+                binding_id=cleaned_binding_id,
+                status=exc.status,
+            )
+        except KnowledgeSyncPublicationFenceConflict:
+            result = self._rejected_result(
+                mode=KnowledgeSyncMode.RECONCILIATION,
+                binding_id=cleaned_binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST,
             )
         except BaseException as exc:
             operation_error = exc
@@ -326,7 +380,26 @@ class VendorKnowledgeSyncCoordinator:
         if config_error is not None:
             raise config_error
         assert self._reconciliation_engine is not None
-        return self._reconciliation_engine.execute_recovery_command(command)
+        lease = self._acquire_lease(binding_id=command.binding_id)
+        if lease is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge publication lease is unavailable",
+                retryable=True,
+            )
+        self._active_lease = lease
+        try:
+            try:
+                return self._reconciliation_engine.execute_recovery_command(command)
+            except _PublicationRejected:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                    safe_message="Knowledge reconciliation publication fence is stale",
+                    retryable=False,
+                ) from None
+        finally:
+            self._active_lease = None
+            self._release_lease(lease)
 
     async def execute_reconciliation_recovery_async(
         self,
@@ -336,7 +409,28 @@ class VendorKnowledgeSyncCoordinator:
         if config_error is not None:
             raise config_error
         assert self._reconciliation_engine is not None
-        return await self._reconciliation_engine.execute_recovery_command_async(command)
+        lease = self._acquire_lease(binding_id=command.binding_id)
+        if lease is None:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge publication lease is unavailable",
+                retryable=True,
+            )
+        self._active_lease = lease
+        try:
+            try:
+                return await self._reconciliation_engine.execute_recovery_command_async(
+                    command
+                )
+            except _PublicationRejected:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.INVALID_CURSOR,
+                    safe_message="Knowledge reconciliation publication fence is stale",
+                    retryable=False,
+                ) from None
+        finally:
+            self._active_lease = None
+            self._release_lease(lease)
 
     async def _run_once(
         self,
@@ -373,11 +467,35 @@ class VendorKnowledgeSyncCoordinator:
         operation_error: BaseException | None = None
         result: KnowledgeSyncRunResult | None = None
         try:
-            result = await self._process_page(
+            publication_fence, rejected = self._capture_publication_fence(
                 binding_id=cleaned_binding_id,
-                page_size=page_size,
                 mode=mode,
-                restart=restart,
+            )
+            if rejected is not None:
+                result = rejected
+            else:
+                self._active_lease = lease
+                try:
+                    result = await self._process_page(
+                        binding_id=cleaned_binding_id,
+                        page_size=page_size,
+                        mode=mode,
+                        restart=restart,
+                        publication_fence=publication_fence,
+                    )
+                finally:
+                    self._active_lease = None
+        except _PublicationRejected as exc:
+            result = self._rejected_result(
+                mode=mode,
+                binding_id=cleaned_binding_id,
+                status=exc.status,
+            )
+        except KnowledgeSyncPublicationFenceConflict:
+            result = self._rejected_result(
+                mode=mode,
+                binding_id=cleaned_binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST,
             )
         except BaseException as exc:
             operation_error = exc
@@ -469,6 +587,122 @@ class VendorKnowledgeSyncCoordinator:
                 retryable=True,
             ) from None
 
+    def _capture_publication_fence(
+        self,
+        *,
+        binding_id: str,
+        mode: KnowledgeSyncMode,
+    ) -> tuple[
+        KnowledgeSyncPublicationFenceV1 | None,
+        KnowledgeSyncRunResult | None,
+    ]:
+        if self._publication_fence_port is None:
+            if self._require_fenced_publication:
+                raise VendorKnowledgeError(
+                    code=VendorKnowledgeErrorCode.CONFIGURATION_ERROR,
+                    safe_message="Knowledge sync publication fence is not configured",
+                    retryable=False,
+                )
+            return None, None
+        try:
+            fence = self._publication_fence_port.read_fence(
+                tenant_id=self._tenant_id,
+                binding_id=binding_id,
+            )
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge sync publication fence lookup failed",
+                retryable=True,
+            ) from None
+        if fence is None:
+            return None, self._rejected_result(
+                mode=mode,
+                binding_id=binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_BINDING_MISSING,
+            )
+        if fence.tenant_id != self._tenant_id or fence.binding_id != binding_id:
+            return None, self._rejected_result(
+                mode=mode,
+                binding_id=binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST,
+            )
+        if fence.detached:
+            return None, self._rejected_result(
+                mode=mode,
+                binding_id=binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_DETACHED,
+            )
+        if not fence.enabled:
+            return None, self._rejected_result(
+                mode=mode,
+                binding_id=binding_id,
+                status=KnowledgeSyncRunStatus.PUBLICATION_DISABLED,
+            )
+        return fence, None
+
+    def _validate_publication(
+        self,
+        expected: KnowledgeSyncPublicationFenceV1 | None,
+    ) -> None:
+        lease = self._active_lease
+        try:
+            owned = lease is not None and self._lease_repository.is_owned(lease=lease)
+        except KnowledgeSyncCorruptState:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE,
+                safe_message="Knowledge source lease state is corrupt",
+                retryable=False,
+            ) from None
+        if not owned:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_LEASE_LOST)
+        if expected is None:
+            return
+        if self._publication_fence_port is None:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST)
+        try:
+            current = self._publication_fence_port.read_fence(
+                tenant_id=expected.tenant_id,
+                binding_id=expected.binding_id,
+            )
+        except Exception:
+            raise VendorKnowledgeError(
+                code=VendorKnowledgeErrorCode.DEPENDENCY_UNAVAILABLE,
+                safe_message="Knowledge sync publication fence validation failed",
+                retryable=True,
+            ) from None
+        if current is None:
+            raise _PublicationRejected(
+                KnowledgeSyncRunStatus.PUBLICATION_BINDING_MISSING
+            )
+        if current.tenant_id != self._tenant_id or current.binding_id != expected.binding_id:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST)
+        if current.detached:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_DETACHED)
+        if not current.enabled:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_DISABLED)
+        if current != expected:
+            raise _PublicationRejected(KnowledgeSyncRunStatus.PUBLICATION_FENCE_LOST)
+
+    def _rejected_result(
+        self,
+        *,
+        mode: KnowledgeSyncMode,
+        binding_id: str,
+        status: KnowledgeSyncRunStatus,
+    ) -> KnowledgeSyncRunResult:
+        return KnowledgeSyncRunResult(
+            status=status,
+            mode=mode,
+            tenant_id=self._tenant_id,
+            binding_id=binding_id,
+            changes_count=0,
+            active_count=0,
+            tombstone_count=0,
+            checkpoint_advanced=False,
+            has_more=False,
+            retryable=False,
+        )
     async def _process_page(
         self,
         *,
@@ -476,6 +710,7 @@ class VendorKnowledgeSyncCoordinator:
         page_size: int,
         mode: KnowledgeSyncMode,
         restart: bool,
+        publication_fence: KnowledgeSyncPublicationFenceV1 | None,
     ) -> KnowledgeSyncRunResult:
         binding, source = self._load_binding_and_source(binding_id=binding_id)
         loaded_checkpoint = self._read_checkpoint(binding_id=binding_id)
@@ -537,6 +772,7 @@ class VendorKnowledgeSyncCoordinator:
             mode=mode,
             input_cursor=input_cursor,
             page=page,
+            publication_fence=publication_fence,
         )
         batch = KnowledgeSyncBatch(
             tenant_id=self._tenant_id,
@@ -547,13 +783,16 @@ class VendorKnowledgeSyncCoordinator:
             delivery_id=delivery_id,
             envelopes=tuple(envelopes),
             has_more=page.has_more,
+            publication_fence=publication_fence,
         )
         await self._apply_durable_batch(
             batch=batch,
             binding=binding,
             loaded_checkpoint=loaded_checkpoint,
             page=page,
+            publication_fence=publication_fence,
         )
+        self._validate_publication(publication_fence)
         active_count = sum(
             1 for envelope in envelopes if envelope.change_kind in _ACTIVE_CHANGE_KINDS
         )
@@ -940,7 +1179,9 @@ class VendorKnowledgeSyncCoordinator:
         binding: KnowledgeSourceBinding,
         loaded_checkpoint: KnowledgeSyncCheckpoint | None,
         page: KnowledgePage,
+        publication_fence: KnowledgeSyncPublicationFenceV1 | None,
     ) -> None:
+        self._validate_publication(publication_fence)
         try:
             await self._sink.apply_batch(batch=batch)
         except VendorKnowledgeError:
@@ -959,12 +1200,14 @@ class VendorKnowledgeSyncCoordinator:
             ) from None
 
         states = self._build_remote_states(batch=batch, binding=binding)
+        self._validate_publication(publication_fence)
         try:
             self._item_state_repository.apply_batch(
                 tenant_id=batch.tenant_id,
                 binding_id=batch.binding_id,
                 delivery_id=batch.delivery_id,
                 states=states,
+                expected_publication_fence=publication_fence,
             )
         except VendorKnowledgeError:
             raise
@@ -990,10 +1233,12 @@ class VendorKnowledgeSyncCoordinator:
             binding_configuration_version=binding.configuration_version,
             cursor=page.proposed_checkpoint,
         )
+        self._validate_publication(publication_fence)
         try:
             self._checkpoint_repository.commit(
                 new_checkpoint,
                 expected_previous=loaded_checkpoint,
+                expected_publication_fence=publication_fence,
             )
         except VendorKnowledgeError:
             raise

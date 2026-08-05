@@ -52,6 +52,11 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     validate_reconciliation_prepared_intent,
     validate_recovery_required_run,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFenceConflict,
+    KnowledgeSyncPublicationFencePort,
+    KnowledgeSyncPublicationFenceV1,
+)
 
 _LEASE_SCHEMA = "vendor_knowledge.source_lease.v1"
 _CHECKPOINT_SCHEMA = "vendor_knowledge.sync_checkpoint.v1"
@@ -568,6 +573,25 @@ def _data_as_dict(data: Mapping[str, Any]) -> dict[str, Any]:
     return dict(data)
 
 
+def _require_current_publication_fence(
+    *,
+    port: KnowledgeSyncPublicationFencePort | None,
+    expected: KnowledgeSyncPublicationFenceV1 | None,
+) -> None:
+    if expected is None:
+        return
+    if port is None:
+        raise KnowledgeSyncPublicationFenceConflict(
+            "publication fence authority is not configured"
+        )
+    current = port.read_fence(
+        tenant_id=expected.tenant_id,
+        binding_id=expected.binding_id,
+    )
+    if current != expected or not expected.enabled or expected.detached:
+        raise KnowledgeSyncPublicationFenceConflict("publication fence no longer matches")
+
+
 class DocumentStoreKnowledgeSourceLeaseRepository:
     """Atomic source-level lease repository backed by ConditionalDocumentStore."""
 
@@ -662,6 +686,24 @@ class DocumentStoreKnowledgeSourceLeaseRepository:
             return
         self._store.delete_if_match(expected=existing)
 
+    def is_owned(self, *, lease: KnowledgeSourceLeaseToken) -> bool:
+        existing = self._store.get(
+            _lease_partition_key(lease.tenant_id),
+            _lease_row_key(lease.binding_id),
+        )
+        if existing is None:
+            return False
+        parsed = self._parse_lease_document(
+            existing,
+            expected_tenant=lease.tenant_id,
+        )
+        return (
+            parsed["token"] == lease.token
+            and parsed["owner_id"] == lease.owner_id
+            and parsed["binding_id"] == lease.binding_id
+            and float(self._clock()) < float(parsed["expires_at_epoch"])
+        )
+
     def _lease_document(
         self,
         *,
@@ -754,9 +796,11 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         document_store: DocumentStore,
         *,
         version_factory: VersionFactory | None = None,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
     ) -> None:
         self._store = _require_conditional_document_store(document_store)
         self._version_factory = version_factory or _default_version_factory
+        self._publication_fence_port = publication_fence_port
 
     def get(
         self,
@@ -783,7 +827,12 @@ class DocumentStoreKnowledgeSyncCheckpointRepository:
         checkpoint: KnowledgeSyncCheckpoint,
         *,
         expected_previous: KnowledgeSyncCheckpoint | None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _require_current_publication_fence(
+            port=self._publication_fence_port,
+            expected=expected_publication_fence,
+        )
         cleaned_tenant = _require_non_empty(
             checkpoint.tenant_id, field_name="tenant_id"
         )
@@ -1101,9 +1150,11 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         document_store: DocumentStore,
         *,
         version_factory: VersionFactory | None = None,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
     ) -> None:
         self._store = _require_conditional_document_store(document_store)
         self._version_factory = version_factory or _default_version_factory
+        self._publication_fence_port = publication_fence_port
 
     def get(
         self,
@@ -1135,7 +1186,12 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         delivery_id: str,
         states: tuple[KnowledgeRemoteItemState, ...],
         prepared_state_mutations_fingerprint: str | None = None,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _require_current_publication_fence(
+            port=self._publication_fence_port,
+            expected=expected_publication_fence,
+        )
         cleaned_tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         cleaned_binding = _require_non_empty(binding_id, field_name="binding_id")
         cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
@@ -2094,9 +2150,11 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         document_store: DocumentStore,
         *,
         policy: KnowledgeReconciliationLimitPolicy | None = None,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
     ) -> None:
         self._store = _require_conditional_document_store(document_store)
         self._policy = policy or KnowledgeReconciliationLimitPolicy()
+        self._publication_fence_port = publication_fence_port
 
     def get(
         self,
@@ -2152,7 +2210,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _require_current_publication_fence(
+            port=self._publication_fence_port,
+            expected=expected_publication_fence,
+        )
         self._validate_run_identity_keys(expected)
         self._validate_run_identity_keys(replacement)
         _validate_reconciliation_identity_unchanged(
@@ -2200,7 +2263,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _require_current_publication_fence(
+            port=self._publication_fence_port,
+            expected=expected_publication_fence,
+        )
         if replacement.tenant_id != expected.tenant_id:
             raise KnowledgeSyncCorruptState(
                 "superseding replacement tenant identity mismatch"
@@ -2275,7 +2343,12 @@ class DocumentStoreKnowledgeReconciliationRunRepository:
         *,
         expected: KnowledgeReconciliationRun,
         replacement: KnowledgeReconciliationRun,
+        expected_publication_fence: KnowledgeSyncPublicationFenceV1 | None = None,
     ) -> None:
+        _require_current_publication_fence(
+            port=self._publication_fence_port,
+            expected=expected_publication_fence,
+        )
         self._validate_run_identity_keys(expected)
         self._validate_run_identity_keys(replacement)
         _validate_reconciliation_identity_unchanged(
