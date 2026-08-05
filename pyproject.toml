@@ -272,6 +272,7 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "--basetemp=build/pytest-basetemp",
+  "--import-mode=importlib",
 ]
 
 markers = [
