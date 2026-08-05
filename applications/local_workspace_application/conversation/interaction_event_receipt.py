@@ -29,6 +29,13 @@ class ConversationEventReceiptStatus(StrEnum):
     RESPONSE_SENT = "response_sent"
 
 
+class ConversationEventMemoryStatus(StrEnum):
+    NOT_REQUIRED = "not_required"
+    PENDING = "pending"
+    FAILED = "failed"
+    COMPLETED = "completed"
+
+
 class ConversationEventReceipt(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -39,6 +46,11 @@ class ConversationEventReceipt(BaseModel):
     execution_id: str = Field(min_length=1, max_length=128)
     safe_response: str | None = Field(default=None, max_length=_MAX_RESPONSE_LENGTH)
     response_hash: str | None = Field(default=None, max_length=64)
+    memory_status: ConversationEventMemoryStatus = (
+        ConversationEventMemoryStatus.NOT_REQUIRED
+    )
+    memory_revision_id: str | None = Field(default=None, max_length=128)
+    memory_error_code: str | None = Field(default=None, max_length=128)
     created_at: datetime
     completed_at: datetime | None = None
 
@@ -75,11 +87,27 @@ class ConversationEventReceipt(BaseModel):
         ):
             raise ValueError("receipt timestamps must be timezone-aware UTC")
 
+        if self.memory_status is ConversationEventMemoryStatus.COMPLETED:
+            if self.memory_revision_id is None or self.memory_error_code is not None:
+                raise ValueError("completed memory state is inconsistent")
+        elif self.memory_status is ConversationEventMemoryStatus.FAILED:
+            if not self.memory_error_code or self.memory_revision_id is not None:
+                raise ValueError("failed memory state is inconsistent")
+        elif self.memory_status is ConversationEventMemoryStatus.PENDING:
+            if self.memory_revision_id is not None or self.memory_error_code is not None:
+                raise ValueError("pending memory state is inconsistent")
+        elif (
+            self.memory_revision_id is not None
+            or self.memory_error_code is not None
+        ):
+            raise ValueError("not-required memory state is inconsistent")
+
         if self.status is ConversationEventReceiptStatus.PROCESSING:
             if (
                 self.safe_response is not None
                 or self.response_hash is not None
                 or self.completed_at is not None
+                or self.memory_status is not ConversationEventMemoryStatus.NOT_REQUIRED
             ):
                 raise ValueError("processing receipt cannot contain a response")
             return self
@@ -253,6 +281,7 @@ class ConversationInteractionEventReceiptRepository:
         *,
         receipt: ConversationEventReceipt,
         response: str,
+        memory_required: bool = False,
     ) -> ConversationEventReceipt:
         self._ensure_transition(
             receipt,
@@ -273,6 +302,71 @@ class ConversationInteractionEventReceiptRepository:
                     safe_response.encode("utf-8")
                 ).hexdigest(),
                 "completed_at": _utcnow(),
+                "memory_status": (
+                    ConversationEventMemoryStatus.PENDING
+                    if memory_required
+                    else ConversationEventMemoryStatus.NOT_REQUIRED
+                ),
+                "memory_revision_id": None,
+                "memory_error_code": None,
+            },
+        )
+        self._replace(receipt, replacement)
+        return replacement
+
+    def mark_memory_completed(
+        self,
+        *,
+        receipt: ConversationEventReceipt,
+        revision_id: str,
+    ) -> ConversationEventReceipt:
+        if receipt.status not in {
+            ConversationEventReceiptStatus.RESPONSE_PENDING,
+            ConversationEventReceiptStatus.RESPONSE_FAILED,
+        }:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_memory_transition_invalid"
+            )
+        revision = revision_id.strip()
+        if not revision:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_memory_revision_empty"
+            )
+        replacement = self._transition(
+            receipt,
+            update={
+                "memory_status": ConversationEventMemoryStatus.COMPLETED,
+                "memory_revision_id": revision[:128],
+                "memory_error_code": None,
+            },
+        )
+        self._replace(receipt, replacement)
+        return replacement
+
+    def mark_memory_failed(
+        self,
+        *,
+        receipt: ConversationEventReceipt,
+        error_code: str,
+    ) -> ConversationEventReceipt:
+        if receipt.status not in {
+            ConversationEventReceiptStatus.RESPONSE_PENDING,
+            ConversationEventReceiptStatus.RESPONSE_FAILED,
+        }:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_memory_transition_invalid"
+            )
+        normalized = error_code.strip()
+        if not normalized:
+            raise ConversationEventReceiptError(
+                "conversation_receipt_memory_error_empty"
+            )
+        replacement = self._transition(
+            receipt,
+            update={
+                "memory_status": ConversationEventMemoryStatus.FAILED,
+                "memory_revision_id": None,
+                "memory_error_code": normalized[:128],
             },
         )
         self._replace(receipt, replacement)
@@ -315,6 +409,7 @@ __all__ = [
     "ConversationEventReceipt",
     "ConversationEventReceiptClaim",
     "ConversationEventReceiptError",
+    "ConversationEventMemoryStatus",
     "ConversationEventReceiptStatus",
     "ConversationInteractionEventReceiptRepository",
 ]

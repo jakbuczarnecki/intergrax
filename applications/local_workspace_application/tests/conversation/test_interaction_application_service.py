@@ -34,6 +34,9 @@ from local_workspace_application.conversation.interaction_event_receipt import (
     ConversationInteractionEventReceiptRepository,
     _MAX_RESPONSE_LENGTH,
 )
+from local_workspace_application.conversation.conversation_thread_memory_service import (
+    ConversationThreadMemoryService,
+)
 from local_workspace_application.conversation.interaction_execution_models import (
     ConversationActionExecutionResult,
     ConversationActionExecutionStatus,
@@ -57,6 +60,13 @@ from local_workspace_application.workspaces.conversation_context_models import (
     ConversationProductCapability,
     ConversationThreadContextPolicy,
     ResolvedConversationWorkspaceContextV1,
+)
+from local_workspace_application.workspaces.conversation_context_memory import (
+    DocumentStoreThreadMemoryLifecyclePort,
+    SessionHistorySnapshotConversationThreadMemoryAdapter,
+)
+from local_workspace_application.workspaces.conversation_context_models import (
+    ConversationThreadMemoryLimitsV1,
 )
 
 
@@ -243,6 +253,66 @@ async def test_application_service_plans_executes_renders_once_and_deduplicates(
     assert planner.requests[0].active_workspace_id == "workspace-1"
     assert planner.requests[0].available_workspaces[0].is_active is True
     assert executor.commands[0].planning_request is planner.requests[0]
+
+
+@pytest.mark.asyncio
+async def test_restart_reconstructs_recent_turns_before_planning() -> None:
+    store = InMemoryDocumentStore()
+    fixed_now = datetime(2026, 8, 5, 8, 0, tzinfo=UTC)
+
+    def now() -> datetime:
+        return fixed_now
+
+    def build_service(planner: _Planner, executor: _Executor):
+        memory = ConversationThreadMemoryService(
+            adapter=SessionHistorySnapshotConversationThreadMemoryAdapter(
+                port=DocumentStoreThreadMemoryLifecyclePort(store),
+            ),
+            limits=ConversationThreadMemoryLimitsV1(
+                max_messages=20,
+                max_bytes=16 * 1024,
+                max_age_seconds=24 * 60 * 60,
+            ),
+            clock=now,
+        )
+        return ConversationInteractionApplicationService(
+            context_resolver=_Resolver(),  # type: ignore[arg-type]
+            planner=planner,  # type: ignore[arg-type]
+            executor=executor,  # type: ignore[arg-type]
+            renderer=_Renderer(),  # type: ignore[arg-type]
+            receipt_repository=ConversationInteractionEventReceiptRepository(store),
+            workspace_service=_WorkspaceService(),
+            personal_allowed_capabilities=frozenset(ConversationProductCapability),
+            thread_memory_service=memory,
+            clock=now,
+        )
+
+    first_planner = _Planner()
+    first_executor = _Executor()
+    first_service = build_service(first_planner, first_executor)
+    first = await first_service.handle(_command(event_ref="restart-1"))
+    assert first.response_text == "Workspaces: 1"
+    first_service.mark_response_sent(first)
+
+    second_planner = _Planner()
+    second_executor = _Executor()
+    second_service = build_service(second_planner, second_executor)
+    second_command = _command(event_ref="restart-2").model_copy(
+        update={"message_text": "activate it"}
+    )
+    await second_service.handle(second_command)
+
+    assert second_planner.calls == 1
+    assert [
+        (turn.role, turn.text) for turn in second_planner.requests[0].recent_turns
+    ] == [
+        ("user", "list workspaces"),
+        ("assistant", "Workspaces: 1"),
+    ]
+    assert second_executor.calls == 1
+    duplicate = await second_service.handle(_command(event_ref="restart-1"))
+    assert duplicate.should_send is False
+    assert second_planner.calls == 1
 
 
 @pytest.mark.asyncio

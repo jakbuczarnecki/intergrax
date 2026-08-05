@@ -10,7 +10,7 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any, Protocol, cast
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -21,6 +21,7 @@ from intergrax.integrations.contracts.conversation_channel import (
 from local_workspace_application.conversation.interaction_event_receipt import (
     ConversationEventReceipt,
     ConversationEventReceiptError,
+    ConversationEventMemoryStatus,
     ConversationEventReceiptStatus,
     ConversationInteractionEventReceiptRepository,
 )
@@ -38,6 +39,7 @@ from local_workspace_application.conversation.interaction_models import (
     ConversationPlanningAttachment,
     ConversationPlanningRequest,
     ConversationPlanningSourceCandidate,
+    ConversationPlanningTurn,
     ConversationPlanningWorkspace,
     KnowledgeAddAttachmentsPlannedAction,
 )
@@ -47,6 +49,10 @@ from local_workspace_application.conversation.interaction_planner import (
 )
 from local_workspace_application.conversation.interaction_response_renderer import (
     ConversationInteractionResponseRenderer,
+)
+from local_workspace_application.conversation.conversation_thread_memory_service import (
+    ConversationThreadMemoryService,
+    ConversationThreadMemoryServiceError,
 )
 from local_workspace_application.workspaces.conversation_context_execution import (
     ConversationExecutionContextError,
@@ -128,6 +134,8 @@ class ConversationInteractionApplicationService:
         source_candidate_service: Any | None = None,
         attachment_loader: TrustedAttachmentLoader | None = None,
         attachment_max_bytes: int = 25 * 1024 * 1024,
+        thread_memory_service: ConversationThreadMemoryService | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not personal_allowed_capabilities:
             raise ValueError("personal_allowed_capabilities must not be empty")
@@ -140,6 +148,8 @@ class ConversationInteractionApplicationService:
         self._source_candidate_service = source_candidate_service
         self._attachment_loader = attachment_loader
         self._attachment_max_bytes = attachment_max_bytes
+        self._thread_memory = thread_memory_service
+        self._clock = clock or (lambda: datetime.now(UTC))
         self._configured_personal_capabilities = personal_allowed_capabilities
         self._attachment_registry: contextvars.ContextVar[dict[str, object]] = (
             contextvars.ContextVar("lkw_conversation_attachment_registry", default={})
@@ -165,42 +175,24 @@ class ConversationInteractionApplicationService:
             )
 
         if not claim.owned:
-            receipt = claim.receipt
-            if (
-                receipt.status
-                in {
-                    ConversationEventReceiptStatus.RESPONSE_PENDING,
-                    ConversationEventReceiptStatus.RESPONSE_FAILED,
-                }
-                and receipt.safe_response
-            ):
-                return ConversationInteractionApplicationResult(
-                    execution_result=_failure_result(
-                        execution_id=receipt.execution_id,
-                        tenant_id=command.tenant_id,
-                        code="conversation_duplicate_event",
-                    ),
-                    response_text=receipt.safe_response,
-                    should_send=True,
-                    receipt=receipt,
-                )
-            return ConversationInteractionApplicationResult(
-                execution_result=_failure_result(
-                    execution_id=receipt.execution_id,
-                    tenant_id=command.tenant_id,
-                    code="conversation_duplicate_event",
-                ),
-                response_text="",
-                should_send=False,
-                receipt=receipt,
+            return self._recover_duplicate(
+                command=command,
+                receipt=claim.receipt,
             )
 
         receipt = claim.receipt
         try:
             execution_context = self._resolve_context(command)
+            recent_turns = ()
+            if self._thread_memory is not None:
+                recent_turns = self._thread_memory.load_recent_turns(
+                    context=execution_context,
+                    now=self._clock(),
+                )
             planning_request = await self._build_planning_request(
                 command=command,
                 execution_context=execution_context,
+                recent_turns=recent_turns,
             )
         except ConversationContextResolutionError as exc:
             return self._finish_failure(
@@ -215,6 +207,13 @@ class ConversationInteractionApplicationService:
                 receipt=receipt,
                 execution_id=execution_id,
                 code="conversation_context_not_active",
+            )
+        except ConversationThreadMemoryServiceError as exc:
+            return self._finish_failure(
+                command=command,
+                receipt=receipt,
+                execution_id=execution_id,
+                code=exc.error_code,
             )
         except Exception:  # noqa: BLE001 - safe planning-context boundary
             logger.warning("conversation planning context construction failed")
@@ -286,6 +285,8 @@ class ConversationInteractionApplicationService:
             self._attachment_registry.reset(token)
 
         return self._finish_success(
+            command=command,
+            execution_context=execution_context,
             receipt=receipt,
             execution_result=execution_result,
         )
@@ -341,6 +342,7 @@ class ConversationInteractionApplicationService:
         *,
         command: ConversationInteractionApplicationCommand,
         execution_context: ConversationExecutionContextV1,
+        recent_turns: tuple[ConversationPlanningTurn, ...] = (),
     ) -> ConversationPlanningRequest:
         raw_workspaces = self._workspace_service.list_workspaces(
             tenant_id=command.tenant_id
@@ -392,7 +394,7 @@ class ConversationInteractionApplicationService:
             available_workspaces=planning_workspaces,
             active_workspace_id=execution_context.workspace_id,
             available_source_candidates=candidates,
-            recent_turns=(),
+            recent_turns=recent_turns,
         )
 
     async def _prepare_attachments(
@@ -432,6 +434,8 @@ class ConversationInteractionApplicationService:
     def _finish_success(
         self,
         *,
+        command: ConversationInteractionApplicationCommand | None = None,
+        execution_context: ConversationExecutionContextV1 | None = None,
         receipt: ConversationEventReceipt,
         execution_result: ConversationInteractionExecutionResult,
     ) -> ConversationInteractionApplicationResult:
@@ -444,15 +448,128 @@ class ConversationInteractionApplicationService:
             pending = self._receipts.mark_response_pending(
                 receipt=receipt,
                 response=response_text,
+                memory_required=(
+                    self._thread_memory is not None
+                    and command is not None
+                    and execution_context is not None
+                ),
             )
         except ConversationEventReceiptError:
             pending = receipt
             logger.warning("conversation response receipt pending update failed")
+        if (
+            self._thread_memory is not None
+            and command is not None
+            and execution_context is not None
+            and pending.status is ConversationEventReceiptStatus.RESPONSE_PENDING
+            and pending.memory_status is ConversationEventMemoryStatus.PENDING
+        ):
+            try:
+                user_created_at = self._clock()
+                assistant_created_at = max(self._clock(), user_created_at)
+                appended = self._thread_memory.append_exchange(
+                    context=execution_context,
+                    user_text=command.message_text.strip(),
+                    assistant_text=response_text,
+                    user_created_at=user_created_at,
+                    assistant_created_at=assistant_created_at,
+                    exchange_id=receipt.execution_id,
+                )
+            except ConversationThreadMemoryServiceError as exc:
+                logger.warning(
+                    "conversation thread memory append failed code=%s",
+                    exc.error_code,
+                )
+                try:
+                    pending = self._receipts.mark_memory_failed(
+                        receipt=pending,
+                        error_code=exc.error_code,
+                    )
+                except ConversationEventReceiptError:
+                    logger.warning("conversation memory failure marker update failed")
+            else:
+                try:
+                    pending = self._receipts.mark_memory_completed(
+                        receipt=pending,
+                        revision_id=appended.snapshot.revision_id,
+                    )
+                except ConversationEventReceiptError:
+                    logger.warning("conversation memory completion marker update failed")
         return ConversationInteractionApplicationResult(
             execution_result=execution_result,
             response_text=response_text,
             should_send=True,
             receipt=pending,
+        )
+
+    def _recover_duplicate(
+        self,
+        *,
+        command: ConversationInteractionApplicationCommand,
+        receipt: ConversationEventReceipt,
+    ) -> ConversationInteractionApplicationResult:
+        safe_response = receipt.safe_response
+        if (
+            receipt.status
+            in {
+                ConversationEventReceiptStatus.RESPONSE_PENDING,
+                ConversationEventReceiptStatus.RESPONSE_FAILED,
+            }
+            and safe_response
+        ):
+            if (
+                self._thread_memory is not None
+                and receipt.memory_status
+                in {
+                    ConversationEventMemoryStatus.PENDING,
+                    ConversationEventMemoryStatus.FAILED,
+                }
+            ):
+                try:
+                    execution_context = self._resolve_context(command)
+                    user_created_at = self._clock()
+                    assistant_created_at = max(self._clock(), user_created_at)
+                    appended = self._thread_memory.append_exchange(
+                        context=execution_context,
+                        user_text=command.message_text.strip(),
+                        assistant_text=safe_response,
+                        user_created_at=user_created_at,
+                        assistant_created_at=assistant_created_at,
+                        exchange_id=receipt.execution_id,
+                    )
+                    receipt = self._receipts.mark_memory_completed(
+                        receipt=receipt,
+                        revision_id=appended.snapshot.revision_id,
+                    )
+                except (
+                    ConversationContextResolutionError,
+                    ConversationExecutionContextError,
+                    ConversationThreadMemoryServiceError,
+                    ConversationEventReceiptError,
+                ) as exc:
+                    logger.warning(
+                        "conversation duplicate memory recovery failed kind=%s",
+                        type(exc).__name__,
+                    )
+            return ConversationInteractionApplicationResult(
+                execution_result=_failure_result(
+                    execution_id=receipt.execution_id,
+                    tenant_id=command.tenant_id,
+                    code="conversation_duplicate_event",
+                ),
+                response_text=safe_response,
+                should_send=True,
+                receipt=receipt,
+            )
+        return ConversationInteractionApplicationResult(
+            execution_result=_failure_result(
+                execution_id=receipt.execution_id,
+                tenant_id=command.tenant_id,
+                code="conversation_duplicate_event",
+            ),
+            response_text="",
+            should_send=False,
+            receipt=receipt,
         )
 
     def _finish_failure(

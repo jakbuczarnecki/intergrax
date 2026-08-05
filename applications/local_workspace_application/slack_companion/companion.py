@@ -57,7 +57,15 @@ from local_workspace_application.conversation.interaction_planner import (
 from local_workspace_application.conversation.interaction_response_renderer import (
     ConversationInteractionResponseRenderer,
 )
+from local_workspace_application.conversation.conversation_thread_memory_service import (
+    ConversationThreadMemoryService,
+)
+from local_workspace_application.workspaces.conversation_context_memory import (
+    DocumentStoreThreadMemoryLifecyclePort,
+    SessionHistorySnapshotConversationThreadMemoryAdapter,
+)
 from local_workspace_application.workspaces.conversation_context_models import (
+    ConversationThreadMemoryLimitsV1,
     ConversationProductCapability,
 )
 from local_workspace_application.workspaces.conversation_context_repository import (
@@ -88,6 +96,9 @@ SLACK_COMPANION_PRODUCT_ENV_KEYS: tuple[str, ...] = (
     "LOCAL_WORKSPACE_SLACK_ASK_BASE_URL",
     "LOCAL_WORKSPACE_SLACK_ASK_API_KEY",
     "LOCAL_WORKSPACE_SLACK_ASK_TIMEOUT_SECONDS",
+    "LOCAL_WORKSPACE_CONVERSATION_THREAD_MEMORY_MAX_MESSAGES",
+    "LOCAL_WORKSPACE_CONVERSATION_THREAD_MEMORY_MAX_BYTES",
+    "LOCAL_WORKSPACE_CONVERSATION_THREAD_MEMORY_MAX_AGE_SECONDS",
 )
 
 
@@ -105,6 +116,7 @@ class SlackCompanionRuntimeConfig:
     conversation_connection_ref: str
     attachment_max_bytes: int
     attachment_max_batch_files: int
+    thread_memory_limits: ConversationThreadMemoryLimitsV1
 
 
 def resolve_slack_companion_runtime_config(
@@ -136,6 +148,14 @@ def resolve_slack_companion_runtime_config(
         return None
     if attachment_max_bytes < 1 or attachment_max_batch_files < 1:
         return None
+    try:
+        thread_memory_limits = ConversationThreadMemoryLimitsV1(
+            max_messages=settings.conversation_thread_memory_max_messages,
+            max_bytes=settings.conversation_thread_memory_max_bytes,
+            max_age_seconds=settings.conversation_thread_memory_max_age_seconds,
+        )
+    except ValueError:
+        return None
 
     return SlackCompanionRuntimeConfig(
         approved_team_id=approved_team_id,
@@ -150,6 +170,7 @@ def resolve_slack_companion_runtime_config(
         ),
         attachment_max_bytes=attachment_max_bytes,
         attachment_max_batch_files=attachment_max_batch_files,
+        thread_memory_limits=thread_memory_limits,
     )
 
 
@@ -462,6 +483,16 @@ def _build_conversation_interaction_application_service(
         web_url_intake_service=getattr(app.state, "lkw_web_url_intake_service", None),
         ask_service=ask_service,
     )
+    def clock() -> datetime:
+        return datetime.now(UTC)
+    memory_adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
+        port=DocumentStoreThreadMemoryLifecyclePort(store),
+    )
+    thread_memory = ConversationThreadMemoryService(
+        adapter=memory_adapter,
+        limits=runtime.thread_memory_limits,
+        clock=clock,
+    )
     interaction_service = ConversationInteractionApplicationService(
         context_resolver=resolver,
         planner=planner,
@@ -481,6 +512,8 @@ def _build_conversation_interaction_application_service(
         ),
         personal_allowed_capabilities=frozenset(ConversationProductCapability),
         attachment_max_bytes=runtime.attachment_max_bytes,
+        thread_memory_service=thread_memory,
+        clock=clock,
     )
     bridge.service = interaction_service
     return interaction_service

@@ -29,10 +29,11 @@ Supporting accepted blocks:
   LKW-CONVERSATIONAL-INTERACTION-1A — ACCEPTED / CLOSED
   LKW-CONVERSATIONAL-INTERACTION-1B — ACCEPTED / CLOSED
   LKW-CONVERSATIONAL-INTERACTION-1C — ACCEPTED / CLOSED
+  LKW-CONVERSATION-CONTEXT-1B2 — ACCEPTED / CLOSED
   LKW-CONVERSATION-CONTEXT-1B3 — ACCEPTED / CLOSED
 
 CURRENT DIRECT LKW TASK
-Audit and close LKW-CONVERSATION-CONTEXT-1B2 — READY_FOR_REVIEW
+LKW-CONVERSATION-CONTEXT-1C — READY_FOR_REVIEW
 
 NEXT DIRECT LKW TASKS
 Complete the bounded remaining LKW-CONVERSATION-CONTEXT-1C scope,
@@ -130,11 +131,13 @@ vendor-specific implementation inside LKW.
 
 The currently accepted product description is:
 
-- Slack personal DM uses Conversation Context.
+- Slack personal DM uses Conversation Context and bounded durable thread memory.
 - Natural-language messages use the accepted planner and deterministic executor.
 - Workspace selection is durable.
 - The Slack DM path uses one planner call, one executor call and one bounded deterministic response.
 - Event processing has durable CAS-backed idempotency.
+- A completed interaction appends one safe user/assistant exchange through the
+  shared durable memory lifecycle; retries reuse the event receipt.
 - Files, trusted attachments, local sources and Web URLs use existing LKW-owned intake boundaries.
 - Hybrid Ask provider-neutral orchestration is accepted.
 - Shared Slack channels remain outside the currently accepted frontend scope.
@@ -152,15 +155,14 @@ implementation has started.
 
 ### A. Conversation Context completion
 
-1. `LKW-CONVERSATION-CONTEXT-1B2` — **READY_FOR_REVIEW**: audit the documented
-   result and close it only after an independently accepted audit result.
-2. `LKW-CONVERSATION-CONTEXT-1C` — **PLANNED**: complete the bounded remaining
-   LKW scope.
+1. `LKW-CONVERSATION-CONTEXT-1B2` — **ACCEPTED / CLOSED**.
+2. `LKW-CONVERSATION-CONTEXT-1C` — **READY_FOR_REVIEW**: integrate bounded
+   durable thread-memory reconstruction and exactly-once exchange persistence.
 
 Required outcome:
 
 - durable reconstruction;
-- bounded thread context or explicitly documented empty-memory behavior;
+- bounded thread context with empty-memory behavior when no valid snapshot exists;
 - personal/shared isolation;
 - fail-closed unsupported audiences;
 - no vendor dependency.
@@ -594,9 +596,9 @@ Provider-neutral personal/shared conversation context architecture precedes shar
 |---|---|
 | `LKW-CONVERSATION-CONTEXT-1A` | **ACCEPTED** |
 | `LKW-CONVERSATION-CONTEXT-1B1` | **ACCEPTED** |
-| `LKW-CONVERSATION-CONTEXT-1B2` | **READY_FOR_REVIEW** |
+| `LKW-CONVERSATION-CONTEXT-1B2` | **ACCEPTED / CLOSED** |
 | `LKW-CONVERSATION-CONTEXT-1B3` | **ACCEPTED / CLOSED** |
-| `LKW-CONVERSATION-CONTEXT-1C` | **PLANNED** / next after acceptance |
+| `LKW-CONVERSATION-CONTEXT-1C` | **READY_FOR_REVIEW** |
 
 **Required dependency (implementation tracks):**
 
@@ -622,7 +624,13 @@ LKW-SLACK-CONNECTED-SOURCE-1
 
 `LKW-CONVERSATION-CONTEXT-1` is a prerequisite/supporting block of the wider conversational frontend execution path — not a competing planner/executor. Final Slack proof cannot claim indexed + live combined evidence before Hybrid Ask exists. Google Workspace runtime implementation (`GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1` and below) starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED** (currently **PLANNED**); `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` remains **READY_FOR_REVIEW**. `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR` follows the first accepted Google Workspace LKW proof (`LKW-GOOGLE-WORKSPACE-PROOF-1`).
 
-**Available today:** The user can operate LKW through Slack DM and ask about knowledge already present in the selected personal workspace (temporary in-memory selection). Durable Conversation Context Bindings, observed-audience validation, durable personal selection, shared-channel runtime, shared thread memory, shared capability enforcement, shared source eligibility, mention/thread-continuation runtime, Slack history indexing and live Slack Ask are **not** implemented.
+**Available today:** The user can operate LKW through Slack DM, continue a
+canonical thread with bounded durable recent turns, and ask about knowledge
+already present in the resolved personal workspace. The legacy exact-command
+fallback still has temporary in-memory selection state. Durable shared-channel
+transport, shared capability enforcement, shared source eligibility,
+mention/thread-continuation transport, Slack history indexing and live Slack Ask
+remain **not** implemented.
 
 ### 3.3 Internal implementation slices (historical identity preserved)
 

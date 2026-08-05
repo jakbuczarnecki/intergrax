@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 
 from intergrax.context.session_history import SessionHistoryMessage, SessionHistorySnapshot
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from local_workspace_application.workspaces.conversation_context_execution import (
     build_conversation_execution_context,
 )
@@ -18,6 +19,7 @@ from local_workspace_application.workspaces.conversation_context_memory import (
     ConversationThreadMemoryError,
     ConversationThreadMemoryPartitionV1,
     ConversationThreadMemorySnapshotV1,
+    DocumentStoreThreadMemoryLifecyclePort,
     SessionHistorySnapshotConversationThreadMemoryAdapter,
     ThreadMemoryLifecycleEnvelopeV1,
     ThreadMemoryLifecyclePort,
@@ -1319,3 +1321,52 @@ def test_partition_descriptor_fields() -> None:
     assert partition.canonical_thread_ref == _THREAD
     assert partition.audience_mode is ConversationAudienceMode.PERSONAL
     assert partition.workspace_id == _WORKSPACE
+
+
+def test_document_store_lifecycle_reconstructs_and_deduplicates_exchange() -> None:
+    context = _context()
+    store = InMemoryDocumentStore()
+    adapter = SessionHistorySnapshotConversationThreadMemoryAdapter(
+        port=DocumentStoreThreadMemoryLifecyclePort(store),
+    )
+    first = adapter.append_exchange(
+        context=context,  # type: ignore[arg-type]
+        user_message=_message(
+            role=ConversationThreadMemoryMessageRole.USER,
+            content="first question",
+        ),
+        assistant_message=_message(
+            role=ConversationThreadMemoryMessageRole.ASSISTANT,
+            content="first answer",
+            created_at=_NOW + timedelta(seconds=1),
+        ),
+        exchange_id="execution-1",
+    )
+    restarted = SessionHistorySnapshotConversationThreadMemoryAdapter(
+        port=DocumentStoreThreadMemoryLifecyclePort(store),
+    )
+    reconstructed = restarted.load_bounded_history_from_port(
+        context=context,  # type: ignore[arg-type]
+        limits=_limits(),
+        now=_NOW + timedelta(seconds=2),
+    )
+    duplicate = restarted.append_exchange(
+        context=context,  # type: ignore[arg-type]
+        user_message=_message(
+            role=ConversationThreadMemoryMessageRole.USER,
+            content="first question",
+        ),
+        assistant_message=_message(
+            role=ConversationThreadMemoryMessageRole.ASSISTANT,
+            content="first answer",
+            created_at=_NOW + timedelta(seconds=1),
+        ),
+        exchange_id="execution-1",
+    )
+
+    assert [message.content for message in reconstructed] == [
+        "first question",
+        "first answer",
+    ]
+    assert duplicate.snapshot.revision_id == first.snapshot.revision_id
+    assert len(duplicate.snapshot.messages) == 2

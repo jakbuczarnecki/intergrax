@@ -140,6 +140,9 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     web_url_preflight_timeout_seconds: float = 10.0
     connected_source_opaque_ref_signing_key: str = ""
     connected_source_slack_connection_ref: str = ""
+    conversation_thread_memory_max_messages: int = 20
+    conversation_thread_memory_max_bytes: int = 16 * 1024
+    conversation_thread_memory_max_age_seconds: int = 24 * 60 * 60
 
     @property
     def config_dir(self) -> str:
