@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
@@ -44,7 +45,7 @@ class FakeReranker(BaseReranker):
             results.append(
                 RerankerResult(
                     candidate=candidate,
-                    rerank_score=float(len(candidate.text)),
+                    rerank_score=float(len(candidate.document.content)),
                     fusion_score=None,
                     rank=i,
                 )
@@ -60,16 +61,30 @@ def _candidates() -> list[RerankerCandidate]:
 
     return [
         RerankerCandidate(
-            id="1",
-            text="alpha",
-            metadata={},
+            document=KnowledgeDocument(
+                schema_version=1,
+                identity={"document_id": "1", "root_document_id": "1"},
+                scope={"tenant_id": "unit", "namespace": "cache"},
+                content="alpha",
+                provenance={"source_kind": "test", "source_id": "1"},
+            ),
             original_score=0.0,
+            original_rank=0,
+            channel="unit",
+            vector_id="v1",
         ),
         RerankerCandidate(
-            id="2",
-            text="beta",
-            metadata={},
+            document=KnowledgeDocument(
+                schema_version=1,
+                identity={"document_id": "2", "root_document_id": "2"},
+                scope={"tenant_id": "unit", "namespace": "cache"},
+                content="beta",
+                provenance={"source_kind": "test", "source_id": "2"},
+            ),
             original_score=0.0,
+            original_rank=1,
+            channel="unit",
+            vector_id="v2",
         ),
     ]
 
@@ -160,7 +175,7 @@ def test_cache_store_after_miss() -> None:
     result = cache.get(
         reranker="fake",
         query="query",
-        texts=[c.text for c in candidates],
+        texts=[c.document.content for c in candidates],
     )
 
     assert result is not None

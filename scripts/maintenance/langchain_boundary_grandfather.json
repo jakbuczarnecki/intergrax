@@ -3,15 +3,6 @@
   "policy": "LCI-0B",
   "entries": [
     {
-      "inventory_id": "LCI-INV-0006",
-      "path": "intergrax/integrations/contracts/rerank_provider.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0031",
       "path": "intergrax/memory/session_turn_index_service.py",
       "kind": "from",
@@ -176,42 +167,6 @@
     {
       "inventory_id": "LCI-INV-0085",
       "path": "intergrax/rag/graph/tenant/graph_isolation_contract.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0093",
-      "path": "intergrax/rag/rerankers/contracts/reranker_types.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0094",
-      "path": "intergrax/rag/rerankers/providers/_api_reranker_base.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0095",
-      "path": "intergrax/rag/rerankers/providers/_cross_encoder_base.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0096",
-      "path": "intergrax/rag/rerankers/providers/embedding_cosine_reranker.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

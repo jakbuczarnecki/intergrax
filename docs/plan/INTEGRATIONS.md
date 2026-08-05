@@ -41,6 +41,16 @@ Provider runtime matrix:
 | LanceDB | native | absent | keyword-only | verified | B metadata-scoped fallback |
 | Typesense | native | absent | keyword-only | verified | C unsupported, fail closed |
 
+### LCI-4B — Native rerank provider boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | READY_FOR_REVIEW |
+| **Provider boundary** | `Sequence[RerankerCandidate]` → vendor SDK text/index payload → `Sequence[RerankerResult]` |
+| **Invariants** | Native `KnowledgeDocument`, identity, scope, provenance, user metadata and vector identity remain authoritative |
+| **Providers** | Cohere Rerank and Jina Rerank |
+| **Next** | LCI-4C Graph RAG |
+
 ---
 
 ## Cursor read scope (token budget)

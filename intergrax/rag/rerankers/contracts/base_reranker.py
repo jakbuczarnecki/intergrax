@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from collections.abc import Sequence
 
-from intergrax.rag.rerankers.contracts.reranker_types import RerankerResult, Candidates
+from intergrax.rag.rerankers.contracts.reranker_types import (
+    RerankerCandidate,
+    RerankerResult,
+)
 
 
 
@@ -22,10 +25,10 @@ class BaseReranker(ABC):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
         """
         Re-rank candidate documents for a given query.
         """
@@ -35,10 +38,10 @@ class BaseReranker(ABC):
     def __call__(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
 
         return self.rerank(
             query=query,

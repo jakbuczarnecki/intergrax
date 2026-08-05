@@ -29,11 +29,7 @@ ROADMAP_TASKS = {
 }
 
 SEMANTIC_PATH_TASKS: dict[str, str] = {
-    "intergrax/integrations/contracts/rerank_provider.py": "LCI-4B",
-    "intergrax/rag/rerankers/contracts/reranker_types.py": "LCI-4B",
     "intergrax/rag/graph/tenant/graph_isolation_contract.py": "LCI-4C",
-    "intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py": "LCI-4B",
-    "intergrax/integrations/providers/rerank_provider/jina_rerank/adapter.py": "LCI-4B",
 }
 
 SEMANTIC_PATH_SYMBOL_TASKS: dict[tuple[str, str], str] = {
@@ -50,6 +46,16 @@ SEMANTIC_TEST_TASKS: dict[str, str] = {
 
 LCI_1D_ALLOWED_TESTS: set[str] = set()  # populated if native document conformance tests exist
 LCI_7B_ALLOWED_TESTS: set[str] = set()  # no inventory TEST_ONLY rows should use LCI-7B
+
+REMOVED_LCI_4B_INVENTORY_IDS = {
+    "LCI-INV-0006",
+    "LCI-INV-0012",
+    "LCI-INV-0013",
+    "LCI-INV-0093",
+    "LCI-INV-0094",
+    "LCI-INV-0095",
+    "LCI-INV-0096",
+}
 
 
 def _fix_mojibake(text: str) -> str:
@@ -249,7 +255,8 @@ def validate(text: str) -> None:
     rows = parse_rows(text)
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
-    assert len(ids) == 99, f"expected 99 unique inventory IDs, got {len(ids)}"
+    assert not REMOVED_LCI_4B_INVENTORY_IDS.intersection(ids), "closed LCI-4B rows reintroduced"
+    assert len(ids) == 92, f"expected 92 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -269,13 +276,13 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 41
+    assert summary.get("direct production/runtime imports") == 34
     assert summary.get("direct test imports") == 46
-    assert summary.get("provider-bound dependencies") == 15
-    assert summary.get("total detailed inventory rows") == 99
+    assert summary.get("provider-bound dependencies") == 13
+    assert summary.get("total detailed inventory rows") == 92
     assert summary.get("unclassified occurrences") == 0
-    assert summary.get("core contract leaks") == 3
-    assert summary.get("core implementation dependencies") == 15
+    assert summary.get("core contract leaks") == 1
+    assert summary.get("core implementation dependencies") == 12
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
@@ -322,7 +329,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("99 unique inventory IDs")
+    print("92 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

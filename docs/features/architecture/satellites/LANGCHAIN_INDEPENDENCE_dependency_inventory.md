@@ -26,42 +26,44 @@ Use, modification, or distribution without written permission is prohibited.
 
 ## LCI-4A closeout
 
-Active retrievers and the retrieval tool now use the native immutable `RetrievalHit` contract. Graph, reranker, ingest and auxiliary legacy rows remain assigned to LCI-4C, LCI-4B and LCI-4D as applicable.
+Active retrievers and the retrieval tool now use the native immutable `RetrievalHit` contract. Graph, ingest and auxiliary legacy rows remain assigned to LCI-4C and LCI-4D as applicable.
+
+## LCI-4B closeout
+
+Reranker candidate/result contracts and reranker provider adapters now use native Intergrax knowledge documents; the seven eliminated LangChain document import rows were removed from the detailed inventory.
+
 
 ## B. Summary
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 41 |
+| direct production/runtime imports | 34 |
 | direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
 | generated lock rows | 1 |
-| core contract leaks | 3 |
-| core implementation dependencies | 15 |
-| provider-bound dependencies | 15 |
+| core contract leaks | 1 |
+| core implementation dependencies | 12 |
+| provider-bound dependencies | 13 |
 | optional compatibility paths | 0 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
 | test-only | 46 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 99 |
+| total detailed inventory rows | 92 |
 
 ## C. Detailed inventory table
 
 | Inventory ID | Package/module | Path | Line | Symbol or usage | Layer/domain | Dependency exposure | Classification | Current requirement status | Target state | Migration task | Evidence/notes |
 |--------------|----------------|------|-----:|-----------------|--------------|---------------------|----------------|----------------------------|--------------|----------------|----------------|
 | LCI-INV-0001 | `langchain_core.documents` | `applications/local_workspace_application/tests/workspaces/test_workspace_lifecycle.py` | 3 | `Document` | APPLICATION / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
-| LCI-INV-0006 | `langchain_core.documents` | `intergrax/integrations/contracts/rerank_provider.py` | 10 | `Document` | INTEGRATIONS / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B | verified import |
 | LCI-INV-0007 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/openpyxl/opens.py` | 126 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0008 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/pymupdf/opens.py` | 13 | `PyMuPDFLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0009 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 10 | `Docx2txtLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0010 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 11 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0011 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/unstructured/opens.py` | 10 | `UnstructuredHTMLLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
-| LCI-INV-0012 | `langchain_core.documents` | `intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-4B | verified import |
-| LCI-INV-0013 | `langchain_core.documents` | `intergrax/integrations/providers/rerank_provider/jina_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-4B | verified import |
 | LCI-INV-0023 | `langchain_core.documents` | `intergrax/legacy/rag_answers/builders/__init__.py` | 9 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
 | LCI-INV-0024 | `langchain_core.documents` | `intergrax/legacy/rag_answers/builders/context_builder.py` | 8 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
 | LCI-INV-0025 | `langchain_core.documents` | `intergrax/legacy/rag_answers/contracts/answer_result.py` | 10 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
@@ -89,10 +91,6 @@ Active retrievers and the retrieval tool now use the native immutable `Retrieval
 | LCI-INV-0083 | `langchain_core.documents` | `intergrax/rag/graph/indexer/llm_graph_indexer.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
 | LCI-INV-0084 | `langchain_core.documents` | `intergrax/rag/graph/indexer/plugin_registry.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4C | verified import |
 | LCI-INV-0085 | `langchain_core.documents` | `intergrax/rag/graph/tenant/graph_isolation_contract.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4C | verified import |
-| LCI-INV-0093 | `langchain_core.documents` | `intergrax/rag/rerankers/contracts/reranker_types.py` | 11 | `Document` | RAG / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B | verified import |
-| LCI-INV-0094 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_api_reranker_base.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
-| LCI-INV-0095 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_cross_encoder_base.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
-| LCI-INV-0096 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/embedding_cosine_reranker.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |
@@ -189,7 +187,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | Document/messages ABI leak | 54 | 51 | 1 | 106 | yes | compat extra only | LCI-7A |
+| langchain-core | Document/messages ABI leak | 47 | 51 | 1 | 99 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
@@ -209,10 +207,10 @@ Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import h
 
 | Metric | Value |
 |--------|------:|
-| production imports scanned | 85 |
-| allowed-zone imports | 24 |
-| guarded imports | 61 |
-| grandfather entries | 61 |
+| production files scanned | 4393 |
+| allowed-zone imports | 15 |
+| grandfathered guarded imports | 21 |
+| grandfather entries | 21 |
 | new forbidden imports | 0 |
 | stale grandfather entries | 0 |
 | register path | `scripts/maintenance/langchain_boundary_grandfather.json` |

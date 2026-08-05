@@ -40,7 +40,7 @@ def test_cohere_reranker_basic() -> None:
 
     assert len(results) == 3
 
-    assert results[0].rank == 1
+    assert results[0].rank == 0
 
 
 def test_cohere_reranker_limit() -> None:
@@ -57,4 +57,4 @@ def test_cohere_reranker_limit() -> None:
 
     assert len(results) == 1
 
-    assert results[0].rank == 1
+    assert results[0].rank == 0

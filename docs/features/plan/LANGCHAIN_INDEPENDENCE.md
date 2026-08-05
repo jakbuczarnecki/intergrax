@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-4A — Native retrieval hit/result contract migration
-**Next task after acceptance:** LCI-4B
+**Current active task:** LCI-4B — Native reranker candidate/result contract migration
+**Next task after acceptance:** LCI-4C
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -340,7 +340,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Migrate active retrievers and RAG tools to one immutable native hit/result contract. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-3D |
@@ -356,14 +356,16 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
-| **Purpose** | Single native RerankerCandidate; no List[Document] in public contract. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Single immutable native RerankerCandidate and RerankerResult; no LangChain Document in active rerank contracts. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/INTEGRATIONS.md |
 | **Dependencies** | LCI-4A |
 | **Exact scope** | rerankers/**, integration rerank adapters |
 | **Explicit out of scope** | Algorithm changes |
-| **Acceptance criteria** | Rerank ordering parity tests pass on native candidates |
+| **Acceptance criteria** | Native candidate/result contract, RetrievalHit mapping, provider validation, ordering parity, scope/provenance preservation, inventory and boundary audits pass |
 | **User-visible outcome** | Rerank API native at contract |
+
+**Decision:** Reranking uses one immutable native `RerankerCandidate` containing `KnowledgeDocument` and original retrieval score/rank. `RerankerResult` preserves the original candidate and adds only rerank/fusion score and final rank. Active core rerankers and integration providers do not accept or return LangChain `Document`. Reranking cannot alter document identity, scope, provenance or user metadata. Graph RAG remains LCI-4C.
 
 ---
 

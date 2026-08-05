@@ -4,13 +4,14 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
-    Candidates,
     RerankerCandidate,
     RerankerResult,
+    validate_candidates,
+    validate_limit,
 )
 
 
@@ -36,16 +37,18 @@ class RRFReranker(BaseReranker):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        candidates = validate_candidates(candidates)
+        validate_limit(limit)
         if not candidates:
-            return []
+            return ()
 
-        scores: dict[str, float] = {}
-        candidate_map: dict[str, RerankerCandidate] = {}
+        positions = {id(candidate): position for position, candidate in enumerate(candidates)}
+        scores: dict[int, float] = {}
+        candidate_map: dict[int, RerankerCandidate] = {}
 
         for reranker in self._rerankers:
 
@@ -57,13 +60,18 @@ class RRFReranker(BaseReranker):
 
             for r in results:
 
-                cid = r.candidate.id or r.candidate.text
+                cid = id(r.candidate)
+                if cid not in positions:
+                    raise ValueError("RRF reranker returned an unknown candidate")
 
                 candidate_map[cid] = r.candidate
 
                 rank = r.rank if r.rank > 0 else 1
 
                 scores[cid] = scores.get(cid, 0.0) + 1.0 / (self._k + rank)
+
+        if set(scores) != set(positions):
+            raise ValueError("RRF reranker returned an incomplete candidate batch")
 
         fused: List[RerankerResult] = []
 
@@ -78,15 +86,14 @@ class RRFReranker(BaseReranker):
                 )
             )
 
-        fused.sort(
-            key=lambda r: r.rerank_score,
-            reverse=True,
+        fused.sort(key=lambda r: (-r.rerank_score, positions[id(r.candidate)]))
+        selected = fused[:limit] if limit is not None else fused
+        return tuple(
+            RerankerResult(
+                candidate=result.candidate,
+                rerank_score=result.rerank_score,
+                fusion_score=result.fusion_score,
+                rank=rank,
+            )
+            for rank, result in enumerate(selected)
         )
-
-        if limit:
-            fused = fused[:limit]
-
-        for i, r in enumerate(fused, start=1):
-            r.rank = i
-
-        return fused

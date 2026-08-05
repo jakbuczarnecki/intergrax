@@ -6,6 +6,7 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
+from dataclasses import replace
 import time
 from typing import Any, List, Optional
 
@@ -131,23 +132,23 @@ class RetrievalService:
             if not candidates:
                 return RetrievalResult(chunks=[], used=False, reason="no_hits", trace=trace)
 
-            chunks = _candidates_to_chunks(candidates)
-
             use_rerank = self._profile.enable_rerank and self._reranker_manager is not None
             trace.rerank_enabled = use_rerank
             if use_rerank and self._reranker_manager is not None:
+                if not all(isinstance(candidate, RetrievalHit) for candidate in candidates):
+                    raise TypeError("reranking requires native RetrievalHit candidates")
                 reranker_id = self._profile.reranker_id
                 trace.reranker_id = reranker_id
-                chunks_by_id = {chunk.id: chunk for chunk in chunks}
-                rerank_candidates = [
-                    RerankerCandidate(
-                        id=c.id,
-                        text=c.text,
-                        metadata=dict(c.user_metadata or c.metadata),
-                        original_score=c.score,
+                rerank_candidates = tuple(
+                    RerankerCandidate.from_retrieval_hit(candidate)
+                    for candidate in candidates
+                )
+                candidate_to_hit = {
+                    id(rerank_candidate): candidate
+                    for rerank_candidate, candidate in zip(
+                        rerank_candidates, candidates
                     )
-                    for c in chunks
-                ]
+                }
                 t1 = time.perf_counter()
                 reranked = self._reranker_manager.rerank(
                     query=query,
@@ -156,26 +157,18 @@ class RetrievalService:
                     reranker_id=reranker_id,
                 )
                 trace.rerank_latency_ms = (time.perf_counter() - t1) * 1000.0
-                reranked_chunks: list[RetrievalChunk] = []
-                for r in reranked:
-                    source = chunks_by_id.get(r.candidate.id)
-                    reranked_chunks.append(
-                        RetrievalChunk(
-                            id=r.candidate.id,
-                            text=r.candidate.text,
-                            score=float(r.rerank_score),
-                            rank=source.rank if source is not None else 0,
-                            channel=source.channel if source is not None else "rerank",
-                            vector_id=source.vector_id if source is not None else None,
-                            scope=dict(source.scope) if source is not None else {},
-                            provenance=dict(source.provenance) if source is not None else {},
-                            user_metadata=dict(r.candidate.metadata or {}),
-                            metadata=dict(r.candidate.metadata or {}),
-                        )
+                reranked_hits: list[RetrievalHit] = []
+                for result in reranked:
+                    source = candidate_to_hit.get(id(result.candidate))
+                    if source is None:
+                        raise ValueError("reranker returned an unknown candidate")
+                    reranked_hits.append(
+                        replace(source, score=float(result.rerank_score), rank=result.rank)
                     )
-                chunks = reranked_chunks
+                chunks = [retrieval_hit_to_chunk(hit) for hit in reranked_hits]
                 trace.candidates_after_rerank = len(chunks)
             else:
+                chunks = _candidates_to_chunks(candidates)
                 chunks = chunks[:final_k]
                 trace.candidates_after_rerank = len(chunks)
 

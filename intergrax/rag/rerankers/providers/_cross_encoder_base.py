@@ -4,14 +4,15 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
+from collections.abc import Sequence
+from typing import Optional
 
-from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
-    Candidates,
+    validate_candidates,
+    validate_limit,
     RerankerCandidate,
     RerankerResult,
 )
@@ -41,63 +42,36 @@ class _CrossEncoderBaseReranker(BaseReranker):
     def rerank(
         self,
         *,
-        query: Optional[str],
-        candidates: Candidates,
-        limit: Optional[int] = None,
-    ) -> List[RerankerResult]:
-
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        candidates = validate_candidates(candidates)
+        validate_limit(limit)
         if not candidates:
-            return []
+            return ()
 
-        if query is None or not query.strip():
-            return []
+        if not query.strip():
+            return ()
         
         self._ensure_cross_encoder()
 
-        normalized: List[RerankerCandidate] = []
-
-        if isinstance(candidates[0], Document):
-
-            for d in candidates:
-
-                normalized.append(
-                    RerankerCandidate(
-                        id=None,
-                        text=d.page_content or "",
-                        metadata=dict(d.metadata or {}),
-                        original_score=None,
-                    )
-                )
-
-        else:
-            normalized = list(candidates)
-
-        pairs = [(query, c.text) for c in normalized]
+        normalized = candidates
+        pairs = [(query, c.document.content) for c in normalized]
 
         scores = self._model.predict(pairs)
 
-        results: List[RerankerResult] = []
-
-        for c, score in zip(normalized, scores):
-
-            results.append(
-                RerankerResult(
-                    candidate=c,
-                    rerank_score=float(score),
-                    fusion_score=None,
-                    rank=0,
-                )
+        if len(scores) != len(normalized):
+            raise ValueError("cross encoder returned an invalid score shape")
+        scored = list(zip(normalized, scores))
+        scored.sort(key=lambda item: float(item[1]), reverse=True)
+        selected = scored[:limit] if limit is not None else scored
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=float(score),
+                fusion_score=None,
+                rank=rank,
             )
-
-        results.sort(
-            key=lambda r: r.rerank_score,
-            reverse=True,
+            for rank, (candidate, score) in enumerate(selected)
         )
-
-        if limit:
-            results = results[:limit]
-
-        for i, r in enumerate(results, start=1):
-            r.rank = i
-
-        return results
