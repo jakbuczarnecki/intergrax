@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Protocol
 
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreScope,
+)
 
 
 class HybridSearchCapable(Protocol):
@@ -15,8 +20,9 @@ class HybridSearchCapable(Protocol):
         query_embedding: Sequence[float],
         query_text: str,
         *,
+        scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
         alpha: float = 0.5,
-    ) -> List[VectorStoreHit]: ...
+    ) -> Sequence[VectorStoreHit]: ...

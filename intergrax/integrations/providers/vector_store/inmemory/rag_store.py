@@ -6,14 +6,23 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence
 import math
-import uuid
 
-from langchain_core.documents import Document
-
-from intergrax.rag.embedding.contracts.embedding_metadata_key import EmbeddingMetadataKey
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.rag.vectorstore.hybrid.lexical_hybrid import LexicalHybridSupport
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    native_hit,
+    provider_metadata,
+    reconstruct_document,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 
 
 class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
@@ -33,48 +42,33 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
         self._tenant_id = tenant_id
         self._vectors: Dict[str, List[float]] = {}
         self._payloads: Dict[str, Dict[str, Any]] = {}
+        self._documents: Dict[str, Any] = {}
 
     # ---------------------------------------------------------
 
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[Document],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
 
-        if len(documents) == 0:
-            return
+        validated = validate_records(records, scope=scope, tenant_id=self._tenant_id)
+        ids: list[str] = []
 
-        if len(documents) != len(embeddings):
-            raise ValueError("documents and embeddings length mismatch")
-
-        n = len(documents)
-        ids_list = list(ids) if ids else [str(uuid.uuid4()) for _ in range(n)]
-
-        for i in range(n):
-
-            vector = list(map(float, embeddings[i]))
-            doc = documents[i]
-
-            payload = dict(doc.metadata or {})
-
-            if EmbeddingMetadataKey.VECTOR in payload:
-                payload.pop(EmbeddingMetadataKey.VECTOR, None)
-
-            existing = payload.get("tenant_id")
-            if existing is not None and existing != self._tenant_id:
-                raise ValueError(
-                    f"Metadata tenant_id mismatch: expected '{self._tenant_id}', got '{existing}'."
-                )
-
-            payload["tenant_id"] = self._tenant_id
-            payload["text"] = doc.page_content or ""
-
-            self._vectors[ids_list[i]] = vector
-            self._payloads[ids_list[i]] = payload
-            self._index_lexical(ids_list[i], payload.get("text", ""))
+        for record in validated:
+            payload = provider_metadata(record.document, scope=scope)
+            vector_id = record.vector_id
+            self._vectors[vector_id] = record.embedding.tolist()
+            self._payloads[vector_id] = dict(payload)
+            self._documents[vector_id] = reconstruct_document(
+                record.document.content,
+                payload,
+                scope=scope,
+            )
+            self._index_lexical(vector_id, record.document.content)
+            ids.append(vector_id)
+        return ids
 
     # ---------------------------------------------------------
 
@@ -82,26 +76,17 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
         self,
         query_embedding: Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> List[VectorStoreHit]:
 
-        vector = list(map(float, query_embedding))
-
-        effective_where: Dict[str, Any] = (
-            dict(metadata_filter.conditions)
-            if metadata_filter is not None
-            else {}
+        vector, limit = validate_query(query_embedding, top_k=top_k)
+        validate_scope(scope, tenant_id=self._tenant_id)
+        effective_where = dict(
+            MetadataFilter.for_scope(scope, metadata_filter).conditions
         )
-
-        existing = effective_where.get("tenant_id")
-        if existing is not None and existing != self._tenant_id:
-            raise ValueError(
-                f"Query tenant_id mismatch: expected '{self._tenant_id}', got '{existing}'."
-            )
-
-        effective_where["tenant_id"] = self._tenant_id
 
         candidates: List[tuple[str, float]] = []
 
@@ -123,22 +108,21 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
             candidates.append((id_, score))
 
         candidates.sort(key=lambda x: x[1], reverse=True)
-        candidates = candidates[:top_k]
+        candidates = candidates[:limit]
 
         hits: List[VectorStoreHit] = []
 
         for rank, (id_, score) in enumerate(candidates):
 
             payload = self._payloads[id_]
-            text = payload.get("text", "")
-
             hits.append(
-                VectorStoreHit(
-                    id=id_,
-                    content=text,
+                native_hit(
+                    vector_id=id_,
+                    content=self._documents[id_].content,
                     metadata=payload,
-                    similarity_score=float(score),
+                    similarity_score=score,
                     rank=rank,
+                    scope=scope,
                     embedding=self._vectors[id_] if include_embeddings else None,
                 )
             )
@@ -147,17 +131,26 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
 
     # ---------------------------------------------------------
 
-    def delete(self, ids: Sequence[str]) -> None:
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
 
+        validate_scope(scope, tenant_id=self._tenant_id)
         for id_ in ids:
+            payload = self._payloads.get(id_)
+            if payload is None or not self._matches_scope(payload, scope):
+                continue
             self._vectors.pop(id_, None)
             self._payloads.pop(id_, None)
+            self._documents.pop(id_, None)
             self._lexical_index.remove(id_)
 
     # ---------------------------------------------------------
 
-    def count(self) -> int:
-        return len(self._vectors)
+    def count(self, *, scope: VectorStoreScope) -> int:
+        validate_scope(scope, tenant_id=self._tenant_id)
+        return sum(
+            self._matches_scope(payload, scope)
+            for payload in self._payloads.values()
+        )
 
     def list_collections(self) -> List[str]:
         return [f"inmemory:{self._tenant_id}"]
@@ -172,11 +165,13 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
         payload = self._payloads.get(document_id)
         if payload is None:
             return None
-        metadata = {key: value for key, value in payload.items() if key != "text"}
+        document = self._documents.get(document_id)
+        if document is None:
+            return None
         return {
             "id": document_id,
-            "text": str(payload.get("text") or ""),
-            "metadata": metadata,
+            "text": document.content,
+            "metadata": dict(document.metadata),
         }
 
     def search_by_metadata(
@@ -198,12 +193,12 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
             match = all(payload.get(key) == value for key, value in effective_where.items())
             if not match:
                 continue
-            metadata = {key: value for key, value in payload.items() if key != "text"}
+            document = self._documents[doc_id]
             results.append(
                 {
                     "id": doc_id,
-                    "text": str(payload.get("text") or ""),
-                    "metadata": metadata,
+                    "text": document.content,
+                    "metadata": dict(document.metadata),
                 }
             )
             if len(results) >= max(1, limit):
@@ -218,7 +213,10 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
         document_count = len(self._payloads)
         if dry_run:
             return {"dry_run": True, "would_delete": document_count, "tenant_id": self._tenant_id}
-        self.delete(list(self._payloads.keys()))
+        self.delete(
+            list(self._payloads.keys()),
+            scope=VectorStoreScope(tenant_id=self._tenant_id),
+        )
         return {"dry_run": False, "deleted": document_count, "tenant_id": self._tenant_id}
 
     # ---------------------------------------------------------
@@ -237,3 +235,14 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
             return 0.0
 
         return dot / (norm_a * norm_b)
+
+    @staticmethod
+    def _matches_scope(
+        payload: Dict[str, Any],
+        scope: VectorStoreScope,
+    ) -> bool:
+        return (
+            payload.get("tenant_id") == scope.tenant_id
+            and payload.get("namespace") == scope.namespace
+            and payload.get("workspace_id") == scope.workspace_id
+        )

@@ -1,11 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Native, immutable vector-store contracts.
+"""Native, immutable vector-store provider contracts.
 
-The provider port remains legacy for the duration of LCI-3D.  These records,
-scopes and hits are the core-facing ABI and deliberately do not import
-LangChain.
+These records, scopes and hits are the provider-facing ABI and deliberately
+do not import LangChain.
 """
 
 from __future__ import annotations

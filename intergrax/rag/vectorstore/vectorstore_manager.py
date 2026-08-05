@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
@@ -19,10 +20,6 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreScope,
 )
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
-from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
-    from_legacy_rag_hit,
-    to_legacy_rag_document,
-)
 from intergrax.rag.vectorstore.governance.collection_access_policy import (
     CollectionAccessPolicy,
     enforce_collection_access,
@@ -34,10 +31,9 @@ logger = IntergraxLogging.get_logger(__name__, component="rag")
 
 class VectorstoreManager(BaseVectorstoreManager):
     """
-    Native core boundary around a legacy provider compatibility port.
+    Native core boundary around provider implementations.
 
-    Providers receive legacy documents only after the complete native batch
-    has been validated. Provider hits are normalized before returning.
+    Providers receive validated native records and return native hits.
     """
 
     def __init__(
@@ -52,14 +48,11 @@ class VectorstoreManager(BaseVectorstoreManager):
         self._access_policy = access_policy
         self._collection_name = collection_name
         self._bound_scope = scope
-        self._provider_scope_bound = False
         provider_tenant = getattr(store, "_tenant_id", None)
+        if not isinstance(provider_tenant, str) or not provider_tenant:
+            provider_tenant = None
         if provider_tenant is not None:
             provider_scope = VectorStoreScope(tenant_id=provider_tenant)
-            self._provider_scope_bound = (
-                scope is None
-                or (scope.namespace is None and scope.workspace_id is None)
-            )
             if scope is not None and scope.tenant_id != provider_scope.tenant_id:
                 raise ValueError("manager scope tenant_id does not match provider tenant")
             if scope is None:
@@ -133,6 +126,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         *,
         scope: VectorStoreScope | None = None,
     ) -> Sequence[str] | None:
+        resolved_scope = self._resolve_scope(scope)
         materialized = list(records)
         if not materialized:
             return []
@@ -158,36 +152,6 @@ class VectorstoreManager(BaseVectorstoreManager):
                 "records must share the same document tenant and namespace"
             )
 
-        document_scope = VectorStoreScope(
-            tenant_id=first_document_scope.tenant_id,
-            namespace=first_document_scope.namespace,
-        )
-        if scope is None:
-            bound_scope = self._bound_scope
-            if bound_scope is not None:
-                if bound_scope.tenant_id != document_scope.tenant_id:
-                    raise VectorStoreContractError(
-                        "document tenant_id differs from bound scope"
-                    )
-                if (
-                    bound_scope.namespace is not None
-                    and bound_scope.namespace != document_scope.namespace
-                ):
-                    raise VectorStoreContractError(
-                        "document namespace differs from bound scope"
-                    )
-            resolved_scope = self._resolve_scope(
-                VectorStoreScope(
-                    tenant_id=document_scope.tenant_id,
-                    namespace=document_scope.namespace,
-                    workspace_id=(
-                        bound_scope.workspace_id if bound_scope is not None else None
-                    ),
-                )
-            )
-        else:
-            resolved_scope = self._resolve_scope(scope)
-
         if any(
             not resolved_scope.matches_document(record.document)
             for record in validated
@@ -197,28 +161,7 @@ class VectorstoreManager(BaseVectorstoreManager):
             )
 
         self._enforce_access("write", resolved_scope)
-
-        legacy_documents = []
-        for record in validated:
-            legacy = to_legacy_rag_document(record.document)
-            metadata = dict(getattr(legacy, "metadata", {}) or {})
-            if resolved_scope.workspace_id is None:
-                metadata.pop("workspace_id", None)
-            else:
-                metadata["workspace_id"] = resolved_scope.workspace_id
-            legacy_documents.append(
-                type(legacy)(
-                    id=getattr(legacy, "id", None),
-                    page_content=getattr(legacy, "page_content"),
-                    metadata=metadata,
-                )
-            )
-
-        return self._store.add_documents(
-            documents=legacy_documents,
-            embeddings=[record.embedding.tolist() for record in validated],
-            ids=[record.vector_id for record in validated],
-        )
+        return self._store.add_records(validated, scope=resolved_scope)
 
     def query(
         self,
@@ -236,6 +179,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
         provider_hits = self._store.query(
             query_embedding=vector.tolist(),
+            scope=resolved_scope,
             top_k=limit,
             metadata_filter=provider_filter,
             include_embeddings=include_embeddings,
@@ -256,33 +200,23 @@ class VectorstoreManager(BaseVectorstoreManager):
         normalized: list[VectorStoreHit] = []
         for provider_hit in provider_hits:
             try:
-                raw_metadata = getattr(provider_hit, "metadata")
-                if not isinstance(raw_metadata, Mapping):
+                if not isinstance(provider_hit, VectorStoreHit):
                     raise VectorStoreContractError(
-                        "provider hit metadata must be a mapping"
+                        "provider returned a non-native vector-store hit"
                     )
-                if raw_metadata.get("tenant_id") != scope.tenant_id:
+                document = getattr(provider_hit, "document")
+                if not isinstance(document, KnowledgeDocument):
                     raise VectorStoreContractError(
-                        "provider hit belongs to a different tenant"
+                        "provider hit document is not a KnowledgeDocument"
                     )
-                if (
-                    scope.namespace is not None
-                    and raw_metadata.get("namespace") != scope.namespace
-                ):
-                    raise VectorStoreContractError(
-                        "provider hit belongs to a different namespace"
-                    )
-                if (
-                    scope.workspace_id is not None
-                    and raw_metadata.get("workspace_id") != scope.workspace_id
-                ):
-                    raise VectorStoreContractError(
-                        "provider hit belongs to a different workspace"
-                    )
-                document = from_legacy_rag_hit(provider_hit)
                 if not scope.matches_document(document):
                     raise VectorStoreContractError(
                         "provider hit document scope does not match query scope"
+                    )
+                workspace_id = document.metadata.get("workspace_id")
+                if workspace_id != scope.workspace_id:
+                    raise VectorStoreContractError(
+                        "provider hit belongs to a different workspace"
                     )
                 embedding = (
                     getattr(provider_hit, "embedding", None)
@@ -291,7 +225,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                 )
                 normalized.append(
                     VectorStoreHit(
-                        vector_id=getattr(provider_hit, "id"),
+                        vector_id=getattr(provider_hit, "vector_id"),
                         document=document,
                         similarity_score=getattr(provider_hit, "similarity_score"),
                         rank=getattr(provider_hit, "rank"),
@@ -326,6 +260,7 @@ class VectorstoreManager(BaseVectorstoreManager):
             provider_hits = self._store.query_hybrid(
                 vector.tolist(),
                 query_text,
+                scope=resolved_scope,
                 top_k=limit,
                 metadata_filter=provider_filter,
                 include_embeddings=include_embeddings,
@@ -334,6 +269,7 @@ class VectorstoreManager(BaseVectorstoreManager):
         else:
             provider_hits = self._store.query(
                 query_embedding=vector.tolist(),
+                scope=resolved_scope,
                 top_k=limit,
                 metadata_filter=provider_filter,
                 include_embeddings=include_embeddings,
@@ -352,24 +288,22 @@ class VectorstoreManager(BaseVectorstoreManager):
     ) -> None:
         resolved_scope = self._resolve_scope(scope)
         self._enforce_access("delete", resolved_scope)
-        self._require_scope_bound_operation(resolved_scope)
-        self._store.delete(ids)
+        try:
+            self._store.delete(ids, scope=resolved_scope)
+        except TypeError as exc:
+            raise VectorStoreContractError(
+                "provider does not support scoped delete"
+            ) from exc
 
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         resolved_scope = self._resolve_scope(scope)
         self._enforce_access("count", resolved_scope)
-        self._require_scope_bound_operation(resolved_scope)
-        return self._store.count()
-
-    def _require_scope_bound_operation(self, scope: VectorStoreScope) -> None:
-        if not self._provider_scope_bound or self._bound_scope is None:
+        try:
+            return self._store.count(scope=resolved_scope)
+        except TypeError as exc:
             raise VectorStoreContractError(
-                "delete/count require a tenant-bound provider scope"
-            )
-        if not self._bound_scope.matches(scope):
-            raise VectorStoreContractError(
-                "delete/count require the provider's exact bound scope"
-            )
+                "provider does not support scoped count"
+            ) from exc
 
     def list_collections(self) -> list[str]:
         return list(self._store.list_collections())

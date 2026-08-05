@@ -11,10 +11,14 @@ import uuid
 from dataclasses import dataclass
 from typing import Sequence
 
-from langchain_core.documents import Document
-
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.contracts.base import IntegrationStatus
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter, VectorStore
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.contracts.vector_store import VectorStore
 
 STABLE_PROD_SLO_SLUGS: tuple[str, ...] = (
     "qdrant",
@@ -57,9 +61,24 @@ def manifest_status_for_slug(slug: str) -> IntegrationStatus:
     return manifest.status
 
 
-def _docs(count: int) -> list[Document]:
+def _docs(count: int, *, tenant_id: str) -> list[KnowledgeDocument]:
     return [
-        Document(page_content=f"soak_doc_{i}", metadata={"group": i % 3, "batch": "soak"})
+        KnowledgeDocument.model_validate(
+            {
+                "schema_version": 1,
+                "identity": {
+                    "document_id": f"soak-doc-{i}",
+                    "root_document_id": f"soak-doc-{i}",
+                },
+                "scope": {"tenant_id": tenant_id},
+                "content": f"soak_doc_{i}",
+                "metadata": {"group": i % 3, "batch": "soak"},
+                "provenance": {
+                    "source_kind": "vectorstore-soak",
+                    "source_id": f"soak-doc-{i}",
+                },
+            }
+        )
         for i in range(count)
     ]
 
@@ -88,16 +107,31 @@ def run_vectorstore_soak(
     Used by gate unit tests (in-memory harness) and integration probes for stable backends.
     """
     cfg = config or SoakConfig()
-    docs = _docs(cfg.document_count)
+    bound_store = getattr(store, "rag_store", store)
+    tenant_id = str(
+        getattr(bound_store, "_tenant_id", None)
+        or getattr(getattr(bound_store, "cfg", None), "tenant_id", None)
+        or "soak"
+    )
+    scope = VectorStoreScope(tenant_id=tenant_id)
+    docs = _docs(cfg.document_count, tenant_id=tenant_id)
     embs = _embeddings(cfg.document_count, cfg.embedding_dim)
+    records = [
+        VectorStoreRecord(
+            document=document,
+            embedding=embedding,
+            vector_id=document.identity.document_id,
+        )
+        for document, embedding in zip(docs, embs)
+    ]
 
     try:
-        store.add_documents(docs, embs)
+        store.add_records(records, scope=scope)
     except Exception as exc:
         return SoakResult(passed=False, slug=slug, reason=f"ingest_failed:{exc}")
 
     try:
-        indexed = store.count()
+        indexed = store.count(scope=scope)
     except Exception as exc:
         return SoakResult(passed=False, slug=slug, reason=f"count_failed:{exc}")
 
@@ -118,6 +152,7 @@ def run_vectorstore_soak(
             started = time.perf_counter()
             hits = store.query(
                 query_embedding=query_vec,
+                scope=scope,
                 top_k=cfg.top_k,
                 include_embeddings=False,
             )
@@ -154,6 +189,7 @@ def run_vectorstore_soak(
 
         filtered = store.query(
             query_embedding=embs[0],
+            scope=scope,
             top_k=cfg.document_count,
             metadata_filter=MetadataFilter(conditions={"group": 1}),
         )
@@ -166,9 +202,9 @@ def run_vectorstore_soak(
                 reason="metadata_filter_failed",
             )
 
-        probe = store.query(query_embedding=embs[0], top_k=1)
-        store.delete([probe[0].id])
-        if store.count() != indexed - 1:
+        probe = store.query(query_embedding=embs[0], scope=scope, top_k=1)
+        store.delete([probe[0].id], scope=scope)
+        if store.count(scope=scope) != indexed - 1:
             return SoakResult(
                 passed=False,
                 slug=slug,
@@ -290,6 +326,6 @@ def run_beta_adapter_soak(
         store = factory(vector_store=harness_store)  # type: ignore[operator]
     except (AssertionError, TypeError, ValueError):
         store = harness_store
-    if store is not harness_store and not hasattr(store, "add_documents"):
+    if store is not harness_store and not hasattr(store, "add_records"):
         store = harness_store
     return run_vectorstore_soak(store, config=config, slug=slug)

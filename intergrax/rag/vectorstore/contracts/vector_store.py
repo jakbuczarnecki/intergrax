@@ -6,80 +6,64 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 
-from intergrax.knowledge.contracts.validation import JsonValue
-from intergrax.rag.vectorstore.contracts.native_vectorstore import MetadataFilter
+import numpy as np
+from numpy.typing import NDArray
 
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
-@dataclass(frozen=True)
-class LegacyVectorStoreHit:
-    """
-    Legacy provider result owned by LCI-3D.
-
-    ``VectorstoreManager`` converts this private transport shape into the
-    native hit before returning it to core callers.
-    """
-    id: str
-    content: str
-    metadata: dict[str, JsonValue]
-    similarity_score: float
-    rank: int
-    embedding: Optional[List[float]] = None
-
-
-VectorStoreHit = LegacyVectorStoreHit
+__all__ = [
+    "MetadataFilter",
+    "VectorStore",
+    "VectorStoreHit",
+    "VectorStoreRecord",
+    "VectorStoreScope",
+]
 
 
 class VectorStore(ABC):
-    """
-    Legacy provider compatibility port owned by LCI-3D.
-    """
+    """Native provider-facing vector-store port."""
 
     @abstractmethod
-    def add_documents(
+    def add_records(
         self,
-        documents: Sequence[object],
-        embeddings: Sequence[Sequence[float]],
+        records: Sequence[VectorStoreRecord],
         *,
-        ids: Optional[Sequence[str]] = None,
-    ) -> None:
-        """
-        Add or upsert documents with corresponding embeddings.
-        """
+        scope: VectorStoreScope,
+    ) -> Sequence[str] | None:
+        """Add or upsert native records within the authoritative scope."""
         raise NotImplementedError
 
     @abstractmethod
     def query(
         self,
-        query_embedding: Sequence[float],
+        query_embedding: NDArray[np.float32] | Sequence[float],
         *,
+        scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> List[LegacyVectorStoreHit]:
-        """
-        Query top_k most similar vectors.
-        Must return similarity_score normalized to [0,1].
-        """
+    ) -> Sequence[VectorStoreHit]:
+        """Return native hits with scores normalized to ``[0, 1]``."""
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self, ids: Sequence[str]) -> None:
-        """
-        Delete vectors by ids.
-        """
+    def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
+        """Delete only IDs belonging to the authoritative scope."""
         raise NotImplementedError
 
     @abstractmethod
-    def count(self) -> int:
-        """
-        Return number of stored vectors.
-        """
+    def count(self, *, scope: VectorStoreScope) -> int:
+        """Count only vectors belonging to the authoritative scope."""
         raise NotImplementedError
 
-    def list_collections(self) -> List[str]:
+    def list_collections(self) -> list[str]:
         """Return logical collection names exposed by this store (default: single active collection)."""
         name = attribute_access.optional(self, "collection_name", None)
         if name is None and hasattr(self, "cfg"):

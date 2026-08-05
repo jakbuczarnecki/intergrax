@@ -47,20 +47,20 @@ def _record(
     )
 
 
-class _LegacyProvider:
+class _NativeProvider:
     def __init__(self) -> None:
-        self.documents: list[object] = []
+        self.records: list[VectorStoreRecord] = []
+        self.scopes: list[VectorStoreScope] = []
 
-    def add_documents(
+    def add_records(
         self,
+        records: list[VectorStoreRecord],
         *,
-        documents: list[object],
-        embeddings: list[list[float]],
-        ids: list[str],
+        scope: VectorStoreScope,
     ) -> list[str]:
-        del embeddings
-        self.documents.extend(documents)
-        return ids
+        self.records.extend(records)
+        self.scopes.append(scope)
+        return [record.vector_id for record in records]
 
 
 def test_collection_access_policy_denies_query() -> None:
@@ -108,7 +108,7 @@ def test_collection_access_policy_workspace_allowlist() -> None:
 def test_bound_workspace_write_ignores_metadata_spoof(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    provider = _LegacyProvider()
+    provider = _NativeProvider()
     record = _record(
         tenant_id="tenant-a",
         namespace="rag",
@@ -153,13 +153,19 @@ def test_bound_workspace_write_ignores_metadata_spoof(
     manager.add_records([record])
 
     assert policy_calls == [("write", "workspace-a", None)]
-    assert len(provider.documents) == 1
-    assert provider.documents[0].metadata["workspace_id"] == "workspace-a"
+    assert len(provider.records) == 1
+    assert provider.scopes == [
+        VectorStoreScope(
+            tenant_id="tenant-a",
+            namespace="rag",
+            workspace_id="workspace-a",
+        )
+    ]
     assert record.document.metadata["workspace_id"] == "spoofed-workspace"
 
 
 def test_bound_workspace_rejects_conflicting_explicit_scope_before_provider() -> None:
-    provider = _LegacyProvider()
+    provider = _NativeProvider()
     manager = VectorstoreManager(
         provider,
         scope=VectorStoreScope(
@@ -179,11 +185,11 @@ def test_bound_workspace_rejects_conflicting_explicit_scope_before_provider() ->
             ),
         )
 
-    assert provider.documents == []
+    assert provider.records == []
 
 
 def test_bound_tenant_rejects_mismatched_document_before_provider() -> None:
-    provider = _LegacyProvider()
+    provider = _NativeProvider()
     manager = VectorstoreManager(
         provider,
         scope=VectorStoreScope(
@@ -193,7 +199,7 @@ def test_bound_tenant_rejects_mismatched_document_before_provider() -> None:
         ),
     )
 
-    with pytest.raises(VectorStoreContractError, match="tenant_id"):
+    with pytest.raises(VectorStoreContractError, match="scope"):
         manager.add_records([_record(tenant_id="tenant-b", namespace="rag")])
 
-    assert provider.documents == []
+    assert provider.records == []
