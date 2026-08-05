@@ -212,6 +212,7 @@ def from_langchain_document(
 
     parent_document_id = _optional_transport_string(metadata_view, "parent_document_id")
     namespace = _optional_transport_string(metadata_view, "namespace")
+    workspace_id = _optional_transport_string(metadata_view, "workspace_id")
     source_parent_id = _optional_transport_string(metadata_view, "source_parent_id")
     provider_id = _optional_transport_string(metadata_view, "provider_id")
     source_revision = _optional_transport_string(metadata_view, "source_revision")
@@ -232,6 +233,7 @@ def from_langchain_document(
             "scope": {
                 "tenant_id": tenant_id,
                 "namespace": namespace,
+                "workspace_id": workspace_id,
             },
             "content": document.page_content,
             "metadata": remaining,
@@ -277,6 +279,7 @@ def to_langchain_document(document: object) -> LangChainDocument:
     optional_fields = {
         "parent_document_id": validated.identity.parent_document_id,
         "namespace": validated.scope.namespace,
+        "workspace_id": validated.scope.workspace_id,
         "source_parent_id": validated.provenance.source_parent_id,
         "provider_id": validated.provenance.provider_id,
         "source_revision": validated.provenance.source_revision,

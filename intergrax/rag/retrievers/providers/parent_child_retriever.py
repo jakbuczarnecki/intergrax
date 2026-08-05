@@ -68,7 +68,7 @@ class ParentChildRetriever(BaseRetriever):
             )
             for hit in hits
         )
-        parent_counts: dict[tuple[str, str | None, str], int] = {}
+        parent_counts: dict[tuple[str, str | None, str | None, str], int] = {}
 
         candidates: list[RetrievalHit] = []
 
@@ -90,6 +90,7 @@ class ParentChildRetriever(BaseRetriever):
             parent_key = (
                 hit.document.scope.tenant_id,
                 hit.document.scope.namespace,
+                hit.document.scope.workspace_id,
                 parent_id,
             )
             count = parent_counts.get(parent_key, 0)

@@ -6,12 +6,14 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **READY_FOR_REVIEW**; LCI-4C **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-4C — Native Graph RAG document contract migration
+**Current active task:** LCI-4C-A1 — Canonical workspace document scope ABI migration
 **Next task after acceptance:** LCI-4D
+
+**LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 

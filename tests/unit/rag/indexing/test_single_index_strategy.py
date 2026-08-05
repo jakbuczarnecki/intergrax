@@ -171,6 +171,30 @@ def test_dual_index_strategy_batches_without_operational_scope():
     assert toc_vectorstore.calls == []
 
 
+def test_single_index_keeps_same_document_id_across_workspaces() -> None:
+    docs = [
+        _native_document("workspace A", 0, workspace_id="workspace-a"),
+        _native_document("workspace B", 0, workspace_id="workspace-b"),
+    ]
+    vectorstore = FakeVectorstore()
+
+    SingleIndexStrategy().build_index(
+        documents=docs,
+        embed_manager=FakeEmbeddingManager(),
+        vectorstore=vectorstore,
+    )
+
+    assert len(vectorstore.records) == 2
+    assert [record.document.identity.document_id for record in vectorstore.records] == [
+        "document-0",
+        "document-0",
+    ]
+    assert [record.document.scope.workspace_id for record in vectorstore.records] == [
+        "workspace-a",
+        "workspace-b",
+    ]
+
+
 @pytest.mark.parametrize(
     ("row_delta", "dimension"),
     [
@@ -204,7 +228,12 @@ def test_single_index_strategy_rejects_invalid_embeddings_before_vectorstore(
     assert embed_manager.received_documents == tuple(docs)
 
 
-def _native_document(content: str, index: int) -> KnowledgeDocument:
+def _native_document(
+    content: str,
+    index: int,
+    *,
+    workspace_id: str | None = None,
+) -> KnowledgeDocument:
     document_id = f"document-{index}"
     return KnowledgeDocument.model_validate(
         {
@@ -213,7 +242,11 @@ def _native_document(content: str, index: int) -> KnowledgeDocument:
                 "document_id": document_id,
                 "root_document_id": document_id,
             },
-            "scope": {"tenant_id": "tenant.test", "namespace": "rag"},
+            "scope": {
+                "tenant_id": "tenant.test",
+                "namespace": "rag",
+                "workspace_id": workspace_id,
+            },
             "content": content,
             "metadata": {"position": index},
             "provenance": {

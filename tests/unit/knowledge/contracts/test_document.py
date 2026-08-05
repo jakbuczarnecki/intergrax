@@ -37,7 +37,11 @@ def _identity(**overrides: object) -> dict[str, object]:
 
 
 def _scope(**overrides: object) -> dict[str, object]:
-    payload: dict[str, object] = {"tenant_id": "tenant-1", "namespace": None}
+    payload: dict[str, object] = {
+        "tenant_id": "tenant-1",
+        "namespace": None,
+        "workspace_id": None,
+    }
     payload.update(overrides)
     return payload
 
@@ -286,6 +290,20 @@ def test_namespace_none_preserved() -> None:
 
 
 @pytest.mark.unit
+def test_workspace_none_preserved() -> None:
+    document = _document(scope=_scope(workspace_id=None))
+    assert document.scope.workspace_id is None
+
+
+@pytest.mark.unit
+def test_empty_workspace_rejected() -> None:
+    with pytest.raises(ValidationError):
+        _document(scope=_scope(workspace_id=""))
+    with pytest.raises(ValidationError):
+        _document(scope=_scope(workspace_id="   "))
+
+
+@pytest.mark.unit
 def test_empty_and_whitespace_content_rejected() -> None:
     with pytest.raises(ValidationError):
         _document(content="")
@@ -385,6 +403,8 @@ def test_top_level_reserved_metadata_key_rejected_even_with_matching_value() -> 
         _document(metadata={"tenant_id": document.scope.tenant_id})
     with pytest.raises(ValidationError):
         _document(metadata={"document_id": document.identity.document_id})
+    with pytest.raises(ValidationError):
+        _document(metadata={"workspace_id": "workspace-spoof"})
 
 
 @pytest.mark.unit
@@ -415,6 +435,16 @@ def test_serialization_round_trip_and_determinism() -> None:
     restored = load_knowledge_document(first)
     assert restored == document
     assert restored.content == document.content
+
+
+@pytest.mark.unit
+def test_old_serialized_document_without_workspace_remains_valid() -> None:
+    payload = json.loads(dump_knowledge_document(_document()).decode("utf-8"))
+    payload["scope"].pop("workspace_id", None)
+
+    restored = load_knowledge_document(json.dumps(payload))
+
+    assert restored.scope.workspace_id is None
 
 
 @pytest.mark.unit
@@ -463,6 +493,7 @@ def test_load_rejects_non_finite_json_constants() -> None:
         ("identity", {"document_id": b"file:abc123", "root_document_id": "file:abc123"}),
         ("scope", {"tenant_id": b"tenant-1"}),
         ("scope", {"tenant_id": "tenant-1", "namespace": b"kb"}),
+        ("scope", {"tenant_id": "tenant-1", "workspace_id": b"workspace-a"}),
         ("provenance", {"source_kind": b"file", "source_id": "abc123"}),
         ("provenance", {"source_kind": "file", "source_id": b"abc123"}),
         (

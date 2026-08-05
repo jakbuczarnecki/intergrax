@@ -84,22 +84,14 @@ class VectorStoreScope:
                 {
                     "tenant_id": self.tenant_id,
                     "namespace": self.namespace,
+                    "workspace_id": self.workspace_id,
                 }
             )
         except Exception as exc:
             raise VectorStoreContractError("invalid vector-store scope") from exc
-        workspace_id = self.workspace_id
-        if workspace_id is not None:
-            try:
-                workspace_id = require_non_empty_str(
-                    workspace_id,
-                    field_name="workspace_id",
-                )
-            except ValueError as exc:
-                raise VectorStoreContractError("invalid vector-store scope") from exc
         object.__setattr__(self, "tenant_id", validated.tenant_id)
         object.__setattr__(self, "namespace", validated.namespace)
-        object.__setattr__(self, "workspace_id", workspace_id)
+        object.__setattr__(self, "workspace_id", validated.workspace_id)
 
     @classmethod
     def from_document(cls, document: KnowledgeDocument) -> VectorStoreScope:
@@ -108,6 +100,7 @@ class VectorStoreScope:
         return cls(
             tenant_id=document.scope.tenant_id,
             namespace=document.scope.namespace,
+            workspace_id=document.scope.workspace_id,
         )
 
     def matches_document(self, document: KnowledgeDocument) -> bool:
@@ -115,6 +108,7 @@ class VectorStoreScope:
             isinstance(document, KnowledgeDocument)
             and document.scope.tenant_id == self.tenant_id
             and document.scope.namespace == self.namespace
+            and document.scope.workspace_id == self.workspace_id
         )
 
     def matches(self, other: VectorStoreScope) -> bool:

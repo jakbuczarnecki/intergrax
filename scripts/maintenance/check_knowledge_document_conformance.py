@@ -43,6 +43,7 @@ EXPECTED_MODEL_FIELDS: dict[str, tuple[str, ...]] = {
     "KnowledgeDocumentScope": (
         "tenant_id",
         "namespace",
+        "workspace_id",
     ),
     "KnowledgeDocumentProvenance": (
         "source_kind",
@@ -318,7 +319,11 @@ def _isolated_proof_source(repo_root: Path) -> str:
             return payload
 
         def _scope(**overrides):
-            payload = {{"tenant_id": "tenant-1", "namespace": None}}
+            payload = {{
+                "tenant_id": "tenant-1",
+                "namespace": None,
+                "workspace_id": None,
+            }}
             payload.update(overrides)
             return payload
 

@@ -145,15 +145,17 @@ class VectorstoreManager(BaseVectorstoreManager):
         if any(
             record.document.scope.tenant_id != first_document_scope.tenant_id
             or record.document.scope.namespace != first_document_scope.namespace
+            or record.document.scope.workspace_id != first_document_scope.workspace_id
             for record in validated[1:]
         ):
             raise VectorStoreContractError(
-                "records must share the same document tenant and namespace"
+                "records must share the same document tenant, namespace and workspace"
             )
 
         document_scope = VectorStoreScope(
             tenant_id=first_document_scope.tenant_id,
             namespace=first_document_scope.namespace,
+            workspace_id=first_document_scope.workspace_id,
         )
         if scope is not None:
             resolved_scope = self._resolve_scope(scope)
@@ -175,11 +177,7 @@ class VectorstoreManager(BaseVectorstoreManager):
                 VectorStoreScope(
                     tenant_id=document_scope.tenant_id,
                     namespace=document_scope.namespace,
-                    workspace_id=(
-                        bound_scope.workspace_id
-                        if bound_scope is not None
-                        else None
-                    ),
+                    workspace_id=document_scope.workspace_id,
                 )
             )
 
@@ -243,11 +241,6 @@ class VectorstoreManager(BaseVectorstoreManager):
                 if not scope.matches_document(document):
                     raise VectorStoreContractError(
                         "provider hit document scope does not match query scope"
-                    )
-                workspace_id = document.metadata.get("workspace_id")
-                if workspace_id != scope.workspace_id:
-                    raise VectorStoreContractError(
-                        "provider hit belongs to a different workspace"
                     )
                 embedding = (
                     getattr(provider_hit, "embedding", None)

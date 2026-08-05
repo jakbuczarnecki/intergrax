@@ -75,6 +75,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-3D | P1 | APPROVED | native provider adapters with scoped native records and hits | LCI-4A |
 | LCI-4A | P1 | APPROVED | native immutable retrieval hit/result contract and native RAG tool output | LCI-4B |
 | LCI-4B | P1 | APPROVED | native immutable reranker candidate/result contract and RetrievalHit boundary | LCI-4C |
+| LCI-4C-A1 | P1 | READY_FOR_REVIEW | canonical workspace-aware KnowledgeDocumentScope ABI propagation | LCI-4D |
 | LCI-4C | P1 | READY_FOR_REVIEW | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
@@ -97,5 +98,13 @@ workspace after binding. GraphStore backend internals remain unchanged.
 
 LCI-4D remains planned for auxiliary memory, multimedia, legacy RAG,
 evaluation and soak paths after LCI-4C acceptance.
+
+LCI-4C-A1 records that `workspace_id` is a canonical system-owned
+`KnowledgeDocumentScope` field. The canonical identity boundary is
+`tenant_id + namespace + workspace_id + document_id`. Missing `workspace_id`
+remains backward-compatible and means no explicit workspace partition. User
+metadata cannot provide or override `workspace_id`; indexing, vector storage,
+retrieval, reranking and Graph RAG preserve workspace scope without using
+metadata as a transport tunnel.
 
 ---

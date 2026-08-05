@@ -9,8 +9,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
+    copy_parser_runtime_state,
     to_legacy_rag_document,
 )
 from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
@@ -42,6 +44,7 @@ class IngestRequest:
     source_path: str
     base_metadata: Dict[str, Any] = field(default_factory=dict)
     chunking_strategy_id: Optional[str] = None
+    workspace_id: str | None = None
 
 
 @dataclass
@@ -136,6 +139,22 @@ class IngestPipeline:
                     use_default_metadata=True,
                     call_custom_metadata=_cb,
                 )
+            if request.workspace_id is not None:
+                scoped_docs: list[KnowledgeDocument] = []
+                for document in native_docs:
+                    payload = document.model_dump(mode="python")
+                    payload["scope"] = KnowledgeDocumentScope(
+                        tenant_id=document.scope.tenant_id,
+                        namespace=document.scope.namespace,
+                        workspace_id=request.workspace_id,
+                    ).model_dump(mode="python")
+                    scoped_docs.append(
+                        copy_parser_runtime_state(
+                            document,
+                            KnowledgeDocument.model_validate(payload),
+                        )
+                    )
+                native_docs = scoped_docs
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 

@@ -123,6 +123,13 @@ class KnowledgeDocumentScope(BaseModel):
             return None
         return require_non_empty_str(value, field_name="namespace")
 
+    @field_validator("workspace_id")
+    @classmethod
+    def _optional_workspace(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return require_non_empty_str(value, field_name="workspace_id")
+
 
 class KnowledgeDocumentProvenance(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -209,6 +216,16 @@ class KnowledgeDocument(BaseModel):
     @field_serializer("metadata")
     def _serialize_metadata(self, value: Mapping[str, JsonValue]) -> dict[str, JsonValue]:
         return knowledge_metadata_to_plain(value)
+
+    @property
+    def identity_key(self) -> tuple[str, str | None, str | None, str]:
+        """Return the canonical scoped document identity."""
+        return (
+            self.scope.tenant_id,
+            self.scope.namespace,
+            self.scope.workspace_id,
+            self.identity.document_id,
+        )
 
 
 def _reject_non_finite_json_constant(constant: str) -> float:

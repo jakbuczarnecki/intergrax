@@ -27,6 +27,7 @@ def _document(
     *,
     tenant_id: str = "tenant-a",
     namespace: str | None = "namespace-a",
+    workspace_id: str | None = None,
     metadata: dict[str, object] | None = None,
 ) -> KnowledgeDocument:
     return KnowledgeDocument.model_validate(
@@ -36,7 +37,11 @@ def _document(
                 "document_id": document_id,
                 "root_document_id": document_id,
             },
-            "scope": {"tenant_id": tenant_id, "namespace": namespace},
+            "scope": {
+                "tenant_id": tenant_id,
+                "namespace": namespace,
+                "workspace_id": workspace_id,
+            },
             "content": "native content",
             "metadata": metadata or {},
             "provenance": {"source_kind": "test", "source_id": document_id},
@@ -105,6 +110,15 @@ def test_scope_is_tenant_required_and_immutable() -> None:
         scope.tenant_id = "tenant-b"  # type: ignore[misc]
     assert scope.namespace == "namespace-a"
     assert scope.workspace_id == "workspace-a"
+
+
+def test_scope_from_document_and_match_include_workspace() -> None:
+    document = _document(workspace_id="workspace-a")
+    scope = VectorStoreScope.from_document(document)
+
+    assert scope.workspace_id == "workspace-a"
+    assert scope.matches_document(document)
+    assert not scope.matches_document(_document(workspace_id="workspace-b"))
 
 
 def test_metadata_filter_copies_nested_json_and_rejects_routing_keys() -> None:
@@ -215,7 +229,7 @@ def test_manager_derives_namespace_for_tenant_bound_provider(
     assert hits[0].document.scope.namespace == "rag"
 
 
-def test_manager_uses_bound_workspace_and_ignores_metadata_spoof(
+def test_manager_preserves_bound_workspace_and_rejects_metadata_spoof(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     provider = InMemoryVectorStore(tenant_id="tenant-a")
@@ -237,10 +251,17 @@ def test_manager_uses_bound_workspace_and_ignores_metadata_spoof(
         workspace_id="workspace-a",
     )
     manager = VectorstoreManager(provider, scope=bound_scope)
+    with pytest.raises(ValueError):
+        _document(
+            namespace="rag",
+            workspace_id="workspace-a",
+            metadata={"workspace_id": "workspace-b"},
+        )
+
     record = VectorStoreRecord(
         document=_document(
             namespace="rag",
-            metadata={"workspace_id": "workspace-b"},
+            workspace_id="workspace-a",
         ),
         embedding=[1.0, 0.0],
         vector_id="workspace-record",
@@ -251,7 +272,7 @@ def test_manager_uses_bound_workspace_and_ignores_metadata_spoof(
 
     hits = manager.query([1.0, 0.0], scope=bound_scope, top_k=1)
     assert received_scopes == [bound_scope]
-    assert hits[0].document.metadata["workspace_id"] == "workspace-a"
+    assert hits[0].document.scope.workspace_id == "workspace-a"
     assert record.document.metadata == original_metadata
 
 
@@ -272,6 +293,59 @@ def test_manager_rejects_mixed_tenant_before_provider() -> None:
     with pytest.raises(ValueError):
         manager.add_records(records, scope=VectorStoreScope(tenant_id="tenant-a"))
     assert manager.count(scope=VectorStoreScope(tenant_id="tenant-a")) == 0
+
+
+def test_manager_rejects_mixed_workspaces_before_provider() -> None:
+    manager = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-a"))
+    records = [
+        VectorStoreRecord(
+            document=_document(document_id="a", workspace_id="workspace-a"),
+            embedding=[1.0],
+            vector_id="a",
+        ),
+        VectorStoreRecord(
+            document=_document(document_id="b", workspace_id="workspace-b"),
+            embedding=[1.0],
+            vector_id="b",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="workspace"):
+        manager.add_records(records)
+
+
+def test_same_document_id_stays_distinct_across_workspace_scopes() -> None:
+    manager_a = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-a"))
+    manager_b = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-a"))
+    scope_a = _scope(workspace_id="workspace-a")
+    scope_b = _scope(workspace_id="workspace-b")
+
+    manager_a.add_records(
+        [
+            VectorStoreRecord(
+                document=_document(workspace_id="workspace-a"),
+                embedding=[1.0],
+                vector_id="same-vector-id",
+            )
+        ],
+        scope=scope_a,
+    )
+    manager_b.add_records(
+        [
+            VectorStoreRecord(
+                document=_document(workspace_id="workspace-b"),
+                embedding=[1.0],
+                vector_id="same-vector-id",
+            )
+        ],
+        scope=scope_b,
+    )
+
+    hit_a = manager_a.query([1.0], scope=scope_a, top_k=1)[0]
+    hit_b = manager_b.query([1.0], scope=scope_b, top_k=1)[0]
+    assert hit_a.document.identity.document_id == hit_b.document.identity.document_id
+    assert hit_a.document.scope.workspace_id == "workspace-a"
+    assert hit_b.document.scope.workspace_id == "workspace-b"
 
 
 def test_tenant_namespace_and_delete_count_are_isolated() -> None:

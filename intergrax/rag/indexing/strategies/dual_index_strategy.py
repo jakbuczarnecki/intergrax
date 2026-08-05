@@ -67,7 +67,10 @@ class DualIndexStrategy(IndexStrategy):
         # Build TOC index from SECTION metadata
         # -----------------------------
 
-        sections: dict[tuple[str, str | None, str, str], KnowledgeDocument] = {}
+        sections: dict[
+            tuple[str, str | None, str | None, str, str],
+            KnowledgeDocument,
+        ] = {}
 
         for doc in documents:
 
@@ -79,6 +82,7 @@ class DualIndexStrategy(IndexStrategy):
             group_key = (
                 doc.scope.tenant_id,
                 doc.scope.namespace,
+                doc.scope.workspace_id,
                 doc.identity.root_document_id,
                 section,
             )
@@ -92,6 +96,7 @@ class DualIndexStrategy(IndexStrategy):
         for (
             tenant_id,
             namespace,
+            workspace_id,
             root_document_id,
             section_name,
         ), parent_document in sections.items():
@@ -100,7 +105,9 @@ class DualIndexStrategy(IndexStrategy):
                     parent_document,
                     content=section_name,
                     strategy_id=(
-                        f"toc:{tenant_id!r}:{namespace!r}:{root_document_id!r}"
+                        "toc:"
+                        f"{tenant_id!r}:{namespace!r}:{workspace_id!r}:"
+                        f"{root_document_id!r}"
                     ),
                     chunk_index=0,
                     metadata_updates={

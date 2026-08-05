@@ -40,14 +40,18 @@ class FakeAPIReranker(_APIRerankerBase):
         return scores
 
 
-def build_candidates():
+def build_candidates(workspace_id: str | None = None):
 
     return [
         RerankerCandidate(
             document=KnowledgeDocument(
                 schema_version=1,
                 identity={"document_id": key, "root_document_id": key},
-                scope={"tenant_id": "unit", "namespace": "rerank"},
+                scope={
+                    "tenant_id": "unit",
+                    "namespace": "rerank",
+                    "workspace_id": workspace_id,
+                },
                 content=f"doc {key}",
                 provenance={"source_kind": "test", "source_id": key},
             ),
@@ -197,6 +201,13 @@ def test_candidate_from_retrieval_hit_preserves_native_fields():
     assert candidate.original_rank == hit.rank
     assert candidate.channel == hit.channel
     assert candidate.vector_id == hit.vector_id
+
+
+def test_candidate_identity_key_includes_workspace() -> None:
+    candidate_a = build_candidates("workspace-a")[0]
+    candidate_b = build_candidates("workspace-b")[0]
+
+    assert candidate_a.identity_key != candidate_b.identity_key
 
 
 def test_result_is_immutable_finite_and_serializable():

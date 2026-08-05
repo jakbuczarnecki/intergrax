@@ -44,7 +44,11 @@ def _identity(**overrides: object) -> dict[str, object]:
 
 
 def _scope(**overrides: object) -> dict[str, object]:
-    payload: dict[str, object] = {"tenant_id": "tenant-1", "namespace": None}
+    payload: dict[str, object] = {
+        "tenant_id": "tenant-1",
+        "namespace": None,
+        "workspace_id": None,
+    }
     payload.update(overrides)
     return payload
 
@@ -215,6 +219,16 @@ def test_round_trip_preserves_lineage_and_unicode() -> None:
     )
     restored = load_knowledge_document(dump_knowledge_document(document))
     assert restored == document
+
+
+@pytest.mark.unit
+def test_old_payload_defaults_workspace_to_none() -> None:
+    payload = json.loads(dump_knowledge_document(_document()).decode("utf-8"))
+    payload["scope"].pop("workspace_id", None)
+
+    restored = load_knowledge_document(json.dumps(payload))
+
+    assert restored.scope.workspace_id is None
 
 
 @pytest.mark.unit

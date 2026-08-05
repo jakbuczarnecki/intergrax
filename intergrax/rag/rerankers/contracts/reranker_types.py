@@ -117,10 +117,13 @@ class RerankerCandidate:
         )
 
     @property
-    def identity_key(self) -> tuple[str, str | None, str, str | None]:
+    def identity_key(
+        self,
+    ) -> tuple[str, str | None, str | None, str, str | None]:
         return (
             self.document.scope.tenant_id,
             self.document.scope.namespace,
+            self.document.scope.workspace_id,
             self.document.identity.document_id,
             self.vector_id,
         )

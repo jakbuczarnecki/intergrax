@@ -62,7 +62,7 @@ class ChunkingEngine:
         strategy: BaseChunkingStrategy = self._registry.resolve(strategy_id)
 
         source_documents = list(documents)
-        input_by_id: dict[str, KnowledgeDocument] = {}
+        input_by_id: dict[tuple[str, str | None, str | None, str], KnowledgeDocument] = {}
         for document in source_documents:
             if not isinstance(document, KnowledgeDocument):
                 raise TypeError(
@@ -76,18 +76,22 @@ class ChunkingEngine:
                 validated_fields,
             )
             source_id = revalidated_source.identity.document_id
-            if source_id in input_by_id:
+            source_key = revalidated_source.identity_key
+            if source_key in input_by_id:
                 raise ValueError(f"Duplicate source document_id: {source_id}")
-            input_by_id[source_id] = revalidated_source
+            input_by_id[source_key] = revalidated_source
 
         revalidated_sources = [
-            input_by_id[document.identity.document_id] for document in source_documents
+            input_by_id[document.identity_key] for document in source_documents
         ]
 
         raw_chunks = list(strategy.chunk(revalidated_sources))
 
-        validated_by_parent: dict[str, list[KnowledgeDocument]] = defaultdict(list)
-        seen_ids: set[str] = set()
+        validated_by_parent: dict[
+            tuple[str, str | None, str | None, str],
+            list[KnowledgeDocument],
+        ] = defaultdict(list)
+        seen_ids: set[tuple[str, str | None, str | None, str]] = set()
 
         for chunk in raw_chunks:
             if not isinstance(chunk, KnowledgeDocument):
@@ -99,24 +103,32 @@ class ChunkingEngine:
             revalidated = KnowledgeDocument.model_validate(chunk.model_dump(mode="python"))
 
             parent_id = revalidated.identity.parent_document_id
-            if parent_id is None or parent_id not in input_by_id:
+            parent_key = (
+                revalidated.scope.tenant_id,
+                revalidated.scope.namespace,
+                revalidated.scope.workspace_id,
+                parent_id,
+            ) if parent_id is not None else None
+            if parent_key is None or parent_key not in input_by_id:
                 raise ValueError(
                     f"Chunk parent_document_id {parent_id!r} does not match an input document"
                 )
 
-            source = input_by_id[parent_id]
+            source = input_by_id[parent_key]
             validated = validate_derived_chunk(
                 source, revalidated, strategy_id=strategy_id
             )
             chunk_id = validated.identity.document_id
-            if chunk_id in seen_ids:
+            chunk_key = validated.identity_key
+            if chunk_key in seen_ids:
                 raise ValueError(f"Duplicate chunk document_id: {chunk_id}")
-            seen_ids.add(chunk_id)
-            validated_by_parent[parent_id].append(validated)
+            seen_ids.add(chunk_key)
+            validated_by_parent[parent_key].append(validated)
 
         for source in revalidated_sources:
             source_id = source.identity.document_id
-            if validated_by_parent.get(source_id):
+            source_key = source.identity_key
+            if validated_by_parent.get(source_key):
                 continue
 
             fallback = build_derived_chunk(
@@ -130,17 +142,18 @@ class ChunkingEngine:
                 source, fallback, strategy_id=strategy_id
             )
             chunk_id = validated.identity.document_id
-            if chunk_id in seen_ids:
+            chunk_key = validated.identity_key
+            if chunk_key in seen_ids:
                 raise ValueError(f"Duplicate chunk document_id: {chunk_id}")
-            seen_ids.add(chunk_id)
-            validated_by_parent[source_id].append(validated)
+            seen_ids.add(chunk_key)
+            validated_by_parent[source_key].append(validated)
 
         result: list[KnowledgeDocument] = []
         for source in revalidated_sources:
-            result.extend(validated_by_parent[source.identity.document_id])
+            result.extend(validated_by_parent[source.identity_key])
 
-        result_ids = [chunk.identity.document_id for chunk in result]
-        if len(result_ids) != len(set(result_ids)):
+        result_keys = [chunk.identity_key for chunk in result]
+        if len(result_keys) != len(set(result_keys)):
             raise ValueError("Chunking result contains duplicate document_id values")
 
         return result

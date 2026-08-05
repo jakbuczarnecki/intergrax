@@ -141,6 +141,19 @@ Normalization adapter implementation is **out of scope** for LCI-1A; belongs to 
 
 ---
 
+## LCI-4C-A1 — Canonical workspace scope ABI
+
+Status: **READY_FOR_REVIEW**
+
+`workspace_id` is a canonical, system-owned `KnowledgeDocumentScope` field. The canonical document identity boundary is:
+
+```text
+tenant_id + namespace + workspace_id + document_id
+```
+
+`workspace_id=None` remains backward-compatible and means no explicit workspace partition. Empty workspace IDs are invalid. User metadata, provider payload metadata and tool metadata cannot provide or override the system-owned scope field. LangChain transport metadata may carry the value only as an explicit bridge representation and must map it back to `document.scope.workspace_id`.
+
+Indexing, vector storage, retrieval, reranking and Graph RAG preserve this scope without using user metadata as a transport tunnel. The Graph RAG scope fence continues to reject mixed or sequential tenant/namespace/workspace switches before writes.
 ## 4. Data model
 
 Implementation target (LCI-1B): Pydantic v2 `BaseModel` with `ConfigDict(extra="forbid", frozen=True)` on all types. No automatic UUID generation. No `langchain*` or provider SDK types.

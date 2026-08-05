@@ -176,6 +176,7 @@ def test_cache_store_after_miss() -> None:
         reranker="fake",
         query="query",
         texts=[c.document.content for c in candidates],
+        identity_keys=[c.identity_key for c in candidates],
     )
 
     assert result is not None
@@ -212,3 +213,19 @@ def test_limit_on_cache_hit() -> None:
     )
 
     assert len(results) == 1
+
+
+def test_reranker_identity_key_includes_workspace() -> None:
+    first = _candidates()[0]
+    payload = first.document.model_dump(mode="python")
+    payload["scope"]["workspace_id"] = "workspace-b"
+    second_document = KnowledgeDocument.model_validate(payload)
+    second = RerankerCandidate(
+        document=second_document,
+        original_score=first.original_score,
+        original_rank=first.original_rank,
+        channel=first.channel,
+        vector_id=first.vector_id,
+    )
+
+    assert first.identity_key != second.identity_key

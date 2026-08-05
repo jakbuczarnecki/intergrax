@@ -69,8 +69,6 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
         base_metadata["user_id"] = params.user_id
     if tenant_id is not None:
         base_metadata["tenant_id"] = tenant_id
-    if params.workspace_id is not None:
-        base_metadata["workspace_id"] = params.workspace_id
 
     strategy_id: Optional[str] = base_metadata.pop("chunking_strategy_id", None)
 
@@ -79,6 +77,7 @@ def perform_rag_ingest(ctx: ToolWiringContext, params: RagIngestInput) -> RagIng
             source_path=str(path),
             base_metadata=base_metadata,
             chunking_strategy_id=strategy_id,
+            workspace_id=params.workspace_id,
         )
     )
 

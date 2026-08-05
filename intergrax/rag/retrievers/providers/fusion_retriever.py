@@ -41,8 +41,8 @@ class FusionRetriever(BaseRetriever):
         if not query.query_text:
             return ()
 
-        results: dict[tuple[str, str | None, str], RetrievalHit] = {}
-        scores: dict[tuple[str, str | None, str], float] = {}
+        results: dict[tuple[str, str | None, str | None, str], RetrievalHit] = {}
+        scores: dict[tuple[str, str | None, str | None, str], float] = {}
 
         for retriever_name in self._retrievers:
 
@@ -54,6 +54,7 @@ class FusionRetriever(BaseRetriever):
                 key = (
                     cand.document.scope.tenant_id,
                     cand.document.scope.namespace,
+                    cand.document.scope.workspace_id,
                     cand.vector_id or cand.document.identity.document_id,
                 )
                 rrf_score = 1.0 / (self._rrf_k + rank + 1)
@@ -68,6 +69,7 @@ class FusionRetriever(BaseRetriever):
                 (
                     c.document.scope.tenant_id,
                     c.document.scope.namespace,
+                    c.document.scope.workspace_id,
                     c.vector_id or c.document.identity.document_id,
                 )
             ],
@@ -83,6 +85,7 @@ class FusionRetriever(BaseRetriever):
                     (
                         cand.document.scope.tenant_id,
                         cand.document.scope.namespace,
+                        cand.document.scope.workspace_id,
                         cand.vector_id or cand.document.identity.document_id,
                     )
                 ],

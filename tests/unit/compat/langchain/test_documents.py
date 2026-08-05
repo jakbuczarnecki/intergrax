@@ -59,7 +59,7 @@ def _native_document(**overrides: object) -> KnowledgeDocument:
             "root_document_id": "file:abc123",
             "parent_document_id": None,
         },
-        "scope": {"tenant_id": "tenant-1", "namespace": None},
+        "scope": {"tenant_id": "tenant-1", "namespace": None, "workspace_id": None},
         "content": "Hello knowledge",
         "metadata": {},
         "provenance": {
@@ -295,6 +295,17 @@ def test_from_langchain_preserves_optional_provenance_fields() -> None:
 
 
 @pytest.mark.unit
+def test_from_langchain_maps_workspace_to_native_scope() -> None:
+    native = from_langchain_document(
+        _lc_document(metadata={"namespace": "kb", "workspace_id": "workspace-a"})
+    )
+
+    assert native.scope.namespace == "kb"
+    assert native.scope.workspace_id == "workspace-a"
+    assert "workspace_id" not in native.metadata
+
+
+@pytest.mark.unit
 def test_from_langchain_preserves_unknown_nested_metadata() -> None:
     document = _lc_document(metadata={"details": {"items": [1, {"tenant_id": "shadow"}]}})
     native = from_langchain_document(document)
@@ -386,6 +397,7 @@ def test_to_langchain_skips_optional_none_fields() -> None:
     converted = to_langchain_document(native)
     assert "parent_document_id" not in converted.metadata
     assert "namespace" not in converted.metadata
+    assert "workspace_id" not in converted.metadata
     assert "source_parent_id" not in converted.metadata
 
 
@@ -394,6 +406,21 @@ def test_to_langchain_preserves_unknown_metadata() -> None:
     native = _native_document(metadata={"details": {"items": [True, 1]}})
     converted = to_langchain_document(native)
     assert converted.metadata["details"] == {"items": [True, 1]}
+
+
+@pytest.mark.unit
+def test_to_langchain_maps_workspace_to_transport_metadata() -> None:
+    native = _native_document(
+        scope={
+            "tenant_id": "tenant-1",
+            "namespace": "kb",
+            "workspace_id": "workspace-a",
+        }
+    )
+
+    converted = to_langchain_document(native)
+
+    assert converted.metadata["workspace_id"] == "workspace-a"
 
 
 @pytest.mark.unit
@@ -451,7 +478,11 @@ def test_round_trip_native_source_document() -> None:
     native = _native_document(
         content="Unicode: Zażółć 🚀",
         metadata={"nested": {"tenant_id": "shadow"}},
-        scope={"tenant_id": "tenant-1", "namespace": "kb"},
+        scope={
+            "tenant_id": "tenant-1",
+            "namespace": "kb",
+            "workspace_id": "workspace-a",
+        },
         provenance={
             "source_kind": "file",
             "source_id": "abc123",
@@ -476,6 +507,11 @@ def test_round_trip_native_chunk_with_full_provenance() -> None:
         },
         content="  padded chunk \n",
         metadata={"source": "abc123", "details": {"items": [{"x": 1}]}},
+        scope={
+            "tenant_id": "tenant-1",
+            "namespace": "kb",
+            "workspace_id": "workspace-a",
+        },
         provenance={
             "source_kind": "file",
             "source_id": "abc123",

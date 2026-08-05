@@ -123,7 +123,7 @@ def provider_metadata(
     optional_identity = {
         "parent_document_id": document.identity.parent_document_id,
         "namespace": document.scope.namespace,
-        "workspace_id": scope.workspace_id,
+        "workspace_id": document.scope.workspace_id,
         "source_parent_id": provenance.source_parent_id,
         "provider_id": provenance.provider_id,
         "source_revision": provenance.source_revision,
@@ -195,8 +195,6 @@ def reconstruct_document(
         for key, value in metadata.items()
         if key not in SYSTEM_METADATA_KEYS
     }
-    if provider_workspace is not None:
-        user_metadata["workspace_id"] = provider_workspace
     try:
         return KnowledgeDocument.model_validate(
             {
@@ -205,6 +203,7 @@ def reconstruct_document(
                 "scope": {
                     "tenant_id": provider_tenant,
                     "namespace": provider_namespace,
+                    "workspace_id": provider_workspace,
                 },
                 "content": content,
                 "metadata": user_metadata,

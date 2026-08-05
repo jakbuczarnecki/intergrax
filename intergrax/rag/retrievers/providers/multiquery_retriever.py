@@ -55,7 +55,10 @@ class MultiQueryRetriever(BaseRetriever):
         top_k = int(query.top_k)
         prefetch_k = max(top_k, top_k * self._prefetch_factor)
 
-        all_hits: dict[tuple[str, str | None, str | None], RetrievalHit] = {}
+        all_hits: dict[
+            tuple[str, str | None, str | None, str | None],
+            RetrievalHit,
+        ] = {}
 
         for query_index, q in enumerate(expanded_queries):
 
@@ -82,6 +85,7 @@ class MultiQueryRetriever(BaseRetriever):
                 key = (
                     native_hit.document.scope.tenant_id,
                     native_hit.document.scope.namespace,
+                    native_hit.document.scope.workspace_id,
                     native_hit.vector_id,
                 )
                 existing = all_hits.get(key)

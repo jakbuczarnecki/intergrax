@@ -106,3 +106,31 @@ def test_hash_determinism() -> None:
     h2 = cache._hash_documents(texts2)
 
     assert h1 == h2
+
+
+def test_identity_keys_isolate_workspace_scopes() -> None:
+    cache = RerankCache(ttl_seconds=60)
+    texts = ["same document content"]
+    workspace_a = [("tenant", "namespace", "workspace-a", "doc", "vector")]
+    workspace_b = [("tenant", "namespace", "workspace-b", "doc", "vector")]
+
+    cache.set(
+        reranker="test",
+        query="query",
+        texts=texts,
+        identity_keys=workspace_a,
+        scores=[0.9],
+    )
+
+    assert cache.get(
+        reranker="test",
+        query="query",
+        texts=texts,
+        identity_keys=workspace_a,
+    ) == [0.9]
+    assert cache.get(
+        reranker="test",
+        query="query",
+        texts=texts,
+        identity_keys=workspace_b,
+    ) is None
