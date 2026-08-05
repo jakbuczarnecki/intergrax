@@ -131,11 +131,11 @@ It is **READY_FOR_REVIEW**; provider/source-kind live tasks remain **PLANNED**
 and the Google readiness gate remains independently **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
-provider-neutral live contract boundary and is **READY_FOR_REVIEW**. No
-provider-specific live handler or production registration is implemented.
-`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **PLANNED / NEXT AFTER
-FOUNDATION ACCEPTANCE**; all other provider live capability tasks remain
-**PLANNED**.
+provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
+`MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE` is **READY_FOR_REVIEW** with one
+bounded Drive list/query capability; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`
+is **PLANNED / NEXT AFTER DRIVE ACCEPTANCE**. Other provider live capability
+tasks remain **PLANNED**.
 
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
@@ -279,6 +279,21 @@ Folders, packages and unknown non-file records are metadata-only descriptors.
 
 Graph `NEXT_PAGE` and `DELTA` continuations are wrapped in adapter-owned
 opaque `KnowledgeCursor` values.
+
+The accepted Drive live operation matrix is:
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED through the existing read_drive_delta_page boundary
+exact item read: UNSUPPORTED_BY_PROVIDER
+child read: NOT_APPLICABLE
+bounded content read: DEFERRED
+```
+
+Drive live list returns deterministic textual metadata only. Content read is
+deferred because the current provider surface returns binary bytes, the shared
+live result is textual, and the existing adapter does not propagate the live
+per-item byte budget.
 
 Drive permission capability remains false because the current low-level
 permission projection explicitly does not prove a complete ACL or complete
@@ -618,8 +633,11 @@ provider-neutral live capability/executor: not implemented
 
 ```text
 durable adapter: implemented
-exact live read foundation: available where an exact item is known
-bounded provider-neutral live search: not implemented
+bounded live list/query: READY_FOR_REVIEW
+bounded live search: unsupported by provider
+exact live item read: unsupported by provider
+child live read: not applicable
+bounded live content read: deferred
 LKW bridge: not implemented
 ```
 
@@ -2060,8 +2078,9 @@ commercial status
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1: READY_FOR_REVIEW
-VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: READY_FOR_REVIEW
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: PLANNED / NEXT AFTER FOUNDATION ACCEPTANCE
+VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1: ACCEPTED / CLOSED
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: PLANNED / NEXT AFTER DRIVE ACCEPTANCE
 other Microsoft Graph live tasks: PLANNED
 Slack live task: PLANNED
 Jira live task: PLANNED

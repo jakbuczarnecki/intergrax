@@ -1,0 +1,49 @@
+"""Microsoft Graph live capability registration."""
+
+from __future__ import annotations
+
+from intergrax.runtime.vendor_knowledge.live import (
+    LiveCapabilityExecutionResultV1,
+)
+from intergrax.runtime.vendor_knowledge.live.registration import (
+    LiveRegistrationBundleV1,
+)
+from intergrax.runtime.vendor_knowledge.live.schemas import (
+    SchemaRegistrationV1,
+    SchemaRoleV1,
+)
+
+from .drive import (
+    MSGRAPH_DRIVE_LIST_REQUEST_SCHEMA_REF,
+    MSGRAPH_DRIVE_LIST_RESULT_SCHEMA_REF,
+    MsGraphDriveListLiveHandlerV1,
+    MsGraphDriveListLiveRequestV1,
+    build_msgraph_drive_list_descriptor,
+)
+
+
+def build_msgraph_drive_live_registration_bundles() -> (
+    tuple[LiveRegistrationBundleV1, ...]
+):
+    """Return exactly the complete supported Microsoft Graph Drive bundle."""
+
+    handler = MsGraphDriveListLiveHandlerV1()
+    descriptor = build_msgraph_drive_list_descriptor()
+    return (
+        LiveRegistrationBundleV1(
+            descriptor=descriptor,
+            handler=handler,
+            request_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_DRIVE_LIST_REQUEST_SCHEMA_REF,
+                role=SchemaRoleV1.REQUEST,
+                model=MsGraphDriveListLiveRequestV1,
+                contract_version="1",
+            ),
+            result_schema=SchemaRegistrationV1(
+                schema_ref=MSGRAPH_DRIVE_LIST_RESULT_SCHEMA_REF,
+                role=SchemaRoleV1.RESULT,
+                model=LiveCapabilityExecutionResultV1,
+                contract_version="1",
+            ),
+        ),
+    )

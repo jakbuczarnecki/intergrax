@@ -60,7 +60,6 @@ from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeConnectionRegistryIntegrationResolverV1,
     KnowledgeQueryOrchestratorV1,
     LiveCapabilityExecutorV1,
-    LiveCapabilityHandlerRegistryV1,
     WorkspaceIndexedEvidenceRetrieverV1,
 )
 from local_workspace_application.workspaces.hybrid_ask_models import WorkspaceAskRunV2
@@ -191,6 +190,12 @@ from local_workspace_application.workspaces.connected_source_wiring import (
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     TenantConnectionPort,
     TenantLiveCapabilityCatalogPort,
+)
+from intergrax.runtime.vendor_knowledge.live.ms365_graph import (
+    build_msgraph_drive_live_registration_bundles,
+)
+from intergrax.runtime.vendor_knowledge.live.registration import (
+    publish_live_registration_bundles,
 )
 from local_workspace_application.serving.knowledge_live_access_routes import (
     mount_knowledge_live_access_routes,
@@ -680,7 +685,9 @@ def mount_managed_workspace_routes(
     if ask_service_v2 is None:
         if connected_wiring is None:
             raise RuntimeError("hybrid_ask_wiring_incomplete")
-        live_handler_registry = LiveCapabilityHandlerRegistryV1()
+        published_live_registration = publish_live_registration_bundles(
+            build_msgraph_drive_live_registration_bundles()
+        )
         ask_service_v2 = WorkspaceAskServiceV2(
             workspace_service=service,
             workspace_repository=repository,
@@ -690,7 +697,9 @@ def mount_managed_workspace_routes(
                 tenant_live_capability_catalog
                 or UnavailableTenantLiveCapabilityCatalog()
             ),
-            request_envelope_validator=SafeCapabilityRequestEnvelopeValidator(),
+            request_envelope_validator=SafeCapabilityRequestEnvelopeValidator(
+                schema_registry=published_live_registration.schemas
+            ),
             resource_scope_validator=BindingResourceScopeValidator(),
             orchestrator=KnowledgeQueryOrchestratorV1(
                 indexed_retriever=WorkspaceIndexedEvidenceRetrieverV1(
@@ -698,7 +707,7 @@ def mount_managed_workspace_routes(
                     workspace_repository=repository,
                 ),
                 live_executor=LiveCapabilityExecutorV1(
-                    handler_registry=live_handler_registry,
+                    published_registration=published_live_registration,
                     integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
                         connected_wiring.connection_registry
                     ),

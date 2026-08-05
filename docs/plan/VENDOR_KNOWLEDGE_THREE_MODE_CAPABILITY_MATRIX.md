@@ -98,7 +98,7 @@ from the exact matrix because no source kind has been selected.
 
 | provider_family | integration_identity | source_kind | adapter_status | indexed_status | indexed_platform_foundation | indexed_provider_wiring | indexed_application_wiring | indexed_refresh | indexed_removal | indexed_provenance | indexed_proof | indexed_gap | durable_status | durable_platform_foundation | durable_provider_wiring | durable_application_sink | durable_checkpoint | durable_recovery | durable_proof | durable_gap | live_status | live_platform_foundation | live_provider_wiring | live_executor | live_limits | live_evidence | live_receipt | live_application_wiring | live_proof | live_gap | commercially_supported_modes | primary_evidence | next_action |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `drive` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Graph-to-index bridge or application query proof; preserve accepted delta/full-reconciliation and ACL limits. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted adapter/reconciliation exists, but no production application-owned sink was found. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Graph source-kind live handler or application invocation. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`; accepted audit input; sync runtime | Keep adapter scope; do not reopen Graph; await a separately routed application-mode task. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `drive` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Graph-to-index bridge or application query proof; preserve accepted delta/full-reconciliation and ACL limits. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted adapter/reconciliation exists, but no production application-owned sink was found. | `READY_FOR_REVIEW` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Drive list/query only; search and exact read are unsupported, child read is not applicable, content read is deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE`; focused live tests | Review the Drive live list proof before acceptance; preserve the exact operation matrix. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `mail` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No folder-scoped Graph Mail index bridge; attachment presence is not attachment inventory or bytes. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted reconciliation is folder-scoped; no production application-owned sink was found. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Graph Mail live handler; low-level reads are not live mode. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`; accepted audit input; Mail semantics in roadmap | Preserve folder-scoped delta/removal and attachment non-goals. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_channel` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No channel-to-index bridge or application proof; deletion evidence remains explicit `deletedDateTime`. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter snapshot/reconciliation is proven, but application sink ownership is absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No provider live registration or application call path. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`; accepted audit input | Preserve explicit deletion semantics; do not infer absence-based removal. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No chat-to-index bridge or application proof; fixed-window scope does not prove live or indexed lifecycle. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application sink ownership is absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No provider live registration or application call path. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`; accepted audit input | Preserve fixed-window and explicit-deletion semantics. |
@@ -171,10 +171,12 @@ capability descriptors, an exact handler registry, bounded execution,
 normalized result items, byte/item/time limits, safe retention and receipts.
 Hybrid Ask can orchestrate indexed and live evidence.
 
-No inspected integration registers a provider/source-kind live handler. No
-exact row therefore exceeds `FOUNDATION_ONLY`. Exact provider reads,
-remote-resource descriptors and live binding tests do not change this result:
-an adapter exact read is not a live capability.
+The Microsoft Graph `drive` row now has one provider/source-kind live handler
+ready for review: bounded list/query through the existing
+`read_drive_delta_page` boundary. No other provider/source-kind row exceeds
+`FOUNDATION_ONLY`. Exact provider reads, remote-resource descriptors and live
+binding tests do not change the operation matrix: an adapter exact read is not
+a live capability.
 
 ## 9. Commercially supported mode claims
 
@@ -339,7 +341,7 @@ accepted.
 
 | provider | source_kind | capability_id | search/list support | exact-read support | resource scope | request schema | result schema | timeout | item budget | byte budget | evidence mapping | safe locator | receipt behavior | retention | descriptor registration | handler registration | proof status | commercial status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Microsoft Graph | `drive` | `PLANNED:vk.msgraph.drive.search/read` | planned | planned | one known drive | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
+| Microsoft Graph | `drive` | `vendor.ms365_graph.drive.list` | unsupported by provider / supported list-query / unsupported exact read | unsupported by provider / not applicable child / deferred content | one known drive ID from binding | `MsGraphDriveListLiveRequestV1` | `LiveCapabilityExecutionResultV1` | executor deadline | restrictive minimum | restrictive minimum | normalized metadata/item identity | filtered provider web locator | receipt only | ephemeral/receipt-only | registered | registered | `READY_FOR_REVIEW` | search and exact item read are unsupported; child read is not applicable; content read is deferred because provider bytes do not fit the textual live result boundary |
 | Microsoft Graph | `mail` | `PLANNED:vk.msgraph.mail.search/read` | planned | planned | mailbox + folder | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Microsoft Graph | `teams_channel` | `PLANNED:vk.msgraph.teams_channel.search/read` | planned | planned | one team + channel | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
 | Microsoft Graph | `teams_chat` | `PLANNED:vk.msgraph.teams_chat.search/read` | planned | planned | one chat + bounded window | `LiveCapabilityRequestV1` (`ARCH-1`) | `NormalizedLiveResultV1` (`ARCH-1`) | effective policy | effective policy | effective policy | source/item/locator | opaque provider-safe | receipt only | ephemeral/receipt-only | planned | planned | `FOUNDATION_ONLY` | NONE |
@@ -357,8 +359,24 @@ accepted.
 
 `gated` means that the exact source kind must first pass
 `GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1`; it is not an implementation
-claim. Shared budget semantics and strict schemas are blocked on
-`FOUNDATION-1`; provider-specific tasks must then prove bounded behavior.
+claim. Shared budget semantics and strict schemas are provided by the accepted
+foundation; provider-specific tasks must prove their own bounded behavior.
+
+### Microsoft Graph Drive live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED
+exact item read: UNSUPPORTED_BY_PROVIDER
+child read: NOT_APPLICABLE
+bounded content read: DEFERRED
+```
+
+The supported list/query operation uses the existing
+`read_drive_delta_page` boundary once per live call and returns metadata-only
+text. Content remains deferred because the provider surface returns binary
+bytes, the shared live result is textual, and the adapter does not propagate
+the live per-item byte budget.
 
 ### Google readiness gate
 

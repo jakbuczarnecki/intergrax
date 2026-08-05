@@ -813,7 +813,7 @@ source-kind rows.
 
 ### 24.1 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED / CLOSED`
 
 **Technical outcome:** implement the shared runtime delta frozen by `ARCH-1`
 before any production provider-specific live handler is activated.
@@ -961,13 +961,16 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
   READY_FOR_REVIEW
 
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
-  READY_FOR_REVIEW
+  ACCEPTED / CLOSED
 
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1-REVIEW-FIX-2
-  READY_FOR_REVIEW
+  ACCEPTED / CLOSED
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE
-  PLANNED / BLOCKED_BY_SHARED_FOUNDATION
+  READY_FOR_REVIEW
+
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL
+  PLANNED / NEXT AFTER DRIVE ACCEPTANCE
 
 all other provider live tasks
   PLANNED
@@ -978,6 +981,20 @@ GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1
   PLANNED
 ```
+
+### Microsoft Graph Drive live operation matrix
+
+```text
+bounded search: UNSUPPORTED_BY_PROVIDER
+bounded list/query: SUPPORTED through the existing read_drive_delta_page boundary
+exact item read: UNSUPPORTED_BY_PROVIDER
+child read: NOT_APPLICABLE
+bounded content read: DEFERRED
+```
+
+Content read remains deferred because the current provider surface returns
+binary bytes, while the shared live result is textual and the adapter does not
+propagate the live per-item byte budget.
 
 Acceptance requires proof that later tasks use:
 
