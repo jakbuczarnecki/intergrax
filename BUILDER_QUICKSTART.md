@@ -20,6 +20,7 @@ It does not create a new scaffold or a new execution contract. All setup and ver
 | Goal | Begin one small, bounded application change |
 | First decision | Extend an application, compose a new workflow, or evaluate a foundation |
 | Expected outcome | Know where the change belongs and what to verify |
+| Primary next action | Plan the first bounded build in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Product trial | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
 | Deeper builder guide | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Broader evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
@@ -132,14 +133,17 @@ Internal plans and maintainer controls are not normal first-step builder documen
 - The builder route is distinct from the LKW product trial.
 - No production-ready application template is claimed.
 
-## Next actions
+## Primary next action
 
-| Goal | Next action |
-|------|-------------|
-| Extend LKW | [LKW application architecture](applications/local_workspace_application/docs/ARCHITECTURE.md) |
-| Plan an application | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Run an evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
-| Understand the platform shape | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
-| Enter deep technical documentation | [docs/DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) |
-| Try the LKW product instead | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
-| Return to project overview | [README.md](README.md) |
+**Plan the first bounded build:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+
+## Other routes
+
+| Route | Use it for |
+|-------|------------|
+| [LKW application architecture](applications/local_workspace_application/docs/ARCHITECTURE.md) | Extending LKW |
+| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Running a broader evaluation |
+| [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) | Understanding the platform shape |
+| [docs/DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md) | Deep technical review |
+| [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) | Trying LKW instead |
+| [README.md](README.md) | Returning to the project overview |

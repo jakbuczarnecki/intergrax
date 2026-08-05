@@ -166,9 +166,13 @@ On Windows, use the same command from a shell after `cd` to that directory.
 - Full LKW platform certification ([LKW Platform Proof](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md) remains the deeper technical path)
 - Linux or macOS live certification unless you actually run the quickstart on those systems
 
-## Next steps
+## Primary next action
+
+**Inspect the bounded technical evidence:** [LKW Platform Proof](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
+
+## Other routes
 
 - Product orientation: [LKW Product Tour](../../../LKW_PRODUCT_TOUR.md)
-- Bounded technical proof: [LKW Platform Proof](../../../docs/public-adoption/LKW_PLATFORM_PROOF.md)
 - Proof status dashboard: [PROOFS.md](../../../PROOFS.md)
-- Build and evaluate: [BUILD_WITH_INTERGRAX.md](../../../BUILD_WITH_INTERGRAX.md)
+- Builder route: [Builder Quick Start](../../../BUILDER_QUICKSTART.md)
+- Deeper build planning: [BUILD_WITH_INTERGRAX.md](../../../BUILD_WITH_INTERGRAX.md)

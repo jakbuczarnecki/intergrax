@@ -15,6 +15,7 @@ LKW is currently a **Backend Product Alpha / MVP**. The tour covers indexed know
 | User result | Grounded answer with a source reference |
 | Inspectable evidence | Source and persisted Ask-run verification |
 | Maturity | Backend Product Alpha / MVP |
+| Primary next action | Run the supported LKW Quick Start |
 | Run it | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
 | Technical review | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 
@@ -106,12 +107,15 @@ It does not represent:
 - real-user validation;
 - commercial validation.
 
-## Next actions
+## Primary next action
 
-| Goal | Next action |
-|------|-------------|
-| Run the supported product path | [Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
-| Inspect deeper technical evidence | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
-| Check current evidence status | [PROOFS.md](PROOFS.md) |
-| Check whether the use case fits | [USE_CASES.md](USE_CASES.md) |
-| Return to the project overview | [README.md](README.md) |
+**Run the supported LKW product path:** [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md)
+
+## Other routes
+
+| Route | Use it for |
+|-------|------------|
+| [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
+| [PROOFS.md](PROOFS.md) | Check current evidence status |
+| [USE_CASES.md](USE_CASES.md) | Check whether the use case fits |
+| [README.md](README.md) | Return to the project overview |

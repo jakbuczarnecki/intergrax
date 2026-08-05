@@ -136,6 +136,8 @@ Other frameworks and tools may suit different needs. This guide does not dismiss
 
 Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
+**Primary next action after apparent fit:** [Check your concrete workflow in USE_CASES.md](USE_CASES.md).
+
 ---
 
 ## What exists today
@@ -164,13 +166,15 @@ Detailed proof matrices and claim boundaries remain in [PROOFS.md](PROOFS.md).
 
 ---
 
-## Next steps
+## Primary next action
 
-| Goal | Document |
-| ---- | -------- |
-| Check a concrete workflow fit | [USE_CASES.md](USE_CASES.md) |
-| Review current evidence | [PROOFS.md](PROOFS.md) |
-| Understand technical boundaries | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
-| Begin building | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) |
-| Discuss a bounded pilot | [PARTNERS.md](PARTNERS.md) |
-| Start evaluating or building | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+**Check concrete workflow fit:** [USE_CASES.md](USE_CASES.md)
+
+## Other routes
+
+| Route | Use it for |
+|-------|------------|
+| [PROOFS.md](PROOFS.md) | Reviewing current evidence |
+| [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
+| [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) | Beginning a bounded build |
+| [PARTNERS.md](PARTNERS.md) | Discussing a bounded pilot |

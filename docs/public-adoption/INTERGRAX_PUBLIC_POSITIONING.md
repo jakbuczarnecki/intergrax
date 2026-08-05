@@ -33,7 +33,8 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-10 — READY_FOR_REVIEW |
+| Current phase | PX-11 — READY_FOR_REVIEW |
+| Proof ownership and roadmap deduplication | PX-10 — ACCEPTED / CLOSED |
 | Public-language cleanup | PX-9 — ACCEPTED / CLOSED |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
@@ -166,6 +167,93 @@ The PX-4 visual is a neutral documentation representation, not a UI screenshot. 
 ---
 
 ## Calls to action
+
+### Root first-screen CTA row
+
+**[Try LKW](#try-lkw)** · [See the LKW workflow](LKW_PRODUCT_TOUR.md) · [Choose your path](#choose-your-path)
+
+`Try LKW` is the only first-screen primary CTA.
+Product Tour is the lower-friction orientation route.
+Choose your path is the audience router.
+Token Optimization remains discoverable in its dedicated lower section.
+Architecture and proof links remain available lower in README.
+Neither Token Optimization, architecture nor PROOFS appears as an equal first-screen CTA.
+
+### Primary-action rule
+
+Every major reader-facing document must identify:
+
+- one primary next action;
+- its exact destination;
+- secondary conditional routes separately.
+
+Freeze these reader paths:
+
+```text
+General first contact:
+Try LKW
+→ README.md#try-lkw
+
+Product orientation:
+See the LKW workflow
+→ LKW_PRODUCT_TOUR.md
+
+Run the primary product:
+Run the supported LKW path
+→ applications/local_workspace_application/docs/QUICKSTART.md
+
+Review LKW after the supported run:
+Inspect bounded LKW evidence
+→ docs/public-adoption/LKW_PLATFORM_PROOF.md
+
+Builder:
+Start with the Builder Quick Start
+→ BUILDER_QUICKSTART.md
+
+Builder after orientation:
+Plan a bounded build
+→ BUILD_WITH_INTERGRAX.md
+
+Architect:
+Review architecture boundaries
+→ ARCHITECTURE_OVERVIEW.md
+
+Architect after boundaries:
+Review current proof
+→ PROOFS.md
+
+CTO, product lead or technical buyer:
+Assess concrete workflow fit
+→ USE_CASES.md
+
+Buyer after apparent fit:
+Review current proof
+→ PROOFS.md
+
+Partner, integrator or design partner:
+Prepare a pilot brief
+→ PARTNERS.md#pilot-brief
+
+Category-level uncertainty:
+Compare common approaches
+→ WHY_INTERGRAX.md#where-intergrax-fits
+
+Concrete fit after category orientation:
+Check workflow fit
+→ USE_CASES.md
+
+Token Optimization evaluator:
+Explore Token Optimization
+→ docs/features/token_optimization/README.md
+
+Deep technical reviewer:
+Open the Technical Documentation Map
+→ docs/DOCUMENTATION_MAP.md
+
+Permission uncertainty:
+Review collaboration and legal terms
+→ COLLABORATION.md and LICENSE
+```
 
 ### Current primary CTA
 

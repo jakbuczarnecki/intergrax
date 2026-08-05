@@ -12,27 +12,50 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 
 ## Start by what you want to do
 
-| I want to… | Start here |
-|------------|------------|
-| Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
-| Compare Intergrax with common approaches | [Where Intergrax fits](../WHY_INTERGRAX.md#where-intergrax-fits) |
-| Review as an architect or platform engineer | [ARCHITECTURE_OVERVIEW](../ARCHITECTURE_OVERVIEW.md) |
+```mermaid
+flowchart TD
+    S[What do you want to do?]
+    S -->|Try the primary product| Q[LKW Quick Start]
+    S -->|Understand LKW first| T[LKW Product Tour]
+    S -->|Build| B[Builder Quick Start]
+    S -->|Review architecture| A[Architecture Overview]
+    S -->|Assess fit| U[Use Cases]
+    S -->|Prepare a pilot| P[Partners]
+    S -->|Explore a platform capability| O[Token Optimization]
+    S -->|Deep technical review| D[Technical Documentation Map]
+
+    T --> Q
+    Q --> L[LKW Platform Proof]
+    A --> R[PROOFS.md]
+    U --> R
+```
+
+The primary product route leads from orientation to execution
+and optionally to deeper proof.
+Other branches serve distinct reader intents and do not compete
+with Try LKW as the repository’s primary product action.
+
+| I want to… | Primary action |
+|------------|----------------|
+| Try LKW | [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) |
+| Understand LKW without running it | [LKW Product Tour](../LKW_PRODUCT_TOUR.md) |
+| Inspect bounded LKW technical evidence | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
 | Start building with Intergrax | [Builder Quick Start](../BUILDER_QUICKSTART.md) |
 | Plan a deeper build | [BUILD_WITH_INTERGRAX](../BUILD_WITH_INTERGRAX.md) |
-| Understand Intergrax (first contact) | [README](../README.md) |
-| Understand LKW without running it | [LKW Product Tour](../LKW_PRODUCT_TOUR.md) |
-| Try LKW | [LKW Quick Start](../applications/local_workspace_application/docs/QUICKSTART.md) |
-| Inspect bounded LKW technical evidence | [LKW Platform Proof](public-adoption/LKW_PLATFORM_PROOF.md) |
-| Explore Token Optimization | [Token Optimization Engine](features/token_optimization/README.md) |
-| Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
+| Review as an architect or platform engineer | [Architecture Overview](../ARCHITECTURE_OVERVIEW.md) |
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../USE_CASES.md) |
-| See where the product-validation program is heading | [Roadmap](../ROADMAP.md) |
 | Explore a partner, integrator or design-partner path | [Partners](../PARTNERS.md) |
-| Check current proof status | [Intergrax Proofs](../PROOFS.md) |
-| Contribute or provide technical feedback | [Collaboration](../COLLABORATION.md) |
+| Explore Token Optimization | [Token Optimization](features/token_optimization/README.md) |
+| Check current proof status | [PROOFS.md](../PROOFS.md) |
+| Compare Intergrax with common approaches | [Where Intergrax fits](../WHY_INTERGRAX.md#where-intergrax-fits) |
+| Run an evaluation | [Evaluation Guide](../EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](../COLLABORATION.md) and [LICENSE](../LICENSE) |
-| Read legally authoritative terms | [LICENSE](../LICENSE) |
 | Perform deep technical review | [Technical Documentation Map](DOCUMENTATION_MAP.md) |
+| Understand why Intergrax exists | [WHY_INTERGRAX](../WHY_INTERGRAX.md) |
+| See where the product-validation program is heading | [Roadmap](../ROADMAP.md) |
+| Read general first-contact questions | [FAQ](../FAQ.md) |
+| Contribute or provide technical feedback | [Collaboration](../COLLABORATION.md) |
+| Read legally authoritative terms | [LICENSE](../LICENSE) |
 
 ---
 

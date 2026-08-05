@@ -22,6 +22,7 @@ Primary decision audience: CTO, product lead or technical buyer assessing fit, m
 | Best fit for platform evaluators | Specialized applications requiring policy, evidence, knowledge or controlled tools |
 | Next product fit to validate | Multi-source indexed + authorized live evidence workflow |
 | Not a fit today | Finished SaaS, generic no-code builder or unrestricted open-source framework |
+| Primary next action after apparent fit | Review the current proof status in [PROOFS.md](PROOFS.md) |
 
 ## Buyer decision path
 
@@ -147,4 +148,6 @@ A good evaluation description should capture:
 | Unsure which class of solution matches the need | Compare common approaches in [WHY_INTERGRAX.md](WHY_INTERGRAX.md#where-intergrax-fits) |
 | Rights or permission are unclear | Review [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
 
-**Start here:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) · [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) · [PROOFS.md](PROOFS.md) · [ROADMAP.md](ROADMAP.md) · [PARTNERS.md](PARTNERS.md) · [COLLABORATION.md](COLLABORATION.md) · [LICENSE](LICENSE)
+**Primary next action after apparent fit:** [Review the current proof status](PROOFS.md).
+
+Then use the decision summary above to choose a bounded evaluation, partner route, permission review, defer decision, or stop.

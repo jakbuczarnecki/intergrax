@@ -134,6 +134,18 @@ Acceptance evidence:
 c9521fb3edace541e76259147073835c37c37b2e
 ```
 
+### PX-10 closeout
+
+```text
+PX-10 — ACCEPTED / CLOSED
+
+Implementation:
+072b409ccd9fc73ea06e7b477d12b6a3fbf0a881
+
+Review fix:
+18626e91a24aa770f4011ab5294219fdfdcf6144
+```
+
 ---
 
 ## 2. Public documentation layers
@@ -296,6 +308,115 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Read legally authoritative rights and restrictions | `LICENSE` |
 | Read general first-contact questions | `FAQ.md` |
 | Perform deep technical review | `docs/DOCUMENTATION_MAP.md` |
+
+## Primary CTA and reader-progression contract
+
+Freeze the primary reader actions:
+
+```text
+README
+→ Try LKW
+
+LKW Product Tour
+→ LKW Quick Start
+
+LKW Quick Start
+→ LKW Platform Proof
+
+Builder Quick Start
+→ BUILD_WITH_INTERGRAX
+
+Architecture Overview
+→ PROOFS
+
+Use Cases
+→ PROOFS after apparent fit
+
+Why Intergrax
+→ Use Cases
+
+FAQ
+→ LKW Product Tour
+
+Partners
+→ prepare pilot brief
+```
+
+Every major Layer 1–3 reader document identifies one primary next action.
+Secondary links remain available but are visually grouped.
+Reference tables are not automatically CTA blocks.
+Repeated links must not create a second primary action.
+Product trial and platform proof remain separate.
+Token Optimization remains a secondary capability route.
+Proof and architecture links must not compete with `Try LKW` in the README first-screen CTA row.
+A router may expose several intents, but each intent has one primary destination.
+No fake urgency, countdowns, unsupported promises or dark-pattern wording are allowed.
+Contact is not requested before partner fit and pilot scope are prepared.
+
+## Conversion-path ownership
+
+Freeze these progressions:
+
+```text
+Product:
+README
+→ Product Tour or Quick Start
+→ Platform Proof when deeper evidence is needed
+
+Builder:
+Builder Quick Start
+→ BUILD_WITH_INTERGRAX
+→ route-specific evaluation or technical documentation
+
+Architect:
+Architecture Overview
+→ PROOFS
+→ Evaluation Guide or Technical Documentation Map
+
+Buyer:
+Use Cases
+→ PROOFS
+→ Evaluation Guide, Partners, defer or stop
+
+Partner:
+Partners
+→ pilot brief
+→ permission-aware discussion
+```
+
+No route is required to continue when the fit is negative.
+
+## CTA visual ownership
+
+```text
+docs/PUBLIC_DOCUMENTATION_MAP.md#start-by-what-you-want-to-do
+```
+
+Purpose:
+
+```text
+visual reader-intent and next-action routing
+```
+
+This is a navigation diagram, not a product architecture claim.
+It uses no custom Mermaid styling.
+The table remains the accessible textual route.
+The diagram must remain consistent with the routing contract.
+LKW remains visually and semantically the primary product route.
+
+## Existing compliant documents
+
+PX-11 reviewed but did not need to modify:
+
+```text
+ARCHITECTURE_OVERVIEW.md
+BUILD_WITH_INTERGRAX.md
+EVALUATION_GUIDE.md
+PARTNERS.md
+PROOFS.md
+LKW_PLATFORM_PROOF.md
+Token Optimization guide
+```
 
 ### Audience ownership
 

@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-10 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-11 |
+| Current phase | PX-11 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-12 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -415,7 +415,17 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-10 — Proof ownership, roadmap linking and status deduplication
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:**
+
+```text
+Implementation:
+072b409ccd9fc73ea06e7b477d12b6a3fbf0a881
+
+Review fix:
+18626e91a24aa770f4011ab5294219fdfdcf6144
+```
 
 **User-visible outcome:** Readers can move from a public proof claim to the owning
 product roadmap without public documentation copying
@@ -477,17 +487,63 @@ the roadmap’s changing task and review status.
 
 ## PX-11 — Calls to action and conversion paths
 
-**Status:** BLOCKED_ON_PX_10_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
-**User-visible outcome:** Every major reader path has one primary CTA; LKW product CTA leads Token Optimization capability CTA.
+**User-visible outcome:** Every major reader path has one primary CTA; LKW remains the primary product route and Token Optimization remains a secondary capability route.
 
-**Completion gate:** CTA hierarchy verified; product trial and platform evaluation routes remain distinct.
+**Delivered:**
+
+- Try LKW established as the only primary first-screen CTA;
+- Product Tour retained as the lower-friction orientation action;
+- root README routes reorganized by reader and primary action;
+- Product Tour continues directly to the supported Quick Start;
+- Quick Start continues to bounded LKW technical proof;
+- Builder Quick Start continues to deeper build planning;
+- Why Intergrax continues to concrete use-case assessment;
+- Use Cases continues to proof review after apparent fit;
+- FAQ restored to a product-first starting route;
+- audience-specific architect, buyer and partner routes retained;
+- Token Optimization retained as a secondary capability route;
+- public documentation map enhanced with one reader-intent Mermaid;
+- secondary and reference links preserved without competing visually;
+- no command, proof claim, product status, legal term,
+  runtime, test, script or visual asset changed.
+
+**Completion gate:**
+
+- the README first-screen CTA row contains exactly Try LKW,
+  See the LKW workflow and Choose your path;
+- Try LKW is the only visually primary first-screen action;
+- Token Optimization, architecture and PROOFS remain discoverable
+  but do not compete in the first-screen CTA row;
+- README Choose your path maps each audience to one primary action;
+- Product Tour identifies Quick Start as its primary next action;
+- Quick Start identifies LKW Platform Proof as its primary next action;
+- Builder Quick Start identifies BUILD_WITH_INTERGRAX as its primary next action;
+- Why Intergrax identifies Use Cases as its primary next action;
+- Use Cases identifies PROOFS as the primary action after apparent fit;
+- FAQ identifies Product Tour as the first general-reader action
+  and Builder Quick Start as the builder route;
+- Architecture Overview retains PROOFS as its primary next action;
+- Partners retains pilot-brief preparation as its primary next action;
+- public documentation map contains one reader-intent Mermaid
+  and an equivalent accessible routing table;
+- every reader intent has exactly one primary destination;
+- secondary navigation remains available and correctly grouped;
+- LKW Product Tour, Quick Start and Platform Proof remain distinct;
+- Token Optimization remains secondary;
+- no negative-fit reader is pushed into evaluation or contact;
+- no external session, conversion rate, onboarding-time
+  or commercial result is claimed;
+- existing visual assets and diagrams are preserved;
+- no command, proof claim, product maturity,
+  legal boundary, code, test, script or dependency is changed.
 
 ---
 
 ## PX-12 — Editorial consistency and readiness review
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_11_ACCEPTANCE
 
 **User-visible outcome:** The complete public journey receives a final human editorial, factual and cross-document consistency review before external sessions.
 

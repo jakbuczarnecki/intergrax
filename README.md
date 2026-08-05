@@ -11,7 +11,7 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
 [![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](LKW_PRODUCT_TOUR.md) · [Explore Token Optimization](#token-optimization) · [Review architecture and proofs](ARCHITECTURE_OVERVIEW.md) · [PROOFS.md](PROOFS.md)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](LKW_PRODUCT_TOUR.md) · [Choose your path](#choose-your-path)
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
 
@@ -43,7 +43,9 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 
 This neutral visual represents the documented Quick Start, not a finished UI screenshot; dynamic workspace and Ask-run IDs are omitted.
 
-**See the complete LKW product tour** → [LKW_PRODUCT_TOUR.md](LKW_PRODUCT_TOUR.md)
+**Primary action:** [Run the supported LKW Quick Start](#try-lkw)
+
+Prefer to understand the experience first? [See the LKW Product Tour](LKW_PRODUCT_TOUR.md).
 
 ### What is boundedly proven today
 
@@ -185,28 +187,25 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 
 **Not complete:** durable in-cache compaction is incomplete; final cross-provider proof gates are incomplete; **universal savings not claimed**; production-proven savings are not claimed.
 
-**Go deeper:** [Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
+**Secondary capability route:** [Explore Token Optimization](docs/features/token_optimization/README.md)
+
+Claim boundaries: [Token Optimization guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
 
 ---
 
 ## Choose your path
 
-| Goal | Start here |
-| ---- | ---------- |
-| Understand LKW without running it | [LKW_PRODUCT_TOUR.md](LKW_PRODUCT_TOUR.md) |
-| Try LKW | [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
-| Review bounded technical evidence | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
-| Review current proofs | [PROOFS.md](PROOFS.md) |
-| Review as an architect or platform engineer | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
-| Start building with Intergrax | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) |
-| Plan a deeper build | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Run a broader evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
-| Assess fit as a CTO, product lead or technical buyer | [USE_CASES.md](USE_CASES.md) |
-| Compare Intergrax with common approaches | [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
-| Explore a partner, integrator or design-partner path | [PARTNERS.md](PARTNERS.md) |
-| Review license and permission boundaries | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
+| You are or want to… | Primary action | Then |
+| ------------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
+| Try the primary product | [Try LKW](#try-lkw) | Inspect the [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) when deeper evidence is needed |
+| Understand LKW before running it | [See the LKW Product Tour](LKW_PRODUCT_TOUR.md) | Run the [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
+| Build with Intergrax | Open the [Builder Quick Start](BUILDER_QUICKSTART.md) | Continue to [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) |
+| Review as an architect | Open [Architecture Overview](ARCHITECTURE_OVERVIEW.md) | Review [PROOFS](PROOFS.md) |
+| Assess fit as a buyer | Open [Use Cases](USE_CASES.md) | Review [PROOFS](PROOFS.md) before evaluation or pilot |
+| Prepare a partner or pilot discussion | Open [Partners](PARTNERS.md) | Prepare the [pilot brief](PARTNERS.md#pilot-brief) |
+| Perform deep technical review | Open the [Technical Documentation Map](docs/DOCUMENTATION_MAP.md) | Follow the owning technical documents |
 
-Technical documentation: [Public Documentation Map](docs/PUBLIC_DOCUMENTATION_MAP.md) · [Technical Documentation Map](docs/DOCUMENTATION_MAP.md)
+Other routes: [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) · [current proof dashboard](PROOFS.md) · [Evaluation Guide](EVALUATION_GUIDE.md) · [collaboration and legal terms](COLLABORATION.md) and [LICENSE](LICENSE).
 
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>

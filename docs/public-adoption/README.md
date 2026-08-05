@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-10 READY_FOR_REVIEW
+Status: ACTIVE — PX-11 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -87,9 +87,9 @@ This directory contains maintainer controls and operational public-adoption mate
 ## Current program status
 
 ```text
-Previous phase: PX-9 ACCEPTED / CLOSED
-Current phase: PX-10 READY_FOR_REVIEW
-Next after acceptance: PX-11
+Previous phase: PX-10 ACCEPTED / CLOSED
+Current phase: PX-11 READY_FOR_REVIEW
+Next after acceptance: PX-12
 External sessions: NOT_STARTED
 ```
 
@@ -101,6 +101,13 @@ Normal public-reader navigation:
 
 Maintainer contracts and claim controls:
 this directory
+
+CTA and reader progression:
+`INTERGRAX_PUBLIC_POSITIONING.md#calls-to-action`
+`PUBLIC_DOCUMENTATION_ARCHITECTURE.md#primary-cta-and-reader-progression-contract`
+
+Public reader route map:
+`../PUBLIC_DOCUMENTATION_MAP.md#start-by-what-you-want-to-do`
 
 ## Audience-route summary
 

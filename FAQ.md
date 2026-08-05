@@ -19,7 +19,8 @@ This FAQ answers common first-contact questions. It does not replace [LICENSE](L
 | What Intergrax is | Platform for specialized agent applications with shared policy, knowledge, evidence, integration, and execution foundations |
 | Strongest current proof | LKW — Primary product proof · Backend Product Alpha / MVP · **PARTIAL** |
 | Current maturity | Source-available, active R&D; real-user and commercial validation incomplete |
-| Where to evaluate | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Primary next action | [See the LKW workflow](LKW_PRODUCT_TOUR.md) |
+| Builder route | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) |
 | Where to compare approaches | [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
 | Where to discuss a pilot | [PARTNERS.md](PARTNERS.md) |
 | Where to check permissions | [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) |
@@ -64,7 +65,11 @@ No. Intergrax is **source-available** under the [Intergrax Evaluation and Collab
 
 ## Where should I start?
 
-Start with [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) to choose an evaluation path. For architecture context, see [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md). For deep technical review, see [docs/DOCUMENTATION_MAP.md](docs/DOCUMENTATION_MAP.md).
+Start with the [LKW Product Tour](LKW_PRODUCT_TOUR.md) to understand the primary product path.
+
+Run the [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) when you are ready to try it.
+
+Builders who want to create or extend an application should use the [Builder Quick Start](BUILDER_QUICKSTART.md).
 
 ---
 
@@ -109,6 +114,8 @@ See [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) for the public architec
 Follow [SECURITY.md](SECURITY.md). Do not open a public issue for a suspected vulnerability.
 
 ---
+
+**Primary next action:** [See the LKW workflow](LKW_PRODUCT_TOUR.md).
 
 ## Related documents
 
