@@ -351,14 +351,45 @@ def test_token_10e_closeout_status_guard_rejects_unrelated_statuses() -> None:
     )
 
 
-def test_claims_distinguish_internal_completion_from_public_claimability() -> None:
-    content = _read_claims_doc().lower()
-    assert "implementation complete" in content
-    assert "ready_for_review" in content or "ready for review" in content
-    assert "pending independent acceptance" in content
-    assert "not claimable" in content
-    assert "explicit/default-off" in content
-    assert "numeric savings" in content
+def test_claims_distinguish_bounded_implementation_from_complete_behavior() -> None:
+    raw_content = _read_claims_doc()
+    content = _normalize_public_text(raw_content)
+    assert re.search(
+        r"bounded durable.{0,80}compaction mechanism is implemented",
+        content,
+    )
+    assert "explicit/default-off operation" in content
+
+    bounded_scope = content[
+        content.index("this does not establish") : content.index(
+            "detailed implementation phases"
+        )
+    ]
+    for limitation in (
+        "live provider-wide behavior",
+        "rollback execution",
+        "provider kv-cache mutation",
+        "production rollout",
+        "general availability",
+        "universal or production-proven savings",
+    ):
+        assert limitation in bounded_scope, f"Missing bounded claim limitation: {limitation!r}"
+    assert "not publicly claimable as complete live-provider" in content
+
+    claims_boundary = content[: content.index("## forbidden wording")]
+    current_status_patterns = (
+        r"readyforreview|ready\s+for\s+review",
+        r"accepted\s*/\s*closed",
+        r"planned\s*/\s*not\s+started",
+        r"current\s+next\s+step",
+        r"blocked\s+until",
+        r"pending\s+independent\s+acceptance",
+    )
+    assert "../features/plan/TOKEN_OPTIMIZATION.md" in raw_content
+    for pattern in current_status_patterns:
+        assert not re.search(pattern, claims_boundary), (
+            f"Claims document mirrors transient plan status: {pattern!r}"
+        )
 
     forbidden_section = content[content.index("## forbidden wording") :]
     before_forbidden_section = content[: content.index("## forbidden wording")]
@@ -455,10 +486,26 @@ def test_claims_doc_contains_neutral_discovery_vs_performance_promotion_boundary
     assert "Performance promotion remains gated" in content
 
 
-def test_claims_doc_mentions_token_10g_and_10h_performance_gates() -> None:
-    content = _read_claims_doc()
-    assert "TOKEN-10G" in content
-    assert "TOKEN-10H" in content
+def test_claims_doc_uses_outcome_based_performance_gates() -> None:
+    content = _normalize_public_text(_read_claims_doc())
+    claims_boundary = content[: content.index("## forbidden wording")]
+    for concept in (
+        "accepted cross-provider proof",
+        "checked-in public evidence",
+        "final public claim review",
+        "explicit limitations",
+        "promotion approval",
+    ):
+        assert concept in content, f"Missing outcome-based evidence gate: {concept!r}"
+
+    for implementation_status_id in (
+        "token-10e",
+        "token-10f",
+        "token-10g",
+        "token-10h",
+        "ctx-ucl",
+    ):
+        assert implementation_status_id not in claims_boundary
 
 
 def test_ucl_adr_has_no_utf8_bom() -> None:
