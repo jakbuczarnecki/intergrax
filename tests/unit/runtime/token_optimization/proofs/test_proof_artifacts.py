@@ -14,9 +14,11 @@ from intergrax.runtime.token_optimization.proofs.config import (
 from intergrax.runtime.token_optimization.proofs.contracts import (
     ProofArtifactError,
     ProofRouterEvidence,
+    UniversalProofCaseResult,
 )
 from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
+    _case_to_dict,
 )
 from scripts.token_optimization.run_universal_proof import (
     EXIT_INVALID_CONFIG,
@@ -130,6 +132,39 @@ def test_evidence_contract_is_immutable_bounded_and_finite() -> None:
         ProofRouterEvidence(confidence=math.inf)
     with pytest.raises(ValueError):
         ProofRouterEvidence(confidence=1.1)
+    with pytest.raises(ValueError):
+        ProofRouterEvidence(confidence=math.nan)
+    with pytest.raises(ValueError):
+        ProofRouterEvidence(reason_code="unsafe reason")
+
+
+def test_legacy_case_result_construction_keeps_defaults_and_safe_new_keys() -> None:
+    result = UniversalProofCaseResult(
+        case_id="legacy-case",
+        status="completed",
+        router_status="routed",
+        router_reason=None,
+        selected_configuration_id="exact_only",
+        pipeline_status="completed",
+        applied_layer_ids=("builtin.exact_deduplication",),
+    )
+
+    assert result.router_evidence.review_required is None
+    assert result.pipeline_evidence.completed is None
+    assert result.protected_region_evidence.input_protected_region_count == 0
+    assert result.prefix_identity_evidence.identity_available is False
+
+    payload = _case_to_dict(result)
+    assert {
+        "router_evidence",
+        "pipeline_evidence",
+        "protected_region_evidence",
+        "prefix_identity_evidence",
+    }.issubset(payload)
+    dumped = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    assert "raw_content_included" in dumped
+    assert "legacy-case" in dumped
+    assert "raw-protected-marker" not in dumped
 
 
 def test_checked_in_sample_uses_repository_root_artifact_directory(monkeypatch) -> None:

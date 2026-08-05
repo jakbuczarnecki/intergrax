@@ -158,7 +158,11 @@ def _router_evidence(result) -> ProofRouterEvidence:
         risk=result.risk.value if result.risk is not None else None,
         transport=result.transport.value,
         structured_output_fallback_used=(
-            result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+            True
+            if result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
+            else False
+            if result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
+            else None
         ),
     )
 
@@ -705,6 +709,7 @@ class UniversalTokenOptimizationProofRunner:
                         selected_raw if isinstance(selected_raw, str) else None
                     ),
                     pipeline_status="not_started",
+                    applied_layer_ids=(),
                     error_reason_code="ROUTER_EXECUTION_FAILED",
                     router_evidence=router_evidence,
                     protected_region_evidence=_protected_region_evidence(
