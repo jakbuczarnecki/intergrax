@@ -862,7 +862,9 @@ def test_prefix_identity_uses_existing_token_10b_assembly_contract() -> None:
     reversed_tools = tuple(reversed(tools))
     with_tools = assembly("stable-policy", "tail-a", tools)
     with_reordered_tools = assembly("stable-policy", "tail-a", reversed_tools)
-    assert with_tools.report.tool_envelope_hash == with_reordered_tools.report.tool_envelope_hash
+    with_identical_tools = assembly("stable-policy", "tail-a", tools)
+    assert with_tools.report.tool_envelope_hash != with_reordered_tools.report.tool_envelope_hash
+    assert with_tools.report.tool_envelope_hash == with_identical_tools.report.tool_envelope_hash
     assert with_tools.report.tool_envelope_hash is not None
 
     same_keys_different_order = (

@@ -435,12 +435,21 @@ def test_reordered_schema_with_reordered_ids_but_old_hash_fails() -> None:
         materialize_cache_stable_send_payload(assembly)
 
 
-def test_canonical_initial_envelope_sorts_tools_and_hashes_ordered_sequence() -> None:
-    schema = list(reversed(_router_tool_schema()))
+def test_initial_envelope_preserves_tool_order_and_hashes_ordered_sequence() -> None:
+    schema = _router_tool_schema()
+    reversed_schema = list(reversed(schema))
     envelope = build_cache_stable_tool_envelope(schema)
+    reversed_envelope = build_cache_stable_tool_envelope(reversed_schema)
     assert envelope.tool_ids == ("alpha.tool", "beta.tool")
+    assert reversed_envelope.tool_ids == ("beta.tool", "alpha.tool")
     names = [entry["function"]["name"] for entry in envelope.tools_schema]
+    reversed_names = [
+        entry["function"]["name"] for entry in reversed_envelope.tools_schema
+    ]
     assert names == ["alpha.tool", "beta.tool"]
+    assert reversed_names == ["beta.tool", "alpha.tool"]
+    assert envelope.envelope_hash != reversed_envelope.envelope_hash
+
     from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash
 
     assert envelope.envelope_hash == compute_openai_tools_schema_hash(envelope.tools_schema)
