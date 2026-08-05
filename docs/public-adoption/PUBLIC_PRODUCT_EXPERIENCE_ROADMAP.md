@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-9 — READY_FOR_REVIEW |
-| Next phase after acceptance | PX-10 |
+| Current phase | PX-10 — READY_FOR_REVIEW |
+| Next phase after acceptance | PX-11 |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -361,7 +361,9 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ## PX-9 — Public-language cleanup
 
-**Status:** READY_FOR_REVIEW
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `c9521fb3edace541e76259147073835c37c37b2e`
 
 **User-visible outcome:** Public documents remove maintainer task IDs and internal vocabulary from normal reader paths.
 
@@ -411,19 +413,65 @@ PX-1 froze: canonical first-contact copy; product hierarchy; CTA hierarchy; audi
 
 ---
 
-## PX-10 — Product-status synchronization
+## PX-10 — Proof ownership, roadmap linking and status deduplication
 
-**Status:** BLOCKED_ON_PX_9_ACCEPTANCE
+**Status:** READY_FOR_REVIEW
 
-**User-visible outcome:** Product status descriptions are consistent across public reader documents.
+**User-visible outcome:** Readers can move from a public proof claim to the owning
+product roadmap without public documentation copying
+the roadmap’s changing task and review status.
 
-**Completion gate:** Status vocabulary aligned with proof dashboard and roadmap; drift resolved or explicitly owned.
+**Delivered:**
+
+- LKW and Token Optimization roadmaps frozen as the only owners
+  of detailed implementation progress;
+- `PROOFS.md` retained as a public evidence and claim dashboard,
+  not an implementation roadmap;
+- direct detailed-roadmap links added for LKW and Token Optimization;
+- roadmap-mirror rows removed from product proof sections;
+- accepted proof, limitations and verification routes retained;
+- claims model reduced to vocabulary, evidence,
+  ownership and promotion rules;
+- Token Optimization guide no longer maintains
+  a parallel current phase snapshot;
+- roadmap changes explicitly separated
+  from public-claim changes;
+- stable ownership-flow Mermaid added by updating
+  the existing `PROOFS.md` diagram;
+- no public claim promoted or downgraded from task status alone;
+- no command, evidence, runtime, test or visual asset changed.
+
+**Completion gate:**
+
+- LKW implementation plan is the only detailed LKW progress owner;
+- Token Optimization plan is the only detailed Token progress owner;
+- `PROOFS.md` links directly to both roadmaps;
+- proof links and roadmap links are visibly distinct;
+- `PROOFS.md` contains no active task, next task,
+  review-fix or subphase status;
+- LKW roadmap-mirror rows are replaced by stable
+  not-established-by-proof boundaries;
+- Token roadmap-mirror rows are replaced by stable
+  not-established-by-proof boundaries;
+- accepted public proof claims remain present;
+- universal and production-proven savings remain not claimable;
+- claims model contains no current LKW or Token subtask register;
+- claims model defines when a roadmap update does
+  and does not propagate to public documents;
+- Token Optimization guide contains no current phase snapshot table;
+- documentation architecture freezes the ownership model;
+- positioning freezes the first-contact summary boundary;
+- `PROOFS.md` retains exactly two Mermaid diagrams;
+- no new asset or diagram is created;
+- no product roadmap, implementation plan,
+  proof evidence or certification artifact is modified;
+- no code, test, script, command or dependency is changed.
 
 ---
 
 ## PX-11 — Calls to action and conversion paths
 
-**Status:** WAITING
+**Status:** BLOCKED_ON_PX_10_ACCEPTANCE
 
 **User-visible outcome:** Every major reader path has one primary CTA; LKW product CTA leads Token Optimization capability CTA.
 

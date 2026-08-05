@@ -17,11 +17,15 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | | |
 |---|---|
 | **Role** | Featured platform-capability proof |
-| **Implemented foundation** | Deterministic pipeline, approved-configuration routing, protected regions, receipts/fallback, cache-stable assembly, exact-send integrity, cache-aware execution |
-| **Bounded proof** | Named vLLM prefix-cache proof environment (documented version, model, workload) |
-| **Partial work** | Unified Context Lifecycle — CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review |
-| **Planned work** | Durable in-cache compaction (TOKEN-10E), universal proof harness (TOKEN-10F), hard gates (TOKEN-10G), public promotion (TOKEN-10H) |
-| **Claim boundary** | No universal or production-proven savings; performance promotion gated by TOKEN-10G and TOKEN-10H |
+| **Overall public classification** | PARTIAL |
+| **Implemented foundation** | Existing deterministic engine mechanisms |
+| **Accepted bounded proof** | Named vLLM prefix-cache proof |
+| **Public limitations** | No provider-independent, universal or production-proven savings claim |
+| **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
+| **Public proof dashboard** | [`../../../PROOFS.md`](../../../PROOFS.md) |
+
+Detailed phase, dependency and review status is maintained only
+in the Token Optimization implementation plan and is not repeated here.
 
 ### Engine lifecycle
 
@@ -88,35 +92,13 @@ input
 
 ## 2. Current maturity
 
-| Label | Meaning in this repository |
-| ----- | -------------------------- |
-| **Implemented** | Contracts, runner, registry, built-in catalog, layers, router, receipts, cache-stable helpers, cache-aware runtime (TOKEN-10D), vLLM proof runner |
-| **Live-verified** | Manual vLLM prefix-cache proof path (documented environment); gated Ollama router E2E |
-| **Partial** | Unified Context Lifecycle runtime — CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review; durable compaction not complete |
-| **Planned** | TOKEN-10E–10H (in-cache compaction, universal harness, proof corpus, public promotion) |
-| **Public-proof-gated** | Performance badges, savings numbers, and broad proof promotion require TOKEN-10G + TOKEN-10H; neutral README discovery allowed before TOKEN-10H |
+The guide documents an implemented deterministic engine foundation, a named
+bounded vLLM prefix-cache proof, and an overall **PARTIAL** public status.
+Provider-independent behavior, universal savings, and production-proven
+savings are not claimed.
 
-**Phase snapshot (authoritative detail in [plan](../plan/TOKEN_OPTIMIZATION.md)):**
-
-| Phase | Status |
-| ----- | ------ |
-| TOKEN-1 … TOKEN-9 | Closed |
-| TOKEN-10A | Accepted / Closed |
-| TOKEN-10B, TOKEN-10B-R1, TOKEN-10B-R2 | Accepted / Closed |
-| TOKEN-10C, TOKEN-10C-R4, TOKEN-10C-R4-R1 | Accepted / Closed |
-| TOKEN-10D-1, TOKEN-10D-2, TOKEN-10D-3 | Accepted / Closed |
-| TOKEN-10D | Accepted / Closed |
-| TOKEN-10E | Architecture Defined / Ready for Review (runtime not started; blocked until CTX-UCL-CLOSEOUT-1) |
-| TOKEN-10F | Planned |
-| TOKEN-10G | Planned |
-| TOKEN-10H | Planned |
-| CTX-UCL-5 | Accepted / Closed through R1/R2/R3 |
-| CTX-UCL-6 | Accepted / Closed through 6D |
-| CTX-UCL-CLOSEOUT-1 | Ready for final review / pending independent acceptance |
-| TOKEN-10E-1 | Blocked pending CTX-UCL-CLOSEOUT-1 acceptance |
-| TOKEN-DOCS-1 | Implemented / Ready for review (this documentation hub) |
-
-TOKEN-10 is **not** complete. Do not treat cache reuse, universal proof, or public promotion as finished.
+Detailed phase, dependency and review status is maintained only
+in the Token Optimization implementation plan.
 
 ---
 
@@ -594,22 +576,9 @@ Full guardrails: [TOKEN_OPTIMIZATION_CLAIMS.md](../../public-adoption/TOKEN_OPTI
 
 ## 16. Current roadmap
 
-```text
-foundation (TOKEN-1…9)
-→ deterministic engine (TOKEN-8)
-→ built-in catalog (TOKEN-8B)
-→ plugin proof (TOKEN-8D)
-→ LLM router (TOKEN-9)
-→ cache-stable prompt (TOKEN-10B)
-→ vLLM prefix cache (TOKEN-10C)
-→ cache-aware runtime (TOKEN-10D — accepted / closed)
-→ in-cache compaction architecture (TOKEN-10E — defined; runtime not started)
-→ universal proof harness (TOKEN-10F)
-→ proof corpus and hard gates (TOKEN-10G)
-→ public proof promotion (TOKEN-10H)
-```
-
-Detail and acceptance criteria: [plan/TOKEN_OPTIMIZATION.md](../plan/TOKEN_OPTIMIZATION.md).
+For the current implementation phase,
+accepted slices, dependencies and next work,
+see the [Token Optimization implementation plan](../plan/TOKEN_OPTIMIZATION.md).
 
 ---
 

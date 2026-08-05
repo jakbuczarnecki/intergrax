@@ -33,7 +33,8 @@ It does **not** replace:
 | Item | Status |
 |------|--------|
 | Contract status | ACTIVE |
-| Current phase | PX-9 — READY_FOR_REVIEW |
+| Current phase | PX-10 — READY_FOR_REVIEW |
+| Public-language cleanup | PX-9 — ACCEPTED / CLOSED |
 | Primary product path | Local Knowledge Workspace (LKW) |
 | Secondary capability path | Token Optimization |
 | Current primary CTA | Try LKW |
@@ -52,6 +53,18 @@ It does **not** replace:
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
+
+---
+
+## Public status summary boundary
+
+- README and first-contact documents may show overall public classification.
+- They may link to `PROOFS.md`.
+- They do not copy product-roadmap task status.
+- They do not copy phase or dependency tables.
+- Current implementation detail belongs to the owning roadmap.
+- Public proof detail belongs to `PROOFS.md`.
+- Summaries change only when their current wording becomes inaccurate.
 
 ---
 

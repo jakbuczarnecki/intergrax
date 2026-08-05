@@ -43,6 +43,99 @@ The reader must not need to understand internal tiers, Cursor workflow, issue au
 
 ---
 
+## Proof and roadmap ownership
+
+The public documentation ownership contract is:
+
+```text
+Product or capability roadmap
+→ detailed implementation progress
+
+Proof document and accepted evidence
+→ demonstrated behavior
+
+PUBLIC_PROOF_AND_CLAIMS_MODEL.md
+→ status vocabulary and promotion rules
+
+PROOFS.md
+→ reader-facing public claims
+
+README and overview documents
+→ short compatible summaries
+```
+
+`PROOFS.md` may link to roadmaps.
+`PROOFS.md` must not reproduce roadmap task tables.
+The claims model must not reproduce roadmap phase tables.
+Feature guides must not maintain parallel current phase snapshots.
+Overview documents must not become status dashboards.
+Accepted implementation does not automatically become accepted proof.
+A roadmap update does not automatically require a public claim update.
+A public claim update requires accepted evidence or a changed claim boundary.
+
+### Roadmap owners
+
+```text
+LKW:
+applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
+
+Token Optimization:
+docs/features/plan/TOKEN_OPTIMIZATION.md
+```
+
+Future products must register exactly one detailed roadmap owner before
+being added to `PROOFS.md`.
+
+### Proof row contract
+
+Every product or capability entry in `PROOFS.md` may contain:
+
+```text
+public classification
+accepted evidence
+limitation
+verification route
+detailed roadmap link
+```
+
+It may not contain:
+
+```text
+active task
+next task
+review-fix status
+dependency graph copied from the roadmap
+current subphase table
+maintainer review state
+```
+
+### Visual ownership
+
+The first `PROOFS.md` Mermaid diagram explains the stable directional
+ownership model:
+
+```text
+roadmap
+→ implementation
+→ accepted evidence
+→ public claim
+→ overview
+```
+
+It is conceptual and stable. It must not show individual implementation-task
+statuses. The second claim-to-proof lifecycle diagram remains unchanged.
+
+### PX-9 closeout
+
+```text
+PX-9 — ACCEPTED / CLOSED
+
+Acceptance evidence:
+c9521fb3edace541e76259147073835c37c37b2e
+```
+
+---
+
 ## 2. Public documentation layers
 
 Freeze five layers.

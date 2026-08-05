@@ -16,10 +16,11 @@ This document owns:
 - evidence requirements;
 - claim qualification;
 - proof promotion rules;
-- LKW and Token Optimization public classifications;
+- source ownership;
+- public update rules;
 - README capability-discovery rules;
 - README performance-promotion rules;
-- future proof-update workflow.
+- accepted-evidence propagation workflow.
 
 It does **not** replace:
 
@@ -27,6 +28,12 @@ It does **not** replace:
 - architecture canon;
 - test suites;
 - proof evidence artifacts;
+- current LKW implementation task status;
+- current Token Optimization phase status;
+- implementation dependencies;
+- active review-fix state;
+- next implementation task;
+- a mirror of any technical roadmap;
 - `LICENSE`;
 - `COLLABORATION.md`.
 
@@ -187,53 +194,47 @@ When sources disagree, apply **claim audit rules** (§11): use the lower support
 
 ## 6. LKW classification rules
 
-**Frozen classification:**
+| Item | Contract |
+|------|----------|
+| Public role | LKW is the Primary product proof |
+| Overall public classification | PARTIAL |
+| Product maturity | Backend Product Alpha / MVP |
+| Accepted proof owner | `LKW_PLATFORM_PROOF.md` and referenced evidence |
+| Detailed implementation owner | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
+| Public claim snapshot | `PROOFS.md` |
+| Non-duplication rule | Current tasks, slices, dependencies and next steps remain only in the implementation plan |
 
-```text
-LKW = Primary product proof
-```
+The implementation plan may advance without changing `PROOFS.md`.
 
-| Attribute | Public position |
-|-----------|-----------------|
-| Product status | Backend Product Alpha / MVP |
-| Platform proof | Bounded — Tier-3 application and platform behavior |
-| Hybrid Ask | Not complete — **PLANNED** |
-| Vendor integration catalog | Not complete — partial slices only |
-| Real-user validation | **NOT CLAIMABLE** |
-| Commercial validation | **NOT CLAIMABLE** |
-| Full live platform proof | **PLANNED** |
-
-LKW is the primary product-development and product-validation program. Current platform proof is **bounded**. It does not prove complete Hybrid Ask, every planned vendor integration, real-user validation, commercial validation, or finished SaaS.
+A `PROOFS.md` update is required only when accepted evidence
+or the allowed public claim changes.
 
 ---
 
 ## 7. Token Optimization classification rules
 
-**Frozen classification:**
+| Item | Contract |
+|------|----------|
+| Public role | Token Optimization is the Featured platform-capability proof |
+| Overall public classification | PARTIAL |
+| Accepted proof owner | Token Optimization proof documents and owning guide |
+| Detailed implementation owner | `docs/features/plan/TOKEN_OPTIMIZATION.md` |
+| Public claim snapshot | `PROOFS.md` |
+| Claim guardrails | `TOKEN_OPTIMIZATION_CLAIMS.md` |
+| Non-duplication rule | Current phases, subphases, dependencies and review states remain only in the implementation plan |
 
-```text
-Token Optimization = Featured platform-capability proof
-```
+Stable public boundaries:
 
-| Category | Current public position |
-|----------|-------------------------|
-| **Implemented mechanisms** | Deterministic pipeline, approved-configuration routing, protected regions, receipts/fallback, cache-stable assembly, exact-send integrity, cache-aware execution gate |
-| **Bounded proof** | vLLM prefix-cache proof in named environment |
-| **Partial** | Unified Context Lifecycle — CTX-UCL-5 accepted/closed; CTX-UCL-1 through CTX-UCL-6 accepted/closed through 6D; CTX-UCL-CLOSEOUT-1 ready for final review / pending independent acceptance; durable compaction integration **PLANNED**; universal savings **NOT CLAIMABLE**; commercial validation incomplete |
-| **Planned** | TOKEN-10E; TOKEN-10F; TOKEN-10G; TOKEN-10H |
-| **NOT CLAIMABLE** | Universal token reduction, production-proven savings, provider-independent cache behavior, completed in-cache compaction |
-
-**TOKEN-10E-1** → **BLOCKED** pending independent acceptance of **CTX-UCL-CLOSEOUT-1**.
-
-Token Optimization demonstrates a reusable platform mechanism. LKW-PF6 product proof remains scheduled after universal platform proof (TOKEN-10G).
+- A named provider proof does not establish provider-independent behavior.
+- Implementation does not establish universal savings.
+- Implementation does not establish production-proven savings.
+- Public promotion requires accepted evidence and explicit limitations.
 
 ---
 
 ## 8. README discovery versus performance promotion
 
-Resolves TOKEN-10G / TOKEN-10H conflict for future root README work.
-
-### Allowed before TOKEN-10H
+### Allowed before performance promotion
 
 A neutral root README capability mention and main-guide link are allowed when:
 
@@ -243,17 +244,23 @@ A neutral root README capability mention and main-guide link are allowed when:
 - bounded-proof language is preserved;
 - in-cache compaction is not presented as complete.
 
-### Still gated by TOKEN-10G and TOKEN-10H
+### Outcome-based promotion gates
 
-The following remain **blocked**:
+Performance promotion is gated by:
+
+- accepted cross-provider proof;
+- final claim review;
+- checked-in public evidence;
+- explicit limitation and promotion approval.
+
+The following remain prohibited:
 
 - performance or savings badges;
 - percentage-reduction headlines;
 - universal token or cost claims;
 - production-proven savings;
 - promotion of universal proof results;
-- claims that TOKEN-10G hard gates passed;
-- claims that TOKEN-10H public proof promotion completed.
+- provider-independent generalization from a named proof.
 
 Detail: [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md) § README discovery and promotion boundary.
 
@@ -261,18 +268,23 @@ Detail: [`TOKEN_OPTIMIZATION_CLAIMS.md`](TOKEN_OPTIMIZATION_CLAIMS.md) § README
 
 ## 9. Public update workflow
 
-Every future proof change must update, in order:
-
 ```text
-owning implementation plan or proof evidence
-→ canonical claims model (this document)
-→ PROOFS.md
-→ affected feature/product guide
-→ future root README when relevant
-→ focused claims regression tests
+Detailed implementation change
+→ update only the owning implementation roadmap
+
+Accepted evidence change
+→ update the owning proof
+→ update PUBLIC_PROOF_AND_CLAIMS_MODEL.md when the allowed claim changes
+→ update PROOFS.md
+→ update affected overview documents only when their summary becomes inaccurate
+
+Roadmap or owner-link change
+→ update the affected link
+→ do not copy the roadmap state
 ```
 
-Skipping a layer creates public drift.
+A routine implementation-task transition does not trigger
+a repository-wide public-document status update.
 
 ---
 
@@ -282,12 +294,12 @@ Skipping a layer creates public drift.
 |-------|-------|
 | Public proof dashboard | `PROOFS.md` |
 | Status vocabulary and promotion rules | this document |
-| LKW proof execution | `LKW_PLATFORM_PROOF.md` |
-| LKW product status | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
+| Detailed LKW implementation progress | `applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md` |
+| Detailed Token Optimization implementation progress | `docs/features/plan/TOKEN_OPTIMIZATION.md` |
+| Accepted LKW proof | `LKW_PLATFORM_PROOF.md` and referenced evidence |
+| Accepted Token Optimization proof | owning proof documents and guide |
 | Token Optimization guide | `docs/features/token_optimization/README.md` |
 | Token Optimization claim guardrails | `TOKEN_OPTIMIZATION_CLAIMS.md` |
-| UCL implementation status | `docs/plan/UNIFIED_CONTEXT_LIFECYCLE.md` |
-| TOKEN-10 implementation status | `docs/features/plan/TOKEN_OPTIMIZATION.md` |
 | Public reader navigation | `docs/PUBLIC_DOCUMENTATION_MAP.md` |
 | Public documentation architecture | `PUBLIC_DOCUMENTATION_ARCHITECTURE.md` |
 | Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
@@ -305,10 +317,16 @@ When sources disagree:
 5. Never infer commercial or real-user validation from technical proof.
 6. Never infer provider-independent behavior from one provider proof.
 7. Never infer production readiness from unit or integration tests.
-8. Record any unresolved contradiction in this document.
+8. Record only contradictions that affect an active public claim decision.
 
 Do not silently choose the more promotional interpretation.
 
-### Unresolved contradictions
+### Promotion-time conflict handling
 
-None recorded at task execution time. If plan and public docs diverge during parallel work, update this section before promoting any claim.
+1. Inspect the current owning implementation roadmap.
+2. Inspect accepted proof evidence.
+3. Never promote a claim from roadmap status alone.
+4. Use the lower supported public claim when sources disagree.
+5. Block public promotion until the owning sources are reconciled.
+6. Do not copy transient task conflicts into `PROOFS.md`.
+7. Record only contradictions that affect an active public claim decision.

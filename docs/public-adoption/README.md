@@ -48,7 +48,7 @@ Public-reader route: yes, through the root public documentation
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
-Status: ACTIVE — PX-9 READY_FOR_REVIEW
+Status: ACTIVE — PX-10 READY_FOR_REVIEW
 Public-reader route: no
 ```
 
@@ -62,14 +62,34 @@ Normal readers should start with the public documentation map:
 
 **Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
+## Ownership routes
+
+```text
+Public proof dashboard:
+../../PROOFS.md
+
+Public proof vocabulary and promotion rules:
+PUBLIC_PROOF_AND_CLAIMS_MODEL.md
+
+Detailed LKW implementation roadmap:
+../../applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md
+
+Detailed Token Optimization implementation roadmap:
+../features/plan/TOKEN_OPTIMIZATION.md
+```
+
+The roadmap links own detailed implementation progress.
+`PROOFS.md` does not reproduce their current tasks,
+dependencies or review states.
+
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
 
 ## Current program status
 
 ```text
-Previous phase: PX-8 ACCEPTED / CLOSED
-Current phase: PX-9 READY_FOR_REVIEW
-Next after acceptance: PX-10
+Previous phase: PX-9 ACCEPTED / CLOSED
+Current phase: PX-10 READY_FOR_REVIEW
+Next after acceptance: PX-11
 External sessions: NOT_STARTED
 ```
 

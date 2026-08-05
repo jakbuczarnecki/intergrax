@@ -13,6 +13,12 @@ Intergrax separates **implemented mechanisms**, **bounded verification**, **part
 > [!NOTE]
 > Intergrax is **source-available** and under **active R&D**. Technical proof does not imply finished SaaS, production readiness, real-user validation, or commercial validation.
 
+> [!NOTE]
+> This page reports public claims and accepted evidence.
+> It does not mirror implementation roadmaps.
+> For current tasks, dependencies and next implementation steps,
+> follow the detailed roadmap linked for each product or capability.
+
 ## Status legend
 
 | Label | Meaning |
@@ -28,25 +34,34 @@ Text labels are authoritative; symbols are visual support only.
 ## Proof landscape
 
 ```mermaid
-flowchart TB
-    I[Intergrax]
-    I --> LKW["LKW — Primary product proof"]
-    I --> TO["Token Optimization — Featured platform-capability proof"]
-    I --> SPF["Shared platform foundations — supporting evidence"]
-    LKW -.->|"complementary, not competing"| TO
-    SPF -.->|"supports both"| LKW
-    SPF -.->|"supports both"| TO
+flowchart LR
+    LR[LKW implementation roadmap] --> LI[LKW implementation]
+    LI --> LE[Accepted LKW evidence]
+
+    TR[Token Optimization roadmap] --> TI[Token implementation]
+    TI --> TE[Accepted Token evidence]
+
+    LE --> P[PROOFS.md public claims]
+    TE --> P
+
+    P --> O[Public overview documents]
 ```
 
-LKW and Token Optimization answer different reviewer questions. LKW demonstrates a real end-to-end application workflow; Token Optimization demonstrates a reusable platform mechanism.
+Roadmaps own changing implementation progress.
+Accepted evidence determines public claims.
+Overview documents summarize those claims
+without copying either roadmap.
 
 ## At a glance
 
-| Proof path | Classification | Current public status | What it demonstrates | Verify |
-|------------|----------------|----------------------|----------------------|--------|
-| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
-| **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](docs/features/token_optimization/README.md) |
-| **Shared platform foundations** | Supporting evidence | ✅ **IMPLEMENTED** (bounded) | Retrieval and grounding, observability, persisted execution evidence, application hosting contracts exercised by LKW | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) |
+| Proof path | Public classification | Current public status | What it demonstrates | Verify | Detailed roadmap |
+|------------|------------------------|----------------------|----------------------|--------|------------------|
+| **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) | [LKW implementation plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) |
+| **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](docs/features/token_optimization/README.md) | [Token Optimization plan](docs/features/plan/TOKEN_OPTIMIZATION.md) |
+| **Shared platform foundations** | Supporting evidence | ✅ **IMPLEMENTED** (bounded) | Retrieval and grounding, observability, persisted execution evidence, application hosting contracts exercised by LKW | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) | — |
+
+`Verify` answers **what has been demonstrated?**
+`Detailed roadmap` answers **what is being implemented and what comes next?**
 
 ---
 
@@ -59,15 +74,21 @@ LKW and Token Optimization answer different reviewer questions. LKW demonstrates
 | Core application and platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence | Bounded to documented certification profiles; not full live platform proof |
 | Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, indexing, grounded Ask over indexed content | Not live external-website certification |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
-| Current Slack DM path | 🟡 **PARTIAL** | Operate LKW through Slack DM for knowledge already in the selected workspace | Durable bindings, shared channels, and full conversational runtime not complete |
-| Slack connected source | 🟡 **PARTIAL** | Platform can read and synchronize Slack conversations; workspace attachment in progress | Workspace attachment and complete product validation remain incomplete |
-| Hybrid Ask | 🗓️ **PLANNED** | Indexed + live evidence in one grounded answer | Not implemented |
-| Google Workspace LKW proof | 🗓️ **PLANNED** | Governed Google Workspace knowledge in LKW | Depends on completion of the prerequisite Slack product proof |
-| Final live platform proof | 🗓️ **PLANNED** | Multi-source live demonstration in one workspace | Not completed |
-| Real-user validation | ⛔ **NOT CLAIMABLE** | — | No completed real-user validation program |
-| Commercial validation | ⛔ **NOT CLAIMABLE** | — | No completed commercial validation |
 
-Deeper detail: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [LKW implementation plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)
+### Not established by the accepted public proof
+
+- Complete Hybrid Ask product behavior is not established by the accepted public proof.
+- A complete Slack connected-knowledge product proof is not established.
+- A Google Workspace LKW product proof is not established.
+- The complete multi-source live platform proof is not established.
+- Real-user validation is not established.
+- Commercial validation is not established.
+
+Detailed implementation roadmap:
+[applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md)
+
+Accepted technical proof:
+[LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md)
 
 ---
 
@@ -85,13 +106,22 @@ Deeper detail: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) 
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
-| Unified Context Lifecycle | 🟡 **PARTIAL** | Ephemeral assembly and lifecycle foundations exist with bounded implementation evidence. | Final closeout and durable production integration remain incomplete. |
-| Durable in-cache compaction | 🗓️ **PLANNED** | The architecture is defined; durable runtime integration remains planned. | Durable runtime integration remains planned. |
-| Cross-provider proof and final claim gates | 🗓️ **PLANNED** | The required cross-provider corpus, proof execution and final promotion gates are incomplete. | The required cross-provider corpus, proof execution and final promotion gates are incomplete. |
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
 | Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |
 
-Deeper detail: [Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
+### Not established by the accepted public proof
+
+- An accepted public proof of complete durable in-cache compaction is not established.
+- Cross-provider behavior is not established by the named vLLM proof.
+- Provider-independent cache behavior is not established.
+- Universal token reduction is not established.
+- Production-proven savings are not established.
+
+Detailed implementation roadmap:
+[docs/features/plan/TOKEN_OPTIMIZATION.md](docs/features/plan/TOKEN_OPTIMIZATION.md)
+
+Verification and claim routes:
+[Token Optimization guide](docs/features/token_optimization/README.md) · [Claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
 
 ---
 
@@ -135,7 +165,9 @@ Real-user and commercial validation remain **incomplete**.
 | Document | Purpose |
 |----------|---------|
 | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) | Guided LKW reviewer proof path |
+| [LKW Implementation Plan](applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md) | Detailed LKW implementation roadmap |
 | [Token Optimization guide](docs/features/token_optimization/README.md) | Engine overview and proof catalog |
+| [Token Optimization plan](docs/features/plan/TOKEN_OPTIMIZATION.md) | Detailed Token Optimization implementation roadmap |
 | [Token Optimization claim guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) | Safe public wording boundaries |
 | [Public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) | Reader-intent navigation |
 | [Technical documentation map](docs/DOCUMENTATION_MAP.md) | Deep technical review entry |
