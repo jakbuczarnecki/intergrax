@@ -8,8 +8,6 @@ from intergrax.utils import attribute_access
 
 from typing import Any, Callable, Optional, Sequence
 
-from langchain_core.documents import Document
-
 from intergrax.integrations._shared.catalog_object_storage import CatalogObjectStorage
 from intergrax.integrations._shared.cloud_task_queue import CloudTaskQueue
 from intergrax.integrations._shared.health import http_ping_ok
@@ -35,6 +33,13 @@ from intergrax.integrations._shared.p8.clients import (
     hits_from_generic_results,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
+from intergrax.integrations.contracts.vector_store import (
+    MetadataFilter,
+    VectorStore,
+    VectorStoreHit,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
 from intergrax.integrations.contracts.document_parser import DocumentParser
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
@@ -42,8 +47,15 @@ from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.rag.vectorstore.providers.native_provider_boundary import (
+    effective_filter,
+    native_hit,
+    provider_metadata,
+    validate_query,
+    validate_records,
+    validate_scope,
+)
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
@@ -279,43 +291,91 @@ def create_lancedb_vector_store(
     config = VectorIntegrationConfig.from_env("INTERGRAX_LANCEDB", **config_overrides)
 
     def _open() -> VectorStore:
-        http_config = HttpIntegrationConfig.from_env("INTERGRAX_LANCEDB", **config_overrides)
-        uri = config.url or http_config.base_url or "lancedb://./build/lancedb"
-        table = config.collection or "intergrax"
-
         class _LanceClient:
             def __init__(self) -> None:
-                self._docs: list[Document] = []
+                self._tenant_id: str | None = None
+                self._docs: dict[str, tuple[str, dict[str, object], list[float]]] = {}
 
-            def add_documents(self, documents: Sequence[Document]) -> list[str]:
-                ids = []
-                for doc in documents:
-                    doc_id = str(doc.metadata.get("id") or len(self._docs))
-                    self._docs.append(doc)
-                    ids.append(doc_id)
+            def add_records(
+                self,
+                records: Sequence[VectorStoreRecord],
+                *,
+                scope: VectorStoreScope,
+            ) -> list[str]:
+                if self._tenant_id is None:
+                    self._tenant_id = scope.tenant_id
+                validated = validate_records(
+                    records,
+                    scope=scope,
+                    tenant_id=self._tenant_id,
+                )
+                if not validated:
+                    return []
+                ids: list[str] = []
+                for record in validated:
+                    metadata = provider_metadata(record.document, scope=scope)
+                    self._docs[record.vector_id] = (
+                        record.document.content,
+                        dict(metadata),
+                        record.embedding.tolist(),
+                    )
+                    ids.append(record.vector_id)
                 return ids
 
             def query(
                 self,
-                query_text: str,
+                query_embedding: Sequence[float],
                 *,
-                k: int = 4,
-                filter: Optional[MetadataFilter] = None,
+                scope: VectorStoreScope,
+                top_k: int = 4,
+                metadata_filter: Optional[MetadataFilter] = None,
+                include_embeddings: bool = False,
             ) -> list[VectorStoreHit]:
-                del filter
+                _vector, limit = validate_query(query_embedding, top_k=top_k)
+                validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+                conditions = effective_filter(scope, metadata_filter).conditions
                 hits: list[VectorStoreHit] = []
-                for idx, doc in enumerate(self._docs[:k]):
+                for idx, (doc_id, (content, metadata, embedding)) in enumerate(
+                    self._docs.items()
+                ):
+                    if not all(
+                        metadata.get(key) == value
+                        for key, value in conditions.items()
+                    ):
+                        continue
+                    if len(hits) >= limit:
+                        break
                     hits.append(
-                        VectorStoreHit(
-                            document=doc,
-                            score=1.0 / float(idx + 1),
-                            metadata=dict(doc.metadata),
+                        native_hit(
+                            vector_id=doc_id,
+                            content=content,
+                            metadata=metadata,
+                            similarity_score=1.0 / float(len(hits) + 1),
+                            rank=len(hits),
+                            scope=scope,
+                            embedding=embedding if include_embeddings else None,
                         )
                     )
                 return hits
 
-            def delete(self, ids: Sequence[str]) -> None:
-                self._docs = [d for d in self._docs if str(d.metadata.get("id")) not in ids]
+            def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
+                validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+                conditions = effective_filter(scope, None).conditions
+                for doc_id in ids:
+                    row = self._docs.get(doc_id)
+                    if row is not None and all(
+                        row[1].get(key) == value
+                        for key, value in conditions.items()
+                    ):
+                        self._docs.pop(doc_id, None)
+
+            def count(self, *, scope: VectorStoreScope) -> int:
+                validate_scope(scope, tenant_id=self._tenant_id or scope.tenant_id)
+                conditions = effective_filter(scope, None).conditions
+                return sum(
+                    all(metadata.get(key) == value for key, value in conditions.items())
+                    for _, (_, metadata, _) in self._docs.items()
+                )
 
             def health(self) -> bool:
                 return True

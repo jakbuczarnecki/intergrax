@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current task:** LCI-3C
-**Next task after acceptance:** LCI-3D
+**Current task:** LCI-3D
+**Next task after acceptance:** LCI-4A
 
 **Inventory satellite:** [../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md](../architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
 
@@ -254,7 +254,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Full parser → normalization → chunking → contextual enrichment → ingest path on native documents, with legacy conversion only at downstream consumer boundaries. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/ORCHESTRATION.md |
 | **Dependencies** | LCI-2E |
@@ -304,7 +304,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Public vector store contract and tenant-safe record semantics stop using LangChain Document; tenant isolation proofs included. |
 | **Owning domain plan** | docs/plan/RAG.md |
 | **Dependencies** | LCI-3B |
@@ -313,7 +313,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Acceptance criteria** | CRUD/search/isolation contract tests pass on native records |
 | **User-visible outcome** | Vector store contract native with tenant proofs |
 
-**Decision:** Public vector-store manager contracts use native records, explicit scope and native hits. Tenant and namespace are authoritative routing fields, never user metadata. Legacy provider conversion is private and temporary until LCI-3D. Delete and count fail closed unless tenant isolation is proven.
+**Decision:** Public vector-store manager contracts use native records, explicit scope and native hits. Tenant and namespace are authoritative routing fields, never user metadata. Delete and count fail closed unless tenant isolation is proven.
 
 ---
 
@@ -322,7 +322,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Providers and integration bridges map native records to SDK/vendor structures; tenant isolation proofs at provider boundary. |
 | **Owning domain plan** | docs/plan/RAG.md + docs/plan/INTEGRATIONS.md |
 | **Dependencies** | LCI-3C |
@@ -330,6 +330,8 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Explicit out of scope** | Application tenancy |
 | **Acceptance criteria** | Provider adapter tests and isolation proofs pass |
 | **User-visible outcome** | Integration vector paths native at boundary |
+
+**Decision:** VectorStore provider port is native. Providers map `VectorStoreRecord` directly to SDK payloads and return native `VectorStoreHit`. Tenant, namespace and workspace routing are system-owned at every provider boundary. LangChain document compatibility is removed from vector-store paths.
 
 ---
 
@@ -341,7 +343,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Status** | PLANNED |
 | **Purpose** | Native retrieval hit/result contract across retrievers and RAG tools. |
 | **Owning domain plan** | docs/plan/RAG.md |
-| **Dependencies** | LCI-3C |
+| **Dependencies** | LCI-3D |
 | **Exact scope** | retrievers/**, tools/providers/rag |
 | **Explicit out of scope** | Reranking, graph |
 | **Acceptance criteria** | Retrieval integration tests green on native result types |

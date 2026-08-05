@@ -23,6 +23,24 @@
 | **Provider internals changed** | no |
 | **Provider optionalization** | deferred to LCI-5A / LCI-5C |
 
+### LCI-3D — Native vector-store provider adapters
+
+| Field | Value |
+|-------|-------|
+| **Status** | READY_FOR_REVIEW |
+| **Provider boundary** | `VectorStoreRecord` → provider-native SDK payload → `VectorStoreHit` |
+| **Isolation** | Tenant, namespace and workspace routing are system-owned at every provider boundary |
+| **Scope** | Vector-store provider implementations and shared integration bridges only |
+| **Out of scope** | Retrieval, reranking, Graph RAG, application tenancy and SDK upgrades |
+
+Provider runtime matrix:
+
+| Provider | `add_records` | `add_documents` | scoped signatures | forwarding | delete/count |
+|----------|---------------|------------------|-------------------|------------|-------------|
+| Vespa | native | absent | keyword-only | verified | B query/count; C unknown-ID delete |
+| LanceDB | native | absent | keyword-only | verified | B metadata-scoped fallback |
+| Typesense | native | absent | keyword-only | verified | C unsupported, fail closed |
+
 ---
 
 ## Cursor read scope (token budget)

@@ -3,42 +3,6 @@
   "policy": "LCI-0B",
   "entries": [
     {
-      "inventory_id": "LCI-INV-0002",
-      "path": "intergrax/integrations/_shared/p3/vector_adapters.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0003",
-      "path": "intergrax/integrations/_shared/p7/factories.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0004",
-      "path": "intergrax/integrations/_shared/p8/factories.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0005",
-      "path": "intergrax/integrations/_shared/vector_store_bridge.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0006",
       "path": "intergrax/integrations/contracts/rerank_provider.py",
       "kind": "from",
@@ -248,24 +212,6 @@
     {
       "inventory_id": "LCI-INV-0096",
       "path": "intergrax/rag/rerankers/providers/embedding_cosine_reranker.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0099",
-      "path": "intergrax/rag/vectorstore/providers/base_vector_store.py",
-      "kind": "from",
-      "module": "langchain_core.documents",
-      "names": [
-        "Document"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0100",
-      "path": "intergrax/rag/vectorstore/soak/prod_slo.py",
       "kind": "from",
       "module": "langchain_core.documents",
       "names": [

@@ -670,3 +670,23 @@ query vector + explicit scope
 ```
 
 Tenant and namespace are authoritative routing fields. User metadata and filters cannot override them; delete and count fail closed unless tenant isolation is proven.
+
+## LCI-3D — Native vector-store provider transport
+
+The vector-store boundary is native and does not construct LangChain Document values.
+
+```text
+VectorStoreRecord
+→ provider-native payload
+→ SDK upsert
+```
+
+```text
+SDK search result
+→ provider-native KnowledgeDocument reconstruction
+→ VectorStoreHit
+```
+
+Identity, scope and provenance are system-owned transport metadata; user metadata cannot overwrite routing keys.
+
+LCI-3D is `READY_FOR_REVIEW`. Retrieval result migration remains LCI-4A (`PLANNED / NEXT AFTER ACCEPTANCE`); no retrieval public contract is changed by this provider closeout.

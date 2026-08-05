@@ -28,32 +28,28 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 56 |
+| direct production/runtime imports | 41 |
 | direct test imports | 51 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
 | packaging declaration rows | 10 |
 | generated lock rows | 1 |
 | core contract leaks | 3 |
-| core implementation dependencies | 17 |
-| provider-bound dependencies | 24 |
-| optional compatibility paths | 4 |
+| core implementation dependencies | 15 |
+| provider-bound dependencies | 15 |
+| optional compatibility paths | 0 |
 | legacy optional paths | 8 |
 | tooling dependencies | 1 |
 | test-only | 51 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 119 |
+| total detailed inventory rows | 104 |
 
 ## C. Detailed inventory table
 
 | Inventory ID | Package/module | Path | Line | Symbol or usage | Layer/domain | Dependency exposure | Classification | Current requirement status | Target state | Migration task | Evidence/notes |
 |--------------|----------------|------|-----:|-----------------|--------------|---------------------|----------------|----------------------------|--------------|----------------|----------------|
 | LCI-INV-0001 | `langchain_core.documents` | `applications/local_workspace_application/tests/workspaces/test_workspace_lifecycle.py` | 3 | `Document` | APPLICATION / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
-| LCI-INV-0002 | `langchain_core.documents` | `intergrax/integrations/_shared/p3/vector_adapters.py` | 10 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
-| LCI-INV-0003 | `langchain_core.documents` | `intergrax/integrations/_shared/p7/factories.py` | 11 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
-| LCI-INV-0004 | `langchain_core.documents` | `intergrax/integrations/_shared/p8/factories.py` | 11 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
-| LCI-INV-0005 | `langchain_core.documents` | `intergrax/integrations/_shared/vector_store_bridge.py` | 10 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_COMPATIBILITY | required (default install) | Optional integration bridge; no core import without extra | LCI-3D | verified import |
 | LCI-INV-0006 | `langchain_core.documents` | `intergrax/integrations/contracts/rerank_provider.py` | 10 | `Document` | INTEGRATIONS / production | runtime | CORE_CONTRACT_LEAK | required (default install) | Native Intergrax knowledge document type in public contracts | LCI-4B | verified import |
 | LCI-INV-0007 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/openpyxl/opens.py` | 126 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0008 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/pymupdf/opens.py` | 13 | `PyMuPDFLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
@@ -62,15 +58,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0011 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/unstructured/opens.py` | 10 | `UnstructuredHTMLLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0012 | `langchain_core.documents` | `intergrax/integrations/providers/rerank_provider/cohere_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-4B | verified import |
 | LCI-INV-0013 | `langchain_core.documents` | `intergrax/integrations/providers/rerank_provider/jina_rerank/adapter.py` | 8 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-4B | verified import |
-| LCI-INV-0014 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/chroma/rag_store.py` | 14 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0015 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/inmemory/rag_store.py` | 11 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0016 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/lancedb/opens.py` | 10 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0017 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/milvus/rag_store.py` | 9 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0018 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/pgvector/rag_store.py` | 12 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0019 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/pinecone/rag_store.py` | 11 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0020 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/qdrant/rag_store.py` | 12 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0021 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/vespa/adapter.py` | 10 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
-| LCI-INV-0022 | `langchain_core.documents` | `intergrax/integrations/providers/vector_store/weaviate/rag_store.py` | 11 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3D | verified import |
 | LCI-INV-0023 | `langchain_core.documents` | `intergrax/legacy/rag_answers/builders/__init__.py` | 9 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
 | LCI-INV-0024 | `langchain_core.documents` | `intergrax/legacy/rag_answers/builders/context_builder.py` | 8 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
 | LCI-INV-0025 | `langchain_core.documents` | `intergrax/legacy/rag_answers/contracts/answer_result.py` | 10 | `Document` | RAG / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-4D | verified import |
@@ -102,8 +89,6 @@ Use, modification, or distribution without written permission is prohibited.
 | LCI-INV-0094 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_api_reranker_base.py` | 10 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0095 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/_cross_encoder_base.py` | 9 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
 | LCI-INV-0096 | `langchain_core.documents` | `intergrax/rag/rerankers/providers/embedding_cosine_reranker.py` | 11 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4B | verified import |
-| LCI-INV-0099 | `langchain_core.documents` | `intergrax/rag/vectorstore/providers/base_vector_store.py` | 13 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-3C | verified import |
-| LCI-INV-0100 | `langchain_core.documents` | `intergrax/rag/vectorstore/soak/prod_slo.py` | 14 | `Document` | RAG / production | runtime | CORE_IMPLEMENTATION_DEPENDENCY | required (default install) | Native implementation using Intergrax document type | LCI-4D | verified import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |
@@ -243,4 +228,4 @@ Ollama native parity (`LCI-6C`), embedding numeric parity, vector store live rou
 
 ## LCI-3C boundary note
 
-`intergrax/rag/vectorstore/contracts/vector_store.py` remains a legacy provider compatibility port owned by LCI-3D. The native core surface is implemented in `contracts/native_vectorstore.py` and `VectorstoreManager`; provider implementations and SDK-facing rows remain grandfathered until LCI-3D.
+The vector-store provider port is native under LCI-3D; providers map `VectorStoreRecord` directly to SDK payloads and return `VectorStoreHit`.
