@@ -92,9 +92,9 @@ VENDOR-KNOWLEDGE-ADAPTER-FAMILY-AUDIT-1
   ACCEPTED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
   ACCEPTED / CLOSED
-READY_FOR_REVIEW:
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1
-  READY_FOR_REVIEW
+  ACCEPTED / CLOSED
+READY_FOR_REVIEW:
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1
 MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT
@@ -127,8 +127,10 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
 [live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
-It is **READY_FOR_REVIEW**; provider/source-kind live tasks remain **PLANNED**
-and the Google readiness gate remains independently **PLANNED**.
+It is **READY_FOR_REVIEW**; Microsoft Graph Drive is **ACCEPTED / CLOSED**,
+Microsoft Graph Mail is **READY_FOR_REVIEW**, Teams Channel is
+**PLANNED / NEXT AFTER MAIL ACCEPTANCE**, and all other provider/source-kind
+live tasks plus the Google readiness gate remain **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
 provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
@@ -1836,8 +1838,15 @@ ARCH-1 frozen shared delta: implemented as the FOUNDATION-1 review boundary
   shared registration bootstrap
   shared contract test suite
 
-provider-specific production handlers: not implemented
-provider-specific production registrations: not implemented
+provider-specific production handlers:
+  implemented for Microsoft Graph Drive list and Mail list only
+
+provider-specific production registrations:
+  implemented for Microsoft Graph Drive list and Mail list only
+
+all other provider/source-kind live handlers and registrations:
+  not implemented
+
 cross-provider production proof: not implemented
 ```
 
@@ -1893,10 +1902,11 @@ uses the same executor, registry, normalized evidence and receipt boundary.
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`
 
-**Status:** `PLANNED / NEXT AFTER ARCHITECTURE ACCEPTANCE`
+**Status:** `ACCEPTED / CLOSED`
 
 **Dependency:** `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` remains
-`READY_FOR_REVIEW`; this task is not activated before external review.
+`READY_FOR_REVIEW`; this foundation task is complete and its boundary is used
+by the accepted Drive and review-ready Mail implementations.
 
 This task implements only the provider-neutral runtime delta frozen by
 `ARCH-1`:

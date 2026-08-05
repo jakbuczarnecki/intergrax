@@ -104,10 +104,10 @@ shared registration bootstrap
 shared contract test suite
 ```
 
-These are provider-neutral runtime changes. They must be implemented by
-`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` before any provider-specific
-live handler is activated; the first Microsoft Graph task must not implement
-them privately.
+These provider-neutral runtime changes are implemented by
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` and must be reused by every
+provider-specific live handler; Microsoft Graph tasks must not implement them
+privately.
 
 ## 3. Ownership boundaries
 
@@ -815,11 +815,14 @@ source-kind rows.
 
 **Status:** `ACCEPTED / CLOSED`
 
-**Technical outcome:** implement the shared runtime delta frozen by `ARCH-1`
-before any production provider-specific live handler is activated.
+**Technical outcome:** the shared runtime delta frozen by `ARCH-1` is
+implemented and accepted before provider-specific production handlers are
+activated.
 
 **User outcome:** every provider enters live access through the same validated
 and tested boundary instead of defining private rules in its first handler.
+Current provider-specific production handlers and registrations are limited to
+Microsoft Graph Drive list and Mail list.
 
 **Provider-neutral scope:**
 
@@ -838,6 +841,19 @@ provider-neutral execution context, outcome, item/result and handler contracts
 canonical runtime ownership independent of the LKW application tier
 shared contract tests
 bootstrap integration needed by all provider families
+```
+
+**Current provider implementation summary:**
+
+```text
+provider-specific production handlers:
+  implemented for Microsoft Graph Drive list and Mail list only
+
+provider-specific production registrations:
+  implemented for Microsoft Graph Drive list and Mail list only
+
+all other provider/source-kind live handlers and registrations:
+  not implemented
 ```
 
 **Explicitly out of scope:**
