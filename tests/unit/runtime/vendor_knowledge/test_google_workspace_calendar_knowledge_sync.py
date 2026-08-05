@@ -27,6 +27,10 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.integ
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
     GoogleWorkspaceCollaborationSuiteIntegration,
 )
+from intergrax.integrations.providers.collaboration_suite.google_workspace.transport import (
+    GoogleWorkspaceApiError,
+    GoogleWorkspaceErrorKind,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
     _GOOGLE_CALENDAR_EVENT_FIELDS,
     _GOOGLE_CALENDAR_EVENTS_FIELDS,
@@ -219,7 +223,8 @@ class _QueuedResponse:
     kind: str
     relative_path: str
     params: dict[str, object]
-    payload: dict[str, object]
+    payload: dict[str, object] = field(default_factory=dict)
+    error: GoogleWorkspaceApiError | None = None
 
 
 @dataclass
@@ -254,6 +259,8 @@ class _DeterministicCalendarTransport(GoogleWorkspaceBinaryTransport):
         assert actual_headers == {}
         kind = "collection" if relative_path.endswith("/events") else "event"
         assert kind == expected.kind
+        if expected.error is not None:
+            raise expected.error
         return copy.deepcopy(expected.payload)
 
     def get_binary(
@@ -310,6 +317,38 @@ def _event_response(
             ),
             params={"fields": _GOOGLE_CALENDAR_EVENT_FIELDS},
             payload=payload,
+        )
+    )
+
+
+def _collection_error_response(
+    transport: _DeterministicCalendarTransport,
+    *,
+    sync_token: str,
+    page_token: str | None = None,
+    status_code: int = 410,
+) -> None:
+    params: dict[str, object] = {
+        "maxResults": _PAGE_SIZE,
+        "showDeleted": True,
+        "singleEvents": False,
+        "fields": _GOOGLE_CALENDAR_EVENTS_FIELDS,
+        "syncToken": sync_token,
+    }
+    if page_token is not None:
+        params["pageToken"] = page_token
+    transport.responses.append(
+        _QueuedResponse(
+            kind="collection",
+            relative_path=f"/calendars/{quote(_CALENDAR_ID, safe='')}/events",
+            params=params,
+            error=GoogleWorkspaceApiError(
+                kind=GoogleWorkspaceErrorKind.INVALID_REQUEST,
+                status_code=status_code,
+                retry_after_seconds=None,
+                safe_reason="private provider response",
+                attempts=1,
+            ),
         )
     )
 
@@ -913,3 +952,168 @@ async def test_calendar_durable_multipage_restart_update_delete_and_content_fenc
     assert not runtime_c2.transport.responses
     assert not runtime_d.transport.responses
     assert not runtime_fence.transport.responses
+
+
+async def test_expired_calendar_sync_token_preserves_state_and_reconciles() -> None:
+    document_store = InMemoryDocumentStore()
+    sink = IdempotentRecordingSink()
+    binding = _binding()
+    present = _event(
+        "event-present",
+        summary="Present",
+        sequence=1,
+        etag='"present-v1"',
+    )
+    missing = _event(
+        "event-missing",
+        summary="Missing",
+        sequence=1,
+        etag='"missing-v1"',
+    )
+
+    initial = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-expired-initial",
+    )
+    _collection_response(
+        initial.transport,
+        _page([present, missing], next_sync_token="expired-sync"),
+    )
+    _event_response(initial.transport, "event-present", present)
+    _event_response(initial.transport, "event-missing", missing)
+    await initial.coordinator.sync_once(binding_id=_BINDING_ID)
+
+    checkpoint_before = _checkpoint(document_store)
+    assert checkpoint_before is not None
+    _assert_cursor(
+        checkpoint_before,
+        phase="changes",
+        page_token=None,
+        sync_token="expired-sync",
+    )
+    states_before = {
+        remote_id: _state(document_store, remote_id).model_dump(mode="json")
+        for remote_id in ("event-present", "event-missing")
+    }
+    sink_calls_before = len(sink.calls)
+    deliveries_before = list(sink.durable_delivery_ids)
+
+    failed = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-expired-failed",
+    )
+    _collection_error_response(failed.transport, sync_token="expired-sync")
+    with pytest.raises(VendorKnowledgeError) as exc_info:
+        await failed.coordinator.sync_once(binding_id=_BINDING_ID)
+
+    error = exc_info.value
+    assert error.code is VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED
+    assert error.retryable is False
+    assert error.__cause__ is None
+    assert "expired-sync" not in repr(error)
+    assert "private provider response" not in repr(error)
+    assert _CALENDAR_ID not in repr(error)
+    assert _CONNECTION_REF not in repr(error)
+    assert len(sink.calls) == sink_calls_before
+    assert sink.durable_delivery_ids == deliveries_before
+    assert {
+        remote_id: _state(document_store, remote_id).model_dump(mode="json")
+        for remote_id in ("event-present", "event-missing")
+    } == states_before
+    checkpoint_after_failure = _checkpoint(document_store)
+    assert checkpoint_after_failure == checkpoint_before
+
+    repeated = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-expired-repeated",
+    )
+    _collection_error_response(repeated.transport, sync_token="expired-sync")
+    with pytest.raises(VendorKnowledgeError) as repeated_error:
+        await repeated.coordinator.sync_once(binding_id=_BINDING_ID)
+    assert repeated_error.value.code is VendorKnowledgeErrorCode.RECONCILIATION_REQUIRED
+    assert repeated.transport.calls[0]["params"]["syncToken"] == "expired-sync"
+    assert _checkpoint(document_store) == checkpoint_before
+
+    reconciliation_a = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-reconcile-a",
+    )
+    _collection_response(
+        reconciliation_a.transport,
+        _page([present], next_page_token="reconcile-page-2"),
+    )
+    _event_response(reconciliation_a.transport, "event-present", present)
+    first_reconciliation = await reconciliation_a.coordinator.reconcile_once(
+        binding_id=_BINDING_ID,
+        restart=True,
+        operation_id="calendar-expired-reconciliation-1",
+    )
+    assert first_reconciliation.mode is KnowledgeSyncMode.RECONCILIATION
+    assert first_reconciliation.has_more is True
+    assert reconciliation_a.transport.calls[0]["params"].get("syncToken") is None
+    assert reconciliation_a.transport.calls[0]["params"].get("pageToken") is None
+    assert _checkpoint(document_store) == checkpoint_before
+    assert len(sink.calls) == sink_calls_before + 1
+
+    with pytest.raises(VendorKnowledgeError) as blocked:
+        await reconciliation_a.coordinator.sync_once(binding_id=_BINDING_ID)
+    assert blocked.value.code is VendorKnowledgeErrorCode.INVALID_CURSOR
+    assert blocked.value.retryable is False
+
+    reconciliation_b = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-reconcile-b",
+    )
+    _collection_response(
+        reconciliation_b.transport,
+        _page([], next_sync_token="reconciled-sync"),
+        page_token="reconcile-page-2",
+    )
+    final_reconciliation = await reconciliation_b.coordinator.reconcile_once(
+        binding_id=_BINDING_ID,
+        restart=False,
+        operation_id="calendar-expired-reconciliation-1",
+        trigger_delivery_id=first_reconciliation.delivery_id,
+    )
+    assert final_reconciliation.mode is KnowledgeSyncMode.RECONCILIATION
+    assert final_reconciliation.checkpoint_advanced is True
+    assert reconciliation_b.transport.calls[0]["params"]["pageToken"] == "reconcile-page-2"
+    assert reconciliation_b.transport.calls[0]["params"].get("syncToken") is None
+    checkpoint_after_reconciliation = _checkpoint(document_store)
+    assert checkpoint_after_reconciliation is not None
+    _assert_cursor(
+        checkpoint_after_reconciliation,
+        phase="changes",
+        page_token=None,
+        sync_token="reconciled-sync",
+    )
+    assert _state(document_store, "event-present").status is KnowledgeRemoteItemStatus.ACTIVE
+    assert _state(document_store, "event-missing").status is KnowledgeRemoteItemStatus.DELETED
+    assert len(sink.durable_delivery_ids) == len(set(sink.durable_delivery_ids))
+    assert len(sink.calls) == sink_calls_before + 2
+
+    subsequent = _build_runtime(
+        document_store=document_store,
+        sink=sink,
+        binding=binding,
+        owner_id="owner-expired-subsequent",
+    )
+    _collection_response(
+        subsequent.transport,
+        _page([], next_sync_token="reconciled-sync-2"),
+        sync_token="reconciled-sync",
+    )
+    result = await subsequent.coordinator.sync_once(binding_id=_BINDING_ID)
+    assert result.status is KnowledgeSyncRunStatus.COMPLETED
+    assert subsequent.transport.calls[0]["params"]["syncToken"] == "reconciled-sync"
+    assert _checkpoint(document_store) != checkpoint_before

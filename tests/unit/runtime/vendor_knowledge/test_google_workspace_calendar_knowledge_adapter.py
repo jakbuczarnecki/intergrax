@@ -575,7 +575,11 @@ async def test_expired_incremental_sync_token_requires_reconciliation(
     )
     assert error.__cause__ is None
     assert fake.page_calls[0]["sync_token"].value == "expired-sync"
-    assert fake.page_calls[0]["page_token"] == page_token
+    assert (
+        fake.page_calls[0]["page_token"].value
+        if page_token is not None
+        else fake.page_calls[0]["page_token"]
+    ) == page_token
     assert "expired-sync" not in repr(error)
     assert "private provider response" not in repr(error)
     assert "page-1" not in repr(error)
