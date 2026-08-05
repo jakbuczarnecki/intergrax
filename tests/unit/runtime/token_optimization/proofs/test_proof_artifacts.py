@@ -22,6 +22,8 @@ from scripts.token_optimization.run_universal_proof import (
     main,
 )
 
+_REPO_ROOT = Path(__file__).resolve().parents[5]
+
 
 def _fixed_clock() -> datetime:
     return datetime(2026, 8, 5, 7, 0, tzinfo=UTC)
@@ -102,6 +104,32 @@ def test_artifacts_are_canonical_redaction_safe_and_manifested(tmp_path: Path) -
         assert file_ref["sha256"]
     assert (run_dir / "cases" / "safe-case.json").is_file()
     assert (run_dir / "run.json").read_bytes().endswith(b"\n")
+
+
+def test_checked_in_sample_uses_repository_root_artifact_directory(monkeypatch) -> None:
+    monkeypatch.setenv("VLLM_API_KEY", "test-only")
+    config = load_universal_token_optimization_proof_config(
+        _REPO_ROOT / "configs" / "token_optimization" / "proof_vllm.toml"
+    )
+
+    assert config.output.directory == (
+        _REPO_ROOT / ".artifacts" / "token_optimization" / "proof"
+    )
+
+
+def test_vllm_compose_is_loopback_bound_without_privileged_access() -> None:
+    compose = (
+        _REPO_ROOT / "infra" / "docker" / "vllm" / "docker-compose.yml"
+    ).read_text(encoding="utf-8")
+    readme = (_REPO_ROOT / "infra" / "docker" / "vllm" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert '127.0.0.1:8100:8000' in compose
+    assert "8100:8000" in compose
+    assert "127.0.0.1:8100:8000" in readme
+    assert "privileged:" not in compose
+    assert "docker.sock" not in compose
 
 
 def test_duplicate_run_directory_fails_closed(tmp_path: Path) -> None:

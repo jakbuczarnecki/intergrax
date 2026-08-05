@@ -28,12 +28,13 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationRequest,
     TokenOptimizationSourceType,
 )
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RUN_MODES = frozenset({"offline_smoke", "live_adapter"})
 _ADAPTER_TYPES = frozenset({"openai_compatible"})
-_PROVIDERS = frozenset({"vllm"})
 _PIPELINE_MODES = frozenset({"default", "replace"})
 _FAILURE_POLICIES = frozenset({"continue", "fail_fast"})
 
@@ -101,6 +102,25 @@ def _relative_path(value: object, field_name: str, *, base_dir: Path) -> Path:
     return (base_dir / path).resolve()
 
 
+def _repository_root(source_path: Path) -> Path:
+    """Resolve repository-relative output paths from the config source."""
+    for candidate in (source_path.parent, *source_path.parents):
+        if (candidate / "pyproject.toml").is_file() and (candidate / ".git").exists():
+            return candidate
+    return source_path.parent
+
+
+def _canonical_provider(value: object) -> str:
+    provider = _strict_string(value, "provider")
+    try:
+        canonical = LLMProvider(provider)
+    except ValueError as exc:
+        raise _fail("UNSUPPORTED_ADAPTER") from exc
+    if canonical.value not in LLMAdapterRegistry.registered_providers():
+        raise _fail("UNSUPPORTED_ADAPTER")
+    return canonical.value
+
+
 def _parse_adapter(table: Mapping[str, Any]) -> ProofAdapterConfig:
     _strict_keys(
         table,
@@ -119,9 +139,9 @@ def _parse_adapter(table: Mapping[str, Any]) -> ProofAdapterConfig:
         ),
         "adapter",
     )
-    provider = _strict_string(_required(table, "provider"), "provider")
+    provider = _canonical_provider(_required(table, "provider"))
     adapter_type = _strict_string(_required(table, "type"), "adapter_type")
-    if provider not in _PROVIDERS or adapter_type not in _ADAPTER_TYPES:
+    if adapter_type not in _ADAPTER_TYPES:
         raise _fail("UNSUPPORTED_ADAPTER")
     api_key_env = table.get("api_key_env")
     if api_key_env is not None:
@@ -339,6 +359,7 @@ def load_universal_token_optimization_proof_config(
         raise _fail("MISSING_API_KEY_ENV")
     router = _parse_router(_table(_required(data, "router"), "router"))
     pipeline = _parse_pipeline(_table(_required(data, "pipeline"), "pipeline"))
+    repository_root = _repository_root(source_path)
 
     output_table = _table(_required(data, "output"), "output")
     _strict_keys(output_table, frozenset({"directory", "fail_if_exists"}), "output")
@@ -346,7 +367,7 @@ def load_universal_token_optimization_proof_config(
         directory=_relative_path(
             _required(output_table, "directory"),
             "output_directory",
-            base_dir=source_path.parent,
+            base_dir=repository_root,
         ),
         fail_if_exists=_strict_bool(
             _required(output_table, "fail_if_exists"),

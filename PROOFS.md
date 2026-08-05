@@ -105,13 +105,14 @@ Accepted technical proof:
 | Cache-stable prompt assembly | ✅ **IMPLEMENTED** | Stable prefix, dynamic tail, append-only rules | Does not prove provider cache behavior alone |
 | Exact-send integrity | ✅ **IMPLEMENTED** | Message and tool-schema integrity before adapter send | Provider-specific cache behavior varies |
 | Cache-aware execution gate | ✅ **IMPLEMENTED** | Only `RUN` executes pipeline; conflicting evidence rejected | Does not perform in-cache compaction |
+| Durable in-cache compaction mechanism | ✅ **IMPLEMENTED (BOUNDED)** | Durable SQLite repository, validation and CAS activation exist | Live provider proof, rollback execution and production rollout remain incomplete |
 | Bounded vLLM prefix-cache proof | 🧪 **BOUNDED PROOF** | Cold/warm/changed-prefix reuse in documented vLLM environment | Named version, model, and workload only |
 | Universal token reduction | ⛔ **NOT CLAIMABLE** | — | No universal savings evidence |
 | Production-proven savings | ⛔ **NOT CLAIMABLE** | — | Required proof and promotion gates are incomplete. |
 
 ### Not established by the accepted public proof
 
-- An accepted public proof of complete durable in-cache compaction is not established.
+- Durable in-cache compaction is implemented as a bounded mechanism; an accepted public live proof of complete provider-wide behavior is not established.
 - Cross-provider behavior is not established by the named vLLM proof.
 - Provider-independent cache behavior is not established.
 - Universal token reduction is not established.
@@ -153,7 +154,7 @@ flowchart LR
 > - universal token or cost savings
 > - completed Hybrid Ask
 > - complete vendor integration catalog
-> - completed durable in-cache compaction
+> - production-proven durable compaction rollout
 > - real-user validation at scale
 
 Real-user and commercial validation remain **incomplete**.

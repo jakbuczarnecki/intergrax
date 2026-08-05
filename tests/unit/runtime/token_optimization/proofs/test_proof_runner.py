@@ -1,27 +1,38 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
+
+from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.runtime.token_optimization.proofs.config import (
     load_universal_token_optimization_proof_config,
 )
+from intergrax.runtime.token_optimization.proofs.contracts import (
+    ProofCompositionError,
+    ProofConfigurationError,
+)
 from intergrax.runtime.token_optimization.proofs.runner import (
     UniversalTokenOptimizationProofRunner,
+    _measurements_from_pipeline,
 )
 
 
-def _config(tmp_path: Path):
+def _config(tmp_path: Path, *, provider: str = "vllm"):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "proof.toml"
     path.write_text(
-        """
+        f"""
 schema_version = "token-optimization-proof.v1"
 proof_id = "runner-proof"
 run_mode = "offline_smoke"
 
 [adapter]
 adapter_id = "offline"
-provider = "vllm"
+provider = "{provider}"
 type = "openai_compatible"
 model = "offline-model"
 base_url = "offline://local"
@@ -121,3 +132,98 @@ def test_offline_runner_is_network_free_and_has_no_second_engine() -> None:
     assert "class ProofOptimizationEngine" not in source
     assert "class MockOptimizationEngine" not in source
     assert "class AlternativePipelineRunner" not in source
+
+
+@pytest.mark.parametrize("provider", ("vllm", "ollama", "openai"))
+def test_loader_accepts_canonical_provider_ids_without_network_call(
+    tmp_path: Path,
+    provider: str,
+) -> None:
+    config = _config(tmp_path / provider, provider=provider)
+    assert config.adapter.provider == provider
+
+
+def test_loader_rejects_unknown_provider_closed(tmp_path: Path) -> None:
+    with pytest.raises(ProofConfigurationError, match="UNSUPPORTED_ADAPTER"):
+        _config(tmp_path, provider="unknown")
+
+
+def test_measurements_preserve_independent_baseline_and_optimized_values() -> None:
+    result = SimpleNamespace(
+        aggregate_measurement=SimpleNamespace(baseline_tokens=100, optimized_tokens=70)
+    )
+    baseline, optimized = _measurements_from_pipeline(result)
+
+    assert baseline.available is True
+    assert baseline.value == 100
+    assert optimized.available is True
+    assert optimized.value == 70
+
+    missing_baseline, missing_optimized = _measurements_from_pipeline(SimpleNamespace())
+    assert missing_baseline.available is False
+    assert missing_optimized.available is False
+
+
+def test_offline_runs_are_concurrent_and_do_not_mutate_global_registry(
+    tmp_path: Path,
+) -> None:
+    from threading import Barrier
+
+    from intergrax.runtime.token_optimization.llm_router import (
+        TokenOptimizationLLMRouter,
+    )
+
+    before = dict(LLMAdapterRegistry._factories)
+    barrier = Barrier(2)
+
+    def run(index: int):
+        def router_factory(**kwargs):
+            barrier.wait()
+            return TokenOptimizationLLMRouter(**kwargs)
+
+        runner = UniversalTokenOptimizationProofRunner(
+            router_factory=router_factory,
+        )
+        return runner.run(
+            _config(tmp_path / f"run-{index}"),
+            run_id=f"run-{index}",
+            persist_artifacts=False,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = tuple(executor.map(run, (1, 2)))
+
+    assert all(result.success for result in results)
+    assert dict(LLMAdapterRegistry._factories) == before
+
+
+def test_failed_offline_composition_and_execution_preserve_global_registry(
+    tmp_path: Path,
+) -> None:
+    from dataclasses import replace
+
+    before = dict(LLMAdapterRegistry._factories)
+    config = _config(tmp_path / "failed")
+    invalid_router = replace(config.router, configuration_id="unknown")
+    invalid_config = replace(config, router=invalid_router)
+
+    with pytest.raises(ProofCompositionError, match="UNKNOWN_ROUTER_CONFIGURATION"):
+        UniversalTokenOptimizationProofRunner().run(
+            invalid_config,
+            persist_artifacts=False,
+        )
+
+    class FailingPipeline:
+        def __init__(self, **kwargs):
+            pass
+
+        def run(self, **kwargs):
+            raise RuntimeError("case failure")
+
+    result = UniversalTokenOptimizationProofRunner(
+        pipeline_runner_factory=FailingPipeline,
+    ).run(config, persist_artifacts=False)
+
+    assert result.success is False
+    assert result.cases[0].error_reason_code == "PIPELINE_EXECUTION_FAILED"
+    assert dict(LLMAdapterRegistry._factories) == before

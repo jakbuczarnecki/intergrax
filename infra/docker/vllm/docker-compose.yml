@@ -11,7 +11,7 @@ services:
     image: vllm/vllm-openai:v0.23.0
     container_name: intergrax-vllm
     ports:
-      - "8100:8000"
+      - "127.0.0.1:8100:8000"
     volumes:
       - vllm_cache:/root/.cache/huggingface
     environment:

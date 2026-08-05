@@ -118,15 +118,25 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         raise ProofArtifactError("ATOMIC_WRITE_FAILED") from exc
 
 
-def _measurement_from_pipeline(result: object) -> ProofMeasurement:
+def _measurements_from_pipeline(
+    result: object,
+) -> tuple[ProofMeasurement, ProofMeasurement]:
     measurement = getattr(result, "aggregate_measurement", None)
     if measurement is None:
-        return ProofMeasurement()
+        return ProofMeasurement(), ProofMeasurement()
     baseline = getattr(measurement, "baseline_tokens", None)
     optimized = getattr(measurement, "optimized_tokens", None)
-    if not isinstance(baseline, int) or not isinstance(optimized, int):
-        return ProofMeasurement()
-    return ProofMeasurement(available=True, value=optimized)
+    baseline_measurement = (
+        ProofMeasurement(available=True, value=baseline)
+        if type(baseline) is int and baseline >= 0
+        else ProofMeasurement()
+    )
+    optimized_measurement = (
+        ProofMeasurement(available=True, value=optimized)
+        if type(optimized) is int and optimized >= 0
+        else ProofMeasurement()
+    )
+    return baseline_measurement, optimized_measurement
 
 
 def _case_to_dict(result: UniversalProofCaseResult) -> dict[str, Any]:
@@ -206,6 +216,7 @@ def write_universal_proof_artifacts(
     fail_if_exists: bool = True,
 ) -> UniversalProofArtifactManifest:
     """Write canonical run, case and manifest JSON with atomic replacement."""
+    output_directory = _resolve_output_directory(output_directory)
     run_directory = output_directory / result.proof_id / result.run_id
     if run_directory.exists() and fail_if_exists:
         raise ProofArtifactError("RUN_DIRECTORY_EXISTS")
@@ -253,12 +264,55 @@ def write_universal_proof_artifacts(
         raise ProofArtifactError("ARTIFACT_PERSISTENCE_FAILED") from exc
 
 
+def _resolve_output_directory(output_directory: Path) -> Path:
+    raw_output_directory = os.fspath(output_directory)
+    if "\x00" in raw_output_directory:
+        raise ProofArtifactError("UNSAFE_OUTPUT_DIRECTORY")
+    try:
+        resolved = Path(output_directory).expanduser().resolve()
+    except (OSError, RuntimeError) as exc:
+        raise ProofArtifactError("UNSAFE_OUTPUT_DIRECTORY") from exc
+    if resolved.exists() and not resolved.is_dir():
+        raise ProofArtifactError("OUTPUT_DIRECTORY_IS_FILE")
+    return resolved
+
+
+def _new_offline_registry() -> type[LLMAdapterRegistry]:
+    class _OfflineScopedAdapterRegistry(LLMAdapterRegistry):
+        _factories = {}
+
+    return _OfflineScopedAdapterRegistry
+
+
+def _adapter_create_kwargs(
+    config: UniversalTokenOptimizationProofConfig,
+    *,
+    api_key: str | None,
+) -> dict[str, Any]:
+    if config.adapter.adapter_type != "openai_compatible":
+        raise ProofCompositionError("UNSUPPORTED_ADAPTER_TYPE")
+    return {
+        "model": config.adapter.model,
+        "base_url": config.adapter.base_url,
+        "api_key": api_key,
+        "timeout_sec": config.adapter.timeout_seconds,
+        "max_tokens": config.adapter.max_output_tokens,
+        "temperature": config.adapter.temperature,
+    }
+
+
 class _OfflineSmokeAdapter(LLMAdapter):
     """Deterministic structured-output adapter used only by offline_smoke."""
 
-    def __init__(self, *, model: str, configuration_id: str) -> None:
+    def __init__(
+        self,
+        *,
+        model: str,
+        configuration_id: str,
+        provider: LLMProvider,
+    ) -> None:
         super().__init__()
-        self.provider = LLMProvider.VLLM
+        self.provider = provider
         self.model = model
         self._configuration_id = TokenOptimizationRouterConfigurationId(configuration_id)
         self.model_name_for_token_estimation = model
@@ -281,7 +335,7 @@ class _OfflineSmokeAdapter(LLMAdapter):
         return LLMAdapterResponse(
             content="offline_smoke",
             model=self.model,
-            provider=LLMProvider.VLLM.value,
+            provider=self.provider.value,
         )
 
     def generate_structured(
@@ -305,7 +359,7 @@ class _OfflineSmokeAdapter(LLMAdapter):
             response=LLMAdapterResponse(
                 content="offline_smoke",
                 model=self.model,
-                provider=LLMProvider.VLLM.value,
+                provider=self.provider.value,
             ),
         )
 
@@ -350,52 +404,48 @@ class UniversalTokenOptimizationProofRunner:
         self._artifact_writer = artifact_writer
 
     def _compose(self, config: UniversalTokenOptimizationProofConfig) -> _Composition:
-        registry = self._adapter_registry
-        snapshot = dict(registry._factories)
-        try:
-            if config.run_mode == "offline_smoke":
-                try:
-                    TokenOptimizationRouterConfigurationId(
-                        config.router.configuration_id
-                    )
-                except ValueError as exc:
-                    raise ProofCompositionError("UNKNOWN_ROUTER_CONFIGURATION") from exc
-                registry.register(
-                    config.adapter.provider,
-                    lambda **_: _OfflineSmokeAdapter(
-                        model=config.adapter.model,
-                        configuration_id=config.router.configuration_id,
-                    ),
-                    override=True,
+        registry = (
+            _new_offline_registry()
+            if config.run_mode == "offline_smoke"
+            else self._adapter_registry
+        )
+        if config.run_mode == "offline_smoke":
+            try:
+                TokenOptimizationRouterConfigurationId(
+                    config.router.configuration_id
                 )
+            except ValueError as exc:
+                raise ProofCompositionError("UNKNOWN_ROUTER_CONFIGURATION") from exc
+            provider = LLMProvider(config.adapter.provider)
+            registry.register(
+                config.adapter.provider,
+                lambda **_: _OfflineSmokeAdapter(
+                    model=config.adapter.model,
+                    configuration_id=config.router.configuration_id,
+                    provider=provider,
+                ),
+            )
+            create_kwargs: dict[str, Any] = {"model": config.adapter.model}
+        else:
             api_key = (
                 os.environ.get(config.adapter.api_key_env)
                 if config.adapter.api_key_env
                 else None
             )
-            if config.run_mode == "live_adapter" and config.adapter.api_key_env and not api_key:
+            if config.adapter.api_key_env and not api_key:
                 raise ProofProviderUnavailableError("MISSING_API_KEY_ENV")
-            try:
-                adapter = registry.create(
-                    config.adapter.provider,
-                    model=config.adapter.model,
-                    base_url=config.adapter.base_url,
-                    api_key=api_key,
-                    timeout_sec=config.adapter.timeout_seconds,
-                    max_tokens=config.adapter.max_output_tokens,
-                    temperature=config.adapter.temperature,
-                )
-            except Exception as exc:
-                if config.run_mode == "live_adapter":
-                    raise ProofProviderUnavailableError("PROVIDER_UNAVAILABLE") from exc
-                raise ProofCompositionError("OFFLINE_ADAPTER_UNAVAILABLE") from exc
-            return _Composition(
-                adapter=adapter,
-                router_catalog=self._router_catalog_factory(),
-                builtin_catalog=self._builtin_catalog_factory(),
-            )
-        finally:
-            registry._factories = snapshot
+            create_kwargs = _adapter_create_kwargs(config, api_key=api_key)
+        try:
+            adapter = registry.create(config.adapter.provider, **create_kwargs)
+        except Exception as exc:
+            if config.run_mode == "live_adapter":
+                raise ProofProviderUnavailableError("PROVIDER_UNAVAILABLE") from exc
+            raise ProofCompositionError("OFFLINE_ADAPTER_UNAVAILABLE") from exc
+        return _Composition(
+            adapter=adapter,
+            router_catalog=self._router_catalog_factory(),
+            builtin_catalog=self._builtin_catalog_factory(),
+        )
 
     def _build_pipeline_config(
         self,
@@ -492,6 +542,9 @@ class UniversalTokenOptimizationProofRunner:
         except Exception as exc:
             raise ProofExecutionError("PIPELINE_EXECUTION_FAILED") from exc
         completed = pipeline_result.receipt_metadata.get("completed") is True
+        baseline_measurement, optimized_measurement = _measurements_from_pipeline(
+            pipeline_result
+        )
         return UniversalProofCaseResult(
             case_id=case.case_id,
             status="completed" if completed else "failed",
@@ -500,8 +553,8 @@ class UniversalTokenOptimizationProofRunner:
             selected_configuration_id=selected_id.value,
             pipeline_status="completed" if completed else "failed",
             applied_layer_ids=tuple(pipeline_result.applied_layer_ids),
-            baseline_measurement=ProofMeasurement(),
-            optimized_measurement=_measurement_from_pipeline(pipeline_result),
+            baseline_measurement=baseline_measurement,
+            optimized_measurement=optimized_measurement,
             error_reason_code=None if completed else "PIPELINE_INCOMPLETE",
         )
 
@@ -553,6 +606,7 @@ class UniversalTokenOptimizationProofRunner:
                         router_reason=None,
                         selected_configuration_id=None,
                         pipeline_status="not_started",
+                        applied_layer_ids=(),
                         error_reason_code=exc.reason_code,
                     )
                 )

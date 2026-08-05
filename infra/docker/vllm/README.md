@@ -11,8 +11,9 @@ The live vLLM proof was not executed as part of TOKEN-10F.
   model download space and GPU memory.
 - Network access for the first Hugging Face model download.
 
-The compose file uses the pinned `vllm/vllm-openai:v0.23.0` image, exposes
-`127.0.0.1:8100`, and uses `Qwen/Qwen2.5-3B-Instruct` by default. Override the
+The compose file uses the pinned `vllm/vllm-openai:v0.23.0` image and binds
+host `127.0.0.1:8100` to container port `8000` (`127.0.0.1:8100:8000`).
+It uses `Qwen/Qwen2.5-3B-Instruct` by default. Override the
 model with `VLLM_MODEL` only when the machine has sufficient resources.
 
 ## Start and check readiness
