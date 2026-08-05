@@ -6,8 +6,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge import (
@@ -25,6 +27,8 @@ from intergrax.runtime.vendor_knowledge import (
 from intergrax.runtime.vendor_knowledge.sync_task import (
     VendorKnowledgeSyncDispatcher,
     VendorKnowledgeSyncHandlerRegistry,
+    register_vendor_knowledge_indexed_sync_dimension,
+    register_vendor_knowledge_sync_executable,
     register_vendor_knowledge_sync_handler,
     unregister_vendor_knowledge_sync_handler,
 )
@@ -241,25 +245,38 @@ async def test_two_neutral_plugins_produce_same_canonical_plan_shape() -> None:
     )
     first_provider = _Provider(first_connection, source_kind="issues")
     second_provider = _Provider(second_connection, source_kind="documents")
-    shared_handler_registry = VendorKnowledgeSyncHandlerRegistry()
-
-    def shared_handler() -> None:
-        return None
-
-    shared_handler_registry.register(
+    task_registry = TaskExecutionRegistry()
+    shared_handler_registry = VendorKnowledgeSyncHandlerRegistry(task_registry)
+    executable_registration = register_vendor_knowledge_sync_executable(
+        task_registry=task_registry,
+        coordinator_factory=lambda _tenant_id, _owner_id: object(),  # type: ignore[return-value]
+        dispatcher=VendorKnowledgeSyncDispatcher(
+            DocumentStoreTaskQueue(InMemoryDocumentStore())
+        ),
+        registration_token="shared-sync-v1",
+        retry_delays_seconds=(),
+        sleeper=lambda _: None,
+    )
+    register_vendor_knowledge_indexed_sync_dimension(
+        handler_registry=shared_handler_registry,
         provider_id=first_provider.provider_id,
         integration_kind=first_provider.integration_kind,
         source_kind=first_provider.source_kind,
         handler_ref=first_provider.sync_handler_ref(),
-        handler=shared_handler,
+        registration_version="registration-a",
+        executable_registration=executable_registration,
     )
-    shared_handler_registry.register(
+    register_vendor_knowledge_indexed_sync_dimension(
+        handler_registry=shared_handler_registry,
         provider_id=second_provider.provider_id,
         integration_kind=second_provider.integration_kind,
         source_kind=second_provider.source_kind,
         handler_ref=second_provider.sync_handler_ref(),
-        handler=shared_handler,
+        registration_version="registration-b",
+        executable_registration=executable_registration,
     )
+    canonical_handler = task_registry.get_handler("vendor_knowledge.sync.v1")
+    assert canonical_handler is executable_registration.handler
     first = _resolver(
         connections=(first_connection, second_connection),
         discovery=_Discovery((_resource(first_connection),)),
@@ -296,6 +313,19 @@ async def test_two_neutral_plugins_produce_same_canonical_plan_shape() -> None:
     assert second_proof.binding_plan is not None
     assert first_proof.binding_plan.source_descriptor.provider_id == "provider-a"
     assert second_proof.binding_plan.source_descriptor.provider_id == "provider-b"
+    assert first_proof.proof_revision != second_proof.proof_revision
+    assert shared_handler_registry.resolve_registration(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        source_kind="issues",
+        handler_ref="synthetic.sync.v1",
+    ).handler is canonical_handler
+    assert shared_handler_registry.resolve_registration(
+        provider_id="provider-b",
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind="documents",
+        handler_ref="synthetic.sync.v1",
+    ).handler is canonical_handler
     assert "credential_ref" not in first_proof.model_dump()
     assert "credential_ref" not in second_proof.model_dump()
 

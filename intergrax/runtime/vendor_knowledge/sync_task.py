@@ -3,6 +3,9 @@
 
 """Application-composition adapter for Vendor Knowledge sync."""
 
+# Domain validation intentionally uses stable ValueError codes.
+# ruff: noqa: TRY004
+
 from __future__ import annotations
 
 import hashlib
@@ -11,15 +14,17 @@ from dataclasses import dataclass
 from threading import RLock
 from typing import cast
 
+from pydantic import BaseModel
+
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskQueue
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.vendor_knowledge.indexed_source_eligibility import (
     IndexedSourceSyncHandlerRegistrationView,
 )
-from intergrax.tools.execution_models import ToolExecutionResult
-from pydantic import BaseModel
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
 from intergrax.runtime.vendor_knowledge.sync_jobs import (
     VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA,
     VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
@@ -35,6 +40,7 @@ from intergrax.runtime.vendor_knowledge.sync_worker import (
     VendorKnowledgeSyncWorkerOutput,
     make_vendor_knowledge_sync_worker_handler,
 )
+from intergrax.tools.execution_models import ToolExecutionResult
 
 CoordinatorFactory = Callable[[str, str], VendorKnowledgeSyncCoordinator]
 VendorKnowledgeSyncHandlerKey = tuple[str, IntegrationCategory, str, str]
@@ -51,6 +57,14 @@ class VendorKnowledgeSyncHandlerRegistration:
     active: bool = True
 
 
+@dataclass(frozen=True)
+class VendorKnowledgeSyncExecutableRegistration:
+    """Published identity of the canonical Vendor Knowledge sync executable."""
+
+    handler: Callable[..., ToolExecutionResult[BaseModel]]
+    registration_token: str
+
+
 class VendorKnowledgeSyncHandlerRegistry:
     """Atomic owner of canonical task and Indexed Source registration."""
 
@@ -60,6 +74,8 @@ class VendorKnowledgeSyncHandlerRegistry:
             VendorKnowledgeSyncHandlerKey,
             VendorKnowledgeSyncHandlerRegistration,
         ] = {}
+        self._owns_executable = False
+        self._executable_registration_token: str | None = None
         self._lock = RLock()
 
     @property
@@ -70,18 +86,108 @@ class VendorKnowledgeSyncHandlerRegistry:
     def register_executable(
         self,
         handler: object,
+        *,
+        registration_token: str | None = None,
     ) -> None:
         """Publish the generic sync task without Indexed Source dimensions."""
         if not callable(handler):
             raise ValueError("sync_handler_registration_handler_not_executable")
+        normalized_token = _normalize_registration_token(registration_token)
         with self._lock:
-            self._task_registry.register(
-                VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-                cast(
-                    Callable[..., ToolExecutionResult[BaseModel]],
-                    handler,
+            task_handler = self._registered_task_handler()
+            if task_handler is None:
+                self._task_registry.register(
+                    VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
+                    cast(
+                        Callable[..., ToolExecutionResult[BaseModel]],
+                        handler,
+                    ),
+                )
+                self._owns_executable = True
+            elif task_handler is not handler:
+                raise ValueError("sync_handler_registration_executable_mismatch")
+            if self._executable_registration_token is not None and (
+                self._executable_registration_token != normalized_token
+            ):
+                raise ValueError("sync_handler_registration_configuration_mismatch")
+            self._executable_registration_token = normalized_token
+
+    def register_dimension(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        source_kind: str,
+        handler_ref: str,
+        registration_version: str | None = None,
+        active: bool = True,
+        executable_registration: VendorKnowledgeSyncExecutableRegistration | None = None,
+    ) -> None:
+        """Bind one Indexed Source dimension to the published canonical task."""
+        key, normalized_version = self._validate_dimension(
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            source_kind=source_kind,
+            handler_ref=handler_ref,
+            registration_version=registration_version,
+            active=active,
+        )
+        with self._lock:
+            task_handler = self._registered_task_handler()
+            if task_handler is None:
+                raise ValueError("sync_handler_registration_canonical_task_missing")
+            if not callable(task_handler):
+                raise ValueError("sync_handler_registration_handler_not_executable")
+            next_registration_token = self._executable_registration_token
+            if executable_registration is not None:
+                if task_handler is not executable_registration.handler:
+                    raise ValueError("sync_handler_registration_executable_mismatch")
+                if next_registration_token is not None and (
+                    next_registration_token != executable_registration.registration_token
+                ):
+                    raise ValueError("sync_handler_registration_configuration_mismatch")
+                next_registration_token = executable_registration.registration_token
+            if key in self._registrations:
+                raise ValueError("sync_handler_registration_already_registered")
+            self._publish_metadata(
+                key,
+                VendorKnowledgeSyncHandlerRegistration(
+                    provider_id=key[0],
+                    integration_kind=key[1],
+                    source_kind=key[2],
+                    handler_ref=key[3],
+                    handler=task_handler,
+                    registration_version=normalized_version,
+                    active=active,
                 ),
             )
+            self._executable_registration_token = next_registration_token
+
+    def _claim_executable(
+        self,
+        registration: VendorKnowledgeSyncExecutableRegistration,
+        *,
+        owned: bool,
+    ) -> None:
+        with self._lock:
+            if self._registered_task_handler() is not registration.handler:
+                raise ValueError("sync_handler_registration_executable_mismatch")
+            if self._executable_registration_token is not None and (
+                self._executable_registration_token
+                != registration.registration_token
+            ):
+                raise ValueError("sync_handler_registration_configuration_mismatch")
+            self._executable_registration_token = registration.registration_token
+            self._owns_executable = self._owns_executable or owned
+
+    def _rollback_executable(self, handler: object) -> None:
+        with self._lock:
+            if self._registrations or not self._owns_executable:
+                return
+            if self._registered_task_handler() is handler:
+                self._task_registry.unregister(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+                self._owns_executable = False
+                self._executable_registration_token = None
 
     def register(
         self,
@@ -141,11 +247,13 @@ class VendorKnowledgeSyncHandlerRegistry:
                         handler,
                     ),
                 )
+                self._owns_executable = True
             try:
                 self._publish_metadata(key, registration)
             except Exception:
                 if task_added:
                     self._task_registry.unregister(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+                    self._owns_executable = False
                 raise
 
     def resolve_registration(
@@ -250,9 +358,41 @@ class VendorKnowledgeSyncHandlerRegistry:
                 return False
             if not self._registrations:
                 task_handler = self._registered_task_handler()
-                if task_handler is removed.handler:
+                if self._owns_executable and task_handler is removed.handler:
                     self._task_registry.unregister(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+                    self._owns_executable = False
+                    self._executable_registration_token = None
             return True
+
+    def _validate_dimension(
+        self,
+        *,
+        provider_id: str,
+        integration_kind: IntegrationCategory,
+        source_kind: str,
+        handler_ref: str,
+        registration_version: str | None,
+        active: bool,
+    ) -> tuple[VendorKnowledgeSyncHandlerKey, str]:
+        values = {
+            "provider_id": provider_id,
+            "source_kind": source_kind,
+            "handler_ref": handler_ref,
+        }
+        if any(not isinstance(value, str) or not value.strip() for value in values.values()):
+            raise ValueError("sync_handler_registration_identifier_required")
+        if not isinstance(integration_kind, IntegrationCategory):
+            raise ValueError("sync_handler_registration_integration_kind_invalid")
+        if registration_version is not None and (
+            not isinstance(registration_version, str) or not registration_version.strip()
+        ):
+            raise ValueError("sync_handler_registration_version_invalid")
+        if not isinstance(active, bool):
+            raise ValueError("sync_handler_registration_active_invalid")
+        return (
+            (provider_id.strip(), integration_kind, source_kind.strip(), handler_ref.strip()),
+            "legacy" if registration_version is None else registration_version.strip(),
+        )
 
     def _registered_task_handler(self) -> object | None:
         try:
@@ -271,6 +411,7 @@ __all__ = [
     "VENDOR_KNOWLEDGE_SYNC_JOB_SCHEMA",
     "VENDOR_KNOWLEDGE_SYNC_TASK_NAME",
     "VendorKnowledgeSyncDispatcher",
+    "VendorKnowledgeSyncExecutableRegistration",
     "VendorKnowledgeSyncHandlerRegistration",
     "VendorKnowledgeSyncHandlerRegistry",
     "VendorKnowledgeSyncJob",
@@ -279,6 +420,8 @@ __all__ = [
     "encode_vendor_knowledge_sync_job",
     "make_vendor_knowledge_sync_handler",
     "owner_id_for_sync_run",
+    "register_vendor_knowledge_indexed_sync_dimension",
+    "register_vendor_knowledge_sync_executable",
     "register_vendor_knowledge_sync_handler",
     "unregister_vendor_knowledge_sync_handler",
     "vendor_knowledge_sync_idempotency_key",
@@ -290,6 +433,14 @@ def _require_non_empty(value: str, *, field_name: str) -> str:
     if not cleaned:
         raise ValueError(f"{field_name} must be a non-empty string")
     return cleaned
+
+
+def _normalize_registration_token(value: str | None) -> str:
+    if value is None:
+        return "default"
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("sync_handler_registration_token_invalid")
+    return value.strip()
 
 
 def owner_id_for_sync_run(run_id: str) -> str:
@@ -369,6 +520,78 @@ def make_vendor_knowledge_sync_handler(
     )
 
 
+def register_vendor_knowledge_sync_executable(
+    *,
+    task_registry: TaskExecutionRegistry,
+    coordinator_factory: CoordinatorFactory | None = None,
+    dispatcher: VendorKnowledgeSyncDispatcher | None = None,
+    registration_token: str | None = None,
+    published_registration: VendorKnowledgeSyncExecutableRegistration | None = None,
+    main_loop_provider: MainLoopProvider | None = None,
+    retry_delays_seconds: tuple[float, ...] = (0.25, 1.0, 4.0),
+    sleeper: Sleeper | None = None,
+) -> VendorKnowledgeSyncExecutableRegistration:
+    """Build and publish the canonical sync executable exactly once."""
+    normalized_token = _normalize_registration_token(registration_token)
+    if published_registration is not None:
+        if not isinstance(published_registration, VendorKnowledgeSyncExecutableRegistration):
+            raise ValueError("sync_handler_registration_token_invalid")
+        if registration_token is not None and (
+            published_registration.registration_token != normalized_token
+        ):
+            raise ValueError("sync_handler_registration_configuration_mismatch")
+        registration = published_registration
+    else:
+        if coordinator_factory is None or dispatcher is None:
+            raise TypeError("coordinator_factory and dispatcher are required")
+        registration = VendorKnowledgeSyncExecutableRegistration(
+            handler=cast(
+                Callable[..., ToolExecutionResult[BaseModel]],
+                make_vendor_knowledge_sync_handler(
+                    coordinator_factory,
+                    dispatcher,
+                    main_loop_provider=main_loop_provider,
+                    retry_delays_seconds=retry_delays_seconds,
+                    sleeper=sleeper,
+                ),
+            ),
+            registration_token=normalized_token,
+        )
+    try:
+        existing_handler = task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+    except ValueError:
+        existing_handler = None
+    if existing_handler is not None:
+        if existing_handler is not registration.handler:
+            raise ValueError("sync_handler_registration_executable_mismatch")
+        return registration
+    task_registry.register(VENDOR_KNOWLEDGE_SYNC_TASK_NAME, registration.handler)
+    return registration
+
+
+def register_vendor_knowledge_indexed_sync_dimension(
+    *,
+    handler_registry: VendorKnowledgeSyncHandlerRegistry,
+    provider_id: str,
+    integration_kind: IntegrationCategory,
+    source_kind: str,
+    handler_ref: str,
+    registration_version: str | None = None,
+    active: bool = True,
+    executable_registration: VendorKnowledgeSyncExecutableRegistration | None = None,
+) -> None:
+    """Publish Indexed Source metadata against the existing canonical task."""
+    handler_registry.register_dimension(
+        provider_id=provider_id,
+        integration_kind=integration_kind,
+        source_kind=source_kind,
+        handler_ref=handler_ref,
+        registration_version=registration_version,
+        active=active,
+        executable_registration=executable_registration,
+    )
+
+
 def register_vendor_knowledge_sync_handler(
     registry: TaskExecutionRegistry | None = None,
     coordinator_factory: CoordinatorFactory | None = None,
@@ -382,80 +605,120 @@ def register_vendor_knowledge_sync_handler(
     handler_ref: str | None = None,
     registration_version: str | None = None,
     active: bool = True,
+    executable_registration: VendorKnowledgeSyncExecutableRegistration | None = None,
+    registration_token: str | None = None,
     main_loop_provider: MainLoopProvider | None = None,
     retry_delays_seconds: tuple[float, ...] = (0.25, 1.0, 4.0),
     sleeper: Sleeper | None = None,
-) -> None:
-    """Atomically publish the executable sync handler and optional dimensions."""
+) -> VendorKnowledgeSyncExecutableRegistration:
+    """Preserve generic registration and support published dimension composition."""
     effective_task_registry = task_registry or registry
     if effective_task_registry is None:
         raise TypeError("task_registry is required")
-    if coordinator_factory is None or dispatcher is None:
-        raise TypeError("coordinator_factory and dispatcher are required")
+    dimensions = (provider_id, integration_kind, source_kind, handler_ref)
+    if any(value is not None for value in dimensions) and handler_registry is None:
+        raise ValueError("sync_handler_registration_metadata_boundary_required")
     if handler_registry is not None and (
         handler_registry.task_registry is not effective_task_registry
     ):
         raise ValueError("sync_handler_registration_registry_mismatch")
-    dimensions = (provider_id, integration_kind, source_kind, handler_ref)
-    if any(value is not None for value in dimensions):
-        if (
-            provider_id is None
-            or integration_kind is None
-            or source_kind is None
-            or handler_ref is None
-        ):
-            raise ValueError("sync_handler_registration_metadata_incomplete")
-        if not isinstance(provider_id, str) or not provider_id.strip():
-            raise ValueError("sync_handler_registration_identifier_required")
-        if not isinstance(source_kind, str) or not source_kind.strip():
-            raise ValueError("sync_handler_registration_identifier_required")
-        if not isinstance(handler_ref, str) or not handler_ref.strip():
-            raise ValueError("sync_handler_registration_identifier_required")
-        if not isinstance(integration_kind, IntegrationCategory):
-            raise ValueError("sync_handler_registration_integration_kind_invalid")
-        if registration_version is not None and (
-            not isinstance(registration_version, str) or not registration_version.strip()
-        ):
-            raise ValueError("sync_handler_registration_version_invalid")
-        if not isinstance(active, bool):
-            raise ValueError("sync_handler_registration_active_invalid")
-    handler = make_vendor_knowledge_sync_handler(
-        coordinator_factory,
-        dispatcher,
-        main_loop_provider=main_loop_provider,
-        retry_delays_seconds=retry_delays_seconds,
-        sleeper=sleeper,
-    )
-    if any(value is not None for value in dimensions):
-        if (
-            provider_id is None
-            or integration_kind is None
-            or source_kind is None
-            or handler_ref is None
-        ):
-            raise ValueError("sync_handler_registration_metadata_incomplete")
+    if not any(value is not None for value in dimensions) and executable_registration is None:
+        if coordinator_factory is None or dispatcher is None:
+            raise TypeError("coordinator_factory and dispatcher are required")
         if handler_registry is None:
-            raise ValueError("sync_handler_registration_metadata_boundary_required")
-        handler_registry.register(
+            handler = make_vendor_knowledge_sync_handler(
+                coordinator_factory,
+                dispatcher,
+                main_loop_provider=main_loop_provider,
+                retry_delays_seconds=retry_delays_seconds,
+                sleeper=sleeper,
+            )
+            effective_task_registry.register(
+                VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
+                cast(
+                    Callable[..., ToolExecutionResult[BaseModel]],
+                    handler,
+                ),
+            )
+            return VendorKnowledgeSyncExecutableRegistration(
+                handler=cast(
+                    Callable[..., ToolExecutionResult[BaseModel]],
+                    handler,
+                ),
+                registration_token=_normalize_registration_token(registration_token),
+            )
+    dimension_requested = any(value is not None for value in dimensions)
+    if dimension_requested:
+        if (
+            handler_registry is None
+            or provider_id is None
+            or integration_kind is None
+            or source_kind is None
+            or handler_ref is None
+        ):
+            raise ValueError("sync_handler_registration_metadata_incomplete")
+        handler_registry._validate_dimension(
             provider_id=provider_id,
             integration_kind=integration_kind,
             source_kind=source_kind,
             handler_ref=handler_ref,
-            handler=handler,
             registration_version=registration_version,
             active=active,
         )
-        return
-    if handler_registry is not None:
-        handler_registry.register_executable(handler)
-        return
-    effective_task_registry.register(
-        VENDOR_KNOWLEDGE_SYNC_TASK_NAME,
-        cast(
-            Callable[..., ToolExecutionResult[BaseModel]],
-            handler,
-        ),
+        if handler_registry.resolve_registration(
+            provider_id=provider_id,
+            integration_kind=integration_kind,
+            source_kind=source_kind,
+            handler_ref=handler_ref,
+        ) is not None:
+            raise ValueError("sync_handler_registration_already_registered")
+    try:
+        effective_task_registry.get_handler(VENDOR_KNOWLEDGE_SYNC_TASK_NAME)
+    except ValueError:
+        had_task = False
+    else:
+        had_task = True
+    registration = register_vendor_knowledge_sync_executable(
+        task_registry=effective_task_registry,
+        coordinator_factory=coordinator_factory,
+        dispatcher=dispatcher,
+        registration_token=registration_token,
+        published_registration=executable_registration,
+        main_loop_provider=main_loop_provider,
+        retry_delays_seconds=retry_delays_seconds,
+        sleeper=sleeper,
     )
+    if dimension_requested:
+        if (
+            handler_registry is None
+            or provider_id is None
+            or integration_kind is None
+            or source_kind is None
+            or handler_ref is None
+        ):
+            raise ValueError("sync_handler_registration_metadata_incomplete")
+        handler_registry._claim_executable(registration, owned=not had_task)
+        try:
+            register_vendor_knowledge_indexed_sync_dimension(
+                handler_registry=handler_registry,
+                provider_id=provider_id,
+                integration_kind=integration_kind,
+                source_kind=source_kind,
+                handler_ref=handler_ref,
+                registration_version=registration_version,
+                active=active,
+                executable_registration=registration,
+            )
+        except Exception:
+            if not had_task:
+                handler_registry._rollback_executable(registration.handler)
+            raise
+    elif handler_registry is not None:
+        handler_registry.register_executable(
+            registration.handler,
+            registration_token=registration.registration_token,
+        )
+    return registration
 
 
 def unregister_vendor_knowledge_sync_handler(

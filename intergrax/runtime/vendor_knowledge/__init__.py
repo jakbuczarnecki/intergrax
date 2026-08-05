@@ -184,8 +184,12 @@ from intergrax.runtime.vendor_knowledge.sync_runtime import (
 )
 from intergrax.runtime.vendor_knowledge.sync_task import (
     VendorKnowledgeSyncDispatcher,
+    VendorKnowledgeSyncExecutableRegistration,
+    VendorKnowledgeSyncHandlerRegistry,
     make_vendor_knowledge_sync_handler,
     owner_id_for_sync_run,
+    register_vendor_knowledge_indexed_sync_dimension,
+    register_vendor_knowledge_sync_executable,
     register_vendor_knowledge_sync_handler,
 )
 from intergrax.runtime.vendor_knowledge.sync_worker import (
@@ -245,7 +249,6 @@ __all__ = [
     "DocumentStoreKnowledgeSyncCheckpointRepository",
     "DocumentStoreTenantConnectionRepository",
     "EffectiveLiveCallBudgetV1",
-    "IntegrationProfileVendorResolver",
     "IndexedSourceBindingPlanV1",
     "IndexedSourceDescriptorV1",
     "IndexedSourceEligibilityPort",
@@ -255,6 +258,7 @@ __all__ = [
     "IndexedSourceEligibilityStatusV1",
     "IndexedSourceMaterializationProvider",
     "IndexedSourceMaterializationRegistry",
+    "IntegrationProfileVendorResolver",
     "KnowledgeAdapterCapabilities",
     "KnowledgeAdapterRegistry",
     "KnowledgeChange",
@@ -368,6 +372,8 @@ __all__ = [
     "VendorKnowledgeFacadeService",
     "VendorKnowledgeSyncCoordinator",
     "VendorKnowledgeSyncDispatcher",
+    "VendorKnowledgeSyncExecutableRegistration",
+    "VendorKnowledgeSyncHandlerRegistry",
     "VendorKnowledgeSyncJob",
     "VendorKnowledgeSyncRuntime",
     "VendorKnowledgeSyncScheduler",
@@ -390,6 +396,8 @@ __all__ = [
     "parse_capability_id",
     "publish_live_registration_bundles",
     "recovery_evidence_from_run",
+    "register_vendor_knowledge_indexed_sync_dimension",
+    "register_vendor_knowledge_sync_executable",
     "register_vendor_knowledge_sync_handler",
     "register_vendor_knowledge_sync_worker_handler",
     "result_hash_for_items",
