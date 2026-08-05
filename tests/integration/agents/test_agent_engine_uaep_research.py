@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.uaep import supports_uaep
+from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
