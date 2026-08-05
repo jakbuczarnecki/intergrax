@@ -24,6 +24,19 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
 | **Public proof dashboard** | [`../../../PROOFS.md`](../../../PROOFS.md) |
 
+Accepted lifecycle status:
+
+- CTX-UCL-5 — **ACCEPTED / CLOSED**
+- CTX-UCL-6 — **ACCEPTED / CLOSED**
+- CTX-UCL-6A — **ACCEPTED / CLOSED**
+- CTX-UCL-6B — **ACCEPTED / CLOSED**
+- CTX-UCL-6C — **ACCEPTED / CLOSED**
+- CTX-UCL-6D — **ACCEPTED / CLOSED**
+- CTX-UCL-CLOSEOUT-1 — **ACCEPTED / CLOSED**
+- TOKEN-10E / TOKEN-10E-1 — **ACCEPTED / CLOSED**
+
+These statuses cover accepted UCL contracts and bounded implementation only. They do not claim production rollout, live provider proof, rollback execution, human-review UX completion, application migration, or numeric savings.
+
 Detailed phase, dependency and review status is maintained only
 in the Token Optimization implementation plan and is not repeated here.
 

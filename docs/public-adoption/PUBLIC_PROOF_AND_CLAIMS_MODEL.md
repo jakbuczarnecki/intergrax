@@ -22,6 +22,19 @@ This document owns:
 - README performance-promotion rules;
 - accepted-evidence propagation workflow.
 
+Accepted lifecycle status:
+
+- CTX-UCL-5 — **ACCEPTED / CLOSED**
+- CTX-UCL-6 — **ACCEPTED / CLOSED**
+- CTX-UCL-6A — **ACCEPTED / CLOSED**
+- CTX-UCL-6B — **ACCEPTED / CLOSED**
+- CTX-UCL-6C — **ACCEPTED / CLOSED**
+- CTX-UCL-6D — **ACCEPTED / CLOSED**
+- CTX-UCL-CLOSEOUT-1 — **ACCEPTED / CLOSED**
+- TOKEN-10E / TOKEN-10E-1 — **ACCEPTED / CLOSED**
+
+These statuses cover accepted UCL contracts and bounded implementation only. They do not claim production rollout, live provider proof, rollback execution, human-review UX completion, application migration, or numeric savings.
+
 It does **not** replace:
 
 - implementation plans;

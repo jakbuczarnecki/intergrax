@@ -96,6 +96,19 @@ Accepted technical proof:
 
 **Role:** Featured platform-capability proof
 
+Accepted lifecycle status:
+
+- CTX-UCL-5 — **ACCEPTED / CLOSED**
+- CTX-UCL-6 — **ACCEPTED / CLOSED**
+- CTX-UCL-6A — **ACCEPTED / CLOSED**
+- CTX-UCL-6B — **ACCEPTED / CLOSED**
+- CTX-UCL-6C — **ACCEPTED / CLOSED**
+- CTX-UCL-6D — **ACCEPTED / CLOSED**
+- CTX-UCL-CLOSEOUT-1 — **ACCEPTED / CLOSED**
+- TOKEN-10E / TOKEN-10E-1 — **ACCEPTED / CLOSED**
+
+These statuses cover accepted UCL contracts and bounded implementation only. They do not claim production rollout, live provider proof, rollback execution, human-review UX completion, application migration, or numeric savings.
+
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | Deterministic optimization pipeline | ✅ **IMPLEMENTED** | Layer registry, pipeline runner, built-in catalog, plugin contract | Not globally auto-enabled |
