@@ -500,6 +500,11 @@ def mount_managed_workspace_routes(
     app.state.lkw_connected_source_readiness = host_bundle.readiness
     if connected_wiring is None:
         connected_wiring = host_bundle.wiring
+    hybrid_ask_connection_registry = (
+        connected_wiring.connection_registry
+        if connected_wiring is not None
+        else host_bundle.hybrid_ask_connection_registry
+    )
     recovery_tenant_ids: tuple[str, ...] = ()
     if connected_wiring is not None and settings.slack_tenant_id.strip():
         recovery_tenant_ids = (settings.slack_tenant_id.strip(),)
@@ -686,8 +691,6 @@ def mount_managed_workspace_routes(
         )
 
     if ask_service_v2 is None:
-        if connected_wiring is None:
-            raise RuntimeError("hybrid_ask_wiring_incomplete")
         published_live_registration = publish_live_registration_bundles(
             (
                 *build_msgraph_live_registration_bundles(),
@@ -715,7 +718,7 @@ def mount_managed_workspace_routes(
                 live_executor=LiveCapabilityExecutorV1(
                     published_registration=published_live_registration,
                     integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
-                        connected_wiring.connection_registry
+                        hybrid_ask_connection_registry
                     ),
                 ),
             ),

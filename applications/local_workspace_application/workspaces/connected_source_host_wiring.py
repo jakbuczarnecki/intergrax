@@ -50,6 +50,7 @@ class ConnectedSourceHostBundle:
     wiring: ConnectedSourceWiring | None
     slack_integration: SlackConversationChannelIntegration | None
     readiness: ConnectedSourceHostReadiness
+    hybrid_ask_connection_registry: KnowledgeConnectionRegistry
 
 
 def connected_source_considered_for_host(settings: LocalWorkspaceBackendSettings) -> bool:
@@ -89,6 +90,7 @@ def build_connected_source_host_bundle(
     slack_integration: SlackConversationChannelIntegration | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
 ) -> ConnectedSourceHostBundle:
+    registry = KnowledgeConnectionRegistry()
     if not connected_source_considered_for_host(settings):
         return ConnectedSourceHostBundle(
             wiring=None,
@@ -102,6 +104,7 @@ def build_connected_source_host_bundle(
                 connection_ref=None,
                 reason="connected_source_disabled",
             ),
+            hybrid_ask_connection_registry=registry,
         )
 
     signing_key_configured = bool(settings.connected_source_opaque_ref_signing_key.strip())
@@ -118,6 +121,7 @@ def build_connected_source_host_bundle(
                 connection_ref=None,
                 reason="connected_source_signing_key_missing",
             ),
+            hybrid_ask_connection_registry=registry,
         )
 
     tenant_id, connection_ref = resolve_connected_source_host_mapping(settings)
@@ -135,6 +139,7 @@ def build_connected_source_host_bundle(
                 connection_ref=connection_ref,
                 reason="slack_integration_unavailable",
             ),
+            hybrid_ask_connection_registry=registry,
         )
 
     mapping_complete = bool(tenant_id and connection_ref)
@@ -151,9 +156,9 @@ def build_connected_source_host_bundle(
                 connection_ref=connection_ref,
                 reason="connected_source_mapping_incomplete",
             ),
+            hybrid_ask_connection_registry=registry,
         )
 
-    registry = KnowledgeConnectionRegistry()
     wiring = build_connected_source_wiring(
         repository=repository,
         workspace_service=workspace_service,
@@ -181,4 +186,5 @@ def build_connected_source_host_bundle(
             tenant_id=tenant_id,
             connection_ref=connection_ref,
         ),
+        hybrid_ask_connection_registry=registry,
     )
