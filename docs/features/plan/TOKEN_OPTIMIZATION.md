@@ -1908,6 +1908,12 @@ writes. Offline mode never claims warm-cache reuse or changed-prefix control
 without provider evidence; numeric savings, live provider execution, checked-in
 results and public promotion remain outside this phase.
 
+**TOKEN-10G-RISK-1 status:** **FROZEN**. The normative production `risk`
+semantics, its relation to `review_required`, and the RISK-2/RISK-3 case
+consequences are defined only in the
+[feature architecture §8.9.1](../architecture/TOKEN_OPTIMIZATION.md#891-production-risk-semantics-token-10g-risk-1).
+RISK-2, RISK-3 and TOKEN-10H remain unresolved.
+
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
 **Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.

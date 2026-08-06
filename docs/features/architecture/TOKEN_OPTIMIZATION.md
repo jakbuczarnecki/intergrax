@@ -1087,6 +1087,62 @@ provider cache gates unavailable unless typed cache evidence is supplied.
 Live provider execution, numeric savings claims, checked-in live results and
 public promotion are TOKEN-10H scope.
 
+### 8.9.1 Production `risk` semantics (TOKEN-10G-RISK-1)
+
+**Status:** **FROZEN**.
+
+This decision is normative for the Token Optimization decision contract,
+including the model prompt, qualification corpus, contract expectations and
+qualification runs. It is the basis for **TOKEN-10G-RISK-2** and
+**TOKEN-10G-RISK-3**. The field `risk` describes the risk that applying the
+selected optimization configuration to the analyzed content will lose,
+distort or improperly omit material information, assessed before final
+deterministic policy enforcement.
+
+`risk` does not describe the general dangerousness of the text, model error
+probability, final post-policy system safety, the mere presence of protected
+values, model confidence, or technical pipeline correctness. It combines the
+character and significance of the content, the selected transformation, and
+the possibility of information loss or distortion.
+
+The canonical levels are:
+
+- **`low`** — use when the selected configuration is lossless, or when no
+  optimization is performed, provided there is no independent critical signal
+  and the transformation creates no real risk of removing or rephrasing
+  material information. This includes `no_optimization`, `exact_only`, exact
+  deduplication with mandatory behavioral validation, and protected values
+  handled by lossless exact preservation. Protected values do not
+  automatically raise the level when the transformation is lossless and
+  exactly validated.
+- **`medium`** — use when the selected configuration is lossy and may remove,
+  omit or compress useful information, but the content has no independent
+  critical signal and the operation may run automatically without mandatory
+  human control. Extractive filtering of ordinary tool, terminal and log
+  output is `medium`; `source_type` must not lower a comparable lossy
+  transformation to `low`.
+- **`high`** — use when at least one of the following applies: the content
+  contains an explicit critical signal such as `security_warning`; lossy
+  processing could touch protected or critical information; loss or
+  rephrasing could change the meaning of a warning, evidence, decision,
+  safety constraint or mandatory condition; or the case requires human review
+  independently of the model proposal. Lossy processing is not automatically
+  `high` without one of these conditions.
+
+`high` requires `review_required = true`. Conversely, `review_required = true`
+is not the sole definition of `high`; `low` and `medium` may both have
+`review_required = false`. `risk` classifies the proposed transformation before
+deterministic policy enforcement. Policy enforcement may block or replace the
+model proposal, but does not change its original `risk` classification. For
+`high`, the pipeline must not begin an unapproved lossy transformation. With
+policy disabled, the router may finish without a model `risk` classification.
+
+This freeze has the following TOKEN-10G consequences: **RISK-2** must change
+`case-terminal-log-output` from `low` to `medium`; `case-noisy-tool-output`
+remains `medium`; `case-protected-values` remains `low`; and
+`case-high-risk-lossy-content` remains `high`. Qwen 7B cannot be honestly
+accepted or rejected before **RISK-2** and **RISK-3** are complete.
+
 ### 8.10 Policy-governed in-cache compaction (TOKEN-10E)
 
 **Status:** **TOKEN-10E implementation complete; ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, and **TOKEN-10E-4** are **ACCEPTED / CLOSED**; candidate construction, validation/receipt/rollback-metadata compilation, durable SQLite storage, and CAS activation are implemented over existing UCL contracts. Rollback execution, human-review UX, and production enablement remain out of scope. [UNIFIED_CONTEXT_LIFECYCLE.md](../../architecture/UNIFIED_CONTEXT_LIFECYCLE.md) is the **sole canonical source** for lifecycle, budget, persistence, activation, rollback, internal-call boundary, single-flight creation, and cross-domain ownership. **TOKEN-10E extends UCL** — it does **not** create a second repository, reservation model, or optimization decision point. **ADR-UCL-001** freezes cross-domain decisions (**Accepted**). **TOKEN-10E-ARCH-1** superseded. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**.
