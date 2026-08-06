@@ -44,6 +44,10 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     resolve_effective_query_policy,
     validate_evidence_plan,
 )
+from local_workspace_application.workspaces.slack_ask_orchestration import (
+    SlackAskPlannerV1,
+    SlackAskRequestV1,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV2,
@@ -151,6 +155,7 @@ class WorkspaceAskCommandV2(BaseModel):
     audience_context: AudienceContextV1
     indexed_max_results: int | None = Field(default=None, ge=1, le=500)
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
+    slack_request: SlackAskRequestV1 | None = None
     request_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
     run_id: str | None = Field(default=None, min_length=1)
 
@@ -158,6 +163,16 @@ class WorkspaceAskCommandV2(BaseModel):
     def _question_not_blank(self) -> WorkspaceAskCommandV2:
         if not self.question.strip():
             raise ValueError("question_must_not_be_blank")
+        if (
+            self.slack_request is not None
+            and self.ordered_live_call_proposals
+        ):
+            raise ValueError("slack_request_proposals_conflict")
+        if (
+            self.slack_request is not None
+            and self.requested_mode is QueryPolicyModeV2.INDEXED_ONLY
+        ):
+            raise ValueError("slack_request_requires_live_mode")
         return self
 
 
@@ -181,6 +196,7 @@ class WorkspaceAskServiceV2:
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         run_id_factory: Callable[[], str] = lambda: str(uuid4()),
         plan_id_factory: Callable[[], str] = lambda: str(uuid4()),
+        slack_planner: SlackAskPlannerV1 | None = None,
     ) -> None:
         self._workspaces = workspace_service
         self._workspace_repository = workspace_repository
@@ -196,6 +212,7 @@ class WorkspaceAskServiceV2:
         self._clock = clock
         self._run_id_factory = run_id_factory
         self._plan_id_factory = plan_id_factory
+        self._slack_planner = slack_planner or SlackAskPlannerV1()
 
     @property
     def llm_adapter(self) -> LLMAdapter:
@@ -337,14 +354,21 @@ class WorkspaceAskServiceV2:
             QueryPolicyModeV2.HYBRID,
         ):
             indexed_directive = self._indexed_directive(min(requested, maximum))
-        return EvidencePlanV1(
+        ordered_live_call_proposals = tuple(command.ordered_live_call_proposals)
+        if command.slack_request is not None:
+            slack_plan = self._slack_planner.build_plan(
+                configuration=configuration,
+                request=command.slack_request,
+            )
+            ordered_live_call_proposals = slack_plan.ordered_live_call_proposals
+        plan = EvidencePlanV1(
             plan_id=self._plan_id_factory(),
             tenant_id=command.tenant_id,
             workspace_id=command.workspace_id,
             configuration_revision=configuration.configuration_revision,
             mode=command.requested_mode,
             indexed_retrieval_directive=indexed_directive,
-            ordered_live_call_proposals=tuple(command.ordered_live_call_proposals),
+            ordered_live_call_proposals=ordered_live_call_proposals,
             budget_snapshot=EffectiveLiveCallBudgetV1(
                 max_live_calls=effective_policy.max_live_calls,
                 max_total_duration_ms=effective_policy.max_total_duration_ms,
@@ -353,6 +377,7 @@ class WorkspaceAskServiceV2:
             ),
             audience_context=command.audience_context,
         )
+        return plan
 
     @staticmethod
     def _indexed_directive(max_results: int) -> Any:
@@ -386,6 +411,14 @@ class WorkspaceAskServiceV2:
             configuration_revision=configuration.configuration_revision,
             plan_id=validated_plan.plan.plan_id,
             live_result_retention=self._live_retention(configuration),
+            slack_coverage=(
+                self._slack_planner.build_plan(
+                    configuration=configuration,
+                    request=command.slack_request,
+                ).coverage
+                if command.slack_request is not None
+                else None
+            ),
             created_at=self._clock(),
             indexed_retrieval_status=(
                 HybridAskIndexedRetrievalStatusV1.FAILED

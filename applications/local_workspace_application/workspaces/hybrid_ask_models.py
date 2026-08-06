@@ -13,6 +13,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     LiveResultRetentionV1,
     QueryPolicyModeV2,
 )
+from local_workspace_application.workspaces.slack_ask_orchestration import (
+    SlackAskCoverageV1,
+)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.runtime.vendor_knowledge.live.contracts import (
@@ -284,6 +287,7 @@ class WorkspaceAskRunV2(BaseModel):
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
+    slack_coverage: SlackAskCoverageV1 | None = None
     answer: str | None = None
     citations: list[WorkspaceCitationV1] = Field(default_factory=list)
     persisted_evidence: list[PersistedAskEvidenceV2] = Field(default_factory=list)
