@@ -14,6 +14,9 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
     SlackConversationChannelIntegration,
@@ -107,8 +110,15 @@ def _message(
     )
 
 
-class _FakeSlackIntegration:
+class _FakeSlackIntegration(SlackConversationChannelBackend):
     def __init__(self) -> None:
+        super().__init__(
+            config=SlackConversationChannelIntegrationConfig(
+                enabled=True,
+                app_token="xapp-test-token-value",
+                bot_token="xoxb-test-token-value",
+            )
+        )
         self.history_calls: list[dict[str, Any]] = []
         self.reply_calls: list[dict[str, Any]] = []
         self.exact_calls: list[dict[str, Any]] = []

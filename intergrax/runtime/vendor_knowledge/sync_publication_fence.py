@@ -281,6 +281,14 @@ class KnowledgeSyncPublicationCommitResult:
 class KnowledgeSyncPublicationFencePort(Protocol):
     """Application lifecycle and publication authority consumed by Vendor Knowledge."""
 
+    def write_fence(
+        self,
+        fence: KnowledgeSyncPublicationFenceV1,
+        *,
+        expected_revision: int | None,
+    ) -> None:
+        ...
+
     def read_fence(
         self,
         *,
@@ -390,7 +398,7 @@ class KnowledgeSyncPublicationFencePort(Protocol):
         node: KnowledgeSyncPublicationCommitNodeV1,
     ) -> bool:
         ...
-class KnowledgeSyncPublicationFenceConflict(Exception):
+class KnowledgeSyncPublicationFenceConflict(RuntimeError):
     """Optimistic lifecycle fence write conflict."""
 
 
