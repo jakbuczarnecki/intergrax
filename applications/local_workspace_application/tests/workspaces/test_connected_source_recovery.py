@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -96,6 +96,9 @@ from intergrax.integrations._shared.in_memory_document_store import (
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
@@ -117,7 +120,7 @@ from intergrax.integrations.providers.conversation_channel.slack.mapping import 
     parse_slack_ts,
 )
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.knowledge.contracts.validation import _FrozenJsonArray  # noqa: SLF001
+from intergrax.knowledge.contracts.validation import _FrozenJsonArray
 from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
 from intergrax.queueing.providers.document_store.document_store_task_queue import (
     DocumentStoreTaskQueue,
@@ -185,8 +188,15 @@ def _message(*, message_ts: str, text: str) -> SlackConversationMessage:
     )
 
 
-class _SlackFakeBackend:
+class _SlackFakeBackend(SlackConversationChannelBackend):
     def __init__(self, *, pages: tuple[SlackConversationMessagePage, ...]) -> None:
+        super().__init__(
+            config=SlackConversationChannelIntegrationConfig(
+                enabled=True,
+                app_token="xapp-test",
+                bot_token="xoxb-test",
+            )
+        )
         self.history_calls = 0
         self._history_pages = list(pages)
         self._content: dict[str, SlackConversationMessage] = {}
@@ -467,7 +477,7 @@ def _build_sync_env(
         integration=integration,
     )
     connected_sync = wiring.connected_source_sync_service
-    connected_sync._max_pages_per_operation = max_pages_per_operation  # noqa: SLF001
+    connected_sync._max_pages_per_operation = max_pages_per_operation
     executor = MagicMock()
     sync_service = ManagedWorkspaceSyncService(
         repo,
@@ -882,7 +892,7 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
         ),
     )
     env.repo.put_operation(_queued_operation())
-    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
+    original_build = env.connected_sync._build_coordinator
 
     def _wrap_coordinator(*args: Any, **kwargs: Any):
         coordinator = original_build(*args, **kwargs)
@@ -898,7 +908,7 @@ async def test_sink_complete_then_retryable_vendor_error_requeues(tmp_path: Path
         coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
         return coordinator
 
-    env.connected_sync._build_coordinator = _wrap_coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = _wrap_coordinator
 
     result = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -993,7 +1003,7 @@ async def test_checkpoint_committed_retry_is_noop_without_provider_reread(
         ),
     )
     env.repo.put_operation(_queued_operation())
-    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
+    original_build = env.connected_sync._build_coordinator
     fail_once = True
 
     def _build_with_fail_once(*args: Any, **kwargs: Any):
@@ -1014,7 +1024,7 @@ async def test_checkpoint_committed_retry_is_noop_without_provider_reread(
         coordinator.reconcile_once = _reconcile_once  # type: ignore[method-assign]
         return coordinator
 
-    env.connected_sync._build_coordinator = _build_with_fail_once  # noqa: SLF001
+    env.connected_sync._build_coordinator = _build_with_fail_once
     first = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
         operation_id=_OPERATION,
@@ -1133,7 +1143,7 @@ def test_host_interruption_running_to_queued_for_connected_source() -> None:
     runtime.worker._on_interrupted(
         TaskHandle(task_id="task-1", provider="document_store", tenant_id=_TENANT),
         request,
-    )  # noqa: SLF001
+    )
 
     reloaded = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
     assert reloaded is not None
@@ -1175,7 +1185,7 @@ async def test_lease_busy_requeue_leaves_no_orphaned_running(tmp_path: Path) -> 
 
     coordinator = MagicMock()
     coordinator.reconcile_once = AsyncMock(side_effect=_lease_busy)
-    env.connected_sync._build_coordinator = lambda **kwargs: coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = lambda **kwargs: coordinator
 
     result = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -1222,7 +1232,6 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         ),
     ]
     call_index = 0
-    original_build = env.connected_sync._build_coordinator  # noqa: SLF001
 
     def _wrap_coordinator(*args: Any, **kwargs: Any):
         sink = kwargs["sink"]
@@ -1231,7 +1240,7 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         async def _reconcile_once(**reconcile_kwargs: Any) -> KnowledgeSyncRunResult:
             nonlocal call_index
             result = apply_results[min(call_index, len(apply_results) - 1)]
-            sink._on_apply(_DELIVERY, result)  # noqa: SLF001
+            sink._on_apply(_DELIVERY, result)
             call_index += 1
             return KnowledgeSyncRunResult(
                 status=KnowledgeSyncRunStatus.COMPLETED,
@@ -1250,7 +1259,7 @@ async def test_durable_counters_no_double_count_on_replay(tmp_path: Path) -> Non
         coordinator.reconcile_once = _reconcile_once
         return coordinator
 
-    env.connected_sync._build_coordinator = _wrap_coordinator  # noqa: SLF001
+    env.connected_sync._build_coordinator = _wrap_coordinator
 
     first = await env.connected_sync.run_operation(
         tenant_id=_TENANT,
@@ -1486,12 +1495,17 @@ def test_accounting_record_exists_zero_counters_repaired_on_retry() -> None:
     repo.put_connected_source_delivery_accounting_if_absent(
         ConnectedSourceOperationDeliveryAccounting(
             tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=_OPERATION,
             delivery_id=_DELIVERY,
             documents_indexed=1,
             documents_unchanged=0,
             items_failed=0,
             accounted_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -1522,12 +1536,17 @@ def test_accounting_second_retry_counters_unchanged() -> None:
     repo.put_connected_source_delivery_accounting_if_absent(
         ConnectedSourceOperationDeliveryAccounting(
             tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=_OPERATION,
             delivery_id=_DELIVERY,
             documents_indexed=1,
             documents_unchanged=0,
             items_failed=0,
             accounted_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -1566,12 +1585,17 @@ def test_accounting_two_deliveries_aggregate_exact_counters() -> None:
         repo.put_connected_source_delivery_accounting_if_absent(
             ConnectedSourceOperationDeliveryAccounting(
                 tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                source_id=_SOURCE,
+                indexed_source_binding_id=_INDEXED,
+                knowledge_source_binding_ref=_BINDING,
                 operation_id=_OPERATION,
                 delivery_id=delivery_id,
                 documents_indexed=indexed,
                 documents_unchanged=unchanged,
                 items_failed=0,
                 accounted_at=_NOW,
+                ownership_classification="COMPLETE_OWNERSHIP",
             )
         )
     operation = repo.get_operation(tenant_id=_TENANT, operation_id=_OPERATION)
@@ -1683,12 +1707,15 @@ def _mark_enqueued(
             tenant_id=operation.tenant_id,
             workspace_id=operation.workspace_id,
             source_id=operation.source_id,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
             operation_id=operation.operation_id,
             enqueue_generation=generation,
             last_enqueued_generation=generation,
             last_task_id=task_id,
             last_queue_provider="document_store",
             updated_at=_NOW,
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
     )
 
@@ -2117,7 +2144,7 @@ def _seed_many_queue_tasks(
     count: int,
 ) -> None:
     for index in range(count):
-        handle = queue.enqueue(
+        queue.enqueue(
             TaskRequest(
                 tenant_id=_TENANT,
                 run_id=f"older-{index}",

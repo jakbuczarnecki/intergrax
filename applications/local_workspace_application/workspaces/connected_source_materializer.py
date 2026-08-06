@@ -8,11 +8,18 @@ import hashlib
 from dataclasses import dataclass
 from typing import Literal, Protocol, runtime_checkable
 
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_logical_path,
+)
+from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceSyncSinkError,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.runtime.vendor_knowledge.models import KnowledgeContent, KnowledgeContentMode
-from local_workspace_application.workspaces.connected_source_ids import connected_logical_path
-from local_workspace_application.workspaces.connected_source_models import ConnectedSourceSyncSinkError
+from intergrax.runtime.vendor_knowledge.models import (
+    KnowledgeContent,
+    KnowledgeContentMode,
+)
 
 _SLACK_CONVERSATION_MESSAGE_SCHEMA = "slack.conversation.message.knowledge.v1"
 _REMOTE_HASH_PREFIX_LEN = 16
@@ -125,6 +132,8 @@ def _render_slack_message_markdown(
     safe_conversation_label: str,
     record: _SlackConversationMessageKnowledgeRecord,
 ) -> str:
+    conversation_id = record.conversation.get("conversation_id")
+    message_ts = record.message.get("message_ts")
     created_at = record.timestamps.get("created_at")
     edited_at = record.timestamps.get("edited_at")
     actor_id = record.actor.get("provider_id")
@@ -136,6 +145,12 @@ def _render_slack_message_markdown(
         f"Conversation: {safe_conversation_label}",
         f"Message: {record.text.strip()}",
     ]
+    if isinstance(conversation_id, str) and conversation_id:
+        lines.append(f"Conversation ID: {conversation_id}")
+    if isinstance(message_ts, str) and message_ts:
+        lines.append(f"Message timestamp: {message_ts}")
+        if isinstance(conversation_id, str) and conversation_id:
+            lines.append(f"Safe locator: slack://{conversation_id}/{message_ts}")
     if isinstance(created_at, str) and created_at:
         lines.append(f"Created at: {created_at}")
     if isinstance(edited_at, str) and edited_at:
@@ -144,8 +159,11 @@ def _render_slack_message_markdown(
         lines.append(f"Actor: {actor_id}")
     if isinstance(root_thread_ts, str) and root_thread_ts:
         lines.append("Thread root: reply")
+        lines.append(f"Thread root timestamp: {root_thread_ts}")
     elif isinstance(reply_count, int) and reply_count > 0:
         lines.append("Thread root: root")
+        if isinstance(message_ts, str) and message_ts:
+            lines.append(f"Thread root timestamp: {message_ts}")
     if record.safe_file_inventory:
         lines.append("")
         lines.append("Files:")

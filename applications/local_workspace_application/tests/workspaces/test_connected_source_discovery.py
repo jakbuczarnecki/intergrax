@@ -5,23 +5,9 @@
 from __future__ import annotations
 
 import inspect
-import time
 from datetime import UTC, datetime
 
 import pytest
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-    SlackConversationChannelIntegration,
-)
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SlackConversationInventoryPage,
-    SlackConversationKind,
-    SlackConversationSummary,
-)
-from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from local_workspace_application.workspaces.connected_source_candidate import (
     decode_slack_conversation_candidate_ref,
     encode_slack_conversation_candidate_ref,
@@ -47,6 +33,27 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.conversation_channel.slack.backend import (
+    SlackConversationChannelBackend,
+)
+from intergrax.integrations.providers.conversation_channel.slack.config import (
+    SlackConversationChannelIntegrationConfig,
+)
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+    SlackConversationChannelIntegration,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SlackConversationInventoryPage,
+    SlackConversationKind,
+    SlackConversationSummary,
+)
+from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+
 pytestmark = pytest.mark.unit
 
 _NOW = datetime(2024, 6, 1, 12, 0, tzinfo=UTC)
@@ -57,8 +64,15 @@ _CONNECTION = "conn.slack"
 _SIGNING_KEY = "connected-source-test-signing-key"
 
 
-class _FakeBackend:
+class _FakeBackend(SlackConversationChannelBackend):
     def __init__(self, pages: list[SlackConversationInventoryPage] | None = None) -> None:
+        super().__init__(
+            config=SlackConversationChannelIntegrationConfig(
+                enabled=True,
+                app_token="xapp-test",
+                bot_token="xoxb-test",
+            )
+        )
         self._pages = list(
             pages
             or [
@@ -255,8 +269,8 @@ def test_cross_tenant_candidate_rejected(codec: RemoteResourceOpaqueRefCodec) ->
 
 
 @pytest.mark.asyncio
-async def test_signed_pagination_cursor_and_no_raw_provider_cursor(discovery_env, codec) -> None:
-    service, _, _, backend, codec = discovery_env
+async def test_signed_pagination_cursor_and_no_raw_provider_cursor(discovery_env) -> None:
+    service, _, _, backend, _ = discovery_env
     backend._pages = [
         SlackConversationInventoryPage(
             items=(
@@ -294,7 +308,7 @@ async def test_signed_pagination_cursor_and_no_raw_provider_cursor(discovery_env
 
 
 @pytest.mark.asyncio
-async def test_bounded_revalidation_limit_exceeded(discovery_env, codec) -> None:
+async def test_bounded_revalidation_limit_exceeded(discovery_env) -> None:
     service, _, _, backend, _ = discovery_env
     looping = SlackConversationInventoryPage(
         items=(),

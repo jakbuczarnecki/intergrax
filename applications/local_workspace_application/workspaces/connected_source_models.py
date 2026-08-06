@@ -185,7 +185,7 @@ class ConnectedSourceDeliverySequenceAssignmentV1(BaseModel):
     workspace_id: str = Field(..., min_length=1, max_length=128)
     source_id: str = Field(..., min_length=1, max_length=128)
     indexed_source_binding_id: str = Field(..., min_length=1, max_length=128)
-    delivery_id: str = Field(..., min_length=64, max_length=64)
+    delivery_id: str
     materialization_sequence: int = Field(..., gt=0)
     assigned_at: datetime
 

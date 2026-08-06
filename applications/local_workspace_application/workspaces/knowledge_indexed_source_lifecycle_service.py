@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
+import secrets
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus
 from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     indexed_source_binding_id,
@@ -50,6 +50,16 @@ from local_workspace_application.workspaces.knowledge_configuration_validation i
     validate_configuration_idempotency_hash,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+    KnowledgeSyncPublicationFencePort,
+    KnowledgeSyncPublicationFenceV1,
+)
 
 _RESULT_TYPE = "indexed_source_binding"
 
@@ -223,11 +233,70 @@ class WorkspaceIndexedSourceLifecycleService:
         configuration_service: WorkspaceKnowledgeConfigurationService,
         mutation_engine: WorkspaceKnowledgeConfigurationMutationEngine,
         tenant_binding_port: TenantKnowledgeSourceBindingPort,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
     ) -> None:
         self._repository = repository
         self._configuration_service = configuration_service
         self._mutation_engine = mutation_engine
         self._tenant_binding_port = tenant_binding_port
+        self._publication_fence_port = publication_fence_port or (
+            DocumentStoreKnowledgeSyncPublicationFenceRepository(repository.document_store)
+        )
+
+    def _set_publication_fence(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        enabled: bool,
+    ) -> None:
+        current = self._publication_fence_port.read_fence(
+            tenant_id=tenant_id,
+            binding_id=binding_id,
+        )
+        if current is None:
+            candidate = KnowledgeSyncPublicationFenceV1(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+                lifecycle_revision=1,
+                lifecycle_token=secrets.token_urlsafe(32),
+                enabled=enabled,
+                detached=False,
+            )
+            try:
+                self._publication_fence_port.write_fence(
+                    candidate,
+                    expected_revision=None,
+                )
+            except Exception:
+                if self._publication_fence_port.read_fence(
+                    tenant_id=tenant_id,
+                    binding_id=binding_id,
+                ) is None:
+                    raise
+            return
+        if current.enabled is enabled and not current.detached:
+            return
+        replacement = current.model_copy(
+            update={
+                "lifecycle_revision": current.lifecycle_revision + 1,
+                "lifecycle_token": secrets.token_urlsafe(32),
+                "enabled": enabled,
+                "detached": False,
+            }
+        )
+        try:
+            self._publication_fence_port.write_fence(
+                replacement,
+                expected_revision=current.lifecycle_revision,
+            )
+        except Exception:
+            reloaded = self._publication_fence_port.read_fence(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+            )
+            if reloaded is None or reloaded.enabled is not enabled:
+                raise
 
     def replay_activation_if_committed(
         self, command: ActivateWorkspaceIndexedSourceCommand
@@ -275,6 +344,11 @@ class WorkspaceIndexedSourceLifecycleService:
             request_hash=request_hash,
             semantic_hash=semantic_hash,
             expected_status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
+        )
+        self._set_publication_fence(
+            tenant_id=tenant_id,
+            binding_id=binding_ref,
+            enabled=True,
         )
         return _lifecycle_result(result, binding=binding, created_new_source=False)
 
@@ -324,6 +398,11 @@ class WorkspaceIndexedSourceLifecycleService:
             request_hash=request_hash,
             semantic_hash=semantic_hash,
             expected_status=WorkspaceIndexedSourceBindingStatusV1.ACTIVE,
+        )
+        self._set_publication_fence(
+            tenant_id=tenant_id,
+            binding_id=binding_ref,
+            enabled=True,
         )
         created = result.disposition is WorkspaceKnowledgeMutationExecutionDispositionV1.APPLIED and not had_source
         return _lifecycle_result(result, binding=binding, created_new_source=created)
@@ -386,6 +465,11 @@ class WorkspaceIndexedSourceLifecycleService:
                 semantic_hash=semantic_hash,
                 expected_status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
             )
+            self._set_publication_fence(
+                tenant_id=tenant_id,
+                binding_id=binding_ref,
+                enabled=False,
+            )
             return _lifecycle_result(result, binding=binding, created_new_source=False)
         configuration = self._configuration_service.get_configuration(
             tenant_id=tenant_id, workspace_id=workspace_id,
@@ -422,5 +506,10 @@ class WorkspaceIndexedSourceLifecycleService:
             binding_id=binding_id, source_id=source_id, request_hash=request_hash,
             semantic_hash=semantic_hash,
             expected_status=WorkspaceIndexedSourceBindingStatusV1.DISABLED,
+        )
+        self._set_publication_fence(
+            tenant_id=tenant_id,
+            binding_id=current.knowledge_source_binding_ref,
+            enabled=False,
         )
         return _lifecycle_result(result, binding=binding, created_new_source=False)

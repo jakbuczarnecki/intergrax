@@ -109,6 +109,7 @@ class ConnectedSourceMaterializationManifestV1(BaseModel):
     publication_fence_revision: int = Field(..., ge=1)
     publication_fence_token_fingerprint: str
     document_entries: tuple[ConnectedSourceMaterializationManifestEntryV1, ...]
+    revoked_remote_ids: tuple[str, ...] = ()
     payload_fingerprint: str
     committed_at: datetime
 
@@ -144,6 +145,22 @@ class ConnectedSourceMaterializationManifestV1(BaseModel):
             raise ValueError("connected_source_manifest_entry_count_exceeded")
         return entries
 
+    @field_validator("revoked_remote_ids")
+    @classmethod
+    def _immutable_revoked_remote_ids(
+        cls,
+        value: tuple[str, ...] | list[str],
+    ) -> tuple[str, ...]:
+        remote_ids = tuple(value)
+        if len(remote_ids) > MAX_MANIFEST_ENTRY_COUNT:
+            raise ValueError("connected_source_manifest_revocation_count_exceeded")
+        normalized = tuple(sorted(_identifier(item, "revoked_remote_id") for item in remote_ids))
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("connected_source_manifest_revocation_duplicate")
+        if remote_ids != normalized:
+            raise ValueError("connected_source_manifest_revocations_not_deterministic")
+        return normalized
+
     @model_validator(mode="after")
     def _entry_invariants(
         self,
@@ -159,6 +176,8 @@ class ConnectedSourceMaterializationManifestV1(BaseModel):
         document_ids = [entry.document_id for entry in self.document_entries]
         if len(document_ids) != len(set(document_ids)):
             raise ValueError("connected_source_manifest_document_id_duplicate")
+        if set(remote_ids).intersection(self.revoked_remote_ids):
+            raise ValueError("connected_source_manifest_active_revocation_conflict")
         if len(self.serialized_bytes()) > MAX_MANIFEST_SERIALIZED_BYTES:
             raise ValueError("connected_source_manifest_serialized_size_exceeded")
         return self
@@ -331,6 +350,9 @@ class ConnectedSourceMaterializationManifestRepository:
             tuple[int, KnowledgeSyncCommittedPublicationV2]
         ] = []
         for descriptor in descriptors:
+            manifest = self._load_immutable(descriptor)
+            if remote_id in manifest.revoked_remote_ids:
+                return None
             candidate = self._get_remote_candidate(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
@@ -783,7 +805,8 @@ class ConnectedSourceMaterializationManifestRepository:
             )
         try:
             manifest = ConnectedSourceMaterializationManifestV1.model_validate(
-                record.data["manifest"]
+                record.data["manifest"],
+                strict=False,
             )
         except (TypeError, ValueError):
             raise ConnectedSourceMaterializationManifestConflict(
@@ -907,7 +930,8 @@ class ConnectedSourceMaterializationManifestRepository:
             )
         try:
             candidate = ConnectedSourceRemoteCandidateV1.model_validate(
-                record.data["candidate"]
+                record.data["candidate"],
+                strict=False,
             )
         except (TypeError, ValueError):
             raise ConnectedSourceMaterializationManifestConflict(

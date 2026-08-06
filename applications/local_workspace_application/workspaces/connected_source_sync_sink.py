@@ -84,6 +84,14 @@ _ALLOWED_CHANGE_KINDS = frozenset(
     {
         KnowledgeChangeKind.UPSERT,
         KnowledgeChangeKind.METADATA_CHANGED,
+        KnowledgeChangeKind.DELETED,
+        KnowledgeChangeKind.REVOKED,
+    }
+)
+_TOMBSTONE_CHANGE_KINDS = frozenset(
+    {
+        KnowledgeChangeKind.DELETED,
+        KnowledgeChangeKind.REVOKED,
     }
 )
 
@@ -237,6 +245,10 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             )
 
         self._validate_authoritative_state(batch)
+        self._validate_publication_at_commit(
+            batch.publication_fence,
+            batch.publication_permit,
+        )
         receipt = begin_delivery_receipt(
             repository=self._repository,
             tenant_id=self._context.tenant_id,
@@ -361,10 +373,21 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         materialized_documents: list[
             tuple[KnowledgeMaterializationOwnershipV1, str, str]
         ] = []
+        revoked_remote_ids: list[str] = []
+        seen_remote_ids: set[str] = set()
 
         for envelope in batch.envelopes:
             if envelope.change_kind not in _ALLOWED_CHANGE_KINDS:
                 raise ConnectedSourceSyncSinkError("connected_source_change_kind_rejected")
+            if envelope.remote_id in seen_remote_ids:
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_remote_id_duplicate"
+                )
+            seen_remote_ids.add(envelope.remote_id)
+            if envelope.change_kind in _TOMBSTONE_CHANGE_KINDS:
+                revoked_remote_ids.append(envelope.remote_id)
+                items_processed += 1
+                continue
             if envelope.content is None:
                 raise ConnectedSourceSyncSinkError("connected_source_content_missing")
             if envelope.content.mode is not KnowledgeContentMode.STRUCTURED_RECORD:
@@ -411,11 +434,16 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             else:
                 raise ConnectedSourceSyncSinkError("connected_source_indexing_failed")
 
-        mark_delivery_prepared(repository=self._repository, receipt=receipt)
+        self._validate_publication_at_commit(
+            batch.publication_fence,
+            batch.publication_permit,
+        )
+        receipt = mark_delivery_prepared(repository=self._repository, receipt=receipt)
         manifest = self._build_manifest(
             batch=batch,
             receipt=receipt,
             materialized_documents=materialized_documents,
+            revoked_remote_ids=tuple(revoked_remote_ids),
             payload_fingerprint=payload_fingerprint,
         )
         expected_fence = batch.publication_fence
@@ -424,6 +452,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             raise ConnectedSourceSyncSinkError(
                 "connected_source_publication_permit_required"
             )
+        self._validate_publication_at_commit(expected_fence, publication_permit)
         try:
             manifest_status = self._manifest_repository.commit(
                 manifest,
@@ -479,6 +508,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         batch: KnowledgeSyncBatch,
         receipt,
         materialized_documents: list[tuple[KnowledgeMaterializationOwnershipV1, str, str]],
+        revoked_remote_ids: tuple[str, ...],
         payload_fingerprint: str,
     ) -> ConnectedSourceMaterializationManifestV1:
         if batch.publication_fence is None or batch.publication_permit is None:
@@ -525,6 +555,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 batch.publication_fence.lifecycle_token
             ),
             document_entries=entries,
+            revoked_remote_ids=revoked_remote_ids,
             payload_fingerprint=payload_fingerprint,
             committed_at=receipt.created_at,
         )
@@ -741,6 +772,8 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             )
         except WorkspaceDocumentIndexingError as exc:
             raise ConnectedSourceSyncSinkError("connected_source_indexing_failed") from exc
+        except Exception:
+            raise
         finally:
             if temp_path.exists():
                 temp_path.unlink(missing_ok=True)

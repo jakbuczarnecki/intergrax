@@ -410,7 +410,10 @@ def _envelope(
     descriptor = make_descriptor(content_mode=KnowledgeContentMode.STRUCTURED_RECORD)
     descriptor = descriptor.model_copy(
         update={
-            "identity": descriptor.identity.model_copy(update={"remote_id": remote_id})
+            "identity": descriptor.identity.model_copy(update={"remote_id": remote_id}),
+            "provenance": descriptor.provenance.model_copy(
+                update={"remote_id": remote_id}
+            ),
         }
     )
     if change_kind in {KnowledgeChangeKind.DELETED, KnowledgeChangeKind.REVOKED}:
@@ -604,10 +607,39 @@ async def test_empty_batch_completes_receipt(sink_env) -> None:
 
 
 @pytest.mark.asyncio
-async def test_tombstone_rejected(sink_env) -> None:
-    _, sink, _ = sink_env
-    with pytest.raises(ConnectedSourceSyncSinkError):
-        await sink.apply_batch(batch=_batch(envelopes=(_envelope(KnowledgeChangeKind.DELETED),)))
+async def test_tombstone_revokes_previous_materialization(sink_env) -> None:
+    repo, sink, _ = sink_env
+    resolver = RepositoryKnowledgeMaterializationVisibility(repo)
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
+            delivery_id=_DELIVERY,
+        )
+    )
+    active_ref = next(
+        ref
+        for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        if ref.materialization_ownership is not None
+    )
+    assert active_ref.materialization_ownership is not None
+    assert resolver.is_visible(
+        ownership=active_ref.materialization_ownership,
+        document_id=active_ref.document_id,
+        content_hash=active_ref.content_hash,
+    )
+
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.DELETED),),
+            delivery_id=_DELIVERY_2,
+        )
+    )
+
+    assert not resolver.is_visible(
+        ownership=active_ref.materialization_ownership,
+        document_id=active_ref.document_id,
+        content_hash=active_ref.content_hash,
+    )
 
 
 @pytest.mark.asyncio
@@ -694,14 +726,17 @@ async def test_materialization_supersession_uses_delivery_sequence_and_replay_is
     )
     assert resolver.is_visible(ownership=second.materialization_ownership)
 
-    replay = await sink.apply_batch(
-        batch=_batch(
-            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
-            delivery_id=_DELIVERY_2,
-            binding_configuration_version=2,
+    with pytest.raises(
+        ConnectedSourceSyncSinkError,
+        match="connected_source_delivery_receipt_conflict",
+    ):
+        await sink.apply_batch(
+            batch=_batch(
+                envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
+                delivery_id=_DELIVERY_2,
+                binding_configuration_version=2,
+            )
         )
-    )
-    assert replay.replayed is True
     assert resolver.is_visible(ownership=second.materialization_ownership)
     assert indexing.index_connected_source_one.await_count == 2
 

@@ -214,10 +214,19 @@ class ManagedWorkspaceConnectedSourceSyncService:
 
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):
-            raise RuntimeError("connected_source_sync_requires_conditional_document_store")
-        checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(document_store)
-        reconciliation_run_repository = DocumentStoreKnowledgeReconciliationRunRepository(
+            raise RuntimeError(  # noqa: TRY004
+                "connected_source_sync_requires_conditional_document_store"
+            )
+        publication_fence_port = DocumentStoreKnowledgeSyncPublicationFenceRepository(
             document_store
+        )
+        checkpoint_repository = DocumentStoreKnowledgeSyncCheckpointRepository(
+            document_store,
+            publication_fence_port=publication_fence_port,
+        )
+        reconciliation_run_repository = DocumentStoreKnowledgeReconciliationRunRepository(
+            document_store,
+            publication_fence_port=publication_fence_port,
         )
         restart_decision = resolve_connected_source_restart(
             repository=self._repository,
@@ -239,6 +248,8 @@ class ManagedWorkspaceConnectedSourceSyncService:
             binding_id=binding_ref,
             operation_id=operation.operation_id,
         )
+        if reconciliation_run is None or reconciliation_run.run_id != expected_run_id:
+            restart = True
         if (
             reconciliation_run is not None
             and reconciliation_run.run_id == expected_run_id
@@ -381,6 +392,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
                     operation.connected_source_reconciliation_state
                     is ConnectedSourceReconciliationStateV1.NEW_RECONCILIATION
                 ):
+                    trigger_delivery_id = result.delivery_id
                     operation = operation.model_copy(
                         update={
                             "connected_source_reconciliation_state": (
@@ -393,6 +405,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 elif operation.connected_source_reconciliation_state is (
                     ConnectedSourceReconciliationStateV1.CONTINUATION
                 ):
+                    trigger_delivery_id = result.delivery_id or trigger_delivery_id
                     restart = False
                 if not result.has_more:
                     has_more = False
@@ -480,27 +493,37 @@ class ManagedWorkspaceConnectedSourceSyncService:
     ) -> VendorKnowledgeSyncCoordinator:
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):
-            raise RuntimeError("connected_source_sync_requires_conditional_document_store")
+            raise RuntimeError(  # noqa: TRY004
+                "connected_source_sync_requires_conditional_document_store"
+            )
+        publication_fence_port = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+            document_store
+        )
         return VendorKnowledgeSyncCoordinator(
             tenant_id=tenant_id,
             owner_id=dependencies.owner_id,
             binding_service=dependencies.binding_service,
             facade=dependencies.facade,
             lease_repository=DocumentStoreKnowledgeSourceLeaseRepository(document_store),
-            checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(document_store),
-            item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(document_store),
+            checkpoint_repository=DocumentStoreKnowledgeSyncCheckpointRepository(
+                document_store,
+                publication_fence_port=publication_fence_port,
+            ),
+            item_state_repository=DocumentStoreKnowledgeRemoteItemStateRepository(
+                document_store,
+                publication_fence_port=publication_fence_port,
+            ),
             sink=sink,
             lease_ttl_seconds=self._lease_ttl_seconds,
             reconciliation_run_repository=DocumentStoreKnowledgeReconciliationRunRepository(
-                document_store
+                document_store,
+                publication_fence_port=publication_fence_port,
             ),
             candidate_inventory_repository=(
                 DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(document_store)
             ),
             sink_receipt_inspector=sink,
-            publication_fence_port=DocumentStoreKnowledgeSyncPublicationFenceRepository(
-                document_store
-            ),
+            publication_fence_port=publication_fence_port,
             require_fenced_publication=True,
         )
 
@@ -545,9 +568,12 @@ class ManagedWorkspaceConnectedSourceSyncService:
             tenant_id=operation.tenant_id,
             operation_id=operation.operation_id,
         )
-        if reloaded is not None and reloaded.status is WorkspaceOperationStatus.RUNNING:
-            if reloaded.completed_at is not None or reloaded.error is not None:
-                return reloaded
+        if (
+            reloaded is not None
+            and reloaded.status is WorkspaceOperationStatus.RUNNING
+            and (reloaded.completed_at is not None or reloaded.error is not None)
+        ):
+            return reloaded
         return self._requeue(operation, source, error_code="lease_busy")
 
     def _requeue(

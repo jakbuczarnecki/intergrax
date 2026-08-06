@@ -2090,6 +2090,8 @@ _ALLOWED_RECOVERY_CAS_TRANSITIONS: frozenset[
 class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
     """Active-only candidate inventory backed by a maintained index."""
 
+    _DOCUMENT_STORE_QUERY_PAGE_LIMIT = 5_000
+
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = _require_conditional_document_store(document_store)
 
@@ -2140,25 +2142,35 @@ class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
             raise KnowledgeCandidateInventoryIncomplete(
                 "legacy active inventory lacks completeness proof"
             )
-        result = self._store.query(
-            index_partition, limit=limit, row_key_prefix="active:"
-        )
         remote_ids: list[str] = []
         seen: set[str] = set()
-        for document in result.documents:
-            cleaned_remote = _parse_active_index_row_strict(
-                document,
-                expected_partition=index_partition,
-                expected_tenant=cleaned_tenant,
-                expected_binding=cleaned_binding,
-                expected_configuration_version=binding_configuration_version,
-                store=self._store,
-                item_partition=item_partition,
+        cursor: str | None = None
+        while len(remote_ids) < limit:
+            result = self._store.query(
+                index_partition,
+                limit=min(limit - len(remote_ids), self._DOCUMENT_STORE_QUERY_PAGE_LIMIT),
+                row_key_prefix="active:",
+                cursor=cursor,
             )
-            if cleaned_remote in seen:
-                raise KnowledgeSyncCorruptState("active item index contains duplicates")
-            seen.add(cleaned_remote)
-            remote_ids.append(cleaned_remote)
+            for document in result.documents:
+                cleaned_remote = _parse_active_index_row_strict(
+                    document,
+                    expected_partition=index_partition,
+                    expected_tenant=cleaned_tenant,
+                    expected_binding=cleaned_binding,
+                    expected_configuration_version=binding_configuration_version,
+                    store=self._store,
+                    item_partition=item_partition,
+                )
+                if cleaned_remote in seen:
+                    raise KnowledgeSyncCorruptState("active item index contains duplicates")
+                seen.add(cleaned_remote)
+                remote_ids.append(cleaned_remote)
+            if result.next_cursor is None:
+                break
+            if result.next_cursor == cursor:
+                raise KnowledgeSyncCorruptState("active item index cursor did not advance")
+            cursor = result.next_cursor
         return tuple(sorted(remote_ids))
 
 

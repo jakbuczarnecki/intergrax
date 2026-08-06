@@ -62,7 +62,7 @@ def map_search_hits(
         snippet = str(item.get("snippet") or item.get("text") or "").strip()
         metadata = item.get("metadata")
 
-        if not document_id or not source_id or not source_path or not file_name:
+        if not document_id or not source_path or not file_name:
             incomplete = True
             continue
         if not isinstance(score_raw, (int, float)):
@@ -84,8 +84,23 @@ def map_search_hits(
             visibility_filtered = True
             continue
         if ref is None:
+            normalized_path = normalize_source_path(source_path)
+            ref = next(
+                (
+                    candidate
+                    for candidate in repository.list_document_refs(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                    )
+                    if normalize_source_path(candidate.source_path) == normalized_path
+                ),
+                None,
+            )
+            if ref is None:
+                continue
+        if ref.tenant_id != tenant_id:
             continue
-        if ref.source_id != source_id or ref.tenant_id != tenant_id:
+        if source_id and ref.source_id != source_id:
             continue
         if normalize_source_path(ref.source_path) != normalize_source_path(source_path):
             # Provenance mismatch — drop rather than fabricate.
@@ -100,7 +115,7 @@ def map_search_hits(
             try:
                 visibility_cache[ownership_key] = visibility.is_visible(
                     ownership=ownership,
-                    document_id=document_id,
+                    document_id=ref.document_id,
                     content_hash=ref.content_hash,
                 )
             except (TypeError, ValueError, AttributeError):
@@ -112,7 +127,7 @@ def map_search_hits(
         hits.append(
             WorkspaceSearchHitV1(
                 document_id=document_id,
-                source_id=source_id,
+                source_id=ref.source_id,
                 workspace_id=workspace_id,
                 source_path=ref.source_path,
                 file_name=file_name,

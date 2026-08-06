@@ -204,7 +204,10 @@ class WorkspaceDocumentIndexingService:
         if record is None:
             return None
         try:
-            receipt = _WorkspaceDocumentIndexReceipt.model_validate(dict(record.data))
+            receipt = _WorkspaceDocumentIndexReceipt.model_validate(
+                dict(record.data),
+                strict=False,
+            )
         except ValueError:
             raise WorkspaceDocumentIndexingError("index_receipt_corrupt") from None
         if (

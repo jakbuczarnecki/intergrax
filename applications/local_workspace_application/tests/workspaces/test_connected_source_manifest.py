@@ -45,6 +45,7 @@ def _manifest(
     document_id: str,
     remote_id: str = "remote-a",
     entries: tuple[ConnectedSourceMaterializationManifestEntryV1, ...] | None = None,
+    revoked_remote_ids: tuple[str, ...] = (),
 ) -> ConnectedSourceMaterializationManifestV1:
     return ConnectedSourceMaterializationManifestV1(
         tenant_id=_TENANT,
@@ -57,7 +58,10 @@ def _manifest(
         binding_configuration_version=1,
         publication_fence_revision=1,
         publication_fence_token_fingerprint="a" * 64,
-        document_entries=entries or (_entry(remote_id, document_id),),
+        document_entries=(
+            (_entry(remote_id, document_id),) if entries is None else entries
+        ),
+        revoked_remote_ids=revoked_remote_ids,
         payload_fingerprint=delivery_id,
         committed_at=_NOW,
     )
@@ -107,11 +111,10 @@ def test_manifest_cas_orders_sequences_and_rejects_same_sequence_conflict() -> N
     authority, fence, permit = _authority(store)
     repository = ConnectedSourceMaterializationManifestRepository(store)
 
-    validate = lambda expected, current: (
-        None
-        if authority.is_current_publication_permit(permit=current)
-        else (_ for _ in ()).throw(RuntimeError("permit_lost"))
-    )
+    def validate(expected: object, current: object) -> None:
+        if not authority.is_current_publication_permit(permit=current):
+            raise RuntimeError("permit_lost")
+
     first = _manifest(sequence=1, delivery_id="a" * 64, document_id="document-a")
     assert (
         repository.commit(
@@ -370,6 +373,42 @@ def test_remote_candidate_index_preserves_unrelated_pages_and_supersedes_item() 
     assert remote("remote-a") == page_three
     assert remote("remote-b") == page_one
     assert remote("remote-c") == page_two
+
+
+def test_latest_revocation_hides_previous_materialization() -> None:
+    store = InMemoryDocumentStore()
+    authority, fence, permit = _authority(store)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+    active = _manifest(
+        sequence=1,
+        delivery_id="a" * 64,
+        document_id="document-a",
+    )
+    revoked = _manifest(
+        sequence=2,
+        delivery_id="b" * 64,
+        document_id="unused",
+        entries=(),
+        revoked_remote_ids=("remote-a",),
+    )
+    for manifest in (active, revoked):
+        assert repository.commit(
+            manifest,
+            expected_fence=fence,
+            publication_permit=permit,
+        ) is ManifestCommitStatus.COMMITTED
+
+    assert repository.get_committed_for_remote(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        remote_id="remote-a",
+    ) is None
 
 
 def test_manifest_commit_rejects_permit_expiry_before_authority_cas() -> None:

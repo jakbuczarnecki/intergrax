@@ -204,7 +204,7 @@ def parse_index_entry(
     try:
         entry = WorkspaceDocumentOwnershipIndexEntryV1.model_validate(
             record.data["entry"],
-            strict=True,
+            strict=False,
         )
     except (TypeError, ValueError):
         raise DocumentOwnershipIndexError("document_ownership_index_corrupt") from None

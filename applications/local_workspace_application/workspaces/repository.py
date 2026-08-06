@@ -8,7 +8,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import TypeVar
+from typing import Any, TypeVar, cast
 
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
@@ -52,7 +52,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperationType,
     WorkspaceSource,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
@@ -231,11 +231,14 @@ class ManagedWorkspaceRepository:
         record = self._store.get(partition_key, row_key)
         if record is None:
             return None
-        return model_type.model_validate(dict(record.data))
+        return model_type.model_validate(dict(record.data), strict=False)
 
     def _list(self, partition_key: str, model_type: type[T], *, limit: int = 500) -> list[T]:
         result = self._store.query(partition_key, limit=limit)
-        return [model_type.model_validate(dict(doc.data)) for doc in result.documents]
+        return [
+            model_type.model_validate(dict(doc.data), strict=False)
+            for doc in result.documents
+        ]
 
     # --- Workspace ---
 
@@ -1089,10 +1092,33 @@ class ManagedWorkspaceRepository:
         existing = self._store.get(record.partition_key, record.row_key)
         if existing is not None:
             parsed = parse_index_entry(existing)
-            if parsed != entry:
+            same_identity = (
+                parsed.tenant_id == entry.tenant_id
+                and parsed.workspace_id == entry.workspace_id
+                and parsed.source_id == entry.source_id
+                and parsed.indexed_source_binding_id == entry.indexed_source_binding_id
+                and parsed.knowledge_source_binding_ref
+                == entry.knowledge_source_binding_ref
+                and parsed.document_id == entry.document_id
+            )
+            if not same_identity:
                 raise DocumentOwnershipIndexError(
                     "document_ownership_index_conflict"
                 )
+            if parsed != entry:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise DocumentOwnershipIndexError(
+                        "document_ownership_index_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if retry is None or parse_index_entry(retry) != entry:
+                        raise DocumentOwnershipIndexError(
+                            "document_ownership_index_conflict"
+                        )
             return entry
         if not isinstance(self._store, ConditionalDocumentStore):
             raise DocumentOwnershipIndexError("document_ownership_index_store_unavailable")
@@ -1232,12 +1258,21 @@ class ManagedWorkspaceRepository:
         )
         refs: list[WorkspaceDocumentReference] = []
         for doc in result.documents:
-            if str(doc.row_key).startswith(f"{workspace_id}:") and not str(doc.row_key).startswith(
-                f"{workspace_id}:path:"
+            if (
+                str(doc.row_key).startswith(f"{workspace_id}:")
+                and not str(doc.row_key).startswith(f"{workspace_id}:path:")
+                and "document_id" in doc.data
+                and "source_path" in doc.data
             ):
-                # skip path index rows which use path: prefix under same partition
-                if "document_id" in doc.data and "source_path" in doc.data:
-                    refs.append(WorkspaceDocumentReference.model_validate(dict(doc.data)))
+                try:
+                    refs.append(
+                        WorkspaceDocumentReference.model_validate(
+                            dict(doc.data),
+                            strict=False,
+                        )
+                    )
+                except ValidationError:
+                    continue
         return refs
 
     def get_document_ref(
@@ -1624,8 +1659,8 @@ class ManagedWorkspaceRepository:
                 try:
                     self._store.delete(_ACTIVE_KNOWLEDGE_INGESTION_PARTITION, doc.row_key)
                     malformed_removed += 1
-                except Exception:  # noqa: BLE001 - continue scan after delete failure
-                    pass
+                except Exception:  # noqa: BLE001, S112 - continue scan after delete failure
+                    continue
         locators.sort(key=lambda item: (item.created_at, item.operation_id))
         return ActiveKnowledgeIngestionLocatorScan(
             locators=tuple(locators),
@@ -1704,7 +1739,8 @@ class ManagedWorkspaceRepository:
             )
         items: list[T] = []
         for doc in result.documents:
-            model = model_type.model_validate(dict(doc.data))
+            model = cast(T, model_type.model_validate(dict(doc.data)))
+            model_data = cast(Any, model)
             row_workspace_id, row_entity_id, row_revision = _parse_revision_row_key(doc.row_key)
             if row_workspace_id != workspace_id:
                 raise ValueError("knowledge_configuration_record_identity_mismatch")
@@ -1716,12 +1752,12 @@ class ManagedWorkspaceRepository:
             _assert_record_identity(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
-                model_tenant_id=model.tenant_id,
-                model_workspace_id=model.workspace_id,
+                model_tenant_id=model_data.tenant_id,
+                model_workspace_id=model_data.workspace_id,
                 entity_id=row_entity_id,
                 model_entity_id=model_entity_id,
                 revision=row_revision,
-                model_revision=model.effective_revision,
+                model_revision=model_data.effective_revision,
             )
             items.append(model)
         return sorted(items, key=sort_key)
