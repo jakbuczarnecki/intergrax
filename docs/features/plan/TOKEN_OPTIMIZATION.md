@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G READY_FOR_REVIEW**; **TOKEN-10H PLANNED / NOT STARTED**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of **TOKEN-10G**. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Independent audit of the checked-in **TOKEN-10H** negative live proof, followed by a separate decision on testing a stronger local model. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of **TOKEN-10G**. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of the checked-in **TOKEN-10H** negative live proof. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1843,7 +1843,7 @@ automatic production enablement
 
 #### Current next step
 
-Independent GitHub audit of **TOKEN-10G**. Do not wire LKW, Slack, or application storage; TOKEN-10H remains planned.
+Independent audit of the checked-in **TOKEN-10H** negative live proof. Do not wire LKW, Slack, or application storage; public promotion remains withheld until model behavior satisfies the contract.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
@@ -1873,7 +1873,7 @@ Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
 Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
 claims, and TOKEN-10H public proof or README promotion.
 
-**Current next step:** Independent audit of **TOKEN-10G**.
+**Current next step:** Independent audit of the checked-in **TOKEN-10H** negative live proof.
 
 #### TOKEN-10F-EVIDENCE-EXTENSION — Safe evaluation evidence contract
 
@@ -1891,7 +1891,7 @@ compatible. TOKEN-10F-EVIDENCE-EXTENSION is **ACCEPTED / CLOSED**.
 
 ### TOKEN-10G — Proof Corpus, Markdown Report, Evals and Hard Gates
 
-**Status:** **READY_FOR_REVIEW**.
+**Status:** **CLOSED**.
 
 TOKEN-10G delivers a strict, versioned, synthetic and redaction-safe corpus in
 `configs/token_optimization/corpus/universal_proof_cases.toml`, typed
@@ -1908,11 +1908,21 @@ writes. Offline mode never claims warm-cache reuse or changed-prefix control
 without provider evidence; numeric savings, live provider execution, checked-in
 results and public promotion remain outside this phase.
 
-### TOKEN-10H — Checked-In Proof, README Promotion and Public Claims
+### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
-**Status:** **PLANNED / NOT STARTED**.
+**Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.
 
-Only phase allowed to promote Token Optimization in main README with reproducible run command, proof link, and evidence-supported measurements. Updates [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md) with proof-gated wording.
+Two repeated local vLLM runs using `Qwen/Qwen2.5-3B-Instruct` were retained as a safe, auditable negative live proof. Offline proof passed `16/16`, runtime safety remained stable, and the two live runs were repeatable, but the selected model failed the behavioral contract in `case-protected-values`, `case-high-risk-lossy-content`, and `case-measure-only`. Public README promotion remains withheld because evaluator success is false and model case-level compliance is only `13/16`.
+
+Evidence is retained under `docs/proofs/token_optimization/`. No raw content, protected values, secrets, paths, or provider cache claims are checked in. TOKEN-10H is not closed; changes are required before any promotional wording is considered.
+
+Closeout:
+
+- offline proof passed `16/16`
+- runtime safety remained stable
+- two live runs were repeatable
+- the selected local Qwen 2.5 3B model failed the behavioral contract in three cases
+- public README promotion remains blocked
 
 ---
 
@@ -2397,8 +2407,8 @@ TOKEN-10D   cache-aware router and pipeline orchestration — Accepted / Closed
 TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review (activation/rollback runtime not started)
 TOKEN-10F universal proof harness — Accepted / Closed
 TOKEN-10F-EVIDENCE-EXTENSION — Accepted / Closed
-TOKEN-10G corpus, gates and evaluation — Ready for Review
-TOKEN-10H checked-in public proof and README promotion — Planned
+TOKEN-10G corpus, gates and evaluation — Closed
+TOKEN-10H checked-in negative live proof — Model behavior mismatch / Changes required
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

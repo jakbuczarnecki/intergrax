@@ -1,0 +1,4796 @@
+{
+  "adapter_type": "openai_compatible",
+  "aggregate": {
+    "gate_counts": {
+      "FAIL": 17,
+      "PASS": 336,
+      "UNAVAILABLE": 8
+    },
+    "integrity_failure_count": 0,
+    "model_mismatch_case_ids": [
+      "case-protected-values",
+      "case-high-risk-lossy-content",
+      "case-measure-only"
+    ],
+    "policy_override_count": 1,
+    "raw_content_failure_count": 0,
+    "runtime_safety_failure_count": 0,
+    "secret_failure_count": 0,
+    "technical_failed_count": 0
+  },
+  "case_count": 16,
+  "cases": [
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-changed-prefix-cache-control",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "changed_prefix_negative_control",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "changed_prefix_negative_control",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 169
+        },
+        "optimized": {
+          "available": true,
+          "count": 169
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EVIDENCE_UNAVAILABLE",
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "UNAVAILABLE"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-code-heavy-content",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 300
+        },
+        "optimized": {
+          "available": true,
+          "count": 300
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "routed",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-exact-duplicate-content",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "20",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "13",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 20
+        },
+        "optimized": {
+          "available": true,
+          "count": 13
+        },
+        "ratios": {
+          "optimized_to_baseline": 0.65,
+          "reduction_ratio": 0.35
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "review_required",
+        "pipeline_completed": null,
+        "pipeline_status": "not_started",
+        "receipt_completion_status": null
+      },
+      "case_id": "case-high-risk-lossy-content",
+      "digests": {
+        "protected_input_identity": "10e93dede8fdd10e46f8308754e4dad7d09612b5b8c7abed869bb70c41f8af10",
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "not_started"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "review_required",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "protected_or_high_risk",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "True",
+          "expected_safe_summary": "True",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "review_required",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "security warning final safety",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_started",
+          "expected_safe_summary": "not_started",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "None",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "coherent terminal non-execution evidence",
+          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "2",
+          "expected_safe_summary": "2",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_run",
+          "expected_safe_summary": "not_run",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": false,
+          "count": null
+        },
+        "optimized": {
+          "available": false,
+          "count": null
+        },
+        "ratios": null
+      },
+      "model_behavioral_failure": true,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "True",
+          "expected_safe_summary": "True",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": true,
+      "policy_override_reason": "security_warning_requires_review",
+      "protected_counts": {
+        "checked": 2,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_run"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE",
+        "VALUE_NOT_ALLOWED",
+        "protected_regions_require_review"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-inner-dictionary-order",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 169
+        },
+        "optimized": {
+          "available": true,
+          "count": 169
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-measure-only",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "73",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "73",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 73
+        },
+        "optimized": {
+          "available": true,
+          "count": 73
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": true,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE",
+        "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
+        "VALUE_NOT_ALLOWED"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "routed",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-noisy-tool-output",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "extractive_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "noisy_tool_output",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "2111",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "533",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 2111
+        },
+        "optimized": {
+          "available": true,
+          "count": 533
+        },
+        "ratios": {
+          "optimized_to_baseline": 0.252487,
+          "reduction_ratio": 0.747513
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "extractive_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "noisy_tool_output",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "medium",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "blocked",
+        "pipeline_completed": null,
+        "pipeline_status": "not_started",
+        "receipt_completion_status": null
+      },
+      "case_id": "case-policy-disabled",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": null,
+        "tool_schema_hash": null
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "not_started"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "blocked",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "policy_disabled",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "blocked",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "coherent terminal non-execution evidence",
+          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_started",
+          "expected_safe_summary": "not_started",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "coherent terminal non-execution evidence",
+          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": false,
+          "count": null
+        },
+        "optimized": {
+          "available": false,
+          "count": null
+        },
+        "ratios": null
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE",
+        "policy_disabled"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-prefix-changed",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 61
+        },
+        "optimized": {
+          "available": true,
+          "count": 61
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-prefix-stable-repeat",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "same",
+          "expected_safe_summary": "case-exact-duplicate-content",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 55
+        },
+        "optimized": {
+          "available": true,
+          "count": 55
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "review_required",
+        "pipeline_completed": null,
+        "pipeline_status": "not_started",
+        "receipt_completion_status": null
+      },
+      "case_id": "case-protected-values",
+      "digests": {
+        "protected_input_identity": "0a766c237bc88b0d84581c73afd4b026ccc8d668b4ade486a01bf937bc76735f",
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "review_required",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "True",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "REVIEW_REQUIREMENT_MISMATCH",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "review_required",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_started",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXECUTION_STATE_MISMATCH",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "None",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "coherent terminal non-execution evidence",
+          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "4",
+          "expected_safe_summary": "4",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "4",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "PROTECTED_PRESERVATION_MISMATCH",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "digest equality",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": false,
+          "count": null
+        },
+        "optimized": {
+          "available": false,
+          "count": null
+        },
+        "ratios": null
+      },
+      "model_behavioral_failure": true,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "medium",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
+        },
+        {
+          "actual_safe_summary": "True",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "REVIEW_REQUIREMENT_MISMATCH",
+          "status": "FAIL"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 4,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_run"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EVIDENCE_UNAVAILABLE",
+        "EXECUTION_STATE_MISMATCH",
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE",
+        "PROTECTED_PRESERVATION_MISMATCH",
+        "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
+        "REVIEW_REQUIREMENT_MISMATCH",
+        "VALUE_NOT_ALLOWED",
+        "model_requested_review"
+      ],
+      "status": "FAIL"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "routed",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-rag-context-pack",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "471",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "316",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 471
+        },
+        "optimized": {
+          "available": true,
+          "count": 316
+        },
+        "ratios": {
+          "optimized_to_baseline": 0.670913,
+          "reduction_ratio": 0.329087
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "exact_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "exact_duplicates",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-reordered-tools",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 169
+        },
+        "optimized": {
+          "available": true,
+          "count": 169
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-short-clean-prompt",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 33
+        },
+        "optimized": {
+          "available": true,
+          "count": 33
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "routed",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-terminal-log-output",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "extractive_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "noisy_tool_output",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "routed",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "<redacted>",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "1375",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "476",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "available",
+          "expected_safe_summary": "identity",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 1375
+        },
+        "optimized": {
+          "available": true,
+          "count": 476
+        },
+        "ratios": {
+          "optimized_to_baseline": 0.346182,
+          "reduction_ratio": 0.653818
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "extractive_only",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "noisy_tool_output",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "PASS"
+    },
+    {
+      "actual_execution_status": {
+        "final_runtime_status": "no_optimization",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
+      },
+      "case_id": "case-warm-cache",
+      "digests": {
+        "protected_input_identity": null,
+        "protected_preserved_identity": null,
+        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
+      },
+      "expected_execution": {
+        "final_runtime_status": "<redacted>",
+        "pipeline_status": "completed"
+      },
+      "final_runtime_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_CONFIDENCE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "ROUTER_TRANSPORT",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "FINAL_ROUTER_STATUS",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "no policy override",
+          "gate_id": "FINAL_POLICY_ENFORCEMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "consistent typed router execution evidence",
+          "expected_safe_summary": "consistent typed router execution evidence",
+          "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "completed",
+          "expected_safe_summary": "completed",
+          "gate_id": "PIPELINE_COMPLETION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_FORBIDDEN_LAYERS",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "PIPELINE_FALLBACK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_VALIDATION",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PIPELINE_REQUIRED_FAILURE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
+          "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_COUNT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "0",
+          "expected_safe_summary": "0",
+          "gate_id": "PROTECTED_REGION_PRESERVATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PROTECTED_REGION_VALIDATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "79",
+          "expected_safe_summary": "required",
+          "gate_id": "BASELINE_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "79",
+          "expected_safe_summary": "required",
+          "gate_id": "OPTIMIZED_MEASUREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "ordered",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MEASUREMENT_ORDERING",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_IDENTITY_AVAILABLE",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_STABILITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "PREFIX_CHANGED_CONTROL",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "not_applicable",
+          "expected_safe_summary": "not_applicable",
+          "gate_id": "TOOL_ENVELOPE_IDENTITY",
+          "reason_code": "NOT_APPLICABLE",
+          "status": "NOT_APPLICABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "warm_expected",
+          "gate_id": "WARM_CACHE_REUSE",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "unavailable",
+          "expected_safe_summary": "warm_expected",
+          "gate_id": "CHANGED_PREFIX_NEGATIVE_CONTROL",
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
+        },
+        {
+          "actual_safe_summary": "absent",
+          "expected_safe_summary": "False",
+          "gate_id": "RAW_CONTENT_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "safe evidence only",
+          "expected_safe_summary": "safe evidence only",
+          "gate_id": "SECRET_ABSENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "valid",
+          "expected_safe_summary": "unique hashed refs",
+          "gate_id": "MANIFEST_INTEGRITY",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "measurement_counts_ratios": {
+        "baseline": {
+          "available": true,
+          "count": 79
+        },
+        "optimized": {
+          "available": true,
+          "count": 79
+        },
+        "ratios": {
+          "optimized_to_baseline": 1.0,
+          "reduction_ratio": 0.0
+        }
+      },
+      "model_behavioral_failure": false,
+      "model_gate_outcomes": [
+        {
+          "actual_safe_summary": "no_optimization",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_CONFIGURATION",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "clean_no_op",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_REASON",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "low",
+          "expected_safe_summary": "<redacted>",
+          "gate_id": "MODEL_ROUTER_RISK",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        },
+        {
+          "actual_safe_summary": "False",
+          "expected_safe_summary": "False",
+          "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
+        }
+      ],
+      "policy_override_applied": false,
+      "policy_override_reason": null,
+      "protected_counts": {
+        "checked": 0,
+        "preserved": 0,
+        "validated": 0,
+        "validation_status": "not_applicable"
+      },
+      "runtime_safety_failure": false,
+      "safe_reason_codes": [
+        "EVIDENCE_UNAVAILABLE",
+        "EXPECTATION_SATISFIED",
+        "NOT_APPLICABLE"
+      ],
+      "status": "UNAVAILABLE"
+    }
+  ],
+  "corpus": {
+    "id": "token-optimization-proof-corpus",
+    "version": "token-optimization-proof-corpus.v1"
+  },
+  "evaluation_success": false,
+  "generated_at": "2026-08-06T13:48:42.974121+00:00",
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "model_behavioral_success": false,
+  "proof_id": "token-optimization-vllm-smoke",
+  "provider": "local vLLM",
+  "run_id": "bb5bbab04c71476aa49f06f3ec32a5d5",
+  "runtime_safety_success": true,
+  "schema_version": "token-10h-safe-run.v1",
+  "technical_execution_success": true,
+  "temperature": 0.0
+}
