@@ -910,6 +910,21 @@ class KnowledgeQueryExecutionResultV1(BaseModel):
     )
 
 
+@runtime_checkable
+class LiveEvidenceExpansionHookV1(Protocol):
+    def expand(
+        self,
+        *,
+        stage: int,
+        calls: tuple[ExecutableLiveCallV1, ...],
+        outcomes: tuple[LiveCapabilityExecutionResultV1, ...],
+        attempted_calls: tuple[ExecutableLiveCallV1, ...],
+        remaining_provider_call_budget: int,
+        deadline_reached: bool,
+    ) -> tuple[ExecutableLiveCallV1, ...]:
+        ...
+
+
 class KnowledgeQueryOrchestratorV1:
     """Coordinate indexed retrieval and required validated live calls only."""
 
@@ -933,6 +948,7 @@ class KnowledgeQueryOrchestratorV1:
         question: str,
         validated_plan: ValidatedEvidencePlanV1,
         retention: LiveResultRetentionV1,
+        live_expansion: LiveEvidenceExpansionHookV1 | None = None,
     ) -> KnowledgeQueryExecutionResultV1:
         started_at = self._clock()
         plan = validated_plan.plan
@@ -1015,77 +1031,158 @@ class KnowledgeQueryOrchestratorV1:
             deadline = self._monotonic() + (
                 validated_plan.effective_budget.max_total_duration_ms / 1000
             )
-            for call in validated_plan.executable_live_calls:
-                outcome = await self._live_executor.execute(
-                    run_id=run_id,
-                    tenant_id=plan.tenant_id,
-                    workspace_id=plan.workspace_id,
-                    call=call,
-                    audience=plan.audience_context.audience,
-                    retention=retention,
-                    deadline_monotonic=deadline,
-                )
-                if outcome.receipt is not None:
-                    receipts.append(outcome.receipt)
-                if outcome.normalized_outcome is LiveExecutionOutcomeV1.FAILED:
-                    live_status = (
-                        HybridAskLiveExecutionStatusV1.PARTIAL
-                        if indexed or live
-                        else HybridAskLiveExecutionStatusV1.FAILED
-                    )
-                    return self._result(
+            attempted_live_calls = 0
+            first_live_error: str | None = None
+
+            async def execute_stage(
+                calls: tuple[ExecutableLiveCallV1, ...],
+            ) -> tuple[
+                tuple[LiveCapabilityExecutionResultV1, ...],
+                tuple[ExecutableLiveCallV1, ...],
+            ]:
+                nonlocal attempted_live_calls
+                nonlocal first_live_error
+                nonlocal live_status
+                nonlocal truncation
+                stage_outcomes: list[LiveCapabilityExecutionResultV1] = []
+                stage_attempted: list[ExecutableLiveCallV1] = []
+                for call in calls:
+                    if self._monotonic() >= deadline:
+                        truncation = HybridAskTruncationStateV1.LIVE
+                        live_status = (
+                            HybridAskLiveExecutionStatusV1.PARTIAL
+                            if indexed or live or stage_outcomes
+                            else HybridAskLiveExecutionStatusV1.FAILED
+                        )
+                        break
+                    outcome = await self._live_executor.execute(
                         run_id=run_id,
-                        plan=validated_plan,
-                        indexed=indexed,
-                        live=live,
-                        receipts=receipts,
-                        indexed_status=indexed_status,
-                        live_status=live_status,
-                        truncation=truncation,
-                        partial_failure=bool(indexed or live),
-                        error_code=outcome.error_code or "live_execution_failed",
-                        started_at=started_at,
+                        tenant_id=plan.tenant_id,
+                        workspace_id=plan.workspace_id,
+                        call=call,
+                        audience=plan.audience_context.audience,
+                        retention=retention,
+                        deadline_monotonic=deadline,
                     )
-                for item in outcome.items:
-                    live.append(
-                        LiveWorkspaceEvidenceV1(
-                            evidence_id=evidence_id_for_call(
-                                provider_id=call.provider_id,
-                                integration_kind=call.integration_kind,
-                                source_kind=call.source_kind,
-                                capability_id=call.capability_id,
-                                contract_version=call.contract_version,
+                    attempted_live_calls += 1
+                    stage_attempted.append(call)
+                    stage_outcomes.append(outcome)
+                    if outcome.receipt is not None:
+                        receipts.append(outcome.receipt)
+                    if outcome.normalized_outcome is LiveExecutionOutcomeV1.FAILED:
+                        first_live_error = first_live_error or (
+                            outcome.error_code or "live_execution_failed"
+                        )
+                        live_status = (
+                            HybridAskLiveExecutionStatusV1.PARTIAL
+                            if indexed or live
+                            else HybridAskLiveExecutionStatusV1.FAILED
+                        )
+                        continue
+                    for item in outcome.items:
+                        live.append(
+                            LiveWorkspaceEvidenceV1(
+                                evidence_id=evidence_id_for_call(
+                                    provider_id=call.provider_id,
+                                    integration_kind=call.integration_kind,
+                                    source_kind=call.source_kind,
+                                    capability_id=call.capability_id,
+                                    contract_version=call.contract_version,
+                                    live_access_binding_id=call.live_access_binding_id,
+                                    connection_ref=call.connection_ref,
+                                    remote_resource_id=call.remote_resource_id,
+                                    call_id=call.call_id,
+                                    remote_item_id=item.remote_item_id,
+                                ),
+                                tenant_id=plan.tenant_id,
+                                workspace_id=plan.workspace_id,
+                                safe_display_name=item.safe_display_name,
+                                retrieved_at=item.retrieved_at,
+                                content=item.content,
+                                content_hash=item.content_hash,
+                                audience=AskAudienceV1(plan.audience_context.audience.value),
                                 live_access_binding_id=call.live_access_binding_id,
                                 connection_ref=call.connection_ref,
-                                remote_resource_id=call.remote_resource_id,
-                                call_id=call.call_id,
+                                capability_id=call.capability_id,
+                                source_kind=call.source_kind,
+                                contract_version=call.contract_version,
+                                remote_resource_id=call.resolved_resource_scope.remote_resource_id,
                                 remote_item_id=item.remote_item_id,
-                            ),
-                            tenant_id=plan.tenant_id,
-                            workspace_id=plan.workspace_id,
-                            safe_display_name=item.safe_display_name,
-                            retrieved_at=item.retrieved_at,
-                            content=item.content,
-                            content_hash=item.content_hash,
-                            audience=AskAudienceV1(plan.audience_context.audience.value),
-                            live_access_binding_id=call.live_access_binding_id,
-                            connection_ref=call.connection_ref,
-                            capability_id=call.capability_id,
-                            source_kind=call.source_kind,
-                            contract_version=call.contract_version,
-                            remote_resource_id=call.resolved_resource_scope.remote_resource_id,
-                            remote_item_id=item.remote_item_id,
-                            provider_id=call.provider_id,
-                            integration_kind=call.integration_kind.value,
-                            call_id=call.call_id,
-                            remote_updated_at=item.remote_updated_at,
-                            safe_locator=item.safe_locator,
-                            truncated=item.truncated or outcome.truncated,
+                                provider_id=call.provider_id,
+                                integration_kind=call.integration_kind.value,
+                                call_id=call.call_id,
+                                remote_updated_at=item.remote_updated_at,
+                                safe_locator=item.safe_locator,
+                                truncated=item.truncated or outcome.truncated,
+                            )
                         )
+                    if outcome.truncated:
+                        truncation = HybridAskTruncationStateV1.LIVE
+                return tuple(stage_outcomes), tuple(stage_attempted)
+
+            stage_one_outcomes, stage_one_attempted = await execute_stage(
+                validated_plan.executable_live_calls
+            )
+            stage_two_calls: tuple[ExecutableLiveCallV1, ...] = ()
+            if live_expansion is not None:
+                stage_two_calls = live_expansion.expand(
+                    stage=1,
+                    calls=validated_plan.executable_live_calls,
+                    outcomes=stage_one_outcomes,
+                    attempted_calls=stage_one_attempted,
+                    remaining_provider_call_budget=max(
+                        0,
+                        validated_plan.effective_budget.max_live_calls
+                        - attempted_live_calls,
+                    ),
+                    deadline_reached=self._monotonic() >= deadline,
+                )
+                remaining_calls = max(
+                    0,
+                    validated_plan.effective_budget.max_live_calls
+                    - attempted_live_calls,
+                )
+                stage_two_calls = stage_two_calls[:remaining_calls]
+            if stage_two_calls:
+                stage_two_outcomes, stage_two_attempted = await execute_stage(
+                    stage_two_calls
+                )
+                if live_expansion is not None:
+                    live_expansion.expand(
+                        stage=2,
+                        calls=stage_two_calls,
+                        outcomes=stage_two_outcomes,
+                        attempted_calls=stage_two_attempted,
+                        remaining_provider_call_budget=max(
+                            0,
+                            validated_plan.effective_budget.max_live_calls
+                            - attempted_live_calls,
+                        ),
+                        deadline_reached=self._monotonic() >= deadline,
                     )
-                if outcome.truncated:
-                    truncation = HybridAskTruncationStateV1.LIVE
-            live_status = HybridAskLiveExecutionStatusV1.COMPLETED
+
+            if first_live_error is None:
+                if live_status is not HybridAskLiveExecutionStatusV1.FAILED:
+                    live_status = HybridAskLiveExecutionStatusV1.COMPLETED
+            else:
+                live_status = (
+                    HybridAskLiveExecutionStatusV1.PARTIAL
+                    if indexed or live
+                    else HybridAskLiveExecutionStatusV1.FAILED
+                )
+            return self._result(
+                run_id=run_id,
+                plan=validated_plan,
+                indexed=indexed,
+                live=live,
+                receipts=receipts,
+                indexed_status=indexed_status,
+                live_status=live_status,
+                truncation=truncation,
+                partial_failure=first_live_error is not None,
+                error_code=first_live_error,
+                started_at=started_at,
+            )
 
         return self._result(
             run_id=run_id,

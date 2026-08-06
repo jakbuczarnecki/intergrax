@@ -934,3 +934,40 @@ def test_new_execution_result_is_strict_and_timestamps_are_aware() -> None:
         ),
         KnowledgeQueryExecutionResultV1,
     )
+
+
+def test_orchestrator_runs_optional_expansion_stage_through_shared_executor() -> None:
+    indexed = _NeutralRetriever()
+    handler = _NeutralHandler((_item("item-1"),))
+    live_executor, _ = _executor(handler)
+    orchestrator = KnowledgeQueryOrchestratorV1(
+        indexed_retriever=indexed,
+        live_executor=live_executor,
+    )
+
+    class _Expansion:
+        def expand(self, **kwargs: object) -> tuple[Any, ...]:
+            if kwargs["stage"] == 1:
+                return (_call("call-2"),)
+            return ()
+
+    result = asyncio.run(
+        orchestrator.execute(
+            run_id="run-staged",
+            question="question",
+            validated_plan=_plan(
+                QueryPolicyModeV2.LIVE_ONLY,
+                calls=(_call("call-1", budget=_budget(max_live_calls=2)),),
+                budget=_budget(max_live_calls=2),
+            ),
+            retention=LiveResultRetentionV1.EPHEMERAL,
+            live_expansion=_Expansion(),  # type: ignore[arg-type]
+        )
+    )
+
+    assert result.error_code is None
+    assert len(handler.calls) == 2
+    assert {item.call_id for item in result.live_evidence} == {
+        "call-1",
+        "call-2",
+    }

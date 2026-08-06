@@ -44,10 +44,6 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     resolve_effective_query_policy,
     validate_evidence_plan,
 )
-from local_workspace_application.workspaces.slack_ask_orchestration import (
-    SlackAskPlannerV1,
-    SlackAskRequestV1,
-)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV2,
@@ -58,6 +54,11 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from local_workspace_application.workspaces.slack_ask_orchestration import (
+    SlackAskPlannerV1,
+    SlackAskRequestV1,
+    SlackAskStagedExecutionV1,
+)
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -257,6 +258,15 @@ class WorkspaceAskServiceV2:
             resource_scope_validator=self._resource_scope_validator,
             schema_registry=self._schema_registry,
         )
+        slack_expansion = self._build_slack_expansion(
+            command=command,
+            configuration=configuration,
+            effective_policy=effective_policy,
+            validated_plan=validated_plan,
+        )
+        slack_coverage = (
+            slack_expansion.coverage if slack_expansion is not None else None
+        )
         run_id = command.run_id or self._run_id_factory()
         initial = self._initial_run(run_id, command, configuration, validated_plan)
         self._persist(initial)
@@ -267,12 +277,18 @@ class WorkspaceAskServiceV2:
                 question=command.question,
                 validated_plan=validated_plan,
                 retention=effective_policy.live_result_retention,
+                live_expansion=slack_expansion,
             )
         except Exception:
             return self._finalize_failure(
                 initial,
                 code="live_execution_failed",
                 execution=None,
+                slack_coverage=(
+                    slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage
+                ),
             )
 
         if execution.error_code is not None:
@@ -280,9 +296,16 @@ class WorkspaceAskServiceV2:
                 initial,
                 code=execution.error_code,
                 execution=execution,
+                slack_coverage=(
+                    slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage
+                ),
             )
 
         evidence = tuple(execution.indexed_evidence) + tuple(execution.live_evidence)
+        if slack_expansion is not None:
+            evidence = slack_expansion.include_evidence(evidence)
         try:
             assembler = HybridAskAnswerAssemblerV2(self.llm_adapter)
             assembly = assembler.assemble(question=command.question, evidence=evidence)
@@ -294,6 +317,9 @@ class WorkspaceAskServiceV2:
                     answer=None,
                     citations=[],
                     status=AskRunStatus.INSUFFICIENT_EVIDENCE,
+                    slack_coverage=slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage,
                 )
             citations = self._project_citations(
                 assembly.used_evidence_ids,
@@ -314,24 +340,42 @@ class WorkspaceAskServiceV2:
                 answer=assembly.answer,
                 citations=citations,
                 status=AskRunStatus.COMPLETED,
+                slack_coverage=slack_expansion.coverage
+                if slack_expansion is not None
+                else slack_coverage,
             )
         except WorkspaceAskV2Error as exc:
             return self._finalize_failure(
                 initial,
                 code=exc.error_code,
                 execution=execution,
+                slack_coverage=(
+                    slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage
+                ),
             )
         except AskAnswerAssemblyError as exc:
             return self._finalize_failure(
                 initial,
                 code=exc.code,
                 execution=execution,
+                slack_coverage=(
+                    slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage
+                ),
             )
         except Exception:
             return self._finalize_failure(
                 initial,
                 code="assembly_failed",
                 execution=execution,
+                slack_coverage=(
+                    slack_expansion.coverage
+                    if slack_expansion is not None
+                    else slack_coverage
+                ),
             )
 
     def get_run(self, *, tenant_id: str, run_id: str) -> WorkspaceAskRunV2:
@@ -378,6 +422,55 @@ class WorkspaceAskServiceV2:
             audience_context=command.audience_context,
         )
         return plan
+
+    def _build_slack_expansion(
+        self,
+        *,
+        command: WorkspaceAskCommandV2,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        effective_policy: Any,
+        validated_plan: ValidatedEvidencePlanV1,
+    ) -> SlackAskStagedExecutionV1 | None:
+        request = command.slack_request
+        if request is None:
+            return None
+        slack_plan = self._slack_planner.build_plan(
+            configuration=configuration,
+            request=request,
+        )
+        resolved_bindings = tuple(
+            binding
+            for binding in configuration.live_access_bindings
+            if binding.live_access_binding_id in slack_plan.coverage.resolved_bindings
+        )
+
+        def validate_expansion(
+            proposals: tuple[LiveCallProposalV1, ...],
+        ) -> tuple[Any, ...]:
+            expansion_plan = validated_plan.plan.model_copy(
+                update={
+                    "plan_id": self._plan_id_factory(),
+                    "ordered_live_call_proposals": proposals,
+                }
+            )
+            expansion = validate_evidence_plan(
+                plan=expansion_plan,
+                configuration=configuration,
+                effective_policy=effective_policy,
+                capability_catalog=self._capability_catalog,
+                request_envelope_validator=self._request_envelope_validator,
+                resource_scope_validator=self._resource_scope_validator,
+                schema_registry=self._schema_registry,
+            )
+            return expansion.executable_live_calls
+
+        return SlackAskStagedExecutionV1(
+            planner=self._slack_planner,
+            request=request,
+            initial_coverage=slack_plan.coverage,
+            resolved_bindings=resolved_bindings,
+            proposal_validator=validate_expansion,
+        )
 
     @staticmethod
     def _indexed_directive(max_results: int) -> Any:
@@ -449,6 +542,7 @@ class WorkspaceAskServiceV2:
         answer: str | None,
         citations: list[Any],
         status: AskRunStatus,
+        slack_coverage: Any = None,
     ) -> WorkspaceAskRunV2:
         return self._finalize_run_model(
             initial,
@@ -462,6 +556,7 @@ class WorkspaceAskServiceV2:
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
+                "slack_coverage": slack_coverage,
                 "completed_at": self._clock(),
                 "error": None,
             },
@@ -473,6 +568,7 @@ class WorkspaceAskServiceV2:
         *,
         code: str,
         execution: KnowledgeQueryExecutionResultV1 | None,
+        slack_coverage: Any = None,
     ) -> WorkspaceAskRunV2:
         if execution is None:
             update: dict[str, Any] = {
@@ -481,6 +577,7 @@ class WorkspaceAskServiceV2:
                 "citations": [],
                 "error": AskError(code=code, message=self._safe_message(code)),
                 "completed_at": self._clock(),
+                "slack_coverage": slack_coverage,
             }
         else:
             update = {
@@ -493,6 +590,7 @@ class WorkspaceAskServiceV2:
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
+                "slack_coverage": slack_coverage,
                 "error": AskError(code=code, message=self._safe_message(code)),
                 "completed_at": self._clock(),
             }
