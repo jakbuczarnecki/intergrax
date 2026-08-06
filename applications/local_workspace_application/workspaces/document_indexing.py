@@ -369,7 +369,7 @@ class WorkspaceDocumentIndexingService:
                     indexed_at=receipt.completed_at or receipt.created_at,
                     materialization_ownership=materialization_ownership,
                     visibility_authority_type=(
-                        KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                        KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
                         if materialization_ownership.ownership_mode
                         is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
                         else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE
@@ -416,7 +416,7 @@ class WorkspaceDocumentIndexingService:
                         update={
                             "materialization_ownership": materialization_ownership,
                             "visibility_authority_type": (
-                                KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                                KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
                             ),
                             "visibility_authority_ref": materialization_ownership.delivery_id,
                         }
@@ -521,7 +521,7 @@ class WorkspaceDocumentIndexingService:
                 indexed_at=completed_receipt.completed_at or completed_receipt.created_at,
                 materialization_ownership=materialization_ownership,
                 visibility_authority_type=(
-                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_RECEIPT
+                    KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST
                     if materialization_ownership.ownership_mode
                     is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
                     else KnowledgeMaterializationVisibilityAuthorityTypeV1.LEGACY_IMMEDIATE

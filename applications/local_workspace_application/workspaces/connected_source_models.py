@@ -44,6 +44,7 @@ class RemoteResourceDiscoveryPageV1(BaseModel):
 class ConnectedSourceDeliveryStatusV1(StrEnum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+    ABORTED = "aborted"
 
 
 ConnectedSourceDeliveryStatus = ConnectedSourceDeliveryStatusV1
@@ -66,6 +67,16 @@ class ConnectedSourceReconciliationStateV1(StrEnum):
 ConnectedSourceReconciliationState = ConnectedSourceReconciliationStateV1
 
 
+class ConnectedSourceDeliveryPublicationStateV1(StrEnum):
+    PREPARING = "preparing"
+    PREPARED = "prepared"
+    COMMITTED = "committed"
+    ABORTED = "aborted"
+
+
+ConnectedSourceDeliveryPublicationState = ConnectedSourceDeliveryPublicationStateV1
+
+
 class ConnectedSourceDeliveryReceiptV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -78,6 +89,8 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
     binding_configuration_version: int = Field(..., ge=1)
     # Optional only for parsing historical receipts; new delivery paths must set it.
     materialization_sequence: int | None = Field(default=None, gt=0)
+    payload_fingerprint: str | None = Field(default=None, min_length=64, max_length=64)
+    publication_state: ConnectedSourceDeliveryPublicationStateV1 | None = None
     operation_id: str = Field(..., min_length=1, max_length=128)
     status: ConnectedSourceDeliveryStatusV1
     documents_indexed: int = Field(default=0, ge=0)
@@ -93,6 +106,13 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
             raise ValueError("connected_source_delivery_id_invalid")
         return value
 
+    @field_validator("payload_fingerprint")
+    @classmethod
+    def _validate_payload_fingerprint(cls, value: str | None) -> str | None:
+        if value is not None and not _SHA256_HEX_RE.fullmatch(value):
+            raise ValueError("connected_source_payload_fingerprint_invalid")
+        return value
+
     @model_validator(mode="after")
     def _validate_status_invariants(self) -> ConnectedSourceDeliveryReceiptV1:
         if self.status is ConnectedSourceDeliveryStatusV1.IN_PROGRESS:
@@ -100,11 +120,30 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
                 raise ValueError("connected_source_delivery_in_progress_completed_at_set")
             if self.items_failed != 0:
                 raise ValueError("connected_source_delivery_in_progress_items_failed")
+            if self.publication_state not in {
+                None,
+                ConnectedSourceDeliveryPublicationStateV1.PREPARING,
+                ConnectedSourceDeliveryPublicationStateV1.PREPARED,
+            }:
+                raise ValueError("connected_source_delivery_in_progress_state_invalid")
         elif self.status is ConnectedSourceDeliveryStatusV1.COMPLETED:
             if self.completed_at is None:
                 raise ValueError("connected_source_delivery_completed_missing_completed_at")
             if self.items_failed != 0:
                 raise ValueError("connected_source_delivery_completed_items_failed")
+            if self.publication_state not in {
+                None,
+                ConnectedSourceDeliveryPublicationStateV1.COMMITTED,
+            }:
+                raise ValueError("connected_source_delivery_completed_state_invalid")
+        elif self.status is ConnectedSourceDeliveryStatusV1.ABORTED:
+            if self.completed_at is None:
+                raise ValueError("connected_source_delivery_aborted_missing_completed_at")
+            if self.publication_state not in {
+                None,
+                ConnectedSourceDeliveryPublicationStateV1.ABORTED,
+            }:
+                raise ValueError("connected_source_delivery_aborted_state_invalid")
         return self
 
 

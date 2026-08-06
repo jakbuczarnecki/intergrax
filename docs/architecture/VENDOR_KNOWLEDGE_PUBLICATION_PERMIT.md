@@ -22,3 +22,44 @@ fenced by this field alone: Indexed Source sinks must verify the permit at
 their visible commit boundary, while legacy sinks remain explicitly unfenced.
 `require_fenced_publication=True` fails closed when the permit authority is
 unavailable.
+
+## Connected-source materialization commit
+
+Connected-source indexing now separates durable prepared physical state from
+query-visible state. Each staged document carries exact tenant/workspace/source
+ownership, binding, delivery, remote ID and generation metadata, while the
+receipt records the deterministic payload fingerprint and progresses through
+`PREPARING` → `PREPARED` → `COMMITTED` (or `ABORTED`). Temporary materializer
+files are never recovery state.
+
+The query-visible authority for a bounded page is the single current
+`ConnectedSourceMaterializationManifestV1` record. It contains deterministically
+ordered remote/document entries, the materialization sequence, binding
+configuration version, fence revision and only a SHA-256 fingerprint of the
+lifecycle token. The page is bounded to 1,000 entries and 1 MiB serialized
+size; oversized or malformed manifests fail closed.
+
+The linearization point is the conditional insert/replace CAS of that one
+current manifest row. Retrieval uses the manifest for represented remote items,
+so a two-document page switches together. Per-remote active pointers are
+derived lookup accelerators rebuilt after the manifest CAS; missing or partial
+rebuilds cannot invalidate manifest-backed visibility. For remote items absent
+from the page, their previous derived pointer remains authoritative, so a page
+does not hide the rest of the source.
+
+Immediately before the manifest CAS, the coordinator callback verifies the
+exact permit, lifecycle fence and still-owned source lease. A permit lost at
+that boundary leaves prepared documents hidden. If the process crashes after
+the CAS, the manifest remains visible and retry repairs/finalizes the derived
+receipt and pointer state. A completed receipt with a missing manifest is
+treated as uncertain and fails closed. Same-delivery payload mismatches and
+same-sequence manifest mismatches are conflicts; lower sequences are stale and
+higher sequences supersede the current manifest.
+
+`DELIVERY_MANIFEST` is the authority for new fenced connected-source
+references. Historical `DELIVERY_RECEIPT` records retain the explicit
+compatibility resolver; connected-source records are never silently treated as
+`LEGACY_IMMEDIATE`. Tombstone activation remains deferred because this sink
+still rejects deletion envelopes; missing page items are not interpreted as
+deletions. The next task is ownership-scoped purge by tenant, workspace and
+indexed-source binding.

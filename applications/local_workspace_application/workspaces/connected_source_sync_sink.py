@@ -16,12 +16,22 @@ from local_workspace_application.workspaces.connected_source_delivery import (
     begin_delivery_receipt,
     complete_delivery_receipt,
     delivery_receipt_completed,
+    mark_delivery_prepared,
+)
+from local_workspace_application.workspaces.connected_source_manifest import (
+    ConnectedSourceMaterializationManifestEntryV1,
+    ConnectedSourceMaterializationManifestRepository,
+    ConnectedSourceMaterializationManifestV1,
+    ManifestCommitStatus,
+    materialization_manifest_payload_fingerprint,
+    publication_fence_token_fingerprint,
 )
 from local_workspace_application.workspaces.connected_source_materializer import (
     ConnectedSourceContentMaterializerRegistry,
     default_connected_source_materializer_registry,
 )
 from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryPublicationState,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceSyncSinkError,
 )
@@ -66,6 +76,9 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncSinkReceipt,
     KnowledgeSyncSinkReceiptStatus,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    KnowledgeSyncPublicationFencePort,
+)
 
 _ALLOWED_CHANGE_KINDS = frozenset(
     {
@@ -105,6 +118,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         tenant_binding_port: TenantKnowledgeSourceBindingPort,
         context: ConnectedSourceSyncSinkContext,
         materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
+        publication_fence_port: KnowledgeSyncPublicationFencePort | None = None,
     ) -> None:
         self._repository = repository
         self._indexing_service = indexing_service
@@ -112,6 +126,15 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         self._tenant_binding_port = tenant_binding_port
         self._context = context
         self._materializers = materializer_registry or default_connected_source_materializer_registry()
+        self._publication_fence_port = publication_fence_port
+        self._manifest_repository = ConnectedSourceMaterializationManifestRepository(
+            repository.document_store
+        )
+        self._publication_validator = None
+
+    def set_publication_validator(self, validator) -> None:
+        """Install the coordinator guard that also checks the active source lease."""
+        self._publication_validator = validator
 
     async def apply_batch(self, *, batch: KnowledgeSyncBatch) -> ConnectedSourceDeliveryApplyResult:
         try:
@@ -177,6 +200,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             or batch.binding_id != self._context.knowledge_source_binding_ref
         ):
             self._validate_authoritative_state(batch)
+        payload_fingerprint = materialization_manifest_payload_fingerprint(batch)
         completed = delivery_receipt_completed(
             repository=self._repository,
             tenant_id=self._context.tenant_id,
@@ -187,8 +211,20 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
             binding_configuration_version=batch.binding_configuration_version,
             operation_id=self._context.operation_id,
+            payload_fingerprint=payload_fingerprint,
         )
         if completed is not None:
+            if completed.payload_fingerprint is not None:
+                current_manifest = self._manifest_repository.get_current(
+                    tenant_id=self._context.tenant_id,
+                    workspace_id=self._context.workspace_id,
+                    source_id=self._context.source_id,
+                    indexed_source_binding_id=self._context.indexed_source_binding_id,
+                )
+                if current_manifest is None:
+                    raise ConnectedSourceSyncSinkError(
+                        "connected_source_materialization_manifest_missing"
+                    )
             self._activate_delivery_documents(delivery_id=completed.delivery_id)
             return ConnectedSourceDeliveryApplyResult(
                 documents_indexed=completed.documents_indexed,
@@ -209,6 +245,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             delivery_id=batch.delivery_id,
             binding_configuration_version=batch.binding_configuration_version,
             operation_id=self._context.operation_id,
+            payload_fingerprint=payload_fingerprint,
         )
         if (
             receipt.status is ConnectedSourceDeliveryStatus.COMPLETED
@@ -222,12 +259,57 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 items_failed=receipt.items_failed,
                 replayed=True,
             )
+        if receipt.materialization_sequence is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_delivery_sequence_missing"
+            )
+        if receipt.publication_state is ConnectedSourceDeliveryPublicationState.PREPARED:
+            try:
+                current_manifest = self._manifest_repository.get_current(
+                    tenant_id=self._context.tenant_id,
+                    workspace_id=self._context.workspace_id,
+                    source_id=self._context.source_id,
+                    indexed_source_binding_id=self._context.indexed_source_binding_id,
+                )
+            except Exception as exc:
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_materialization_manifest_recovery_failed"
+                ) from exc
+            if (
+                current_manifest is not None
+                and current_manifest.delivery_id == receipt.delivery_id
+                and current_manifest.materialization_sequence
+                == receipt.materialization_sequence
+                and current_manifest.payload_fingerprint == receipt.payload_fingerprint
+            ):
+                recovered = complete_delivery_receipt(
+                    repository=self._repository,
+                    receipt=receipt,
+                    documents_indexed=len(current_manifest.document_entries),
+                    documents_unchanged=0,
+                    items_processed=len(current_manifest.document_entries),
+                    items_failed=0,
+                )
+                self._activate_delivery_documents(delivery_id=recovered.delivery_id)
+                return ConnectedSourceDeliveryApplyResult(
+                    documents_indexed=recovered.documents_indexed,
+                    documents_unchanged=recovered.documents_unchanged,
+                    items_processed=(
+                        recovered.documents_indexed + recovered.documents_unchanged
+                    ),
+                    items_failed=recovered.items_failed,
+                    replayed=True,
+                )
+            if current_manifest is not None:
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_materialization_manifest_recovery_conflict"
+                )
 
         documents_indexed = 0
         documents_unchanged = 0
         items_processed = 0
         materialized_documents: list[
-            tuple[KnowledgeMaterializationOwnershipV1, str]
+            tuple[KnowledgeMaterializationOwnershipV1, str, str]
         ] = []
 
         for envelope in batch.envelopes:
@@ -253,6 +335,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 materialized,
                 delivery_id=batch.delivery_id,
                 remote_id=envelope.remote_id,
+                materialization_sequence=receipt.materialization_sequence,
             )
             materialized_documents.append(
                 (
@@ -263,9 +346,11 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                         indexed_source_binding_id=self._context.indexed_source_binding_id,
                         knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
                         delivery_id=batch.delivery_id,
+                        materialization_sequence=receipt.materialization_sequence,
                         remote_id=envelope.remote_id,
                     ),
                     result.document_id,
+                    materialized.content_hash,
                 )
             )
             items_processed += 1
@@ -276,6 +361,36 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             else:
                 raise ConnectedSourceSyncSinkError("connected_source_indexing_failed")
 
+        mark_delivery_prepared(repository=self._repository, receipt=receipt)
+        manifest = self._build_manifest(
+            batch=batch,
+            receipt=receipt,
+            materialized_documents=materialized_documents,
+            payload_fingerprint=payload_fingerprint,
+        )
+        expected_fence = batch.publication_fence
+        publication_permit = batch.publication_permit
+        if expected_fence is None or publication_permit is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_publication_permit_required"
+            )
+        try:
+            manifest_status = self._manifest_repository.commit(
+                manifest,
+                expected_fence=expected_fence,
+                publication_permit=publication_permit,
+                validate_publication=self._validate_publication_at_commit,
+            )
+        except ConnectedSourceSyncSinkError:
+            raise
+        except Exception as exc:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_materialization_manifest_commit_failed"
+            ) from exc
+        if manifest_status is ManifestCommitStatus.STALE:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_materialization_manifest_stale"
+            )
         completed_receipt = complete_delivery_receipt(
             repository=self._repository,
             receipt=receipt,
@@ -284,7 +399,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_processed=items_processed,
             items_failed=0,
         )
-        for ownership, document_id in materialized_documents:
+        for ownership, document_id, _content_hash in materialized_documents:
             self._activate_materialization(
                 ownership=ownership,
                 document_id=document_id,
@@ -297,6 +412,121 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_failed=0,
             replayed=False,
         )
+
+    def _build_manifest(
+        self,
+        *,
+        batch: KnowledgeSyncBatch,
+        receipt,
+        materialized_documents: list[tuple[KnowledgeMaterializationOwnershipV1, str, str]],
+        payload_fingerprint: str,
+    ) -> ConnectedSourceMaterializationManifestV1:
+        if batch.publication_fence is None or batch.publication_permit is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_publication_permit_required"
+            )
+        if receipt.materialization_sequence is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_delivery_sequence_missing"
+            )
+        if (
+            receipt.tenant_id != self._context.tenant_id
+            or receipt.workspace_id != self._context.workspace_id
+            or receipt.source_id != self._context.source_id
+            or receipt.indexed_source_binding_id
+            != self._context.indexed_source_binding_id
+            or receipt.knowledge_source_binding_ref
+            != self._context.knowledge_source_binding_ref
+            or receipt.delivery_id != batch.delivery_id
+            or receipt.binding_configuration_version
+            != batch.binding_configuration_version
+            or receipt.payload_fingerprint != payload_fingerprint
+        ):
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_manifest_receipt_identity_conflict"
+            )
+        entries = tuple(
+            sorted(
+                self._manifest_entries(materialized_documents),
+                key=lambda entry: (entry.remote_id, entry.document_id),
+            )
+        )
+        return ConnectedSourceMaterializationManifestV1(
+            tenant_id=self._context.tenant_id,
+            workspace_id=self._context.workspace_id,
+            source_id=self._context.source_id,
+            indexed_source_binding_id=self._context.indexed_source_binding_id,
+            knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+            delivery_id=batch.delivery_id,
+            materialization_sequence=receipt.materialization_sequence,
+            binding_configuration_version=batch.binding_configuration_version,
+            publication_fence_revision=batch.publication_fence.lifecycle_revision,
+            publication_fence_token_fingerprint=publication_fence_token_fingerprint(
+                batch.publication_fence.lifecycle_token
+            ),
+            document_entries=entries,
+            payload_fingerprint=payload_fingerprint,
+            committed_at=receipt.created_at,
+        )
+
+    @staticmethod
+    def _manifest_entries(
+        materialized_documents: list[tuple[KnowledgeMaterializationOwnershipV1, str, str]],
+    ) -> list[ConnectedSourceMaterializationManifestEntryV1]:
+        entries: list[ConnectedSourceMaterializationManifestEntryV1] = []
+        for ownership, document_id, content_hash in materialized_documents:
+            assert ownership.remote_id is not None
+            assert ownership.materialization_generation is not None
+            entries.append(
+                ConnectedSourceMaterializationManifestEntryV1(
+                    remote_id=ownership.remote_id,
+                    document_id=document_id,
+                    materialization_generation=ownership.materialization_generation,
+                    content_hash=content_hash,
+                )
+            )
+        return entries
+
+    def _validate_publication_at_commit(self, expected_fence, publication_permit) -> None:
+        if expected_fence is None or publication_permit is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_publication_permit_required"
+            )
+        if self._publication_validator is not None:
+            try:
+                self._publication_validator(expected_fence, publication_permit)
+            except Exception as exc:
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_publication_permit_invalid"
+                ) from exc
+            return
+        if self._publication_fence_port is None:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_publication_fence_not_configured"
+            )
+        try:
+            if (
+                publication_permit.tenant_id != expected_fence.tenant_id
+                or publication_permit.binding_id != expected_fence.binding_id
+                or publication_permit.lifecycle_revision
+                != expected_fence.lifecycle_revision
+                or publication_permit.lifecycle_token != expected_fence.lifecycle_token
+            ):
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_publication_permit_invalid"
+                )
+            if not self._publication_fence_port.is_current_publication_permit(
+                permit=publication_permit
+            ):
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_publication_permit_invalid"
+                )
+        except ConnectedSourceSyncSinkError:
+            raise
+        except Exception as exc:
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_publication_permit_invalid"
+            ) from exc
 
     def _binding_configuration_version(self) -> int:
         binding = self._tenant_binding_port.get_binding(
@@ -412,21 +642,22 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         *,
         delivery_id: str,
         remote_id: str,
+        materialization_sequence: int | None,
     ):
         allowed_roots = tuple(
             item.strip()
             for item in os.environ.get("INTERGRAX_ALLOWED_READ_ROOTS", "").split(os.pathsep)
             if item.strip()
         )
-        temp_kwargs = {"prefix": "lkw-connected-source-", "suffix": ".md"}
-        if allowed_roots:
-            temp_kwargs["dir"] = allowed_roots[0]
+        temp_dir = allowed_roots[0] if allowed_roots else None
         fd, temp_name = tempfile.mkstemp(
-            **temp_kwargs,
+            prefix="lkw-connected-source-",
+            suffix=".md",
+            dir=temp_dir,
         )
         temp_path = Path(temp_name)
         try:
-            with open(fd, "w", encoding="utf-8") as handle:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(materialized.markdown)
             return await self._indexing_service.index_connected_source_one(
                 tenant_id=self._context.tenant_id,
@@ -444,6 +675,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                     indexed_source_binding_id=self._context.indexed_source_binding_id,
                     knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
                     delivery_id=delivery_id,
+                    materialization_sequence=materialization_sequence,
                     remote_id=remote_id,
                 ),
             )

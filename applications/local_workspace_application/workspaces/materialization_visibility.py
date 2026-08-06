@@ -17,6 +17,10 @@ if TYPE_CHECKING:
         ManagedWorkspaceRepository,
     )
 
+from local_workspace_application.workspaces.connected_source_manifest import (
+    ConnectedSourceMaterializationManifestConflict,
+    ConnectedSourceMaterializationManifestRepository,
+)
 
 _IDENTIFIER_RE = re.compile(r"^[^\x00-\x1f\x7f]{1,512}$")
 
@@ -46,6 +50,7 @@ class KnowledgeMaterializationOwnershipV1(BaseModel):
     knowledge_source_binding_ref: str | None = Field(default=None, max_length=512)
     delivery_id: str | None = Field(default=None, max_length=512)
     materialization_generation: str | None = Field(default=None, max_length=512)
+    materialization_sequence: int | None = Field(default=None, gt=0)
     remote_id: str | None = Field(default=None, max_length=512)
     ownership_mode: KnowledgeMaterializationOwnershipModeV1 = (
         KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
@@ -104,6 +109,7 @@ class KnowledgeMaterializationOwnershipV1(BaseModel):
         delivery_id: str,
         remote_id: str,
         materialization_generation: str | None = None,
+        materialization_sequence: int | None = None,
     ) -> KnowledgeMaterializationOwnershipV1:
         return cls(
             tenant_id=tenant_id,
@@ -113,6 +119,7 @@ class KnowledgeMaterializationOwnershipV1(BaseModel):
             knowledge_source_binding_ref=knowledge_source_binding_ref,
             delivery_id=delivery_id,
             materialization_generation=materialization_generation or delivery_id,
+            materialization_sequence=materialization_sequence,
             remote_id=remote_id,
         )
 
@@ -144,6 +151,7 @@ class KnowledgeMaterializationVisibilityAuthorityTypeV1(StrEnum):
     LEGACY_IMMEDIATE = "legacy_immediate"
     DELIVERY_RECEIPT = "delivery_receipt"
     MATERIALIZATION_GENERATION = "materialization_generation"
+    DELIVERY_MANIFEST = "delivery_manifest"
 
 
 class KnowledgeMaterializationVisibilityStatusV1(StrEnum):
@@ -226,6 +234,8 @@ class KnowledgeMaterializationVisibilityPort(Protocol):
         self,
         *,
         ownership: KnowledgeMaterializationOwnershipV1,
+        document_id: str | None = None,
+        content_hash: str | None = None,
     ) -> bool:
         ...
 
@@ -240,6 +250,8 @@ class RepositoryKnowledgeMaterializationVisibility:
         self,
         *,
         ownership: KnowledgeMaterializationOwnershipV1,
+        document_id: str | None = None,
+        content_hash: str | None = None,
     ) -> bool:
         if not isinstance(ownership, KnowledgeMaterializationOwnershipV1):
             return False
@@ -268,6 +280,89 @@ class RepositoryKnowledgeMaterializationVisibility:
             or ownership.materialization_generation is None
         ):
             return False
+        authority = None
+        if document_id is not None:
+            try:
+                ref = self._repository.get_document_ref(
+                    tenant_id=ownership.tenant_id,
+                    workspace_id=ownership.workspace_id,
+                    document_id=document_id,
+                )
+            except (TypeError, ValueError, AttributeError):
+                return False
+            if ref is None or ref.materialization_ownership != ownership:
+                return False
+            authority = ref.visibility_authority_type
+        if authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST:
+            try:
+                manifest = ConnectedSourceMaterializationManifestRepository(
+                    self._repository.document_store
+                ).get_current(
+                    tenant_id=ownership.tenant_id,
+                    workspace_id=ownership.workspace_id,
+                    source_id=ownership.source_id,
+                    indexed_source_binding_id=ownership.indexed_source_binding_id,
+                )
+            except (
+                ConnectedSourceMaterializationManifestConflict,
+                TypeError,
+                ValueError,
+                AttributeError,
+            ):
+                return False
+            if (
+                manifest is None
+                or manifest.tenant_id != ownership.tenant_id
+                or manifest.workspace_id != ownership.workspace_id
+                or manifest.source_id != ownership.source_id
+                or manifest.indexed_source_binding_id
+                != ownership.indexed_source_binding_id
+                or manifest.knowledge_source_binding_ref
+                != ownership.knowledge_source_binding_ref
+            ):
+                return False
+            try:
+                receipt = self._repository.get_connected_source_delivery_receipt(
+                    tenant_id=ownership.tenant_id,
+                    workspace_id=ownership.workspace_id,
+                    source_id=ownership.source_id,
+                    delivery_id=ownership.delivery_id,
+                )
+            except (TypeError, ValueError, AttributeError):
+                return False
+            if receipt is not None and (
+                receipt.tenant_id != manifest.tenant_id
+                or receipt.workspace_id != manifest.workspace_id
+                or receipt.source_id != manifest.source_id
+                or receipt.indexed_source_binding_id
+                != manifest.indexed_source_binding_id
+                or receipt.knowledge_source_binding_ref
+                != manifest.knowledge_source_binding_ref
+                or receipt.materialization_sequence
+                != manifest.materialization_sequence
+                or (
+                    ownership.materialization_sequence is not None
+                    and ownership.materialization_sequence
+                    != manifest.materialization_sequence
+                )
+            ):
+                return False
+            entry = next(
+                (
+                    item
+                    for item in manifest.document_entries
+                    if item.remote_id == ownership.remote_id
+                ),
+                None,
+            )
+            if entry is not None:
+                return bool(
+                    manifest.delivery_id == ownership.delivery_id
+                    and entry.materialization_generation
+                    == ownership.materialization_generation
+                    and (document_id is None or entry.document_id == document_id)
+                    and (content_hash is None or entry.content_hash == content_hash)
+                )
         try:
             receipt = self._repository.get_connected_source_delivery_receipt(
                 tenant_id=ownership.tenant_id,

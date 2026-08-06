@@ -236,6 +236,9 @@ class VendorKnowledgeSyncCoordinator:
             )
         self._publication_fence_port = publication_fence_port
         self._require_fenced_publication = require_fenced_publication
+        set_publication_validator = getattr(sink, "set_publication_validator", None)
+        if callable(set_publication_validator):
+            set_publication_validator(self._validate_publication)
         self._active_lease: KnowledgeSourceLeaseToken | None = None
         self._reconciliation_engine: VendorKnowledgeReconciliationEngine | None = None
         if (

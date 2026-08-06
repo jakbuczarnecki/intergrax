@@ -11,24 +11,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Protocol
 
-from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBindingService
-from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
-from intergrax.runtime.vendor_knowledge.sync_coordinator import VendorKnowledgeSyncCoordinator
-from intergrax.runtime.vendor_knowledge.sync_document_store import (
-    DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
-    DocumentStoreKnowledgeReconciliationRunRepository,
-    DocumentStoreKnowledgeRemoteItemStateRepository,
-    DocumentStoreKnowledgeSourceLeaseRepository,
-    DocumentStoreKnowledgeSyncCheckpointRepository,
-)
-from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeSyncRunStatus
-from intergrax.runtime.vendor_knowledge.sync_models import KnowledgeReconciliationRunPhase
-from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
-    derive_reconciliation_run_id,
-)
-from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
 )
@@ -52,7 +34,12 @@ from local_workspace_application.workspaces.connected_source_sync_sink import (
     ConnectedSourceSyncSinkContext,
     WorkspaceConnectedSourceKnowledgeSyncSink,
 )
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.knowledge_access_service import (
+    TenantKnowledgeSourceBindingPort,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceIndexedSourceBindingStatusV1,
 )
@@ -68,6 +55,32 @@ from local_workspace_application.workspaces.models import (
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
+
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
+from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBindingService
+from intergrax.runtime.vendor_knowledge.contracts import VendorKnowledgeFacade
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
+from intergrax.runtime.vendor_knowledge.sync_coordinator import (
+    VendorKnowledgeSyncCoordinator,
+)
+from intergrax.runtime.vendor_knowledge.sync_document_store import (
+    DocumentStoreKnowledgeReconciliationCandidateInventoryRepository,
+    DocumentStoreKnowledgeReconciliationRunRepository,
+    DocumentStoreKnowledgeRemoteItemStateRepository,
+    DocumentStoreKnowledgeSourceLeaseRepository,
+    DocumentStoreKnowledgeSyncCheckpointRepository,
+)
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeReconciliationRunPhase,
+    KnowledgeSyncRunStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+)
+from intergrax.runtime.vendor_knowledge.sync_reconciliation import (
+    derive_reconciliation_run_id,
+)
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +112,9 @@ class _DeliveryCountingSink:
         self._on_apply(batch.delivery_id, result)
         return result
 
+    def set_publication_validator(self, validator) -> None:
+        self._inner.set_publication_validator(validator)
+
     def inspect_receipt(
         self,
         *,
@@ -125,7 +141,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         repository: ManagedWorkspaceRepository,
         indexing_service: WorkspaceDocumentIndexingService,
         configuration_reader: WorkspaceKnowledgeConfigurationService,
-        tenant_binding_port: object,
+        tenant_binding_port: TenantKnowledgeSourceBindingPort,
         dependencies_factory: Callable[[str], ConnectedSourceSyncDependencies],
         *,
         page_size: int = 50,
@@ -327,6 +343,9 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 configuration_reader=self._configuration_reader,
                 tenant_binding_port=self._tenant_binding_port,
                 context=sink_context,
+                publication_fence_port=DocumentStoreKnowledgeSyncPublicationFenceRepository(
+                    document_store
+                ),
             )
 
             def _record_delivery(delivery_id: str, result: ConnectedSourceDeliveryApplyResult) -> None:
@@ -479,6 +498,10 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(document_store)
             ),
             sink_receipt_inspector=sink,
+            publication_fence_port=DocumentStoreKnowledgeSyncPublicationFenceRepository(
+                document_store
+            ),
+            require_fenced_publication=True,
         )
 
     def _resolve_indexed_source_binding(

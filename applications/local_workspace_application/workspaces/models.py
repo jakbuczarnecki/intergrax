@@ -317,6 +317,15 @@ class WorkspaceDocumentReference(BaseModel):
                 or self.visibility_authority_ref != ownership.materialization_generation
             ):
                 raise ValueError("generation_visibility_authority_invalid")
+        elif authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST:
+            if (
+                ownership is None
+                or ownership.ownership_mode
+                is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                or ownership.delivery_id is None
+                or self.visibility_authority_ref != ownership.delivery_id
+            ):
+                raise ValueError("manifest_visibility_authority_invalid")
         return self
 
 

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryPublicationState,
     ConnectedSourceDeliveryReceipt,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceSyncSinkError,
@@ -129,6 +130,7 @@ def delivery_receipt_completed(
     knowledge_source_binding_ref: str,
     binding_configuration_version: int,
     operation_id: str,
+    payload_fingerprint: str | None = None,
 ) -> ConnectedSourceDeliveryReceipt | None:
     existing = repository.get_connected_source_delivery_receipt(
         tenant_id=tenant_id,
@@ -149,6 +151,8 @@ def delivery_receipt_completed(
         binding_configuration_version=binding_configuration_version,
     ):
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
+    if payload_fingerprint is not None and existing.payload_fingerprint != payload_fingerprint:
+        raise ConnectedSourceSyncSinkError("connected_source_delivery_payload_conflict")
     if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
         if existing.completed_at is None or existing.items_failed != 0:
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_invalid")
@@ -172,6 +176,7 @@ def begin_delivery_receipt(
     delivery_id: str,
     binding_configuration_version: int,
     operation_id: str,
+    payload_fingerprint: str | None = None,
 ) -> ConnectedSourceDeliveryReceipt:
     existing = repository.get_connected_source_delivery_receipt(
         tenant_id=tenant_id,
@@ -191,6 +196,8 @@ def begin_delivery_receipt(
             binding_configuration_version=binding_configuration_version,
         ):
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
+        if payload_fingerprint is not None and existing.payload_fingerprint != payload_fingerprint:
+            raise ConnectedSourceSyncSinkError("connected_source_delivery_payload_conflict")
         if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
             _validate_receipt_sequence_assignment(repository=repository, receipt=existing)
             _ = operation_id
@@ -219,6 +226,8 @@ def begin_delivery_receipt(
         delivery_id=delivery_id,
         binding_configuration_version=binding_configuration_version,
         materialization_sequence=materialization_sequence,
+        payload_fingerprint=payload_fingerprint,
+        publication_state=ConnectedSourceDeliveryPublicationState.PREPARING,
         operation_id=operation_id,
         status=ConnectedSourceDeliveryStatus.IN_PROGRESS,
         created_at=now,
@@ -243,9 +252,42 @@ def begin_delivery_receipt(
             delivery_id=delivery_id,
             binding_configuration_version=binding_configuration_version,
             operation_id=operation_id,
+            payload_fingerprint=payload_fingerprint,
         )
     _validate_receipt_sequence_assignment(repository=repository, receipt=receipt)
     return receipt
+
+
+def mark_delivery_prepared(
+    *,
+    repository: ManagedWorkspaceRepository,
+    receipt: ConnectedSourceDeliveryReceipt,
+) -> ConnectedSourceDeliveryReceipt:
+    if receipt.status is ConnectedSourceDeliveryStatus.COMPLETED:
+        return receipt
+    if receipt.status is not ConnectedSourceDeliveryStatus.IN_PROGRESS:
+        raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
+    prepared = receipt.model_copy(
+        update={"publication_state": ConnectedSourceDeliveryPublicationState.PREPARED}
+    )
+    if repository.complete_connected_source_delivery_receipt_if_in_progress(
+        expected=receipt,
+        replacement=prepared,
+    ):
+        return prepared
+    reloaded = repository.get_connected_source_delivery_receipt(
+        tenant_id=receipt.tenant_id,
+        workspace_id=receipt.workspace_id,
+        source_id=receipt.source_id,
+        delivery_id=receipt.delivery_id,
+    )
+    if reloaded is not None and (
+        reloaded.status is ConnectedSourceDeliveryStatus.COMPLETED
+        or reloaded.publication_state
+        is ConnectedSourceDeliveryPublicationState.PREPARED
+    ):
+        return reloaded
+    raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
 
 
 def complete_delivery_receipt(
@@ -270,6 +312,7 @@ def complete_delivery_receipt(
     completed = receipt.model_copy(
         update={
             "status": ConnectedSourceDeliveryStatus.COMPLETED,
+            "publication_state": ConnectedSourceDeliveryPublicationState.COMMITTED,
             "documents_indexed": documents_indexed,
             "documents_unchanged": documents_unchanged,
             "items_failed": items_failed,

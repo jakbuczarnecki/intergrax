@@ -13,54 +13,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from intergrax.compat.langchain.documents import to_langchain_document
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.providers.conversation_channel.slack.config import (
-    SlackConversationChannelIntegrationConfig,
-)
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
-    SlackConversationChannelIntegration,
-)
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SLACK_CONVERSATION_SOURCE_KIND,
-    SlackConversationExactMessageResult,
-    SlackConversationInventoryPage,
-    SlackConversationKind,
-    SlackConversationMessage,
-    SlackConversationMessagePage,
-    SlackConversationSummary,
-    compute_slack_conversation_message_revision,
-)
-from intergrax.integrations.providers.conversation_channel.slack.mapping import parse_slack_ts
-from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.knowledge.contracts.validation import _FrozenJsonArray  # noqa: SLF001
-from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
-from intergrax.queueing.providers.document_store.document_store_task_queue import (
-    DocumentStoreTaskQueue,
-)
-from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    SLACK_CONVERSATION_SCOPE_TYPE,
-    encode_slack_conversation_scope_id,
-)
-from intergrax.runtime.vendor_knowledge.bindings import (
-    KnowledgeSourceBinding,
-    KnowledgeSourceBindingStatus,
-)
-from intergrax.runtime.vendor_knowledge.binding_document_store import (
-    DocumentStoreKnowledgeSourceBindingRepository,
-)
-from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError, VendorKnowledgeErrorCode
-from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceScope
-from intergrax.runtime.vendor_knowledge.sync_models import (
-    KnowledgeSyncMode,
-    KnowledgeSyncRunResult,
-    KnowledgeSyncRunStatus,
-)
-from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
@@ -69,17 +21,17 @@ from local_workspace_application.workspaces.connected_source_delivery import (
     complete_delivery_receipt,
     delivery_receipt_completed,
 )
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_source_id,
+    indexed_source_binding_id,
+    workspace_indexed_source_semantic_hash,
+)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
     ConnectedSourceDeliverySequenceHead,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
-)
-from local_workspace_application.workspaces.connected_source_ids import (
-    connected_source_id,
-    indexed_source_binding_id,
-    workspace_indexed_source_semantic_hash,
 )
 from local_workspace_application.workspaces.connected_source_recovery import (
     ConnectedSourceRecoveryService,
@@ -131,8 +83,71 @@ from local_workspace_application.workspaces.sync_jobs import (
     ManagedWorkspaceSyncJob,
     encode_managed_workspace_sync_job,
 )
-from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.sync_runtime import (
+    build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
+
+from intergrax.compat.langchain.documents import to_langchain_document
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.conversation_channel.slack.config import (
+    SlackConversationChannelIntegrationConfig,
+)
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+    SlackConversationChannelIntegration,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SLACK_CONVERSATION_SOURCE_KIND,
+    SlackConversationExactMessageResult,
+    SlackConversationInventoryPage,
+    SlackConversationKind,
+    SlackConversationMessage,
+    SlackConversationMessagePage,
+    SlackConversationSummary,
+    compute_slack_conversation_message_revision,
+)
+from intergrax.integrations.providers.conversation_channel.slack.mapping import (
+    parse_slack_ts,
+)
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import _FrozenJsonArray  # noqa: SLF001
+from intergrax.queueing.contracts.task_queue import TaskHandle, TaskRequest
+from intergrax.queueing.providers.document_store.document_store_task_queue import (
+    DocumentStoreTaskQueue,
+)
+from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
+    SLACK_CONVERSATION_SCOPE_TYPE,
+    encode_slack_conversation_scope_id,
+)
+from intergrax.runtime.vendor_knowledge.binding_document_store import (
+    DocumentStoreKnowledgeSourceBindingRepository,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+)
+from intergrax.runtime.vendor_knowledge.errors import (
+    VendorKnowledgeError,
+    VendorKnowledgeErrorCode,
+)
+from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceScope
+from intergrax.runtime.vendor_knowledge.sync_models import (
+    KnowledgeSyncMode,
+    KnowledgeSyncRunResult,
+    KnowledgeSyncRunStatus,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+    KnowledgeSyncPublicationFenceV1,
+)
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
 
@@ -377,6 +392,20 @@ def _seed_repo(repo: ManagedWorkspaceRepository) -> None:
             status=KnowledgeSourceBindingStatus.ACTIVE,
             configuration_version=1,
         )
+    )
+    publication_fence = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        repo.document_store
+    )
+    publication_fence.write_fence(
+        KnowledgeSyncPublicationFenceV1(
+            tenant_id=_TENANT,
+            binding_id=_BINDING,
+            lifecycle_revision=1,
+            lifecycle_token="recovery-test-token",
+            enabled=True,
+            detached=False,
+        ),
+        expected_revision=None,
     )
 
 

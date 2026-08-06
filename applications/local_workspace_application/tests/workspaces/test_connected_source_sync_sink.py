@@ -84,6 +84,10 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncEnvelope,
     KnowledgeSyncMode,
 )
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+    KnowledgeSyncPublicationFenceV1,
+)
 from tests.unit.runtime.vendor_knowledge._fakes import make_descriptor
 
 pytestmark = pytest.mark.unit
@@ -98,6 +102,8 @@ _OPERATION = "op-test"
 _DELIVERY = "a" * 64
 _DELIVERY_2 = "b" * 64
 _DELIVERY_3 = "c" * 64
+_PUBLICATION_FENCE = None
+_PUBLICATION_PERMIT = None
 
 
 def _structured_record(text: str = "marker") -> dict[str, object]:
@@ -208,6 +214,8 @@ def _batch(
         delivery_id=delivery_id,
         envelopes=envelopes,
         has_more=False,
+        publication_fence=_PUBLICATION_FENCE,
+        publication_permit=_PUBLICATION_PERMIT,
     )
 
 
@@ -248,8 +256,31 @@ class _TenantBindingPort:
 
 @pytest.fixture
 def sink_env(tmp_path: Path):
+    global _PUBLICATION_FENCE, _PUBLICATION_PERMIT
     store = InMemoryDocumentStore()
     repo = ManagedWorkspaceRepository(store)
+    fence_repository = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        permit_id_factory=lambda: "sink-test-permit",
+    )
+    _PUBLICATION_FENCE = KnowledgeSyncPublicationFenceV1(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        lifecycle_revision=1,
+        lifecycle_token="sink-test-token",
+        enabled=True,
+        detached=False,
+    )
+    fence_repository.write_fence(_PUBLICATION_FENCE, expected_revision=None)
+    _PUBLICATION_PERMIT = fence_repository.acquire_publication_permit(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        expected_revision=1,
+        expected_token="sink-test-token",
+        owner_id="sink-test-owner",
+        ttl_seconds=60,
+    )
+    assert _PUBLICATION_PERMIT is not None
     repo.put_workspace(
         Workspace(
             workspace_id=_WORKSPACE,
@@ -342,7 +373,7 @@ def sink_env(tmp_path: Path):
                 indexed_at=_NOW,
                 materialization_ownership=ownership,
                 visibility_authority_ref=ownership.delivery_id,
-                visibility_authority_type="delivery_receipt",
+                visibility_authority_type="delivery_manifest",
             )
         )
         return WorkspaceDocumentIndexingResult(
@@ -365,12 +396,23 @@ def sink_env(tmp_path: Path):
             knowledge_source_binding_ref=_BINDING,
             operation_id=_OPERATION,
         ),
+        publication_fence_port=fence_repository,
     )
     return repo, sink, indexing
 
 
-def _envelope(change_kind: KnowledgeChangeKind, *, text: str = "marker") -> KnowledgeSyncEnvelope:
+def _envelope(
+    change_kind: KnowledgeChangeKind,
+    *,
+    text: str = "marker",
+    remote_id: str = "remote-message-1",
+) -> KnowledgeSyncEnvelope:
     descriptor = make_descriptor(content_mode=KnowledgeContentMode.STRUCTURED_RECORD)
+    descriptor = descriptor.model_copy(
+        update={
+            "identity": descriptor.identity.model_copy(update={"remote_id": remote_id})
+        }
+    )
     if change_kind in {KnowledgeChangeKind.DELETED, KnowledgeChangeKind.REVOKED}:
         return KnowledgeSyncEnvelope(
             remote_id=descriptor.identity.remote_id,
@@ -388,6 +430,86 @@ def _envelope(change_kind: KnowledgeChangeKind, *, text: str = "marker") -> Know
             content_hash="b" * 64,
         ),
     )
+
+
+@pytest.mark.asyncio
+async def test_two_document_manifest_is_the_single_visibility_transition(sink_env, monkeypatch) -> None:
+    repo, sink, _indexing = sink_env
+    resolver = RepositoryKnowledgeMaterializationVisibility(repo)
+    first_batch = _batch(
+        envelopes=(
+            _envelope(KnowledgeChangeKind.UPSERT, text="v1-a", remote_id="remote-a"),
+            _envelope(KnowledgeChangeKind.UPSERT, text="v1-b", remote_id="remote-b"),
+        ),
+        delivery_id=_DELIVERY,
+    )
+    await sink.apply_batch(batch=first_batch)
+    old_refs = {
+        ref.materialization_ownership.remote_id: ref
+        for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        if ref.materialization_ownership is not None
+        and ref.materialization_ownership.delivery_id == _DELIVERY
+    }
+    second_batch = _batch(
+        envelopes=(
+            _envelope(KnowledgeChangeKind.UPSERT, text="v2-a", remote_id="remote-a"),
+            _envelope(KnowledgeChangeKind.UPSERT, text="v2-b", remote_id="remote-b"),
+        ),
+        delivery_id=_DELIVERY_2,
+    )
+    original_commit = sink._manifest_repository.commit
+
+    def _observe_and_commit(*args, **kwargs):
+        prepared_refs = {
+            ref.materialization_ownership.remote_id: ref
+            for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+            if ref.materialization_ownership is not None
+            and ref.materialization_ownership.delivery_id == _DELIVERY_2
+        }
+        assert all(
+            resolver.is_visible(
+                ownership=ref.materialization_ownership,
+                document_id=ref.document_id,
+                content_hash=ref.content_hash,
+            )
+            is False
+            for ref in prepared_refs.values()
+        )
+        assert all(
+            resolver.is_visible(
+                ownership=ref.materialization_ownership,
+                document_id=ref.document_id,
+                content_hash=ref.content_hash,
+            )
+            for ref in old_refs.values()
+        )
+        result = original_commit(*args, **kwargs)
+        committed_refs = {
+            ref.materialization_ownership.remote_id: ref
+            for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+            if ref.materialization_ownership is not None
+            and ref.materialization_ownership.delivery_id == _DELIVERY_2
+        }
+        assert all(
+            resolver.is_visible(
+                ownership=ref.materialization_ownership,
+                document_id=ref.document_id,
+                content_hash=ref.content_hash,
+            )
+            for ref in committed_refs.values()
+        )
+        assert all(
+            not resolver.is_visible(
+                ownership=ref.materialization_ownership,
+                document_id=ref.document_id,
+                content_hash=ref.content_hash,
+            )
+            for ref in old_refs.values()
+        )
+        return result
+
+    monkeypatch.setattr(sink._manifest_repository, "commit", _observe_and_commit)
+    await sink.apply_batch(batch=second_batch)
 
 
 @pytest.mark.asyncio

@@ -99,7 +99,9 @@ def map_search_hits(
         if ownership_key not in visibility_cache:
             try:
                 visibility_cache[ownership_key] = visibility.is_visible(
-                    ownership=ownership
+                    ownership=ownership,
+                    document_id=document_id,
+                    content_hash=ref.content_hash,
                 )
             except (TypeError, ValueError, AttributeError):
                 visibility_cache[ownership_key] = False
