@@ -434,7 +434,7 @@ async def test_completed_replay_is_idempotent(sink_env) -> None:
 
 
 @pytest.mark.asyncio
-async def test_materialization_supersession_uses_delivery_revision_and_replay_is_stale(
+async def test_materialization_supersession_uses_delivery_sequence_and_replay_is_stale(
     sink_env,
 ) -> None:
     repo, sink, indexing = sink_env
@@ -452,14 +452,31 @@ async def test_materialization_supersession_uses_delivery_revision_and_replay_is
     assert first.materialization_ownership is not None
     assert resolver.is_visible(ownership=first.materialization_ownership)
 
-    sink._tenant_binding_port.configuration_version = 2
     await sink.apply_batch(
         batch=_batch(
             envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
             delivery_id=_DELIVERY_2,
-            binding_configuration_version=2,
+            binding_configuration_version=1,
         )
     )
+    first_receipt = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY,
+    )
+    second_receipt = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY_2,
+    )
+    assert first_receipt is not None
+    assert second_receipt is not None
+    assert first_receipt.binding_configuration_version == 1
+    assert second_receipt.binding_configuration_version == 1
+    assert first_receipt.materialization_sequence == 1
+    assert second_receipt.materialization_sequence == 2
     refs = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
     second = next(
         ref
@@ -493,7 +510,7 @@ async def test_materialization_supersession_uses_delivery_revision_and_replay_is
 
 
 @pytest.mark.asyncio
-async def test_concurrent_revision_cas_reloads_and_keeps_newer_pointer(
+async def test_configuration_change_keeps_delivery_sequence_order(
     sink_env,
     monkeypatch,
 ) -> None:
@@ -547,12 +564,21 @@ async def test_concurrent_revision_cas_reloads_and_keeps_newer_pointer(
     assert pointer is not None
     assert pointer.materialization_revision == 2
     assert pointer.delivery_id == _DELIVERY_2
+    receipt = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY_2,
+    )
+    assert receipt is not None
+    assert receipt.binding_configuration_version == 2
+    assert receipt.materialization_sequence == 2
     assert raced
 
 
 @pytest.mark.asyncio
-async def test_equal_delivery_revision_with_different_delivery_conflicts(sink_env) -> None:
-    _repo, sink, _indexing = sink_env
+async def test_equal_configuration_version_does_not_conflict(sink_env) -> None:
+    repo, sink, _indexing = sink_env
     await sink.apply_batch(
         batch=_batch(
             envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
@@ -560,17 +586,21 @@ async def test_equal_delivery_revision_with_different_delivery_conflicts(sink_en
             binding_configuration_version=1,
         )
     )
-    with pytest.raises(
-        ConnectedSourceSyncSinkError,
-        match="connected_source_active_pointer_revision_conflict",
-    ):
-        await sink.apply_batch(
-            batch=_batch(
-                envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
-                delivery_id=_DELIVERY_3,
-                binding_configuration_version=1,
-            )
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
+            delivery_id=_DELIVERY_3,
+            binding_configuration_version=1,
         )
+    )
+    receipt = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=_DELIVERY_3,
+    )
+    assert receipt is not None
+    assert receipt.materialization_sequence == 2
 
 
 @pytest.mark.asyncio

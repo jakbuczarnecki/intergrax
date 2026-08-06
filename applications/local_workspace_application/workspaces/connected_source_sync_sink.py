@@ -484,6 +484,9 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             source_id=ownership.source_id,
             delivery_id=ownership.delivery_id,
         )
+        materialization_sequence = (
+            None if receipt is None else receipt.materialization_sequence
+        )
         if (
             receipt is None
             or receipt.tenant_id != ownership.tenant_id
@@ -494,6 +497,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             or receipt.status is not ConnectedSourceDeliveryStatus.COMPLETED
             or receipt.completed_at is None
             or receipt.items_failed != 0
+            or materialization_sequence is None
         ):
             raise ConnectedSourceSyncSinkError(
                 "connected_source_active_pointer_receipt_invalid"
@@ -501,7 +505,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         pointer = KnowledgeMaterializationActivePointerV1.for_ownership(
             ownership=ownership,
             document_id=document_id,
-            materialization_revision=receipt.binding_configuration_version,
+            materialization_revision=materialization_sequence,
             committed_at=committed_at,
         )
         for _ in range(3):

@@ -4,10 +4,9 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from enum import StrEnum
-
-import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -70,6 +69,8 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
     knowledge_source_binding_ref: str = Field(..., min_length=1, max_length=128)
     delivery_id: str = Field(..., min_length=64, max_length=64)
     binding_configuration_version: int = Field(..., ge=1)
+    # Optional only for parsing historical receipts; new delivery paths must set it.
+    materialization_sequence: int | None = Field(default=None, gt=0)
     operation_id: str = Field(..., min_length=1, max_length=128)
     status: ConnectedSourceDeliveryStatusV1
     documents_indexed: int = Field(default=0, ge=0)
@@ -101,6 +102,35 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
 
 
 ConnectedSourceDeliveryReceipt = ConnectedSourceDeliveryReceiptV1
+
+
+class ConnectedSourceDeliverySequenceLedgerV1(BaseModel):
+    """CAS-updated delivery sequence authority for one binding stream."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    source_id: str = Field(..., min_length=1, max_length=128)
+    indexed_source_binding_id: str = Field(..., min_length=1, max_length=128)
+    next_sequence: int = Field(..., ge=1)
+    delivery_sequences: dict[str, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_sequence_invariants(
+        self,
+    ) -> ConnectedSourceDeliverySequenceLedgerV1:
+        values = tuple(self.delivery_sequences.values())
+        if (
+            len(set(values)) != len(values)
+            or any(sequence < 1 for sequence in values)
+            or (values and self.next_sequence <= max(values))
+        ):
+            raise ValueError("connected_source_delivery_sequence_ledger_invalid")
+        return self
+
+
+ConnectedSourceDeliverySequenceLedger = ConnectedSourceDeliverySequenceLedgerV1
 
 
 class ConnectedSourceReadinessStateV1(StrEnum):

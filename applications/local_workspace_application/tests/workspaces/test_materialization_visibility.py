@@ -67,6 +67,7 @@ def _completed_receipt(
     ownership: KnowledgeMaterializationOwnershipV1,
     *,
     binding_configuration_version: int = 1,
+    materialization_sequence: int = 1,
 ) -> ConnectedSourceDeliveryReceipt:
     assert ownership.indexed_source_binding_id is not None
     assert ownership.knowledge_source_binding_ref is not None
@@ -79,6 +80,7 @@ def _completed_receipt(
         knowledge_source_binding_ref=ownership.knowledge_source_binding_ref,
         delivery_id=ownership.delivery_id,
         binding_configuration_version=binding_configuration_version,
+        materialization_sequence=materialization_sequence,
         operation_id="operation-a",
         status=ConnectedSourceDeliveryStatus.COMPLETED,
         documents_indexed=1,
@@ -99,6 +101,7 @@ def _commit(
         _completed_receipt(
             ownership,
             binding_configuration_version=materialization_revision,
+            materialization_sequence=materialization_revision,
         )
     )
     repository.put_active_materialization_pointer_if_absent(
@@ -163,13 +166,29 @@ def test_completed_delivery_and_active_pointer_control_supersession() -> None:
     assert not resolver.is_visible(ownership=second)
 
     repository.put_connected_source_delivery_receipt(
-        _completed_receipt(second, binding_configuration_version=2)
+        _completed_receipt(
+            second,
+            binding_configuration_version=2,
+            materialization_sequence=2,
+        )
     )
     assert resolver.is_visible(ownership=first)
     assert not resolver.is_visible(ownership=second)
 
     wrong_binding = _ownership(_DELIVERY_2, binding_id="binding-other")
     assert not resolver.is_visible(ownership=wrong_binding)
+
+
+def test_historical_receipt_without_sequence_is_hidden() -> None:
+    repository = _repository()
+    resolver = RepositoryKnowledgeMaterializationVisibility(repository)
+    ownership = _ownership(_DELIVERY_1)
+    _commit(repository, ownership, document_id="document-1")
+    historical = _completed_receipt(ownership).model_copy(
+        update={"materialization_sequence": None}
+    )
+    repository.put_connected_source_delivery_receipt(historical)
+    assert not resolver.is_visible(ownership=ownership)
 
 
 def test_active_pointer_rejects_naive_committed_at() -> None:
@@ -245,6 +264,7 @@ def test_actual_search_boundary_filters_prepared_and_malformed_documents() -> No
             knowledge_source_binding_ref=_BINDING_REF,
             delivery_id=_DELIVERY_2,
             binding_configuration_version=1,
+            materialization_sequence=2,
             operation_id="operation-b",
             status=ConnectedSourceDeliveryStatus.IN_PROGRESS,
             created_at=_NOW,

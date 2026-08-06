@@ -11,6 +11,7 @@ from typing import TypeVar
 
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliverySequenceLedger,
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
@@ -68,6 +69,7 @@ _ENTITY_KNOWLEDGE_CONFIGURATION_LIVE_ACCESS = "knowledge_configuration_live_acce
 _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY = "knowledge_configuration_query_policy"
 _ENTITY_CONNECTED_SOURCE_DELIVERY = "connected_source_delivery"
 _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE = "connected_source_sync_enqueue"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE = "connected_source_delivery_sequence"
 
 
 class WorkspaceKnowledgeConfigurationRepositoryError(RuntimeError):
@@ -364,6 +366,102 @@ class ManagedWorkspaceRepository:
             f"{workspace_id}:{source_id}:{delivery_id}",
             ConnectedSourceDeliveryReceipt,
         )
+
+    def get_connected_source_delivery_sequence_ledger(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> ConnectedSourceDeliverySequenceLedger | None:
+        ledger = self._get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE),
+            self._delivery_sequence_ledger_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+            ),
+            ConnectedSourceDeliverySequenceLedger,
+        )
+        if ledger is not None and (
+            ledger.tenant_id != tenant_id
+            or ledger.workspace_id != workspace_id
+            or ledger.source_id != source_id
+            or ledger.indexed_source_binding_id != indexed_source_binding_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return ledger
+
+    def allocate_connected_source_delivery_sequence(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> int:
+        if _IDEMPOTENCY_HASH_RE.fullmatch(delivery_id) is None:
+            raise ValueError("connected_source_delivery_id_invalid")
+        partition_key = _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE)
+        row_key = self._delivery_sequence_ledger_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        while True:
+            current = self.get_connected_source_delivery_sequence_ledger(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+            )
+            if current is None:
+                candidate = ConnectedSourceDeliverySequenceLedger(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    next_sequence=2,
+                    delivery_sequences={delivery_id: 1},
+                )
+                if self._put_if_absent(
+                    candidate,
+                    partition_key=partition_key,
+                    row_key=row_key,
+                ):
+                    return 1
+                continue
+            existing_sequence = current.delivery_sequences.get(delivery_id)
+            if existing_sequence is not None:
+                return existing_sequence
+            sequence = current.next_sequence
+            replacement = current.model_copy(
+                update={
+                    "next_sequence": sequence + 1,
+                    "delivery_sequences": {
+                        **current.delivery_sequences,
+                        delivery_id: sequence,
+                    },
+                }
+            )
+            if self._replace_if_match(
+                expected=current,
+                replacement=replacement,
+                partition_key=partition_key,
+                row_key=row_key,
+            ):
+                return sequence
+
+    @staticmethod
+    def _delivery_sequence_ledger_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> str:
+        return f"{workspace_id}:{source_id}:{indexed_source_binding_id}"
 
     def put_active_materialization_pointer_if_absent(
         self,

@@ -287,6 +287,7 @@ class RepositoryKnowledgeMaterializationVisibility:
             or str(receipt.status.value) != "completed"
             or receipt.completed_at is None
             or receipt.items_failed != 0
+            or receipt.materialization_sequence is None
         ):
             return False
         try:
@@ -303,5 +304,5 @@ class RepositoryKnowledgeMaterializationVisibility:
             pointer is not None
             and pointer.delivery_id == ownership.delivery_id
             and pointer.materialization_generation == ownership.materialization_generation
-            and pointer.materialization_revision == receipt.binding_configuration_version
+            and pointer.materialization_revision == receipt.materialization_sequence
         )

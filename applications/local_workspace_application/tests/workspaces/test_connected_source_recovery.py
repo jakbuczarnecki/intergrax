@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -62,6 +63,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
+    allocate_delivery_sequence,
     begin_delivery_receipt,
     complete_delivery_receipt,
     delivery_receipt_completed,
@@ -257,6 +259,7 @@ def _completed_receipt(*, operation_id: str = _OPERATION) -> ConnectedSourceDeli
         knowledge_source_binding_ref=_BINDING,
         delivery_id=_DELIVERY,
         binding_configuration_version=1,
+        materialization_sequence=1,
         operation_id=operation_id,
         status=ConnectedSourceDeliveryStatus.COMPLETED,
         documents_indexed=1,
@@ -491,6 +494,84 @@ def test_delivery_identity_without_operation_id_reuses_completed_receipt() -> No
     assert stored.operation_id == _OPERATION
 
 
+def test_delivery_sequence_allocation_is_durable_and_cas_ordered() -> None:
+    store = InMemoryDocumentStore()
+    first_repository = ManagedWorkspaceRepository(store)
+    second_repository = ManagedWorkspaceRepository(store)
+    delivery_b = "b" * 64
+
+    def _allocate(args: tuple[ManagedWorkspaceRepository, str]) -> int:
+        repository, delivery_id = args
+        return allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id=delivery_id,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = (
+            executor.submit(_allocate, (first_repository, _DELIVERY)),
+            executor.submit(_allocate, (second_repository, delivery_b)),
+        )
+        sequences = [future.result() for future in futures]
+
+    sequence_by_delivery = {
+        _DELIVERY: sequences[0],
+        delivery_b: sequences[1],
+    }
+    assert sorted(sequence_by_delivery.values()) == [1, 2]
+    replay_sequences = [
+        allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id=_DELIVERY,
+        )
+        for repository in (first_repository, second_repository)
+    ]
+    assert replay_sequences == [sequence_by_delivery[_DELIVERY]] * 2
+
+    recovered = begin_delivery_receipt(
+        repository=second_repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id=_DELIVERY,
+        binding_configuration_version=1,
+        operation_id=_OPERATION,
+    )
+    assert recovered.materialization_sequence == sequence_by_delivery[_DELIVERY]
+
+    next_delivery = begin_delivery_receipt(
+        repository=first_repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+        delivery_id="c" * 64,
+        binding_configuration_version=1,
+        operation_id=_OPERATION,
+    )
+    assert next_delivery.materialization_sequence == 3
+
+    racing_replay_id = "d" * 64
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        replay_futures = (
+            executor.submit(_allocate, (first_repository, racing_replay_id)),
+            executor.submit(_allocate, (second_repository, racing_replay_id)),
+        )
+        racing_replay_sequences = [future.result() for future in replay_futures]
+    assert racing_replay_sequences == [4, 4]
+
+
 def test_langchain_transport_normalizes_frozen_nested_metadata() -> None:
     metadata = {
         "nested": {
@@ -581,6 +662,7 @@ def test_in_progress_delivery_recovery() -> None:
         knowledge_source_binding_ref=_BINDING,
         delivery_id=_DELIVERY,
         binding_configuration_version=1,
+        materialization_sequence=1,
         operation_id=_OPERATION,
         status=ConnectedSourceDeliveryStatus.IN_PROGRESS,
         created_at=_NOW,
