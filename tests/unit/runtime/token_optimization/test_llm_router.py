@@ -435,6 +435,8 @@ def test_protected_lossless_can_route_without_review() -> None:
     assert result.configuration_id is TokenOptimizationRouterConfigurationId.EXACT_ONLY
     assert result.reason_code is TokenOptimizationRouterReasonCode.EXACT_DUPLICATES
     assert result.review_required is False
+    assert result.policy_override_applied is False
+    assert result.pipeline_config is not None
 
 
 def test_protected_lossless_preserves_explicit_model_review_and_risk() -> None:
@@ -1143,9 +1145,18 @@ def test_router_system_prompt_in_stable_prefix() -> None:
     assert adapter.captured_messages is not None
     assert adapter.captured_messages[0].role == "system"
     system_prompt = adapter.captured_messages[0].content
+    assert "Require review for protected or high-risk content." not in system_prompt
+    assert "Require review for high-risk content." in system_prompt
+    assert "When protected regions are present, require review only if the selected" in (
+        system_prompt
+    )
     assert "Protected regions with a lossless configuration may proceed without review" in (
         system_prompt
     )
+    assert "Do not require review solely because protected regions are present when the" in (
+        system_prompt
+    )
+    assert "exact\nprotected-value preservation validation will be performed" in system_prompt
     assert "For policy_profile=measure_only" in system_prompt
 
 
@@ -1153,7 +1164,27 @@ def test_router_facts_and_content_in_dynamic_tail() -> None:
     adapter = _SchemaCapturingNativeAdapter(
         decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
     )
-    request = _router_request(content="SYNTH-ROUTER-CONTENT-MARKER")
+    request = _router_request(
+        content="SYNTH-ROUTER-CONTENT-MARKER",
+        protected_regions=(
+            ProtectedRegion(
+                kind=ProtectedRegionKind.URL,
+                value="https://synthetic.invalid/router",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.PATH,
+                value="synthetic/router.json",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.IDENTIFIER,
+                value="SYNTHETIC_ROUTER_ID",
+            ),
+            ProtectedRegion(
+                kind=ProtectedRegionKind.EXACT_ERROR,
+                value="E_SYNTHETIC_ROUTER",
+            ),
+        ),
+    )
     TokenOptimizationLLMRouter(adapter=adapter).route(request)
     assert adapter.captured_messages is not None
     assert len(adapter.captured_messages) == 2
@@ -1161,6 +1192,52 @@ def test_router_facts_and_content_in_dynamic_tail() -> None:
     assert tail.role == "user"
     assert "source_type:" in tail.content
     assert "SYNTH-ROUTER-CONTENT-MARKER" in tail.content
+    assert "protected_region_count: 4" in tail.content
+    assert "protected_region_kinds: exact_error, identifier, path, url" in tail.content
+    assert "- exact_only:" in tail.content
+    assert "lossy=false" in tail.content
+    assert "protected_review_required: true" not in tail.content
+    assert "protected_review_required: false" not in tail.content
+
+
+def test_protected_dynamic_tail_contains_no_ready_review_decision() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    request = _router_request(
+        protected_regions=(
+            ProtectedRegion(
+                kind=ProtectedRegionKind.IDENTIFIER,
+                value="SYNTHETIC_ROUTER_ID",
+            ),
+        ),
+    )
+
+    TokenOptimizationLLMRouter(adapter=adapter).route(request)
+
+    assert adapter.captured_messages is not None
+    tail = adapter.captured_messages[1].content
+    assert "protected_review_required" not in tail
+    assert "review required" not in tail.lower()
+    assert "review not required" not in tail.lower()
+
+
+def test_router_dynamic_tail_exposes_lossy_catalog_metadata() -> None:
+    adapter = _SchemaCapturingNativeAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY)
+    )
+
+    TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            content="INFO\n" * 200,
+            source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+        )
+    )
+
+    assert adapter.captured_messages is not None
+    tail = adapter.captured_messages[1].content
+    assert "- extractive_only:" in tail
+    assert "lossy=true" in tail
 
 
 def test_repeated_requests_with_previous_state_stable_prefix() -> None:
