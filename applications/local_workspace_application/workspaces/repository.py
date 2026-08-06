@@ -56,8 +56,10 @@ from pydantic import BaseModel, ValidationError
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryPageV1,
     DocumentRecord,
     DocumentStore,
+    validate_document_query_limit,
 )
 
 T = TypeVar("T", bound=BaseModel)
@@ -766,6 +768,23 @@ class ManagedWorkspaceRepository:
             f"{workspace_id}:{source_id}:{delivery_id}",
         )
 
+    def list_connected_source_delivery_receipts_page(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:{source_id}:",
+            cursor=cursor,
+        )
+
     # --- Connected source delivery accounting ---
 
     def put_connected_source_delivery_accounting_if_absent(
@@ -821,6 +840,20 @@ class ManagedWorkspaceRepository:
             for doc in result.documents
         ]
         return sorted(items, key=lambda item: (item.accounted_at, item.delivery_id))
+
+    def list_connected_source_delivery_accounting_page(
+        self,
+        *,
+        tenant_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY),
+            limit=limit,
+            cursor=cursor,
+        )
 
     # --- Connected source sync enqueue intent ---
 
@@ -1001,6 +1034,20 @@ class ManagedWorkspaceRepository:
             operation_id,
         )
 
+    def list_connected_source_sync_enqueue_intents_page(
+        self,
+        *,
+        tenant_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE),
+            limit=limit,
+            cursor=cursor,
+        )
+
     # --- Operation ---
 
     def put_operation(self, operation: WorkspaceOperation) -> WorkspaceOperation:
@@ -1139,6 +1186,24 @@ class ManagedWorkspaceRepository:
         except ValueError as exc:
             raise DocumentOwnershipIndexError(str(exc)) from exc
         return self.put_document_ownership_index_entry(entry)
+
+    def delete_document_ownership_index_entry(
+        self,
+        entry: WorkspaceDocumentOwnershipIndexEntryV1,
+    ) -> bool:
+        """Delete one validated derived ownership row, idempotently."""
+        record = self._store.get(
+            ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_index_entry(record) != entry:
+            raise DocumentOwnershipIndexError(
+                "document_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
 
     def list_document_refs_by_materialization_owner(
         self,

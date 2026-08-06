@@ -1962,15 +1962,32 @@ committed publication head, so Search/Ask fails closed before any local
 document, chunk, embedding, candidate, manifest, receipt, pointer or sequence
 record is removed. Sync permits and stale commits cannot cross that CAS.
 
-Deletion is bounded by a 1–500 record page and a durable phase cursor. Manifest
-entries are validated by identity and fingerprint, then exact document IDs are
-deleted through the vector-store metadata lookup and scoped ID deletion port.
+Deletion is bounded by a 1–500 record page and a durable, authenticated cursor
+through the phases `DOCUMENT_REFERENCES`, `RECOVERY_RECORDS`, `MANIFESTS`,
+`DELIVERY_RECORDS`, `PUBLICATION_CHAIN` and `COMPLETION_PROOF`. The
+document-ownership index is the only document enumerator: each canonical
+reference is ownership-validated, its exact vector/chunk/embedding materialization
+is deleted first, then the canonical reference and derived index row are removed.
+Missing canonical references are safe orphan-index evidence; index/reference
+fingerprint or five-field ownership mismatches fail closed.
+
+Recovery records are paginated and classified as `COMPLETE_OWNERSHIP`,
+`LEGACY_MIGRATION_REQUIRED` or preserved legacy/non-connected data. Complete
+index receipts, enqueue intents and delivery accounting are deleted only after
+exact ownership validation. Manifest entries, prepared delivery indexes, remote
+candidates, active pointers, receipts and sequence assignments are removed by
+deterministic scope keys; the constant-size sequence head is removed last.
+
 The publication chain is traversed from its exact head; each head is CAS-advanced
-to its predecessor before the old node is removed. A restart repeats only
-idempotent exact deletions. Malformed ownership, broken chain, fingerprint
-conflict, or unavailable exact vector deletion leaves durable state failed and
-never reports success. Provider data is not mutated. The service is intentionally
-not an HTTP or lifecycle-detach endpoint.
+to its predecessor before the old immutable node is removed. A restart repeats
+only idempotent exact deletions. Before `COMPLETED`, bounded empty-page checks
+prove the ownership index, manifests, delivery records, active pointers,
+sequence head and publication head are empty. A legacy migration blocker or
+corruption never reports completion. The detached fence remains as bounded
+purge/lifecycle evidence, with no publication permit or committed head.
+Provider data is not mutated. The service is intentionally not an HTTP or
+lifecycle-detach endpoint and is the prerequisite for the final publication-fence
+closeout.
 
 ## 20. Purge enumeration prerequisites
 
