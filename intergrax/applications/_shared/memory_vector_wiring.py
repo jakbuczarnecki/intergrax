@@ -22,9 +22,16 @@ def memory_vector_flags_require_backend(env: ApplicationEnvironmentProfile) -> b
     return bool(profile.enable_long_term_memory or profile.enable_session_vector_index)
 
 
+def _require_runtime_tenant(tenant_id: str | None) -> str:
+    if not isinstance(tenant_id, str) or not tenant_id.strip():
+        raise MemoryVectorBackendUnavailableError(reason="tenant_required")
+    return tenant_id.strip()
+
+
 def resolve_rag_stack_for_memory_wiring(
     env: ApplicationEnvironmentProfile,
     *,
+    tenant_id: str | None = None,
     integration_profile: object | None = None,
     llm_adapter: object | None = None,
 ) -> RagStack | None:
@@ -33,15 +40,19 @@ def resolve_rag_stack_for_memory_wiring(
     from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
 
     if not memory_vector_flags_require_backend(env):
+        if tenant_id is None and env.context_profile.enable_rag:
+            return None
         return resolve_rag_stack_for_environment(
             env,
+            tenant_id=tenant_id,
             integration_profile=integration_profile,  # type: ignore[arg-type]
             llm_adapter=llm_adapter,  # type: ignore[arg-type]
         )
     profile = integration_profile or env.integration_profile
+    resolved_tenant_id = _require_runtime_tenant(tenant_id)
     return create_default_rag_stack(
         integration_profile=profile,  # type: ignore[arg-type]
-        tenant_id=env.profile_id,
+        tenant_id=resolved_tenant_id,
         llm_for_contextual=llm_adapter,  # type: ignore[arg-type]
     )
 
@@ -63,6 +74,7 @@ def build_user_profile_manager(
     store: UserProfileStore,
     env: ApplicationEnvironmentProfile,
     *,
+    tenant_id: str | None = None,
     rag_stack: RagStack | None = None,
 ) -> UserProfileManager | None:
     """Construct ``UserProfileManager`` with optional LTM vector dependencies."""
@@ -70,8 +82,9 @@ def build_user_profile_manager(
     if not (profile.enable_user_memory or profile.enable_long_term_memory):
         return None
 
+    resolved_tenant_id = _require_runtime_tenant(tenant_id)
     kwargs: dict[str, object] = {
-        "tenant_id": env.profile_id or "default",
+        "tenant_id": resolved_tenant_id,
         "vector_index_namespace": profile.vector_index_namespace,
     }
     if profile.enable_long_term_memory and rag_stack is not None:
@@ -86,6 +99,7 @@ def build_user_profile_manager(
 def build_session_turn_index_store(
     env: ApplicationEnvironmentProfile,
     *,
+    tenant_id: str | None = None,
     rag_stack: RagStack | None = None,
     session_turn_index_plugins: Sequence[type] = (),
 ) -> SessionTurnIndexStore | None:
@@ -95,6 +109,7 @@ def build_session_turn_index_store(
     profile = env.memory_profile
     if not profile.enable_session_vector_index:
         return None
+    resolved_tenant_id = _require_runtime_tenant(tenant_id)
     if rag_stack is None:
         return None
 
@@ -104,7 +119,7 @@ def build_session_turn_index_store(
             embedding_manager=rag_stack.embedding_manager,
             vectorstore_manager=rag_stack.vectorstore_manager,
             index_roles=profile.session_index_roles,
-            tenant_id=env.profile_id or "default",
+            tenant_id=resolved_tenant_id,
             vector_index_namespace=profile.vector_index_namespace,
         )
 
@@ -112,6 +127,6 @@ def build_session_turn_index_store(
         embedding_manager=rag_stack.embedding_manager,
         vectorstore_manager=rag_stack.vectorstore_manager,
         index_roles=profile.session_index_roles,
-        tenant_id=env.profile_id or "default",
+        tenant_id=resolved_tenant_id,
         vector_index_namespace=profile.vector_index_namespace,
     )

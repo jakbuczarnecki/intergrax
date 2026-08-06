@@ -137,6 +137,7 @@ def resolve_memory_platform_wiring(
 def build_session_manager_from_environment(
     env: ApplicationEnvironmentProfile,
     *,
+    tenant_id: str | None = None,
     integration_profile: IntegrationProfile | None = None,
     memory_wiring: MemoryPlatformWiring | None = None,
     rag_stack: RagStack | None = None,
@@ -155,6 +156,7 @@ def build_session_manager_from_environment(
         user_manager = build_user_profile_manager(
             wiring.user_profile_store,
             env,
+            tenant_id=tenant_id,
             rag_stack=rag_stack,
         )
 
@@ -165,7 +167,11 @@ def build_session_manager_from_environment(
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
-    session_turn_index = build_session_turn_index_store(env, rag_stack=rag_stack)
+    session_turn_index = build_session_turn_index_store(
+        env,
+        tenant_id=tenant_id,
+        rag_stack=rag_stack,
+    )
 
     return SessionManager(
         wiring.session_storage,

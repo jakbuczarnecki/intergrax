@@ -50,11 +50,12 @@ class _DeterministicEmbeddingManager(BaseEmbeddingManager):
         return np.array(rows, dtype=np.float32)
 
 
-def _memory_rag_stack() -> RagStack:
-    store = InMemoryVectorStore(tenant_id="lab")
+def _memory_rag_stack(tenant_id: str) -> RagStack:
+    store = InMemoryVectorStore(tenant_id=tenant_id)
     embedding = _DeterministicEmbeddingManager()
     vectorstore = VectorstoreManager(store=store)
     return create_default_rag_stack(
+        tenant_id=tenant_id,
         vectorstore_manager=vectorstore,
         embedding_manager=embedding,
     )
@@ -70,7 +71,7 @@ async def test_ltm_vector_wiring_search_returns_hits_after_write() -> None:
         enable_task_memory=False,
     )
 
-    rag_stack = _memory_rag_stack()
+    rag_stack = _memory_rag_stack("tenant-memory")
     wiring = MemoryPlatformWiring(
         session_storage=InMemorySessionStorage(),
         user_profile_store=InMemoryUserProfileStore(),
@@ -78,11 +79,13 @@ async def test_ltm_vector_wiring_search_returns_hits_after_write() -> None:
     )
     session_manager = build_session_manager_from_environment(
         env,
+        tenant_id="tenant-memory",
         memory_wiring=wiring,
         rag_stack=rag_stack,
     )
     assert session_manager.user_profile_manager is not None
     assert session_manager.user_profile_manager.is_longterm_rag_enabled()
+    assert session_manager.user_profile_manager._tenant_id == "tenant-memory"
 
     fact = "User prefers concise technical answers in Polish."
     await session_manager.user_profile_manager.add_memory_entry(
@@ -111,7 +114,7 @@ async def test_episodic_index_recall_after_append() -> None:
         enable_session_vector_index=True,
     )
 
-    rag_stack = _memory_rag_stack()
+    rag_stack = _memory_rag_stack("tenant-episodic")
     wiring = MemoryPlatformWiring(
         session_storage=InMemorySessionStorage(),
         user_profile_store=InMemoryUserProfileStore(),
@@ -119,25 +122,27 @@ async def test_episodic_index_recall_after_append() -> None:
     )
     session_manager = build_session_manager_from_environment(
         env,
+        tenant_id="tenant-episodic",
         memory_wiring=wiring,
         rag_stack=rag_stack,
     )
+    assert session_manager._session_turn_index_store._tenant_id == "tenant-episodic"
 
     await session_manager.create_session(
-        tenant_id="lab",
+        tenant_id="tenant-episodic",
         session_id="sess-episodic",
         user_id="tester",
         workspace_id="default",
     )
     turn_text = "We discussed vector memory wiring for episodic recall."
     await session_manager.append_message(
-        tenant_id="lab",
+        tenant_id="tenant-episodic",
         session_id="sess-episodic",
         message=ChatMessage(role="user", content=turn_text),
     )
 
     hits = await session_manager.search_session_semantic_recall(
-        tenant_id="lab",
+        tenant_id="tenant-episodic",
         session_id="sess-episodic",
         user_id="tester",
         query=turn_text,
@@ -152,7 +157,7 @@ def test_resolve_rag_stack_for_memory_wiring_when_ltm_enabled_without_rag_contex
     env.memory_profile = MemoryProfile(enable_long_term_memory=True)
     env.context_profile = env.context_profile.model_copy(update={"enable_rag": False})
 
-    stack = resolve_rag_stack_for_memory_wiring(env)
+    stack = resolve_rag_stack_for_memory_wiring(env, tenant_id="tenant-ltm")
     assert stack is not None
     assert stack.vectorstore_manager is not None
     assert stack.embedding_manager is not None

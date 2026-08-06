@@ -138,6 +138,7 @@ def wire_application_environment(
     *,
     settings: Any = None,
     integration_profile: Any = None,
+    tenant_id: str | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
     strict_harness: bool = False,
     trace_db_path: Path | None = None,
@@ -163,12 +164,15 @@ def wire_application_environment(
         circuit_breaker_config=reliability_wiring.circuit_breaker_config,
     )
 
-    rag_stack = resolve_rag_stack_for_memory_wiring(
-        env,
-        integration_profile=resolved_integration,
-        llm_adapter=resolve_environment_llm_adapter(env),
-    )
-    assert_memory_vector_backend_available(env, rag_stack)
+    rag_stack = None
+    if tenant_id is not None:
+        rag_stack = resolve_rag_stack_for_memory_wiring(
+            env,
+            tenant_id=tenant_id,
+            integration_profile=resolved_integration,
+            llm_adapter=resolve_environment_llm_adapter(env),
+        )
+        assert_memory_vector_backend_available(env, rag_stack)
 
     tool_profile = tool_profile_with_sandbox(env)
     env_for_codecraft = env.model_copy(update={"tool_profile": tool_profile})
@@ -212,17 +216,25 @@ def wire_application_environment(
         build_session_manager_from_environment,
     )
 
-    session_manager = build_session_manager_from_environment(
-        env,
-        integration_profile=resolved_integration,
-        memory_wiring=memory_wiring,
-        rag_stack=rag_stack,
-    )
-    user_profile_manager = build_user_profile_manager(
-        memory_wiring.user_profile_store,
-        env,
-        rag_stack=rag_stack,
-    )
+    if tenant_id is None:
+        from intergrax.runtime.nexus.session.session_manager import SessionManager
+
+        session_manager = SessionManager(memory_wiring.session_storage)
+        user_profile_manager = None
+    else:
+        session_manager = build_session_manager_from_environment(
+            env,
+            tenant_id=tenant_id,
+            integration_profile=resolved_integration,
+            memory_wiring=memory_wiring,
+            rag_stack=rag_stack,
+        )
+        user_profile_manager = build_user_profile_manager(
+            memory_wiring.user_profile_store,
+            env,
+            tenant_id=tenant_id,
+            rag_stack=rag_stack,
+        )
     if user_profile_manager is not None:
         from dataclasses import replace
 

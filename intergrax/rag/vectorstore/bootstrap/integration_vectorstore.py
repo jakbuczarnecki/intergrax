@@ -26,7 +26,7 @@ from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 def _validated_tenant_id(value: object, *, source: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{source} tenant_id must be a non-empty string")
-    return value
+    return value.strip()
 
 
 def _resolve_tenant_id(
@@ -68,7 +68,7 @@ def _validated_scope_part(value: object | None, *, source: str) -> str | None:
         return None
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{source} must be a non-empty string")
-    return value
+    return value.strip()
 
 
 def _scope_from_integration_config(

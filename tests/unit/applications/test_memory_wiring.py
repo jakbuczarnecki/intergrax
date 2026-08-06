@@ -19,6 +19,7 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.integrations.providers.relational_store.sqlite.bundle import create_sqlite_integration
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
@@ -103,7 +104,11 @@ def test_build_session_manager_from_environment_respects_memory_profile_flags(
         enable_task_memory=False,
     )
     wiring = resolve_memory_platform_wiring(env)
-    session_manager = build_session_manager_from_environment(env, memory_wiring=wiring)
+    session_manager = build_session_manager_from_environment(
+        env,
+        tenant_id="tenant-memory",
+        memory_wiring=wiring,
+    )
 
     assert session_manager is not None
     assert session_manager._user_profile_manager is not None
@@ -127,3 +132,16 @@ def test_build_session_manager_skips_managers_when_memory_flags_disabled(
     assert session_manager._user_profile_manager is None
     assert session_manager._organization_profile_manager is None
     assert isinstance(session_manager._storage, SQLiteSessionStorage)
+
+
+def test_build_session_manager_requires_runtime_tenant_for_user_memory() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="host-profile-x")
+    env.memory_profile = MemoryProfile(
+        enable_user_memory=True,
+        enable_long_term_memory=False,
+        enable_task_memory=False,
+    )
+    wiring = resolve_memory_platform_wiring(env)
+
+    with pytest.raises(MemoryVectorBackendUnavailableError, match="tenant_required"):
+        build_session_manager_from_environment(env, memory_wiring=wiring)

@@ -31,8 +31,8 @@ def test_typed_integration_tenant_preserves_scope_context() -> None:
         options={
             INMEMORY.slug: {
                 "tenant_id": "tenant-configured",
-                "namespace": "knowledge",
-                "workspace_id": "workspace-a",
+                "namespace": " knowledge ",
+                "workspace_id": " workspace-a ",
             }
         },
     )
@@ -42,6 +42,26 @@ def test_typed_integration_tenant_preserves_scope_context() -> None:
     assert isinstance(manager, VectorstoreManager)
     assert manager._bound_scope == VectorStoreScope(
         tenant_id="tenant-configured",
+        namespace="knowledge",
+        workspace_id="workspace-a",
+    )
+
+
+def test_scope_tenant_and_overrides_are_canonicalized() -> None:
+    profile = IntegrationProfile(
+        vector_store=INMEMORY,
+        options={INMEMORY.slug: {"tenant_id": " tenant-a "}},
+    )
+
+    manager = create_vectorstore_manager(
+        tenant_id=" tenant-a ",
+        profile=profile,
+        namespace=" knowledge ",
+        workspace_id=" workspace-a ",
+    )
+
+    assert manager._bound_scope == VectorStoreScope(
+        tenant_id="tenant-a",
         namespace="knowledge",
         workspace_id="workspace-a",
     )
