@@ -31,6 +31,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationReadConfigurationError,
     SlackConversationReadError,
     SlackConversationSourceWindow,
+    compare_slack_timestamps,
     compute_slack_conversation_message_revision,
     validate_slack_conversation_message,
     validate_slack_timestamp,
@@ -40,7 +41,6 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.
 )
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_SCOPE_TYPE,
-    SlackConversationKnowledgeAdapter,
     decode_slack_conversation_scope_id,
 )
 from intergrax.runtime.vendor_knowledge.errors import (
@@ -60,12 +60,8 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
     safe_locator_or_none,
 )
 from intergrax.runtime.vendor_knowledge.models import (
-    KnowledgeChange,
     KnowledgeChangeKind,
     KnowledgeContentMode,
-    KnowledgePage,
-    KnowledgeSourceRef,
-    KnowledgeSourceScope,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
@@ -88,12 +84,10 @@ SLACK_CONVERSATION_THREAD_READ_CAPABILITY_ID: Final[str] = (
     f"{SLACK_CONVERSATION_SOURCE_KIND}.thread.read"
 )
 SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF: Final[str] = (
-    "schema://vendor-knowledge/live/slack/slack_conversation/"
-    "thread.read/request/v1"
+    "schema://vendor-knowledge/live/slack/slack_conversation/thread.read/request/v1"
 )
 SLACK_CONVERSATION_THREAD_READ_RESULT_SCHEMA_REF: Final[str] = (
-    "schema://vendor-knowledge/live/slack/slack_conversation/"
-    "thread.read/result/v1"
+    "schema://vendor-knowledge/live/slack/slack_conversation/thread.read/result/v1"
 )
 
 SLACK_CONVERSATION_READ_CAPABILITY_ID: Final[str] = (
@@ -107,24 +101,13 @@ SLACK_CONVERSATION_READ_RESULT_SCHEMA_REF: Final[str] = (
     "schema://vendor-knowledge/live/slack/slack_conversation/read/result/v1"
 )
 
-_MAX_LIST_ITEMS = 1
+_MAX_LIST_ITEMS = 15
 _MAX_THREAD_ITEMS = 15
 _MAX_RESULT_BYTES = 131_072
 _MAX_CONTENT_BYTES_PER_ITEM = 16_384
 _METADATA_MAX_CHARS = 4_096
 _EXACT_DEFAULT_MAX_CHARS = 16_384
 _MESSAGE_ITEM_TYPE = "slack_conversation_message"
-_METADATA_KEYS = frozenset(
-    {
-        "subtype",
-        "has_files",
-        "reply_count",
-        "created_at",
-        "edited_at",
-        "thread_root_ts",
-        "attachment_inventory_in_content",
-    }
-)
 _AUTH_ERRORS = frozenset(
     {
         "invalid_auth",
@@ -150,13 +133,24 @@ _FORBIDDEN_ERRORS = frozenset(
         "two_factor_setup_required",
     }
 )
-_NOT_FOUND_ERRORS = frozenset({"channel_not_found", "thread_not_found", "message_not_found"})
+_NOT_FOUND_ERRORS = frozenset(
+    {"channel_not_found", "thread_not_found", "message_not_found"}
+)
 
 
 class SlackConversationListLiveRequestV1(BaseModel):
-    """Strict immutable zero-field request for one root message."""
+    """Strict immutable request for one bounded recent root-message page."""
 
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    page_size: int = Field(default=1, ge=1, le=_MAX_LIST_ITEMS)
+    oldest: str | None = None
+    latest: str | None = None
+
+    @field_validator("oldest", "latest")
+    @classmethod
+    def _valid_window_boundary(cls, value: str | None) -> str | None:
+        return None if value is None else validate_slack_timestamp(value)
 
 
 class SlackConversationThreadReadLiveRequestV1(BaseModel):
@@ -241,9 +235,9 @@ def build_slack_conversation_list_descriptor() -> LiveCapabilityDescriptorV1:
         capability_id=SLACK_CONVERSATION_LIST_CAPABILITY_ID,
         request_schema_ref=SLACK_CONVERSATION_LIST_REQUEST_SCHEMA_REF,
         result_schema_ref=SLACK_CONVERSATION_LIST_RESULT_SCHEMA_REF,
-        max_items=1,
-        max_upstream_items=1,
-        max_page_size=1,
+        max_items=15,
+        max_upstream_items=15,
+        max_page_size=15,
     )
 
 
@@ -291,28 +285,6 @@ class _SlackLiveHandlerSupport:
             return decode_slack_conversation_scope_id(call.remote_resource_id)
         except (ValueError, TypeError, AttributeError, ValidationError):
             raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_SCOPE) from None
-
-    def _source(
-        self,
-        *,
-        call: ValidatedLiveCapabilityCallV1,
-        context: LiveCapabilityExecutionContextV1,
-    ) -> KnowledgeSourceRef:
-        if call.remote_resource_id is None:
-            raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_SCOPE)
-        return KnowledgeSourceRef(
-            tenant_id=context.tenant_id,
-            provider_id=self.provider_id,
-            integration_kind=self.integration_kind,
-            source_kind=self.source_kind,
-            connection_ref=call.connection_ref,
-            scope=KnowledgeSourceScope(
-                remote_scope_id=call.remote_resource_id,
-                remote_scope_type=SLACK_CONVERSATION_SCOPE_TYPE,
-                safe_display_name="Slack conversation",
-                parameters={},
-            ),
-        )
 
     def _vendor_error(self, code: VendorKnowledgeErrorCode) -> VendorKnowledgeError:
         return VendorKnowledgeError(
@@ -387,12 +359,16 @@ class _SlackLiveHandlerSupport:
             call.effective_budget.max_content_bytes_per_item,
             _MAX_CONTENT_BYTES_PER_ITEM,
         )
-        max_result_bytes = min(call.effective_budget.max_result_bytes, _MAX_RESULT_BYTES)
+        max_result_bytes = min(
+            call.effective_budget.max_result_bytes, _MAX_RESULT_BYTES
+        )
         total = 0
         for item in items:
             size = len(item.content.encode("utf-8"))
             if size > max_item_bytes:
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             total += size
         if total > max_result_bytes:
             raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
@@ -466,12 +442,6 @@ class SlackConversationListLiveHandlerV1(
     result_schema_ref = SLACK_CONVERSATION_LIST_RESULT_SCHEMA_REF
     expected_request_model = SlackConversationListLiveRequestV1
 
-    def __init__(
-        self,
-        adapter: SlackConversationKnowledgeAdapter | None = None,
-    ) -> None:
-        self._adapter = adapter or SlackConversationKnowledgeAdapter()
-
     async def execute(
         self,
         *,
@@ -480,35 +450,94 @@ class SlackConversationListLiveHandlerV1(
         context: LiveCapabilityExecutionContextV1,
     ) -> LiveCapabilityExecutionResultV1:
         try:
-            self._validate_call_and_scope(call)
-            self._validate_request(call)
+            conversation_id, conversation_kind, binding_window = (
+                self._validate_call_and_scope(call)
+            )
+            request = self._validated_request(call)
             if not isinstance(integration, SlackConversationChannelIntegration):
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
-            page = await self._adapter.read_page(
-                integration=integration,
-                source=self._source(call=call, context=context),
-                cursor=None,
-                limit=1,
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
+            try:
+                window = _narrow_recent_window(
+                    binding_window,
+                    oldest=request.oldest,
+                    latest=request.latest,
+                )
+            except ValueError:
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.CONFIGURATION_ERROR
+                ) from None
+            effective_limit = min(
+                request.page_size,
+                call.effective_budget.max_result_items,
+                call.effective_budget.max_upstream_items,
+                call.effective_budget.max_provider_page_size,
+                _MAX_LIST_ITEMS,
             )
-            if not isinstance(page, KnowledgePage):
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
-            if len(page.changes) > 1:
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+            if effective_limit < 1:
+                raise self._vendor_error(VendorKnowledgeErrorCode.CONFIGURATION_ERROR)
+            page = await integration.read_recent_conversation_messages_page(
+                conversation_id=conversation_id,
+                conversation_kind=conversation_kind,
+                window=window,
+                limit=effective_limit,
+                max_chars_per_message=min(
+                    DEFAULT_MESSAGE_MAX_CHARS,
+                    call.effective_budget.max_content_bytes_per_item,
+                ),
+            )
+            if type(page) is not SlackConversationMessagePage:
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
+            if (
+                page.conversation_id != conversation_id
+                or page.oldest != window.oldest
+                or page.latest != window.latest
+                or len(page.items) > effective_limit
+            ):
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
+            seen_timestamps: set[str] = set()
             retrieved_at = _utc_now()
-            items = tuple(
-                self._map_root_change(change, retrieved_at=retrieved_at)
-                for change in page.changes
-            )
+            items: list[LiveCapabilityResultItemV1] = []
+            for raw_message in page.items:
+                message = validate_slack_conversation_message(raw_message)
+                if (
+                    message.conversation_id != conversation_id
+                    or message.root_thread_ts is not None
+                    or message.subtype == "thread_broadcast"
+                    or not _timestamp_in_window(message.message_ts, window)
+                    or message.message_ts in seen_timestamps
+                ):
+                    raise self._vendor_error(
+                        VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                    )
+                seen_timestamps.add(message.message_ts)
+                items.append(
+                    self._map_recent_root(
+                        message,
+                        retrieved_at=retrieved_at,
+                        max_bytes=min(
+                            call.effective_budget.max_content_bytes_per_item,
+                            _MAX_CONTENT_BYTES_PER_ITEM,
+                        ),
+                    )
+                )
+            text_truncated = any(item.truncated for item in items)
+            provider_truncated = page.next_cursor is not None
             return self._result(
                 call=call,
                 context=context,
-                items=items,
+                items=tuple(items),
                 outcome=(
                     LiveExecutionOutcomeV1.TRUNCATED
-                    if page.has_more
+                    if provider_truncated or text_truncated
                     else LiveExecutionOutcomeV1.COMPLETED
                 ),
-                truncated=page.has_more,
+                truncated=provider_truncated or text_truncated,
             )
         except asyncio.CancelledError:
             raise
@@ -519,41 +548,29 @@ class SlackConversationListLiveHandlerV1(
                 error_code=self._map_exception(exc),
             )
 
-    def _validate_request(self, call: ValidatedLiveCapabilityCallV1) -> None:
+    def _validated_request(
+        self,
+        call: ValidatedLiveCapabilityCallV1,
+    ) -> SlackConversationListLiveRequestV1:
         if not isinstance(call.validated_request, self.expected_request_model):
             raise self._vendor_error(VendorKnowledgeErrorCode.CONFIGURATION_ERROR)
+        return call.validated_request
 
-    def _map_root_change(
+    def _map_recent_root(
         self,
-        change: KnowledgeChange,
+        message: SlackConversationMessage,
         *,
         retrieved_at: datetime,
+        max_bytes: int,
     ) -> LiveCapabilityResultItemV1:
-        if change.kind is not KnowledgeChangeKind.UPSERT or change.descriptor is None:
-            raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
-        metadata = _validated_descriptor_metadata(
-            change,
-            require_root=True,
-            provider_id=self.provider_id,
-            source_kind=self.source_kind,
-        )
-        content = _json_content(
-            {
-                "change_kind": change.kind.value,
-                "item_type": change.descriptor.item_type,
-                **metadata,
-                "content_available": change.descriptor.content_available,
-                "content_mode": change.descriptor.content_mode.value,
-                "revision_version": change.descriptor.revision.version,
-            }
-        )
+        content, text_truncated = _recent_message_content(message, max_bytes=max_bytes)
         return _item(
-            remote_item_id=change.remote_id,
-            safe_display_name=change.descriptor.title,
+            remote_item_id=message.message_ts,
+            safe_display_name=_message_title(message.text),
             content=content,
             retrieved_at=retrieved_at,
-            remote_updated_at=change.descriptor.revision.updated_at,
-            safe_locator=change.descriptor.provenance.web_url,
+            remote_updated_at=message.edited_at or message.created_at,
+            truncated=text_truncated,
         )
 
 
@@ -578,10 +595,14 @@ class SlackConversationThreadReadLiveHandlerV1(
         context: LiveCapabilityExecutionContextV1,
     ) -> LiveCapabilityExecutionResultV1:
         try:
-            conversation_id, conversation_kind, window = self._validate_call_and_scope(call)
+            conversation_id, conversation_kind, window = self._validate_call_and_scope(
+                call
+            )
             request = self._validated_request(call)
             if not isinstance(integration, SlackConversationChannelIntegration):
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             if not _timestamp_in_window(request.root_message_ts, window):
                 raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_SCOPE)
             effective_limit = min(
@@ -601,9 +622,13 @@ class SlackConversationThreadReadLiveHandlerV1(
                 max_chars_per_message=_METADATA_MAX_CHARS,
             )
             if type(page) is not SlackConversationMessagePage:
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             if len(page.items) > effective_limit:
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             retrieved_at = _utc_now()
             items = tuple(
                 self._map_reply(
@@ -685,10 +710,14 @@ class SlackConversationReadLiveHandlerV1(
         context: LiveCapabilityExecutionContextV1,
     ) -> LiveCapabilityExecutionResultV1:
         try:
-            conversation_id, conversation_kind, window = self._validate_call_and_scope(call)
+            conversation_id, conversation_kind, window = self._validate_call_and_scope(
+                call
+            )
             request = self._validated_request(call)
             if not isinstance(integration, SlackConversationChannelIntegration):
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             if not _timestamp_in_window(request.message_ts, window) or (
                 request.root_thread_ts is not None
                 and not _timestamp_in_window(request.root_thread_ts, window)
@@ -704,7 +733,9 @@ class SlackConversationReadLiveHandlerV1(
                 max_chars_per_message=min(request.max_chars, DEFAULT_MESSAGE_MAX_CHARS),
             )
             if type(result) is not SlackConversationExactMessageResult:
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             if not result.found or result.message is None:
                 raise self._vendor_error(VendorKnowledgeErrorCode.REMOTE_ITEM_NOT_FOUND)
             message = validate_slack_conversation_message(result.message)
@@ -713,7 +744,9 @@ class SlackConversationReadLiveHandlerV1(
                 or message.message_ts != request.message_ts
                 or message.root_thread_ts != request.root_thread_ts
             ):
-                raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
+                raise self._vendor_error(
+                    VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE
+                )
             if (
                 request.expected_revision is not None
                 and compute_slack_conversation_message_revision(message)
@@ -760,50 +793,6 @@ class SlackConversationReadLiveHandlerV1(
         return call.validated_request
 
 
-def _validated_descriptor_metadata(
-    change: KnowledgeChange,
-    *,
-    require_root: bool,
-    provider_id: str,
-    source_kind: str,
-) -> dict[str, object]:
-    descriptor = change.descriptor
-    if descriptor is None:
-        raise ValueError("descriptor_missing")
-    if (
-        descriptor.item_type != _MESSAGE_ITEM_TYPE
-        or descriptor.content_mode is not KnowledgeContentMode.STRUCTURED_RECORD
-        or descriptor.content_available is not True
-        or descriptor.provenance.provider_id != provider_id
-        or descriptor.provenance.source_kind != source_kind
-        or descriptor.provenance.remote_id != change.remote_id
-        or set(descriptor.metadata) != _METADATA_KEYS
-    ):
-        raise ValueError("descriptor_invalid")
-    metadata = descriptor.metadata
-    if (
-        (metadata["subtype"] is not None and not isinstance(metadata["subtype"], str))
-        or type(metadata["has_files"]) is not bool
-        or (
-            metadata["reply_count"] is not None
-            and (type(metadata["reply_count"]) is not int or metadata["reply_count"] < 0)
-        )
-        or not isinstance(metadata["created_at"], str)
-        or (metadata["edited_at"] is not None and not isinstance(metadata["edited_at"], str))
-        or (metadata["thread_root_ts"] is not None and not isinstance(metadata["thread_root_ts"], str))
-        or metadata["attachment_inventory_in_content"] is not True
-    ):
-        raise ValueError("descriptor_metadata_invalid")
-    if metadata["thread_root_ts"] is not None:
-        validate_slack_timestamp(metadata["thread_root_ts"])
-    if require_root and metadata["thread_root_ts"] is not None:
-        raise ValueError("root_message_required")
-    _validate_aware_iso(metadata["created_at"])
-    if metadata["edited_at"] is not None:
-        _validate_aware_iso(metadata["edited_at"])
-    return dict(metadata)
-
-
 def _message_content(
     message: SlackConversationMessage,
     *,
@@ -829,6 +818,75 @@ def _message_content(
     else:
         normalized["content_deferred"] = True
     return _json_content(normalized)
+
+
+def _recent_message_content(
+    message: SlackConversationMessage,
+    *,
+    max_bytes: int,
+) -> tuple[str, bool]:
+    normalized: dict[str, object] = {
+        "change_kind": KnowledgeChangeKind.UPSERT.value,
+        "item_type": _MESSAGE_ITEM_TYPE,
+        "message_ts": message.message_ts,
+        "subtype": message.subtype,
+        "has_files": bool(message.files),
+        "reply_count": message.reply_count,
+        "created_at": message.created_at.isoformat(),
+        "edited_at": message.edited_at.isoformat() if message.edited_at else None,
+        "thread_root_ts": message.root_thread_ts,
+        "author_id": message.actor_provider_id,
+        "content_available": True,
+        "content_mode": KnowledgeContentMode.STRUCTURED_RECORD.value,
+        "revision_version": compute_slack_conversation_message_revision(message),
+        "text": message.text,
+    }
+    complete = _json_content(normalized)
+    if len(complete.encode("utf-8")) <= max_bytes:
+        return complete, False
+
+    normalized["text_truncated"] = True
+    normalized["text_original_chars"] = len(message.text)
+    base = dict(normalized)
+    base["text"] = ""
+    base_content = _json_content(base)
+    if len(base_content.encode("utf-8")) > max_bytes:
+        raise ValueError("recent_message_metadata_exceeds_budget")
+
+    low, high = 0, len(message.text)
+    best = base_content
+    while low <= high:
+        middle = (low + high) // 2
+        candidate = dict(base)
+        candidate["text"] = message.text[:middle]
+        encoded = _json_content(candidate)
+        if len(encoded.encode("utf-8")) <= max_bytes:
+            best = encoded
+            low = middle + 1
+        else:
+            high = middle - 1
+    return best, True
+
+
+def _narrow_recent_window(
+    binding_window: SlackConversationSourceWindow,
+    *,
+    oldest: str | None,
+    latest: str | None,
+) -> SlackConversationSourceWindow:
+    effective_oldest = binding_window.oldest
+    effective_latest = binding_window.latest
+    if oldest is not None and compare_slack_timestamps(oldest, effective_oldest) > 0:
+        effective_oldest = oldest
+    if latest is not None and compare_slack_timestamps(latest, effective_latest) < 0:
+        effective_latest = latest
+    try:
+        return SlackConversationSourceWindow(
+            oldest=effective_oldest,
+            latest=effective_latest,
+        )
+    except ValueError:
+        raise ValueError("recent_request_window_invalid") from None
 
 
 def _content_fits(
@@ -862,6 +920,7 @@ def _item(
     retrieved_at: datetime,
     remote_updated_at: datetime | None,
     safe_locator: str | None = None,
+    truncated: bool = False,
 ) -> LiveCapabilityResultItemV1:
     return LiveCapabilityResultItemV1(
         remote_item_id=remote_item_id,
@@ -871,18 +930,13 @@ def _item(
         retrieved_at=retrieved_at,
         remote_updated_at=remote_updated_at,
         safe_locator=safe_locator_or_none(safe_locator),
+        truncated=truncated,
     )
 
 
 def _message_title(text: str) -> str:
     stripped = text.strip()
     return stripped[:120] + ("..." if len(stripped) > 120 else "") or "Slack message"
-
-
-def _validate_aware_iso(value: str) -> None:
-    parsed = datetime.fromisoformat(value)
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ValueError("metadata_timestamp_not_aware")
 
 
 def _timestamp_in_window(

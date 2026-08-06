@@ -8,11 +8,14 @@ from __future__ import annotations
 from pydantic import PrivateAttr
 
 from intergrax.integrations._shared.health import probe_client_health
-from intergrax.integrations.contracts.base import HealthStatus, IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    HealthStatus,
+    IntegrationConfigurationError,
+)
 from intergrax.integrations.contracts.conversation_channel import (
     ConversationAttachmentContent,
-    ConversationAttachmentFetchError,
     ConversationAttachmentFetcher,
+    ConversationAttachmentFetchError,
     ConversationAttachmentReference,
     ConversationChannelBackend,
     ConversationDeliveryReceipt,
@@ -36,7 +39,9 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationReadConfigurationError,
     SlackConversationSourceWindow,
 )
-from intergrax.runtime.integrations.categories.messaging import ConversationChannelIntegrationContract
+from intergrax.runtime.integrations.categories.messaging import (
+    ConversationChannelIntegrationContract,
+)
 
 SLACK_CONVERSATION_CHANNEL_PROVIDER_ID = "slack"
 
@@ -49,7 +54,9 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
     Inject a ``ConversationChannelBackend`` for tests, or construct via ``from_config``.
     """
 
-    config: SlackConversationChannelIntegrationConfig = SlackConversationChannelIntegrationConfig()
+    config: SlackConversationChannelIntegrationConfig = (
+        SlackConversationChannelIntegrationConfig()
+    )
     _backend: ConversationChannelBackend | None = PrivateAttr(default=None)
 
     async def start(self, handler: ConversationEventHandler) -> None:
@@ -58,7 +65,9 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
     async def stop(self) -> None:
         return await self._require_backend().stop()
 
-    async def send(self, message: OutboundConversationMessage) -> ConversationDeliveryReceipt:
+    async def send(
+        self, message: OutboundConversationMessage
+    ) -> ConversationDeliveryReceipt:
         return await self._require_backend().send(message)
 
     async def fetch_attachment(
@@ -93,11 +102,30 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         limit: int,
         max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
     ) -> SlackConversationMessagePage:
-        return await self._require_knowledge_read_client().read_conversation_history_page(
+        return (
+            await self._require_knowledge_read_client().read_conversation_history_page(
+                conversation_id=conversation_id,
+                conversation_kind=conversation_kind,
+                window=window,
+                cursor=cursor,
+                limit=limit,
+                max_chars_per_message=max_chars_per_message,
+            )
+        )
+
+    async def read_recent_conversation_messages_page(
+        self,
+        *,
+        conversation_id: str,
+        conversation_kind: SlackConversationKind,
+        window: SlackConversationSourceWindow,
+        limit: int,
+        max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+    ) -> SlackConversationMessagePage:
+        return await self._require_knowledge_read_client().read_recent_conversation_messages_page(
             conversation_id=conversation_id,
             conversation_kind=conversation_kind,
             window=window,
-            cursor=cursor,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
         )

@@ -25,8 +25,6 @@ from intergrax.integrations.providers.conversation_channel.slack.mapping import 
     parse_slack_ts,
 )
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    SLACK_CONVERSATION_SCOPE_TYPE,
-    SlackConversationKnowledgeAdapter,
     encode_slack_conversation_scope_id,
 )
 from intergrax.runtime.vendor_knowledge.live import (
@@ -65,11 +63,6 @@ from intergrax.runtime.vendor_knowledge.live.slack.conversation import (
     SLACK_CONVERSATION_READ_RESULT_SCHEMA_REF,
     SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF,
     SLACK_CONVERSATION_THREAD_READ_RESULT_SCHEMA_REF,
-)
-from intergrax.runtime.vendor_knowledge.models import (
-    KnowledgePage,
-    KnowledgeSourceRef,
-    KnowledgeSourceScope,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
@@ -145,6 +138,10 @@ class _FakeSlackBackend:
         self.raise_changed = False
 
     async def read_conversation_history_page(self, **kwargs: Any):
+        self.history_calls.append(kwargs)
+        return self.history_page
+
+    async def read_recent_conversation_messages_page(self, **kwargs: Any):
         self.history_calls.append(kwargs)
         return self.history_page
 
@@ -237,9 +234,18 @@ def _context() -> LiveCapabilityExecutionContextV1:
 
 
 async def test_slack_requests_registration_and_combined_publication() -> None:
-    assert SlackConversationListLiveRequestV1.model_fields == {}
     with pytest.raises(ValidationError):
-        SlackConversationListLiveRequestV1.model_validate({"page_size": 1})
+        SlackConversationListLiveRequestV1(page_size=0)
+    with pytest.raises(ValidationError):
+        SlackConversationListLiveRequestV1(page_size=16)
+    assert SlackConversationListLiveRequestV1().page_size == 1
+    assert SlackConversationListLiveRequestV1(page_size=15).page_size == 15
+    with pytest.raises(ValidationError):
+        SlackConversationListLiveRequestV1(oldest=_LATEST, latest=_OLDEST)
+    with pytest.raises(ValidationError):
+        SlackConversationListLiveRequestV1.model_validate(
+            {"conversation_id": _CONVERSATION_ID}
+        )
     with pytest.raises(ValidationError):
         SlackConversationThreadReadLiveRequestV1(
             root_message_ts=_ROOT_TS,
@@ -261,15 +267,24 @@ async def test_slack_requests_registration_and_combined_publication() -> None:
         SLACK_CONVERSATION_READ_CAPABILITY_ID,
     )
     published = publish_live_registration_bundles(bundles)
-    assert published.schemas.resolve_request(
-        SLACK_CONVERSATION_LIST_REQUEST_SCHEMA_REF, "1"
-    ) is SlackConversationListLiveRequestV1
-    assert published.schemas.resolve_request(
-        SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF, "1"
-    ) is SlackConversationThreadReadLiveRequestV1
-    assert published.schemas.resolve_request(
-        SLACK_CONVERSATION_READ_REQUEST_SCHEMA_REF, "1"
-    ) is SlackConversationReadLiveRequestV1
+    assert (
+        published.schemas.resolve_request(
+            SLACK_CONVERSATION_LIST_REQUEST_SCHEMA_REF, "1"
+        )
+        is SlackConversationListLiveRequestV1
+    )
+    assert (
+        published.schemas.resolve_request(
+            SLACK_CONVERSATION_THREAD_READ_REQUEST_SCHEMA_REF, "1"
+        )
+        is SlackConversationThreadReadLiveRequestV1
+    )
+    assert (
+        published.schemas.resolve_request(
+            SLACK_CONVERSATION_READ_REQUEST_SCHEMA_REF, "1"
+        )
+        is SlackConversationReadLiveRequestV1
+    )
     assert published.schemas.resolve_result(
         SLACK_CONVERSATION_LIST_RESULT_SCHEMA_REF, "1"
     )
@@ -294,11 +309,13 @@ async def test_slack_requests_registration_and_combined_publication() -> None:
     }.issubset({key[2] for key in combined.descriptors})
 
 
-async def test_slack_list_is_one_call_metadata_only_and_truncated() -> None:
+async def test_slack_list_is_one_call_bounded_text_and_truncated() -> None:
     backend = _FakeSlackBackend()
     result = await SlackConversationListLiveHandlerV1().execute(
         integration=_integration(backend),
-        call=_call(SLACK_CONVERSATION_LIST_CAPABILITY_ID, SlackConversationListLiveRequestV1()),
+        call=_call(
+            SLACK_CONVERSATION_LIST_CAPABILITY_ID, SlackConversationListLiveRequestV1()
+        ),
         context=_context(),
     )
 
@@ -307,58 +324,30 @@ async def test_slack_list_is_one_call_metadata_only_and_truncated() -> None:
     assert len(backend.history_calls) == 1
     assert backend.history_calls[0]["cursor"] is None
     assert backend.history_calls[0]["limit"] == 1
-    assert '"text"' not in result.items[0].content
+    assert '"text":"root"' in result.items[0].content
     assert '"thread_root_ts":null' in result.items[0].content
     assert "history-page-2" not in result.items[0].content
 
 
 async def test_slack_list_rejects_active_reply() -> None:
     backend = _FakeSlackBackend()
-    adapter = SlackConversationKnowledgeAdapter()
-    source_ref = KnowledgeSourceRef(
-        tenant_id="tenant-1",
-        provider_id="slack",
-        integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
-        source_kind="slack_conversation",
-        scope=KnowledgeSourceScope(
-            remote_scope_id=_scope_id(),
-            remote_scope_type=SLACK_CONVERSATION_SCOPE_TYPE,
-            safe_display_name="General",
-            parameters={},
-        ),
-    )
-    page = await adapter.read_page(
-        integration=_integration(backend),
-        source=source_ref,
-        cursor=None,
-        limit=1,
-    )
-    change = page.changes[0]
-    assert change.descriptor is not None
-    reply_descriptor = change.descriptor.model_copy(
+    backend.history_page = backend.history_page.model_copy(
         update={
-            "identity": change.descriptor.identity.model_copy(
-                update={"parent_remote_id": "parent"}
+            "items": (
+                _message(
+                    message_ts=_REPLY_TS,
+                    text="reply",
+                    root_thread_ts=_ROOT_TS,
+                ),
             ),
-            "metadata": {
-                **change.descriptor.metadata,
-                "thread_root_ts": _ROOT_TS,
-            },
+            "next_cursor": None,
         }
     )
-
-    class _ReplyAdapter:
-        async def read_page(self, **kwargs: Any):
-            return KnowledgePage(
-                changes=(change.model_copy(update={"descriptor": reply_descriptor}),),
-                has_more=False,
-            )
-
-    result = await SlackConversationListLiveHandlerV1(
-        adapter=_ReplyAdapter()  # type: ignore[arg-type]
-    ).execute(
+    result = await SlackConversationListLiveHandlerV1().execute(
         integration=_integration(backend),
-        call=_call(SLACK_CONVERSATION_LIST_CAPABILITY_ID, SlackConversationListLiveRequestV1()),
+        call=_call(
+            SLACK_CONVERSATION_LIST_CAPABILITY_ID, SlackConversationListLiveRequestV1()
+        ),
         context=_context(),
     )
     assert result.error_code == "live_provider_contract_violation"
@@ -383,7 +372,7 @@ async def test_slack_thread_reads_one_provider_page_and_rejects_wrong_thread() -
     assert backend.thread_calls[0]["conversation_id"] == _CONVERSATION_ID
     assert backend.thread_calls[0]["cursor"] is None
     assert backend.thread_calls[0]["limit"] == 15
-    assert '"text"' not in result.items[0].content
+    assert '"text":"reply"' in result.items[0].content
 
     backend.thread_page = backend.thread_page.model_copy(
         update={
@@ -408,7 +397,9 @@ async def test_slack_thread_reads_one_provider_page_and_rejects_wrong_thread() -
     assert rejected.error_code == "live_provider_contract_violation"
 
 
-async def test_slack_exact_read_maps_found_not_found_changed_and_bounds_content() -> None:
+async def test_slack_exact_read_maps_found_not_found_changed_and_bounds_content() -> (
+    None
+):
     backend = _FakeSlackBackend()
     backend.exact_result = SlackConversationExactMessageResult(
         found=True,
