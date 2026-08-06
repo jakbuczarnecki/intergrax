@@ -20,6 +20,11 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 
 
 class BaseVectorstoreManager(ABC):
+    @property
+    def bound_scope(self) -> VectorStoreScope | None:
+        """Public immutable scope bound by an integration, when available."""
+        return None
+
 
     @abstractmethod
     def add_records(

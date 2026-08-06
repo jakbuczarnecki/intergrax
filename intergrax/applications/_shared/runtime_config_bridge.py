@@ -122,6 +122,7 @@ def materialize_runtime_config(
         enable_websearch=ctx_profile.enable_websearch,
         production_mode=strict or env.execution_mode.value == "strict",
         tenant_id=request.tenant_id,
+        workspace_id=request.workspace_id,
         trace_db_path=trace_path,
         security_profile=env.security_profile,
         modality_profile=modality_profile,

@@ -62,6 +62,7 @@ class HierarchicalRetriever(BaseRetriever):
         # Step 1: base retrieval from chunks
         base_hits = self._chunks.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=max(top_k, self._k_chunks),
             metadata_filter=query.metadata_filter,
             include_embeddings=query.include_embeddings,
@@ -87,6 +88,7 @@ class HierarchicalRetriever(BaseRetriever):
 
             toc_hits = self._toc.query(
                 query_embedding=q_vec,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=self._k_toc,
                 metadata_filter=query.metadata_filter,
                 include_embeddings=False,
@@ -127,6 +129,7 @@ class HierarchicalRetriever(BaseRetriever):
                     parent_filter.update(query.metadata_filter.conditions)
                 local_hits = self._chunks.query(
                     query_embedding=q_vec,
+                    **({"scope": query.scope} if query.scope is not None else {}),
                     top_k=self._k_chunks,
                     metadata_filter=MetadataFilter(conditions=parent_filter),
                     include_embeddings=query.include_embeddings,

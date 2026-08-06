@@ -10,6 +10,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.chat_session import ChatSession
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 
 
@@ -47,3 +48,116 @@ def test_context_builder_disables_rag_when_tool_list_excludes_retrieve() -> None
     use_rag, reason = builder._should_use_rag(session, request)
     assert use_rag is False
     assert reason == "rag_not_in_allowed_tools"
+
+
+def _retrieval_builder(
+    *,
+    tenant_id: str | None = "tenant-a",
+    workspace_id: str | None = "workspace-a",
+    bound_scope: VectorStoreScope | None = None,
+) -> tuple[ContextBuilder, MagicMock]:
+    retrieval_service = MagicMock()
+    retrieval_service.retrieve.return_value = MagicMock(
+        chunks=[],
+        used=False,
+        reason="no_hits",
+        trace=MagicMock(),
+    )
+    vectorstore = MagicMock()
+    vectorstore.bound_scope = bound_scope
+    config = RuntimeConfig(
+        llm_adapter=MagicMock(),
+        enable_rag=True,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        retrieval_service=retrieval_service,
+        embedding_manager=MagicMock(),
+    )
+    return ContextBuilder(config, vectorstore), retrieval_service
+
+
+def _request(*, tenant_id: str | None = "tenant-a", workspace_id: str | None = "workspace-a") -> RuntimeRequest:
+    return RuntimeRequest(
+        agent_id="agent",
+        user_id="user-a",
+        session_id="session-a",
+        message="hello",
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+    )
+
+
+@pytest.mark.gate
+def test_context_builder_separates_operation_scope_from_metadata_filter() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(
+        id="session-a",
+        user_id="user-a",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+    )
+
+    _, reason = builder._retrieve_for_session(session, _request())
+
+    assert reason == "no_hits"
+    request = retrieval_service.retrieve.call_args.args[0]
+    assert request.scope == VectorStoreScope(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+    )
+    assert request.metadata_filter.conditions == {
+        "session_id": "session-a",
+        "user_id": "user-a",
+    }
+
+
+@pytest.mark.gate
+def test_context_builder_rejects_conflicting_workspace_before_retrieval() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(
+        id="session-a",
+        user_id="user-a",
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+    )
+
+    chunks, reason = builder._retrieve_for_session(
+        session,
+        _request(workspace_id="workspace-b"),
+    )
+
+    assert chunks == []
+    assert reason == "workspace_scope_conflict"
+    retrieval_service.retrieve.assert_not_called()
+
+
+@pytest.mark.gate
+def test_context_builder_rejects_conflicting_tenant_before_retrieval() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+
+    chunks, reason = builder._retrieve_for_session(
+        session,
+        _request(tenant_id="tenant-b", workspace_id=None),
+    )
+
+    assert chunks == []
+    assert reason == "tenant_scope_conflict"
+    retrieval_service.retrieve.assert_not_called()
+
+
+@pytest.mark.gate
+def test_context_builder_preserves_bound_namespace() -> None:
+    builder, retrieval_service = _retrieval_builder(
+        workspace_id=None,
+        bound_scope=VectorStoreScope(tenant_id="tenant-a", namespace="configured"),
+    )
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+
+    builder._retrieve_for_session(session, _request(workspace_id=None))
+
+    request = retrieval_service.retrieve.call_args.args[0]
+    assert request.scope == VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="configured",
+    )

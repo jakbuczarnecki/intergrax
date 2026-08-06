@@ -15,7 +15,10 @@ from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreHit
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreHit,
+    VectorStoreScope,
+)
 
 if TYPE_CHECKING:
     from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
@@ -37,6 +40,9 @@ class RetrieverQuery:
 
     # metadata filtering compatible with VectorStore contract
     metadata_filter: MetadataFilter | None = None
+
+    # authoritative vector-store routing scope
+    scope: VectorStoreScope | None = None
 
     # request embeddings in returned candidates
     include_embeddings: bool = False

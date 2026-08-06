@@ -17,8 +17,11 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from intergrax.llm.messages import ChatMessage
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
-from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    MetadataFilter,
+    VectorStoreScope,
+)
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -48,7 +51,7 @@ class ContextBuilder:
     def __init__(
         self,
         config: "RuntimeConfig",
-        vectorstore_manager: VectorstoreManager,
+        vectorstore_manager: BaseVectorstoreManager,
         *,
         collection_name: Optional[str] = None,
     ) -> None:
@@ -126,15 +129,16 @@ class ContextBuilder:
     ) -> Tuple[List[RetrievedChunk], Optional[str]]:
         query_text = str(request.message or "")
 
+        scope, scope_reason = self._resolve_scope(session, request)
+        if scope_reason:
+            return [], scope_reason
+        assert scope is not None
+
         where: Dict[str, Any] = {}
         if session.id:
             where["session_id"] = session.id
         if session.user_id is not None:
             where["user_id"] = session.user_id
-        if session.tenant_id:
-            where["tenant_id"] = session.tenant_id
-        if session.workspace_id is not None:
-            where["workspace_id"] = session.workspace_id
 
         max_docs: int = int(self._config.max_docs_per_query)
         score_threshold: Optional[float] = self._config.rag_score_threshold
@@ -166,6 +170,7 @@ class ContextBuilder:
             RetrievalRequest(
                 query=query_text,
                 final_top_k=max_docs,
+                scope=scope,
                 metadata_filter=metadata_filter,
                 score_threshold=score_threshold,
             )
@@ -183,6 +188,63 @@ class ContextBuilder:
             for c in result.chunks
         ]
         return retrieved_chunks, None
+
+    def _resolve_scope(
+        self,
+        session: ChatSession,
+        request: RuntimeRequest,
+    ) -> Tuple[Optional[VectorStoreScope], Optional[str]]:
+        def canonical(value: object) -> str | None:
+            if value is None:
+                return None
+            normalized = str(value).strip()
+            return normalized or None
+
+        def agree(values: tuple[str | None, ...]) -> str | None:
+            supplied = {value for value in values if value is not None}
+            return next(iter(supplied)) if len(supplied) == 1 else None
+
+        tenant_values = (
+            canonical(request.tenant_id),
+            canonical(self._config.tenant_id),
+            canonical(session.tenant_id),
+        )
+        tenants = {value for value in tenant_values if value is not None}
+        if len(tenants) > 1:
+            return None, "tenant_scope_conflict"
+        tenant_id = agree(tenant_values)
+        if tenant_id is None:
+            return None, "tenant_scope_required"
+
+        workspace_values = (
+            canonical(request.workspace_id),
+            canonical(self._config.workspace_id),
+            canonical(session.workspace_id),
+        )
+        workspaces = {value for value in workspace_values if value is not None}
+        if len(workspaces) > 1:
+            return None, "workspace_scope_conflict"
+        workspace_id = agree(workspace_values)
+
+        bound_scope = getattr(self._vectorstore, "bound_scope", None)
+        if not isinstance(bound_scope, VectorStoreScope):
+            bound_scope = None
+        if bound_scope is not None:
+            if tenant_id != bound_scope.tenant_id:
+                return None, "tenant_scope_conflict"
+            if bound_scope.workspace_id is not None:
+                if workspace_id is not None and workspace_id != bound_scope.workspace_id:
+                    return None, "workspace_scope_conflict"
+                workspace_id = bound_scope.workspace_id
+
+        return (
+            VectorStoreScope(
+                tenant_id=tenant_id,
+                namespace=bound_scope.namespace if bound_scope is not None else None,
+                workspace_id=workspace_id,
+            ),
+            None,
+        )
 
 
 SessionRagContextBuilder = ContextBuilder

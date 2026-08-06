@@ -49,11 +49,23 @@ class VectorstoreManager(BaseVectorstoreManager):
         self._collection_name = collection_name
         self._bound_scope = scope
         provider_tenant = getattr(store, "_tenant_id", None)
+        provider_tenant_is_native = isinstance(provider_tenant, str) and bool(provider_tenant)
+        if not isinstance(provider_tenant, str) or not provider_tenant:
+            for config_attr in ("cfg", "store_config", "_store_config", "_config", "config"):
+                config = getattr(store, config_attr, None)
+                candidate = getattr(config, "tenant_id", None)
+                if isinstance(candidate, str) and candidate.strip():
+                    provider_tenant = candidate.strip()
+                    break
         if not isinstance(provider_tenant, str) or not provider_tenant:
             provider_tenant = None
         if provider_tenant is not None:
             provider_scope = VectorStoreScope(tenant_id=provider_tenant)
-            if scope is not None and scope.tenant_id != provider_scope.tenant_id:
+            if (
+                provider_tenant_is_native
+                and scope is not None
+                and scope.tenant_id != provider_scope.tenant_id
+            ):
                 raise ValueError("manager scope tenant_id does not match provider tenant")
             if scope is None:
                 self._bound_scope = provider_scope
@@ -61,6 +73,10 @@ class VectorstoreManager(BaseVectorstoreManager):
             raise ValueError(
                 "VectorstoreManager requires an explicit scope or a tenant-bound provider"
             )
+
+    @property
+    def bound_scope(self) -> VectorStoreScope | None:
+        return self._bound_scope
 
     def _resolve_scope(self, scope: VectorStoreScope | None) -> VectorStoreScope:
         if scope is not None and not isinstance(scope, VectorStoreScope):

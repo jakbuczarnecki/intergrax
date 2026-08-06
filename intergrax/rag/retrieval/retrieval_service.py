@@ -108,13 +108,15 @@ class RetrievalService:
 
             t0 = time.perf_counter()
             try:
-                candidates = self._retriever_manager.retrieve(
-                    query,
-                    retriever_id=retriever_id,
-                    top_k=prefetch_k,
-                    metadata_filter=request.metadata_filter,
-                    include_embeddings=False,
-                )
+                retrieve_kwargs = {
+                    "retriever_id": retriever_id,
+                    "top_k": prefetch_k,
+                    "metadata_filter": request.metadata_filter,
+                    "include_embeddings": False,
+                }
+                if request.scope is not None:
+                    retrieve_kwargs["scope"] = request.scope
+                candidates = self._retriever_manager.retrieve(query, **retrieve_kwargs)
             except RetrievalError as exc:
                 trace.retrieval_error_kind = exc.kind.value
                 trace.attempted_retriever_ids = list(exc.attempted_retriever_ids)

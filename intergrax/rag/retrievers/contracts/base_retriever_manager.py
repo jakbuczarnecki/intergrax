@@ -11,6 +11,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrieverQuery,
 )
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 
 class BaseRetrieverManager:
@@ -24,6 +25,7 @@ class BaseRetrieverManager:
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter=None,
+        scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
     ) -> List[RetrievalHit]:
         """

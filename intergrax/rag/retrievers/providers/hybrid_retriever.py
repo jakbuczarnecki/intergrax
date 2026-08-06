@@ -73,6 +73,7 @@ class HybridRetriever(BaseRetriever):
             hits = self._vs.query_hybrid(
                 q_vec,
                 query.query_text,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=prefetch_k,
                 metadata_filter=query.metadata_filter,
                 include_embeddings=query.include_embeddings,
@@ -102,6 +103,7 @@ class HybridRetriever(BaseRetriever):
 
         hits = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=prefetch_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=query.include_embeddings,

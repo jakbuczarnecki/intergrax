@@ -14,6 +14,7 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 
 class RetrieverPipeline:
@@ -48,6 +49,7 @@ class RetrieverPipeline:
         query_embedding: Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter: MetadataFilter | None=None,
+        scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
     ) -> List[RetrievalHit]:
         """
@@ -64,6 +66,7 @@ class RetrieverPipeline:
             query_embedding=query_embedding,
             top_k=top_k,
             metadata_filter=metadata_filter,
+            scope=scope,
             include_embeddings=include_embeddings,
         )
 

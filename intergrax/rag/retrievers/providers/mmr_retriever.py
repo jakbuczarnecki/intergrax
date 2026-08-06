@@ -60,6 +60,7 @@ class MMRRetriever(BaseRetriever):
 
         hits = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=prefetch_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=True,

@@ -80,6 +80,7 @@ class GraphRagRetriever(BaseRetriever):
         )
         seeds = self._vs.query(
             query_embedding=q_vec,
+            **({"scope": query.scope} if query.scope is not None else {}),
             top_k=self._seed_top_k,
             metadata_filter=query.metadata_filter,
             include_embeddings=False,
@@ -123,6 +124,7 @@ class GraphRagRetriever(BaseRetriever):
         if extra_chunk_ids:
             prefetch = self._vs.query(
                 query_embedding=q_vec,
+                **({"scope": query.scope} if query.scope is not None else {}),
                 top_k=max(int(query.top_k), len(extra_chunk_ids) * 2),
                 metadata_filter=query.metadata_filter,
             )

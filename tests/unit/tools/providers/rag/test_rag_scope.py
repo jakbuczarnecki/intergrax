@@ -10,9 +10,11 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.documents import Document
 
+from intergrax.knowledge.contracts.document import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput
 from intergrax.tools.providers.rag.ingest_service import perform_rag_ingest
 from intergrax.tools.providers.rag.scope import (
@@ -149,6 +151,9 @@ class _FakeEmbeddingManager:
     def embed_one(self, text: str):
         return [0.1, 0.2]
 
+    def embed_texts(self, texts):
+        return [[0.1, 0.2] for _ in texts]
+
 
 class _RecordingVectorstore:
     def __init__(self, tenant_id: str) -> None:
@@ -159,22 +164,66 @@ class _RecordingVectorstore:
         for doc in documents:
             self.added_tenants.append((doc.metadata or {}).get("tenant_id"))
 
+    def add_records(self, records, *, scope):
+        self.added_tenants.extend(record.document.scope.tenant_id for record in records)
+        return [record.vector_id for record in records]
+
 
 class _FakeLoader:
-    def load_document(self, source: str, *, use_default_metadata=True, call_custom_metadata=None):
-        meta = call_custom_metadata(Document(page_content="x", metadata={}), source) if call_custom_metadata else {}
-        return [Document(page_content="hello", metadata=dict(meta))]
+    def load_document(
+        self,
+        source: str,
+        *,
+        use_default_metadata=True,
+        call_custom_metadata=None,
+        **_: Any,
+    ):
+        if call_custom_metadata:
+            call_custom_metadata(Document(page_content="x", metadata={}), source)
+        return [
+            KnowledgeDocument(
+                schema_version=1,
+                identity={
+                    "document_id": Path(source).name,
+                    "root_document_id": Path(source).name,
+                },
+                scope={"tenant_id": "lkw-smoke"},
+                content="hello",
+                metadata={},
+                provenance={"source_kind": "file", "source_id": source},
+            )
+        ]
 
 
 class _FileLoader:
-    def load_document(self, source: str, *, use_default_metadata=True, call_custom_metadata=None):
+    def load_document(
+        self,
+        source: str,
+        *,
+        use_default_metadata=True,
+        call_custom_metadata=None,
+        **_: Any,
+    ):
         text = Path(source).read_text(encoding="utf-8")
-        meta = call_custom_metadata(Document(page_content=text, metadata={}), source) if call_custom_metadata else {}
-        return [Document(page_content=text, metadata=dict(meta))]
+        if call_custom_metadata:
+            call_custom_metadata(Document(page_content=text, metadata={}), source)
+        return [
+            KnowledgeDocument(
+                schema_version=1,
+                identity={
+                    "document_id": Path(source).name,
+                    "root_document_id": Path(source).name,
+                },
+                scope={"tenant_id": "lkw-smoke"},
+                content=text,
+                metadata={},
+                provenance={"source_kind": "file", "source_id": source},
+            )
+        ]
 
 
 class _FakeSplitter:
-    def split_documents(self, docs):
+    def split_documents(self, docs, **_: Any):
         return docs
 
 
@@ -258,6 +307,7 @@ def test_rag_retrieve_resolves_tenant_scoped_vectorstore(monkeypatch: pytest.Mon
 
     class _FakeRetrievalService:
         def retrieve(self, request):
+            captured["request"] = request
             from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 
             return RetrievalResult(
@@ -292,11 +342,23 @@ def test_rag_retrieve_resolves_tenant_scoped_vectorstore(monkeypatch: pytest.Mon
 
     out = perform_rag_retrieve(
         ctx,
-        RagRetrieveInput(query="fixture", tenant_id="lkw-smoke", workspace_id="ws-1"),
+        RagRetrieveInput(
+            query="fixture",
+            tenant_id="lkw-smoke",
+            workspace_id="ws-1",
+            session_id="session-a",
+            user_id="user-a",
+        ),
     )
 
     assert out.used is True
     assert vectorstore_tenant_id(captured["manager"]) == "lkw-smoke"
+    request = captured["request"]
+    assert request.scope == VectorStoreScope(tenant_id="lkw-smoke", workspace_id="ws-1")
+    assert request.metadata_filter.conditions == {
+        "session_id": "session-a",
+        "user_id": "user-a",
+    }
 
 
 _MARKER = "LKW_TENANT_RETRIEVE_MARKER_20260627"
@@ -369,7 +431,7 @@ def test_tenant_scoped_ingest_and_retrieve_round_trip(
     payload = next(iter(stored.values()))
     assert payload["tenant_id"] == "lkw-smoke"
     assert payload["workspace_id"] == _WORKSPACE_ID
-    assert _MARKER in payload["text"]
+    assert _MARKER in scoped_store._documents[next(iter(stored))].content
 
     retrieve_out = perform_rag_retrieve(
         ctx,

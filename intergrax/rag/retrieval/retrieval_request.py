@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+
 
 @dataclass(frozen=True)
 class RetrievalRequest:
@@ -16,6 +18,7 @@ class RetrievalRequest:
     final_top_k: Optional[int] = None
     prefetch_k: Optional[int] = None
     metadata_filter: Any = None
+    scope: VectorStoreScope | None = None
     score_threshold: Optional[float] = None
     retriever_id: Optional[str] = None
     route_tier_override: Optional[str] = None

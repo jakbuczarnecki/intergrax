@@ -13,6 +13,7 @@ from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.retrieval.citation import Citation
 from intergrax.tools.providers.rag.contracts import (
     RagChunkResult,
@@ -42,6 +43,12 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     if tenant_conflict:
         return RagRetrieveOutput(used=False, reason=tenant_conflict)
 
+    if params.workspace_id is not None and tenant_id is None:
+        return RagRetrieveOutput(used=False, reason="tenant_scope_required")
+    configured_scope = attribute_access.optional(ctx.vectorstore_manager, "bound_scope", None)
+    if isinstance(configured_scope, VectorStoreScope) and tenant_id is None:
+        tenant_id = configured_scope.tenant_id
+
     vectorstore = resolve_tenant_scoped_vectorstore(ctx, tenant_id)
     if vectorstore is None:
         return RagRetrieveOutput(used=False, reason="vectorstore_manager_not_configured")
@@ -61,13 +68,39 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     if service is None:
         return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
 
-    where = _build_metadata_scope(params, tenant_id=tenant_id)
+    bound_scope = attribute_access.optional(vectorstore, "bound_scope", None)
+    if not isinstance(bound_scope, VectorStoreScope):
+        bound_scope = None
+    workspace_id = (
+        str(params.workspace_id).strip()
+        if params.workspace_id is not None and str(params.workspace_id).strip()
+        else None
+    )
+    if bound_scope is not None:
+        if tenant_id is not None and bound_scope.tenant_id != tenant_id:
+            return RagRetrieveOutput(used=False, reason="tenant_scope_conflict")
+        if bound_scope.workspace_id is not None:
+            if workspace_id is not None and workspace_id != bound_scope.workspace_id:
+                return RagRetrieveOutput(used=False, reason="workspace_scope_conflict")
+            workspace_id = bound_scope.workspace_id
+        tenant_id = bound_scope.tenant_id
+    operation_scope = (
+        VectorStoreScope(
+            tenant_id=tenant_id,
+            namespace=bound_scope.namespace if bound_scope is not None else None,
+            workspace_id=workspace_id,
+        )
+        if tenant_id is not None
+        else None
+    )
+    where = _build_metadata_scope(params)
     metadata_filter = MetadataFilter(conditions=where) if where else None
 
     result = service.retrieve(
         RetrievalRequest(
             query=params.query,
             top_k=int(params.top_k) if params.top_k else None,
+            scope=operation_scope,
             metadata_filter=metadata_filter,
             score_threshold=params.score_threshold,
         )
@@ -208,17 +241,12 @@ def _to_rag_citation(citation: Citation) -> RagCitationResult:
     )
 
 
-def _build_metadata_scope(params: RagRetrieveInput, *, tenant_id: str | None = None) -> dict[str, Any]:
+def _build_metadata_scope(params: RagRetrieveInput) -> dict[str, Any]:
     where: dict[str, Any] = {}
     if params.session_id is not None:
         where["session_id"] = params.session_id
     if params.user_id is not None:
         where["user_id"] = params.user_id
-    resolved_tenant = tenant_id if tenant_id is not None else params.tenant_id
-    if resolved_tenant is not None:
-        where["tenant_id"] = resolved_tenant
-    if params.workspace_id is not None:
-        where["workspace_id"] = params.workspace_id
     return where
 
 
