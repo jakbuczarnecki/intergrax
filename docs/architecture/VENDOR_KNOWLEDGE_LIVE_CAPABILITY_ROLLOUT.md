@@ -910,18 +910,30 @@ operations in deterministic order:
 
 ```text
 vendor.slack.slack_conversation.list
-  one adapter history call, limit 1, at most one root message
+  one typed recent-history call, limit 1–15, at most 15 root messages
 vendor.slack.slack_conversation.thread.read
-  one provider reply-page call, limit at most 15, no cursor replay
+  one provider reply-page call, limit at most 15, bounded reply text, no cursor replay
 vendor.slack.slack_conversation.read
-  one provider exact-message call, at most one message
+  one provider exact-message call, at most one bounded message
 ```
 
-The list and thread results are metadata-only. Exact read may include bounded
-typed message text; file bytes, private file URLs, raw Slack payloads,
-permissions, search, full conversation/thread traversal and provider cursors
-remain unsupported or deferred in live v1. Results are ephemeral and receipt
-only through the shared executor; they are not indexed or durably persisted.
+Recent list and thread results expose bounded validated message text required for
+Ask. File bytes, private file URLs, raw Slack payloads, permissions, native
+workspace search, exhaustive history and provider cursors remain unsupported or
+deferred in live v1. Results are ephemeral or receipt-only through the shared
+executor; they are not indexed or durably persisted.
+
+**Slack bounded Ask readiness (`SLACK-LIVE-DISCOVERY-AND-ASK-READINESS-1`)**
+
+The LKW application may plan and execute bounded recent activity, configured
+multi-channel activity, bounded recent lexical/semantic filtering over fetched
+evidence, thread summaries and exact-message reads. Resolution is limited to
+active Slack live access bindings in the current tenant/workspace; provider
+inventory is not authorization. Channel fan-out is capped at 5, roots per
+channel at 15, thread expansions at 3 and replies per thread at 15, subject
+to the shared executor budget and deadline. Every result carries coverage and
+partial-result metadata. Native Slack workspace search, exhaustive history,
+arbitrary token-accessible channels and attachments/files remain deferred.
 
 **Explicitly out of scope:**
 
@@ -929,7 +941,7 @@ only through the shared executor; they are not indexed or durably persisted.
 Microsoft Graph Drive/Mail/Teams handlers
 Jira, Confluence or Google Workspace handlers
 provider SDK calls or provider-specific request models beyond test fixtures
-application UI, LKW behavior, durable synchronization or indexing
+application UI, durable synchronization or indexing
 provider credentials or provider clients in handlers
 ```
 

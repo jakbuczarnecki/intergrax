@@ -49,7 +49,11 @@ injected durable sink
 └── optional LKW Knowledge Intake → RAG
 ```
 
-Existing integrations remain low-level and authoritative. Vendor Knowledge Facade and Sync Coordinator cover the **durable** path today. Live capability execution remains planned. The facade is not an integration category.
+Existing integrations remain low-level and authoritative. Vendor Knowledge Facade
+and Sync Coordinator cover the **durable** path today. Accepted live capability
+families and Slack's bounded configured-channel Ask path execute through the
+shared validated live boundary; indexed and durable Ask remain separate. The
+facade is not an integration category.
 
 ---
 
@@ -1443,7 +1447,7 @@ No duplicate parsing or embedding path is allowed.
 
 ### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
-**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; LKW bridge remains **IN_PROGRESS / CHANGES_REQUIRED**.
+**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; bounded configured-channel Ask readiness **ACCEPTED / CLOSED**; indexed/durable LKW bridge remains **IN_PROGRESS / CHANGES_REQUIRED**.
 
 One existing `SlackConversationChannelIntegration` is reused across indexed RAG, durable materialization without RAG and bounded live access. LKW application tasks remain outside platform ownership.
 
@@ -1541,19 +1545,37 @@ The accepted family publishes exactly three operations:
 
 ```text
 vendor.slack.slack_conversation.list
-  one history call, at most one root message, metadata-only
+  one recent-history call, at most 15 roots, bounded validated text
 vendor.slack.slack_conversation.thread.read
-  one reply page, at most 15 replies, metadata-only
+  one reply page, at most 15 replies, bounded validated text
 vendor.slack.slack_conversation.read
   one exact message, bounded typed text only when safe
 ```
 
-Bounded search, full conversation traversal, full thread traversal,
-authoritative permissions and file/attachment reads are unsupported or
-deferred in live v1. No automatic durable persistence, indexing or provider
-cursor persistence occurs.
+Native workspace search, exhaustive history, full conversation/thread traversal,
+authoritative permissions and file/attachment reads are unsupported or deferred
+in live v1. No automatic durable persistence, indexing or provider cursor
+persistence occurs.
 
 **User-facing meaning after completion:** Authorized applications can read bounded current Slack information at request time without waiting for a complete durable synchronization.
+
+#### `SLACK-LIVE-DISCOVERY-AND-ASK-READINESS-1`
+
+**Status:** `ACCEPTED / CLOSED` (LKW application)
+
+Ask supports bounded recent channel activity, bounded configured multi-channel
+activity (maximum 5 channels), bounded recent lexical/semantic filtering over
+fetched list evidence, one-page thread summaries and exact-message reads.
+Resolution uses only active Slack live access bindings in the current
+tenant/workspace and fails closed on unknown or ambiguous names. The shared
+executor remains authoritative for capability validation, budgets and
+deadlines; coverage metadata exposes queried/skipped bindings, inspected roots,
+thread/reply counts, provider calls, truncation and partial reasons.
+
+This is not native Slack workspace search and does not imply exhaustive history,
+arbitrary token-accessible channel discovery, attachments/files, indexing or
+durable live-result persistence. Commercial Slack support remains gated by the
+existing commercial policy.
 
 #### `LKW-SLACK-KNOWLEDGE-PROOF-1`
 
