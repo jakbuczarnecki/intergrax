@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol
 
@@ -165,6 +165,7 @@ class KnowledgeMaterializationActivePointerV1(BaseModel):
     delivery_id: str = Field(..., min_length=1, max_length=512)
     materialization_generation: str = Field(..., min_length=1, max_length=512)
     document_id: str = Field(..., min_length=1, max_length=512)
+    materialization_revision: int = Field(..., gt=0)
     committed_at: datetime
 
     _validate_ids = field_validator(
@@ -182,12 +183,22 @@ class KnowledgeMaterializationActivePointerV1(BaseModel):
         )
     )
 
+    @field_validator("committed_at")
+    @classmethod
+    def _validate_committed_at(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("materialization_committed_at_must_be_timezone_aware")
+        if value.utcoffset() != timedelta(0):
+            raise ValueError("materialization_committed_at_must_be_utc")
+        return value.astimezone(UTC)
+
     @classmethod
     def for_ownership(
         cls,
         *,
         ownership: KnowledgeMaterializationOwnershipV1,
         document_id: str,
+        materialization_revision: int,
         committed_at: datetime,
     ) -> KnowledgeMaterializationActivePointerV1:
         if ownership.ownership_mode is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE:
@@ -205,6 +216,7 @@ class KnowledgeMaterializationActivePointerV1(BaseModel):
             delivery_id=ownership.delivery_id,
             materialization_generation=ownership.materialization_generation,
             document_id=document_id,
+            materialization_revision=materialization_revision,
             committed_at=committed_at,
         )
 
@@ -291,4 +303,5 @@ class RepositoryKnowledgeMaterializationVisibility:
             pointer is not None
             and pointer.delivery_id == ownership.delivery_id
             and pointer.materialization_generation == ownership.materialization_generation
+            and pointer.materialization_revision == receipt.binding_configuration_version
         )

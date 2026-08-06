@@ -172,7 +172,11 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         )
 
     async def _apply_batch(self, *, batch: KnowledgeSyncBatch) -> ConnectedSourceDeliveryApplyResult:
-        self._validate_authoritative_state(batch)
+        if (
+            batch.tenant_id != self._context.tenant_id
+            or batch.binding_id != self._context.knowledge_source_binding_ref
+        ):
+            self._validate_authoritative_state(batch)
         completed = delivery_receipt_completed(
             repository=self._repository,
             tenant_id=self._context.tenant_id,
@@ -194,6 +198,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 replayed=True,
             )
 
+        self._validate_authoritative_state(batch)
         receipt = begin_delivery_receipt(
             repository=self._repository,
             tenant_id=self._context.tenant_id,
@@ -469,23 +474,37 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         document_id: str,
         committed_at: datetime,
     ) -> None:
-        pointer = KnowledgeMaterializationActivePointerV1.for_ownership(
-            ownership=ownership,
-            document_id=document_id,
-            committed_at=committed_at,
-        )
         assert ownership.indexed_source_binding_id is not None
+        assert ownership.knowledge_source_binding_ref is not None
+        assert ownership.delivery_id is not None
         assert ownership.remote_id is not None
-        current = self._repository.get_active_materialization_pointer(
+        receipt = self._repository.get_connected_source_delivery_receipt(
             tenant_id=ownership.tenant_id,
             workspace_id=ownership.workspace_id,
             source_id=ownership.source_id,
-            indexed_source_binding_id=ownership.indexed_source_binding_id,
-            remote_id=ownership.remote_id,
+            delivery_id=ownership.delivery_id,
         )
-        if current is None:
-            if self._repository.put_active_materialization_pointer_if_absent(pointer):
-                return
+        if (
+            receipt is None
+            or receipt.tenant_id != ownership.tenant_id
+            or receipt.workspace_id != ownership.workspace_id
+            or receipt.source_id != ownership.source_id
+            or receipt.indexed_source_binding_id != ownership.indexed_source_binding_id
+            or receipt.knowledge_source_binding_ref != ownership.knowledge_source_binding_ref
+            or receipt.status is not ConnectedSourceDeliveryStatus.COMPLETED
+            or receipt.completed_at is None
+            or receipt.items_failed != 0
+        ):
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_active_pointer_receipt_invalid"
+            )
+        pointer = KnowledgeMaterializationActivePointerV1.for_ownership(
+            ownership=ownership,
+            document_id=document_id,
+            materialization_revision=receipt.binding_configuration_version,
+            committed_at=committed_at,
+        )
+        for _ in range(3):
             current = self._repository.get_active_materialization_pointer(
                 tenant_id=ownership.tenant_id,
                 workspace_id=ownership.workspace_id,
@@ -493,14 +512,26 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 indexed_source_binding_id=ownership.indexed_source_binding_id,
                 remote_id=ownership.remote_id,
             )
-        if current is None or current == pointer:
-            return
-        if current.committed_at > pointer.committed_at:
-            return
-        if not self._repository.replace_active_materialization_pointer(
-            expected=current,
-            replacement=pointer,
-        ):
-            raise ConnectedSourceSyncSinkError(
-                "connected_source_active_pointer_conflict"
-            )
+            if current is None:
+                if self._repository.put_active_materialization_pointer_if_absent(pointer):
+                    return
+                continue
+            if current == pointer:
+                return
+            if current.materialization_revision > pointer.materialization_revision:
+                return
+            if current.materialization_revision == pointer.materialization_revision:
+                if (
+                    current.delivery_id == pointer.delivery_id
+                    and current.document_id == pointer.document_id
+                ):
+                    return
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_active_pointer_revision_conflict"
+                )
+            if self._repository.replace_active_materialization_pointer(
+                expected=current,
+                replacement=pointer,
+            ):
+                return
+        raise ConnectedSourceSyncSinkError("connected_source_active_pointer_conflict")

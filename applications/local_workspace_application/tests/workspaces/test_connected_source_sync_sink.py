@@ -39,8 +39,12 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
 )
+from local_workspace_application.workspaces.materialization_visibility import (
+    RepositoryKnowledgeMaterializationVisibility,
+)
 from local_workspace_application.workspaces.models import (
     Workspace,
+    WorkspaceDocumentReference,
     WorkspaceOperation,
     WorkspaceOperationStatus,
     WorkspaceOperationType,
@@ -92,6 +96,8 @@ _SOURCE = connected_source_id(_TENANT, _WORKSPACE, _BINDING)
 _INDEXED = indexed_source_binding_id(_TENANT, _WORKSPACE, _BINDING)
 _OPERATION = "op-test"
 _DELIVERY = "a" * 64
+_DELIVERY_2 = "b" * 64
+_DELIVERY_3 = "c" * 64
 
 
 def _structured_record(text: str = "marker") -> dict[str, object]:
@@ -175,11 +181,16 @@ def _bump_head(repo: ManagedWorkspaceRepository, *, committed_revision: int) -> 
     )
 
 
-def _batch(*, envelopes: tuple[KnowledgeSyncEnvelope, ...] = ()) -> KnowledgeSyncBatch:
+def _batch(
+    *,
+    envelopes: tuple[KnowledgeSyncEnvelope, ...] = (),
+    binding_configuration_version: int = 1,
+    delivery_id: str = _DELIVERY,
+) -> KnowledgeSyncBatch:
     return KnowledgeSyncBatch(
         tenant_id=_TENANT,
         binding_id=_BINDING,
-        binding_configuration_version=1,
+        binding_configuration_version=binding_configuration_version,
         source=KnowledgeSourceRef(
             tenant_id=_TENANT,
             provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -194,7 +205,7 @@ def _batch(*, envelopes: tuple[KnowledgeSyncEnvelope, ...] = ()) -> KnowledgeSyn
             ),
         ),
         mode=KnowledgeSyncMode.RECONCILIATION,
-        delivery_id=_DELIVERY,
+        delivery_id=delivery_id,
         envelopes=envelopes,
         has_more=False,
     )
@@ -213,6 +224,8 @@ class _Lookup:
 
 
 class _TenantBindingPort:
+    configuration_version = 1
+
     def get_binding(self, *, tenant_id: str, binding_id: str):
         return KnowledgeSourceBinding(
             binding_id=binding_id,
@@ -229,7 +242,7 @@ class _TenantBindingPort:
                 parameters={},
             ),
             status=KnowledgeSourceBindingStatus.ACTIVE,
-            configuration_version=1,
+            configuration_version=self.configuration_version,
         )
 
 
@@ -303,23 +316,47 @@ def sink_env(tmp_path: Path):
         )
     )
     repo.put_knowledge_configuration_mutation_if_absent(_creation_mutation())
+    tenant_binding_port = _TenantBindingPort()
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(store)
-    binding_repo.create(_TenantBindingPort().get_binding(tenant_id=_TENANT, binding_id=_BINDING))
+    binding_repo.create(
+        tenant_binding_port.get_binding(tenant_id=_TENANT, binding_id=_BINDING)
+    )
     config = WorkspaceKnowledgeConfigurationService(repo, _Lookup())
     indexing = AsyncMock()
-    indexing.index_connected_source_one = AsyncMock(
-        return_value=WorkspaceDocumentIndexingResult(
+    document_number = 0
+
+    async def _index(**kwargs):
+        nonlocal document_number
+        document_number += 1
+        document_id = f"doc-{document_number}"
+        ownership = kwargs["materialization_ownership"]
+        repo.put_document_ref(
+            WorkspaceDocumentReference(
+                document_id=document_id,
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                source_id=_SOURCE,
+                source_path=f"connected/{ownership.remote_id}.md",
+                file_name=kwargs["safe_file_name"],
+                content_hash=kwargs["content_hash"],
+                indexed_at=_NOW,
+                materialization_ownership=ownership,
+                visibility_authority_ref=ownership.delivery_id,
+                visibility_authority_type="delivery_receipt",
+            )
+        )
+        return WorkspaceDocumentIndexingResult(
             indexed=True,
             unchanged=False,
-            document_id="doc-1",
+            document_id=document_id,
             documents_indexed=1,
         )
-    )
+    indexing.index_connected_source_one = AsyncMock(side_effect=_index)
     sink = WorkspaceConnectedSourceKnowledgeSyncSink(
         repository=repo,
         indexing_service=indexing,
         configuration_reader=config,
-        tenant_binding_port=_TenantBindingPort(),
+        tenant_binding_port=tenant_binding_port,
         context=ConnectedSourceSyncSinkContext(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
@@ -394,6 +431,146 @@ async def test_completed_replay_is_idempotent(sink_env) -> None:
     assert first.replayed is False
     assert second.replayed is True
     assert indexing.index_connected_source_one.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_materialization_supersession_uses_delivery_revision_and_replay_is_stale(
+    sink_env,
+) -> None:
+    repo, sink, indexing = sink_env
+    resolver = RepositoryKnowledgeMaterializationVisibility(repo)
+
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v1"),),
+            delivery_id=_DELIVERY,
+            binding_configuration_version=1,
+        )
+    )
+    refs = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    first = next(ref for ref in refs if ref.materialization_ownership is not None)
+    assert first.materialization_ownership is not None
+    assert resolver.is_visible(ownership=first.materialization_ownership)
+
+    sink._tenant_binding_port.configuration_version = 2
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
+            delivery_id=_DELIVERY_2,
+            binding_configuration_version=2,
+        )
+    )
+    refs = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    second = next(
+        ref
+        for ref in refs
+        if ref.materialization_ownership is not None
+        and ref.materialization_ownership.delivery_id == _DELIVERY_2
+    )
+    assert second.materialization_ownership is not None
+    assert not resolver.is_visible(ownership=first.materialization_ownership)
+    assert resolver.is_visible(ownership=second.materialization_ownership)
+
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v1"),),
+            delivery_id=_DELIVERY,
+            binding_configuration_version=1,
+        )
+    )
+    assert resolver.is_visible(ownership=second.materialization_ownership)
+
+    replay = await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
+            delivery_id=_DELIVERY_2,
+            binding_configuration_version=2,
+        )
+    )
+    assert replay.replayed is True
+    assert resolver.is_visible(ownership=second.materialization_ownership)
+    assert indexing.index_connected_source_one.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_concurrent_revision_cas_reloads_and_keeps_newer_pointer(
+    sink_env,
+    monkeypatch,
+) -> None:
+    repo, sink, _indexing = sink_env
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v1"),),
+            delivery_id=_DELIVERY,
+            binding_configuration_version=1,
+        )
+    )
+    first_ref = next(
+        ref
+        for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        if ref.materialization_ownership is not None
+    )
+    assert first_ref.materialization_ownership is not None
+    remote_id = first_ref.materialization_ownership.remote_id
+    assert remote_id is not None
+    sink._tenant_binding_port.configuration_version = 2
+    original_replace = repo.replace_active_materialization_pointer
+    raced = False
+
+    def _replace_with_concurrent_winner(*, expected, replacement):
+        nonlocal raced
+        if not raced:
+            raced = True
+            assert original_replace(expected=expected, replacement=replacement)
+            return False
+        return original_replace(expected=expected, replacement=replacement)
+
+    monkeypatch.setattr(
+        repo,
+        "replace_active_materialization_pointer",
+        _replace_with_concurrent_winner,
+    )
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, text="v2"),),
+            delivery_id=_DELIVERY_2,
+            binding_configuration_version=2,
+        )
+    )
+    pointer = repo.get_active_materialization_pointer(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        remote_id=remote_id,
+    )
+    assert pointer is not None
+    assert pointer.materialization_revision == 2
+    assert pointer.delivery_id == _DELIVERY_2
+    assert raced
+
+
+@pytest.mark.asyncio
+async def test_equal_delivery_revision_with_different_delivery_conflicts(sink_env) -> None:
+    _repo, sink, _indexing = sink_env
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
+            delivery_id=_DELIVERY_2,
+            binding_configuration_version=1,
+        )
+    )
+    with pytest.raises(
+        ConnectedSourceSyncSinkError,
+        match="connected_source_active_pointer_revision_conflict",
+    ):
+        await sink.apply_batch(
+            batch=_batch(
+                envelopes=(_envelope(KnowledgeChangeKind.UPSERT),),
+                delivery_id=_DELIVERY_3,
+                binding_configuration_version=1,
+            )
+        )
 
 
 @pytest.mark.asyncio

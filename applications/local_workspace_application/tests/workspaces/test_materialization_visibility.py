@@ -65,6 +65,8 @@ def _ownership(delivery_id: str, *, binding_id: str = _BINDING) -> KnowledgeMate
 
 def _completed_receipt(
     ownership: KnowledgeMaterializationOwnershipV1,
+    *,
+    binding_configuration_version: int = 1,
 ) -> ConnectedSourceDeliveryReceipt:
     assert ownership.indexed_source_binding_id is not None
     assert ownership.knowledge_source_binding_ref is not None
@@ -76,7 +78,7 @@ def _completed_receipt(
         indexed_source_binding_id=ownership.indexed_source_binding_id,
         knowledge_source_binding_ref=ownership.knowledge_source_binding_ref,
         delivery_id=ownership.delivery_id,
-        binding_configuration_version=1,
+        binding_configuration_version=binding_configuration_version,
         operation_id="operation-a",
         status=ConnectedSourceDeliveryStatus.COMPLETED,
         documents_indexed=1,
@@ -91,12 +93,19 @@ def _commit(
     ownership: KnowledgeMaterializationOwnershipV1,
     *,
     document_id: str,
+    materialization_revision: int = 1,
 ) -> None:
-    repository.put_connected_source_delivery_receipt(_completed_receipt(ownership))
+    repository.put_connected_source_delivery_receipt(
+        _completed_receipt(
+            ownership,
+            binding_configuration_version=materialization_revision,
+        )
+    )
     repository.put_active_materialization_pointer_if_absent(
         KnowledgeMaterializationActivePointerV1.for_ownership(
             ownership=ownership,
             document_id=document_id,
+            materialization_revision=materialization_revision,
             committed_at=_NOW,
         )
     )
@@ -153,12 +162,24 @@ def test_completed_delivery_and_active_pointer_control_supersession() -> None:
     assert resolver.is_visible(ownership=first)
     assert not resolver.is_visible(ownership=second)
 
-    _commit(repository, second, document_id="document-2")
-    assert not resolver.is_visible(ownership=first)
-    assert resolver.is_visible(ownership=second)
+    repository.put_connected_source_delivery_receipt(
+        _completed_receipt(second, binding_configuration_version=2)
+    )
+    assert resolver.is_visible(ownership=first)
+    assert not resolver.is_visible(ownership=second)
 
     wrong_binding = _ownership(_DELIVERY_2, binding_id="binding-other")
     assert not resolver.is_visible(ownership=wrong_binding)
+
+
+def test_active_pointer_rejects_naive_committed_at() -> None:
+    with pytest.raises(ValidationError, match="timezone_aware"):
+        KnowledgeMaterializationActivePointerV1.for_ownership(
+            ownership=_ownership(_DELIVERY_1),
+            document_id="document-1",
+            materialization_revision=1,
+            committed_at=_NOW.replace(tzinfo=None),
+        )
 
 
 class _SearchExecution:
