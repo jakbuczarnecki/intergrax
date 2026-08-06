@@ -865,7 +865,8 @@ activated.
 and tested boundary instead of defining private rules in its first handler.
 At the family closeout, provider-specific production handlers and registrations
 cover the five bounded Microsoft Graph list capabilities: Drive, Mail, Teams
-Channel, Teams Chat and Calendar.
+Channel, Teams Chat and Calendar, plus the three bounded Slack conversation
+capabilities.
 
 **Provider-neutral scope:**
 
@@ -894,16 +895,39 @@ provider-specific production handlers:
 
 provider-specific production registrations:
   implemented for Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar list
+  and Slack conversation list, thread.read and read
 
-all other provider/source-kind live handlers and registrations:
-  not implemented
+Slack live family:
+  ACCEPTED / CLOSED
+  bounded root list, one-page thread read and one exact message read
 ```
+
+**Slack live family (`SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1`)**
+
+The Slack family reuses the resolved `SlackConversationChannelIntegration` and
+the canonical opaque `slack_conversation` scope. It publishes exactly these
+operations in deterministic order:
+
+```text
+vendor.slack.slack_conversation.list
+  one adapter history call, limit 1, at most one root message
+vendor.slack.slack_conversation.thread.read
+  one provider reply-page call, limit at most 15, no cursor replay
+vendor.slack.slack_conversation.read
+  one provider exact-message call, at most one message
+```
+
+The list and thread results are metadata-only. Exact read may include bounded
+typed message text; file bytes, private file URLs, raw Slack payloads,
+permissions, search, full conversation/thread traversal and provider cursors
+remain unsupported or deferred in live v1. Results are ephemeral and receipt
+only through the shared executor; they are not indexed or durably persisted.
 
 **Explicitly out of scope:**
 
 ```text
 Microsoft Graph Drive/Mail/Teams handlers
-Slack, Jira, Confluence or Google Workspace handlers
+Jira, Confluence or Google Workspace handlers
 provider SDK calls or provider-specific request models beyond test fixtures
 application UI, LKW behavior, durable synchronization or indexing
 provider credentials or provider clients in handlers
@@ -1042,6 +1066,12 @@ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR
 
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
   READY_FOR_REVIEW
+
+SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1
+  ACCEPTED / CLOSED
+
+SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT
+  ACCEPTED / CLOSED
 
 all other provider live tasks
   PLANNED

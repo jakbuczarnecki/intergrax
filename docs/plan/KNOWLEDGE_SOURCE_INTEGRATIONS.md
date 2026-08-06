@@ -113,7 +113,6 @@ LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
 PLANNED:
 LKW-CONVERSATION-CONTEXT-1
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
-SLACK-LIVE-CAPABILITY-1
 LKW-SLACK-KNOWLEDGE-PROOF-1
 GOOGLE-WORKSPACE-KNOWLEDGE-FOUNDATION-1
 GOOGLE-WORKSPACE-KNOWLEDGE-READ-SURFACE-1
@@ -128,9 +127,9 @@ DEFERRED: LKW-CONNECTED-SOURCE-1
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
 [live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
 It is **READY_FOR_REVIEW**; the Microsoft Graph Drive, Mail, Teams Channel,
-Teams Chat and Calendar live list capabilities are **ACCEPTED / CLOSED**, and
-all other provider/source-kind live tasks plus the Google readiness gate remain
-**PLANNED**.
+Teams Chat and Calendar live list capabilities and the Slack conversation live
+family are **ACCEPTED / CLOSED**. All other provider/source-kind live tasks plus
+the Google readiness gate remain **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1` implements the shared
 provider-neutral live contract boundary and is **ACCEPTED / CLOSED**.
@@ -155,9 +154,9 @@ surface, and the remaining application-mode gaps without activating work.
 The historical Google status wording above is retained as a documented
 contradiction and is not capability evidence.
 
-`VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. Live capability execution is **not** marked as implemented.
+`VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
 
-`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation, shared-channel runtime and live capability remain **not** implemented.
+`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation and shared-channel runtime remain **not** implemented; the separate Slack live capability family is **ACCEPTED / CLOSED**.
 
 **Execution order (frozen) — parallel tracks:**
 
@@ -174,6 +173,7 @@ SLACK-KNOWLEDGE-THREE-MODE-ARCH-1
 DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
 LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
+SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1 — ACCEPTED / CLOSED
 
 IN_PROGRESS / CHANGES_REQUIRED:
 LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
@@ -181,7 +181,6 @@ LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHAN
 THEN (Slack / LKW track):
 LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
-SLACK-LIVE-CAPABILITY-1
 
 JOIN (final Slack proof):
 LKW-SLACK-CONNECTED-SOURCE-1
@@ -1444,7 +1443,7 @@ No duplicate parsing or embedding path is allowed.
 
 ### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
-**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; LKW bridge and live capability **PLANNED**.
+**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; LKW bridge remains **IN_PROGRESS / CHANGES_REQUIRED**.
 
 One existing `SlackConversationChannelIntegration` is reused across indexed RAG, durable materialization without RAG and bounded live access. LKW application tasks remain outside platform ownership.
 
@@ -1452,7 +1451,7 @@ One existing `SlackConversationChannelIntegration` is reused across indexed RAG,
 
 **Status:** `DONE` (platform)
 
-**Classification:** `IMPLEMENTED` — platform foundation; not LKW bridge or live capability.
+**Classification:** `IMPLEMENTED` — platform foundation; not the LKW bridge. The separate Slack live family is accepted below.
 
 Delivered scope includes same-integration bot-token credential model on one `AsyncWebClient`, bot-membership inventory via single `users.conversations` stream, `conversation_kind`-explicit history/reply/exact reads, strict descriptor validation, `thread_broadcast` exclusion from history materialization, and durable sync retry proof for multi-page reply traversal followed by history resumption.
 
@@ -1480,7 +1479,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 **User-facing meaning after completion:** The platform can safely read and durably synchronize selected Slack conversations for any Intergrax application. No new Slack command or LKW feature is implied yet.
 
-#### Planned Slack three-mode matrix (`PLANNED` — not implemented)
+#### Slack three-mode matrix (live accepted; indexed/durable claims remain conservative)
 
 | Concern | Indexed RAG | Durable materialization | Live access |
 |---|---:|---:|---:|
@@ -1488,7 +1487,7 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 | Slack client, transport, credentials | reused | reused | reused |
 | Shared Slack read primitives | reused | reused | reused |
 | Slack Vendor Knowledge Adapter | implemented | implemented | not used |
-| Slack Live Capability Adapter | not used | not used | required |
+| Slack Live Capability Adapter | not used | not used | implemented |
 | LKW Knowledge Intake / RAG | optional consumer | not required | not automatic |
 | Ephemeral evidence | not primary | not primary | required |
 | Automatic persistence of live results | no | n/a | forbidden by default |
@@ -1528,7 +1527,7 @@ Slack channel/private-channel mention handling (`MENTION_ONLY` activation) over 
 
 #### `SLACK-LIVE-CAPABILITY-1`
 
-**Status:** `PLANNED` (platform)
+**Status:** `ACCEPTED / CLOSED` (platform)
 
 Platform live path using the same integration and shared read primitives:
 
@@ -1538,7 +1537,21 @@ validated capability
 → normalized ephemeral evidence
 ```
 
-No automatic durable persistence.
+The accepted family publishes exactly three operations:
+
+```text
+vendor.slack.slack_conversation.list
+  one history call, at most one root message, metadata-only
+vendor.slack.slack_conversation.thread.read
+  one reply page, at most 15 replies, metadata-only
+vendor.slack.slack_conversation.read
+  one exact message, bounded typed text only when safe
+```
+
+Bounded search, full conversation traversal, full thread traversal,
+authoritative permissions and file/attachment reads are unsupported or
+deferred in live v1. No automatic durable persistence, indexing or provider
+cursor persistence occurs.
 
 **User-facing meaning after completion:** Authorized applications can read bounded current Slack information at request time without waiting for a complete durable synchronization.
 
@@ -1611,7 +1624,7 @@ One existing `GoogleWorkspaceCollaborationSuiteIntegration` (`provider_id: googl
 
 ```text
 GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1 becomes ACCEPTED (currently READY_FOR_REVIEW)
-Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge vertical — currently PLANNED)
+Google Workspace runtime implementation starts only after LKW-SLACK-KNOWLEDGE-PROOF-1 becomes ACCEPTED (complete Slack Knowledge proof — currently PLANNED)
 canonical Tenant Connection / credential-reference boundary available
 SecretsStore-owned credential persistence available
 runtime integration rehydration/resolution boundary available
@@ -2131,7 +2144,7 @@ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT: READY_FOR_REVIEW
 other Microsoft Graph live tasks: PLANNED
-Slack live task: PLANNED
+Slack live family: ACCEPTED / CLOSED
 Jira live task: PLANNED
 Confluence live task: PLANNED
 GOOGLE-WORKSPACE-KNOWLEDGE-LIVE-READINESS-GATE-1: PLANNED
