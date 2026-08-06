@@ -41,6 +41,7 @@ def resolve_rag_stack_for_memory_wiring(
     profile = integration_profile or env.integration_profile
     return create_default_rag_stack(
         integration_profile=profile,  # type: ignore[arg-type]
+        tenant_id=env.profile_id,
         llm_for_contextual=llm_adapter,  # type: ignore[arg-type]
     )
 

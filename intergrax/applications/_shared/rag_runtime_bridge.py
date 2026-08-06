@@ -106,6 +106,7 @@ def resolve_rag_stack_for_environment(
     rag_profile = resolve_rag_profile_for_environment(env, integration_profile=profile)
     return create_default_rag_stack(
         integration_profile=profile,
+        tenant_id=env.profile_id,
         llm_for_contextual=llm_adapter,
         profile=rag_profile,
     )
