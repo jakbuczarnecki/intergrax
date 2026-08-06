@@ -21,7 +21,11 @@ def _toml(
     output: str = ".artifacts/proof",
     provider: str = "vllm",
     adapter_type: str = "openai_compatible",
+    api_key_env: str | None = "SYNTHETIC_REQUIRED_API_KEY",
 ) -> str:
+    api_key_line = (
+        f'api_key_env = "{api_key_env}"\n' if api_key_env is not None else ""
+    )
     return f"""
 schema_version = "token-optimization-proof.v1"
 proof_id = "{proof_id}"
@@ -33,7 +37,7 @@ provider = "{provider}"
 type = "{adapter_type}"
 model = "offline-model"
 base_url = "http://127.0.0.1:8100/v1"
-api_key_env = "TEST_PROOF_KEY"
+{api_key_line}\
 timeout_seconds = 5.0
 max_output_tokens = 32
 temperature = 0.0
@@ -84,6 +88,19 @@ def test_valid_toml_loads_immutable_config(tmp_path: Path) -> None:
     assert config.cases[0].case_id == "case-one"
     assert config.output.directory == (Path.cwd() / ".artifacts/proof").resolve()
     assert "secret prompt value" not in repr(config.cases[0])
+
+
+def test_canonical_vllm_config_is_no_auth(monkeypatch) -> None:
+    monkeypatch.delenv("VLLM_API_KEY", raising=False)
+
+    config = load_universal_token_optimization_proof_config(
+        Path(__file__).resolve().parents[5]
+        / "configs"
+        / "token_optimization"
+        / "proof_vllm.toml"
+    )
+
+    assert config.adapter.api_key_env is None
 
 
 @pytest.mark.parametrize("provider", ("vllm", "openai", "groq"))
@@ -196,7 +213,7 @@ def test_case_path_traversal_and_schema_errors_are_rejected(tmp_path: Path) -> N
 
 
 def test_missing_required_environment_is_safe(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.delenv("TEST_PROOF_KEY", raising=False)
+    monkeypatch.delenv("SYNTHETIC_REQUIRED_API_KEY", raising=False)
     text = _toml().replace("run_mode = \"offline_smoke\"", 'run_mode = "live_adapter"')
 
     with pytest.raises(ProofConfigurationError) as error:
@@ -204,4 +221,4 @@ def test_missing_required_environment_is_safe(tmp_path: Path, monkeypatch) -> No
 
     assert error.value.reason_code == "MISSING_API_KEY_ENV"
     assert "secret" not in repr(error.value).lower()
-    assert "TEST_PROOF_KEY" not in str(error.value)
+    assert "SYNTHETIC_REQUIRED_API_KEY" not in str(error.value)

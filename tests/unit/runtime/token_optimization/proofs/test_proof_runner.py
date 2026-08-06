@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import UTC, datetime
-import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import ClassVar
 
 import pytest
 
@@ -15,20 +16,6 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.runtime.token_optimization.proofs.config import (
-    load_universal_token_optimization_proof_config,
-)
-from intergrax.runtime.token_optimization.proofs.contracts import (
-    ProofCompositionError,
-    ProofConfigurationError,
-)
-from intergrax.runtime.token_optimization.proofs.runner import (
-    UniversalTokenOptimizationProofRunner,
-    _protected_identity_digest,
-    _protected_region_evidence,
-    _prefix_identity_evidence,
-    _measurements_from_pipeline,
-)
 from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegion,
     ProtectedRegionKind,
@@ -37,8 +24,8 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationPipelineResult,
 )
 from intergrax.runtime.token_optimization.llm_router_contracts import (
-    TokenOptimizationRouterConfigurationId,
     TokenOptimizationLLMRouterResult,
+    TokenOptimizationRouterConfigurationId,
     TokenOptimizationRouterReason,
     TokenOptimizationRouterReasonCode,
     TokenOptimizationRouterRisk,
@@ -49,6 +36,20 @@ from intergrax.runtime.token_optimization.prompt_assembly import (
     PromptAssemblyMessageBlock,
     assemble_cache_stable_prompt,
 )
+from intergrax.runtime.token_optimization.proofs.config import (
+    load_universal_token_optimization_proof_config,
+)
+from intergrax.runtime.token_optimization.proofs.contracts import (
+    ProofCompositionError,
+    ProofConfigurationError,
+)
+from intergrax.runtime.token_optimization.proofs.runner import (
+    UniversalTokenOptimizationProofRunner,
+    _measurements_from_pipeline,
+    _prefix_identity_evidence,
+    _protected_identity_digest,
+    _protected_region_evidence,
+)
 
 
 def _config(
@@ -56,9 +57,13 @@ def _config(
     *,
     provider: str = "vllm",
     run_mode: str = "offline_smoke",
+    api_key_env: str | None = "SYNTHETIC_REQUIRED_API_KEY",
 ):
     tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "proof.toml"
+    api_key_line = (
+        f'api_key_env = "{api_key_env}"\n' if api_key_env is not None else ""
+    )
     path.write_text(
         f"""
 schema_version = "token-optimization-proof.v1"
@@ -71,7 +76,7 @@ provider = "{provider}"
 type = "openai_compatible"
 model = "offline-model"
 base_url = "offline://local"
-api_key_env = "RUNNER_UNUSED_KEY"
+{api_key_line}\
 timeout_seconds = 5.0
 max_output_tokens = 32
 temperature = 0.0
@@ -236,12 +241,12 @@ def test_live_runner_uses_injected_registry_contract_without_network(
     monkeypatch,
     provider: str,
 ) -> None:
-    monkeypatch.setenv("RUNNER_UNUSED_KEY", "controlled-test-key")
+    monkeypatch.setenv("SYNTHETIC_REQUIRED_API_KEY", "synthetic-required-value")
     created: list[_RecordingLiveAdapter] = []
 
     class ScopedLiveRegistry(LLMAdapterRegistry):
-        _factories = {}
-        create_calls = []
+        _factories: ClassVar[dict] = {}
+        create_calls: ClassVar[list] = []
 
         @classmethod
         def create(cls, requested_provider, **kwargs):
@@ -268,7 +273,7 @@ def test_live_runner_uses_injected_registry_contract_without_network(
     assert create_kwargs == {
         "model": "offline-model",
         "base_url": "offline://local",
-        "api_key": "controlled-test-key",
+        "api_key": "synthetic-required-value",
         "timeout_sec": 5.0,
         "max_tokens": 32,
         "temperature": 0.0,
@@ -277,6 +282,42 @@ def test_live_runner_uses_injected_registry_contract_without_network(
     assert created[0].create_kwargs == create_kwargs
     assert type(created[0]).__name__ == "_RecordingLiveAdapter"
     assert result.environment.provider == provider
+    assert "synthetic-required-value" not in json.dumps(result, default=str)
+
+
+def test_live_runner_passes_none_for_no_auth_without_environment(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("SYNTHETIC_REQUIRED_API_KEY", raising=False)
+
+    class ScopedLiveRegistry(LLMAdapterRegistry):
+        _factories: ClassVar[dict] = {}
+        create_calls: ClassVar[list] = []
+
+        @classmethod
+        def create(cls, requested_provider, **kwargs):
+            cls.create_calls.append((requested_provider, kwargs))
+            return super().create(requested_provider, **kwargs)
+
+    def factory(**kwargs):
+        return _RecordingLiveAdapter(provider="vllm", **kwargs)
+
+    ScopedLiveRegistry.register("vllm", factory)
+    result = UniversalTokenOptimizationProofRunner(
+        adapter_registry=ScopedLiveRegistry,
+    ).run(
+        _config(
+            tmp_path,
+            provider="vllm",
+            run_mode="live_adapter",
+            api_key_env=None,
+        ),
+        persist_artifacts=False,
+    )
+
+    assert result.success is True
+    assert ScopedLiveRegistry.create_calls[0][1]["api_key"] is None
 
 
 def test_loader_rejects_unknown_provider_closed(tmp_path: Path) -> None:

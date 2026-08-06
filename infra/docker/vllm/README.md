@@ -20,20 +20,20 @@ model with `VLLM_MODEL` only when the machine has sufficient resources.
 
 ```powershell
 $env:VLLM_MODEL = "Qwen/Qwen2.5-3B-Instruct"
-$env:VLLM_API_KEY = "local-token"
 docker compose -f infra/docker/vllm/docker-compose.yml up -d vllm
 Invoke-WebRequest http://127.0.0.1:8100/health
 ```
 
 ```bash
 export VLLM_MODEL="Qwen/Qwen2.5-3B-Instruct"
-export VLLM_API_KEY="local-token"
 docker compose -f infra/docker/vllm/docker-compose.yml up -d vllm
 curl --fail http://127.0.0.1:8100/health
 ```
 
-`VLLM_API_KEY` is only an operator-side environment value. It is not embedded
-in the compose file or proof artifacts.
+The canonical local compose does not configure vLLM API-key authentication.
+The proof client connects without an API key. Do not add placeholder or dummy
+credentials. If authentication is introduced in a separate deployment,
+configure both the server and `api_key_env` explicitly.
 
 ## Run the universal harness
 
