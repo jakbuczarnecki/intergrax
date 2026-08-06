@@ -925,15 +925,29 @@ executor; they are not indexed or durably persisted.
 
 **Slack bounded Ask readiness (`SLACK-LIVE-DISCOVERY-AND-ASK-READINESS-1`)**
 
-The LKW application may plan and execute bounded recent activity, configured
-multi-channel activity, bounded recent lexical/semantic filtering over fetched
-evidence, thread summaries and exact-message reads. Resolution is limited to
-active Slack live access bindings in the current tenant/workspace; provider
-inventory is not authorization. Channel fan-out is capped at 5, roots per
-channel at 15, thread expansions at 3 and replies per thread at 15, subject
-to the shared executor budget and deadline. Every result carries coverage and
-partial-result metadata. Native Slack workspace search, exhaustive history,
-arbitrary token-accessible channels and attachments/files remain deferred.
+**Status:** `ACCEPTED / CLOSED` for bounded recent configured-channel Ask.
+
+The proven LKW execution is explicitly two-stage:
+
+```text
+stage 1: shared-executor list calls for resolved active bindings
+stage 2: parse normalized Slack list evidence, filter/rank roots, then issue
+         at most three binding-owned thread.read calls through the same executor
+```
+
+Automatic thread discovery therefore uses actual returned roots; caller-supplied
+timestamps are only priority references and are not required for useful
+expansion. Resolution is limited to active Slack live access bindings in the
+current tenant/workspace; provider inventory is not authorization. Channel
+fan-out is capped at 5, roots per channel at 15, thread expansions at 3 and
+replies per thread at 15, subject to the shared executor budget and deadline.
+Coverage is derived from attempted successful/failed/truncated calls, including
+binding ownership, inspected roots, expanded threads, replies, provider calls
+and deterministic partial reasons. Selected roots and replies remain transient
+normalized live evidence; they are not indexed or durably persisted.
+
+Native Slack workspace search, exhaustive history, arbitrary token-accessible
+channels and attachments/files remain deferred.
 
 **Explicitly out of scope:**
 

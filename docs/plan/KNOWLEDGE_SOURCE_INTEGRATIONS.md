@@ -1563,14 +1563,26 @@ persistence occurs.
 
 **Status:** `ACCEPTED / CLOSED` (LKW application)
 
-Ask supports bounded recent channel activity, bounded configured multi-channel
-activity (maximum 5 channels), bounded recent lexical/semantic filtering over
-fetched list evidence, one-page thread summaries and exact-message reads.
+This closeout covers only bounded recent configured-channel Ask. Execution is
+proven as two stages: list calls for resolved active bindings execute first;
+normalized Slack list evidence is then filtered/ranked and at most three
+thread roots are selected globally before binding-owned `thread.read` calls
+execute through the shared live executor. Useful thread expansion does not
+require callers to pre-supply timestamps; explicit timestamps remain priority
+references only.
+
 Resolution uses only active Slack live access bindings in the current
 tenant/workspace and fails closed on unknown or ambiguous names. The shared
-executor remains authoritative for capability validation, budgets and
-deadlines; coverage metadata exposes queried/skipped bindings, inspected roots,
-thread/reply counts, provider calls, truncation and partial reasons.
+executor remains authoritative for every call, capability validation, budgets
+and deadlines. Coverage is derived from actual attempted successful, failed and
+truncated calls and exposes queried/skipped bindings, inspected roots,
+thread/reply counts, provider calls, truncation and deterministic partial
+reasons. Selected root and reply bodies remain transient normalized live
+evidence and are not indexed or durably persisted.
+
+Native Slack workspace search, exhaustive history, arbitrary token-accessible
+channels and files/attachments are not implemented. Indexed and durable Slack
+lifecycle claims remain separate and unchanged.
 
 This is not native Slack workspace search and does not imply exhaustive history,
 arbitrary token-accessible channel discovery, attachments/files, indexing or

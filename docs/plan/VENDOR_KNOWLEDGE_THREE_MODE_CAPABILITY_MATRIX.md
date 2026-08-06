@@ -180,6 +180,21 @@ Other provider/source-kind rows remain `FOUNDATION_ONLY`. Exact provider reads,
 remote-resource descriptors and live binding tests do not change the operation
 matrix: an adapter exact read is not a live capability.
 
+### Slack bounded Ask closeout
+
+`SLACK-LIVE-DISCOVERY-AND-ASK-READINESS-1` is `ACCEPTED / CLOSED` only for
+bounded recent configured-channel Ask. Its execution is two-phase: stage 1
+executes list calls for active current-workspace bindings; stage 2 parses only
+normalized Slack list results, filters/ranks actual roots, and executes at most
+three globally selected binding-owned thread reads through the shared executor.
+Coverage is execution-derived, including attempted calls, root/reply counts,
+binding ownership, truncation and deterministic partial reasons. Root and reply
+evidence remains transient and is not indexed or durably persisted.
+
+This row does not claim native Slack workspace search, exhaustive history,
+arbitrary token-accessible channel discovery, files/attachments or organization-
+wide Ask Slack. Indexed and durable lifecycle status remains independent.
+
 ## 9. Commercially supported mode claims
 
 Current commercial claims must remain source-kind specific:
