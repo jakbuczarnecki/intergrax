@@ -31,6 +31,21 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 RAG_TOOL_ID = "rag.retrieve"
 
 
+def _validate_routing_identifier(
+    value: object | None,
+    *,
+    invalid_reason: str,
+) -> tuple[str | None, str | None]:
+    if value is None:
+        return None, None
+    if not isinstance(value, str):
+        return None, invalid_reason
+    normalized = value.strip()
+    if not normalized:
+        return None, invalid_reason
+    return normalized, None
+
+
 class RagRetrieveConfigurationError(RuntimeError):
     """Raised when wiring context lacks required RAG dependencies."""
 
@@ -39,15 +54,38 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
     """
     Retrieve document chunks via unified :class:`RetrievalService` (hybrid + rerank per profile).
     """
-    tenant_id, tenant_conflict = authoritative_tenant_id(request_tenant=params.tenant_id)
+    request_tenant, tenant_error = _validate_routing_identifier(
+        params.tenant_id,
+        invalid_reason="tenant_scope_invalid",
+    )
+    if tenant_error:
+        return RagRetrieveOutput(used=False, reason=tenant_error)
+    tenant_id, tenant_conflict = authoritative_tenant_id(request_tenant=request_tenant)
     if tenant_conflict:
         return RagRetrieveOutput(used=False, reason=tenant_conflict)
 
-    if params.workspace_id is not None and tenant_id is None:
-        return RagRetrieveOutput(used=False, reason="tenant_scope_required")
+    workspace_id, workspace_error = _validate_routing_identifier(
+        params.workspace_id,
+        invalid_reason="workspace_scope_invalid",
+    )
+    if workspace_error:
+        return RagRetrieveOutput(used=False, reason=workspace_error)
+
     configured_scope = attribute_access.optional(ctx.vectorstore_manager, "bound_scope", None)
-    if isinstance(configured_scope, VectorStoreScope) and tenant_id is None:
+    if configured_scope is not None and not isinstance(configured_scope, VectorStoreScope):
+        return RagRetrieveOutput(used=False, reason="tenant_scope_invalid")
+    if configured_scope is not None and tenant_id is None:
         tenant_id = configured_scope.tenant_id
+        if configured_scope.workspace_id is not None:
+            if (
+                workspace_id is not None
+                and workspace_id != configured_scope.workspace_id
+            ):
+                return RagRetrieveOutput(used=False, reason="workspace_scope_conflict")
+            workspace_id = configured_scope.workspace_id
+
+    if tenant_id is None:
+        return RagRetrieveOutput(used=False, reason="tenant_scope_required")
 
     vectorstore = resolve_tenant_scoped_vectorstore(ctx, tenant_id)
     if vectorstore is None:
@@ -69,14 +107,9 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         return RagRetrieveOutput(used=False, reason="retrieval_service_not_configured")
 
     bound_scope = attribute_access.optional(vectorstore, "bound_scope", None)
-    if not isinstance(bound_scope, VectorStoreScope):
-        bound_scope = None
-    workspace_id = (
-        str(params.workspace_id).strip()
-        if params.workspace_id is not None and str(params.workspace_id).strip()
-        else None
-    )
-    if bound_scope is not None:
+    if bound_scope is not None and not isinstance(bound_scope, VectorStoreScope):
+        return RagRetrieveOutput(used=False, reason="tenant_scope_invalid")
+    if isinstance(bound_scope, VectorStoreScope):
         if tenant_id is not None and bound_scope.tenant_id != tenant_id:
             return RagRetrieveOutput(used=False, reason="tenant_scope_conflict")
         if bound_scope.workspace_id is not None:
@@ -115,7 +148,7 @@ def perform_rag_retrieve(ctx: ToolWiringContext, params: RagRetrieveInput) -> Ra
         return RagRetrieveOutput(
             used=False,
             reason=result.reason,
-            diagnostics=diagnostics or None,
+            diagnostics=diagnostics,
         )
 
     chunks = [_to_rag_chunk(c) for c in result.chunks]

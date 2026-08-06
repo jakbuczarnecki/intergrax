@@ -7,7 +7,9 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.agentic_loop import AgenticRetrievalLoop
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
+from intergrax.rag.retrieval.retrieval_result import RetrievalResult, RetrievalTrace
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
@@ -79,3 +81,90 @@ def test_retriever_query_scope_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         query.scope = VectorStoreScope(tenant_id="tenant-b")
+
+
+def test_agentic_reconstructed_requests_preserve_exact_scope() -> None:
+    scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+
+    class _Service:
+        def __init__(self) -> None:
+            self.requests: list[RetrievalRequest] = []
+
+        def retrieve_single_pass(self, request: RetrievalRequest, *, route_tier: str):
+            assert route_tier == "deep"
+            self.requests.append(request)
+            return RetrievalResult(
+                chunks=[],
+                used=False,
+                reason="no_hits",
+                trace=RetrievalTrace(),
+            )
+
+    class _Refiner:
+        def refine(self, query: str, result: RetrievalResult) -> str:
+            return f"{query} refined"
+
+    service = _Service()
+    loop = AgenticRetrievalLoop(
+        service,  # type: ignore[arg-type]
+        RagProfile(
+            agentic_max_iterations=2,
+            agentic_min_chunks=1,
+            agentic_min_score=0.5,
+        ),
+        query_refiner=_Refiner(),
+    )
+
+    loop.run(RetrievalRequest(query="initial", top_k=3, scope=scope))
+
+    assert len(service.requests) == 2
+    assert all(step.scope is scope for step in service.requests)
+    assert all(
+        (
+            step.scope.tenant_id,
+            step.scope.namespace,
+            step.scope.workspace_id,
+        )
+        == ("tenant-a", "namespace-a", "workspace-a")
+        for step in service.requests
+    )
+
+
+def test_scoped_request_rejects_manager_without_scoped_contract() -> None:
+    scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+
+    class _UnscopedManager:
+        calls = 0
+
+        def retrieve(
+            self,
+            query_text: str,
+            *,
+            retriever_id: str,
+            top_k: int,
+            metadata_filter=None,
+            include_embeddings: bool = False,
+        ):
+            self.calls += 1
+            return []
+
+    manager = _UnscopedManager()
+    service = RetrievalService(
+        retriever_manager=manager,  # type: ignore[arg-type]
+        profile=RagProfile(route_mode="off", retriever_id="vector_similarity"),
+    )
+
+    result = service.retrieve(RetrievalRequest(query="hello", scope=scope))
+
+    assert result.used is False
+    assert result.reason == "retriever_failed"
+    assert result.trace.retrieval_error_kind == "scoped_retrieval_unsupported"
+    assert manager.calls == 0

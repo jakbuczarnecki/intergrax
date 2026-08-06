@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from intergrax.integrations.registry.catalog_manifests import INMEMORY
@@ -80,6 +82,34 @@ def test_explicit_and_configured_tenant_mismatch_fails_closed() -> None:
 def test_missing_tenant_does_not_create_default_scope() -> None:
     with pytest.raises(ValueError, match="explicit tenant_id"):
         create_vectorstore_manager(profile=IntegrationProfile())
+
+
+@pytest.mark.parametrize(
+    "config_attribute",
+    ("cfg", "store_config", "_store_config", "_config", "config"),
+)
+def test_config_only_provider_tenant_does_not_bind_manager(
+    config_attribute: str,
+) -> None:
+    store = SimpleNamespace(
+        **{config_attribute: SimpleNamespace(tenant_id="tenant-config-only")}
+    )
+
+    with pytest.raises(ValueError, match="explicit scope or a tenant-bound provider"):
+        VectorstoreManager(store)
+
+
+def test_config_only_provider_accepts_explicit_scope() -> None:
+    explicit_scope = VectorStoreScope(
+        tenant_id="tenant-explicit",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+    store = SimpleNamespace(cfg=SimpleNamespace(tenant_id="tenant-config-only"))
+
+    manager = VectorstoreManager(store, scope=explicit_scope)
+
+    assert manager.bound_scope == explicit_scope
 
 
 def test_provider_scope_mismatch_fails_closed() -> None:

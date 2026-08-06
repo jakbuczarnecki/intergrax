@@ -20,6 +20,8 @@ from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.applications.contracts.environment_profile import ApplicationSecurityProfile
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrieval.retrieval_result import RetrievalResult, RetrievalTrace
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.registry.runtime import ToolRegistry
@@ -55,20 +57,35 @@ def _document(
 
 
 class FakeVectorstoreManager:
-    def __init__(self, hits: Optional[List[VectorStoreHit]] = None) -> None:
+    def __init__(
+        self,
+        hits: Optional[List[VectorStoreHit]] = None,
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> None:
         self._hits = hits or []
+        self._bound_scope = scope
         self.last_query: Optional[str] = None
         self.last_top_k: int = 0
         self.last_filter: Optional[MetadataFilter] = None
+        self.last_scope: VectorStoreScope | None = None
+        self.query_calls = 0
+
+    @property
+    def bound_scope(self) -> VectorStoreScope | None:
+        return self._bound_scope
 
     def query(
         self,
         *,
         query_embedding,
+        scope: VectorStoreScope | None = None,
         top_k: int,
         metadata_filter: Optional[MetadataFilter] = None,
         include_embeddings: bool = False,
     ) -> List[VectorStoreHit]:
+        self.query_calls += 1
+        self.last_scope = scope
         self.last_top_k = top_k
         self.last_filter = metadata_filter
         return list(self._hits)
@@ -130,7 +147,7 @@ def test_rag_retrieve_missing_vectorstore() -> None:
     ctx = ToolWiringContext(embedding_manager=FakeEmbeddingManager())
     out = perform_rag_retrieve(ctx, RagRetrieveInput(query="test"))
     assert out.used is False
-    assert out.reason == "vectorstore_manager_not_configured"
+    assert out.reason == "tenant_scope_required"
 
 
 def test_rag_tool_registered_via_catalog() -> None:
@@ -165,7 +182,7 @@ def test_rag_retrieve_via_runtime_invoker() -> None:
         run_id="rag_run",
         step_id="step/1",
         tool_id="rag.retrieve",
-        input=RagRetrieveInput(query="policy", top_k=5),
+        input=RagRetrieveInput(query="policy", top_k=5, tenant_id="t1"),
     )
 
     result = invoker.invoke(state=state, agent_id="agent", request=request)
@@ -206,7 +223,7 @@ def test_rag_retrieve_quarantines_poisoned_chunks_when_security_enabled() -> Non
         security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=True),
     )
 
-    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5, tenant_id="t1"))
 
     assert out.used is True
     assert [chunk.id for chunk in out.chunks] == ["trusted"]
@@ -231,7 +248,7 @@ def test_rag_retrieve_skips_poisoning_filter_when_security_disabled() -> None:
         security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=False),
     )
 
-    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5, tenant_id="t1"))
 
     assert out.used is True
     assert out.chunks[0].id == "poisoned"
@@ -254,11 +271,127 @@ def test_rag_retrieve_all_quarantined_returns_not_used() -> None:
         security_profile=ApplicationSecurityProfile(retrieval_poisoning_defense_enabled=True),
     )
 
-    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5))
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="policy", top_k=5, tenant_id="t1"))
 
     assert out.used is False
     assert out.reason == "retrieval_poisoning_quarantine"
     assert out.chunks == []
+
+
+def test_rag_retrieve_fails_closed_without_request_or_bound_tenant() -> None:
+    manager = FakeVectorstoreManager()
+
+    class _NeverCalledService:
+        calls = 0
+
+        def retrieve(self, request):
+            self.calls += 1
+            raise AssertionError("retrieval must not be called")
+
+    retrieval_service = _NeverCalledService()
+    ctx = ToolWiringContext(
+        vectorstore_manager=manager,
+        embedding_manager=FakeEmbeddingManager(),
+        retrieval_service=retrieval_service,
+    )
+
+    out = perform_rag_retrieve(
+        ctx,
+        RagRetrieveInput(query="secret", tenant_id=None, workspace_id=None),
+    )
+
+    assert out.used is False
+    assert out.reason == "tenant_scope_required"
+    assert retrieval_service.calls == 0
+    assert manager.query_calls == 0
+
+
+def test_rag_retrieve_inherits_public_bound_scope() -> None:
+    scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+    manager = FakeVectorstoreManager(scope=scope)
+    captured: list[object] = []
+
+    class _CaptureService:
+        def retrieve(self, request):
+            captured.append(request)
+            return RetrievalResult(
+                chunks=[],
+                used=False,
+                reason="no_hits",
+                trace=RetrievalTrace(),
+            )
+
+    ctx = ToolWiringContext(
+        vectorstore_manager=manager,
+        embedding_manager=FakeEmbeddingManager(),
+        retrieval_service=_CaptureService(),
+    )
+
+    out = perform_rag_retrieve(ctx, RagRetrieveInput(query="scoped"))
+
+    assert out.used is False
+    assert out.reason == "no_hits"
+    assert captured[0].scope == scope
+
+
+def test_rag_retrieve_rejects_request_tenant_conflict_before_retrieval() -> None:
+    manager = FakeVectorstoreManager(scope=VectorStoreScope(tenant_id="tenant-b"))
+    retrieval_calls = 0
+
+    class _CaptureService:
+        def retrieve(self, request):
+            nonlocal retrieval_calls
+            retrieval_calls += 1
+            raise AssertionError("retrieval must not be called")
+
+    out = perform_rag_retrieve(
+        ToolWiringContext(
+            vectorstore_manager=manager,
+            embedding_manager=FakeEmbeddingManager(),
+            retrieval_service=_CaptureService(),
+        ),
+        RagRetrieveInput(query="scoped", tenant_id="tenant-a"),
+    )
+
+    assert out.used is False
+    assert out.reason == "tenant_scope_conflict"
+    assert retrieval_calls == 0
+    assert manager.query_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("tenant_id", "workspace_id", "reason"),
+    [
+        (123, None, "tenant_scope_invalid"),
+        ("tenant-a", 123, "workspace_scope_invalid"),
+        ("tenant-a", "   ", "workspace_scope_invalid"),
+    ],
+)
+def test_rag_retrieve_rejects_non_string_or_blank_routing_identity(
+    tenant_id: object,
+    workspace_id: object,
+    reason: str,
+) -> None:
+    manager = FakeVectorstoreManager()
+    out = perform_rag_retrieve(
+        ToolWiringContext(
+            vectorstore_manager=manager,
+            embedding_manager=FakeEmbeddingManager(),
+        ),
+        RagRetrieveInput.model_construct(
+            query="scoped",
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ),
+    )
+
+    assert out.used is False
+    assert out.reason == reason
+    assert manager.query_calls == 0
 
 
 def test_build_registry_from_profile_enables_rag_tool() -> None:
@@ -284,13 +417,32 @@ def test_rag_retrieve_diagnostics_include_graph_trace_fields() -> None:
 
     store = InMemoryVectorStore(tenant_id="tool-trace")
     manager = VectorstoreManager(store=store)
-    doc = Document(
+    source_doc = Document(
         page_content="Vertex Corp deploys Intergrax GraphRAG on Neo4j.",
-        metadata={"tenant_id": "tool-trace"},
+        metadata={},
+    )
+    doc = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": "chunk-vertex",
+                "root_document_id": "chunk-vertex",
+            },
+            "scope": {"tenant_id": "tool-trace"},
+            "content": source_doc.page_content,
+            "metadata": source_doc.metadata,
+            "provenance": {
+                "source_kind": "test",
+                "source_id": "chunk-vertex",
+            },
+        }
     )
     manager.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-vertex"])
     graph = InMemoryGraphStore()
-    HeuristicGraphIndexer(graph).index_documents([doc], chunk_ids=["chunk-vertex"])
+    HeuristicGraphIndexer(graph).index_documents(
+        [doc],
+        chunk_ids=["chunk-vertex"],
+    )
 
     profile = RagProfile(
         retriever_id="graph_rag",
