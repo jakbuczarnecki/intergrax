@@ -21,6 +21,7 @@ from intergrax.integrations.contracts.document_store import (
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     DocumentStoreKnowledgeSyncPublicationFenceRepository,
     KnowledgeSyncCommittedPublicationV1,
+    KnowledgeSyncCommittedPublicationV2,
     KnowledgeSyncPublicationCommitStatus,
     KnowledgeSyncPublicationFencePort,
     KnowledgeSyncPublicationFenceV1,
@@ -32,7 +33,8 @@ if TYPE_CHECKING:
 
 
 _IMMUTABLE_MANIFEST_SCHEMA = "lkw.connected_source_materialization_manifest.immutable.v1"
-_PUBLICATION_COMMIT_SCHEMA = "lkw.connected_source_publication_commit.v1"
+_DELIVERY_INDEX_SCHEMA = "lkw.connected_source_delivery_index.immutable.v1"
+_REMOTE_CANDIDATE_SCHEMA = "lkw.connected_source_remote_candidate.immutable.v1"
 _MANIFEST_ENTITY = "connected_source_materialization_manifest"
 MAX_MANIFEST_ENTRY_COUNT = 1000
 MAX_MANIFEST_SERIALIZED_BYTES = 1_048_576
@@ -183,6 +185,42 @@ class ConnectedSourceMaterializationManifestV1(BaseModel):
         return hashlib.sha256(_canonical_json(identity)).hexdigest()
 
 
+class ConnectedSourceRemoteCandidateV1(BaseModel):
+    """One immutable remote/version candidate, prepared before publication CAS."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=512)
+    workspace_id: str = Field(..., min_length=1, max_length=512)
+    source_id: str = Field(..., min_length=1, max_length=512)
+    indexed_source_binding_id: str = Field(..., min_length=1, max_length=512)
+    remote_id: str = Field(..., min_length=1, max_length=512)
+    delivery_id: str = Field(..., min_length=1, max_length=512)
+    materialization_sequence: int = Field(..., gt=0)
+    manifest_id: str = Field(..., min_length=1, max_length=512)
+    manifest_fingerprint: str = Field(
+        ...,
+        min_length=64,
+        max_length=64,
+    )
+    entry: ConnectedSourceMaterializationManifestEntryV1
+
+    _validate_ids = field_validator(
+        "tenant_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+        "remote_id",
+        "delivery_id",
+        "manifest_id",
+    )(
+        lambda value, info: _identifier(value, info.field_name or "identifier")
+    )
+    _validate_hash = field_validator("manifest_fingerprint")(
+        lambda value, info: _sha256(value, info.field_name or "fingerprint")
+    )
+
+
 def materialization_manifest_payload_fingerprint(batch: KnowledgeSyncBatch) -> str:
     """Hash the bounded delivery payload without including lifecycle secrets."""
     payload = {
@@ -237,12 +275,14 @@ class ConnectedSourceMaterializationManifestRepository:
         workspace_id: str,
         source_id: str,
         indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
     ) -> ConnectedSourceMaterializationManifestV1 | None:
         manifests = self.list_committed(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
             indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
         )
         return max(
             manifests,
@@ -270,6 +310,50 @@ class ConnectedSourceMaterializationManifestRepository:
             return None
         return self._load_immutable(descriptor)
 
+    def get_committed_for_remote(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        remote_id: str,
+    ) -> ConnectedSourceMaterializationManifestV1 | None:
+        descriptors = self._list_commit_descriptors(
+            tenant_id=tenant_id,
+            binding_id=knowledge_source_binding_ref,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        candidates: list[
+            tuple[int, KnowledgeSyncCommittedPublicationV2]
+        ] = []
+        for descriptor in descriptors:
+            candidate = self._get_remote_candidate(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                remote_id=remote_id,
+                materialization_sequence=descriptor.materialization_sequence,
+            )
+            if candidate is None:
+                continue
+            if (
+                candidate.delivery_id != descriptor.delivery_id
+                or candidate.manifest_id != descriptor.manifest_id
+                or candidate.manifest_fingerprint != descriptor.manifest_fingerprint
+            ):
+                raise ConnectedSourceMaterializationManifestConflict(
+                    "connected_source_remote_candidate_descriptor_mismatch"
+                )
+            candidates.append((descriptor.materialization_sequence, descriptor))
+        if not candidates:
+            return None
+        return self._load_immutable(max(candidates, key=lambda item: item[0])[1])
+
     def get_prepared_for_delivery(
         self,
         *,
@@ -279,35 +363,26 @@ class ConnectedSourceMaterializationManifestRepository:
         indexed_source_binding_id: str,
         delivery_id: str,
     ) -> ConnectedSourceMaterializationManifestV1 | None:
-        prefix = self._scope_prefix(
+        index = self._store.get(
+            self._immutable_partition(tenant_id),
+            self._delivery_index_row_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            ),
+        )
+        if index is None:
+            return None
+        manifest = self._parse_delivery_index(
+            index,
+            tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
             indexed_source_binding_id=indexed_source_binding_id,
+            delivery_id=delivery_id,
         )
-        result = self._store.query(
-            self._immutable_partition(tenant_id),
-            limit=5000,
-            row_key_prefix=prefix,
-        )
-        candidates: list[ConnectedSourceMaterializationManifestV1] = []
-        for record in result.documents:
-            if not str(record.row_key).startswith(prefix + "manifest:"):
-                continue
-            try:
-                manifest = self._parse_immutable(
-                    record,
-                    tenant_id=tenant_id,
-                    workspace_id=workspace_id,
-                    source_id=source_id,
-                    indexed_source_binding_id=indexed_source_binding_id,
-                )
-            except ConnectedSourceMaterializationManifestConflict:
-                continue
-            if manifest.delivery_id == delivery_id:
-                candidates.append(manifest)
-        if not candidates:
-            return None
-        return max(candidates, key=lambda manifest: manifest.materialization_sequence)
+        return manifest
 
     def list_committed(
         self,
@@ -316,39 +391,16 @@ class ConnectedSourceMaterializationManifestRepository:
         workspace_id: str,
         source_id: str,
         indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
     ) -> tuple[ConnectedSourceMaterializationManifestV1, ...]:
-        prefix = self._scope_prefix(
+        descriptors = self._list_commit_descriptors(
+            tenant_id=tenant_id,
+            binding_id=knowledge_source_binding_ref,
             workspace_id=workspace_id,
             source_id=source_id,
             indexed_source_binding_id=indexed_source_binding_id,
         )
-        descriptors: dict[str, KnowledgeSyncCommittedPublicationV1] = {}
-        result = self._store.query(
-            self._commit_partition(tenant_id),
-            limit=5000,
-            row_key_prefix=prefix,
-        )
-        for record in result.documents:
-            if not str(record.row_key).startswith(prefix + "commit:"):
-                continue
-            descriptor = self._parse_commit_descriptor(record)
-            if (
-                descriptor.workspace_id == workspace_id
-                and descriptor.source_id == source_id
-                and descriptor.indexed_source_binding_id == indexed_source_binding_id
-            ):
-                descriptors[descriptor.delivery_id] = descriptor
-        current = self._publication_authority.list_committed_publications(
-            tenant_id=tenant_id
-        )
-        for descriptor in current:
-            if (
-                descriptor.workspace_id == workspace_id
-                and descriptor.source_id == source_id
-                and descriptor.indexed_source_binding_id == indexed_source_binding_id
-            ):
-                descriptors.setdefault(descriptor.delivery_id, descriptor)
-        manifests = [self._load_immutable(descriptor) for descriptor in descriptors.values()]
+        manifests = [self._load_immutable(descriptor) for descriptor in descriptors]
         return tuple(sorted(manifests, key=lambda item: item.materialization_sequence))
 
     def commit(
@@ -376,6 +428,8 @@ class ConnectedSourceMaterializationManifestRepository:
                 "connected_source_manifest_delivery_conflict"
             )
         self._put_immutable(manifest)
+        self._put_delivery_index(manifest)
+        self._put_remote_candidates(manifest)
         existing = self._get_commit_descriptor(
             tenant_id=manifest.tenant_id,
             workspace_id=manifest.workspace_id,
@@ -384,12 +438,16 @@ class ConnectedSourceMaterializationManifestRepository:
             delivery_id=manifest.delivery_id,
         )
         candidate_descriptor = self._descriptor(manifest)
-        if existing is not None and existing != candidate_descriptor:
+        if existing is not None and not self._descriptor_matches(
+            existing,
+            candidate_descriptor,
+        ):
             raise ConnectedSourceMaterializationManifestConflict(
                 "connected_source_manifest_delivery_conflict"
             )
         for committed in self._list_commit_descriptors(
             tenant_id=manifest.tenant_id,
+            binding_id=manifest.knowledge_source_binding_ref,
             workspace_id=manifest.workspace_id,
             source_id=manifest.source_id,
             indexed_source_binding_id=manifest.indexed_source_binding_id,
@@ -397,7 +455,7 @@ class ConnectedSourceMaterializationManifestRepository:
             if (
                 committed.materialization_sequence
                 == manifest.materialization_sequence
-                and committed != candidate_descriptor
+                and not self._descriptor_matches(committed, candidate_descriptor)
             ):
                 raise ConnectedSourceMaterializationManifestConflict(
                     "connected_source_manifest_sequence_conflict"
@@ -408,9 +466,7 @@ class ConnectedSourceMaterializationManifestRepository:
             publication_descriptor=candidate_descriptor,
         )
         if result.status is KnowledgeSyncPublicationCommitStatus.STALE:
-            self._put_commit_descriptor(result.descriptor)
             return ManifestCommitStatus.STALE
-        self._put_commit_descriptor(result.descriptor)
         if result.status is KnowledgeSyncPublicationCommitStatus.REPLAYED:
             return ManifestCommitStatus.REPLAYED
         return ManifestCommitStatus.COMMITTED
@@ -418,10 +474,6 @@ class ConnectedSourceMaterializationManifestRepository:
     @staticmethod
     def _immutable_partition(tenant_id: str) -> str:
         return f"lkw.managed_workspace:{tenant_id}:{_MANIFEST_ENTITY}:immutable"
-
-    @staticmethod
-    def _commit_partition(tenant_id: str) -> str:
-        return f"lkw.managed_workspace:{tenant_id}:{_MANIFEST_ENTITY}:commit"
 
     @staticmethod
     def _scope_prefix(
@@ -444,14 +496,21 @@ class ConnectedSourceMaterializationManifestRepository:
         )
 
     @classmethod
-    def _commit_row_key(cls, descriptor: KnowledgeSyncCommittedPublicationV1) -> str:
+    def _delivery_index_row_key(
+        cls,
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> str:
         return (
             cls._scope_prefix(
-                workspace_id=descriptor.workspace_id,
-                source_id=descriptor.source_id,
-                indexed_source_binding_id=descriptor.indexed_source_binding_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
             )
-            + f"commit:{descriptor.delivery_id}"
+            + f"delivery:{delivery_id}"
         )
 
     @classmethod
@@ -474,16 +533,82 @@ class ConnectedSourceMaterializationManifestRepository:
         )
 
     @classmethod
-    def _commit_record(
+    def _delivery_index_record(
         cls,
-        descriptor: KnowledgeSyncCommittedPublicationV1,
+        manifest: ConnectedSourceMaterializationManifestV1,
     ) -> DocumentRecord:
         return DocumentRecord(
-            partition_key=cls._commit_partition(descriptor.tenant_id),
-            row_key=cls._commit_row_key(descriptor),
+            partition_key=cls._immutable_partition(manifest.tenant_id),
+            row_key=cls._delivery_index_row_key(
+                workspace_id=manifest.workspace_id,
+                source_id=manifest.source_id,
+                indexed_source_binding_id=manifest.indexed_source_binding_id,
+                delivery_id=manifest.delivery_id,
+            ),
             data={
-                "schema_version": _PUBLICATION_COMMIT_SCHEMA,
-                "descriptor": descriptor.model_dump(mode="json"),
+                "schema_version": _DELIVERY_INDEX_SCHEMA,
+                "tenant_id": manifest.tenant_id,
+                "workspace_id": manifest.workspace_id,
+                "source_id": manifest.source_id,
+                "indexed_source_binding_id": manifest.indexed_source_binding_id,
+                "knowledge_source_binding_ref": manifest.knowledge_source_binding_ref,
+                "delivery_id": manifest.delivery_id,
+                "materialization_sequence": manifest.materialization_sequence,
+                "manifest_id": manifest.manifest_id,
+                "manifest_fingerprint": manifest.manifest_fingerprint,
+            },
+        )
+
+    @classmethod
+    def _remote_candidate_row_key(
+        cls,
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        remote_id: str,
+        materialization_sequence: int,
+    ) -> str:
+        remote_key = hashlib.sha256(remote_id.encode("utf-8")).hexdigest()
+        return (
+            cls._scope_prefix(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+            )
+            + f"remote:{remote_key}:sequence:{materialization_sequence}"
+        )
+
+    @classmethod
+    def _remote_candidate_record(
+        cls,
+        manifest: ConnectedSourceMaterializationManifestV1,
+        entry: ConnectedSourceMaterializationManifestEntryV1,
+    ) -> DocumentRecord:
+        candidate = ConnectedSourceRemoteCandidateV1(
+            tenant_id=manifest.tenant_id,
+            workspace_id=manifest.workspace_id,
+            source_id=manifest.source_id,
+            indexed_source_binding_id=manifest.indexed_source_binding_id,
+            remote_id=entry.remote_id,
+            delivery_id=manifest.delivery_id,
+            materialization_sequence=manifest.materialization_sequence,
+            manifest_id=manifest.manifest_id,
+            manifest_fingerprint=manifest.manifest_fingerprint,
+            entry=entry,
+        )
+        return DocumentRecord(
+            partition_key=cls._immutable_partition(manifest.tenant_id),
+            row_key=cls._remote_candidate_row_key(
+                workspace_id=manifest.workspace_id,
+                source_id=manifest.source_id,
+                indexed_source_binding_id=manifest.indexed_source_binding_id,
+                remote_id=entry.remote_id,
+                materialization_sequence=manifest.materialization_sequence,
+            ),
+            data={
+                "schema_version": _REMOTE_CANDIDATE_SCHEMA,
+                "candidate": candidate.model_dump(mode="json"),
             },
         )
 
@@ -524,6 +649,111 @@ class ConnectedSourceMaterializationManifestRepository:
                 raise ConnectedSourceMaterializationManifestConflict(
                     "connected_source_manifest_immutable_conflict"
                 )
+
+    def _put_delivery_index(
+        self,
+        manifest: ConnectedSourceMaterializationManifestV1,
+    ) -> None:
+        record = self._delivery_index_record(manifest)
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            if dict(existing.data) != dict(record.data):
+                raise ConnectedSourceMaterializationManifestConflict(
+                    "connected_source_delivery_index_conflict"
+                )
+            return
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or dict(retry.data) != dict(record.data):
+                raise ConnectedSourceMaterializationManifestConflict(
+                    "connected_source_delivery_index_conflict"
+                )
+
+    def _put_remote_candidates(
+        self,
+        manifest: ConnectedSourceMaterializationManifestV1,
+    ) -> None:
+        for entry in manifest.document_entries:
+            record = self._remote_candidate_record(manifest, entry)
+            existing = self._store.get(record.partition_key, record.row_key)
+            if existing is not None:
+                if dict(existing.data) != dict(record.data):
+                    raise ConnectedSourceMaterializationManifestConflict(
+                        "connected_source_remote_candidate_conflict"
+                    )
+                continue
+            if not self._store.put_if_absent(record):
+                retry = self._store.get(record.partition_key, record.row_key)
+                if retry is None or dict(retry.data) != dict(record.data):
+                    raise ConnectedSourceMaterializationManifestConflict(
+                        "connected_source_remote_candidate_conflict"
+                    )
+
+    def _parse_delivery_index(
+        self,
+        record: DocumentRecord,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> ConnectedSourceMaterializationManifestV1:
+        data = dict(record.data)
+        if (
+            record.partition_key != self._immutable_partition(tenant_id)
+            or record.row_key
+            != self._delivery_index_row_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            )
+            or data.get("schema_version") != _DELIVERY_INDEX_SCHEMA
+            or data.get("tenant_id") != tenant_id
+            or data.get("workspace_id") != workspace_id
+            or data.get("source_id") != source_id
+            or data.get("indexed_source_binding_id") != indexed_source_binding_id
+            or data.get("delivery_id") != delivery_id
+            or not isinstance(data.get("manifest_id"), str)
+            or not isinstance(data.get("manifest_fingerprint"), str)
+            or not isinstance(data.get("materialization_sequence"), int)
+        ):
+            raise ConnectedSourceMaterializationManifestConflict(
+                "connected_source_delivery_index_corrupt"
+            )
+        manifest_record = self._store.get(
+            self._immutable_partition(tenant_id),
+            self._immutable_row_key_values(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+                materialization_sequence=data["materialization_sequence"],
+                manifest_id=data["manifest_id"],
+            ),
+        )
+        if manifest_record is None:
+            raise ConnectedSourceMaterializationManifestConflict(
+                "connected_source_manifest_immutable_missing"
+            )
+        manifest = self._parse_immutable(
+            manifest_record,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        if (
+            manifest.delivery_id != delivery_id
+            or manifest.manifest_id != data["manifest_id"]
+            or manifest.manifest_fingerprint != data["manifest_fingerprint"]
+            or manifest.materialization_sequence != data["materialization_sequence"]
+        ):
+            raise ConnectedSourceMaterializationManifestConflict(
+                "connected_source_delivery_index_mismatch"
+            )
+        return manifest
 
     def _parse_immutable(
         self,
@@ -598,102 +828,129 @@ class ConnectedSourceMaterializationManifestRepository:
         source_id: str,
         indexed_source_binding_id: str,
         delivery_id: str,
-    ) -> KnowledgeSyncCommittedPublicationV1 | None:
-        record = self._store.get(
-            self._commit_partition(tenant_id),
-            self._commit_row_key_values(
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
+        index = self._store.get(
+            self._immutable_partition(tenant_id),
+            self._delivery_index_row_key(
                 workspace_id=workspace_id,
                 source_id=source_id,
                 indexed_source_binding_id=indexed_source_binding_id,
                 delivery_id=delivery_id,
             ),
         )
-        if record is not None:
-            descriptor = self._parse_commit_descriptor(record)
-            if (
-                descriptor.workspace_id != workspace_id
-                or descriptor.source_id != source_id
-                or descriptor.indexed_source_binding_id != indexed_source_binding_id
-                or descriptor.delivery_id != delivery_id
-            ):
-                raise ConnectedSourceMaterializationManifestConflict(
-                    "connected_source_manifest_commit_identity_conflict"
-                )
-            return descriptor
-        for descriptor in self._publication_authority.list_committed_publications(
-            tenant_id=tenant_id
-        ):
+        if index is None:
+            return None
+        manifest = self._parse_delivery_index(
+            index,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            delivery_id=delivery_id,
+        )
+        return self._publication_authority.read_committed_publication_for_delivery(
+            tenant_id=tenant_id,
+            binding_id=manifest.knowledge_source_binding_ref,
+            delivery_id=delivery_id,
+        )
+
+    def _list_commit_descriptors(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV2, ...]:
+        return tuple(
+            descriptor
+            for descriptor in self._publication_authority.list_committed_publications(
+                tenant_id=tenant_id,
+                binding_id=binding_id,
+            )
             if (
                 descriptor.workspace_id == workspace_id
                 and descriptor.source_id == source_id
                 and descriptor.indexed_source_binding_id == indexed_source_binding_id
-                and descriptor.delivery_id == delivery_id
-            ):
-                return descriptor
-        return None
+            )
+        )
 
-    def _list_commit_descriptors(
+    def _get_remote_candidate(
         self,
         *,
         tenant_id: str,
         workspace_id: str,
         source_id: str,
         indexed_source_binding_id: str,
-    ) -> tuple[KnowledgeSyncCommittedPublicationV1, ...]:
-        prefix = self._scope_prefix(
-            workspace_id=workspace_id,
-            source_id=source_id,
-            indexed_source_binding_id=indexed_source_binding_id,
+        remote_id: str,
+        materialization_sequence: int,
+    ) -> ConnectedSourceRemoteCandidateV1 | None:
+        record = self._store.get(
+            self._immutable_partition(tenant_id),
+            self._remote_candidate_row_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                remote_id=remote_id,
+                materialization_sequence=materialization_sequence,
+            ),
         )
-        result = self._store.query(
-            self._commit_partition(tenant_id),
-            limit=5000,
-            row_key_prefix=prefix,
-        )
-        return tuple(
-            self._parse_commit_descriptor(record)
-            for record in result.documents
-            if str(record.row_key).startswith(prefix + "commit:")
-        )
-
-    def _put_commit_descriptor(
-        self,
-        descriptor: KnowledgeSyncCommittedPublicationV1,
-    ) -> None:
-        record = self._commit_record(descriptor)
-        existing = self._store.get(record.partition_key, record.row_key)
-        if existing is not None:
-            if self._parse_commit_descriptor(existing) != descriptor:
-                raise ConnectedSourceMaterializationManifestConflict(
-                    "connected_source_manifest_delivery_conflict"
-                )
-            return
-        if not self._store.put_if_absent(record):
-            retry = self._store.get(record.partition_key, record.row_key)
-            if retry is None or self._parse_commit_descriptor(retry) != descriptor:
-                raise ConnectedSourceMaterializationManifestConflict(
-                    "connected_source_manifest_commit_record_conflict"
-                )
-
-    @staticmethod
-    def _parse_commit_descriptor(
-        record: DocumentRecord,
-    ) -> KnowledgeSyncCommittedPublicationV1:
+        if record is None:
+            return None
         if (
-            record.data.get("schema_version") != _PUBLICATION_COMMIT_SCHEMA
-            or not isinstance(record.data.get("descriptor"), dict)
+            record.data.get("schema_version") != _REMOTE_CANDIDATE_SCHEMA
+            or not isinstance(record.data.get("candidate"), dict)
         ):
             raise ConnectedSourceMaterializationManifestConflict(
-                "connected_source_manifest_commit_record_corrupt"
+                "connected_source_remote_candidate_corrupt"
             )
         try:
-            return KnowledgeSyncCommittedPublicationV1.model_validate(
-                record.data["descriptor"]
+            candidate = ConnectedSourceRemoteCandidateV1.model_validate(
+                record.data["candidate"]
             )
         except (TypeError, ValueError):
             raise ConnectedSourceMaterializationManifestConflict(
-                "connected_source_manifest_commit_record_corrupt"
+                "connected_source_remote_candidate_corrupt"
             ) from None
+        if (
+            record.partition_key != self._immutable_partition(tenant_id)
+            or record.row_key
+            != self._remote_candidate_row_key(
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                remote_id=remote_id,
+                materialization_sequence=materialization_sequence,
+            )
+            or candidate.tenant_id != tenant_id
+            or candidate.workspace_id != workspace_id
+            or candidate.source_id != source_id
+            or candidate.indexed_source_binding_id != indexed_source_binding_id
+            or candidate.remote_id != remote_id
+            or candidate.materialization_sequence != materialization_sequence
+        ):
+            raise ConnectedSourceMaterializationManifestConflict(
+                "connected_source_remote_candidate_identity_conflict"
+            )
+        return candidate
+
+    @staticmethod
+    def _descriptor_matches(
+        left: KnowledgeSyncCommittedPublicationV1,
+        right: KnowledgeSyncCommittedPublicationV1,
+    ) -> bool:
+        return (
+            left.tenant_id == right.tenant_id
+            and left.binding_id == right.binding_id
+            and left.workspace_id == right.workspace_id
+            and left.source_id == right.source_id
+            and left.indexed_source_binding_id == right.indexed_source_binding_id
+            and left.delivery_id == right.delivery_id
+            and left.materialization_sequence == right.materialization_sequence
+            and left.manifest_id == right.manifest_id
+            and left.manifest_fingerprint == right.manifest_fingerprint
+        )
 
     def _load_immutable(
         self,
@@ -732,19 +989,6 @@ class ConnectedSourceMaterializationManifestRepository:
                 "connected_source_manifest_descriptor_mismatch"
             )
         return manifest
-
-    @staticmethod
-    def _commit_row_key_values(
-        *,
-        workspace_id: str,
-        source_id: str,
-        indexed_source_binding_id: str,
-        delivery_id: str,
-    ) -> str:
-        return (
-            f"{workspace_id}:{source_id}:{indexed_source_binding_id}:"
-            f"commit:{delivery_id}"
-        )
 
     @staticmethod
     def _immutable_row_key_values(

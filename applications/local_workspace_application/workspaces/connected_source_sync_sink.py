@@ -221,6 +221,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                     workspace_id=self._context.workspace_id,
                     source_id=self._context.source_id,
                     indexed_source_binding_id=self._context.indexed_source_binding_id,
+                    knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
                 )
                 if current_manifest is None:
                     raise ConnectedSourceSyncSinkError(

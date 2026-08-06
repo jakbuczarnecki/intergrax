@@ -176,6 +176,7 @@ def test_manifest_commit_requires_current_permit() -> None:
         workspace_id=_WORKSPACE,
         source_id=_SOURCE,
         indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
     ) is None
 
 
@@ -211,6 +212,164 @@ def test_manifest_visibility_is_linearized_by_fence_record_cas() -> None:
         indexed_source_binding_id=_INDEXED,
         delivery_id=manifest.delivery_id,
     ) == manifest
+
+
+def test_publication_chain_preserves_all_committed_pages() -> None:
+    store = InMemoryDocumentStore()
+    authority, fence, permit = _authority(store)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+    manifests = tuple(
+        _manifest(
+            sequence=sequence,
+            delivery_id=chr(96 + sequence) * 64,
+            document_id=f"document-{sequence}",
+        )
+        for sequence in (1, 2, 3)
+    )
+    for manifest in manifests:
+        assert repository.commit(
+            manifest,
+            expected_fence=fence,
+            publication_permit=permit,
+        ) is ManifestCommitStatus.COMMITTED
+
+    descriptors = authority.list_committed_publications(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+    )
+    assert [item.materialization_sequence for item in descriptors] == [3, 2, 1]
+    assert descriptors[0].previous_publication_commit_id == (
+        descriptors[1].publication_commit_id
+    )
+    assert descriptors[1].previous_publication_commit_id == (
+        descriptors[2].publication_commit_id
+    )
+    assert descriptors[2].previous_publication_commit_id is None
+    assert repository.list_committed(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+    ) == manifests
+
+
+def test_crash_after_fence_cas_keeps_history_for_later_page() -> None:
+    class _CrashAfterFenceCASStore(InMemoryDocumentStore):
+        crash_next_fence_cas = False
+
+        def replace_if_match(self, *, expected, replacement):
+            replaced = super().replace_if_match(
+                expected=expected,
+                replacement=replacement,
+            )
+            if (
+                replaced
+                and self.crash_next_fence_cas
+                and expected.row_key == f"binding:{_BINDING}"
+                and replacement.data.get("committed_publication") is not None
+            ):
+                self.crash_next_fence_cas = False
+                raise RuntimeError("injected crash after fence CAS")
+            return replaced
+
+    store = _CrashAfterFenceCASStore()
+    authority, fence, permit = _authority(store)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+    first = _manifest(sequence=1, delivery_id="a" * 64, document_id="document-a")
+    second = _manifest(sequence=2, delivery_id="b" * 64, document_id="document-b")
+    third = _manifest(sequence=3, delivery_id="c" * 64, document_id="document-c")
+    assert repository.commit(
+        first,
+        expected_fence=fence,
+        publication_permit=permit,
+    ) is ManifestCommitStatus.COMMITTED
+    store.crash_next_fence_cas = True
+    with pytest.raises(RuntimeError, match="injected crash"):
+        repository.commit(
+            second,
+            expected_fence=fence,
+            publication_permit=permit,
+        )
+    assert authority.release_publication_permit(permit) is True
+    next_permit = authority.acquire_publication_permit(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        expected_revision=1,
+        expected_token=_TOKEN,
+        owner_id="owner-restart",
+        ttl_seconds=60,
+    )
+    assert next_permit is not None
+    assert repository.commit(
+        third,
+        expected_fence=fence,
+        publication_permit=next_permit,
+    ) is ManifestCommitStatus.COMMITTED
+
+    assert repository.list_committed(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        knowledge_source_binding_ref=_BINDING,
+    ) == (first, second, third)
+
+
+def test_remote_candidate_index_preserves_unrelated_pages_and_supersedes_item() -> None:
+    store = InMemoryDocumentStore()
+    authority, fence, permit = _authority(store)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+    page_one = _manifest(
+        sequence=1,
+        delivery_id="a" * 64,
+        document_id="document-a",
+        entries=(
+            _entry("remote-a", "document-a"),
+            _entry("remote-b", "document-b"),
+        ),
+    )
+    page_two = _manifest(
+        sequence=2,
+        delivery_id="b" * 64,
+        document_id="document-c",
+        remote_id="remote-c",
+    )
+    page_three = _manifest(
+        sequence=3,
+        delivery_id="c" * 64,
+        document_id="document-a-v2",
+        remote_id="remote-a",
+    )
+    for manifest in (page_one, page_two, page_three):
+        assert repository.commit(
+            manifest,
+            expected_fence=fence,
+            publication_permit=permit,
+        ) is ManifestCommitStatus.COMMITTED
+
+    def remote(remote_id: str):
+        return repository.get_committed_for_remote(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            knowledge_source_binding_ref=_BINDING,
+            remote_id=remote_id,
+        )
+
+    assert remote("remote-a") == page_three
+    assert remote("remote-b") == page_one
+    assert remote("remote-c") == page_two
 
 
 def test_manifest_commit_rejects_permit_expiry_before_authority_cas() -> None:

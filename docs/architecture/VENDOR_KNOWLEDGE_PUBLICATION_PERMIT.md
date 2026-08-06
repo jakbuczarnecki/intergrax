@@ -39,22 +39,32 @@ configuration version, fence revision and only a SHA-256 fingerprint of the
 lifecycle token. The page is bounded to 1,000 entries and 1 MiB serialized
 size; oversized or malformed manifests fail closed.
 
-The linearization point is the conditional insert/replace CAS of that one
-current manifest row. Retrieval uses the manifest for represented remote items,
-so a two-document page switches together. Per-remote active pointers are
-derived lookup accelerators rebuilt after the manifest CAS; missing or partial
-rebuilds cannot invalidate manifest-backed visibility. For remote items absent
-from the page, their previous derived pointer remains authoritative, so a page
-does not hide the rest of the source.
+The linearization point is the conditional insert/replace CAS of the
+same-record lifecycle fence. Before that CAS, the immutable manifest, its
+delivery index and per-remote candidate records, and an immutable publication
+commit node are durable. The fence stores only the current V2 head; each node
+contains the deterministic commit ID and predecessor ID, so later pages cannot
+erase earlier committed history. Exact delivery reads traverse that bounded
+chain, while remote resolution uses deterministic candidate keys and committed
+sequence ordering. Per-remote active pointers are derived lookup accelerators
+rebuilt after the fence CAS; missing or partial rebuilds cannot invalidate
+manifest-backed visibility.
 
-Immediately before the manifest CAS, the coordinator callback verifies the
-exact permit, lifecycle fence and still-owned source lease. A permit lost at
-that boundary leaves prepared documents hidden. If the process crashes after
-the CAS, the manifest remains visible and retry repairs/finalizes the derived
-receipt and pointer state. A completed receipt with a missing manifest is
-treated as uncertain and fails closed. Same-delivery payload mismatches and
+Immediately before the fence CAS, the coordinator callback verifies the exact
+permit, lifecycle fence and still-owned source lease. A permit lost at that
+boundary leaves prepared documents hidden. If the process crashes after the
+CAS, the commit node is already durable, so retry only finalizes the derived
+receipt and pointer state; no correctness-critical history write is required.
+A completed receipt with a missing manifest or a malformed/missing chain node
+is treated as uncertain and fails closed. Same-delivery payload mismatches and
 same-sequence manifest mismatches are conflicts; lower sequences are stale and
 higher sequences supersede the current manifest.
+
+Immutable commit nodes and manifests are retention-ready only when no
+authoritative head or retained descendant references them, remote-item active
+history has been safely compacted, receipt/replay obligations have expired, and
+the purge operation owns the exact binding. Retention and purge are outside
+this authority.
 
 `DELIVERY_MANIFEST` is the authority for new fenced connected-source
 references. Historical `DELIVERY_RECEIPT` records retain the explicit

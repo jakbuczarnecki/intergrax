@@ -361,11 +361,13 @@ class RepositoryKnowledgeMaterializationVisibility:
                 ):
                     return False
                 try:
-                    committed_manifests = manifest_repository.list_committed(
+                    newest = manifest_repository.get_committed_for_remote(
                         tenant_id=ownership.tenant_id,
                         workspace_id=ownership.workspace_id,
                         source_id=ownership.source_id,
                         indexed_source_binding_id=ownership.indexed_source_binding_id,
+                        knowledge_source_binding_ref=ownership.knowledge_source_binding_ref,
+                        remote_id=ownership.remote_id,
                     )
                 except (
                     ConnectedSourceMaterializationManifestConflict,
@@ -374,21 +376,11 @@ class RepositoryKnowledgeMaterializationVisibility:
                     AttributeError,
                 ):
                     return False
-                remote_versions = [
-                    candidate
-                    for candidate in committed_manifests
-                    if any(
-                        candidate_entry.remote_id == ownership.remote_id
-                        for candidate_entry in candidate.document_entries
-                    )
-                ]
-                if not remote_versions:
-                    return False
-                newest = max(
-                    remote_versions,
-                    key=lambda candidate: candidate.materialization_sequence,
+                return (
+                    newest is not None
+                    and newest.materialization_sequence
+                    == manifest.materialization_sequence
                 )
-                return newest.materialization_sequence == manifest.materialization_sequence
             return False
         try:
             receipt = self._repository.get_connected_source_delivery_receipt(

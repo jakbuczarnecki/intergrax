@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import secrets
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -33,8 +35,11 @@ _FENCE_SCHEMA = "vendor_knowledge.sync_publication_fence.v1"
 _FENCE_PARTITION_PREFIX = _FENCE_SCHEMA
 _MAX_TOKEN_LENGTH = 256
 _PERMIT_SCHEMA = "vendor_knowledge.sync_publication_permit.v1"
+_PUBLICATION_COMMIT_NODE_SCHEMA = "vendor_knowledge.sync_publication_commit_node.v1"
+_PUBLICATION_COMMIT_PARTITION_PREFIX = f"{_FENCE_PARTITION_PREFIX}:commit"
 _MAX_PERMIT_TTL_SECONDS = 3600
 _SHA256_LENGTH = 64
+_MAX_COMMITTED_CHAIN_NODES = 1_000_000
 
 
 def _require_non_empty(value: str, *, field_name: str) -> str:
@@ -168,6 +173,98 @@ class KnowledgeSyncCommittedPublicationV1(BaseModel):
         return value
 
 
+class KnowledgeSyncCommittedPublicationV2(KnowledgeSyncCommittedPublicationV1):
+    """Bounded publication descriptor linked into immutable history."""
+
+    publication_commit_id: str = Field(
+        min_length=_SHA256_LENGTH,
+        max_length=_SHA256_LENGTH,
+    )
+    previous_publication_commit_id: str | None = Field(
+        default=None,
+        min_length=_SHA256_LENGTH,
+        max_length=_SHA256_LENGTH,
+    )
+
+    @field_validator("publication_commit_id", "previous_publication_commit_id")
+    @classmethod
+    def _commit_ids(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if any(character not in "0123456789abcdef" for character in value):
+            raise ValueError("publication commit id must be a lowercase SHA-256 digest")
+        return value
+
+
+class KnowledgeSyncPublicationCommitNodeV1(BaseModel):
+    """Immutable, non-visible publication history node."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    commit_id: str = Field(min_length=_SHA256_LENGTH, max_length=_SHA256_LENGTH)
+    descriptor: KnowledgeSyncCommittedPublicationV2
+    previous_commit_id: str | None = Field(
+        default=None,
+        min_length=_SHA256_LENGTH,
+        max_length=_SHA256_LENGTH,
+    )
+
+    @model_validator(mode="after")
+    def _identity(self) -> KnowledgeSyncPublicationCommitNodeV1:
+        if self.commit_id != self.descriptor.publication_commit_id:
+            raise ValueError("publication commit node id mismatch")
+        if self.previous_commit_id != self.descriptor.previous_publication_commit_id:
+            raise ValueError("publication commit node predecessor mismatch")
+        return self
+
+
+def _descriptor_identity_payload(
+    descriptor: KnowledgeSyncCommittedPublicationV1,
+    *,
+    previous_commit_id: str | None,
+) -> dict[str, object]:
+    return {
+        "tenant_id": descriptor.tenant_id,
+        "binding_id": descriptor.binding_id,
+        "workspace_id": descriptor.workspace_id,
+        "source_id": descriptor.source_id,
+        "indexed_source_binding_id": descriptor.indexed_source_binding_id,
+        "delivery_id": descriptor.delivery_id,
+        "materialization_sequence": descriptor.materialization_sequence,
+        "manifest_id": descriptor.manifest_id,
+        "manifest_fingerprint": descriptor.manifest_fingerprint,
+        "previous_commit_id": previous_commit_id,
+    }
+
+
+def publication_commit_id(
+    descriptor: KnowledgeSyncCommittedPublicationV1,
+    *,
+    previous_commit_id: str | None,
+) -> str:
+    """Return the deterministic identity of one immutable publication node."""
+    payload = json.dumps(
+        _descriptor_identity_payload(
+            descriptor,
+            previous_commit_id=previous_commit_id,
+        ),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _descriptor_identity(
+    descriptor: KnowledgeSyncCommittedPublicationV1,
+) -> tuple[object, ...]:
+    return tuple(
+        _descriptor_identity_payload(
+            descriptor,
+            previous_commit_id=None,
+        ).values()
+    )
+
+
 class KnowledgeSyncPublicationCommitStatus(StrEnum):
     COMMITTED = "committed"
     REPLAYED = "replayed"
@@ -177,7 +274,7 @@ class KnowledgeSyncPublicationCommitStatus(StrEnum):
 @dataclass(frozen=True, slots=True)
 class KnowledgeSyncPublicationCommitResult:
     status: KnowledgeSyncPublicationCommitStatus
-    descriptor: KnowledgeSyncCommittedPublicationV1
+    descriptor: KnowledgeSyncCommittedPublicationV2
 
 
 @runtime_checkable
@@ -231,14 +328,24 @@ class KnowledgeSyncPublicationFencePort(Protocol):
         *,
         tenant_id: str,
         binding_id: str,
-    ) -> KnowledgeSyncCommittedPublicationV1 | None:
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
         ...
 
     def list_committed_publications(
         self,
         *,
         tenant_id: str,
-    ) -> tuple[KnowledgeSyncCommittedPublicationV1, ...]:
+        binding_id: str,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV2, ...]:
+        ...
+
+    def read_committed_publication_for_delivery(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
         ...
 class KnowledgeSyncPublicationFenceConflict(Exception):
     """Optimistic lifecycle fence write conflict."""
@@ -368,51 +475,66 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             )
         partition = self._partition_key(expected_fence.tenant_id)
         row = self._row_key(expected_fence.binding_id)
-        current = self._store.get(partition, row)
-        if current is None:
-            raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
-        fence, current_permit, current_descriptor = self._parse(
-            current,
-            tenant_id=expected_fence.tenant_id,
-            binding_id=expected_fence.binding_id,
-        )
-        now = self._utc_now()
-        if fence != expected_fence:
-            raise KnowledgeSyncPublicationFenceConflict("publication fence changed")
-        if not fence.enabled or fence.detached:
-            raise KnowledgeSyncPublicationFenceConflict("publication fence is disabled")
-        if current_permit != publication_permit:
-            raise KnowledgeSyncPublicationFenceConflict(
-                "permit_lost: publication permit is not current"
+        for _ in range(4):
+            current = self._store.get(partition, row)
+            if current is None:
+                raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
+            fence, current_permit, current_descriptor = self._parse(
+                current,
+                tenant_id=expected_fence.tenant_id,
+                binding_id=expected_fence.binding_id,
             )
-        if publication_permit.expires_at <= now:
-            raise KnowledgeSyncPublicationFenceConflict("publication permit expired")
-        if current_descriptor is not None:
-            if current_descriptor.materialization_sequence > publication_descriptor.materialization_sequence:
-                return KnowledgeSyncPublicationCommitResult(
-                    status=KnowledgeSyncPublicationCommitStatus.STALE,
-                    descriptor=current_descriptor,
+            now = self._utc_now()
+            if fence != expected_fence:
+                raise KnowledgeSyncPublicationFenceConflict("publication fence changed")
+            if not fence.enabled or fence.detached:
+                raise KnowledgeSyncPublicationFenceConflict("publication fence is disabled")
+            if current_permit != publication_permit:
+                raise KnowledgeSyncPublicationFenceConflict(
+                    "permit_lost: publication permit is not current"
                 )
-            if current_descriptor.materialization_sequence == publication_descriptor.materialization_sequence:
-                if current_descriptor != publication_descriptor:
-                    raise KnowledgeSyncPublicationFenceConflict(
-                        "publication sequence conflict"
-                    )
-                return KnowledgeSyncPublicationCommitResult(
-                    status=KnowledgeSyncPublicationCommitStatus.REPLAYED,
-                    descriptor=current_descriptor,
+            if publication_permit.expires_at <= now:
+                raise KnowledgeSyncPublicationFenceConflict("publication permit expired")
+
+            chain = self._read_chain(
+                tenant_id=fence.tenant_id,
+                binding_id=fence.binding_id,
+                head=current_descriptor,
+            )
+            existing_result = self._resolve_existing_descriptor(
+                publication_descriptor,
+                chain,
+            )
+            if existing_result is not None:
+                return existing_result
+
+            previous_commit_id = (
+                None
+                if current_descriptor is None
+                else current_descriptor.publication_commit_id
+            )
+            committed_descriptor = self._committed_descriptor(
+                publication_descriptor,
+                previous_commit_id=previous_commit_id,
+            )
+            self._put_commit_node(
+                KnowledgeSyncPublicationCommitNodeV1(
+                    commit_id=committed_descriptor.publication_commit_id,
+                    descriptor=committed_descriptor,
+                    previous_commit_id=previous_commit_id,
                 )
-        replacement = self._to_document(
-            fence,
-            publication_permit=publication_permit,
-            committed_publication=publication_descriptor,
-        )
-        if not self._store.replace_if_match(expected=current, replacement=replacement):
-            raise KnowledgeSyncPublicationFenceConflict("publication commit conflict")
-        return KnowledgeSyncPublicationCommitResult(
-            status=KnowledgeSyncPublicationCommitStatus.COMMITTED,
-            descriptor=publication_descriptor,
-        )
+            )
+            replacement = self._to_document(
+                fence,
+                publication_permit=publication_permit,
+                committed_publication=committed_descriptor,
+            )
+            if self._store.replace_if_match(expected=current, replacement=replacement):
+                return KnowledgeSyncPublicationCommitResult(
+                    status=KnowledgeSyncPublicationCommitStatus.COMMITTED,
+                    descriptor=committed_descriptor,
+                )
+        raise KnowledgeSyncPublicationFenceConflict("publication commit conflict")
 
     def release_publication_permit(
         self,
@@ -585,7 +707,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         fence: KnowledgeSyncPublicationFenceV1,
         *,
         publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
-        committed_publication: KnowledgeSyncCommittedPublicationV1 | None = None,
+        committed_publication: KnowledgeSyncCommittedPublicationV2 | None = None,
     ) -> DocumentRecord:
         if publication_permit is not None:
             self._validate_permit_identity(publication_permit)
@@ -628,7 +750,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
     ) -> tuple[
         KnowledgeSyncPublicationFenceV1,
         KnowledgeSyncPublicationPermitV1 | None,
-        KnowledgeSyncCommittedPublicationV1 | None,
+        KnowledgeSyncCommittedPublicationV2 | None,
     ]:
         data: dict[str, Any] = dict(document.data)
         if (
@@ -662,12 +784,12 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             ):
                 raise ValueError("publication fence record is corrupt")
         raw_descriptor = data.get("committed_publication")
-        descriptor: KnowledgeSyncCommittedPublicationV1 | None = None
+        descriptor: KnowledgeSyncCommittedPublicationV2 | None = None
         if raw_descriptor is not None:
             if not isinstance(raw_descriptor, dict):
                 raise ValueError("publication fence record is corrupt")
             try:
-                descriptor = KnowledgeSyncCommittedPublicationV1.model_validate(
+                descriptor = KnowledgeSyncCommittedPublicationV2.model_validate(
                     raw_descriptor
                 )
             except (TypeError, ValueError):
@@ -684,31 +806,224 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         *,
         tenant_id: str,
         binding_id: str,
-    ) -> KnowledgeSyncCommittedPublicationV1 | None:
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
         tenant = _require_non_empty(tenant_id, field_name="tenant_id")
         binding = _require_non_empty(binding_id, field_name="binding_id")
         document = self._store.get(self._partition_key(tenant), self._row_key(binding))
         if document is None:
             return None
-        return self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+        descriptor = self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+        self._read_chain(tenant_id=tenant, binding_id=binding, head=descriptor)
+        return descriptor
 
     def list_committed_publications(
         self,
         *,
         tenant_id: str,
-    ) -> tuple[KnowledgeSyncCommittedPublicationV1, ...]:
+        binding_id: str,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV2, ...]:
         tenant = _require_non_empty(tenant_id, field_name="tenant_id")
-        result = self._store.query(self._partition_key(tenant), limit=5000)
-        descriptors: list[KnowledgeSyncCommittedPublicationV1] = []
-        for document in result.documents:
-            data = dict(document.data)
-            binding = data.get("binding_id")
-            if not isinstance(binding, str):
-                continue
-            parsed = self._parse(document, tenant_id=tenant, binding_id=binding)[2]
-            if parsed is not None:
-                descriptors.append(parsed)
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        document = self._store.get(self._partition_key(tenant), self._row_key(binding))
+        if document is None:
+            return ()
+        descriptor = self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+        return self._read_chain(
+            tenant_id=tenant,
+            binding_id=binding,
+            head=descriptor,
+        )
+
+    def read_committed_publication_for_delivery(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        delivery_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        delivery = _require_non_empty(delivery_id, field_name="delivery_id")
+        for descriptor in self.list_committed_publications(
+            tenant_id=tenant,
+            binding_id=binding,
+        ):
+            if descriptor.delivery_id == delivery:
+                return descriptor
+        return None
+
+    @staticmethod
+    def _commit_partition(tenant_id: str, binding_id: str) -> str:
+        return (
+            f"{_PUBLICATION_COMMIT_PARTITION_PREFIX}:"
+            f"{_require_non_empty(tenant_id, field_name='tenant_id')}:"
+            f"{_require_non_empty(binding_id, field_name='binding_id')}"
+        )
+
+    @staticmethod
+    def _commit_row_key(commit_id: str) -> str:
+        return f"commit:{_require_non_empty(commit_id, field_name='commit_id')}"
+
+    @staticmethod
+    def _committed_descriptor(
+        descriptor: KnowledgeSyncCommittedPublicationV1,
+        *,
+        previous_commit_id: str | None,
+    ) -> KnowledgeSyncCommittedPublicationV2:
+        return KnowledgeSyncCommittedPublicationV2(
+            **descriptor.model_dump(),
+            publication_commit_id=publication_commit_id(
+                descriptor,
+                previous_commit_id=previous_commit_id,
+            ),
+            previous_publication_commit_id=previous_commit_id,
+        )
+
+    def _put_commit_node(
+        self,
+        node: KnowledgeSyncPublicationCommitNodeV1,
+    ) -> None:
+        record = DocumentRecord(
+            partition_key=self._commit_partition(
+                node.descriptor.tenant_id,
+                node.descriptor.binding_id,
+            ),
+            row_key=self._commit_row_key(node.commit_id),
+            data={
+                "schema_version": _PUBLICATION_COMMIT_NODE_SCHEMA,
+                "commit_id": node.commit_id,
+                "previous_commit_id": node.previous_commit_id,
+                "node": node.model_dump(mode="json"),
+            },
+        )
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            if self._parse_commit_node(existing) != node:
+                raise KnowledgeSyncPublicationFenceConflict(
+                    "publication commit node identity conflict"
+                )
+            return
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or self._parse_commit_node(retry) != node:
+                raise KnowledgeSyncPublicationFenceConflict(
+                    "publication commit node write conflict"
+                )
+
+    def _read_chain(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        head: KnowledgeSyncCommittedPublicationV2 | None,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV2, ...]:
+        if head is None:
+            return ()
+        current: KnowledgeSyncCommittedPublicationV2 | None = head
+        previous_sequence: int | None = None
+        visited: set[str] = set()
+        descriptors: list[KnowledgeSyncCommittedPublicationV2] = []
+        while current is not None:
+            if len(descriptors) >= _MAX_COMMITTED_CHAIN_NODES:
+                raise ValueError("publication commit chain safety bound exceeded")
+            commit_id = current.publication_commit_id
+            if commit_id in visited:
+                raise ValueError("publication commit chain predecessor cycle")
+            visited.add(commit_id)
+            record = self._store.get(
+                self._commit_partition(tenant_id, binding_id),
+                self._commit_row_key(commit_id),
+            )
+            if record is None:
+                raise ValueError("publication commit node is missing")
+            node = self._parse_commit_node(record)
+            if node.descriptor != current:
+                raise ValueError("publication commit head/node mismatch")
+            if (
+                node.descriptor.tenant_id != tenant_id
+                or node.descriptor.binding_id != binding_id
+            ):
+                raise ValueError("publication commit chain identity mismatch")
+            if (
+                previous_sequence is not None
+                and current.materialization_sequence >= previous_sequence
+            ):
+                raise ValueError("publication commit chain sequence is non-monotonic")
+            descriptors.append(current)
+            previous_sequence = current.materialization_sequence
+            previous_id = current.previous_publication_commit_id
+            if previous_id is None:
+                break
+            if previous_id in visited:
+                raise ValueError("publication commit chain predecessor cycle")
+            previous_record = self._store.get(
+                self._commit_partition(tenant_id, binding_id),
+                self._commit_row_key(previous_id),
+            )
+            if previous_record is None:
+                raise ValueError("publication commit predecessor is missing")
+            previous_node = self._parse_commit_node(previous_record)
+            if previous_node.commit_id != previous_id:
+                raise ValueError("publication commit predecessor id mismatch")
+            current = previous_node.descriptor
         return tuple(descriptors)
+
+    @staticmethod
+    def _parse_commit_node(
+        record: DocumentRecord,
+    ) -> KnowledgeSyncPublicationCommitNodeV1:
+        if (
+            record.data.get("schema_version") != _PUBLICATION_COMMIT_NODE_SCHEMA
+            or not isinstance(record.data.get("node"), dict)
+            or not isinstance(record.data.get("commit_id"), str)
+            or record.row_key != f"commit:{record.data.get('commit_id')}"
+        ):
+            raise ValueError("publication commit node is corrupt")
+        try:
+            node = KnowledgeSyncPublicationCommitNodeV1.model_validate(
+                record.data["node"]
+            )
+        except (TypeError, ValueError):
+            raise ValueError("publication commit node is corrupt") from None
+        if (
+            node.commit_id != record.data.get("commit_id")
+            or node.previous_commit_id != record.data.get("previous_commit_id")
+        ):
+            raise ValueError("publication commit node is corrupt")
+        return node
+
+    @staticmethod
+    def _resolve_existing_descriptor(
+        candidate: KnowledgeSyncCommittedPublicationV1,
+        chain: tuple[KnowledgeSyncCommittedPublicationV2, ...],
+    ) -> KnowledgeSyncPublicationCommitResult | None:
+        candidate_identity = _descriptor_identity(candidate)
+        for position, committed in enumerate(chain):
+            if _descriptor_identity(committed) == candidate_identity:
+                return KnowledgeSyncPublicationCommitResult(
+                    status=(
+                        KnowledgeSyncPublicationCommitStatus.REPLAYED
+                        if position == 0
+                        else KnowledgeSyncPublicationCommitStatus.STALE
+                    ),
+                    descriptor=committed,
+                )
+            if (
+                committed.materialization_sequence
+                == candidate.materialization_sequence
+            ):
+                raise KnowledgeSyncPublicationFenceConflict(
+                    "publication sequence conflict"
+                )
+        if chain and (
+            chain[0].materialization_sequence
+            > candidate.materialization_sequence
+        ):
+            return KnowledgeSyncPublicationCommitResult(
+                status=KnowledgeSyncPublicationCommitStatus.STALE,
+                descriptor=chain[0],
+            )
+        return None
 
     def _utc_now(self) -> datetime:
         now = self._clock()
