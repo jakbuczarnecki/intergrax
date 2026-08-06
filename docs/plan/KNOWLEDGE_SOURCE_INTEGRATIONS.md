@@ -106,6 +106,8 @@ VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1
   READY_FOR_REVIEW
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1
   READY_FOR_REVIEW
+ACCEPTED / CLOSED:
+LKW-SLACK-CONNECTED-SOURCE-1
 CHANGES_REQUIRED:
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1
   correction under review
@@ -113,7 +115,6 @@ VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1-REVIEW-FIX-1
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-1
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-1A-REVIEW-FIX-2
 IN_PROGRESS:
-LKW-SLACK-CONNECTED-SOURCE-1 — CHANGES_REQUIRED
 PLANNED:
 LKW-CONVERSATION-CONTEXT-1
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
@@ -162,6 +163,14 @@ contradiction and is not capability evidence.
 
 `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation and shared-channel runtime remain **not** implemented; the separate Slack live capability family is **ACCEPTED / CLOSED**.
 
+`LKW-SLACK-CONNECTED-SOURCE-1` is **ACCEPTED / CLOSED**. The proof accepts
+selected Slack conversation durable synchronization, root/reply traversal,
+typed continuation and crash recovery, application-owned materialization,
+workspace-scoped indexed Search/Ask, and replay without duplicate indexed
+evidence. Complete per-user Slack ACL enforcement, organization-wide automatic
+indexing, native Slack search, attachments/file bodies, a Slack conversation
+frontend, and combined indexed-plus-live answers remain unproved or deferred.
+
 **Execution order (frozen) — parallel tracks:**
 
 ```text
@@ -178,17 +187,17 @@ DONE:
 SLACK-KNOWLEDGE-FOUNDATION-1
 LKW-CONVERSATION-CONTEXT-ARCH-1 — ACCEPTED
 SLACK-KNOWLEDGE-LIVE-CAPABILITIES-1 — ACCEPTED / CLOSED
+LKW-SLACK-CONNECTED-SOURCE-1 — ACCEPTED / CLOSED
 
 IN_PROGRESS / CHANGES_REQUIRED:
-LKW-SLACK-CONNECTED-SOURCE-1 (LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2 — CHANGES_REQUIRED; REVIEW-FIX-3 not accepted; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
+none for the accepted Slack connected-source slice
 
 THEN (Slack / LKW track):
-LKW-CONVERSATION-CONTEXT-1            # LKW-wide prerequisite for shared adapters
+LKW-CONVERSATION-CONTEXT-1
 LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 
 JOIN (final Slack proof):
-LKW-SLACK-CONNECTED-SOURCE-1
-+ LKW-CONVERSATION-CONTEXT-1
+LKW-CONVERSATION-CONTEXT-1
 + LKW-SLACK-SHARED-CONVERSATION-ADAPTER-1
 + SLACK-LIVE-CAPABILITY-1
 + LKW-HYBRID-ASK-1
@@ -1498,7 +1507,10 @@ Do not freeze implementation signatures before the repository audit. Do not clai
 
 #### `LKW-SLACK-CONNECTED-SOURCE-1`
 
-**Status:** `IN_PROGRESS / CHANGES_REQUIRED` (LKW application — `LKW-SLACK-CONNECTED-SOURCE-1-REVIEW-FIX-2` **CHANGES_REQUIRED**; `REVIEW-FIX-3` not accepted; HTTP discovery/create/sync scaffold present; final crash-safe recovery and real indexed Search/Ask proof remain under correction)
+**Status:** `ACCEPTED / CLOSED` (LKW application — selected Slack
+conversation synchronization, root/reply traversal, typed continuation,
+crash-safe recovery, application-owned materialization and indexed Search/Ask
+proof accepted)
 
 Application-only use of the completed platform foundation:
 
@@ -1513,7 +1525,12 @@ workspace Connection
 
 No new Slack client or provider adapter in LKW.
 
-**User-facing meaning after completion:** The user can attach an approved Slack conversation to an LKW workspace, synchronize it and ask questions about its indexed history.
+**User-facing meaning:** The user can attach an approved Slack conversation to
+an LKW workspace, synchronize it and ask questions about its indexed history.
+Replay and restart preserve the same corpus without duplicate indexed evidence.
+This does not prove complete per-user Slack ACLs, organization-wide automatic
+indexing, native Slack search, attachments/file bodies or combined indexed-plus-
+live answers.
 
 Connecting a Slack conversation as an Indexed Source does **not** activate the bot in that channel. Activating the bot in a channel does **not** automatically index channel history.
 

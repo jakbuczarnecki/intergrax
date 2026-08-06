@@ -24,7 +24,7 @@ indexed ingestion or live access. Current repository evidence proves:
 - the accepted `ARCH-1` shared live delta is implemented and closed through
   `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`;
 - a provider-specific application indexed path only for Slack
-  `slack_conversation`, with final accepted LKW closeout still unresolved;
+  `slack_conversation`, with accepted LKW durable and indexed closeout;
 - provider/source-kind live handlers and registrations are implemented for the
   five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
   Teams Chat and Calendar, plus the three Slack conversation live capabilities;
@@ -104,7 +104,7 @@ from the exact matrix because no source kind has been selected.
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_channel` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No channel-to-index bridge or application proof; deletion evidence remains explicit `deletedDateTime`. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter snapshot/reconciliation is proven, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Live remains limited to one root post and does not list replies or all channel messages. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL`; focused live tests | Preserve explicit deletion semantics and the bounded root-post list. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No chat-to-index bridge or application proof; fixed-window scope does not prove live or indexed lifecycle. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Fixed-window metadata-only list; bodies, mentions, reactions, attachments and hosted content remain excluded. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT`; focused live tests | Preserve fixed-window and explicit-deletion semantics. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `calendar` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Calendar-to-index bridge or application proof; primary delta and non-primary snapshot paths must remain separate. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted primary/non-primary reconciliation exists, but no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | One binding-selected initial metadata-only page; complete traversal, replay and event content remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR`; focused live tests | Preserve primary-delta versus non-primary-snapshot semantics and window removals. |
-| Slack | `slack / conversation_channel` | `slack_conversation` | `IMPLEMENTED_UNREVIEWED` | `IMPLEMENTED_UNREVIEWED` | YES | YES | YES | PARTIAL | NO | YES | PARTIAL | Current HTTP→sync→index→Search/Ask proof exists; final accepted LKW/recovery closeout and removal propagation remain unresolved. | `PARTIAL` | YES | YES | YES | YES | PARTIAL | PARTIAL | Connected-source application sink and retry path exist; final crash-safe recovery/closeout is still unresolved. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Bounded recent configured-channel activity, bounded multi-channel Ask, fetched-evidence filtering, one-page thread summary and exact message read are supported; native search, exhaustive history, arbitrary accessible-channel discovery, permissions and file/attachment reads remain deferred. | NONE | `test_slack_live.py`; `test_slack_ask_orchestration.py`; `SLACK-LIVE-DISCOVERY-AND-ASK-READINESS-1` | Keep indexed/durable Slack claims conservative; do not infer native search, exhaustive history, ACL or attachment support from bounded live Ask. |
+| Slack | `slack / conversation_channel` | `slack_conversation` | `ACCEPTED` | `ACCEPTED` | YES | YES | YES | YES | NO | YES | FOCUSED_TESTS | Indexed HTTP→sync→materialization→index→Search/Ask proof passes with replay/recovery; Slack removal propagation remains unproved. | `ACCEPTED` | YES | YES | YES | YES | YES | FOCUSED_TESTS | Removal propagation and complete per-user ACL enforcement remain unproved. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Bounded recent configured-channel activity, bounded multi-channel Ask, fetched-evidence filtering, one-page thread summary and exact message read are supported; native search, exhaustive history, arbitrary accessible-channel discovery, permissions and file/attachment reads remain deferred. | NONE | `test_slack_connected_source_end_to_end.py`; `test_connected_source_continuation.py`; `test_connected_source_recovery.py`; `test_slack_live.py`; `test_slack_ask_orchestration.py` | Keep ACL, native search, exhaustive history, removal propagation and attachment/file-body claims conservative. |
 | Google Workspace | `google_workspace / collaboration_suite` | `drive` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Adapter and sync tests exist, but no Google application binding, index bridge or indexed proof exists. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Provider adapter/reconciliation exists; application-owned materialization is not wired. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Drive live handler or application invocation. | NONE | `google_workspace_drive` adapter/sync tests named by accepted audit; roadmap Google status is stale | Correct status only through matrix routing; route application proof separately if product support is approved. |
 | Google Workspace | `google_workspace / collaboration_suite` | `docs` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Known-document adapter does not establish indexed discovery, lifecycle or application query wiring. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | One-item reconciliation exists; broad discovery, deletion semantics and application sink are absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Docs live handler or application invocation. | NONE | `google_workspace_docs` adapter/sync tests named by accepted audit; current integration | Keep exact-known-resource limits explicit; do not copy stale “no adapters” wording as capability evidence. |
 | Google Workspace | `google_workspace / collaboration_suite` | `sheets` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Known-spreadsheet adapter does not establish indexed discovery, lifecycle or application query wiring. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | One-item reconciliation exists; broad discovery, deletion semantics and application sink are absent. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Sheets live handler or application invocation. | NONE | `google_workspace_sheets` adapter/sync tests named by accepted audit; current integration | Keep exact-known-resource limits explicit; route application proof only if approved. |
@@ -134,9 +134,8 @@ source path. The latter is provider-specific only for Slack:
   safe indexed documents;
 - `test_slack_connected_source_end_to_end.py` exercises discovery, binding,
   synchronization, vector-store population, Search and Ask citations;
-- the roadmap still marks the Slack application task
-  `CHANGES_REQUIRED`, so the exact mode is `IMPLEMENTED_UNREVIEWED`, not
-  `ACCEPTED`.
+- the Slack application task is `ACCEPTED / CLOSED` through its focused
+  continuation, recovery, materialization and indexed Search/Ask proof.
 
 No Microsoft Graph, Google, Jira or Confluence source kind has an exact
 provider-to-index bridge in the inspected application wiring. Generic LKW
@@ -157,9 +156,8 @@ sync tests exist for the accepted Graph family, Slack, Google
 `drive`/`docs`/`sheets`, Jira and Confluence.
 
 Only the Slack connected-source path proves a production application-owned
-materialization/index sink in the inspected application surfaces. Even there,
-the final crash-safe recovery and accepted LKW closeout remain open. For all
-other adapter rows, `PARTIAL` means adapter/reconciliation layers are present
+materialization/index sink and crash-safe recovery in the inspected application
+surfaces. For all other adapter rows, `PARTIAL` means adapter/reconciliation layers are present
 while application materialization is not proven.
 
 The DocumentStore runtime itself is not counted as provider-specific
@@ -200,12 +198,12 @@ wide Ask Slack. Indexed and durable lifecycle status remains independent.
 Current commercial claims must remain source-kind specific:
 
 - **Indexed:** no generally accepted Vendor Knowledge commercial claim.
-  Slack `slack_conversation` is an `IMPLEMENTED_UNREVIEWED` demonstrable LKW
-  path, but its final accepted proof is unresolved.
+  Slack `slack_conversation` is an accepted demonstrable LKW path, but this
+  task does not establish a broad commercial claim.
 - **Durable materialization:** adapter-level synchronization is broader than
-  production application materialization. The repository does not support a
-  broad commercial claim for Graph, Slack, Google, Jira or Confluence
-  application-owned materialization; Slack is `PARTIAL`.
+  production application materialization. Slack has an accepted
+  application-owned path for the selected conversation scope; Graph, Google,
+  Jira and Confluence remain outside that claim.
 - **Live:** no Vendor Knowledge provider/source kind is commercially
   supported; all rows are `FOUNDATION_ONLY`.
 
@@ -215,8 +213,8 @@ access.
 
 ## 10. Cross-provider gaps
 
-1. There is no provider/source-kind index bridge except the partial,
-   unreviewed Slack LKW path.
+1. There is no provider/source-kind index bridge except the accepted Slack LKW
+   path.
 2. Provider adapters and reconciliation are not uniformly connected to
    application-owned durable sinks.
 3. There is no provider/source-kind live handler registration.
@@ -235,8 +233,8 @@ access.
 The matrix records gaps; it does not activate them. The documented sequence is:
 
 1. accept this matrix after external review;
-2. finish the already-routed Slack connected-source corrections and obtain
-   the final indexed proof;
+2. keep the accepted Slack connected-source lifecycle proof stable while
+   routing the remaining provider application proofs;
 3. decide whether application-owned materialization is a supported product
    workflow for each non-LKW provider family;
 4. route provider/source-kind index or materialization tasks only after the
