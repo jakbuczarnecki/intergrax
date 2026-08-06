@@ -105,6 +105,10 @@ class TokenOptimizationRouterReason(StrEnum):
     PROMPT_ASSEMBLY_INTEGRITY_FAILED = "prompt_assembly_integrity_failed"
 
 
+class TokenOptimizationPolicyOverrideReason(StrEnum):
+    SECURITY_WARNING_REQUIRES_REVIEW = "security_warning_requires_review"
+
+
 @dataclass(frozen=True, slots=True)
 class TokenOptimizationLLMRouterPolicy:
     allow_structured_output_fallback: bool = True
@@ -146,3 +150,9 @@ class TokenOptimizationLLMRouterResult:
     executed: bool
     prompt_cache_state: CacheStablePromptState | None = None
     prompt_assembly_report: CacheStablePromptAssemblyReport | None = None
+    model_configuration_id: TokenOptimizationRouterConfigurationId | None = None
+    model_reason_code: TokenOptimizationRouterReasonCode | None = None
+    model_risk: TokenOptimizationRouterRisk | None = None
+    model_review_required: bool | None = None
+    policy_override_applied: bool = False
+    policy_override_reason: TokenOptimizationPolicyOverrideReason | None = None

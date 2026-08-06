@@ -336,19 +336,155 @@ def _router_gates(context: _GateContext) -> list[GateResult]:
             evidence.structured_output_fallback_used,
         )
     gates.append(transport_gate)
-    if expectation.allowed_risk:
-        risk_gate = _allowed(
-            "ROUTER_REASON", evidence.risk, expectation.allowed_risk, context
-        )
-        if risk_gate.status is GateStatus.FAIL:
-            gates[2] = _fail(
-                "ROUTER_REASON",
-                context,
-                "RISK_NOT_ALLOWED",
-                sorted(expectation.allowed_risk),
-                evidence.risk,
-            )
     return gates
+
+
+def _model_router_gates(context: _GateContext) -> list[GateResult]:
+    expectation = context.case.router
+    evidence = context.result.router_evidence
+    model_configuration_id = (
+        evidence.model_configuration_id or evidence.configuration_id
+    )
+    model_reason_code = evidence.model_reason_code or evidence.reason_code
+    model_risk = evidence.model_risk or evidence.risk
+    model_review_required = (
+        evidence.model_review_required
+        if evidence.model_review_required is not None
+        else evidence.review_required
+    )
+    gate_ids = (
+        "MODEL_ROUTER_CONFIGURATION",
+        "MODEL_ROUTER_REASON",
+        "MODEL_ROUTER_RISK",
+        "MODEL_ROUTER_REVIEW_REQUIREMENT",
+    )
+    if _profile_not_applicable(gate_ids, context):
+        return [_not_applicable(gate_id, context) for gate_id in gate_ids]
+    if (
+        evidence.model_configuration_id is None
+        and evidence.model_reason_code is None
+        and evidence.model_risk is None
+        and evidence.model_review_required is None
+        and evidence.configuration_id is None
+        and context.result.router_reason in {"policy_disabled", "profile_off"}
+    ):
+        return [
+            _not_applicable(gate_id, context)
+            for gate_id in gate_ids
+        ]
+    gates = [
+        _allowed(
+            "MODEL_ROUTER_CONFIGURATION",
+            model_configuration_id,
+            expectation.allowed_configuration_ids,
+            context,
+        ),
+        _allowed(
+            "MODEL_ROUTER_REASON",
+            model_reason_code,
+            expectation.allowed_reason_codes,
+            context,
+        ),
+        _allowed(
+            "MODEL_ROUTER_RISK",
+            model_risk,
+            expectation.allowed_risk,
+            context,
+        ),
+    ]
+    if expectation.review_required is None:
+        gates.append(_not_applicable("MODEL_ROUTER_REVIEW_REQUIREMENT", context))
+    elif model_review_required is None:
+        gates.append(
+            _unavailable(
+                "MODEL_ROUTER_REVIEW_REQUIREMENT",
+                context,
+                expectation.review_required,
+            )
+        )
+    elif model_review_required != expectation.review_required:
+        gates.append(
+            _fail(
+                "MODEL_ROUTER_REVIEW_REQUIREMENT",
+                context,
+                "REVIEW_REQUIREMENT_MISMATCH",
+                expectation.review_required,
+                model_review_required,
+            )
+        )
+    else:
+        gates.append(
+            _pass(
+                "MODEL_ROUTER_REVIEW_REQUIREMENT",
+                context,
+                expectation.review_required,
+                model_review_required,
+            )
+        )
+    return gates
+
+
+def _final_router_gates(context: _GateContext) -> list[GateResult]:
+    expectation = context.case.router
+    evidence = context.result.router_evidence
+    model_risk = evidence.model_risk or evidence.risk
+    model_review_required = (
+        evidence.model_review_required
+        if evidence.model_review_required is not None
+        else evidence.review_required
+    )
+    security_warning = any(
+        region.kind.value == "security_warning"
+        for region in context.case.protected_regions
+    )
+    final_safety = (
+        security_warning
+        and context.result.router_status == "review_required"
+        and context.result.pipeline_status == "not_started"
+        and not context.result.applied_layer_ids
+        and evidence.risk == "high"
+        and evidence.review_required is True
+        and (
+            (
+                evidence.policy_override_applied
+                and evidence.policy_override_reason
+                == "security_warning_requires_review"
+            )
+            or (
+                not evidence.policy_override_applied
+                and model_risk == "high"
+                and model_review_required is True
+            )
+        )
+    ) or (
+        not security_warning
+        and not evidence.policy_override_applied
+        and evidence.policy_override_reason is None
+    )
+    return [
+        _allowed(
+            "FINAL_ROUTER_STATUS",
+            context.result.router_status,
+            expectation.allowed_statuses,
+            context,
+        ),
+        (
+            _pass(
+                "FINAL_POLICY_ENFORCEMENT",
+                context,
+                "security warning final safety" if security_warning else "no policy override",
+                "safe final outcome",
+            )
+            if final_safety
+            else _fail(
+                "FINAL_POLICY_ENFORCEMENT",
+                context,
+                "FINAL_SAFETY_OUTCOME_NOT_ENFORCED",
+                "safe final outcome",
+                "unsafe or inconsistent final outcome",
+            )
+        ),
+    ]
 
 
 def _pipeline_gates(context: _GateContext) -> list[GateResult]:
@@ -1405,6 +1541,8 @@ class UniversalProofEvaluator:
             )
             gates = (
                 _router_gates(context)
+                + _model_router_gates(context)
+                + _final_router_gates(context)
                 + [_router_integrity_gate(context)]
                 + _pipeline_gates(context)
                 + [_pipeline_integrity_gate(context)]

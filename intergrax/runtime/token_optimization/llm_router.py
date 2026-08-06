@@ -5,17 +5,18 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.registry.catalog_capabilities import (
     unwrap_catalog_capability_adapter,
 )
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import (
     ToolPlanningService,
@@ -39,6 +40,7 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationLLMRouterPolicy,
     TokenOptimizationLLMRouterRequest,
     TokenOptimizationLLMRouterResult,
+    TokenOptimizationPolicyOverrideReason,
     TokenOptimizationRouterConfigurationId,
     TokenOptimizationRouterReason,
     TokenOptimizationRouterReasonCode,
@@ -46,6 +48,9 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterStatus,
     TokenOptimizationRouterToolInput,
     TokenOptimizationRouterTransport,
+)
+from intergrax.runtime.token_optimization.pipeline import (
+    TokenOptimizationPipelineRunner,
 )
 from intergrax.runtime.token_optimization.prompt_assembly import (
     CacheStablePromptAssembly,
@@ -57,10 +62,8 @@ from intergrax.runtime.token_optimization.prompt_assembly import (
     assemble_cache_stable_prompt,
     materialize_cache_stable_send_payload,
 )
-from intergrax.runtime.token_optimization.pipeline import TokenOptimizationPipelineRunner
-from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-
+from intergrax.tools.registry import ToolRegistry
 from intergrax.utils import attribute_access
 
 ROUTER_TOOL_ID = "token_optimization.select_configuration"
@@ -142,6 +145,8 @@ class _CompiledDecision:
     confidence: float | None
     pipeline_config: TokenOptimizationPipelineConfig | None
     executed: bool
+    policy_override_applied: bool = False
+    policy_override_reason: TokenOptimizationPolicyOverrideReason | None = None
 
 
 def _adapter_provider(adapter: LLMAdapter) -> str:
@@ -421,22 +426,6 @@ def _compile_decision(
             executed=False,
         )
 
-    if (
-        req.policy.profile is TokenOptimizationProfile.MEASURE_ONLY
-        and decision.configuration_id
-        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
-        and decision.reason_code is TokenOptimizationRouterReasonCode.CLEAN_NO_OP
-        and _content_has_duplicate_lines(req.content)
-    ):
-        decision = decision.model_copy(
-            update={
-                "configuration_id": TokenOptimizationRouterConfigurationId.EXACT_ONLY,
-                "reason_code": TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
-            }
-        )
-        spec = catalog.get(decision.configuration_id)
-        assert spec is not None
-
     if decision.confidence < policy.minimum_confidence:
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.BLOCKED,
@@ -454,6 +443,10 @@ def _compile_decision(
         region.kind is ProtectedRegionKind.SECURITY_WARNING
         for region in req.protected_regions
     ):
+        policy_override_applied = not (
+            decision.risk is TokenOptimizationRouterRisk.HIGH
+            and decision.review_required
+        )
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
             reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
@@ -464,21 +457,12 @@ def _compile_decision(
             confidence=decision.confidence,
             pipeline_config=None,
             executed=False,
-        )
-
-    protected_lossless_override = (
-        req.protected_regions
-        and not spec.lossy
-        and decision.risk is not TokenOptimizationRouterRisk.HIGH
-        and decision.reason_code
-        is not TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK
-    )
-    if protected_lossless_override:
-        decision = decision.model_copy(
-            update={
-                "risk": TokenOptimizationRouterRisk.LOW,
-                "review_required": False,
-            }
+            policy_override_applied=policy_override_applied,
+            policy_override_reason=(
+                TokenOptimizationPolicyOverrideReason.SECURITY_WARNING_REQUIRES_REVIEW
+                if policy_override_applied
+                else None
+            ),
         )
 
     if decision.review_required:
@@ -617,6 +601,7 @@ def _success_result(
     *,
     router_request: TokenOptimizationLLMRouterRequest,
     transport: TokenOptimizationRouterTransport,
+    decision: TokenOptimizationRouterToolInput,
     compiled: _CompiledDecision,
     adapter: LLMAdapter,
     tool_call_id: str | None,
@@ -642,6 +627,12 @@ def _success_result(
         executed=pipeline_result is not None,
         prompt_cache_state=prompt_cache_state,
         prompt_assembly_report=prompt_assembly_report,
+        model_configuration_id=decision.configuration_id,
+        model_reason_code=decision.reason_code,
+        model_risk=decision.risk,
+        model_review_required=decision.review_required,
+        policy_override_applied=compiled.policy_override_applied,
+        policy_override_reason=compiled.policy_override_reason,
     )
 
 
@@ -819,6 +810,7 @@ class TokenOptimizationLLMRouter:
         return _success_result(
             router_request=router_request,
             transport=transport,
+            decision=decision,
             compiled=compiled,
             adapter=self._adapter,
             tool_call_id=tool_call_id,
@@ -872,6 +864,12 @@ class TokenOptimizationLLMRouter:
             executed=True,
             prompt_cache_state=routed_result.prompt_cache_state,
             prompt_assembly_report=routed_result.prompt_assembly_report,
+            model_configuration_id=routed_result.model_configuration_id,
+            model_reason_code=routed_result.model_reason_code,
+            model_risk=routed_result.model_risk,
+            model_review_required=routed_result.model_review_required,
+            policy_override_applied=routed_result.policy_override_applied,
+            policy_override_reason=routed_result.policy_override_reason,
         )
 
     def route_and_execute(
@@ -897,6 +895,12 @@ _ALLOWED_REPORT_FIELDS = frozenset(
         "risk",
         "review_required",
         "confidence",
+        "model_configuration_id",
+        "model_reason_code",
+        "model_risk",
+        "model_review_required",
+        "policy_override_applied",
+        "policy_override_reason",
         "provider",
         "model",
         "tool_call_id_present",
@@ -976,6 +980,24 @@ def token_optimization_router_result_to_safe_dict(
         "risk": result.risk.value if result.risk is not None else None,
         "review_required": result.review_required,
         "confidence": result.confidence,
+        "model_configuration_id": (
+            result.model_configuration_id.value
+            if result.model_configuration_id is not None
+            else None
+        ),
+        "model_reason_code": (
+            result.model_reason_code.value
+            if result.model_reason_code is not None
+            else None
+        ),
+        "model_risk": result.model_risk.value if result.model_risk is not None else None,
+        "model_review_required": result.model_review_required,
+        "policy_override_applied": result.policy_override_applied,
+        "policy_override_reason": (
+            result.policy_override_reason.value
+            if result.policy_override_reason is not None
+            else None
+        ),
         "provider": result.provider,
         "model": result.model,
         "tool_call_id_present": bool(result.tool_call_id),

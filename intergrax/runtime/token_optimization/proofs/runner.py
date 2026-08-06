@@ -34,7 +34,10 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationPipelineConfig,
     TokenOptimizationPipelineMode,
 )
-from intergrax.runtime.token_optimization.llm_router import TokenOptimizationLLMRouter
+from intergrax.runtime.token_optimization.llm_router import (
+    TokenOptimizationLLMRouter,
+    token_optimization_router_result_to_safe_dict,
+)
 from intergrax.runtime.token_optimization.llm_router_catalog import (
     TokenOptimizationRouterConfigurationCatalog,
     create_token_optimization_router_configuration_catalog,
@@ -48,23 +51,22 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterStatus,
     TokenOptimizationRouterTransport,
 )
-from intergrax.runtime.token_optimization.llm_router import (
-    token_optimization_router_result_to_safe_dict,
+from intergrax.runtime.token_optimization.pipeline import (
+    TokenOptimizationPipelineRunner,
 )
-from intergrax.runtime.token_optimization.pipeline import TokenOptimizationPipelineRunner
 from intergrax.runtime.token_optimization.proofs.contracts import (
+    SCHEMA_VERSION,
     ProofArtifactError,
     ProofArtifactRef,
     ProofCompositionError,
-    ProofExecutionError,
     ProofError,
+    ProofExecutionError,
     ProofMeasurement,
     ProofPipelineEvidence,
     ProofPrefixIdentityEvidence,
     ProofProtectedRegionEvidence,
     ProofProviderUnavailableError,
     ProofRouterEvidence,
-    SCHEMA_VERSION,
     UniversalProofArtifactManifest,
     UniversalProofCaseResult,
     UniversalProofEnvironmentSummary,
@@ -172,6 +174,40 @@ def _router_evidence(result) -> ProofRouterEvidence:
             if result.transport is TokenOptimizationRouterTransport.STRUCTURED_OUTPUT
             else False
             if result.transport is TokenOptimizationRouterTransport.NATIVE_TOOLS
+            else None
+        ),
+        model_configuration_id=(
+            result.model_configuration_id.value
+            if result.model_configuration_id is not None
+            else (
+                result.configuration_id.value
+                if result.configuration_id is not None
+                else None
+            )
+        ),
+        model_reason_code=(
+            result.model_reason_code.value
+            if result.model_reason_code is not None
+            else result.reason_code.value
+            if result.reason_code is not None
+            else None
+        ),
+        model_risk=(
+            result.model_risk.value
+            if result.model_risk is not None
+            else result.risk.value
+            if result.risk is not None
+            else None
+        ),
+        model_review_required=(
+            result.model_review_required
+            if result.model_review_required is not None
+            else result.review_required
+        ),
+        policy_override_applied=result.policy_override_applied,
+        policy_override_reason=(
+            result.policy_override_reason.value
+            if result.policy_override_reason is not None
             else None
         ),
     )
@@ -319,6 +355,12 @@ def _case_to_dict(result: UniversalProofCaseResult) -> dict[str, Any]:
             "structured_output_fallback_used": (
                 result.router_evidence.structured_output_fallback_used
             ),
+            "model_configuration_id": result.router_evidence.model_configuration_id,
+            "model_reason_code": result.router_evidence.model_reason_code,
+            "model_risk": result.router_evidence.model_risk,
+            "model_review_required": result.router_evidence.model_review_required,
+            "policy_override_applied": result.router_evidence.policy_override_applied,
+            "policy_override_reason": result.router_evidence.policy_override_reason,
         },
         "pipeline_evidence": {
             "completed": result.pipeline_evidence.completed,

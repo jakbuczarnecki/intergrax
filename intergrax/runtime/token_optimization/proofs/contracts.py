@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
+import math
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
-import math
 from pathlib import Path
-import re
 
 from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationRequest,
@@ -177,6 +177,7 @@ class UniversalProofEnvironmentSummary:
 
 _SAFE_EVIDENCE_STRING_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_POLICY_OVERRIDE_REASONS = frozenset({"security_warning_requires_review"})
 
 
 def _validate_evidence_string(value: str | None, field_name: str) -> None:
@@ -198,7 +199,7 @@ def _validate_count(value: int, field_name: str) -> None:
 
 @dataclass(frozen=True, slots=True)
 class ProofRouterEvidence:
-    """Redaction-safe snapshot of the typed router decision."""
+    """Redaction-safe model decision plus final policy outcome."""
 
     status: str | None = None
     configuration_id: str | None = None
@@ -208,6 +209,12 @@ class ProofRouterEvidence:
     risk: str | None = None
     transport: str | None = None
     structured_output_fallback_used: bool | None = None
+    model_configuration_id: str | None = None
+    model_reason_code: str | None = None
+    model_risk: str | None = None
+    model_review_required: bool | None = None
+    policy_override_applied: bool = False
+    policy_override_reason: str | None = None
 
     def __post_init__(self) -> None:
         for field_name in (
@@ -224,6 +231,26 @@ class ProofRouterEvidence:
             type(self.structured_output_fallback_used) is not bool
         ):
             raise ValueError("structured_output_fallback_used must be bool or None")
+        for field_name in (
+            "model_configuration_id",
+            "model_reason_code",
+            "model_risk",
+        ):
+            _validate_evidence_string(getattr(self, field_name), field_name)
+        if self.model_review_required is not None and type(
+            self.model_review_required
+        ) is not bool:
+            raise ValueError("model_review_required must be bool or None")
+        if type(self.policy_override_applied) is not bool:
+            raise ValueError("policy_override_applied must be bool")
+        if self.policy_override_reason is not None and (
+            self.policy_override_reason not in _POLICY_OVERRIDE_REASONS
+        ):
+            raise ValueError("unknown policy_override_reason")
+        if self.policy_override_applied and self.policy_override_reason is None:
+            raise ValueError("policy overrides require a reason")
+        if not self.policy_override_applied and self.policy_override_reason is not None:
+            raise ValueError("inactive policy overrides cannot have a reason")
         if self.confidence is not None:
             if isinstance(self.confidence, bool) or not math.isfinite(self.confidence):
                 raise ValueError("confidence must be finite")

@@ -6,6 +6,10 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.token_optimization.contracts import (
+    ProtectedRegion,
+    ProtectedRegionKind,
+)
 from intergrax.runtime.token_optimization.proofs.contracts import (
     ProofArtifactRef,
     ProofMeasurement,
@@ -201,6 +205,14 @@ def _offline_config() -> EvaluationConfiguration:
             "ROUTER_REVIEW_REQUIREMENT": EvaluationGateRequirement.NOT_APPLICABLE,
             "ROUTER_CONFIDENCE": EvaluationGateRequirement.NOT_APPLICABLE,
             "ROUTER_TRANSPORT": EvaluationGateRequirement.NOT_APPLICABLE,
+            "MODEL_ROUTER_CONFIGURATION": EvaluationGateRequirement.NOT_APPLICABLE,
+            "MODEL_ROUTER_REASON": EvaluationGateRequirement.NOT_APPLICABLE,
+            "MODEL_ROUTER_RISK": EvaluationGateRequirement.NOT_APPLICABLE,
+            "MODEL_ROUTER_REVIEW_REQUIREMENT": (
+                EvaluationGateRequirement.NOT_APPLICABLE
+            ),
+            "FINAL_ROUTER_STATUS": EvaluationGateRequirement.NOT_APPLICABLE,
+            "FINAL_POLICY_ENFORCEMENT": EvaluationGateRequirement.NOT_APPLICABLE,
             "PIPELINE_COMPLETION": EvaluationGateRequirement.NOT_APPLICABLE,
             "PIPELINE_REQUIRED_LAYERS": EvaluationGateRequirement.NOT_APPLICABLE,
             "PIPELINE_FORBIDDEN_LAYERS": EvaluationGateRequirement.NOT_APPLICABLE,
@@ -302,6 +314,69 @@ def _gate(evaluation, gate_id: str):
         for gate in case.gates
         if gate.gate_id == gate_id
     )
+
+
+def test_security_override_separates_model_failure_from_runtime_safety() -> None:
+    run, corpus, config = _fixture()
+    model_case = replace(
+        run.cases[0],
+        status="failed",
+        router_status="review_required",
+        router_reason="protected_regions_require_review",
+        pipeline_status="not_started",
+        applied_layer_ids=(),
+        router_evidence=replace(
+            run.cases[0].router_evidence,
+            status="review_required",
+            configuration_id="exact_only",
+            reason_code="protected_or_high_risk",
+            risk="high",
+            review_required=True,
+            model_configuration_id="exact_only",
+            model_reason_code="clean_no_op",
+            model_risk="low",
+            model_review_required=False,
+            policy_override_applied=True,
+            policy_override_reason="security_warning_requires_review",
+        ),
+        pipeline_evidence=ProofPipelineEvidence(),
+    )
+    security_case = replace(
+        corpus.cases[0],
+        protected_regions=(
+            ProtectedRegion(
+                kind=ProtectedRegionKind.SECURITY_WARNING,
+                value="SYNTHETIC_SECURITY_WARNING",
+            ),
+        ),
+        router=replace(
+            corpus.cases[0].router,
+            allowed_statuses=frozenset({"review_required"}),
+            allowed_configuration_ids=frozenset({"exact_only"}),
+            allowed_reason_codes=frozenset({"protected_or_high_risk"}),
+            review_required=True,
+            allowed_risk=frozenset({"high"}),
+        ),
+        pipeline=replace(
+            corpus.cases[0].pipeline,
+            expected_execution=PipelineExecutionExpectation.NOT_STARTED,
+            required_layer_ids=frozenset(),
+            allowed_layer_ids=frozenset(),
+        ),
+    )
+    evaluation = UniversalProofEvaluator().evaluate(
+        replace(run, cases=(model_case,), completed_count=0, failed_count=1),
+        replace(corpus, cases=(security_case,)),
+        config,
+        evaluation_id="security-override-separation",
+    )
+
+    assert _gate(evaluation, "MODEL_ROUTER_RISK").status is GateStatus.FAIL
+    assert (
+        _gate(evaluation, "MODEL_ROUTER_REVIEW_REQUIREMENT").status
+        is GateStatus.FAIL
+    )
+    assert _gate(evaluation, "FINAL_POLICY_ENFORCEMENT").status is GateStatus.PASS
 
 
 def _changed_prefix_fixture() -> tuple[

@@ -6,24 +6,28 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
+from unittest.mock import patch
 
 import pytest
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.registry.catalog_capabilities import (
-    CatalogCapabilityAdapter,
-    enrich_adapter_with_catalog_capabilities,
-)
 from intergrax.llm_adapters.providers.ollama_capabilities import (
     OllamaCapabilityResolutionSource,
     OllamaModelCapabilities,
+)
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    CatalogCapabilityAdapter,
+    enrich_adapter_with_catalog_capabilities,
 )
 from intergrax.runtime.token_optimization.contracts import (
     PromptCacheInvalidationReason,
@@ -41,8 +45,6 @@ from intergrax.runtime.token_optimization.llm_router import (
     TokenOptimizationLLMRouter,
     token_optimization_router_result_to_safe_dict,
 )
-from intergrax.runtime.token_optimization.prompt_assembly import CacheStablePromptIntegrityError
-from unittest.mock import patch
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationLLMRouterPolicy,
     TokenOptimizationLLMRouterRequest,
@@ -53,6 +55,9 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationRouterStatus,
     TokenOptimizationRouterToolInput,
     TokenOptimizationRouterTransport,
+)
+from intergrax.runtime.token_optimization.prompt_assembly import (
+    CacheStablePromptIntegrityError,
 )
 from tests.fixtures.token_optimization.llm_router_corpus import LLM_ROUTER_CORPUS
 
@@ -432,6 +437,27 @@ def test_protected_lossless_can_route_without_review() -> None:
     assert result.review_required is False
 
 
+def test_protected_lossless_preserves_explicit_model_review_and_risk() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+            review_required=True,
+            risk=TokenOptimizationRouterRisk.MEDIUM,
+        )
+    )
+    protected = ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH")
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert result.review_required is True
+    assert result.risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.model_review_required is True
+    assert result.model_risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.policy_override_applied is False
+
+
 @pytest.mark.parametrize(
     ("configuration_id", "source_type", "expected_layer_ids"),
     [
@@ -519,6 +545,84 @@ def test_no_optimization_safe_noop() -> None:
     assert result.status is TokenOptimizationRouterStatus.NO_OPTIMIZATION
     assert result.executed is False
     assert result.pipeline_config is None
+
+
+def test_measure_only_no_optimization_decision_is_not_rewritten() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            reason_code=TokenOptimizationRouterReasonCode.CLEAN_NO_OP,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            policy=TokenOptimizationPolicy(
+                enabled=True,
+                profile=TokenOptimizationProfile.MEASURE_ONLY,
+                allow_lossy=True,
+            )
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.NO_OPTIMIZATION
+    assert result.configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    assert result.reason_code is TokenOptimizationRouterReasonCode.CLEAN_NO_OP
+    assert result.model_configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    assert result.pipeline_config is None
+
+
+def test_security_warning_applies_typed_fail_closed_override() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION)
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.model_risk is TokenOptimizationRouterRisk.LOW
+    assert result.model_review_required is False
+    assert result.policy_override_applied is True
+    assert (
+        result.policy_override_reason.value
+        == "security_warning_requires_review"
+    )
+    assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
+    assert (
+        token_optimization_router_result_to_safe_dict(result)["raw_content_included"]
+        is False
+    )
+
+
+def test_security_warning_high_review_decision_needs_no_override() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            review_required=True,
+            risk=TokenOptimizationRouterRisk.HIGH,
+        )
+    )
+    protected = ProtectedRegion(
+        kind=ProtectedRegionKind.SECURITY_WARNING,
+        value="SYNTHETIC_SECURITY_WARNING",
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.model_risk is TokenOptimizationRouterRisk.HIGH
+    assert result.model_review_required is True
+    assert result.policy_override_applied is False
+    assert result.policy_override_reason is None
+    assert result.risk is TokenOptimizationRouterRisk.HIGH
+    assert result.review_required is True
+    assert result.executed is False
 
 
 def test_valid_lossless_decision_compiles() -> None:
@@ -910,7 +1014,9 @@ def test_summary_transport_selection(
     structured_output_supported: bool,
     expected: str,
 ) -> None:
-    from tests.e2e.token_optimization.test_llm_router_ollama_live import _summary_transport
+    from tests.e2e.token_optimization.test_llm_router_ollama_live import (
+        _summary_transport,
+    )
 
     assert (
         _summary_transport(
@@ -951,7 +1057,9 @@ def test_safe_report_preserves_canonical_executed_order() -> None:
 
 
 def test_safe_report_includes_required_failure_layer_id() -> None:
-    from intergrax.runtime.token_optimization.contracts import TokenOptimizationPipelineResult
+    from intergrax.runtime.token_optimization.contracts import (
+        TokenOptimizationPipelineResult,
+    )
     from intergrax.runtime.token_optimization.llm_router_contracts import (
         TokenOptimizationLLMRouterResult,
     )

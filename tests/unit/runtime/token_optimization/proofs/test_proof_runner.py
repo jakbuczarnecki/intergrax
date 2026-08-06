@@ -26,6 +26,7 @@ from intergrax.runtime.token_optimization.contracts import (
 )
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationLLMRouterResult,
+    TokenOptimizationPolicyOverrideReason,
     TokenOptimizationRouterConfigurationId,
     TokenOptimizationRouterReason,
     TokenOptimizationRouterReasonCode,
@@ -472,6 +473,12 @@ def _controlled_router_result(
     confidence: float | None = 1.0,
     prompt_assembly_report=None,
     reason=None,
+    model_configuration_id=None,
+    model_reason_code=None,
+    model_risk=None,
+    model_review_required=None,
+    policy_override_applied=False,
+    policy_override_reason=None,
 ) -> TokenOptimizationLLMRouterResult:
     return TokenOptimizationLLMRouterResult(
         request_id="controlled-proof-router",
@@ -490,6 +497,16 @@ def _controlled_router_result(
         pipeline_result=None,
         executed=False,
         prompt_assembly_report=prompt_assembly_report,
+        model_configuration_id=model_configuration_id,
+        model_reason_code=model_reason_code,
+        model_risk=model_risk,
+        model_review_required=model_review_required,
+        policy_override_applied=policy_override_applied,
+        policy_override_reason=(
+            TokenOptimizationPolicyOverrideReason(policy_override_reason)
+            if policy_override_reason is not None
+            else None
+        ),
     )
 
 
@@ -650,6 +667,38 @@ def test_runner_preserves_router_evidence_boundaries_and_review(
         assert result.cases[0].pipeline_evidence.completed is None
     else:
         assert result.cases[0].pipeline_evidence.completed is True
+
+
+def test_runner_preserves_model_decision_and_policy_override_separately(
+    tmp_path: Path,
+) -> None:
+    result = _run_controlled_case(
+        tmp_path,
+        router_result=_controlled_router_result(
+            status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
+            configuration_id=TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
+            risk=TokenOptimizationRouterRisk.HIGH,
+            review_required=True,
+            reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
+            model_configuration_id=TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION,
+            model_reason_code=TokenOptimizationRouterReasonCode.CLEAN_NO_OP,
+            model_risk=TokenOptimizationRouterRisk.LOW,
+            model_review_required=False,
+            policy_override_applied=True,
+            policy_override_reason="security_warning_requires_review",
+        ),
+    )
+
+    evidence = result.cases[0].router_evidence
+    assert evidence.model_reason_code == "clean_no_op"
+    assert evidence.model_risk == "low"
+    assert evidence.model_review_required is False
+    assert evidence.risk == "high"
+    assert evidence.review_required is True
+    assert evidence.policy_override_applied is True
+    assert evidence.policy_override_reason == "security_warning_requires_review"
+    assert result.cases[0].pipeline_status == "not_started"
 
 
 @pytest.mark.parametrize(

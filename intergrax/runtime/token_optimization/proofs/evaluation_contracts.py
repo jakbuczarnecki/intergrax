@@ -91,6 +91,12 @@ EVALUATION_GATE_IDS = (
     "ROUTER_CONFIDENCE",
     "ROUTER_TRANSPORT",
     "ROUTER_EVIDENCE_INTEGRITY",
+    "MODEL_ROUTER_CONFIGURATION",
+    "MODEL_ROUTER_REASON",
+    "MODEL_ROUTER_RISK",
+    "MODEL_ROUTER_REVIEW_REQUIREMENT",
+    "FINAL_ROUTER_STATUS",
+    "FINAL_POLICY_ENFORCEMENT",
     "PIPELINE_COMPLETION",
     "PIPELINE_REQUIRED_LAYERS",
     "PIPELINE_FORBIDDEN_LAYERS",
@@ -974,7 +980,8 @@ def _measurement(value: Mapping[str, Any]) -> ProofMeasurement:
 
 def _evidence(value: Mapping[str, Any], kind: str):
     if kind == "router":
-        allowed = {
+        legacy_allowed = frozenset(
+            {
             "status",
             "configuration_id",
             "reason_code",
@@ -983,9 +990,30 @@ def _evidence(value: Mapping[str, Any], kind: str):
             "risk",
             "transport",
             "structured_output_fallback_used",
-        }
-        if set(value) != allowed:
+            }
+        )
+        added = frozenset(
+            {
+            "model_configuration_id",
+            "model_reason_code",
+            "model_risk",
+            "model_review_required",
+            "policy_override_applied",
+            "policy_override_reason",
+            }
+        )
+        if frozenset(value) not in {legacy_allowed, legacy_allowed | added}:
             raise ValueError("invalid router evidence fields")
+        if frozenset(value) == legacy_allowed:
+            value = {
+                **value,
+                "model_configuration_id": None,
+                "model_reason_code": None,
+                "model_risk": None,
+                "model_review_required": None,
+                "policy_override_applied": False,
+                "policy_override_reason": None,
+            }
         return ProofRouterEvidence(**value)
     if kind == "pipeline":
         return ProofPipelineEvidence(**value)
