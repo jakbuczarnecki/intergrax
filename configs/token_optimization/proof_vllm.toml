@@ -218,8 +218,7 @@ content = """def verify_artifact(path: str, expected_sha256: str) -> bool:
     return actual_sha256 == expected_sha256
 
 ARTIFACT_PATH = "synthetic/artifacts/fixed-run.json"
-ARTIFACT_MARKER = "sha256:synthetic-proof"
-"""
+ARTIFACT_MARKER = "sha256:synthetic-proof"""
 tags = ["synthetic", "code-heavy"]
 
 [cases.policy]
