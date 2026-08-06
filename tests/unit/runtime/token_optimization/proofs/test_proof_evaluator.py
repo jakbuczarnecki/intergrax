@@ -26,6 +26,8 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     CorpusCase,
     EvaluationConfiguration,
     EvaluationConfigurationError,
+    EvaluationGateRequirement,
+    EvaluationProfile,
     GateStatus,
     MeasurementExpectation,
     MeasurementRequirement,
@@ -35,6 +37,7 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     ProtectedRegionExpectation,
     ProviderCacheEvidence,
     RouterExpectation,
+    load_evaluation_config,
 )
 from intergrax.runtime.token_optimization.proofs.evaluator import (
     EVALUATION_GATE_IDS,
@@ -180,6 +183,47 @@ def _cache() -> ProviderCacheEvidence:
         cache_attribution=CacheAttribution.REUSE_CONFIRMED,
         role=CacheEvidenceRole.WARM_EXPECTED,
         reason_code="PROVIDER_REPORTED_REUSE",
+    )
+
+
+def _offline_config() -> EvaluationConfiguration:
+    requirements = {
+        gate_id: EvaluationGateRequirement.REQUIRED
+        for gate_id in EVALUATION_GATE_IDS
+    }
+    requirements.update(
+        {
+            "ROUTER_STATUS": EvaluationGateRequirement.NOT_APPLICABLE,
+            "ROUTER_CONFIGURATION": EvaluationGateRequirement.NOT_APPLICABLE,
+            "ROUTER_REASON": EvaluationGateRequirement.NOT_APPLICABLE,
+            "ROUTER_REVIEW_REQUIREMENT": EvaluationGateRequirement.NOT_APPLICABLE,
+            "ROUTER_CONFIDENCE": EvaluationGateRequirement.NOT_APPLICABLE,
+            "ROUTER_TRANSPORT": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_COMPLETION": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_REQUIRED_LAYERS": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_FORBIDDEN_LAYERS": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_FALLBACK": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_VALIDATION": EvaluationGateRequirement.NOT_APPLICABLE,
+            "PIPELINE_REQUIRED_FAILURE": EvaluationGateRequirement.NOT_APPLICABLE,
+            "BASELINE_MEASUREMENT": EvaluationGateRequirement.OPTIONAL,
+            "OPTIMIZED_MEASUREMENT": EvaluationGateRequirement.OPTIONAL,
+            "MEASUREMENT_ORDERING": EvaluationGateRequirement.OPTIONAL,
+            "PREFIX_CHANGED_CONTROL": EvaluationGateRequirement.NOT_APPLICABLE,
+            "TOOL_ENVELOPE_IDENTITY": EvaluationGateRequirement.NOT_APPLICABLE,
+            "WARM_CACHE_REUSE": EvaluationGateRequirement.UNAVAILABLE_ALLOWED,
+            "CHANGED_PREFIX_NEGATIVE_CONTROL": (
+                EvaluationGateRequirement.UNAVAILABLE_ALLOWED
+            ),
+        }
+    )
+    return EvaluationConfiguration(
+        schema_version="token-optimization-proof-evaluation.v1",
+        evaluation_version="token-10g.v1",
+        required_gate_ids=(),
+        unavailable_allowed_gate_ids=frozenset(),
+        profile=EvaluationProfile.OFFLINE_COMPOSITION,
+        gate_requirements=requirements,
+        configured_offline_decision="exact_only",
     )
 
 
@@ -385,6 +429,59 @@ def test_all_required_gates_pass_from_recorded_evidence() -> None:
         for gate in case.gates
         if gate.required and gate.status is GateStatus.FAIL
     ]
+
+
+def test_offline_profile_separates_composition_from_behavior() -> None:
+    run, corpus, _ = _fixture()
+    run = replace(
+        run,
+        cases=(
+            replace(
+                run.cases[0],
+                router_evidence=replace(
+                    run.cases[0].router_evidence,
+                    transport="structured_output",
+                    structured_output_fallback_used=True,
+                ),
+            ),
+        ),
+    )
+    evaluation = UniversalProofEvaluator().evaluate(
+        run,
+        corpus,
+        _offline_config(),
+        evaluation_id="offline-composition",
+    )
+
+    assert evaluation.profile is EvaluationProfile.OFFLINE_COMPOSITION
+    assert evaluation.success is True
+    assert not [
+        gate
+        for case in evaluation.cases
+        for gate in case.gates
+        if gate.required and gate.status is GateStatus.FAIL
+    ]
+    assert any(
+        gate.gate_id == "ROUTER_CONFIGURATION"
+        and gate.status is GateStatus.NOT_APPLICABLE
+        and not gate.required
+        for case in evaluation.cases
+        for gate in case.gates
+    )
+    assert any(
+        gate.gate_id == "ROUTER_EVIDENCE_INTEGRITY"
+        and gate.status is GateStatus.PASS
+        and gate.required
+        for case in evaluation.cases
+        for gate in case.gates
+    )
+    assert any(
+        gate.gate_id == "WARM_CACHE_REUSE"
+        and gate.status is GateStatus.UNAVAILABLE
+        and gate.required
+        for case in evaluation.cases
+        for gate in case.gates
+    )
 
 
 def test_changed_prefix_cache_evidence_passes_from_typed_fixtures() -> None:
@@ -602,6 +699,32 @@ def test_unknown_gate_is_a_configuration_error() -> None:
                 unavailable_allowed_gate_ids=frozenset(),
             ),
         )
+
+
+@pytest.mark.parametrize(
+    ("profile", "expected_reason"),
+    [
+        ("unknown", "UNKNOWN_EVALUATION_PROFILE"),
+    ],
+)
+def test_unknown_profile_is_a_configuration_error(
+    tmp_path: Path, profile: str, expected_reason: str
+) -> None:
+    config_path = tmp_path / "evaluation.toml"
+    config_path.write_text(
+        "\n".join(
+            (
+                'schema_version = "token-optimization-proof-evaluation.v1"',
+                'evaluation_version = "token-10g.v1"',
+                f'profile = "{profile}"',
+                "required_gate_ids = []",
+                "unavailable_allowed_gate_ids = []",
+            )
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(EvaluationConfigurationError, match=expected_reason):
+        load_evaluation_config(config_path)
 
 
 def test_structural_guard_keeps_evaluator_evaluation_only() -> None:

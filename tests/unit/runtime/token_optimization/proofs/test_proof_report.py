@@ -9,6 +9,7 @@ import pytest
 from intergrax.runtime.token_optimization.proofs.contracts import ProofArtifactError
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     CaseEvaluation,
+    EvaluationProfile,
     GateResult,
     GateStatus,
     UniversalProofEvaluation,
@@ -52,6 +53,7 @@ def _evaluation() -> UniversalProofEvaluation:
             for status in GateStatus
         },
         success=True,
+        profile=EvaluationProfile.OFFLINE_COMPOSITION,
     )
 
 
@@ -60,9 +62,10 @@ def test_markdown_is_escaped_and_deterministic() -> None:
     assert escape_markdown("a`b") == "a\\`b"
     assert "<b>" not in escape_markdown("<b>")
     assert "\\n" in escape_markdown("a\n# b")
-    assert render_evaluation_markdown(_evaluation()) == render_evaluation_markdown(
-        _evaluation()
-    )
+    rendered = render_evaluation_markdown(_evaluation())
+    assert rendered == render_evaluation_markdown(_evaluation())
+    assert "offline_composition" in rendered
+    assert "does not establish behavior-specific LLM routing quality" in rendered
 
 
 def test_artifacts_are_canonical_hashed_and_duplicate_safe(tmp_path: Path) -> None:

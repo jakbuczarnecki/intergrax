@@ -13,6 +13,7 @@ from pathlib import Path
 
 from intergrax.runtime.token_optimization.proofs.contracts import ProofArtifactError
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
+    EvaluationProfile,
     GateStatus,
     UniversalProofEvaluation,
 )
@@ -36,6 +37,24 @@ def escape_markdown(value: object) -> str:
 
 def render_evaluation_markdown(evaluation: UniversalProofEvaluation) -> str:
     counts = evaluation.status_counts
+    all_gates = [gate for case in evaluation.cases for gate in case.gates]
+    required_ids = sorted({gate.gate_id for gate in all_gates if gate.required})
+    gate_ids = {
+        status: sorted(
+            {gate.gate_id for gate in all_gates if gate.status is status}
+        )
+        for status in GateStatus
+    }
+    if evaluation.profile is EvaluationProfile.OFFLINE_COMPOSITION:
+        ownership = (
+            "Deterministic offline adapter validates composition and evidence "
+            "plumbing; it does not establish behavior-specific LLM routing quality."
+        )
+    else:
+        ownership = (
+            "Behavioral proof owns typed decision, pipeline, protected-region, "
+            "prefix, tool identity, and cache expectations from evaluate-only/live evidence."
+        )
     lines = [
         "# Universal Token Optimization Proof Evaluation",
         "",
@@ -46,6 +65,7 @@ def render_evaluation_markdown(evaluation: UniversalProofEvaluation) -> str:
         f"- Run ID: `{escape_markdown(evaluation.run_id)}`",
         f"- Corpus version: `{escape_markdown(evaluation.corpus_version)}`",
         f"- Evaluation version: `{escape_markdown(evaluation.evaluation_version)}`",
+        f"- Evaluation profile: `{escape_markdown(evaluation.profile.value)}`",
         f"- Run mode: `{escape_markdown(evaluation.run_mode)}`",
         f"- Provider/model: `{escape_markdown(evaluation.provider)}` / `{escape_markdown(evaluation.model)}`",
         f"- Case count: `{len(evaluation.cases)}`",
@@ -56,6 +76,10 @@ def render_evaluation_markdown(evaluation: UniversalProofEvaluation) -> str:
             )
         ),
         f"- Overall hard-gate status: `{'PASS' if evaluation.success else 'FAIL'}`",
+        f"- Proof ownership: {escape_markdown(ownership)}",
+        f"- Required gates: `{escape_markdown(', '.join(required_ids) or 'none')}`",
+        f"- Not applicable gates: `{escape_markdown(', '.join(gate_ids[GateStatus.NOT_APPLICABLE]) or 'none')}`",
+        f"- Unavailable gates: `{escape_markdown(', '.join(gate_ids[GateStatus.UNAVAILABLE]) or 'none')}`",
         "- Limitations: live provider proof, numeric savings claims and public promotion are outside TOKEN-10G.",
         "- Cache limitation: warm reuse and changed-prefix controls require typed provider evidence.",
         "",

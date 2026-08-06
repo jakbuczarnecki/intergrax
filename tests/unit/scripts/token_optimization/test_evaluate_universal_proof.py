@@ -39,8 +39,37 @@ def test_evaluate_only_is_network_free_and_prints_safe_summary(
     assert exit_code == cli.EXIT_OK
     output = capsys.readouterr().out
     assert "evaluation_id=cli-fixed" in output
+    assert "profile=behavioral" in output
     assert "success=true" in output
     assert "synthetic" not in output.lower()
+
+
+def test_offline_rejects_behavioral_evaluation_profile(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    run, corpus, evaluation_config = _fixture()
+    monkeypatch.setattr(
+        cli,
+        "load_universal_token_optimization_proof_config",
+        lambda path: SimpleNamespace(),
+    )
+    monkeypatch.setattr(cli, "load_proof_corpus", lambda path: corpus)
+    monkeypatch.setattr(cli, "load_evaluation_config", lambda path: evaluation_config)
+
+    exit_code = cli.main(
+        [
+            "--proof-config",
+            "synthetic-proof.toml",
+            "--evaluation-config",
+            "synthetic-evaluation.toml",
+            "--output-dir",
+            str(tmp_path),
+            "--offline",
+        ]
+    )
+
+    assert exit_code == cli.EXIT_INVALID_CONFIG
+    assert "OFFLINE_REQUIRES_OFFLINE_COMPOSITION_PROFILE" in capsys.readouterr().err
 
 
 def test_cli_returns_required_evidence_exit_without_raw_output(

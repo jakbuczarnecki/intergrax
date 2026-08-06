@@ -65,6 +65,52 @@ class MeasurementRequirement(StrEnum):
     NOT_APPLICABLE = "not_applicable"
 
 
+class EvaluationProfile(StrEnum):
+    OFFLINE_COMPOSITION = "offline_composition"
+    BEHAVIORAL = "behavioral"
+
+
+class EvaluationGateRequirement(StrEnum):
+    REQUIRED = "required"
+    OPTIONAL = "optional"
+    NOT_APPLICABLE = "not_applicable"
+    UNAVAILABLE_ALLOWED = "unavailable_allowed"
+
+
+EVALUATION_GATE_IDS = (
+    "ROUTER_STATUS",
+    "ROUTER_CONFIGURATION",
+    "ROUTER_REASON",
+    "ROUTER_REVIEW_REQUIREMENT",
+    "ROUTER_CONFIDENCE",
+    "ROUTER_TRANSPORT",
+    "ROUTER_EVIDENCE_INTEGRITY",
+    "PIPELINE_COMPLETION",
+    "PIPELINE_REQUIRED_LAYERS",
+    "PIPELINE_FORBIDDEN_LAYERS",
+    "PIPELINE_FALLBACK",
+    "PIPELINE_VALIDATION",
+    "PIPELINE_REQUIRED_FAILURE",
+    "PIPELINE_EVIDENCE_INTEGRITY",
+    "PROTECTED_REGION_COUNT",
+    "PROTECTED_REGION_PRESERVATION",
+    "PROTECTED_REGION_VALIDATION",
+    "BASELINE_MEASUREMENT",
+    "OPTIMIZED_MEASUREMENT",
+    "MEASUREMENT_ORDERING",
+    "PREFIX_IDENTITY_AVAILABLE",
+    "PREFIX_STABILITY",
+    "PREFIX_CHANGED_CONTROL",
+    "TOOL_ENVELOPE_IDENTITY",
+    "WARM_CACHE_REUSE",
+    "CHANGED_PREFIX_NEGATIVE_CONTROL",
+    "RAW_CONTENT_ABSENT",
+    "SECRET_ABSENT",
+    "MANIFEST_INTEGRITY",
+)
+KNOWN_EVALUATION_GATE_IDS = frozenset(EVALUATION_GATE_IDS)
+
+
 class CacheExpectationMode(StrEnum):
     NOT_APPLICABLE = "not_applicable"
     UNAVAILABLE_ALLOWED = "unavailable_allowed"
@@ -240,15 +286,41 @@ class EvaluationConfiguration:
     evaluation_version: str
     required_gate_ids: tuple[str, ...]
     unavailable_allowed_gate_ids: frozenset[str]
+    profile: EvaluationProfile = EvaluationProfile.BEHAVIORAL
+    gate_requirements: Mapping[str, EvaluationGateRequirement] | None = None
+    configured_offline_decision: str | None = None
 
     def __post_init__(self) -> None:
         if self.schema_version != EVALUATION_SCHEMA_VERSION:
             raise ValueError("unsupported evaluation schema version")
         if len(self.required_gate_ids) != len(set(self.required_gate_ids)):
             raise ValueError("duplicate gate IDs are not allowed")
-        unknown = set(self.unavailable_allowed_gate_ids) - set(self.required_gate_ids)
+        unknown = (
+            set(self.unavailable_allowed_gate_ids)
+            | set(self.gate_requirements or {})
+        ) - KNOWN_EVALUATION_GATE_IDS
         if unknown:
-            raise ValueError("unavailable allowance references unknown gate")
+            raise ValueError("unknown evaluation gate")
+        if not isinstance(self.profile, EvaluationProfile):
+            raise ValueError("unsupported evaluation profile")
+        if self.configured_offline_decision is not None:
+            _safe_id(self.configured_offline_decision, "configured_offline_decision")
+        if self.gate_requirements is not None:
+            for gate_id, requirement in self.gate_requirements.items():
+                _safe_id(gate_id, "gate_id")
+                if not isinstance(requirement, EvaluationGateRequirement):
+                    raise ValueError("invalid gate requirement")
+
+    def requirement_for(self, gate_id: str) -> EvaluationGateRequirement:
+        if gate_id not in KNOWN_EVALUATION_GATE_IDS:
+            raise EvaluationConfigurationError("UNKNOWN_GATE_ID")
+        if self.gate_requirements and gate_id in self.gate_requirements:
+            return self.gate_requirements[gate_id]
+        if gate_id in self.unavailable_allowed_gate_ids:
+            return EvaluationGateRequirement.UNAVAILABLE_ALLOWED
+        if gate_id in self.required_gate_ids:
+            return EvaluationGateRequirement.REQUIRED
+        return EvaluationGateRequirement.OPTIONAL
 
 
 @dataclass(frozen=True, slots=True)
@@ -320,6 +392,7 @@ class UniversalProofEvaluation:
     status_counts: Mapping[str, int]
     success: bool
     artifact_refs: tuple[str, ...] = ()
+    profile: EvaluationProfile = EvaluationProfile.BEHAVIORAL
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -329,6 +402,7 @@ class UniversalProofEvaluation:
             "run_id": self.run_id,
             "corpus_version": self.corpus_version,
             "evaluation_version": self.evaluation_version,
+            "profile": self.profile.value,
             "run_mode": self.run_mode,
             "provider": self.provider,
             "model": self.model,
@@ -391,24 +465,86 @@ def load_evaluation_config(path: str | Path) -> EvaluationConfiguration:
             {
                 "schema_version",
                 "evaluation_version",
+                "profile",
+                "configured_offline_decision",
                 "required_gate_ids",
                 "unavailable_allowed_gate_ids",
+                "gate_requirements",
             }
         ),
         "evaluation",
     )
     try:
+        try:
+            profile = EvaluationProfile(
+                data.get("profile", EvaluationProfile.BEHAVIORAL.value)
+            )
+        except ValueError as exc:
+            raise EvaluationConfigurationError("UNKNOWN_EVALUATION_PROFILE") from exc
+        raw_requirements = data.get("gate_requirements")
+        if raw_requirements is not None and not isinstance(raw_requirements, dict):
+            raise EvaluationConfigurationError("INVALID_GATE_REQUIREMENTS")
+        gate_requirements = None
+        if raw_requirements is not None:
+            gate_requirements = {}
+            for gate_id, raw_requirement in raw_requirements.items():
+                if gate_id not in KNOWN_EVALUATION_GATE_IDS:
+                    raise EvaluationConfigurationError("UNKNOWN_GATE_ID")
+                try:
+                    gate_requirements[
+                        _safe_id(gate_id, "gate_id")
+                    ] = EvaluationGateRequirement(raw_requirement)
+                except (TypeError, ValueError) as exc:
+                    raise EvaluationConfigurationError(
+                        "INVALID_GATE_REQUIREMENT"
+                    ) from exc
+        required_gate_ids = tuple(
+            _safe_id(value, "gate_id")
+            for value in data.get(
+                "required_gate_ids",
+                [
+                    gate_id
+                    for gate_id, requirement in (gate_requirements or {}).items()
+                    if requirement is EvaluationGateRequirement.REQUIRED
+                ],
+            )
+        )
+        if set(required_gate_ids) - KNOWN_EVALUATION_GATE_IDS:
+            raise EvaluationConfigurationError("UNKNOWN_GATE_ID")
+        unavailable_allowed_gate_ids = _string_set(
+            data.get(
+                "unavailable_allowed_gate_ids",
+                [
+                    gate_id
+                    for gate_id, requirement in (gate_requirements or {}).items()
+                    if requirement is EvaluationGateRequirement.UNAVAILABLE_ALLOWED
+                ],
+            ),
+            "unavailable_allowed_gate_ids",
+        )
         result = EvaluationConfiguration(
             schema_version=data["schema_version"],
             evaluation_version=_safe_id(
                 data["evaluation_version"], "evaluation_version"
             ),
-            required_gate_ids=tuple(
-                _safe_id(value, "gate_id") for value in data["required_gate_ids"]
+            required_gate_ids=required_gate_ids,
+            unavailable_allowed_gate_ids=unavailable_allowed_gate_ids,
+            profile=profile,
+            gate_requirements=(
+                {
+                    key: value
+                    for key, value in (gate_requirements or {}).items()
+                }
+                if gate_requirements is not None
+                else None
             ),
-            unavailable_allowed_gate_ids=_string_set(
-                data.get("unavailable_allowed_gate_ids", []),
-                "unavailable_allowed_gate_ids",
+            configured_offline_decision=(
+                _safe_id(
+                    data["configured_offline_decision"],
+                    "configured_offline_decision",
+                )
+                if data.get("configured_offline_decision") is not None
+                else None
             ),
         )
     except (KeyError, TypeError, ValueError) as exc:
@@ -973,6 +1109,9 @@ __all__ = [
     "CorpusCase",
     "EvaluationConfiguration",
     "EvaluationConfigurationError",
+    "EvaluationGateRequirement",
+    "EvaluationProfile",
+    "EVALUATION_GATE_IDS",
     "GateResult",
     "GateStatus",
     "MeasurementExpectation",
@@ -984,6 +1123,7 @@ __all__ = [
     "ProviderCacheEvidence",
     "RouterExpectation",
     "UniversalProofEvaluation",
+    "KNOWN_EVALUATION_GATE_IDS",
     "expand_proof_config_with_corpus",
     "load_cache_evidence",
     "load_evaluation_config",

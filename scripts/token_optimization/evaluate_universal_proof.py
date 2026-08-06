@@ -23,6 +23,7 @@ from intergrax.runtime.token_optimization.proofs.corpus import (
 )
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     EvaluationConfigurationError,
+    EvaluationProfile,
     GateStatus,
     load_cache_evidence,
     load_evaluation_config,
@@ -64,6 +65,7 @@ def _print_summary(evaluation) -> None:
     print(f"evaluation_id={evaluation.evaluation_id}")
     print(f"proof_id={evaluation.proof_id}")
     print(f"run_id={evaluation.run_id}")
+    print(f"profile={evaluation.profile.value}")
     print(f"cases={len(evaluation.cases)}")
     print(
         "gates="
@@ -111,6 +113,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         corpus = load_proof_corpus(_default_corpus_path(args.proof_config))
         evaluation_config = load_evaluation_config(args.evaluation_config)
+        if (
+            args.offline
+            and evaluation_config.profile is not EvaluationProfile.OFFLINE_COMPOSITION
+        ):
+            raise EvaluationConfigurationError(
+                "OFFLINE_REQUIRES_OFFLINE_COMPOSITION_PROFILE"
+            )
         if args.evaluate_only:
             if args.run_result is None:
                 raise EvaluationConfigurationError("RUN_RESULT_REQUIRED")

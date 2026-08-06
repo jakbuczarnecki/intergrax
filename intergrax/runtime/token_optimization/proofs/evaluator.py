@@ -16,9 +16,12 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     CacheAttribution,
     CacheExpectationMode,
     CaseEvaluation,
+    EVALUATION_GATE_IDS,
     CorpusCase,
     EvaluationConfiguration,
     EvaluationConfigurationError,
+    EvaluationGateRequirement,
+    EvaluationProfile,
     GateResult,
     GateStatus,
     MeasurementRequirement,
@@ -27,35 +30,6 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     UniversalProofEvaluation,
 )
 
-EVALUATION_GATE_IDS = (
-    "ROUTER_STATUS",
-    "ROUTER_CONFIGURATION",
-    "ROUTER_REASON",
-    "ROUTER_REVIEW_REQUIREMENT",
-    "ROUTER_CONFIDENCE",
-    "ROUTER_TRANSPORT",
-    "PIPELINE_COMPLETION",
-    "PIPELINE_REQUIRED_LAYERS",
-    "PIPELINE_FORBIDDEN_LAYERS",
-    "PIPELINE_FALLBACK",
-    "PIPELINE_VALIDATION",
-    "PIPELINE_REQUIRED_FAILURE",
-    "PROTECTED_REGION_COUNT",
-    "PROTECTED_REGION_PRESERVATION",
-    "PROTECTED_REGION_VALIDATION",
-    "BASELINE_MEASUREMENT",
-    "OPTIMIZED_MEASUREMENT",
-    "MEASUREMENT_ORDERING",
-    "PREFIX_IDENTITY_AVAILABLE",
-    "PREFIX_STABILITY",
-    "PREFIX_CHANGED_CONTROL",
-    "TOOL_ENVELOPE_IDENTITY",
-    "WARM_CACHE_REUSE",
-    "CHANGED_PREFIX_NEGATIVE_CONTROL",
-    "RAW_CONTENT_ABSENT",
-    "SECRET_ABSENT",
-    "MANIFEST_INTEGRITY",
-)
 _KNOWN_GATE_IDS = frozenset(EVALUATION_GATE_IDS)
 _SAFE_SUMMARY_RE = re.compile(r"^[A-Za-z0-9._:/=, -]{1,512}$")
 
@@ -68,6 +42,22 @@ class _GateContext:
     config: EvaluationConfiguration
     cache: ProviderCacheEvidence | None
     cases_by_id: Mapping[str, UniversalProofCaseResult]
+
+
+def _requirement(
+    gate_id: str, context: _GateContext
+) -> EvaluationGateRequirement:
+    return context.config.requirement_for(gate_id)
+
+
+def _profile_not_applicable(
+    gate_ids: Iterable[str], context: _GateContext
+) -> bool:
+    return all(
+        _requirement(gate_id, context)
+        is EvaluationGateRequirement.NOT_APPLICABLE
+        for gate_id in gate_ids
+    )
 
 
 def _summary(value: object) -> str:
@@ -94,7 +84,13 @@ def _gate(
         reason_code=reason_code,
         expected_safe_summary=_summary(expected),
         actual_safe_summary=_summary(actual),
-        required=gate_id in context.config.required_gate_ids,
+        required=(
+            _requirement(gate_id, context)
+            in {
+                EvaluationGateRequirement.REQUIRED,
+                EvaluationGateRequirement.UNAVAILABLE_ALLOWED,
+            }
+        ),
     )
 
 
@@ -154,6 +150,16 @@ def _allowed(
 
 
 def _router_gates(context: _GateContext) -> list[GateResult]:
+    router_gate_ids = (
+        "ROUTER_STATUS",
+        "ROUTER_CONFIGURATION",
+        "ROUTER_REASON",
+        "ROUTER_REVIEW_REQUIREMENT",
+        "ROUTER_CONFIDENCE",
+        "ROUTER_TRANSPORT",
+    )
+    if _profile_not_applicable(router_gate_ids, context):
+        return [_not_applicable(gate_id, context) for gate_id in router_gate_ids]
     expectation = context.case.router
     evidence = context.result.router_evidence
     gates: list[GateResult] = []
@@ -305,6 +311,16 @@ def _router_gates(context: _GateContext) -> list[GateResult]:
 
 
 def _pipeline_gates(context: _GateContext) -> list[GateResult]:
+    pipeline_gate_ids = (
+        "PIPELINE_COMPLETION",
+        "PIPELINE_REQUIRED_LAYERS",
+        "PIPELINE_FORBIDDEN_LAYERS",
+        "PIPELINE_FALLBACK",
+        "PIPELINE_VALIDATION",
+        "PIPELINE_REQUIRED_FAILURE",
+    )
+    if _profile_not_applicable(pipeline_gate_ids, context):
+        return [_not_applicable(gate_id, context) for gate_id in pipeline_gate_ids]
     expected = context.case.pipeline
     evidence = context.result.pipeline_evidence
     gates: list[GateResult] = []
@@ -502,6 +518,99 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
     return gates
 
 
+def _router_integrity_gate(context: _GateContext) -> GateResult:
+    result = context.result
+    evidence = result.router_evidence
+    fields_consistent = (
+        result.router_status == evidence.status
+        and result.router_reason == evidence.reason_code
+        and result.selected_configuration_id == evidence.configuration_id
+    )
+    typed_fields = (
+        evidence.status is not None
+        and evidence.configuration_id is not None
+        and evidence.reason_code is not None
+        and type(evidence.review_required) is bool
+        and evidence.confidence is not None
+        and evidence.transport is not None
+        and type(evidence.structured_output_fallback_used) is bool
+    )
+    offline_transport = (
+        context.config.profile is not EvaluationProfile.OFFLINE_COMPOSITION
+        or context.run.run_mode != "offline_smoke"
+        or (
+            evidence.transport == "structured_output"
+            and evidence.structured_output_fallback_used is True
+        )
+    )
+    configured_decision = context.config.configured_offline_decision
+    configured = (
+        configured_decision is None
+        or context.config.profile is not EvaluationProfile.OFFLINE_COMPOSITION
+        or context.run.run_mode != "offline_smoke"
+        or (
+            evidence.configuration_id == configured_decision
+            and result.selected_configuration_id == configured_decision
+        )
+    )
+    if fields_consistent and typed_fields and offline_transport and configured:
+        return _pass(
+            "ROUTER_EVIDENCE_INTEGRITY",
+            context,
+            "consistent typed router evidence",
+            "consistent typed router evidence",
+        )
+    reason = (
+        "EVIDENCE_CONTRADICTION"
+        if not fields_consistent
+        else "OFFLINE_DECISION_OR_TRANSPORT_MISMATCH"
+        if not offline_transport or not configured
+        else "ROUTER_EVIDENCE_INCOMPLETE"
+    )
+    return _fail(
+        "ROUTER_EVIDENCE_INTEGRITY",
+        context,
+        reason,
+        "typed consistent evidence",
+        "invalid or incomplete evidence",
+    )
+
+
+def _pipeline_integrity_gate(context: _GateContext) -> GateResult:
+    result = context.result
+    evidence = result.pipeline_evidence
+    status_matches = (
+        evidence.completed is not None
+        and result.pipeline_status
+        == ("completed" if evidence.completed else "failed")
+    )
+    receipt_matches = (
+        evidence.receipt_completion_status is None
+        or evidence.receipt_completion_status == evidence.completed
+    )
+    layer_ids_are_safe = bool(
+        all(
+            isinstance(layer_id, str)
+            and bool(re.fullmatch(r"[A-Za-z0-9._-]{1,128}", layer_id))
+            for layer_id in result.applied_layer_ids
+        )
+    ) or not result.applied_layer_ids
+    if status_matches and receipt_matches and layer_ids_are_safe:
+        return _pass(
+            "PIPELINE_EVIDENCE_INTEGRITY",
+            context,
+            "consistent pipeline execution evidence",
+            "consistent pipeline execution evidence",
+        )
+    return _fail(
+        "PIPELINE_EVIDENCE_INTEGRITY",
+        context,
+        "PIPELINE_EVIDENCE_INCONSISTENT",
+        "consistent execution evidence",
+        "invalid or contradictory evidence",
+    )
+
+
 def _protected_gates(context: _GateContext) -> list[GateResult]:
     expected = context.case.protected
     evidence = context.result.protected_region_evidence
@@ -597,6 +706,8 @@ def _measurement_gate(
     measurement,
     context: _GateContext,
 ) -> GateResult:
+    if _requirement(gate_id, context) is EvaluationGateRequirement.NOT_APPLICABLE:
+        return _not_applicable(gate_id, context)
     if requirement is MeasurementRequirement.NOT_APPLICABLE:
         return _not_applicable(gate_id, context)
     if not measurement.available:
@@ -981,12 +1092,31 @@ class UniversalProofEvaluator:
             r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", evaluation_id
         ):
             raise EvaluationConfigurationError("INVALID_EVALUATION_ID")
+        if (
+            run_result.run_mode == "offline_smoke"
+            and evaluation_config.profile is EvaluationProfile.BEHAVIORAL
+            and evaluation_config.gate_requirements is not None
+        ):
+            raise EvaluationConfigurationError("PROFILE_RUN_MODE_MISMATCH")
         unknown = set(evaluation_config.required_gate_ids) - _KNOWN_GATE_IDS
         unknown.update(
             set(evaluation_config.unavailable_allowed_gate_ids) - _KNOWN_GATE_IDS
         )
+        if evaluation_config.gate_requirements:
+            unknown.update(
+                set(evaluation_config.gate_requirements) - _KNOWN_GATE_IDS
+            )
         if unknown:
             raise EvaluationConfigurationError("UNKNOWN_GATE_ID")
+        required_gate_ids = tuple(
+            gate_id
+            for gate_id in EVALUATION_GATE_IDS
+            if evaluation_config.requirement_for(gate_id)
+            in {
+                EvaluationGateRequirement.REQUIRED,
+                EvaluationGateRequirement.UNAVAILABLE_ALLOWED,
+            }
+        )
         if {case.case_id for case in corpus.cases} != {
             item.case_id for item in run_result.cases
         }:
@@ -1008,7 +1138,9 @@ class UniversalProofEvaluator:
             )
             gates = (
                 _router_gates(context)
+                + [_router_integrity_gate(context)]
                 + _pipeline_gates(context)
+                + [_pipeline_integrity_gate(context)]
                 + _protected_gates(context)
                 + _measurement_gates(context)
                 + _prefix_gates(context)
@@ -1030,14 +1162,15 @@ class UniversalProofEvaluator:
         }
         assessed_required = {gate.gate_id for gate in all_gates if gate.required}
         success = (
-            set(evaluation_config.required_gate_ids) <= assessed_required
+            set(required_gate_ids) <= assessed_required
             and not any(
                 gate.required and gate.status is GateStatus.FAIL for gate in all_gates
             )
             and not any(
                 gate.required
                 and gate.status is GateStatus.UNAVAILABLE
-                and gate.gate_id not in evaluation_config.unavailable_allowed_gate_ids
+                and evaluation_config.requirement_for(gate.gate_id)
+                is not EvaluationGateRequirement.UNAVAILABLE_ALLOWED
                 for gate in all_gates
             )
         )
@@ -1053,6 +1186,7 @@ class UniversalProofEvaluator:
             cases=tuple(evaluations),
             status_counts=status_counts,
             success=success,
+            profile=evaluation_config.profile,
         )
 
 
