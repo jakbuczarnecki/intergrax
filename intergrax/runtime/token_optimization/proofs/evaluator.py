@@ -7,16 +7,17 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from math import isfinite
 
 from intergrax.runtime.token_optimization.proofs.contracts import (
     UniversalProofCaseResult,
     UniversalProofRunResult,
 )
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
+    EVALUATION_GATE_IDS,
     CacheAttribution,
     CacheExpectationMode,
     CaseEvaluation,
-    EVALUATION_GATE_IDS,
     CorpusCase,
     EvaluationConfiguration,
     EvaluationConfigurationError,
@@ -32,6 +33,49 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
 
 _KNOWN_GATE_IDS = frozenset(EVALUATION_GATE_IDS)
 _SAFE_SUMMARY_RE = re.compile(r"^[A-Za-z0-9._:/=, -]{1,512}$")
+_ROUTER_STATUSES = frozenset(
+    {
+        "routed",
+        "no_optimization",
+        "review_required",
+        "blocked",
+        "invalid_decision",
+        "unsupported_adapter",
+        "llm_error",
+    }
+)
+_ROUTER_REASON_CODES = frozenset(
+    {
+        "clean_no_op",
+        "exact_duplicates",
+        "noisy_tool_output",
+        "priority_packing",
+        "mixed_deduplication_packing",
+        "protected_or_high_risk",
+        "insufficient_information",
+    }
+)
+_ROUTER_RISKS = frozenset({"low", "medium", "high"})
+_ROUTER_TRANSPORTS = frozenset(
+    {"native_tools", "structured_output", "unsupported"}
+)
+_ROUTER_TERMINAL_REASONS = {
+    "blocked": frozenset(
+        {
+            "policy_disabled",
+            "profile_off",
+            "unsupported_adapter",
+            "capability_resolution_failed",
+            "source_type_not_supported",
+            "confidence_below_threshold",
+            "packing_input_required",
+            "lossy_not_allowed",
+        }
+    ),
+    "review_required": frozenset(
+        {"model_requested_review", "protected_regions_require_review"}
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -521,19 +565,112 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
 def _router_integrity_gate(context: _GateContext) -> GateResult:
     result = context.result
     evidence = result.router_evidence
-    fields_consistent = (
-        result.router_status == evidence.status
-        and result.router_reason == evidence.reason_code
-        and result.selected_configuration_id == evidence.configuration_id
+    status_consistent = (
+        isinstance(result.router_status, str)
+        and result.router_status == evidence.status
+        and result.router_status in _ROUTER_STATUSES
     )
-    typed_fields = (
-        evidence.status is not None
-        and evidence.configuration_id is not None
+    confidence_typed = (
+        isinstance(evidence.confidence, (int, float))
+        and not isinstance(evidence.confidence, bool)
+        and isfinite(evidence.confidence)
+        and 0.0 <= evidence.confidence <= 1.0
+    )
+    fallback_typed = (
+        evidence.structured_output_fallback_used is None
+        or type(evidence.structured_output_fallback_used) is bool
+    )
+    evidence_types = (
+        isinstance(evidence.status, str)
+        and evidence.status in _ROUTER_STATUSES
+        and (
+            evidence.configuration_id is None
+            or isinstance(evidence.configuration_id, str)
+        )
+        and (
+            evidence.reason_code is None
+            or (
+                isinstance(evidence.reason_code, str)
+                and evidence.reason_code in _ROUTER_REASON_CODES
+            )
+        )
+        and (
+            evidence.risk is None
+            or (isinstance(evidence.risk, str) and evidence.risk in _ROUTER_RISKS)
+        )
+        and (evidence.review_required is None or type(evidence.review_required) is bool)
+        and (evidence.confidence is None or confidence_typed)
+        and (
+            evidence.transport is None
+            or (
+                isinstance(evidence.transport, str)
+                and evidence.transport in _ROUTER_TRANSPORTS
+            )
+        )
+        and fallback_typed
+    )
+    terminal_reason = (
+        result.router_reason
+        if isinstance(result.router_reason, str)
+        else None
+    )
+    terminal_status = result.router_status if status_consistent else None
+    terminal_reason_known = (
+        terminal_status in _ROUTER_TERMINAL_REASONS
+        and terminal_reason in _ROUTER_TERMINAL_REASONS[terminal_status]
+    )
+    terminal_reason_valid = (
+        terminal_status not in _ROUTER_TERMINAL_REASONS
+        or terminal_reason_known
+    )
+    has_decision_evidence = (
+        evidence.configuration_id is not None
         and evidence.reason_code is not None
-        and type(evidence.review_required) is bool
+        and evidence.review_required is not None
         and evidence.confidence is not None
-        and evidence.transport is not None
-        and type(evidence.structured_output_fallback_used) is bool
+        and evidence.risk is not None
+        and evidence.transport in {"native_tools", "structured_output"}
+        and (
+            (
+                evidence.transport == "native_tools"
+                and evidence.structured_output_fallback_used is False
+            )
+            or (
+                evidence.transport == "structured_output"
+                and evidence.structured_output_fallback_used is True
+            )
+        )
+    )
+    execution_consistent = (
+        status_consistent
+        and evidence_types
+        and has_decision_evidence
+        and result.selected_configuration_id == evidence.configuration_id
+        and (
+            terminal_reason_known
+            if terminal_status in _ROUTER_TERMINAL_REASONS
+            else result.router_reason in {None, evidence.reason_code}
+        )
+    )
+    non_execution_transport = (
+        evidence.transport is None
+        or (
+            evidence.transport == "unsupported"
+            and terminal_reason in {"policy_disabled", "profile_off"}
+        )
+    )
+    non_execution_consistent = (
+        status_consistent
+        and evidence_types
+        and terminal_reason_known
+        and result.selected_configuration_id is None
+        and evidence.configuration_id is None
+        and evidence.reason_code is None
+        and evidence.review_required is None
+        and evidence.confidence is None
+        and evidence.risk is None
+        and non_execution_transport
+        and evidence.structured_output_fallback_used is None
     )
     offline_transport = (
         context.config.profile is not EvaluationProfile.OFFLINE_COMPOSITION
@@ -549,29 +686,48 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
         or context.config.profile is not EvaluationProfile.OFFLINE_COMPOSITION
         or context.run.run_mode != "offline_smoke"
         or (
-            evidence.configuration_id == configured_decision
+            execution_consistent
+            and evidence.configuration_id == configured_decision
             and result.selected_configuration_id == configured_decision
         )
+        or non_execution_consistent
     )
-    if fields_consistent and typed_fields and offline_transport and configured:
+    if non_execution_consistent:
         return _pass(
             "ROUTER_EVIDENCE_INTEGRITY",
             context,
-            "consistent typed router evidence",
-            "consistent typed router evidence",
+            "coherent terminal non-execution evidence",
+            "coherent terminal non-execution evidence",
         )
-    reason = (
-        "EVIDENCE_CONTRADICTION"
-        if not fields_consistent
-        else "OFFLINE_DECISION_OR_TRANSPORT_MISMATCH"
-        if not offline_transport or not configured
-        else "ROUTER_EVIDENCE_INCOMPLETE"
-    )
+    if execution_consistent and offline_transport and configured:
+        return _pass(
+            "ROUTER_EVIDENCE_INTEGRITY",
+            context,
+            "consistent typed router execution evidence",
+            "consistent typed router execution evidence",
+        )
+    if not status_consistent or not terminal_reason_valid:
+        reason = "ROUTER_EVIDENCE_CONTRADICTION"
+    elif (
+        not execution_consistent
+        and not non_execution_consistent
+        and (
+            evidence.configuration_id is None
+            or evidence.reason_code is None
+            or evidence.confidence is None
+            or evidence.transport is None
+        )
+    ):
+        reason = "ROUTER_EVIDENCE_PARTIAL"
+    elif not offline_transport or not configured:
+        reason = "OFFLINE_DECISION_OR_TRANSPORT_MISMATCH"
+    else:
+        reason = "ROUTER_EVIDENCE_CONTRADICTION"
     return _fail(
         "ROUTER_EVIDENCE_INTEGRITY",
         context,
         reason,
-        "typed consistent evidence",
+        "consistent typed execution or terminal non-execution evidence",
         "invalid or incomplete evidence",
     )
 
@@ -579,34 +735,88 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
 def _pipeline_integrity_gate(context: _GateContext) -> GateResult:
     result = context.result
     evidence = result.pipeline_evidence
-    status_matches = (
-        evidence.completed is not None
+    layer_ids_are_safe = all(
+        isinstance(layer_id, str)
+        and bool(re.fullmatch(r"[A-Za-z0-9._-]{1,128}", layer_id))
+        for layer_id in result.applied_layer_ids
+    )
+    execution_consistent = (
+        type(evidence.completed) is bool
         and result.pipeline_status
         == ("completed" if evidence.completed else "failed")
-    )
-    receipt_matches = (
-        evidence.receipt_completion_status is None
-        or evidence.receipt_completion_status == evidence.completed
-    )
-    layer_ids_are_safe = bool(
-        all(
-            isinstance(layer_id, str)
-            and bool(re.fullmatch(r"[A-Za-z0-9._-]{1,128}", layer_id))
-            for layer_id in result.applied_layer_ids
+        and type(evidence.receipt_completion_status) is bool
+        and evidence.receipt_completion_status == evidence.completed
+        and type(evidence.fallback_applied) is bool
+        and layer_ids_are_safe
+        and (
+            evidence.validation_status is None
+            or isinstance(evidence.validation_status, str)
         )
-    ) or not result.applied_layer_ids
-    if status_matches and receipt_matches and layer_ids_are_safe:
+        and (
+            evidence.validation_reason_code is None
+            or isinstance(evidence.validation_reason_code, str)
+        )
+        and (
+            evidence.required_layer_failure is None
+            or isinstance(evidence.required_layer_failure, str)
+        )
+    )
+    terminal_reason = (
+        result.router_reason
+        if isinstance(result.router_reason, str)
+        else None
+    )
+    terminal_router = (
+        result.router_status in _ROUTER_TERMINAL_REASONS
+        and terminal_reason
+        in _ROUTER_TERMINAL_REASONS[result.router_status]
+    )
+    non_execution_consistent = (
+        result.status == "failed"
+        and result.pipeline_status == "not_started"
+        and terminal_router
+        and not result.applied_layer_ids
+        and evidence.completed is None
+        and evidence.receipt_completion_status is None
+        and evidence.fallback_applied is None
+        and evidence.validation_status in {None, "not_run"}
+        and evidence.validation_reason_code in {None, "not_run"}
+        and evidence.required_layer_failure is None
+        and layer_ids_are_safe
+    )
+    if execution_consistent:
         return _pass(
             "PIPELINE_EVIDENCE_INTEGRITY",
             context,
             "consistent pipeline execution evidence",
             "consistent pipeline execution evidence",
         )
+    if non_execution_consistent:
+        return _pass(
+            "PIPELINE_EVIDENCE_INTEGRITY",
+            context,
+            "coherent terminal non-execution evidence",
+            "coherent terminal non-execution evidence",
+        )
+    reason = (
+        "PIPELINE_NON_EXECUTION_WITH_SIDE_EFFECTS"
+        if result.pipeline_status == "not_started"
+        and terminal_router
+        and (
+            bool(result.applied_layer_ids)
+            or evidence.completed is not None
+            or evidence.receipt_completion_status is not None
+            or evidence.fallback_applied is not None
+            or evidence.validation_status not in {None, "not_run"}
+            or evidence.validation_reason_code not in {None, "not_run"}
+        )
+        else "PIPELINE_EVIDENCE_INCONSISTENT"
+    )
     return _fail(
         "PIPELINE_EVIDENCE_INTEGRITY",
         context,
-        "PIPELINE_EVIDENCE_INCONSISTENT",
-        "consistent execution evidence",
+        reason,
+        "consistent execution or terminal non-execution evidence",
         "invalid or contradictory evidence",
     )
 

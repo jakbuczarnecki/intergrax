@@ -117,6 +117,7 @@ def _fixture() -> tuple[UniversalProofRunResult, ProofCorpus, EvaluationConfigur
         pipeline_evidence=ProofPipelineEvidence(
             completed=True,
             fallback_applied=False,
+            receipt_completion_status=True,
         ),
         protected_region_evidence=ProofProtectedRegionEvidence(
             protected_region_validation_status="not_applicable",
@@ -224,6 +225,43 @@ def _offline_config() -> EvaluationConfiguration:
         profile=EvaluationProfile.OFFLINE_COMPOSITION,
         gate_requirements=requirements,
         configured_offline_decision="exact_only",
+    )
+
+
+def _offline_executed_run() -> UniversalProofRunResult:
+    run, _, _ = _fixture()
+    case = run.cases[0]
+    return replace(
+        run,
+        cases=(
+            replace(
+                case,
+                router_evidence=replace(
+                    case.router_evidence,
+                    transport="structured_output",
+                    structured_output_fallback_used=True,
+                ),
+            ),
+        ),
+    )
+
+
+def _evaluate_offline(run: UniversalProofRunResult):
+    _, corpus, _ = _fixture()
+    return UniversalProofEvaluator().evaluate(
+        run,
+        corpus,
+        _offline_config(),
+        evaluation_id="offline-integrity",
+    )
+
+
+def _gate(evaluation, gate_id: str):
+    return next(
+        gate
+        for case in evaluation.cases
+        for gate in case.gates
+        if gate.gate_id == gate_id
     )
 
 
@@ -482,6 +520,256 @@ def test_offline_profile_separates_composition_from_behavior() -> None:
         for case in evaluation.cases
         for gate in case.gates
     )
+
+
+def test_router_integrity_accepts_executed_offline_exact_only() -> None:
+    evaluation = _evaluate_offline(_offline_executed_run())
+
+    assert evaluation.success is True
+    assert _gate(evaluation, "ROUTER_EVIDENCE_INTEGRITY").status is GateStatus.PASS
+
+
+@pytest.mark.parametrize("terminal_reason", ["policy_disabled", "source_type_not_supported"])
+def test_router_integrity_accepts_coherent_terminal_non_execution(
+    terminal_reason: str,
+) -> None:
+    run, _, _ = _fixture()
+    terminal_case = replace(
+        run.cases[0],
+        status="failed",
+        router_status="blocked",
+        router_reason=terminal_reason,
+        selected_configuration_id=None,
+        pipeline_status="not_started",
+        applied_layer_ids=(),
+        router_evidence=ProofRouterEvidence(status="blocked"),
+        pipeline_evidence=ProofPipelineEvidence(),
+    )
+    evaluation = _evaluate_offline(replace(run, cases=(terminal_case,)))
+
+    assert evaluation.success is True
+    assert _gate(evaluation, "ROUTER_EVIDENCE_INTEGRITY").status is GateStatus.PASS
+    assert _gate(evaluation, "PIPELINE_EVIDENCE_INTEGRITY").status is GateStatus.PASS
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda run: replace(
+            run,
+            cases=(
+                replace(
+                    run.cases[0],
+                    status="failed",
+                    router_status="blocked",
+                    router_reason="policy_disabled",
+                    selected_configuration_id=None,
+                    router_evidence=ProofRouterEvidence(
+                        status="blocked", configuration_id="exact_only"
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            run,
+            cases=(
+                replace(
+                    run.cases[0],
+                    status="failed",
+                    router_status="blocked",
+                    router_reason="policy_disabled",
+                    selected_configuration_id=None,
+                    router_evidence=ProofRouterEvidence(
+                        status="blocked", transport="native_tools"
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            run,
+            cases=(
+                replace(
+                    run.cases[0],
+                    status="failed",
+                    router_status="blocked",
+                    router_reason="policy_disabled",
+                    selected_configuration_id=None,
+                    router_evidence=ProofRouterEvidence(
+                        status="blocked", confidence=0.9
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            _offline_executed_run(),
+            cases=(
+                replace(
+                    run.cases[0],
+                    router_evidence=replace(
+                        run.cases[0].router_evidence,
+                        configuration_id=None,
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            _offline_executed_run(),
+            cases=(
+                replace(
+                    run.cases[0],
+                    router_evidence=replace(
+                        run.cases[0].router_evidence,
+                        transport=None,
+                        structured_output_fallback_used=None,
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            _offline_executed_run(),
+            cases=(
+                replace(
+                    run.cases[0],
+                    selected_configuration_id="other",
+                    router_evidence=replace(
+                        run.cases[0].router_evidence,
+                        configuration_id="other",
+                    ),
+                ),
+            ),
+        ),
+        lambda run: replace(
+            _offline_executed_run(),
+            cases=(
+                replace(
+                    run.cases[0],
+                    router_status="blocked",
+                    router_reason="policy_disabled",
+                ),
+            ),
+        ),
+        lambda run: replace(
+            run,
+            cases=(
+                replace(
+                    run.cases[0],
+                    status="failed",
+                    router_status="blocked",
+                    router_reason="unknown_terminal_reason",
+                    selected_configuration_id=None,
+                    router_evidence=ProofRouterEvidence(status="blocked"),
+                ),
+            ),
+        ),
+    ],
+)
+def test_router_integrity_rejects_partial_or_contradictory_evidence(mutation) -> None:
+    run = mutation(_offline_executed_run())
+    evaluation = _evaluate_offline(run)
+
+    assert evaluation.success is False
+    assert _gate(evaluation, "ROUTER_EVIDENCE_INTEGRITY").status is GateStatus.FAIL
+
+
+@pytest.mark.parametrize("pipeline_mutation", ["completed", "failed"])
+def test_pipeline_integrity_accepts_coherent_execution(pipeline_mutation: str) -> None:
+    run = _offline_executed_run()
+    completed = pipeline_mutation == "completed"
+    case = replace(
+        run.cases[0],
+        status="completed" if completed else "failed",
+        pipeline_status=pipeline_mutation,
+        pipeline_evidence=replace(
+            run.cases[0].pipeline_evidence,
+            completed=completed,
+            receipt_completion_status=completed,
+        ),
+    )
+    evaluation = _evaluate_offline(replace(run, cases=(case,)))
+
+    assert _gate(evaluation, "PIPELINE_EVIDENCE_INTEGRITY").status is GateStatus.PASS
+
+
+@pytest.mark.parametrize("terminal_reason", ["policy_disabled", "source_type_not_supported"])
+def test_pipeline_integrity_accepts_terminal_not_run(terminal_reason: str) -> None:
+    run, _, _ = _fixture()
+    case = replace(
+        run.cases[0],
+        status="failed",
+        router_status="blocked",
+        router_reason=terminal_reason,
+        selected_configuration_id=None,
+        pipeline_status="not_started",
+        applied_layer_ids=(),
+        router_evidence=ProofRouterEvidence(status="blocked"),
+        pipeline_evidence=ProofPipelineEvidence(),
+    )
+    evaluation = _evaluate_offline(replace(run, cases=(case,)))
+
+    assert _gate(evaluation, "PIPELINE_EVIDENCE_INTEGRITY").status is GateStatus.PASS
+
+
+@pytest.mark.parametrize(
+    "pipeline_mutation",
+    [
+        lambda case: replace(case, applied_layer_ids=("layer.one",)),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                receipt_completion_status=True,
+            ),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                fallback_applied=True,
+            ),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                validation_status="passed",
+            ),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_status="completed",
+            pipeline_evidence=replace(case.pipeline_evidence, completed=None),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_status="failed",
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                completed=True,
+                receipt_completion_status=True,
+            ),
+        ),
+    ],
+)
+def test_pipeline_integrity_rejects_side_effects_or_completion_contradictions(
+    pipeline_mutation,
+) -> None:
+    run, _, _ = _fixture()
+    base_case = replace(
+        run.cases[0],
+        status="failed",
+        router_status="blocked",
+        router_reason="policy_disabled",
+        selected_configuration_id=None,
+        pipeline_status="not_started",
+        applied_layer_ids=(),
+        router_evidence=ProofRouterEvidence(status="blocked"),
+        pipeline_evidence=ProofPipelineEvidence(),
+    )
+    case = pipeline_mutation(base_case)
+    evaluation = _evaluate_offline(replace(run, cases=(case,)))
+
+    assert evaluation.success is False
+    assert _gate(evaluation, "PIPELINE_EVIDENCE_INTEGRITY").status is GateStatus.FAIL
 
 
 def test_changed_prefix_cache_evidence_passes_from_typed_fixtures() -> None:

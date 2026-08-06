@@ -199,7 +199,12 @@ fallback_on_validation_failure = true
 [[cases]]
 case_id = "protected-values"
 source_type = "prompt"
-content = "Preserve the deployment record and report its validation result."
+content = """Validate record SYNTHETIC_RUN_001 at
+https://synthetic.invalid/proof/run.
+The artifact is synthetic/artifacts/fixed-run.json.
+Preserve error code E_SYNTHETIC_PROTECTED exactly.
+This synthetic context marker is repeated.
+This synthetic context marker is repeated."""
 tags = ["synthetic", "protected"]
 
 [cases.policy]

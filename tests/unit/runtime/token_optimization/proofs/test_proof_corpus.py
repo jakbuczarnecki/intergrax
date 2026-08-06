@@ -85,6 +85,21 @@ def test_corpus_inputs_are_representative_and_expectations_are_assertive(
     assert "def verify_artifact" in cases["case-code-heavy-content"].request.content
     assert "sha256" in cases["case-code-heavy-content"].request.content
     assert len(expectations["case-protected-values"].protected_regions) == 4
+    protected_case = cases["case-protected-values"]
+    protected_values = tuple(
+        region.value for region in expectations["case-protected-values"].protected_regions
+    )
+    assert len(protected_values) == 4
+    assert set(protected_values) == {
+        "https://synthetic.invalid/proof/run",
+        "synthetic/artifacts/fixed-run.json",
+        "SYNTHETIC_RUN_001",
+        "E_SYNTHETIC_PROTECTED",
+    }
+    assert all(protected_case.request.content.count(value) == 1 for value in protected_values)
+    assert sum(
+        protected_case.request.content.count(value) for value in protected_values
+    ) == 4
     assert len(expectations["case-high-risk-lossy-content"].protected_regions) == 2
     assert cases["case-policy-disabled"].request.policy.enabled is False
     assert cases["case-measure-only"].request.policy.profile.value == "measure_only"
