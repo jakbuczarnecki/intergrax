@@ -461,6 +461,24 @@ idempotent processing
 checkpoint commit after durable page completion
 ```
 
+For indexed connected sources, page publication has one visibility authority:
+
+```text
+prepare receipt
+→ stage hidden documents
+→ write immutable delivery manifest
+→ CAS the lifecycle/permit fence with the committed manifest descriptor
+→ complete the receipt and rebuild derived projections
+```
+
+The fence CAS is the publication linearization point. Immutable manifests and
+per-delivery commit records preserve bounded publication history, so retrieval
+resolves the highest committed sequence for each remote item. Active pointers
+are only accelerators; a failed pointer write cannot hide a committed document.
+Prepared manifests and completed receipts without a fence descriptor remain
+invisible, and lifecycle disable/detach conflicts with an unexpired permit
+through the same authority record.
+
 ### 3.7.1 Provider-neutral Indexed Source eligibility
 
 Discovery, live capability support and durable materialization are separate

@@ -293,15 +293,34 @@ class RepositoryKnowledgeMaterializationVisibility:
             if ref is None or ref.materialization_ownership != ownership:
                 return False
             authority = ref.visibility_authority_type
-        if authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST:
+        else:
             try:
-                manifest = ConnectedSourceMaterializationManifestRepository(
+                authority = next(
+                    (
+                        ref.visibility_authority_type
+                        for ref in self._repository.list_document_refs(
+                            tenant_id=ownership.tenant_id,
+                            workspace_id=ownership.workspace_id,
+                        )
+                        if ref.materialization_ownership == ownership
+                    ),
+                    None,
+                )
+            except (TypeError, ValueError, AttributeError):
+                return False
+        if authority is KnowledgeMaterializationVisibilityAuthorityTypeV1.DELIVERY_MANIFEST:
+            if ownership.materialization_sequence is None:
+                return False
+            try:
+                manifest_repository = ConnectedSourceMaterializationManifestRepository(
                     self._repository.document_store
-                ).get_current(
+                )
+                manifest = manifest_repository.get_committed_for_delivery(
                     tenant_id=ownership.tenant_id,
                     workspace_id=ownership.workspace_id,
                     source_id=ownership.source_id,
                     indexed_source_binding_id=ownership.indexed_source_binding_id,
+                    delivery_id=ownership.delivery_id,
                 )
             except (
                 ConnectedSourceMaterializationManifestConflict,
@@ -319,32 +338,9 @@ class RepositoryKnowledgeMaterializationVisibility:
                 != ownership.indexed_source_binding_id
                 or manifest.knowledge_source_binding_ref
                 != ownership.knowledge_source_binding_ref
-            ):
-                return False
-            try:
-                receipt = self._repository.get_connected_source_delivery_receipt(
-                    tenant_id=ownership.tenant_id,
-                    workspace_id=ownership.workspace_id,
-                    source_id=ownership.source_id,
-                    delivery_id=ownership.delivery_id,
-                )
-            except (TypeError, ValueError, AttributeError):
-                return False
-            if receipt is not None and (
-                receipt.tenant_id != manifest.tenant_id
-                or receipt.workspace_id != manifest.workspace_id
-                or receipt.source_id != manifest.source_id
-                or receipt.indexed_source_binding_id
-                != manifest.indexed_source_binding_id
-                or receipt.knowledge_source_binding_ref
-                != manifest.knowledge_source_binding_ref
-                or receipt.materialization_sequence
-                != manifest.materialization_sequence
-                or (
-                    ownership.materialization_sequence is not None
-                    and ownership.materialization_sequence
-                    != manifest.materialization_sequence
-                )
+                or manifest.delivery_id != ownership.delivery_id
+                or manifest.materialization_sequence
+                != ownership.materialization_sequence
             ):
                 return False
             entry = next(
@@ -356,13 +352,44 @@ class RepositoryKnowledgeMaterializationVisibility:
                 None,
             )
             if entry is not None:
-                return bool(
+                if not (
                     manifest.delivery_id == ownership.delivery_id
                     and entry.materialization_generation
                     == ownership.materialization_generation
                     and (document_id is None or entry.document_id == document_id)
                     and (content_hash is None or entry.content_hash == content_hash)
+                ):
+                    return False
+                try:
+                    committed_manifests = manifest_repository.list_committed(
+                        tenant_id=ownership.tenant_id,
+                        workspace_id=ownership.workspace_id,
+                        source_id=ownership.source_id,
+                        indexed_source_binding_id=ownership.indexed_source_binding_id,
+                    )
+                except (
+                    ConnectedSourceMaterializationManifestConflict,
+                    TypeError,
+                    ValueError,
+                    AttributeError,
+                ):
+                    return False
+                remote_versions = [
+                    candidate
+                    for candidate in committed_manifests
+                    if any(
+                        candidate_entry.remote_id == ownership.remote_id
+                        for candidate_entry in candidate.document_entries
+                    )
+                ]
+                if not remote_versions:
+                    return False
+                newest = max(
+                    remote_versions,
+                    key=lambda candidate: candidate.materialization_sequence,
                 )
+                return newest.materialization_sequence == manifest.materialization_sequence
+            return False
         try:
             receipt = self._repository.get_connected_source_delivery_receipt(
                 tenant_id=ownership.tenant_id,

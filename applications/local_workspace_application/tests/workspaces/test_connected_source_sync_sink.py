@@ -513,6 +513,81 @@ async def test_two_document_manifest_is_the_single_visibility_transition(sink_en
 
 
 @pytest.mark.asyncio
+async def test_manifest_history_survives_failed_active_pointer_projection(
+    sink_env,
+    monkeypatch,
+) -> None:
+    repo, sink, _indexing = sink_env
+    resolver = RepositoryKnowledgeMaterializationVisibility(repo)
+
+    def _fail_projection(**_kwargs):
+        raise ConnectedSourceSyncSinkError("active_pointer_projection_failed")
+
+    monkeypatch.setattr(sink, "_activate_materialization", _fail_projection)
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(
+                _envelope(KnowledgeChangeKind.UPSERT, remote_id="remote-a"),
+                _envelope(KnowledgeChangeKind.UPSERT, remote_id="remote-b"),
+            ),
+            delivery_id=_DELIVERY,
+        )
+    )
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, remote_id="remote-c"),),
+            delivery_id=_DELIVERY_2,
+        )
+    )
+
+    refs = {
+        ref.materialization_ownership.remote_id: ref
+        for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        if ref.materialization_ownership is not None
+    }
+    assert all(
+        ref.materialization_ownership is not None
+        and resolver.is_visible(
+            ownership=ref.materialization_ownership,
+            document_id=ref.document_id,
+            content_hash=ref.content_hash,
+        )
+        for ref in refs.values()
+    )
+
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(_envelope(KnowledgeChangeKind.UPSERT, remote_id="remote-a"),),
+            delivery_id=_DELIVERY_3,
+        )
+    )
+    versions = {
+        ref.materialization_ownership.delivery_id: ref
+        for ref in repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+        if ref.materialization_ownership is not None
+        and ref.materialization_ownership.remote_id == "remote-a"
+    }
+    assert not resolver.is_visible(
+        ownership=versions[_DELIVERY].materialization_ownership,
+        document_id=versions[_DELIVERY].document_id,
+        content_hash=versions[_DELIVERY].content_hash,
+    )
+    assert resolver.is_visible(
+        ownership=versions[_DELIVERY_3].materialization_ownership,
+        document_id=versions[_DELIVERY_3].document_id,
+        content_hash=versions[_DELIVERY_3].content_hash,
+    )
+    for remote_id in ("remote-b", "remote-c"):
+        ref = refs[remote_id]
+        assert ref.materialization_ownership is not None
+        assert resolver.is_visible(
+            ownership=ref.materialization_ownership,
+            document_id=ref.document_id,
+            content_hash=ref.content_hash,
+        )
+
+
+@pytest.mark.asyncio
 async def test_empty_batch_completes_receipt(sink_env) -> None:
     repo, sink, _ = sink_env
     await sink.apply_batch(batch=_batch())

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import secrets
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import (
@@ -32,6 +34,7 @@ _FENCE_PARTITION_PREFIX = _FENCE_SCHEMA
 _MAX_TOKEN_LENGTH = 256
 _PERMIT_SCHEMA = "vendor_knowledge.sync_publication_permit.v1"
 _MAX_PERMIT_TTL_SECONDS = 3600
+_SHA256_LENGTH = 64
 
 
 def _require_non_empty(value: str, *, field_name: str) -> str:
@@ -109,6 +112,74 @@ class KnowledgeSyncPublicationPermitV1(BaseModel):
         return self
 
 
+class KnowledgeSyncCommittedPublicationV1(BaseModel):
+    """Bounded descriptor authorized by the publication fence CAS."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    tenant_id: str
+    binding_id: str
+    workspace_id: str
+    source_id: str
+    indexed_source_binding_id: str
+    delivery_id: str
+    materialization_sequence: StrictInt = Field(gt=0)
+    manifest_id: str = Field(min_length=1, max_length=512)
+    manifest_fingerprint: str = Field(
+        min_length=_SHA256_LENGTH, max_length=_SHA256_LENGTH
+    )
+    committed_at: datetime
+
+    @field_validator(
+        "tenant_id",
+        "binding_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+        "delivery_id",
+    )
+    @classmethod
+    def _identifiers(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "field"
+        return _require_non_empty(value, field_name=field_name)
+
+    @field_validator("manifest_id")
+    @classmethod
+    def _manifest_id(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "fingerprint"
+        return _require_non_empty(value, field_name=field_name)
+
+    @field_validator("manifest_fingerprint")
+    @classmethod
+    def _fingerprint(cls, value: str, info: ValidationInfo) -> str:
+        field_name = info.field_name or "fingerprint"
+        cleaned = _require_non_empty(value, field_name=field_name)
+        if len(cleaned) != _SHA256_LENGTH or any(
+            character not in "0123456789abcdef" for character in cleaned
+        ):
+            raise ValueError(f"{field_name} must be a lowercase SHA-256 digest")
+        return cleaned
+
+    @field_validator("committed_at")
+    @classmethod
+    def _utc_datetime(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() != timedelta(0):
+            raise ValueError("committed_at must be a timezone-aware UTC datetime")
+        return value
+
+
+class KnowledgeSyncPublicationCommitStatus(StrEnum):
+    COMMITTED = "committed"
+    REPLAYED = "replayed"
+    STALE = "stale"
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeSyncPublicationCommitResult:
+    status: KnowledgeSyncPublicationCommitStatus
+    descriptor: KnowledgeSyncCommittedPublicationV1
+
+
 @runtime_checkable
 class KnowledgeSyncPublicationFencePort(Protocol):
     """Application lifecycle and publication authority consumed by Vendor Knowledge."""
@@ -146,6 +217,29 @@ class KnowledgeSyncPublicationFencePort(Protocol):
     ) -> bool:
         ...
 
+    def commit_publication_under_permit(
+        self,
+        *,
+        expected_fence: KnowledgeSyncPublicationFenceV1,
+        publication_permit: KnowledgeSyncPublicationPermitV1,
+        publication_descriptor: KnowledgeSyncCommittedPublicationV1,
+    ) -> KnowledgeSyncPublicationCommitResult:
+        ...
+
+    def read_committed_publication(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV1 | None:
+        ...
+
+    def list_committed_publications(
+        self,
+        *,
+        tenant_id: str,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV1, ...]:
+        ...
 class KnowledgeSyncPublicationFenceConflict(Exception):
     """Optimistic lifecycle fence write conflict."""
 
@@ -215,7 +309,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         current = self._store.get(partition, row)
         if current is None:
             return None
-        fence, existing_permit = self._parse(
+        fence, existing_permit, current_descriptor = self._parse(
             current, tenant_id=tenant, binding_id=binding
         )
         now = self._utc_now()
@@ -242,10 +336,83 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             acquired_at=now,
             expires_at=now + timedelta(seconds=ttl_seconds),
         )
-        replacement = self._to_document(fence, publication_permit=permit)
+        replacement = self._to_document(
+            fence,
+            publication_permit=permit,
+            committed_publication=current_descriptor,
+        )
         if not self._store.replace_if_match(expected=current, replacement=replacement):
             return None
         return permit
+
+    def commit_publication_under_permit(
+        self,
+        *,
+        expected_fence: KnowledgeSyncPublicationFenceV1,
+        publication_permit: KnowledgeSyncPublicationPermitV1,
+        publication_descriptor: KnowledgeSyncCommittedPublicationV1,
+    ) -> KnowledgeSyncPublicationCommitResult:
+        self._validate_identity(expected_fence)
+        self._validate_permit_identity(publication_permit)
+        self._validate_descriptor_identity(publication_descriptor)
+        if (
+            publication_descriptor.tenant_id != expected_fence.tenant_id
+            or publication_descriptor.binding_id != expected_fence.binding_id
+            or publication_permit.tenant_id != expected_fence.tenant_id
+            or publication_permit.binding_id != expected_fence.binding_id
+            or publication_permit.lifecycle_revision != expected_fence.lifecycle_revision
+            or publication_permit.lifecycle_token != expected_fence.lifecycle_token
+        ):
+            raise KnowledgeSyncPublicationFenceConflict(
+                "publication identity does not match fence"
+            )
+        partition = self._partition_key(expected_fence.tenant_id)
+        row = self._row_key(expected_fence.binding_id)
+        current = self._store.get(partition, row)
+        if current is None:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
+        fence, current_permit, current_descriptor = self._parse(
+            current,
+            tenant_id=expected_fence.tenant_id,
+            binding_id=expected_fence.binding_id,
+        )
+        now = self._utc_now()
+        if fence != expected_fence:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence changed")
+        if not fence.enabled or fence.detached:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence is disabled")
+        if current_permit != publication_permit:
+            raise KnowledgeSyncPublicationFenceConflict(
+                "permit_lost: publication permit is not current"
+            )
+        if publication_permit.expires_at <= now:
+            raise KnowledgeSyncPublicationFenceConflict("publication permit expired")
+        if current_descriptor is not None:
+            if current_descriptor.materialization_sequence > publication_descriptor.materialization_sequence:
+                return KnowledgeSyncPublicationCommitResult(
+                    status=KnowledgeSyncPublicationCommitStatus.STALE,
+                    descriptor=current_descriptor,
+                )
+            if current_descriptor.materialization_sequence == publication_descriptor.materialization_sequence:
+                if current_descriptor != publication_descriptor:
+                    raise KnowledgeSyncPublicationFenceConflict(
+                        "publication sequence conflict"
+                    )
+                return KnowledgeSyncPublicationCommitResult(
+                    status=KnowledgeSyncPublicationCommitStatus.REPLAYED,
+                    descriptor=current_descriptor,
+                )
+        replacement = self._to_document(
+            fence,
+            publication_permit=publication_permit,
+            committed_publication=publication_descriptor,
+        )
+        if not self._store.replace_if_match(expected=current, replacement=replacement):
+            raise KnowledgeSyncPublicationFenceConflict("publication commit conflict")
+        return KnowledgeSyncPublicationCommitResult(
+            status=KnowledgeSyncPublicationCommitStatus.COMMITTED,
+            descriptor=publication_descriptor,
+        )
 
     def release_publication_permit(
         self,
@@ -258,7 +425,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         )
         if current is None:
             return True
-        fence, current_permit = self._parse(
+        fence, current_permit, current_descriptor = self._parse(
             current,
             tenant_id=permit.tenant_id,
             binding_id=permit.binding_id,
@@ -269,7 +436,10 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             return False
         return self._store.replace_if_match(
             expected=current,
-            replacement=self._to_document(fence),
+            replacement=self._to_document(
+                fence,
+                committed_publication=current_descriptor,
+            ),
         )
 
     def is_current_publication_permit(
@@ -284,7 +454,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         )
         if current is None:
             return False
-        fence, current_permit = self._parse(
+        fence, current_permit, _current_descriptor = self._parse(
             current,
             tenant_id=permit.tenant_id,
             binding_id=permit.binding_id,
@@ -320,7 +490,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             return
         if current is None:
             raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
-        parsed, current_permit = self._parse(
+        parsed, current_permit, current_descriptor = self._parse(
             current,
             tenant_id=fence.tenant_id,
             binding_id=fence.binding_id,
@@ -335,7 +505,10 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             raise KnowledgeSyncPublicationInProgress("publication_in_progress")
         if not self._store.replace_if_match(
             expected=current,
-            replacement=self._to_document(fence),
+            replacement=self._to_document(
+                fence,
+                committed_publication=current_descriptor,
+            ),
         ):
             raise KnowledgeSyncPublicationFenceConflict("publication fence write conflict")
 
@@ -412,6 +585,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         fence: KnowledgeSyncPublicationFenceV1,
         *,
         publication_permit: KnowledgeSyncPublicationPermitV1 | None = None,
+        committed_publication: KnowledgeSyncCommittedPublicationV1 | None = None,
     ) -> DocumentRecord:
         if publication_permit is not None:
             self._validate_permit_identity(publication_permit)
@@ -422,6 +596,13 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
                 or publication_permit.lifecycle_token != fence.lifecycle_token
             ):
                 raise ValueError("publication permit does not match fence")
+        if committed_publication is not None:
+            self._validate_descriptor_identity(committed_publication)
+            if (
+                committed_publication.tenant_id != fence.tenant_id
+                or committed_publication.binding_id != fence.binding_id
+            ):
+                raise ValueError("publication descriptor does not match fence")
         data: dict[str, Any] = {
             "schema_version": _FENCE_SCHEMA,
             "tenant_id": fence.tenant_id,
@@ -430,6 +611,8 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         }
         if publication_permit is not None:
             data["publication_permit"] = publication_permit.model_dump(mode="json")
+        if committed_publication is not None:
+            data["committed_publication"] = committed_publication.model_dump(mode="json")
         return DocumentRecord(
             partition_key=self._partition_key(fence.tenant_id),
             row_key=self._row_key(fence.binding_id),
@@ -445,6 +628,7 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
     ) -> tuple[
         KnowledgeSyncPublicationFenceV1,
         KnowledgeSyncPublicationPermitV1 | None,
+        KnowledgeSyncCommittedPublicationV1 | None,
     ]:
         data: dict[str, Any] = dict(document.data)
         if (
@@ -477,7 +661,54 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
                 or permit.lifecycle_token != fence.lifecycle_token
             ):
                 raise ValueError("publication fence record is corrupt")
-        return fence, permit
+        raw_descriptor = data.get("committed_publication")
+        descriptor: KnowledgeSyncCommittedPublicationV1 | None = None
+        if raw_descriptor is not None:
+            if not isinstance(raw_descriptor, dict):
+                raise ValueError("publication fence record is corrupt")
+            try:
+                descriptor = KnowledgeSyncCommittedPublicationV1.model_validate(
+                    raw_descriptor
+                )
+            except (TypeError, ValueError):
+                raise ValueError("publication fence record is corrupt") from None
+            if (
+                descriptor.tenant_id != fence.tenant_id
+                or descriptor.binding_id != fence.binding_id
+            ):
+                raise ValueError("publication fence record is corrupt")
+        return fence, permit, descriptor
+
+    def read_committed_publication(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV1 | None:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        document = self._store.get(self._partition_key(tenant), self._row_key(binding))
+        if document is None:
+            return None
+        return self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+
+    def list_committed_publications(
+        self,
+        *,
+        tenant_id: str,
+    ) -> tuple[KnowledgeSyncCommittedPublicationV1, ...]:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        result = self._store.query(self._partition_key(tenant), limit=5000)
+        descriptors: list[KnowledgeSyncCommittedPublicationV1] = []
+        for document in result.documents:
+            data = dict(document.data)
+            binding = data.get("binding_id")
+            if not isinstance(binding, str):
+                continue
+            parsed = self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+            if parsed is not None:
+                descriptors.append(parsed)
+        return tuple(descriptors)
 
     def _utc_now(self) -> datetime:
         now = self._clock()
@@ -496,3 +727,10 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
     ) -> None:
         if not permit.tenant_id.strip() or not permit.binding_id.strip():
             raise ValueError("publication permit identity is invalid")
+
+    @staticmethod
+    def _validate_descriptor_identity(
+        descriptor: KnowledgeSyncCommittedPublicationV1,
+    ) -> None:
+        if not descriptor.tenant_id.strip() or not descriptor.binding_id.strip():
+            raise ValueError("publication descriptor identity is invalid")

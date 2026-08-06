@@ -128,7 +128,8 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         self._materializers = materializer_registry or default_connected_source_materializer_registry()
         self._publication_fence_port = publication_fence_port
         self._manifest_repository = ConnectedSourceMaterializationManifestRepository(
-            repository.document_store
+            repository.document_store,
+            publication_authority=publication_fence_port,
         )
         self._publication_validator = None
 
@@ -265,29 +266,29 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             )
         if receipt.publication_state is ConnectedSourceDeliveryPublicationState.PREPARED:
             try:
-                current_manifest = self._manifest_repository.get_current(
+                committed_manifest = self._manifest_repository.get_committed_for_delivery(
                     tenant_id=self._context.tenant_id,
                     workspace_id=self._context.workspace_id,
                     source_id=self._context.source_id,
                     indexed_source_binding_id=self._context.indexed_source_binding_id,
+                    delivery_id=receipt.delivery_id,
                 )
             except Exception as exc:
                 raise ConnectedSourceSyncSinkError(
                     "connected_source_materialization_manifest_recovery_failed"
                 ) from exc
             if (
-                current_manifest is not None
-                and current_manifest.delivery_id == receipt.delivery_id
-                and current_manifest.materialization_sequence
+                committed_manifest is not None
+                and committed_manifest.materialization_sequence
                 == receipt.materialization_sequence
-                and current_manifest.payload_fingerprint == receipt.payload_fingerprint
+                and committed_manifest.payload_fingerprint == receipt.payload_fingerprint
             ):
                 recovered = complete_delivery_receipt(
                     repository=self._repository,
                     receipt=receipt,
-                    documents_indexed=len(current_manifest.document_entries),
+                    documents_indexed=len(committed_manifest.document_entries),
                     documents_unchanged=0,
-                    items_processed=len(current_manifest.document_entries),
+                    items_processed=len(committed_manifest.document_entries),
                     items_failed=0,
                 )
                 self._activate_delivery_documents(delivery_id=recovered.delivery_id)
@@ -300,7 +301,55 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                     items_failed=recovered.items_failed,
                     replayed=True,
                 )
-            if current_manifest is not None:
+            prepared_manifest = self._manifest_repository.get_prepared_for_delivery(
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                source_id=self._context.source_id,
+                indexed_source_binding_id=self._context.indexed_source_binding_id,
+                delivery_id=receipt.delivery_id,
+            )
+            if (
+                prepared_manifest is not None
+                and prepared_manifest.materialization_sequence
+                == receipt.materialization_sequence
+                and prepared_manifest.payload_fingerprint == receipt.payload_fingerprint
+                and batch.publication_fence is not None
+                and batch.publication_permit is not None
+            ):
+                try:
+                    status = self._manifest_repository.commit(
+                        prepared_manifest,
+                        expected_fence=batch.publication_fence,
+                        publication_permit=batch.publication_permit,
+                        publication_authority=self._publication_fence_port,
+                    )
+                except Exception as exc:
+                    raise ConnectedSourceSyncSinkError(
+                        "connected_source_materialization_manifest_recovery_failed"
+                    ) from exc
+                if status is ManifestCommitStatus.STALE:
+                    raise ConnectedSourceSyncSinkError(
+                        "connected_source_materialization_manifest_stale"
+                    )
+                recovered = complete_delivery_receipt(
+                    repository=self._repository,
+                    receipt=receipt,
+                    documents_indexed=len(prepared_manifest.document_entries),
+                    documents_unchanged=0,
+                    items_processed=len(prepared_manifest.document_entries),
+                    items_failed=0,
+                )
+                self._activate_delivery_documents(delivery_id=recovered.delivery_id)
+                return ConnectedSourceDeliveryApplyResult(
+                    documents_indexed=recovered.documents_indexed,
+                    documents_unchanged=recovered.documents_unchanged,
+                    items_processed=(
+                        recovered.documents_indexed + recovered.documents_unchanged
+                    ),
+                    items_failed=recovered.items_failed,
+                    replayed=True,
+                )
+            if prepared_manifest is not None:
                 raise ConnectedSourceSyncSinkError(
                     "connected_source_materialization_manifest_recovery_conflict"
                 )
@@ -379,7 +428,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 manifest,
                 expected_fence=expected_fence,
                 publication_permit=publication_permit,
-                validate_publication=self._validate_publication_at_commit,
+                publication_authority=self._publication_fence_port,
             )
         except ConnectedSourceSyncSinkError:
             raise
@@ -400,11 +449,21 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_failed=0,
         )
         for ownership, document_id, _content_hash in materialized_documents:
-            self._activate_materialization(
-                ownership=ownership,
-                document_id=document_id,
-                committed_at=completed_receipt.completed_at or completed_receipt.created_at,
-            )
+            try:
+                self._activate_materialization(
+                    ownership=ownership,
+                    document_id=document_id,
+                    committed_at=completed_receipt.completed_at or completed_receipt.created_at,
+                )
+            except (
+                ConnectedSourceSyncSinkError,
+                AssertionError,
+                TypeError,
+                ValueError,
+                AttributeError,
+            ):
+                # Active pointers are a rebuildable accelerator, never visibility authority.
+                pass
         return ConnectedSourceDeliveryApplyResult(
             documents_indexed=completed_receipt.documents_indexed,
             documents_unchanged=completed_receipt.documents_unchanged,
@@ -693,11 +752,21 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             ownership = ref.materialization_ownership
             if ownership is None or ownership.delivery_id != delivery_id:
                 continue
-            self._activate_materialization(
-                ownership=ownership,
-                document_id=ref.document_id,
-                committed_at=ref.indexed_at,
-            )
+            try:
+                self._activate_materialization(
+                    ownership=ownership,
+                    document_id=ref.document_id,
+                    committed_at=ref.indexed_at,
+                )
+            except (
+                ConnectedSourceSyncSinkError,
+                AssertionError,
+                TypeError,
+                ValueError,
+                AttributeError,
+            ):
+                # Recovery and retrieval remain correct without this projection.
+                pass
 
     def _activate_materialization(
         self,

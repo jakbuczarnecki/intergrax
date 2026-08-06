@@ -177,3 +177,84 @@ def test_manifest_commit_requires_current_permit() -> None:
         source_id=_SOURCE,
         indexed_source_binding_id=_INDEXED,
     ) is None
+
+
+def test_manifest_visibility_is_linearized_by_fence_record_cas() -> None:
+    store = InMemoryDocumentStore()
+    authority, fence, permit = _authority(store)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+
+    manifest = _manifest(
+        sequence=1,
+        delivery_id="a" * 64,
+        document_id="document-a",
+    )
+    assert repository.commit(
+        manifest,
+        expected_fence=fence,
+        publication_permit=permit,
+    ) is ManifestCommitStatus.COMMITTED
+    descriptor = authority.read_committed_publication(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+    )
+    assert descriptor is not None
+    assert descriptor.manifest_id == manifest.manifest_id
+    assert descriptor.manifest_fingerprint == manifest.manifest_fingerprint
+    assert repository.get_committed_for_delivery(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        delivery_id=manifest.delivery_id,
+    ) == manifest
+
+
+def test_manifest_commit_rejects_permit_expiry_before_authority_cas() -> None:
+    store = InMemoryDocumentStore()
+    now = {"value": _NOW}
+    authority = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+        store,
+        clock=lambda: now["value"],
+        permit_id_factory=lambda: "permit-expiry",
+    )
+    fence = KnowledgeSyncPublicationFenceV1(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        lifecycle_revision=1,
+        lifecycle_token=_TOKEN,
+        enabled=True,
+        detached=False,
+    )
+    authority.write_fence(fence, expected_revision=None)
+    permit = authority.acquire_publication_permit(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        expected_revision=1,
+        expected_token=_TOKEN,
+        owner_id="owner-a",
+        ttl_seconds=1,
+    )
+    assert permit is not None
+    now["value"] = _NOW.replace(second=_NOW.second + 2)
+    repository = ConnectedSourceMaterializationManifestRepository(
+        store,
+        publication_authority=authority,
+    )
+    with pytest.raises(RuntimeError, match="expired"):
+        repository.commit(
+            _manifest(
+                sequence=1,
+                delivery_id="a" * 64,
+                document_id="document-a",
+            ),
+            expected_fence=fence,
+            publication_permit=permit,
+        )
+    assert authority.read_committed_publication(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+    ) is None
