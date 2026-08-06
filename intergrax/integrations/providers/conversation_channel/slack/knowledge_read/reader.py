@@ -496,6 +496,7 @@ class SlackConversationKnowledgeReadClient(Protocol):
         window: SlackConversationSourceWindow,
         limit: int,
         max_chars_per_message: int,
+        cursor: str | None = None,
     ) -> SlackConversationMessagePage: ...
 
     async def read_thread_replies_page(
@@ -693,8 +694,11 @@ class SlackConversationKnowledgeReader:
         window: SlackConversationSourceWindow,
         limit: int,
         max_chars_per_message: int,
+        cursor: str | None = None,
     ) -> SlackConversationMessagePage:
         del conversation_kind
+        if cursor is not None:
+            raise ValueError("recent_conversation_cursor_unsupported")
         validated_conversation_id = validate_slack_conversation_id(conversation_id)
         validated_window = SlackConversationSourceWindow.model_validate(
             window.model_dump()

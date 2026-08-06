@@ -481,6 +481,7 @@ class SlackConversationListLiveHandlerV1(
                 conversation_id=conversation_id,
                 conversation_kind=conversation_kind,
                 window=window,
+                cursor=None,
                 limit=effective_limit,
                 max_chars_per_message=min(
                     DEFAULT_MESSAGE_MAX_CHARS,
@@ -635,6 +636,10 @@ class SlackConversationThreadReadLiveHandlerV1(
                     message,
                     root_message_ts=request.root_message_ts,
                     retrieved_at=retrieved_at,
+                    max_bytes=min(
+                        call.effective_budget.max_content_bytes_per_item,
+                        _MAX_CONTENT_BYTES_PER_ITEM,
+                    ),
                 )
                 for message in page.items
             )
@@ -672,6 +677,7 @@ class SlackConversationThreadReadLiveHandlerV1(
         *,
         root_message_ts: str,
         retrieved_at: datetime,
+        max_bytes: int,
     ) -> LiveCapabilityResultItemV1:
         validated = validate_slack_conversation_message(message)
         if (
@@ -679,13 +685,18 @@ class SlackConversationThreadReadLiveHandlerV1(
             or validated.message_ts == root_message_ts
         ):
             raise self._vendor_error(VendorKnowledgeErrorCode.INVALID_PROVIDER_RESPONSE)
-        content = _message_content(validated)
+        content, text_truncated = _bounded_text_content(
+            normalized=_message_content_payload(validated, include_text=True),
+            text=validated.text,
+            max_bytes=max_bytes,
+        )
         return _item(
             remote_item_id=validated.message_ts,
             safe_display_name=_message_title(validated.text),
             content=content,
             retrieved_at=retrieved_at,
             remote_updated_at=validated.edited_at or validated.created_at,
+            truncated=text_truncated,
         )
 
 
@@ -798,6 +809,14 @@ def _message_content(
     *,
     include_text: bool = False,
 ) -> str:
+    return _json_content(_message_content_payload(message, include_text=include_text))
+
+
+def _message_content_payload(
+    message: SlackConversationMessage,
+    *,
+    include_text: bool,
+) -> dict[str, object]:
     normalized: dict[str, object] = {
         "change_kind": KnowledgeChangeKind.UPSERT.value,
         "item_type": _MESSAGE_ITEM_TYPE,
@@ -817,7 +836,7 @@ def _message_content(
         normalized["text"] = message.text
     else:
         normalized["content_deferred"] = True
-    return _json_content(normalized)
+    return normalized
 
 
 def _recent_message_content(
@@ -841,24 +860,37 @@ def _recent_message_content(
         "revision_version": compute_slack_conversation_message_revision(message),
         "text": message.text,
     }
+    return _bounded_text_content(
+        normalized=normalized,
+        text=message.text,
+        max_bytes=max_bytes,
+    )
+
+
+def _bounded_text_content(
+    *,
+    normalized: dict[str, object],
+    text: str,
+    max_bytes: int,
+) -> tuple[str, bool]:
     complete = _json_content(normalized)
     if len(complete.encode("utf-8")) <= max_bytes:
         return complete, False
 
     normalized["text_truncated"] = True
-    normalized["text_original_chars"] = len(message.text)
+    normalized["text_original_chars"] = len(text)
     base = dict(normalized)
     base["text"] = ""
     base_content = _json_content(base)
     if len(base_content.encode("utf-8")) > max_bytes:
         raise ValueError("recent_message_metadata_exceeds_budget")
 
-    low, high = 0, len(message.text)
+    low, high = 0, len(text)
     best = base_content
     while low <= high:
         middle = (low + high) // 2
         candidate = dict(base)
-        candidate["text"] = message.text[:middle]
+        candidate["text"] = text[:middle]
         encoded = _json_content(candidate)
         if len(encoded.encode("utf-8")) <= max_bytes:
             best = encoded

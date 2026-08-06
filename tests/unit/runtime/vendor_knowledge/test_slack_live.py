@@ -143,7 +143,12 @@ class _FakeSlackBackend:
 
     async def read_recent_conversation_messages_page(self, **kwargs: Any):
         self.history_calls.append(kwargs)
-        return self.history_page
+        return self.history_page.model_copy(
+            update={
+                "oldest": kwargs["window"].oldest,
+                "latest": kwargs["window"].latest,
+            }
+        )
 
     async def read_thread_replies_page(self, **kwargs: Any):
         self.thread_calls.append(kwargs)
@@ -240,8 +245,11 @@ async def test_slack_requests_registration_and_combined_publication() -> None:
         SlackConversationListLiveRequestV1(page_size=16)
     assert SlackConversationListLiveRequestV1().page_size == 1
     assert SlackConversationListLiveRequestV1(page_size=15).page_size == 15
-    with pytest.raises(ValidationError):
-        SlackConversationListLiveRequestV1(oldest=_LATEST, latest=_OLDEST)
+    inverted_window = SlackConversationListLiveRequestV1(
+        oldest=_LATEST, latest=_OLDEST
+    )
+    assert inverted_window.oldest == _LATEST
+    assert inverted_window.latest == _OLDEST
     with pytest.raises(ValidationError):
         SlackConversationListLiveRequestV1.model_validate(
             {"conversation_id": _CONVERSATION_ID}
@@ -307,6 +315,52 @@ async def test_slack_requests_registration_and_combined_publication() -> None:
         "vendor.ms365_graph.teams_chat.list",
         "vendor.ms365_graph.calendar.list",
     }.issubset({key[2] for key in combined.descriptors})
+
+
+async def test_slack_list_window_validation_is_bounded_before_provider_call() -> None:
+    backend = _FakeSlackBackend()
+    narrowed = await SlackConversationListLiveHandlerV1().execute(
+        integration=_integration(backend),
+        call=_call(
+            SLACK_CONVERSATION_LIST_CAPABILITY_ID,
+            SlackConversationListLiveRequestV1(
+                oldest=_ROOT_TS,
+                latest=_REPLY_TS,
+            ),
+        ),
+        context=_context(),
+    )
+    assert narrowed.error_code is None
+    assert backend.history_calls[0]["window"].oldest == _ROOT_TS
+    assert backend.history_calls[0]["window"].latest == _REPLY_TS
+
+    backend.history_calls.clear()
+    outside_binding = await SlackConversationListLiveHandlerV1().execute(
+        integration=_integration(backend),
+        call=_call(
+            SLACK_CONVERSATION_LIST_CAPABILITY_ID,
+            SlackConversationListLiveRequestV1(
+                oldest="1700000000.000001",
+                latest="1800000000.000001",
+            ),
+        ),
+        context=_context(),
+    )
+    assert outside_binding.error_code is None
+    assert backend.history_calls[0]["window"].oldest == _OLDEST
+    assert backend.history_calls[0]["window"].latest == _LATEST
+
+    backend.history_calls.clear()
+    invalid = await SlackConversationListLiveHandlerV1().execute(
+        integration=_integration(backend),
+        call=_call(
+            SLACK_CONVERSATION_LIST_CAPABILITY_ID,
+            SlackConversationListLiveRequestV1(oldest=_LATEST, latest=_OLDEST),
+        ),
+        context=_context(),
+    )
+    assert invalid.error_code == "live_request_invalid"
+    assert backend.history_calls == []
 
 
 async def test_slack_list_is_one_call_bounded_text_and_truncated() -> None:

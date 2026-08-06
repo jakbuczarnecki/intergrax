@@ -121,6 +121,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
         window: SlackConversationSourceWindow,
         limit: int,
         max_chars_per_message: int = DEFAULT_MESSAGE_MAX_CHARS,
+        cursor: str | None = None,
     ) -> SlackConversationMessagePage:
         return await self._require_knowledge_read_client().read_recent_conversation_messages_page(
             conversation_id=conversation_id,
@@ -128,6 +129,7 @@ class SlackConversationChannelIntegration(ConversationChannelIntegrationContract
             window=window,
             limit=limit,
             max_chars_per_message=max_chars_per_message,
+            cursor=cursor,
         )
 
     async def read_thread_replies_page(
