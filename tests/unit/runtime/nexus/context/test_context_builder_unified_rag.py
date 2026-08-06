@@ -150,7 +150,11 @@ def test_context_builder_rejects_conflicting_tenant_before_retrieval() -> None:
 def test_context_builder_preserves_bound_namespace() -> None:
     builder, retrieval_service = _retrieval_builder(
         workspace_id=None,
-        bound_scope=VectorStoreScope(tenant_id="tenant-a", namespace="configured"),
+        bound_scope=VectorStoreScope(
+            tenant_id="tenant-a",
+            namespace="configured",
+            workspace_id="workspace-bound",
+        ),
     )
     session = ChatSession(id="session-a", tenant_id="tenant-a")
 
@@ -160,4 +164,133 @@ def test_context_builder_preserves_bound_namespace() -> None:
     assert request.scope == VectorStoreScope(
         tenant_id="tenant-a",
         namespace="configured",
+        workspace_id="workspace-bound",
+    )
+
+
+@pytest.mark.parametrize(
+    ("source", "value"),
+    [
+        ("request", 123),
+        ("config", 123),
+        ("session", 123),
+    ],
+)
+def test_context_builder_rejects_non_string_tenant(
+    source: str,
+    value: object,
+) -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+    request = _request()
+
+    if source == "request":
+        request.tenant_id = value  # type: ignore[assignment]
+    elif source == "config":
+        builder._config.tenant_id = value  # type: ignore[assignment]
+    else:
+        session.tenant_id = value  # type: ignore[assignment]
+
+    chunks, reason = builder._retrieve_for_session(session, request)
+
+    assert chunks == []
+    assert reason == "tenant_scope_invalid"
+    retrieval_service.retrieve.assert_not_called()
+
+
+def test_context_builder_rejects_blank_request_tenant_without_fallback() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+
+    chunks, reason = builder._retrieve_for_session(
+        session,
+        _request(tenant_id="   "),
+    )
+
+    assert chunks == []
+    assert reason == "tenant_scope_invalid"
+    retrieval_service.retrieve.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("source", "value"),
+    [
+        ("request", True),
+        ("config", True),
+        ("session", True),
+    ],
+)
+def test_context_builder_rejects_non_string_workspace(
+    source: str,
+    value: object,
+) -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+    request = _request()
+
+    if source == "request":
+        request.workspace_id = value  # type: ignore[assignment]
+    elif source == "config":
+        builder._config.workspace_id = value  # type: ignore[assignment]
+    else:
+        session.workspace_id = value  # type: ignore[assignment]
+
+    chunks, reason = builder._retrieve_for_session(session, request)
+
+    assert chunks == []
+    assert reason == "workspace_scope_invalid"
+    retrieval_service.retrieve.assert_not_called()
+
+
+def test_context_builder_canonicalizes_valid_routing_strings() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(
+        id="session-a",
+        tenant_id=" tenant-a ",
+        workspace_id=" workspace-a ",
+    )
+
+    _, reason = builder._retrieve_for_session(
+        session,
+        _request(tenant_id=" tenant-a ", workspace_id=" workspace-a "),
+    )
+
+    assert reason == "no_hits"
+    request = retrieval_service.retrieve.call_args.args[0]
+    assert request.scope == VectorStoreScope(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+    )
+
+
+def test_context_builder_rejects_invalid_bound_scope_before_retrieval() -> None:
+    builder, retrieval_service = _retrieval_builder(
+        bound_scope=object(),  # type: ignore[arg-type]
+    )
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+
+    chunks, reason = builder._retrieve_for_session(session, _request())
+
+    assert chunks == []
+    assert reason == "tenant_scope_invalid"
+    retrieval_service.retrieve.assert_not_called()
+
+
+def test_context_builder_does_not_use_routing_keys_from_request_metadata() -> None:
+    builder, retrieval_service = _retrieval_builder()
+    session = ChatSession(id="session-a", tenant_id="tenant-a")
+    request = _request()
+    request.metadata = {
+        "tenant_id": "spoofed-tenant",
+        "namespace": "spoofed-namespace",
+        "workspace_id": "spoofed-workspace",
+    }
+
+    _, reason = builder._retrieve_for_session(session, request)
+
+    assert reason == "no_hits"
+    retrieval_request = retrieval_service.retrieve.call_args.args[0]
+    assert retrieval_request.scope == VectorStoreScope(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
     )

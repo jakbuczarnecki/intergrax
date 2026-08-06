@@ -55,6 +55,7 @@ def test_scope_survives_retrieval_service_manager_pipeline_query() -> None:
         embedding_manager=_EmbeddingManager(),
     )
     manager = RetrieverManager(pipeline)
+    assert manager.supports_scoped_retrieval is True
     service = RetrievalService(
         retriever_manager=manager,
         profile=RagProfile(
@@ -168,3 +169,84 @@ def test_scoped_request_rejects_manager_without_scoped_contract() -> None:
     assert result.reason == "retriever_failed"
     assert result.trace.retrieval_error_kind == "scoped_retrieval_unsupported"
     assert manager.calls == 0
+
+
+def test_scoped_request_rejects_manager_with_false_scoped_contract() -> None:
+    scope = VectorStoreScope(tenant_id="tenant-a")
+
+    class _FalseCapabilityManager:
+        supports_scoped_retrieval = False
+        calls = 0
+
+        def retrieve(self, *args, **kwargs):
+            self.calls += 1
+            return []
+
+    manager = _FalseCapabilityManager()
+    service = RetrievalService(
+        retriever_manager=manager,  # type: ignore[arg-type]
+        profile=RagProfile(route_mode="off", retriever_id="vector_similarity"),
+    )
+
+    result = service.retrieve(RetrievalRequest(query="hello", scope=scope))
+
+    assert result.used is False
+    assert result.reason == "retriever_failed"
+    assert result.trace.retrieval_error_kind == "scoped_retrieval_unsupported"
+    assert manager.calls == 0
+
+
+def test_supported_custom_manager_receives_exact_scope() -> None:
+    scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        namespace="namespace-a",
+        workspace_id="workspace-a",
+    )
+
+    class _ScopedManager:
+        supports_scoped_retrieval = True
+
+        def __init__(self) -> None:
+            self.received_scope = None
+
+        def retrieve(
+            self,
+            query_text: str,
+            *,
+            retriever_id: str,
+            top_k: int,
+            metadata_filter=None,
+            scope: VectorStoreScope,
+            include_embeddings: bool = False,
+        ):
+            self.received_scope = scope
+            return []
+
+    manager = _ScopedManager()
+    service = RetrievalService(
+        retriever_manager=manager,  # type: ignore[arg-type]
+        profile=RagProfile(route_mode="off", retriever_id="vector_similarity"),
+    )
+
+    result = service.retrieve(RetrievalRequest(query="hello", scope=scope))
+
+    assert result.reason == "no_hits"
+    assert manager.received_scope is scope
+
+
+def test_internal_type_error_from_supported_manager_remains_visible() -> None:
+    scope = VectorStoreScope(tenant_id="tenant-a")
+
+    class _BrokenScopedManager:
+        supports_scoped_retrieval = True
+
+        def retrieve(self, *args, **kwargs):
+            raise TypeError("internal retriever defect")
+
+    service = RetrievalService(
+        retriever_manager=_BrokenScopedManager(),  # type: ignore[arg-type]
+        profile=RagProfile(route_mode="off", retriever_id="vector_similarity"),
+    )
+
+    with pytest.raises(TypeError, match="internal retriever defect"):
+        service.retrieve(RetrievalRequest(query="hello", scope=scope))

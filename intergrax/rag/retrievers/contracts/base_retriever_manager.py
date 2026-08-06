@@ -15,6 +15,11 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreSc
 
 
 class BaseRetrieverManager:
+
+    @property
+    def supports_scoped_retrieval(self) -> bool:
+        """Whether this manager explicitly supports scoped retrieval."""
+        return False
     
     @abstractmethod
     def retrieve(

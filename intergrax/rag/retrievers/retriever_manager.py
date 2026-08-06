@@ -34,6 +34,10 @@ class RetrieverManager(BaseRetrieverManager):
         self._pipeline = pipeline
 
     @property
+    def supports_scoped_retrieval(self) -> bool:
+        return True
+
+    @property
     def last_execution(self) -> RetrieverExecutionMetadata | None:
         return self._pipeline.last_execution
 

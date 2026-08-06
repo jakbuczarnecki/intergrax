@@ -107,6 +107,19 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
+            if (
+                request.scope is not None
+                and getattr(self._retriever_manager, "supports_scoped_retrieval", False)
+                is not True
+            ):
+                trace.retrieval_error_kind = "scoped_retrieval_unsupported"
+                trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
+                return RetrievalResult(
+                    chunks=[],
+                    used=False,
+                    reason="retriever_failed",
+                    trace=trace,
+                )
             try:
                 retrieve_kwargs = {
                     "retriever_id": retriever_id,
@@ -117,17 +130,6 @@ class RetrievalService:
                 if request.scope is not None:
                     retrieve_kwargs["scope"] = request.scope
                 candidates = self._retriever_manager.retrieve(query, **retrieve_kwargs)
-            except TypeError:
-                if request.scope is None:
-                    raise
-                trace.retrieval_error_kind = "scoped_retrieval_unsupported"
-                trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
-                return RetrievalResult(
-                    chunks=[],
-                    used=False,
-                    reason="retriever_failed",
-                    trace=trace,
-                )
             except RetrievalError as exc:
                 trace.retrieval_error_kind = exc.kind.value
                 trace.attempted_retriever_ids = list(exc.attempted_retriever_ids)

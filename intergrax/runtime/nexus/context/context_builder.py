@@ -194,25 +194,40 @@ class ContextBuilder:
         session: ChatSession,
         request: RuntimeRequest,
     ) -> Tuple[Optional[VectorStoreScope], Optional[str]]:
-        def canonical(value: object) -> str | None:
+        def canonical(value: object) -> tuple[str | None, bool]:
             if value is None:
-                return None
-            normalized = str(value).strip()
-            return normalized or None
+                return None, False
+            if not isinstance(value, str):
+                return None, True
+            normalized = value.strip()
+            return normalized or None, not bool(normalized)
 
-        def agree(values: tuple[str | None, ...]) -> str | None:
-            supplied = {value for value in values if value is not None}
-            return next(iter(supplied)) if len(supplied) == 1 else None
+        def resolve_values(
+            values: tuple[tuple[str | None, bool], ...],
+            *,
+            invalid_reason: str,
+            conflict_reason: str,
+        ) -> tuple[str | None, Optional[str]]:
+            if any(invalid for _, invalid in values):
+                return None, invalid_reason
+            canonical_values = tuple(value for value, _ in values)
+            supplied = {value for value in canonical_values if value is not None}
+            if len(supplied) > 1:
+                return None, conflict_reason
+            return next(iter(supplied), None), None
 
         tenant_values = (
             canonical(request.tenant_id),
             canonical(self._config.tenant_id),
             canonical(session.tenant_id),
         )
-        tenants = {value for value in tenant_values if value is not None}
-        if len(tenants) > 1:
-            return None, "tenant_scope_conflict"
-        tenant_id = agree(tenant_values)
+        tenant_id, tenant_reason = resolve_values(
+            tenant_values,
+            invalid_reason="tenant_scope_invalid",
+            conflict_reason="tenant_scope_conflict",
+        )
+        if tenant_reason:
+            return None, tenant_reason
         if tenant_id is None:
             return None, "tenant_scope_required"
 
@@ -221,14 +236,18 @@ class ContextBuilder:
             canonical(self._config.workspace_id),
             canonical(session.workspace_id),
         )
-        workspaces = {value for value in workspace_values if value is not None}
-        if len(workspaces) > 1:
-            return None, "workspace_scope_conflict"
-        workspace_id = agree(workspace_values)
+        workspace_id, workspace_reason = resolve_values(
+            workspace_values,
+            invalid_reason="workspace_scope_invalid",
+            conflict_reason="workspace_scope_conflict",
+        )
+        if workspace_reason:
+            return None, workspace_reason
 
         bound_scope = getattr(self._vectorstore, "bound_scope", None)
         if not isinstance(bound_scope, VectorStoreScope):
-            bound_scope = None
+            if bound_scope is not None:
+                return None, "tenant_scope_invalid"
         if bound_scope is not None:
             if tenant_id != bound_scope.tenant_id:
                 return None, "tenant_scope_conflict"
