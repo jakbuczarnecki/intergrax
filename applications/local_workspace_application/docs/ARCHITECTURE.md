@@ -1971,3 +1971,25 @@ idempotent exact deletions. Malformed ownership, broken chain, fingerprint
 conflict, or unavailable exact vector deletion leaves durable state failed and
 never reports success. Provider data is not mutated. The service is intentionally
 not an HTTP or lifecycle-detach endpoint.
+
+## 20. Purge enumeration prerequisites
+
+DocumentStore traversal uses `DocumentQueryPageV1`. The cursor is an opaque,
+bounded, checksum-validated token containing the partition, row-key prefix,
+last returned row key and cursor schema. It is reusable by another process only
+for the same query shape; traversal promises deterministic ordering over an
+unchanged, snapshot-like dataset, not transactional snapshot isolation.
+
+Connected-source index receipts, delivery accounting and enqueue recovery
+intents carry complete binding identity on new writes. Historical records
+without that identity remain explicitly `LEGACY_MIGRATION_REQUIRED` and are
+never associated with a purge by inference. Local-file and web records remain
+legacy records.
+
+Connected-source document references are indexed one-per-row by the exact
+five-part ownership scope. The canonical reference is written first and the
+derived ownership row second. A missing second write is repairable from a
+known canonical reference; an index/reference fingerprint or ownership
+mismatch fails closed. Paginated ownership lookup validates the canonical
+reference before returning it and reports missing canonical rows as orphan
+index evidence, without scanning the workspace.

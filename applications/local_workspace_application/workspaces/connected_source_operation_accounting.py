@@ -11,6 +11,7 @@ from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
 )
 from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryReceipt,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceOperationDeliveryAccounting,
 )
@@ -47,16 +48,25 @@ def _utc_now() -> datetime:
 
 def _validate_accounting_matches_receipt(
     accounting: ConnectedSourceOperationDeliveryAccounting,
-    receipt_documents_indexed: int,
-    receipt_documents_unchanged: int,
-    receipt_items_failed: int,
+    receipt: ConnectedSourceDeliveryReceipt,
 ) -> None:
     if (
-        accounting.documents_indexed != receipt_documents_indexed
-        or accounting.documents_unchanged != receipt_documents_unchanged
-        or accounting.items_failed != receipt_items_failed
+        accounting.documents_indexed != receipt.documents_indexed
+        or accounting.documents_unchanged != receipt.documents_unchanged
+        or accounting.items_failed != receipt.items_failed
     ):
         raise ConnectedSourceDeliveryAccountingConflictError()
+    if (
+        accounting.ownership_classification != "COMPLETE_OWNERSHIP"
+        or accounting.workspace_id != receipt.workspace_id
+        or accounting.source_id != receipt.source_id
+        or accounting.indexed_source_binding_id != receipt.indexed_source_binding_id
+        or accounting.knowledge_source_binding_ref
+        != receipt.knowledge_source_binding_ref
+    ):
+        raise ConnectedSourceDeliveryAccountingConflictError(
+            "connected_source_delivery_accounting_ownership_conflict"
+        )
 
 
 def _aggregate_accounting_counters(
@@ -100,12 +110,17 @@ def apply_completed_delivery_accounting(
     if existing is None:
         accounting = ConnectedSourceOperationDeliveryAccounting(
             tenant_id=operation.tenant_id,
+            workspace_id=receipt.workspace_id,
+            source_id=receipt.source_id,
+            indexed_source_binding_id=receipt.indexed_source_binding_id,
+            knowledge_source_binding_ref=receipt.knowledge_source_binding_ref,
             operation_id=operation.operation_id,
             delivery_id=delivery_id,
             documents_indexed=receipt.documents_indexed,
             documents_unchanged=receipt.documents_unchanged,
             items_failed=receipt.items_failed,
             accounted_at=_utc_now(),
+            ownership_classification="COMPLETE_OWNERSHIP",
         )
         accounting_created = repository.put_connected_source_delivery_accounting_if_absent(accounting)
         existing = repository.get_connected_source_delivery_accounting(
@@ -117,9 +132,7 @@ def apply_completed_delivery_accounting(
             return operation, ConnectedSourceDeliveryAccountingResult(applied=False)
     _validate_accounting_matches_receipt(
         existing,
-        receipt.documents_indexed,
-        receipt.documents_unchanged,
-        receipt.items_failed,
+        receipt,
     )
 
     for _ in range(_MAX_CAS_RETRIES):
@@ -158,9 +171,10 @@ def apply_completed_delivery_accounting(
                 "files_failed": total_failed,
             }
         )
-        if current.status in _TERMINAL_OPERATION_STATUSES:
-            replacement = replacement.model_copy(update={"status": current.status})
-        elif operation.status in _TERMINAL_OPERATION_STATUSES:
+        if (
+            current.status in _TERMINAL_OPERATION_STATUSES
+            or operation.status in _TERMINAL_OPERATION_STATUSES
+        ):
             replacement = replacement.model_copy(update={"status": current.status})
 
         if repository.replace_operation_if_match(expected=current, replacement=replacement):

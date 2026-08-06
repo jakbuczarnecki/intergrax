@@ -18,7 +18,7 @@ from local_workspace_application.workspaces.materialization_visibility import (
 )
 from local_workspace_application.workspaces.models import WorkspaceDocumentReference
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
@@ -120,6 +120,23 @@ class _WorkspaceDocumentIndexReceipt(BaseModel):
     created_at: datetime
     completed_at: datetime | None = None
     materialization_scope: str | None = None
+    materialization_ownership: KnowledgeMaterializationOwnershipV1 | None = None
+
+    @model_validator(mode="after")
+    def _validate_ownership_record(self) -> _WorkspaceDocumentIndexReceipt:
+        ownership = self.materialization_ownership
+        if ownership is None:
+            return self
+        if ownership.ownership_mode is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE:
+            raise ValueError("index_receipt_legacy_ownership_invalid")
+        if (
+            ownership.tenant_id != self.tenant_id
+            or ownership.workspace_id != self.workspace_id
+            or ownership.source_id != self.source_id
+            or self.materialization_scope != ownership.identity_scope
+        ):
+            raise ValueError("index_receipt_ownership_identity_mismatch")
+        return self
 
 
 def _index_receipt_partition(tenant_id: str) -> str:
@@ -170,6 +187,7 @@ class WorkspaceDocumentIndexingService:
         logical_source_path: str,
         content_hash: str,
         materialization_scope: str | None,
+        materialization_ownership: KnowledgeMaterializationOwnershipV1 | None = None,
     ) -> tuple[DocumentRecord, _WorkspaceDocumentIndexReceipt] | None:
         row_key = _index_receipt_row_key(
             tenant_id=tenant_id,
@@ -197,6 +215,17 @@ class WorkspaceDocumentIndexingService:
             or receipt.content_hash != content_hash
             or receipt.materialization_scope != materialization_scope
         ):
+            raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
+        if materialization_scope is not None:
+            if receipt.materialization_ownership is None:
+                raise WorkspaceDocumentIndexingError(
+                    "index_receipt_migration_required"
+                )
+            if receipt.materialization_ownership != materialization_ownership:
+                raise WorkspaceDocumentIndexingError(
+                    "index_receipt_ownership_identity_conflict"
+                )
+        elif receipt.materialization_ownership is not None:
             raise WorkspaceDocumentIndexingError("index_receipt_identity_conflict")
         return record, receipt
 
@@ -247,6 +276,7 @@ class WorkspaceDocumentIndexingService:
                 logical_source_path=receipt.logical_source_path,
                 content_hash=receipt.content_hash,
                 materialization_scope=receipt.materialization_scope,
+                materialization_ownership=receipt.materialization_ownership,
             )
             if reloaded is None or reloaded[1].status != "completed":
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
@@ -350,6 +380,7 @@ class WorkspaceDocumentIndexingService:
             logical_source_path=logical_source_path,
             content_hash=content_hash,
             materialization_scope=materialization_scope,
+            materialization_ownership=materialization_ownership,
         )
         if receipt_record is not None:
             _, receipt = receipt_record
@@ -443,6 +474,12 @@ class WorkspaceDocumentIndexingService:
             status="in_progress",
             created_at=_utc_now(),
             materialization_scope=materialization_scope,
+            materialization_ownership=(
+                materialization_ownership
+                if materialization_ownership.ownership_mode
+                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                else None
+            ),
         )
         if not self._put_index_receipt_if_absent(receipt):
             reloaded = self._get_index_receipt(
@@ -452,6 +489,7 @@ class WorkspaceDocumentIndexingService:
                 logical_source_path=logical_source_path,
                 content_hash=content_hash,
                 materialization_scope=materialization_scope,
+                materialization_ownership=materialization_ownership,
             )
             if reloaded is None:
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
@@ -497,15 +535,19 @@ class WorkspaceDocumentIndexingService:
             reason = str(ingest_summary.get("reason") or "ingest_failed")
             raise WorkspaceDocumentIndexingError(reason)
 
+        completed_record = self._get_index_receipt(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            logical_source_path=logical_source_path,
+            content_hash=content_hash,
+            materialization_scope=materialization_scope,
+            materialization_ownership=materialization_ownership,
+        )
+        if completed_record is None:
+            raise WorkspaceDocumentIndexingError("index_receipt_missing")
         completed_receipt = self._complete_index_receipt(
-            record=self._get_index_receipt(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                source_id=source_id,
-                logical_source_path=logical_source_path,
-                content_hash=content_hash,
-                materialization_scope=materialization_scope,
-            )[0],
+            record=completed_record[0],
             receipt=receipt,
             num_chunks=int(ingest_summary.get("num_chunks") or 0),
         )

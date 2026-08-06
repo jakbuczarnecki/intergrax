@@ -235,12 +235,21 @@ class ConnectedSourceOperationDeliveryAccountingV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str | None = Field(default=None, min_length=1, max_length=128)
+    source_id: str | None = Field(default=None, min_length=1, max_length=128)
+    indexed_source_binding_id: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
+    knowledge_source_binding_ref: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
     operation_id: str = Field(..., min_length=1, max_length=128)
     delivery_id: str = Field(..., min_length=64, max_length=64)
     documents_indexed: int = Field(..., ge=0)
     documents_unchanged: int = Field(..., ge=0)
     items_failed: int = Field(..., ge=0)
     accounted_at: datetime
+    ownership_classification: str = "LEGACY_MIGRATION_REQUIRED"
 
     @field_validator("delivery_id")
     @classmethod
@@ -248,6 +257,29 @@ class ConnectedSourceOperationDeliveryAccountingV1(BaseModel):
         if not _SHA256_HEX_RE.fullmatch(value):
             raise ValueError("connected_source_delivery_id_invalid")
         return value
+
+    @model_validator(mode="after")
+    def _validate_ownership(self) -> ConnectedSourceOperationDeliveryAccountingV1:
+        identity = (
+            self.workspace_id,
+            self.source_id,
+            self.indexed_source_binding_id,
+            self.knowledge_source_binding_ref,
+        )
+        if any(value is not None for value in identity) and any(
+            value is None for value in identity
+        ):
+            raise ValueError("connected_source_accounting_ownership_incomplete")
+        if self.ownership_classification == "COMPLETE_OWNERSHIP" and any(
+            value is None for value in identity
+        ):
+            raise ValueError("connected_source_accounting_ownership_incomplete")
+        if (
+            self.ownership_classification != "COMPLETE_OWNERSHIP"
+            and all(value is not None for value in identity)
+        ):
+            raise ValueError("connected_source_accounting_classification_mismatch")
+        return self
 
 
 ConnectedSourceOperationDeliveryAccounting = ConnectedSourceOperationDeliveryAccountingV1
@@ -259,17 +291,41 @@ class ConnectedSourceSyncEnqueueIntentV1(BaseModel):
     tenant_id: str = Field(..., min_length=1, max_length=128)
     workspace_id: str = Field(..., min_length=1, max_length=128)
     source_id: str = Field(..., min_length=1, max_length=128)
+    indexed_source_binding_id: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
+    knowledge_source_binding_ref: str | None = Field(
+        default=None, min_length=1, max_length=128
+    )
     operation_id: str = Field(..., min_length=1, max_length=128)
     enqueue_generation: int = Field(..., ge=1)
     last_enqueued_generation: int = Field(default=0, ge=0)
     last_task_id: str | None = None
     last_queue_provider: str | None = None
     updated_at: datetime
+    ownership_classification: str = "LEGACY_MIGRATION_REQUIRED"
 
     @model_validator(mode="after")
     def _validate_enqueue_generation_invariants(self) -> ConnectedSourceSyncEnqueueIntentV1:
         if self.last_enqueued_generation > self.enqueue_generation:
             raise ValueError("connected_source_enqueue_generation_invariant_violation")
+        identity = (
+            self.indexed_source_binding_id,
+            self.knowledge_source_binding_ref,
+        )
+        if any(value is not None for value in identity) and any(
+            value is None for value in identity
+        ):
+            raise ValueError("connected_source_enqueue_ownership_incomplete")
+        if self.ownership_classification == "COMPLETE_OWNERSHIP" and any(
+            value is None for value in identity
+        ):
+            raise ValueError("connected_source_enqueue_ownership_incomplete")
+        if (
+            self.ownership_classification != "COMPLETE_OWNERSHIP"
+            and all(value is not None for value in identity)
+        ):
+            raise ValueError("connected_source_enqueue_classification_mismatch")
         return self
 
 

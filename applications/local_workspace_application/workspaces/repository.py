@@ -17,6 +17,14 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.document_ownership_index import (
+    DocumentOwnershipIndexError,
+    DocumentReferenceOwnershipPageV1,
+    WorkspaceDocumentOwnershipIndexEntryV1,
+    ownership_index_partition,
+    parse_index_entry,
+    reference_fingerprint,
+)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceCommittedQueryPolicy,
     WorkspaceConnectionAttachment,
@@ -29,6 +37,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.materialization_visibility import (
     KnowledgeMaterializationActivePointerV1,
+    KnowledgeMaterializationOwnershipModeV1,
 )
 from local_workspace_application.workspaces.models import (
     ActiveKnowledgeIngestionLocator,
@@ -94,6 +103,7 @@ _ENTITY_WORKSPACE = "workspace"
 _ENTITY_SOURCE = "source"
 _ENTITY_OPERATION = "operation"
 _ENTITY_DOCUMENT = "document"
+_ENTITY_DOCUMENT_OWNERSHIP_INDEX = "document_ownership_index"
 _ENTITY_KNOWLEDGE_INPUT = "knowledge_input"
 _ENTITY_MANAGED_FILE = "managed_file"
 _ENTITY_WEB_URL_LOCATOR = "web_url_locator"
@@ -837,6 +847,8 @@ class ManagedWorkspaceRepository:
         workspace_id: str,
         source_id: str,
         operation_id: str,
+        indexed_source_binding_id: str | None = None,
+        knowledge_source_binding_ref: str | None = None,
         max_attempts: int = 3,
     ) -> ConnectedSourceSyncEnqueueIntent:
         from datetime import UTC, datetime
@@ -849,18 +861,42 @@ class ManagedWorkspaceRepository:
             )
             now = datetime.now(UTC)
             if existing is None:
+                complete_ownership = (
+                    indexed_source_binding_id is not None
+                    and knowledge_source_binding_ref is not None
+                )
                 intent = ConnectedSourceSyncEnqueueIntent(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    knowledge_source_binding_ref=knowledge_source_binding_ref,
                     operation_id=operation_id,
                     enqueue_generation=1,
                     last_enqueued_generation=0,
                     updated_at=now,
+                    ownership_classification=(
+                        "COMPLETE_OWNERSHIP"
+                        if complete_ownership
+                        else "LEGACY_MIGRATION_REQUIRED"
+                    ),
                 )
                 if self.put_connected_source_sync_enqueue_intent_if_absent(intent):
                     return intent
                 continue
+            if (
+                (
+                    indexed_source_binding_id is not None
+                    or knowledge_source_binding_ref is not None
+                )
+                and (
+                    existing.ownership_classification != "COMPLETE_OWNERSHIP"
+                    or existing.indexed_source_binding_id != indexed_source_binding_id
+                    or existing.knowledge_source_binding_ref
+                    != knowledge_source_binding_ref
+                )
+            ):
+                raise ValueError("connected_source_enqueue_migration_required")
             updated = existing.model_copy(
                 update={
                     "enqueue_generation": existing.enqueue_generation + 1,
@@ -875,6 +911,35 @@ class ManagedWorkspaceRepository:
             ):
                 return updated
         raise RuntimeError("connected_source_enqueue_generation_allocation_failed")
+
+    def resolve_connected_source_ownership_for_source(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+    ) -> tuple[str, str] | None:
+        versions = self.list_knowledge_indexed_source_versions(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        )
+        matches = [
+            item
+            for item in versions
+            if item.source_id == source_id
+        ]
+        if not matches:
+            return None
+        binding_ids = {
+            (
+                item.indexed_source_binding_id,
+                item.knowledge_source_binding_ref,
+            )
+            for item in matches
+        }
+        if len(binding_ids) != 1:
+            raise ValueError("connected_source_ownership_ambiguous")
+        return next(iter(binding_ids))
 
     def get_connected_source_sync_enqueue_intent(
         self,
@@ -1006,7 +1071,132 @@ class ManagedWorkspaceRepository:
                 data={"document_id": ref.document_id, "content_hash": ref.content_hash},
             )
         )
+        if (
+            ref.materialization_ownership is not None
+            and ref.materialization_ownership.ownership_mode
+            is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+        ):
+            self.put_document_ownership_index_entry(
+                WorkspaceDocumentOwnershipIndexEntryV1.for_reference(ref)
+            )
         return ref
+
+    def put_document_ownership_index_entry(
+        self,
+        entry: WorkspaceDocumentOwnershipIndexEntryV1,
+    ) -> WorkspaceDocumentOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_index_entry(existing)
+            if parsed != entry:
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_conflict"
+                )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise DocumentOwnershipIndexError("document_ownership_index_store_unavailable")
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_index_entry(retry) != entry:
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_conflict"
+                )
+        return entry
+
+    def repair_document_ownership_index_entry(
+        self,
+        reference: WorkspaceDocumentReference,
+    ) -> WorkspaceDocumentOwnershipIndexEntryV1:
+        try:
+            entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(reference)
+        except ValueError as exc:
+            raise DocumentOwnershipIndexError(str(exc)) from exc
+        return self.put_document_ownership_index_entry(entry)
+
+    def list_document_refs_by_materialization_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentReferenceOwnershipPageV1:
+        scope = {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "source_id": source_id,
+            "indexed_source_binding_id": indexed_source_binding_id,
+            "knowledge_source_binding_ref": knowledge_source_binding_ref,
+        }
+        prefix_entry = WorkspaceDocumentOwnershipIndexEntryV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            document_id="scope-probe",
+            reference_fingerprint="0" * 64,
+            indexed_at=datetime.now(UTC),
+        )
+        page = self._store.query(
+            ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix_entry.scope_prefix,
+            cursor=cursor,
+        )
+        references: list[WorkspaceDocumentReference] = []
+        orphan_entries: list[WorkspaceDocumentOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_index_entry(record)
+            if any(
+                getattr(entry, key) != value
+                for key, value in scope.items()
+            ):
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_scope_mismatch"
+                )
+            reference = self.get_document_ref(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                document_id=entry.document_id,
+            )
+            if reference is None:
+                orphan_entries.append(entry)
+                continue
+            ownership = reference.materialization_ownership
+            if (
+                ownership is None
+                or ownership.ownership_mode
+                is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                or (
+                    ownership.tenant_id,
+                    ownership.workspace_id,
+                    ownership.source_id,
+                    ownership.indexed_source_binding_id,
+                    ownership.knowledge_source_binding_ref,
+                )
+                != (
+                    tenant_id,
+                    workspace_id,
+                    source_id,
+                    indexed_source_binding_id,
+                    knowledge_source_binding_ref,
+                )
+                or reference_fingerprint(reference) != entry.reference_fingerprint
+            ):
+                raise DocumentOwnershipIndexError(
+                    "document_ownership_index_reference_mismatch"
+                )
+            references.append(reference)
+        return DocumentReferenceOwnershipPageV1(
+            references=tuple(references),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
 
     def get_document_ref_by_path(
         self,

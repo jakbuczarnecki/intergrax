@@ -8,11 +8,6 @@ import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from intergrax.queueing.contracts.task_queue import TaskHandle, TaskStatus
-from intergrax.queueing.providers.document_store.document_store_task_queue import (
-    DocumentStoreTaskQueue,
-)
-from intergrax.tools.registry.wiring import ToolWiringContext
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceSyncEnqueueIntent,
 )
@@ -24,8 +19,16 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
+from local_workspace_application.workspaces.sync_enqueue import (
+    enqueue_managed_workspace_sync,
+)
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
+
+from intergrax.queueing.contracts.task_queue import TaskHandle, TaskStatus
+from intergrax.queueing.providers.document_store.document_store_task_queue import (
+    DocumentStoreTaskQueue,
+)
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +55,18 @@ def record_connected_source_enqueue_intent(
     repository: ManagedWorkspaceRepository,
     operation: WorkspaceOperation,
 ) -> ConnectedSourceSyncEnqueueIntent:
+    ownership = repository.resolve_connected_source_ownership_for_source(
+        tenant_id=operation.tenant_id,
+        workspace_id=operation.workspace_id,
+        source_id=operation.source_id,
+    )
     return repository.allocate_connected_source_sync_enqueue_generation(
         tenant_id=operation.tenant_id,
         workspace_id=operation.workspace_id,
         source_id=operation.source_id,
         operation_id=operation.operation_id,
+        indexed_source_binding_id=ownership[0] if ownership is not None else None,
+        knowledge_source_binding_ref=ownership[1] if ownership is not None else None,
         max_attempts=_MAX_CAS_RETRIES,
     )
 
@@ -106,9 +116,9 @@ def _should_allocate_next_generation(
     active = _latest_task_is_active(wiring_context=wiring_context, intent=intent)
     if active is True:
         return False
-    if active is None and intent.last_enqueued_generation == intent.enqueue_generation:
-        return False
-    return True
+    return not (
+        active is None and intent.last_enqueued_generation == intent.enqueue_generation
+    )
 
 
 def try_enqueue_connected_source_sync(
@@ -150,12 +160,18 @@ def try_enqueue_connected_source_sync(
             operation=operation,
         )
 
-    if resolved_intent.last_enqueued_generation >= resolved_intent.enqueue_generation:
-        if _latest_task_is_active(wiring_context=wiring_context, intent=resolved_intent) is not False:
-            return ConnectedSourceEnqueueResult(
-                enqueued=False,
-                enqueue_generation=resolved_intent.enqueue_generation,
-            )
+    if (
+        resolved_intent.last_enqueued_generation >= resolved_intent.enqueue_generation
+        and _latest_task_is_active(
+            wiring_context=wiring_context,
+            intent=resolved_intent,
+        )
+        is not False
+    ):
+        return ConnectedSourceEnqueueResult(
+            enqueued=False,
+            enqueue_generation=resolved_intent.enqueue_generation,
+        )
 
     job = ManagedWorkspaceSyncJob(
         tenant_id=operation.tenant_id,
