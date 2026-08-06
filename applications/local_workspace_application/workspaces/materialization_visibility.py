@@ -22,6 +22,10 @@ from local_workspace_application.workspaces.connected_source_manifest import (
     ConnectedSourceMaterializationManifestRepository,
 )
 
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+)
+
 _IDENTIFIER_RE = re.compile(r"^[^\x00-\x1f\x7f]{1,512}$")
 
 
@@ -271,6 +275,19 @@ class RepositoryKnowledgeMaterializationVisibility:
         if ownership.ownership_mode is KnowledgeMaterializationOwnershipModeV1.LEGACY:
             return not is_connected
         if not is_connected:
+            return False
+        try:
+            publication_fence = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+                self._repository.document_store
+            ).read_fence(
+                tenant_id=ownership.tenant_id,
+                binding_id=ownership.knowledge_source_binding_ref or "",
+            )
+        except (TypeError, ValueError, AttributeError):
+            return False
+        if publication_fence is not None and (
+            not publication_fence.enabled or publication_fence.detached
+        ):
             return False
         if (
             ownership.indexed_source_binding_id is None

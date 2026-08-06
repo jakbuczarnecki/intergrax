@@ -331,6 +331,14 @@ class KnowledgeSyncPublicationFencePort(Protocol):
     ) -> KnowledgeSyncCommittedPublicationV2 | None:
         ...
 
+    def read_publication_head(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
+        ...
+
     def list_committed_publications(
         self,
         *,
@@ -346,6 +354,41 @@ class KnowledgeSyncPublicationFencePort(Protocol):
         binding_id: str,
         delivery_id: str,
     ) -> KnowledgeSyncCommittedPublicationV2 | None:
+        ...
+
+    def invalidate_for_purge(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        requested_lifecycle_revision: int,
+        purge_id: str,
+    ) -> KnowledgeSyncPublicationFenceV1:
+        ...
+
+    def read_publication_commit_node(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        commit_id: str,
+    ) -> KnowledgeSyncPublicationCommitNodeV1:
+        ...
+
+    def advance_purge_publication_head(
+        self,
+        *,
+        expected_fence: KnowledgeSyncPublicationFenceV1,
+        expected_head: KnowledgeSyncCommittedPublicationV2 | None,
+        replacement_head: KnowledgeSyncCommittedPublicationV2 | None,
+    ) -> KnowledgeSyncPublicationFenceV1:
+        ...
+
+    def delete_publication_commit_node(
+        self,
+        *,
+        node: KnowledgeSyncPublicationCommitNodeV1,
+    ) -> bool:
         ...
 class KnowledgeSyncPublicationFenceConflict(Exception):
     """Optimistic lifecycle fence write conflict."""
@@ -816,6 +859,19 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
         self._read_chain(tenant_id=tenant, binding_id=binding, head=descriptor)
         return descriptor
 
+    def read_publication_head(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+    ) -> KnowledgeSyncCommittedPublicationV2 | None:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        document = self._store.get(self._partition_key(tenant), self._row_key(binding))
+        if document is None:
+            return None
+        return self._parse(document, tenant_id=tenant, binding_id=binding)[2]
+
     def list_committed_publications(
         self,
         *,
@@ -851,6 +907,153 @@ class DocumentStoreKnowledgeSyncPublicationFenceRepository:
             if descriptor.delivery_id == delivery:
                 return descriptor
         return None
+
+    def invalidate_for_purge(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        requested_lifecycle_revision: int,
+        purge_id: str,
+    ) -> KnowledgeSyncPublicationFenceV1:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        purge = _require_non_empty(purge_id, field_name="purge_id")
+        if requested_lifecycle_revision < 1:
+            raise ValueError("requested_lifecycle_revision must be >= 1")
+        current = self._store.get(self._partition_key(tenant), self._row_key(binding))
+        if current is None:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
+        fence, permit, descriptor = self._parse(
+            current,
+            tenant_id=tenant,
+            binding_id=binding,
+        )
+        if permit is not None and permit.expires_at > self._utc_now():
+            raise KnowledgeSyncPublicationInProgress("publication_in_progress")
+        if not fence.enabled and fence.detached and fence.lifecycle_revision >= requested_lifecycle_revision:
+            return fence
+        revision = max(
+            fence.lifecycle_revision + 1,
+            requested_lifecycle_revision,
+        )
+        token = hashlib.sha256(
+            f"purge:{tenant}:{binding}:{purge}:{revision}:{secrets.token_urlsafe(24)}".encode()
+        ).hexdigest()
+        replacement = KnowledgeSyncPublicationFenceV1(
+            tenant_id=tenant,
+            binding_id=binding,
+            lifecycle_revision=revision,
+            lifecycle_token=token,
+            enabled=False,
+            detached=True,
+        )
+        if not self._store.replace_if_match(
+            expected=current,
+            replacement=self._to_document(
+                replacement,
+                committed_publication=descriptor,
+            ),
+        ):
+            raise KnowledgeSyncPublicationFenceConflict("publication purge invalidation conflict")
+        return replacement
+
+    def read_publication_commit_node(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        commit_id: str,
+    ) -> KnowledgeSyncPublicationCommitNodeV1:
+        tenant = _require_non_empty(tenant_id, field_name="tenant_id")
+        binding = _require_non_empty(binding_id, field_name="binding_id")
+        commit = _require_non_empty(commit_id, field_name="commit_id")
+        record = self._store.get(
+            self._commit_partition(tenant, binding),
+            self._commit_row_key(commit),
+        )
+        if record is None:
+            raise ValueError("publication commit node is missing")
+        node = self._parse_commit_node(record)
+        if (
+            node.commit_id != commit
+            or node.descriptor.tenant_id != tenant
+            or node.descriptor.binding_id != binding
+        ):
+            raise ValueError("publication commit chain identity mismatch")
+        return node
+
+    def advance_purge_publication_head(
+        self,
+        *,
+        expected_fence: KnowledgeSyncPublicationFenceV1,
+        expected_head: KnowledgeSyncCommittedPublicationV2 | None,
+        replacement_head: KnowledgeSyncCommittedPublicationV2 | None,
+    ) -> KnowledgeSyncPublicationFenceV1:
+        self._validate_identity(expected_fence)
+        if expected_fence.enabled or not expected_fence.detached:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence is not purge-invalidated")
+        if expected_head is not None:
+            self._validate_descriptor_identity(expected_head)
+            if (
+                expected_head.tenant_id != expected_fence.tenant_id
+                or expected_head.binding_id != expected_fence.binding_id
+            ):
+                raise KnowledgeSyncPublicationFenceConflict("publication purge head identity mismatch")
+        if replacement_head is not None:
+            self._validate_descriptor_identity(replacement_head)
+            if (
+                replacement_head.tenant_id != expected_fence.tenant_id
+                or replacement_head.binding_id != expected_fence.binding_id
+            ):
+                raise KnowledgeSyncPublicationFenceConflict(
+                    "publication purge predecessor identity mismatch"
+                )
+        current = self._store.get(
+            self._partition_key(expected_fence.tenant_id),
+            self._row_key(expected_fence.binding_id),
+        )
+        if current is None:
+            raise KnowledgeSyncPublicationFenceConflict("publication fence is missing")
+        fence, permit, current_head = self._parse(
+            current,
+            tenant_id=expected_fence.tenant_id,
+            binding_id=expected_fence.binding_id,
+        )
+        if fence != expected_fence or permit is not None:
+            raise KnowledgeSyncPublicationFenceConflict("publication purge head CAS conflict")
+        if current_head != expected_head:
+            raise KnowledgeSyncPublicationFenceConflict("publication purge head changed")
+        replacement = self._to_document(
+            fence,
+            committed_publication=replacement_head,
+        )
+        if not self._store.replace_if_match(expected=current, replacement=replacement):
+            raise KnowledgeSyncPublicationFenceConflict("publication purge head CAS conflict")
+        return fence
+
+    def delete_publication_commit_node(
+        self,
+        *,
+        node: KnowledgeSyncPublicationCommitNodeV1,
+    ) -> bool:
+        self._validate_descriptor_identity(node.descriptor)
+        record = DocumentRecord(
+            partition_key=self._commit_partition(
+                node.descriptor.tenant_id,
+                node.descriptor.binding_id,
+            ),
+            row_key=self._commit_row_key(node.commit_id),
+            data={
+                "schema_version": _PUBLICATION_COMMIT_NODE_SCHEMA,
+                "commit_id": node.commit_id,
+                "previous_commit_id": node.previous_commit_id,
+                "node": node.model_dump(mode="json"),
+            },
+        )
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise TypeError("publication purge requires ConditionalDocumentStore")
+        return self._store.delete_if_match(expected=record)
 
     @staticmethod
     def _commit_partition(tenant_id: str, binding_id: str) -> str:

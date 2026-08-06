@@ -1948,3 +1948,26 @@ Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../.
 uv sync --project applications/local_workspace_application
 uv run --project applications/local_workspace_application python -m local_workspace_application.host.main
 ```
+
+## 19. Exact connected-source materialization purge
+
+`KnowledgeMaterializationPurgeService` is the internal, provider-neutral boundary
+for the next Indexed Source detach task. Its scope is the exact tuple
+`tenant_id/workspace_id/source_id/indexed_source_binding_id/knowledge_source_binding_ref`;
+local-file and web ownership are never eligible.
+
+Purge first persists its intent and then performs a CAS invalidation of the
+publication fence. The fence becomes detached and disabled while retaining the
+committed publication head, so Search/Ask fails closed before any local
+document, chunk, embedding, candidate, manifest, receipt, pointer or sequence
+record is removed. Sync permits and stale commits cannot cross that CAS.
+
+Deletion is bounded by a 1–500 record page and a durable phase cursor. Manifest
+entries are validated by identity and fingerprint, then exact document IDs are
+deleted through the vector-store metadata lookup and scoped ID deletion port.
+The publication chain is traversed from its exact head; each head is CAS-advanced
+to its predecessor before the old node is removed. A restart repeats only
+idempotent exact deletions. Malformed ownership, broken chain, fingerprint
+conflict, or unavailable exact vector deletion leaves durable state failed and
+never reports success. Provider data is not mutated. The service is intentionally
+not an HTTP or lifecycle-detach endpoint.
