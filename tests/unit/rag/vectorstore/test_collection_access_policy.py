@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
@@ -25,11 +26,14 @@ def _record(
     *,
     tenant_id: str = "t1",
     namespace: str | None = None,
+    workspace_id: str | None = None,
     metadata: dict[str, object] | None = None,
 ) -> VectorStoreRecord:
     document_scope: dict[str, str] = {"tenant_id": tenant_id}
     if namespace is not None:
         document_scope["namespace"] = namespace
+    if workspace_id is not None:
+        document_scope["workspace_id"] = workspace_id
     document = KnowledgeDocument.model_validate(
         {
             "schema_version": 1,
@@ -105,14 +109,15 @@ def test_collection_access_policy_workspace_allowlist() -> None:
         )
 
 
-def test_bound_workspace_write_ignores_metadata_spoof(
+def test_bound_workspace_write_uses_authoritative_bound_scope(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     provider = _NativeProvider()
     record = _record(
         tenant_id="tenant-a",
         namespace="rag",
-        metadata={"workspace_id": "spoofed-workspace"},
+        workspace_id="workspace-a",
+        metadata={"source": "test"},
     )
     manager = VectorstoreManager(
         provider,
@@ -161,7 +166,65 @@ def test_bound_workspace_write_ignores_metadata_spoof(
             workspace_id="workspace-a",
         )
     ]
-    assert record.document.metadata["workspace_id"] == "spoofed-workspace"
+    assert record.document.metadata["source"] == "test"
+    assert "tenant_id" not in record.document.metadata
+    assert "namespace" not in record.document.metadata
+    assert "workspace_id" not in record.document.metadata
+
+
+def test_bound_workspace_write_rejects_reserved_metadata_spoof_before_provider(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _NativeProvider()
+    manager = VectorstoreManager(
+        provider,
+        scope=VectorStoreScope(
+            tenant_id="tenant-a",
+            namespace="rag",
+            workspace_id="workspace-a",
+        ),
+        access_policy=CollectionAccessPolicy(
+            tenant_id="tenant-a",
+            allowed_workspace_ids=frozenset({"workspace-a"}),
+        ),
+    )
+    policy_calls: list[tuple[str, str | None, str | None]] = []
+    real_enforce = vectorstore_manager_module.enforce_collection_access
+
+    def policy_spy(
+        policy: CollectionAccessPolicy | None,
+        operation: str,
+        *,
+        workspace_id: str | None,
+        collection_name: str | None,
+    ) -> None:
+        policy_calls.append((operation, workspace_id, collection_name))
+        real_enforce(
+            policy,
+            operation,
+            workspace_id=workspace_id,
+            collection_name=collection_name,
+        )
+
+    monkeypatch.setattr(
+        vectorstore_manager_module,
+        "enforce_collection_access",
+        policy_spy,
+    )
+
+    with pytest.raises(
+        ValidationError,
+        match="metadata must not contain reserved key 'workspace_id'",
+    ):
+        _record(
+            tenant_id="tenant-a",
+            namespace="rag",
+            metadata={"workspace_id": "spoofed-workspace"},
+        )
+
+    assert provider.records == []
+    assert provider.scopes == []
+    assert policy_calls == []
 
 
 def test_bound_workspace_rejects_conflicting_explicit_scope_before_provider() -> None:
