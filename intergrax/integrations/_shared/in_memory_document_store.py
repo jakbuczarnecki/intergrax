@@ -5,13 +5,13 @@
 
 from __future__ import annotations
 
+import secrets
 import threading
 
 from intergrax.integrations.contracts.document_store import (
+    DocumentQueryCursorCodec,
     DocumentQueryPageV1,
     DocumentRecord,
-    decode_document_query_cursor,
-    encode_document_query_cursor,
     validate_document_query_limit,
 )
 
@@ -38,7 +38,21 @@ def _data_matches(current: DocumentRecord, expected: DocumentRecord) -> bool:
 class InMemoryDocumentStore:
     """Deterministic document store backing conformance suites."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        cursor_codec: DocumentQueryCursorCodec | None = None,
+        cursor_secret: bytes | None = None,
+    ) -> None:
+        if cursor_codec is not None and cursor_secret is not None:
+            raise TypeError("document_store_cursor_codec_configuration_invalid")
+        self._cursor_codec = cursor_codec or DocumentQueryCursorCodec(
+            secret=(
+                cursor_secret
+                if cursor_secret is not None
+                else secrets.token_bytes(32)
+            )
+        )
         self._rows: dict[tuple[str, str], DocumentRecord] = {}
         self._lock = threading.RLock()
 
@@ -73,15 +87,15 @@ class InMemoryDocumentStore:
                 rows.append(doc)
             rows.sort(key=lambda doc: doc.row_key)
             if cursor is not None:
-                last_row_key = decode_document_query_cursor(
+                last_row_key = self._cursor_codec.decode(
                     cursor,
                     partition_key=partition_key,
                     row_key_prefix=row_key_prefix,
-                )
+                ).last_row_key
                 rows = [doc for doc in rows if doc.row_key > last_row_key]
             sliced = rows[:limit]
             next_cursor = (
-                encode_document_query_cursor(
+                self._cursor_codec.encode(
                     partition_key=partition_key,
                     row_key_prefix=row_key_prefix,
                     last_row_key=sliced[-1].row_key,
