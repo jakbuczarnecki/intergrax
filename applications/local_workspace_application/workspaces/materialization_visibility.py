@@ -291,6 +291,21 @@ class RepositoryKnowledgeMaterializationVisibility:
         ):
             return False
         try:
+            assignment = self._repository.get_connected_source_delivery_sequence_assignment(
+                tenant_id=ownership.tenant_id,
+                workspace_id=ownership.workspace_id,
+                source_id=ownership.source_id,
+                indexed_source_binding_id=ownership.indexed_source_binding_id,
+                delivery_id=ownership.delivery_id,
+            )
+        except (TypeError, ValueError, AttributeError):
+            return False
+        if (
+            assignment is not None
+            and assignment.materialization_sequence != receipt.materialization_sequence
+        ):
+            return False
+        try:
             pointer = self._repository.get_active_materialization_pointer(
                 tenant_id=ownership.tenant_id,
                 workspace_id=ownership.workspace_id,

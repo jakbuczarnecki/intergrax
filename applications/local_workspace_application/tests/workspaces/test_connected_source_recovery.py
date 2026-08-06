@@ -17,6 +17,7 @@ import pytest
 from intergrax.compat.langchain.documents import to_langchain_document
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.integrations.providers.conversation_channel.slack.config import (
     SlackConversationChannelIntegrationConfig,
 )
@@ -70,6 +71,7 @@ from local_workspace_application.workspaces.connected_source_delivery import (
 )
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliverySequenceHead,
     ConnectedSourceDeliveryStatus,
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
@@ -120,7 +122,10 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
     WorkspaceStatus,
 )
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.repository import (
+    ManagedWorkspaceRepository,
+    WorkspaceKnowledgeConfigurationRepositoryError,
+)
 from local_workspace_application.workspaces.sync_jobs import (
     LKW_MANAGED_WORKSPACE_SYNC_TASK_NAME,
     ManagedWorkspaceSyncJob,
@@ -570,6 +575,142 @@ def test_delivery_sequence_allocation_is_durable_and_cas_ordered() -> None:
         )
         racing_replay_sequences = [future.result() for future in replay_futures]
     assert racing_replay_sequences == [4, 4]
+    head = first_repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert head is not None
+    assert set(head.model_dump()) == {
+        "tenant_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+        "next_sequence",
+    }
+    assert "delivery_sequences" not in head.model_dump()
+    assignments = first_repository.list_connected_source_delivery_sequence_assignments(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert len(assignments) == 4
+    assert len({item.delivery_id for item in assignments}) == 4
+    assert len({item.materialization_sequence for item in assignments}) == 4
+
+
+def test_delivery_sequence_storage_shape_scales_without_growing_head() -> None:
+    repository = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    delivery_ids = tuple(f"{index:064x}" for index in range(750))
+
+    for delivery_id in delivery_ids:
+        assert (
+            allocate_delivery_sequence(
+                repository=repository,
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                source_id=_SOURCE,
+                indexed_source_binding_id=_INDEXED,
+                delivery_id=delivery_id,
+            )
+            > 0
+        )
+
+    head = repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert isinstance(head, ConnectedSourceDeliverySequenceHead)
+    assert head.next_sequence == 751
+    assert "delivery_sequences" not in head.model_dump()
+    assignments = repository.list_connected_source_delivery_sequence_assignments(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert len(assignments) == 750
+    assert {item.delivery_id for item in assignments} == set(delivery_ids)
+    assert {item.materialization_sequence for item in assignments} == set(range(1, 751))
+
+
+def test_delivery_sequence_crash_gap_is_recoverable() -> None:
+    repository = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    first_delivery = allocate_delivery_sequence(
+        repository=repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        delivery_id=_DELIVERY,
+    )
+    head = repository.get_connected_source_delivery_sequence_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+    )
+    assert head is not None
+    assert repository.replace_connected_source_delivery_sequence_head_if_match(
+        expected=head,
+        replacement=head.model_copy(update={"next_sequence": head.next_sequence + 1}),
+    )
+
+    recovered = allocate_delivery_sequence(
+        repository=repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_INDEXED,
+        delivery_id="b" * 64,
+    )
+    assert first_delivery == 1
+    assert recovered == 3
+    assert (
+        allocate_delivery_sequence(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+            delivery_id="b" * 64,
+        )
+        == 3
+    )
+
+
+def test_old_delivery_sequence_ledger_requires_explicit_migration() -> None:
+    store = InMemoryDocumentStore()
+    repository = ManagedWorkspaceRepository(store)
+    store.put(
+        DocumentRecord(
+            partition_key=f"lkw.managed_workspace:{_TENANT}:connected_source_delivery_sequence",
+            row_key=f"{_WORKSPACE}:{_SOURCE}:{_INDEXED}",
+            data={
+                "tenant_id": _TENANT,
+                "workspace_id": _WORKSPACE,
+                "source_id": _SOURCE,
+                "indexed_source_binding_id": _INDEXED,
+                "next_sequence": 2,
+                "delivery_sequences": {_DELIVERY: 1},
+            },
+        )
+    )
+
+    with pytest.raises(
+        WorkspaceKnowledgeConfigurationRepositoryError,
+        match="connected_source_delivery_sequence_migration_required",
+    ):
+        repository.get_connected_source_delivery_sequence_head(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_INDEXED,
+        )
 
 
 def test_langchain_transport_normalizes_frozen_nested_metadata() -> None:

@@ -7,11 +7,13 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TypeVar
 
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
-    ConnectedSourceDeliverySequenceLedger,
+    ConnectedSourceDeliverySequenceAssignment,
+    ConnectedSourceDeliverySequenceHead,
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
@@ -69,7 +71,11 @@ _ENTITY_KNOWLEDGE_CONFIGURATION_LIVE_ACCESS = "knowledge_configuration_live_acce
 _ENTITY_KNOWLEDGE_CONFIGURATION_QUERY_POLICY = "knowledge_configuration_query_policy"
 _ENTITY_CONNECTED_SOURCE_DELIVERY = "connected_source_delivery"
 _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE = "connected_source_sync_enqueue"
-_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE = "connected_source_delivery_sequence"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_LEGACY = "connected_source_delivery_sequence"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD = "connected_source_delivery_sequence_head"
+_ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT = (
+    "connected_source_delivery_sequence_assignment"
+)
 
 
 class WorkspaceKnowledgeConfigurationRepositoryError(RuntimeError):
@@ -367,6 +373,43 @@ class ManagedWorkspaceRepository:
             ConnectedSourceDeliveryReceipt,
         )
 
+    def get_connected_source_delivery_sequence_head(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> ConnectedSourceDeliverySequenceHead | None:
+        row_key = self._delivery_sequence_head_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        )
+        partition_key = _partition(
+            tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+        )
+        record = self._store.get(partition_key, row_key)
+        if record is None:
+            legacy_record = self._store.get(
+                _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_LEGACY),
+                row_key,
+            )
+            if legacy_record is not None:
+                raise WorkspaceKnowledgeConfigurationRepositoryError(
+                    "connected_source_delivery_sequence_migration_required"
+                )
+            return None
+        head = ConnectedSourceDeliverySequenceHead.model_validate(dict(record.data))
+        if (
+            head.tenant_id != tenant_id
+            or head.workspace_id != workspace_id
+            or head.source_id != source_id
+            or head.indexed_source_binding_id != indexed_source_binding_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return head
+
     def get_connected_source_delivery_sequence_ledger(
         self,
         *,
@@ -374,24 +417,149 @@ class ManagedWorkspaceRepository:
         workspace_id: str,
         source_id: str,
         indexed_source_binding_id: str,
-    ) -> ConnectedSourceDeliverySequenceLedger | None:
-        ledger = self._get(
-            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE),
-            self._delivery_sequence_ledger_key(
-                workspace_id=workspace_id,
-                source_id=source_id,
-                indexed_source_binding_id=indexed_source_binding_id,
-            ),
-            ConnectedSourceDeliverySequenceLedger,
+    ) -> ConnectedSourceDeliverySequenceHead | None:
+        """Deprecated compatibility name for the bounded sequence head."""
+        return self.get_connected_source_delivery_sequence_head(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
         )
-        if ledger is not None and (
-            ledger.tenant_id != tenant_id
-            or ledger.workspace_id != workspace_id
-            or ledger.source_id != source_id
-            or ledger.indexed_source_binding_id != indexed_source_binding_id
+
+    def put_connected_source_delivery_sequence_head_if_absent(
+        self,
+        head: ConnectedSourceDeliverySequenceHead,
+    ) -> bool:
+        return self._put_if_absent(
+            head,
+            partition_key=_partition(
+                head.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+            ),
+            row_key=self._delivery_sequence_head_key(
+                workspace_id=head.workspace_id,
+                source_id=head.source_id,
+                indexed_source_binding_id=head.indexed_source_binding_id,
+            ),
+        )
+
+    def replace_connected_source_delivery_sequence_head_if_match(
+        self,
+        *,
+        expected: ConnectedSourceDeliverySequenceHead,
+        replacement: ConnectedSourceDeliverySequenceHead,
+    ) -> bool:
+        if (
+            expected.tenant_id != replacement.tenant_id
+            or expected.workspace_id != replacement.workspace_id
+            or expected.source_id != replacement.source_id
+            or expected.indexed_source_binding_id != replacement.indexed_source_binding_id
         ):
             raise ValueError("connected_source_delivery_sequence_identity_mismatch")
-        return ledger
+        return self._replace_if_match(
+            expected=expected,
+            replacement=replacement,
+            partition_key=_partition(
+                expected.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_HEAD
+            ),
+            row_key=self._delivery_sequence_head_key(
+                workspace_id=expected.workspace_id,
+                source_id=expected.source_id,
+                indexed_source_binding_id=expected.indexed_source_binding_id,
+            ),
+        )
+
+    def get_connected_source_delivery_sequence_assignment(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> ConnectedSourceDeliverySequenceAssignment | None:
+        if _IDEMPOTENCY_HASH_RE.fullmatch(delivery_id) is None:
+            raise ValueError("connected_source_delivery_id_invalid")
+        row_key = self._delivery_sequence_assignment_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            delivery_id=delivery_id,
+        )
+        record = self._store.get(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT),
+            row_key,
+        )
+        if record is None:
+            return None
+        assignment = ConnectedSourceDeliverySequenceAssignment.model_validate(
+            dict(record.data)
+        )
+        if (
+            assignment.tenant_id != tenant_id
+            or assignment.workspace_id != workspace_id
+            or assignment.source_id != source_id
+            or assignment.indexed_source_binding_id != indexed_source_binding_id
+            or assignment.delivery_id != delivery_id
+        ):
+            raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+        return assignment
+
+    def put_connected_source_delivery_sequence_assignment_if_absent(
+        self,
+        assignment: ConnectedSourceDeliverySequenceAssignment,
+    ) -> bool:
+        return self._put_if_absent(
+            assignment,
+            partition_key=_partition(
+                assignment.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT
+            ),
+            row_key=self._delivery_sequence_assignment_key(
+                workspace_id=assignment.workspace_id,
+                source_id=assignment.source_id,
+                indexed_source_binding_id=assignment.indexed_source_binding_id,
+                delivery_id=assignment.delivery_id,
+            ),
+        )
+
+    def list_connected_source_delivery_sequence_assignments(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+    ) -> list[ConnectedSourceDeliverySequenceAssignment]:
+        prefix = self._delivery_sequence_head_key(
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+        ) + ":"
+        result = self._store.query(
+            _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE_ASSIGNMENT),
+            limit=5000,
+            row_key_prefix=prefix,
+        )
+        assignments: list[ConnectedSourceDeliverySequenceAssignment] = []
+        for record in result.documents:
+            assignment = ConnectedSourceDeliverySequenceAssignment.model_validate(
+                dict(record.data)
+            )
+            if (
+                assignment.tenant_id != tenant_id
+                or assignment.workspace_id != workspace_id
+                or assignment.source_id != source_id
+                or assignment.indexed_source_binding_id != indexed_source_binding_id
+                or record.row_key
+                != self._delivery_sequence_assignment_key(
+                    workspace_id=workspace_id,
+                    source_id=source_id,
+                    indexed_source_binding_id=indexed_source_binding_id,
+                    delivery_id=assignment.delivery_id,
+                )
+            ):
+                raise ValueError("connected_source_delivery_sequence_identity_mismatch")
+            assignments.append(assignment)
+        return sorted(assignments, key=lambda item: item.materialization_sequence)
 
     def allocate_connected_source_delivery_sequence(
         self,
@@ -404,64 +572,87 @@ class ManagedWorkspaceRepository:
     ) -> int:
         if _IDEMPOTENCY_HASH_RE.fullmatch(delivery_id) is None:
             raise ValueError("connected_source_delivery_id_invalid")
-        partition_key = _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_SEQUENCE)
-        row_key = self._delivery_sequence_ledger_key(
-            workspace_id=workspace_id,
-            source_id=source_id,
-            indexed_source_binding_id=indexed_source_binding_id,
-        )
         while True:
-            current = self.get_connected_source_delivery_sequence_ledger(
+            assignment = self.get_connected_source_delivery_sequence_assignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            )
+            if assignment is not None:
+                return assignment.materialization_sequence
+
+            current = self.get_connected_source_delivery_sequence_head(
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 source_id=source_id,
                 indexed_source_binding_id=indexed_source_binding_id,
             )
             if current is None:
-                candidate = ConnectedSourceDeliverySequenceLedger(
+                candidate = ConnectedSourceDeliverySequenceHead(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
                     source_id=source_id,
                     indexed_source_binding_id=indexed_source_binding_id,
                     next_sequence=2,
-                    delivery_sequences={delivery_id: 1},
                 )
-                if self._put_if_absent(
-                    candidate,
-                    partition_key=partition_key,
-                    row_key=row_key,
+                sequence = 1
+                if not self.put_connected_source_delivery_sequence_head_if_absent(candidate):
+                    continue
+            else:
+                sequence = current.next_sequence
+                replacement = current.model_copy(update={"next_sequence": sequence + 1})
+                if not self.replace_connected_source_delivery_sequence_head_if_match(
+                    expected=current,
+                    replacement=replacement,
                 ):
-                    return 1
-                continue
-            existing_sequence = current.delivery_sequences.get(delivery_id)
-            if existing_sequence is not None:
-                return existing_sequence
-            sequence = current.next_sequence
-            replacement = current.model_copy(
-                update={
-                    "next_sequence": sequence + 1,
-                    "delivery_sequences": {
-                        **current.delivery_sequences,
-                        delivery_id: sequence,
-                    },
-                }
+                    continue
+
+            assignment = ConnectedSourceDeliverySequenceAssignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+                materialization_sequence=sequence,
+                assigned_at=datetime.now(UTC),
             )
-            if self._replace_if_match(
-                expected=current,
-                replacement=replacement,
-                partition_key=partition_key,
-                row_key=row_key,
+            if self.put_connected_source_delivery_sequence_assignment_if_absent(
+                assignment
             ):
                 return sequence
+            winner = self.get_connected_source_delivery_sequence_assignment(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                indexed_source_binding_id=indexed_source_binding_id,
+                delivery_id=delivery_id,
+            )
+            if winner is not None:
+                return winner.materialization_sequence
 
     @staticmethod
-    def _delivery_sequence_ledger_key(
+    def _delivery_sequence_head_key(
         *,
         workspace_id: str,
         source_id: str,
         indexed_source_binding_id: str,
     ) -> str:
         return f"{workspace_id}:{source_id}:{indexed_source_binding_id}"
+
+    @staticmethod
+    def _delivery_sequence_assignment_key(
+        *,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        delivery_id: str,
+    ) -> str:
+        return (
+            f"{workspace_id}:{source_id}:{indexed_source_binding_id}:"
+            f"{delivery_id}"
+        )
 
     def put_active_materialization_pointer_if_absent(
         self,

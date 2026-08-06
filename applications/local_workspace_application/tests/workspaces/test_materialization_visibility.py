@@ -3,7 +3,15 @@ from datetime import UTC, datetime
 import pytest
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliverySequenceAssignment,
+    ConnectedSourceDeliverySequenceHead,
     ConnectedSourceDeliveryStatus,
+    ConnectedSourceSyncSinkError,
+)
+from local_workspace_application.workspaces.connected_source_delivery import (
+    begin_delivery_receipt,
+    complete_delivery_receipt,
+    delivery_receipt_completed,
 )
 from local_workspace_application.workspaces.materialization_visibility import (
     KnowledgeMaterializationActivePointerV1,
@@ -199,6 +207,126 @@ def test_active_pointer_rejects_naive_committed_at() -> None:
             materialization_revision=1,
             committed_at=_NOW.replace(tzinfo=None),
         )
+
+
+def test_sequence_models_are_strict_and_utc() -> None:
+    head = ConnectedSourceDeliverySequenceHead(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=_BINDING,
+        next_sequence=1,
+    )
+    assert head.model_dump() == {
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "source_id": _SOURCE,
+        "indexed_source_binding_id": _BINDING,
+        "next_sequence": 1,
+    }
+    with pytest.raises(ValidationError, match="extra"):
+        ConnectedSourceDeliverySequenceHead(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_BINDING,
+            next_sequence=1,
+            delivery_sequences={_DELIVERY_1: 1},
+        )
+    with pytest.raises(ValidationError, match="connected_source_delivery_id_invalid"):
+        ConnectedSourceDeliverySequenceAssignment(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_BINDING,
+            delivery_id="not-sha256",
+            materialization_sequence=1,
+            assigned_at=_NOW,
+        )
+    with pytest.raises(ValidationError, match="timezone_aware"):
+        ConnectedSourceDeliverySequenceAssignment(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            indexed_source_binding_id=_BINDING,
+            delivery_id=_DELIVERY_1,
+            materialization_sequence=1,
+            assigned_at=_NOW.replace(tzinfo=None),
+        )
+
+
+def test_receipt_sequence_matches_immutable_assignment() -> None:
+    repository = _repository()
+    ownership = _ownership(_DELIVERY_1)
+    assert ownership.indexed_source_binding_id is not None
+    assignment_sequence = repository.allocate_connected_source_delivery_sequence(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=ownership.indexed_source_binding_id,
+        delivery_id=_DELIVERY_1,
+    )
+    assignment = repository.get_connected_source_delivery_sequence_assignment(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=ownership.indexed_source_binding_id,
+        delivery_id=_DELIVERY_1,
+    )
+    assert assignment is not None
+    assert assignment.materialization_sequence == assignment_sequence
+
+    repository.put_connected_source_delivery_receipt(
+        _completed_receipt(
+            ownership,
+            materialization_sequence=assignment_sequence + 1,
+        )
+    )
+    with pytest.raises(
+        ConnectedSourceSyncSinkError,
+        match="connected_source_delivery_sequence_conflict",
+    ):
+        delivery_receipt_completed(
+            repository=repository,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE,
+            delivery_id=_DELIVERY_1,
+            indexed_source_binding_id=ownership.indexed_source_binding_id,
+            knowledge_source_binding_ref=_BINDING_REF,
+            binding_configuration_version=1,
+            operation_id="operation-a",
+        )
+
+    replay = begin_delivery_receipt(
+        repository=repository,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=ownership.indexed_source_binding_id,
+        knowledge_source_binding_ref=_BINDING_REF,
+        delivery_id=_DELIVERY_2,
+        binding_configuration_version=1,
+        operation_id="operation-b",
+    )
+    replay_assignment = repository.get_connected_source_delivery_sequence_assignment(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        indexed_source_binding_id=ownership.indexed_source_binding_id,
+        delivery_id=_DELIVERY_2,
+    )
+    assert replay_assignment is not None
+    assert replay.materialization_sequence == replay_assignment.materialization_sequence
+    completed = complete_delivery_receipt(
+        repository=repository,
+        receipt=replay,
+        documents_indexed=0,
+        documents_unchanged=0,
+        items_processed=0,
+        items_failed=0,
+    )
+    assert completed.materialization_sequence == replay_assignment.materialization_sequence
 
 
 class _SearchExecution:

@@ -502,6 +502,20 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             raise ConnectedSourceSyncSinkError(
                 "connected_source_active_pointer_receipt_invalid"
             )
+        assignment = self._repository.get_connected_source_delivery_sequence_assignment(
+            tenant_id=ownership.tenant_id,
+            workspace_id=ownership.workspace_id,
+            source_id=ownership.source_id,
+            indexed_source_binding_id=ownership.indexed_source_binding_id,
+            delivery_id=ownership.delivery_id,
+        )
+        if (
+            assignment is not None
+            and assignment.materialization_sequence != materialization_sequence
+        ):
+            raise ConnectedSourceSyncSinkError(
+                "connected_source_active_pointer_receipt_invalid"
+            )
         pointer = KnowledgeMaterializationActivePointerV1.for_ownership(
             ownership=ownership,
             document_id=document_id,
@@ -525,11 +539,6 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             if current.materialization_revision > pointer.materialization_revision:
                 return
             if current.materialization_revision == pointer.materialization_revision:
-                if (
-                    current.delivery_id == pointer.delivery_id
-                    and current.document_id == pointer.document_id
-                ):
-                    return
                 raise ConnectedSourceSyncSinkError(
                     "connected_source_active_pointer_revision_conflict"
                 )

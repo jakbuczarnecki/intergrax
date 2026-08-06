@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -49,6 +49,13 @@ class ConnectedSourceDeliveryStatusV1(StrEnum):
 ConnectedSourceDeliveryStatus = ConnectedSourceDeliveryStatusV1
 
 _SHA256_HEX_RE = re.compile(r"^[a-f0-9]{64}$")
+_SEQUENCE_ID_RE = re.compile(r"^[^\x00-\x1f\x7f]{1,128}$")
+
+
+def _validate_sequence_identity(value: str, field_name: str) -> str:
+    if value != value.strip() or _SEQUENCE_ID_RE.fullmatch(value) is None:
+        raise ValueError(f"{field_name}_must_be_normalized")
+    return value
 
 
 class ConnectedSourceReconciliationStateV1(StrEnum):
@@ -104,8 +111,34 @@ class ConnectedSourceDeliveryReceiptV1(BaseModel):
 ConnectedSourceDeliveryReceipt = ConnectedSourceDeliveryReceiptV1
 
 
-class ConnectedSourceDeliverySequenceLedgerV1(BaseModel):
-    """CAS-updated delivery sequence authority for one binding stream."""
+class ConnectedSourceDeliverySequenceHeadV1(BaseModel):
+    """Constant-size CAS-updated sequence authority for one binding stream."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    source_id: str = Field(..., min_length=1, max_length=128)
+    indexed_source_binding_id: str = Field(..., min_length=1, max_length=128)
+    next_sequence: int = Field(..., ge=1)
+
+    _validate_identity = field_validator(
+        "tenant_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+    )(
+        lambda value, info: _validate_sequence_identity(
+            value, info.field_name or "identity"
+        )
+    )
+
+
+ConnectedSourceDeliverySequenceHead = ConnectedSourceDeliverySequenceHeadV1
+
+
+class ConnectedSourceDeliverySequenceAssignmentV1(BaseModel):
+    """Immutable sequence reservation for exactly one delivery."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -113,24 +146,39 @@ class ConnectedSourceDeliverySequenceLedgerV1(BaseModel):
     workspace_id: str = Field(..., min_length=1, max_length=128)
     source_id: str = Field(..., min_length=1, max_length=128)
     indexed_source_binding_id: str = Field(..., min_length=1, max_length=128)
-    next_sequence: int = Field(..., ge=1)
-    delivery_sequences: dict[str, int] = Field(default_factory=dict)
+    delivery_id: str = Field(..., min_length=64, max_length=64)
+    materialization_sequence: int = Field(..., gt=0)
+    assigned_at: datetime
 
-    @model_validator(mode="after")
-    def _validate_sequence_invariants(
-        self,
-    ) -> ConnectedSourceDeliverySequenceLedgerV1:
-        values = tuple(self.delivery_sequences.values())
-        if (
-            len(set(values)) != len(values)
-            or any(sequence < 1 for sequence in values)
-            or (values and self.next_sequence <= max(values))
-        ):
-            raise ValueError("connected_source_delivery_sequence_ledger_invalid")
-        return self
+    _validate_identity = field_validator(
+        "tenant_id",
+        "workspace_id",
+        "source_id",
+        "indexed_source_binding_id",
+    )(
+        lambda value, info: _validate_sequence_identity(
+            value, info.field_name or "identity"
+        )
+    )
+
+    @field_validator("delivery_id")
+    @classmethod
+    def _validate_delivery_id(cls, value: str) -> str:
+        if _SHA256_HEX_RE.fullmatch(value) is None:
+            raise ValueError("connected_source_delivery_id_invalid")
+        return value
+
+    @field_validator("assigned_at")
+    @classmethod
+    def _validate_assigned_at(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("connected_source_sequence_assigned_at_timezone_aware")
+        if value.utcoffset() != timedelta(0):
+            raise ValueError("connected_source_sequence_assigned_at_must_be_utc")
+        return value.astimezone(UTC)
 
 
-ConnectedSourceDeliverySequenceLedger = ConnectedSourceDeliverySequenceLedgerV1
+ConnectedSourceDeliverySequenceAssignment = ConnectedSourceDeliverySequenceAssignmentV1
 
 
 class ConnectedSourceReadinessStateV1(StrEnum):

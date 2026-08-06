@@ -91,6 +91,33 @@ def _receipt_identity_conflict(
     )
 
 
+def _validate_receipt_sequence_assignment(
+    *,
+    repository: ManagedWorkspaceRepository,
+    receipt: ConnectedSourceDeliveryReceipt,
+) -> None:
+    if receipt.materialization_sequence is None:
+        raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+    assignment = repository.get_connected_source_delivery_sequence_assignment(
+        tenant_id=receipt.tenant_id,
+        workspace_id=receipt.workspace_id,
+        source_id=receipt.source_id,
+        indexed_source_binding_id=receipt.indexed_source_binding_id,
+        delivery_id=receipt.delivery_id,
+    )
+    if assignment is None:
+        return
+    if (
+        assignment.tenant_id != receipt.tenant_id
+        or assignment.workspace_id != receipt.workspace_id
+        or assignment.source_id != receipt.source_id
+        or assignment.indexed_source_binding_id != receipt.indexed_source_binding_id
+        or assignment.delivery_id != receipt.delivery_id
+        or assignment.materialization_sequence != receipt.materialization_sequence
+    ):
+        raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_conflict")
+
+
 def delivery_receipt_completed(
     *,
     repository: ManagedWorkspaceRepository,
@@ -123,17 +150,13 @@ def delivery_receipt_completed(
     ):
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
     if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
-        if (
-            existing.completed_at is None
-            or existing.items_failed != 0
-            or existing.materialization_sequence is None
-        ):
+        if existing.completed_at is None or existing.items_failed != 0:
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_invalid")
+        _validate_receipt_sequence_assignment(repository=repository, receipt=existing)
         _ = operation_id
         return existing
     if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
-        if existing.materialization_sequence is None:
-            raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+        _validate_receipt_sequence_assignment(repository=repository, receipt=existing)
         return None
     raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
 
@@ -169,13 +192,11 @@ def begin_delivery_receipt(
         ):
             raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
         if existing.status is ConnectedSourceDeliveryStatus.COMPLETED:
-            if existing.materialization_sequence is None:
-                raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+            _validate_receipt_sequence_assignment(repository=repository, receipt=existing)
             _ = operation_id
             return existing
         if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
-            if existing.materialization_sequence is None:
-                raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+            _validate_receipt_sequence_assignment(repository=repository, receipt=existing)
             _ = operation_id
             return existing
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
@@ -223,6 +244,7 @@ def begin_delivery_receipt(
             binding_configuration_version=binding_configuration_version,
             operation_id=operation_id,
         )
+    _validate_receipt_sequence_assignment(repository=repository, receipt=receipt)
     return receipt
 
 
@@ -237,15 +259,13 @@ def complete_delivery_receipt(
 ) -> ConnectedSourceDeliveryReceipt:
     _ = items_processed
     if receipt.status is ConnectedSourceDeliveryStatus.COMPLETED:
-        if receipt.materialization_sequence is None:
-            raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+        _validate_receipt_sequence_assignment(repository=repository, receipt=receipt)
         return receipt
     if receipt.status is not ConnectedSourceDeliveryStatus.IN_PROGRESS:
         raise ConnectedSourceSyncSinkError("connected_source_delivery_receipt_conflict")
     if items_failed != 0:
         raise ConnectedSourceSyncSinkError("connected_source_delivery_items_failed")
-    if receipt.materialization_sequence is None:
-        raise ConnectedSourceSyncSinkError("connected_source_delivery_sequence_missing")
+    _validate_receipt_sequence_assignment(repository=repository, receipt=receipt)
 
     completed = receipt.model_copy(
         update={
