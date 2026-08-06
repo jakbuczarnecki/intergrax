@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import (
@@ -525,7 +525,7 @@ def _resolve_output_directory(output_directory: Path) -> Path:
 
 def _new_offline_registry() -> type[LLMAdapterRegistry]:
     class _OfflineScopedAdapterRegistry(LLMAdapterRegistry):
-        _factories = {}
+        _factories: ClassVar[dict[str, Callable[..., LLMAdapter]]] = {}
 
     return _OfflineScopedAdapterRegistry
 

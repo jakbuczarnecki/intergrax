@@ -250,7 +250,7 @@ def _select_transport(
             )
         try:
             structured = bool(adapter.supports_structured_output())
-        except Exception:
+        except Exception:  # noqa: BLE001 — adapter capability boundary fails closed
             structured = False
         if structured and router_policy.allow_structured_output_fallback:
             return _TransportSelection(
@@ -264,7 +264,7 @@ def _select_transport(
 
     try:
         native = bool(adapter.supports_tools())
-    except Exception:
+    except Exception:  # noqa: BLE001 — adapter capability boundary fails closed
         native = False
     if native:
         return _TransportSelection(
@@ -273,7 +273,7 @@ def _select_transport(
         )
     try:
         structured = bool(adapter.supports_structured_output())
-    except Exception:
+    except Exception:  # noqa: BLE001 — adapter capability boundary fails closed
         structured = False
     if structured and router_policy.allow_structured_output_fallback:
         return _TransportSelection(
@@ -676,7 +676,7 @@ class TokenOptimizationLLMRouter:
             )
         except ValidationError:
             return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, None
-        except Exception:
+        except Exception:  # noqa: BLE001 — provider planning boundary maps to typed failure
             return None, TokenOptimizationRouterReason.LLM_ERROR, None
 
         raw_calls = llm_result.tool_calls
@@ -718,7 +718,7 @@ class TokenOptimizationLLMRouter:
                 temperature=0.0,
                 run_id=run_id,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001 — provider structured-output boundary maps to typed failure
             return None, TokenOptimizationRouterReason.LLM_ERROR, None
 
         parsed = structured.parsed
