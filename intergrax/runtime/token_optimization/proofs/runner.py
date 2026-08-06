@@ -70,6 +70,7 @@ from intergrax.runtime.token_optimization.proofs.contracts import (
     UniversalProofEnvironmentSummary,
     UniversalProofRunResult,
     UniversalTokenOptimizationProofConfig,
+    is_terminal_router_non_execution,
 )
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -125,12 +126,21 @@ def _atomic_write(path: Path, payload: bytes) -> None:
 
 def _measurements_from_pipeline(
     result: object,
+    *,
+    original_content: str = "",
 ) -> tuple[ProofMeasurement, ProofMeasurement]:
     measurement = getattr(result, "aggregate_measurement", None)
-    if measurement is None:
+    if measurement is not None:
+        baseline = getattr(measurement, "baseline_tokens", None)
+        optimized = getattr(measurement, "optimized_tokens", None)
+    elif getattr(result, "receipt_metadata", {}).get("completed") is True:
+        optimized_content = getattr(result, "final_content", None)
+        if not isinstance(optimized_content, str):
+            return ProofMeasurement(), ProofMeasurement()
+        baseline = len(original_content)
+        optimized = len(optimized_content)
+    else:
         return ProofMeasurement(), ProofMeasurement()
-    baseline = getattr(measurement, "baseline_tokens", None)
-    optimized = getattr(measurement, "optimized_tokens", None)
     baseline_measurement = (
         ProofMeasurement(available=True, value=baseline)
         if type(baseline) is int and baseline >= 0
@@ -700,6 +710,10 @@ class UniversalTokenOptimizationProofRunner:
                 TokenOptimizationRouterStatus.ROUTED.value,
                 TokenOptimizationRouterStatus.NO_OPTIMIZATION.value,
             } or not isinstance(selected_raw, str):
+                terminal_non_execution = is_terminal_router_non_execution(
+                    router_status,
+                    router_reason,
+                )
                 return UniversalProofCaseResult(
                     case_id=case.case_id,
                     status="failed",
@@ -710,7 +724,9 @@ class UniversalTokenOptimizationProofRunner:
                     ),
                     pipeline_status="not_started",
                     applied_layer_ids=(),
-                    error_reason_code="ROUTER_EXECUTION_FAILED",
+                    error_reason_code=(
+                        None if terminal_non_execution else "ROUTER_EXECUTION_FAILED"
+                    ),
                     router_evidence=router_evidence,
                     protected_region_evidence=_protected_region_evidence(
                         case.request,
@@ -748,7 +764,8 @@ class UniversalTokenOptimizationProofRunner:
             raise ProofExecutionError("PIPELINE_EXECUTION_FAILED") from exc
         completed = pipeline_result.receipt_metadata.get("completed") is True
         baseline_measurement, optimized_measurement = _measurements_from_pipeline(
-            pipeline_result
+            pipeline_result,
+            original_content=case.request.content,
         )
         return UniversalProofCaseResult(
             case_id=case.case_id,
@@ -836,7 +853,14 @@ class UniversalTokenOptimizationProofRunner:
                 )
             except Exception as exc:
                 raise ProofExecutionError("CASE_EXECUTION_FAILED") from exc
-        completed_count = sum(case.status == "completed" for case in results)
+        completed_count = sum(
+            case.status == "completed"
+            or is_terminal_router_non_execution(
+                case.router_status,
+                case.router_reason,
+            )
+            for case in results
+        )
         failed_count = len(results) - completed_count
         completed_at = self._clock()
         result = UniversalProofRunResult(

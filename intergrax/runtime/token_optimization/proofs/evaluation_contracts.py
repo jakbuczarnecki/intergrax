@@ -77,6 +77,12 @@ class EvaluationGateRequirement(StrEnum):
     UNAVAILABLE_ALLOWED = "unavailable_allowed"
 
 
+class PipelineExecutionExpectation(StrEnum):
+    COMPLETED = "completed"
+    FAILED = "failed"
+    NOT_STARTED = "not_started"
+
+
 EVALUATION_GATE_IDS = (
     "ROUTER_STATUS",
     "ROUTER_CONFIGURATION",
@@ -207,7 +213,7 @@ class RouterExpectation:
 
 @dataclass(frozen=True, slots=True)
 class PipelineExpectation:
-    expected_completion: bool | None = None
+    expected_execution: PipelineExecutionExpectation | None = None
     required_layer_ids: frozenset[str] = frozenset()
     allowed_layer_ids: frozenset[str] = frozenset()
     forbidden_layer_ids: frozenset[str] = frozenset()
@@ -215,6 +221,12 @@ class PipelineExpectation:
     expected_validation_status: str | None = None
     allowed_validation_reason_codes: frozenset[str] = frozenset()
     required_layer_failure_expected: bool | None = None
+
+    def __post_init__(self) -> None:
+        if self.expected_execution is not None and not isinstance(
+            self.expected_execution, PipelineExecutionExpectation
+        ):
+            raise ValueError("expected_execution must be a pipeline execution expectation")
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,14 +314,14 @@ class EvaluationConfiguration:
         if unknown:
             raise ValueError("unknown evaluation gate")
         if not isinstance(self.profile, EvaluationProfile):
-            raise ValueError("unsupported evaluation profile")
+            raise TypeError("unsupported evaluation profile")
         if self.configured_offline_decision is not None:
             _safe_id(self.configured_offline_decision, "configured_offline_decision")
         if self.gate_requirements is not None:
             for gate_id, requirement in self.gate_requirements.items():
                 _safe_id(gate_id, "gate_id")
                 if not isinstance(requirement, EvaluationGateRequirement):
-                    raise ValueError("invalid gate requirement")
+                    raise TypeError("invalid gate requirement")
 
     def requirement_for(self, gate_id: str) -> EvaluationGateRequirement:
         if gate_id not in KNOWN_EVALUATION_GATE_IDS:
@@ -600,7 +612,7 @@ def _parse_pipeline(value: Mapping[str, Any]) -> PipelineExpectation:
         value,
         frozenset(
             {
-                "expected_completion",
+                "expected_execution",
                 "required_layer_ids",
                 "allowed_layer_ids",
                 "forbidden_layer_ids",
@@ -612,10 +624,17 @@ def _parse_pipeline(value: Mapping[str, Any]) -> PipelineExpectation:
         ),
         "pipeline_expectation",
     )
+    raw_execution = value.get("expected_execution")
+    try:
+        expected_execution = (
+            PipelineExecutionExpectation(raw_execution)
+            if raw_execution is not None
+            else None
+        )
+    except (TypeError, ValueError) as exc:
+        raise EvaluationConfigurationError("INVALID_EXPECTED_EXECUTION") from exc
     return PipelineExpectation(
-        expected_completion=_bool_or_none(
-            value.get("expected_completion"), "expected_completion"
-        ),
+        expected_execution=expected_execution,
         required_layer_ids=_string_set(
             value.get("required_layer_ids", []), "required_layer_ids"
         ),
@@ -1100,7 +1119,9 @@ def load_universal_proof_run_result(path: str | Path) -> UniversalProofRunResult
 __all__ = [
     "CACHE_EVIDENCE_SCHEMA_VERSION",
     "CORPUS_SCHEMA_VERSION",
+    "EVALUATION_GATE_IDS",
     "EVALUATION_SCHEMA_VERSION",
+    "KNOWN_EVALUATION_GATE_IDS",
     "CacheAttribution",
     "CacheEvidenceRole",
     "CacheExpectation",
@@ -1111,11 +1132,11 @@ __all__ = [
     "EvaluationConfigurationError",
     "EvaluationGateRequirement",
     "EvaluationProfile",
-    "EVALUATION_GATE_IDS",
     "GateResult",
     "GateStatus",
     "MeasurementExpectation",
     "MeasurementRequirement",
+    "PipelineExecutionExpectation",
     "PipelineExpectation",
     "PrefixExpectation",
     "ProofCorpus",
@@ -1123,7 +1144,6 @@ __all__ = [
     "ProviderCacheEvidence",
     "RouterExpectation",
     "UniversalProofEvaluation",
-    "KNOWN_EVALUATION_GATE_IDS",
     "expand_proof_config_with_corpus",
     "load_cache_evidence",
     "load_evaluation_config",

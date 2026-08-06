@@ -25,6 +25,7 @@ from intergrax.runtime.token_optimization.builtin_catalog import (
     create_builtin_token_optimization_layer_catalog,
 )
 from intergrax.runtime.token_optimization.contracts import (
+    ProtectedRegionKind,
     TokenOptimizationPipelineConfig,
     TokenOptimizationPipelineResult,
     TokenOptimizationProfile,
@@ -87,8 +88,16 @@ Routing heuristics:
 - noisy_long_output=true for tool/terminal/log source -> extractive_only or exact_then_extractive
 - Short clean output with noisy_long_output=false -> no_optimization
 - packing_input_available=true without duplicate_lines_detected -> packing_only
-- Protected regions plus lossy need -> set review_required=true
-- Protected regions present -> set review_required=true unless selecting no_optimization"""
+- Protected regions with a lossy configuration require review_required=true
+- Protected regions with a lossless configuration may proceed without review,
+  but exact preservation validation is mandatory
+- Do not mark review_required solely because protected regions exist when the
+  selected configuration is lossless
+- high-risk content requires review_required=true
+- For policy_profile=measure_only, select the same approved configuration that
+  would be appropriate in normal execution. Do not select no_optimization
+  solely because the profile is measure_only. The pipeline will measure the
+  selected strategy without replacing the final content."""
 
 
 class _RouterToolOutput(BaseModel):
@@ -412,6 +421,22 @@ def _compile_decision(
             executed=False,
         )
 
+    if (
+        req.policy.profile is TokenOptimizationProfile.MEASURE_ONLY
+        and decision.configuration_id
+        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+        and decision.reason_code is TokenOptimizationRouterReasonCode.CLEAN_NO_OP
+        and _content_has_duplicate_lines(req.content)
+    ):
+        decision = decision.model_copy(
+            update={
+                "configuration_id": TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+                "reason_code": TokenOptimizationRouterReasonCode.EXACT_DUPLICATES,
+            }
+        )
+        spec = catalog.get(decision.configuration_id)
+        assert spec is not None
+
     if decision.confidence < policy.minimum_confidence:
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.BLOCKED,
@@ -423,6 +448,37 @@ def _compile_decision(
             confidence=decision.confidence,
             pipeline_config=None,
             executed=False,
+        )
+
+    if any(
+        region.kind is ProtectedRegionKind.SECURITY_WARNING
+        for region in req.protected_regions
+    ):
+        return _CompiledDecision(
+            status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
+            reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
+            configuration_id=decision.configuration_id,
+            reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
+            risk=TokenOptimizationRouterRisk.HIGH,
+            review_required=True,
+            confidence=decision.confidence,
+            pipeline_config=None,
+            executed=False,
+        )
+
+    protected_lossless_override = (
+        req.protected_regions
+        and not spec.lossy
+        and decision.risk is not TokenOptimizationRouterRisk.HIGH
+        and decision.reason_code
+        is not TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK
+    )
+    if protected_lossless_override:
+        decision = decision.model_copy(
+            update={
+                "risk": TokenOptimizationRouterRisk.LOW,
+                "review_required": False,
+            }
         )
 
     if decision.review_required:

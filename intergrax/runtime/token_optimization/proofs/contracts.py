@@ -15,6 +15,34 @@ from intergrax.runtime.token_optimization.contracts import (
 )
 
 SCHEMA_VERSION = "token-optimization-proof.v1"
+ROUTER_TERMINAL_NON_EXECUTION_REASONS = {
+    "blocked": frozenset(
+        {
+            "policy_disabled",
+            "profile_off",
+            "unsupported_adapter",
+            "capability_resolution_failed",
+            "source_type_not_supported",
+            "confidence_below_threshold",
+            "packing_input_required",
+            "lossy_not_allowed",
+        }
+    ),
+    "review_required": frozenset(
+        {"model_requested_review", "protected_regions_require_review"}
+    ),
+}
+
+
+def is_terminal_router_non_execution(
+    router_status: str | None,
+    router_reason: str | None,
+) -> bool:
+    """Return whether routing ended safely before pipeline execution."""
+    return (
+        router_status in ROUTER_TERMINAL_NON_EXECUTION_REASONS
+        and router_reason in ROUTER_TERMINAL_NON_EXECUTION_REASONS[router_status]
+    )
 
 
 class ProofError(Exception):

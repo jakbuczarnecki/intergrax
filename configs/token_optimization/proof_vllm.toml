@@ -20,8 +20,8 @@ allow_structured_output_fallback = true
 require_review_for_protected_lossy_content = true
 
 [pipeline]
-mode = "replace"
-layer_ids = ["builtin.exact_deduplication"]
+mode = "default"
+layer_ids = []
 failure_policy = "continue"
 
 [output]
@@ -205,6 +205,12 @@ Preserve error code E_SYNTHETIC_PROTECTED exactly.
 This synthetic context marker is repeated.
 This synthetic context marker is repeated."""
 tags = ["synthetic", "protected"]
+protected_regions = [
+  { kind = "url", value = "https://synthetic.invalid/proof/run" },
+  { kind = "path", value = "synthetic/artifacts/fixed-run.json" },
+  { kind = "identifier", value = "SYNTHETIC_RUN_001" },
+  { kind = "exact_error", value = "E_SYNTHETIC_PROTECTED" },
+]
 
 [cases.policy]
 enabled = true
@@ -235,8 +241,12 @@ fallback_on_validation_failure = true
 [[cases]]
 case_id = "high-risk-protected"
 source_type = "prompt"
-content = "Review the synthetic security finding without altering exact identifiers."
+content = "Review SYNTHETIC_SECURITY_WARNING for SYNTHETIC_FINDING_007 without altering exact identifiers."
 tags = ["synthetic", "high-risk", "protected"]
+protected_regions = [
+  { kind = "security_warning", value = "SYNTHETIC_SECURITY_WARNING" },
+  { kind = "identifier", value = "SYNTHETIC_FINDING_007" },
+]
 
 [cases.policy]
 enabled = true
@@ -261,7 +271,7 @@ fallback_on_validation_failure = true
 [[cases]]
 case_id = "measure-only"
 source_type = "prompt"
-content = "measure-only duplicate\nmeasure-only duplicate\nmeasure-only tail"
+content = "measure-only duplicate line\nmeasure-only duplicate line\nmeasure-only tail"
 tags = ["synthetic", "measure-only"]
 
 [cases.policy]
@@ -276,19 +286,6 @@ case_id = "prefix-stable-a"
 source_type = "prompt"
 content = "Stable system contract. Dynamic tail A requests status."
 tags = ["synthetic", "prefix", "stable-a"]
-
-[cases.policy]
-enabled = true
-profile = "balanced"
-allow_lossy = false
-require_validation = true
-fallback_on_validation_failure = true
-
-[[cases]]
-case_id = "prefix-stable-b"
-source_type = "prompt"
-content = "Stable system contract. Dynamic tail B requests inventory."
-tags = ["synthetic", "prefix", "stable-b"]
 
 [cases.policy]
 enabled = true

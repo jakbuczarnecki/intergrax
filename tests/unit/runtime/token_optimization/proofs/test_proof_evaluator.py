@@ -31,6 +31,7 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     GateStatus,
     MeasurementExpectation,
     MeasurementRequirement,
+    PipelineExecutionExpectation,
     PipelineExpectation,
     PrefixExpectation,
     ProofCorpus,
@@ -75,7 +76,7 @@ def _fixture() -> tuple[UniversalProofRunResult, ProofCorpus, EvaluationConfigur
             structured_output_fallback=False,
         ),
         pipeline=PipelineExpectation(
-            expected_completion=True,
+            expected_execution=PipelineExecutionExpectation.COMPLETED,
             required_layer_ids=frozenset({"layer.one"}),
             allowed_layer_ids=frozenset({"layer.one"}),
             expected_fallback=False,
@@ -253,6 +254,44 @@ def _evaluate_offline(run: UniversalProofRunResult):
         corpus,
         _offline_config(),
         evaluation_id="offline-integrity",
+    )
+
+
+def _terminal_non_execution_fixture(
+    expected_execution: PipelineExecutionExpectation,
+) -> tuple[UniversalProofRunResult, ProofCorpus, EvaluationConfiguration]:
+    run, corpus, config = _fixture()
+    terminal_case = replace(
+        run.cases[0],
+        status="failed",
+        router_status="blocked",
+        router_reason="policy_disabled",
+        selected_configuration_id=None,
+        pipeline_status="not_started",
+        applied_layer_ids=(),
+        router_evidence=ProofRouterEvidence(status="blocked"),
+        pipeline_evidence=ProofPipelineEvidence(),
+    )
+    corpus_case = replace(
+        corpus.cases[0],
+        router=RouterExpectation(
+            allowed_statuses=frozenset({"blocked"}),
+            allowed_reason_codes=frozenset({"policy_disabled"}),
+        ),
+        pipeline=replace(
+            corpus.cases[0].pipeline,
+            expected_execution=expected_execution,
+            required_layer_ids=frozenset(),
+            allowed_layer_ids=frozenset(),
+            expected_fallback=None,
+            expected_validation_status=None,
+            required_layer_failure_expected=None,
+        ),
+    )
+    return (
+        replace(run, cases=(terminal_case,)),
+        replace(corpus, cases=(corpus_case,)),
+        config,
     )
 
 
@@ -467,6 +506,175 @@ def test_all_required_gates_pass_from_recorded_evidence() -> None:
         for gate in case.gates
         if gate.required and gate.status is GateStatus.FAIL
     ]
+
+
+@pytest.mark.parametrize(
+    "expected_execution",
+    [
+        PipelineExecutionExpectation.COMPLETED,
+        PipelineExecutionExpectation.FAILED,
+        PipelineExecutionExpectation.NOT_STARTED,
+    ],
+)
+def test_pipeline_completion_expectation_accepts_matching_typed_evidence(
+    expected_execution: PipelineExecutionExpectation,
+) -> None:
+    if expected_execution is PipelineExecutionExpectation.NOT_STARTED:
+        run, corpus, config = _terminal_non_execution_fixture(expected_execution)
+    else:
+        run, corpus, config = _fixture()
+        completed = expected_execution is PipelineExecutionExpectation.COMPLETED
+        case = replace(
+            run.cases[0],
+            status="completed" if completed else "failed",
+            pipeline_status=expected_execution.value,
+            pipeline_evidence=replace(
+                run.cases[0].pipeline_evidence,
+                completed=completed,
+                receipt_completion_status=completed,
+            ),
+        )
+        run = replace(run, cases=(case,))
+        corpus = replace(
+            corpus,
+            cases=(
+                replace(
+                    corpus.cases[0],
+                    pipeline=replace(
+                        corpus.cases[0].pipeline,
+                        expected_execution=expected_execution,
+                    ),
+                ),
+            ),
+        )
+
+    evaluation = UniversalProofEvaluator().evaluate(
+        run,
+        corpus,
+        config,
+        cache_evidence=(_cache(),),
+        evaluation_id=f"typed-{expected_execution.value}",
+    )
+
+    assert _gate(evaluation, "PIPELINE_COMPLETION").status is GateStatus.PASS
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda case: replace(case, pipeline_status="completed"),
+        lambda case: replace(
+            case,
+            pipeline_status="failed",
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                completed=False,
+                receipt_completion_status=False,
+            ),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(case.pipeline_evidence, completed=False),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(case.pipeline_evidence, completed=True),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                receipt_completion_status=True,
+            ),
+        ),
+        lambda case: replace(case, applied_layer_ids=("layer.one",)),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(case.pipeline_evidence, fallback_applied=True),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(case.pipeline_evidence, validation_status="passed"),
+        ),
+        lambda case: replace(
+            case,
+            pipeline_evidence=replace(
+                case.pipeline_evidence,
+                required_layer_failure="layer.one",
+            ),
+        ),
+        lambda case: replace(case, router_reason=None),
+        lambda case: replace(case, router_reason="unknown_terminal_reason"),
+    ],
+)
+def test_not_started_expectation_rejects_execution_or_side_effects(mutation) -> None:
+    run, corpus, config = _terminal_non_execution_fixture(
+        PipelineExecutionExpectation.NOT_STARTED
+    )
+    evaluation = UniversalProofEvaluator().evaluate(
+        replace(run, cases=(mutation(run.cases[0]),)),
+        corpus,
+        config,
+        cache_evidence=(_cache(),),
+        evaluation_id="not-started-negative",
+    )
+
+    assert _gate(evaluation, "PIPELINE_COMPLETION").status is GateStatus.FAIL
+
+
+@pytest.mark.parametrize(
+    ("expected_execution", "actual_execution", "actual_completed"),
+    [
+        (
+            PipelineExecutionExpectation.COMPLETED,
+            "failed",
+            False,
+        ),
+        (
+            PipelineExecutionExpectation.FAILED,
+            "not_started",
+            None,
+        ),
+    ],
+)
+def test_completed_and_failed_expectations_reject_other_execution_states(
+    expected_execution: PipelineExecutionExpectation,
+    actual_execution: str,
+    actual_completed: bool | None,
+) -> None:
+    run, corpus, config = _fixture()
+    case = replace(
+        run.cases[0],
+        status="failed",
+        pipeline_status=actual_execution,
+        pipeline_evidence=replace(
+            run.cases[0].pipeline_evidence,
+            completed=actual_completed,
+            receipt_completion_status=actual_completed,
+        ),
+    )
+    corpus = replace(
+        corpus,
+        cases=(
+            replace(
+                corpus.cases[0],
+                pipeline=replace(
+                    corpus.cases[0].pipeline,
+                    expected_execution=expected_execution,
+                ),
+            ),
+        ),
+    )
+
+    evaluation = UniversalProofEvaluator().evaluate(
+        replace(run, cases=(case,)),
+        corpus,
+        config,
+        cache_evidence=(_cache(),),
+        evaluation_id="typed-mismatch",
+    )
+
+    assert _gate(evaluation, "PIPELINE_COMPLETION").status is GateStatus.FAIL
 
 
 def test_offline_profile_separates_composition_from_behavior() -> None:

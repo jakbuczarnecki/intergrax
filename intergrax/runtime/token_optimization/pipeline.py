@@ -10,6 +10,7 @@ from typing import Any
 from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegionValidationStatus,
     StrategySafetyClass,
+    TokenCategory,
     TokenOptimizationBypassReason,
     TokenOptimizationLayerContext,
     TokenOptimizationLayerDecision,
@@ -22,18 +23,15 @@ from intergrax.runtime.token_optimization.contracts import (
     TokenOptimizationPolicy,
     TokenOptimizationProfile,
     TokenOptimizationRequest,
+    TokenSavingsClaimConfidence,
+    TokenSavingsMeasurement,
 )
-from intergrax.runtime.token_optimization.protected_regions import validate_protected_regions
+from intergrax.runtime.token_optimization.protected_regions import (
+    validate_protected_regions,
+)
 from intergrax.runtime.token_optimization.registry import TokenOptimizationLayerRegistry
 
 _PIPELINE_METADATA_KEY = "token_optimization_pipeline"
-
-_MEASURE_ONLY_SAFETY_CLASSES = frozenset(
-    {
-        StrategySafetyClass.MEASUREMENT_ONLY,
-        StrategySafetyClass.POLICY_ONLY,
-    }
-)
 
 _CONTENT_CHANGING_VALIDATED_DECISIONS = frozenset(
     {
@@ -242,7 +240,6 @@ class TokenOptimizationPipelineRunner:
             policy_bypass_reason = _policy_gate_bypass_reason(
                 policy=request.policy,
                 safety_class=safety_class,
-                measure_only=measure_only,
             )
             if policy_bypass_reason is not None:
                 layer_results.append(
@@ -300,7 +297,14 @@ class TokenOptimizationPipelineRunner:
                 original_content=original_content,
                 current_content=current_content,
                 source_type=request.source_type,
-                policy=request.policy,
+                policy=(
+                    dataclasses.replace(
+                        request.policy,
+                        profile=TokenOptimizationProfile.BALANCED,
+                    )
+                    if measure_only
+                    else request.policy
+                ),
                 attribution=request.attribution,
                 strategy=descriptor.strategy,
                 layer_context=TokenOptimizationLayerContext(
@@ -446,7 +450,6 @@ class TokenOptimizationPipelineRunner:
                 layer_input_content=layer_input_content,
                 original_content=original_content,
                 applied_layer_ids=applied_layer_ids,
-                measure_only=measure_only,
             )
             if outcome.malformed is not None:
                 if layer_ref.required:
@@ -482,6 +485,15 @@ class TokenOptimizationPipelineRunner:
             layer_results.append(result)
             previous_processed_ids.append(layer_ref.layer_id)
 
+        aggregate_measurement = (
+            _measure_only_aggregate_measurement(
+                original_content=original_content,
+                optimized_content=current_content,
+                request=request,
+            )
+            if measure_only
+            else None
+        )
         receipt_metadata: dict[str, Any] = {
             "pipeline_mode": config.mode.value,
             "resolved_layer_ids": [layer_ref.layer_id for layer_ref in resolved_layers],
@@ -489,19 +501,27 @@ class TokenOptimizationPipelineRunner:
             "disabled_layer_ids": disabled_layer_ids,
             "completed": completed,
         }
+        if measure_only:
+            receipt_metadata.update(
+                {
+                    "decision": "measure_only",
+                    "final_content_replacement": False,
+                    "optimized_character_count": len(current_content),
+                }
+            )
         if required_failure_layer_id is not None:
             receipt_metadata["required_failure_layer_id"] = required_failure_layer_id
 
         return TokenOptimizationPipelineResult(
             pipeline_id=config.pipeline_id,
             original_content=original_content,
-            final_content=current_content,
+            final_content=original_content if measure_only else current_content,
             layer_results=tuple(layer_results),
             applied_layer_ids=tuple(applied_layer_ids),
             bypassed_layer_ids=tuple(bypassed_layer_ids),
             failed_layer_ids=tuple(failed_layer_ids),
             fallback_used=fallback_used,
-            aggregate_measurement=None,
+            aggregate_measurement=aggregate_measurement,
             receipt_metadata=receipt_metadata,
             metadata={
                 "resolved_layer_count": len(resolved_layers),
@@ -517,10 +537,7 @@ def _policy_gate_bypass_reason(
     *,
     policy: TokenOptimizationPolicy,
     safety_class: StrategySafetyClass,
-    measure_only: bool,
 ) -> TokenOptimizationBypassReason | None:
-    if measure_only and safety_class not in _MEASURE_ONLY_SAFETY_CLASSES:
-        return TokenOptimizationBypassReason.POLICY_DISALLOWED
     if safety_class is StrategySafetyClass.LOSSY and not policy.allow_lossy:
         return TokenOptimizationBypassReason.POLICY_DISALLOWED
     if (
@@ -533,6 +550,32 @@ def _policy_gate_bypass_reason(
 
 def _requires_validation(*, policy: TokenOptimizationPolicy, descriptor) -> bool:
     return policy.require_validation or descriptor.requires_validation
+
+
+def _measure_only_aggregate_measurement(
+    *,
+    original_content: str,
+    optimized_content: str,
+    request: TokenOptimizationRequest,
+) -> TokenSavingsMeasurement:
+    baseline_tokens = len(original_content)
+    optimized_tokens = len(optimized_content)
+    saved_tokens = baseline_tokens - optimized_tokens
+    saved_ratio = (
+        min(1.0, max(0.0, saved_tokens / baseline_tokens))
+        if baseline_tokens
+        else 0.0
+    )
+    return TokenSavingsMeasurement(
+        baseline_tokens=baseline_tokens,
+        optimized_tokens=optimized_tokens,
+        saved_tokens=saved_tokens,
+        saved_ratio=saved_ratio,
+        confidence=TokenSavingsClaimConfidence.MEASURED,
+        category=TokenCategory.INPUT_CONTEXT,
+        source_type=request.source_type,
+        metadata={"measurement_basis": "character_count"},
+    )
 
 
 def _abort_required_pipeline(
@@ -597,7 +640,6 @@ def _apply_layer_decision(
     layer_input_content: str,
     original_content: str,
     applied_layer_ids: list[str],
-    measure_only: bool,
 ) -> _LayerDecisionOutcome:
     decision = result.decision
     bypassed: list[str] = []
@@ -608,11 +650,8 @@ def _apply_layer_decision(
     malformed: TokenOptimizationLayerResult | None = None
 
     if decision is TokenOptimizationLayerDecision.APPLY:
-        if measure_only:
-            current = layer_input_content
-        else:
-            current = result.output_content
-            applied.append(result.layer_id)
+        current = result.output_content
+        applied.append(result.layer_id)
         return _LayerDecisionOutcome(
             result=result,
             current_content=current,
@@ -689,10 +728,7 @@ def _apply_layer_decision(
         for overridden_id in result.overridden_layer_ids:
             if overridden_id in applied:
                 applied.remove(overridden_id)
-        if measure_only:
-            current = layer_input_content
-        else:
-            current = result.output_content
+        current = result.output_content
         applied.append(result.layer_id)
         return _LayerDecisionOutcome(
             result=result,

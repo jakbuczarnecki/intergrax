@@ -17,7 +17,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -51,7 +51,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 required_layer_ids = ["builtin.exact_deduplication"]
 allowed_layer_ids = ["builtin.exact_deduplication"]
 forbidden_layer_ids = ["builtin.extractive_filtering"]
@@ -86,10 +86,10 @@ allowed_statuses = ["routed"]
 allowed_configuration_ids = ["extractive_only"]
 allowed_reason_codes = ["noisy_tool_output"]
 review_required = false
-allowed_risk = ["low"]
+allowed_risk = ["medium"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 required_layer_ids = ["builtin.extractive_filtering"]
 allowed_layer_ids = ["builtin.extractive_filtering"]
 forbidden_layer_ids = ["builtin.exact_deduplication"]
@@ -127,7 +127,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 required_layer_ids = ["builtin.extractive_filtering"]
 allowed_layer_ids = ["builtin.extractive_filtering"]
 forbidden_layer_ids = ["builtin.exact_deduplication"]
@@ -165,7 +165,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 required_layer_ids = ["builtin.exact_deduplication"]
 allowed_layer_ids = ["builtin.exact_deduplication"]
 forbidden_layer_ids = ["builtin.extractive_filtering"]
@@ -208,7 +208,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 required_layer_ids = ["builtin.exact_deduplication"]
 allowed_layer_ids = ["builtin.exact_deduplication"]
 forbidden_layer_ids = ["builtin.extractive_filtering"]
@@ -248,7 +248,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -281,13 +281,13 @@ protected_regions = [
 
 [cases.router]
 allowed_statuses = ["review_required"]
-allowed_configuration_ids = ["extractive_only"]
+allowed_configuration_ids = ["no_optimization"]
 allowed_reason_codes = ["protected_or_high_risk"]
 review_required = true
 allowed_risk = ["high"]
 
 [cases.pipeline]
-expected_completion = false
+expected_execution = "not_started"
 forbidden_layer_ids = ["builtin.exact_deduplication", "builtin.extractive_filtering"]
 expected_fallback = false
 
@@ -322,7 +322,7 @@ allowed_configuration_ids = []
 allowed_reason_codes = ["policy_disabled"]
 
 [cases.pipeline]
-expected_completion = false
+expected_execution = "not_started"
 forbidden_layer_ids = ["builtin.exact_deduplication", "builtin.extractive_filtering"]
 
 [cases.protected]
@@ -344,7 +344,7 @@ mode = "not_applicable"
 [[cases]]
 case_id = "case-measure-only"
 category = "measure_only"
-description = "Measure-only policy records baseline and optimized observations without content-changing layers."
+description = "Measure-only policy measures the selected strategy while preserving the original final content."
 input_case_id = "measure-only"
 policy_profile = "measure_only"
 safe_tags = ["synthetic", "measure-only"]
@@ -357,8 +357,10 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
-forbidden_layer_ids = ["builtin.exact_deduplication", "builtin.extractive_filtering"]
+expected_execution = "completed"
+required_layer_ids = ["builtin.exact_deduplication"]
+allowed_layer_ids = ["builtin.exact_deduplication"]
+forbidden_layer_ids = ["builtin.extractive_filtering"]
 expected_fallback = false
 
 [cases.protected]
@@ -392,7 +394,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -428,7 +430,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -463,7 +465,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -498,7 +500,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -532,7 +534,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]
@@ -567,7 +569,7 @@ review_required = false
 allowed_risk = ["low"]
 
 [cases.pipeline]
-expected_completion = true
+expected_execution = "completed"
 expected_fallback = false
 
 [cases.protected]

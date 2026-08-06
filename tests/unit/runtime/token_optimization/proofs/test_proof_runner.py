@@ -22,6 +22,7 @@ from intergrax.runtime.token_optimization.contracts import (
     ProtectedRegionValidationResult,
     ProtectedRegionValidationStatus,
     TokenOptimizationPipelineResult,
+    TokenOptimizationSourceType,
 )
 from intergrax.runtime.token_optimization.llm_router_contracts import (
     TokenOptimizationLLMRouterResult,
@@ -548,6 +549,44 @@ def _run_controlled_case(
         router_factory=lambda **kwargs: _ControlledRouter(),
         pipeline_runner_factory=selected_pipeline_factory,
     ).run(config, persist_artifacts=False)
+
+
+def test_runner_uses_selected_catalog_layer_without_behavioral_override(
+    tmp_path: Path,
+) -> None:
+    base_config = _config(tmp_path)
+    case = replace(
+        base_config.cases[0],
+        request=replace(
+            base_config.cases[0].request,
+            content="".join(
+                f"INFO tool=build step={index:03d} status=running\n"
+                for index in range(20)
+            ),
+            source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
+            policy=replace(base_config.cases[0].request.policy, allow_lossy=True),
+        ),
+    )
+    config = replace(
+        base_config,
+        cases=(case,),
+        pipeline=replace(base_config.pipeline, mode="default", layer_ids=()),
+    )
+
+    class _ControlledRouter:
+        def route(self, request):
+            return _controlled_router_result(
+                configuration_id=TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+                reason_code=TokenOptimizationRouterReasonCode.NOISY_TOOL_OUTPUT,
+            )
+
+    result = UniversalTokenOptimizationProofRunner(
+        router_factory=lambda **kwargs: _ControlledRouter(),
+    ).run(config, persist_artifacts=False)
+
+    assert result.success is True
+    assert result.cases[0].selected_configuration_id == "extractive_only"
+    assert result.cases[0].applied_layer_ids == ("builtin.extractive_filtering",)
 
 
 @pytest.mark.parametrize(

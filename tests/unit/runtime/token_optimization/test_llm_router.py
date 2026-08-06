@@ -417,6 +417,72 @@ def test_protected_lossy_requires_review() -> None:
     assert result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
 
 
+def test_protected_lossless_can_route_without_review() -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(TokenOptimizationRouterConfigurationId.EXACT_ONLY)
+    )
+    protected = ProtectedRegion(kind=ProtectedRegionKind.IDENTIFIER, value="SECRET-SYNTH")
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(protected_regions=(protected,))
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.configuration_id is TokenOptimizationRouterConfigurationId.EXACT_ONLY
+    assert result.reason_code is TokenOptimizationRouterReasonCode.EXACT_DUPLICATES
+    assert result.review_required is False
+
+
+@pytest.mark.parametrize(
+    ("configuration_id", "source_type", "expected_layer_ids"),
+    [
+        (
+            TokenOptimizationRouterConfigurationId.EXACT_ONLY,
+            TokenOptimizationSourceType.PROMPT,
+            ("builtin.exact_deduplication",),
+        ),
+        (
+            TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+            TokenOptimizationSourceType.TOOL_OUTPUT,
+            ("builtin.extractive_filtering",),
+        ),
+        (
+            TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+            TokenOptimizationSourceType.TOOL_OUTPUT,
+            ("builtin.exact_deduplication", "builtin.extractive_filtering"),
+        ),
+    ],
+)
+def test_router_compiles_canonical_catalog_layer_order(
+    configuration_id: TokenOptimizationRouterConfigurationId,
+    source_type: TokenOptimizationSourceType,
+    expected_layer_ids: tuple[str, ...],
+) -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            configuration_id,
+            reason_code=(
+                TokenOptimizationRouterReasonCode.NOISY_TOOL_OUTPUT
+                if configuration_id
+                in {
+                    TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+                    TokenOptimizationRouterConfigurationId.EXACT_THEN_EXTRACTIVE,
+                }
+                else TokenOptimizationRouterReasonCode.EXACT_DUPLICATES
+            ),
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            source_type=source_type,
+            content="INFO\n" * 200,
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.pipeline_config is not None
+    assert tuple(layer.layer_id for layer in result.pipeline_config.layers) == expected_layer_ids
+
+
 def test_model_requested_review_prevents_execution() -> None:
     adapter = _NativeToolsAdapter(
         decision=_decision(
@@ -968,6 +1034,11 @@ def test_router_system_prompt_in_stable_prefix() -> None:
     )
     assert adapter.captured_messages is not None
     assert adapter.captured_messages[0].role == "system"
+    system_prompt = adapter.captured_messages[0].content
+    assert "Protected regions with a lossless configuration may proceed without review" in (
+        system_prompt
+    )
+    assert "For policy_profile=measure_only" in system_prompt
 
 
 def test_router_facts_and_content_in_dynamic_tail() -> None:

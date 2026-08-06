@@ -23,12 +23,12 @@ from intergrax.runtime.token_optimization.proofs.report import (
 
 def _evaluation() -> UniversalProofEvaluation:
     gate = GateResult(
-        gate_id="RAW_CONTENT_ABSENT",
+        gate_id="PIPELINE_COMPLETION",
         status=GateStatus.PASS,
         case_id="case-one",
         reason_code="EXPECTATION_SATISFIED",
-        expected_safe_summary="safe",
-        actual_safe_summary="safe",
+        expected_safe_summary="not_started",
+        actual_safe_summary="not_started",
         required=True,
     )
     return UniversalProofEvaluation(
@@ -66,6 +66,8 @@ def test_markdown_is_escaped_and_deterministic() -> None:
     assert rendered == render_evaluation_markdown(_evaluation())
     assert "offline_composition" in rendered
     assert "does not establish behavior-specific LLM routing quality" in rendered
+    assert "not_started" in rendered
+    assert "expected_completion" not in rendered
 
 
 def test_artifacts_are_canonical_hashed_and_duplicate_safe(tmp_path: Path) -> None:

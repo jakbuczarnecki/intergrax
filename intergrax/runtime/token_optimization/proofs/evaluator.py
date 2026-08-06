@@ -10,8 +10,10 @@ from dataclasses import dataclass
 from math import isfinite
 
 from intergrax.runtime.token_optimization.proofs.contracts import (
+    ROUTER_TERMINAL_NON_EXECUTION_REASONS,
     UniversalProofCaseResult,
     UniversalProofRunResult,
+    is_terminal_router_non_execution,
 )
 from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     EVALUATION_GATE_IDS,
@@ -26,6 +28,7 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
     GateResult,
     GateStatus,
     MeasurementRequirement,
+    PipelineExecutionExpectation,
     ProofCorpus,
     ProviderCacheEvidence,
     UniversalProofEvaluation,
@@ -59,23 +62,11 @@ _ROUTER_RISKS = frozenset({"low", "medium", "high"})
 _ROUTER_TRANSPORTS = frozenset(
     {"native_tools", "structured_output", "unsupported"}
 )
-_ROUTER_TERMINAL_REASONS = {
-    "blocked": frozenset(
-        {
-            "policy_disabled",
-            "profile_off",
-            "unsupported_adapter",
-            "capability_resolution_failed",
-            "source_type_not_supported",
-            "confidence_below_threshold",
-            "packing_input_required",
-            "lossy_not_allowed",
-        }
-    ),
-    "review_required": frozenset(
-        {"model_requested_review", "protected_regions_require_review"}
-    ),
-}
+def _terminal_router_non_execution(result: UniversalProofCaseResult) -> bool:
+    return is_terminal_router_non_execution(
+        result.router_status,
+        result.router_reason,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -252,10 +243,16 @@ def _router_gates(context: _GateContext) -> list[GateResult]:
             evidence.configuration_id,
             context.result.selected_configuration_id,
         )
+    router_reason_code = evidence.reason_code
+    if (
+        router_reason_code is None
+        and context.result.router_status in ROUTER_TERMINAL_NON_EXECUTION_REASONS
+    ):
+        router_reason_code = context.result.router_reason
     gates.append(
         _allowed(
             "ROUTER_REASON",
-            evidence.reason_code,
+            router_reason_code,
             expectation.allowed_reason_codes,
             context,
         )
@@ -367,45 +364,83 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
         return [_not_applicable(gate_id, context) for gate_id in pipeline_gate_ids]
     expected = context.case.pipeline
     evidence = context.result.pipeline_evidence
+    terminal_non_execution = _terminal_router_non_execution(context.result)
     gates: list[GateResult] = []
-    if expected.expected_completion is None:
+    if expected.expected_execution is None:
         gates.append(_not_applicable("PIPELINE_COMPLETION", context))
-    elif evidence.completed is None:
-        gates.append(
-            _unavailable("PIPELINE_COMPLETION", context, expected.expected_completion)
+    elif expected.expected_execution is PipelineExecutionExpectation.NOT_STARTED:
+        not_started = (
+            context.result.status == "failed"
+            and context.result.pipeline_status == "not_started"
+            and _terminal_router_non_execution(context.result)
+            and not context.result.applied_layer_ids
+            and evidence.completed is None
+            and evidence.receipt_completion_status is None
+            and evidence.fallback_applied is None
+            and evidence.validation_status in {None, "not_run"}
+            and evidence.validation_reason_code in {None, "not_run"}
+            and evidence.required_layer_failure is None
         )
-    elif (
-        context.result.pipeline_status
-        == ("completed" if evidence.completed else "failed")
-    ) is False:
-        gates.append(
-            _fail(
-                "PIPELINE_COMPLETION",
-                context,
-                "EVIDENCE_CONTRADICTION",
-                expected.expected_completion,
-                context.result.pipeline_status,
-            )
-        )
-    elif evidence.completed != expected.expected_completion:
-        gates.append(
-            _fail(
-                "PIPELINE_COMPLETION",
-                context,
-                "COMPLETION_MISMATCH",
-                expected.expected_completion,
-                evidence.completed,
-            )
-        )
-    else:
         gates.append(
             _pass(
                 "PIPELINE_COMPLETION",
                 context,
-                expected.expected_completion,
-                evidence.completed,
+                expected.expected_execution.value,
+                context.result.pipeline_status,
+            )
+            if not_started
+            else _fail(
+                "PIPELINE_COMPLETION",
+                context,
+                "NOT_STARTED_EXPECTATION_NOT_SATISFIED",
+                expected.expected_execution.value,
+                context.result.pipeline_status,
             )
         )
+    else:
+        expected_status = expected.expected_execution.value
+        if context.result.pipeline_status == "not_started":
+            gates.append(
+                _fail(
+                    "PIPELINE_COMPLETION",
+                    context,
+                    "EXECUTION_STATE_MISMATCH",
+                    expected_status,
+                    context.result.pipeline_status,
+                )
+            )
+        elif evidence.completed is None or evidence.receipt_completion_status is None:
+            gates.append(
+                _unavailable(
+                    "PIPELINE_COMPLETION",
+                    context,
+                    expected_status,
+                )
+            )
+        else:
+            matches = (
+                context.result.pipeline_status == expected_status
+                and evidence.completed
+                == (expected.expected_execution is PipelineExecutionExpectation.COMPLETED)
+                and evidence.receipt_completion_status
+                == (expected.expected_execution is PipelineExecutionExpectation.COMPLETED)
+            )
+            gates.append(
+                _pass(
+                    "PIPELINE_COMPLETION",
+                    context,
+                    expected_status,
+                    context.result.pipeline_status,
+                )
+                if matches
+                else _fail(
+                    "PIPELINE_COMPLETION",
+                    context,
+                    "COMPLETION_MISMATCH",
+                    expected_status,
+                    context.result.pipeline_status,
+                )
+            )
     applied = set(context.result.applied_layer_ids)
     missing = sorted(expected.required_layer_ids - applied)
     unexpected = (
@@ -454,6 +489,17 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
         gates.append(_not_applicable("PIPELINE_FORBIDDEN_LAYERS", context))
     if expected.expected_fallback is None:
         gates.append(_not_applicable("PIPELINE_FALLBACK", context))
+    elif evidence.fallback_applied is None and (
+        terminal_non_execution and expected.expected_fallback is False
+    ):
+        gates.append(
+            _pass(
+                "PIPELINE_FALLBACK",
+                context,
+                expected.expected_fallback,
+                None,
+            )
+        )
     elif evidence.fallback_applied is None:
         gates.append(
             _unavailable("PIPELINE_FALLBACK", context, expected.expected_fallback)
@@ -492,6 +538,19 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
         and not expected.allowed_validation_reason_codes
     ):
         gates.append(_not_applicable("PIPELINE_VALIDATION", context))
+    elif (
+        evidence.validation_status is None
+        and terminal_non_execution
+        and expected.expected_validation_status == "not_run"
+    ):
+        gates.append(
+            _pass(
+                "PIPELINE_VALIDATION",
+                context,
+                expected.expected_validation_status,
+                None,
+            )
+        )
     elif evidence.validation_status is None or reason_missing:
         gates.append(
             _unavailable(
@@ -615,12 +674,9 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
         else None
     )
     terminal_status = result.router_status if status_consistent else None
-    terminal_reason_known = (
-        terminal_status in _ROUTER_TERMINAL_REASONS
-        and terminal_reason in _ROUTER_TERMINAL_REASONS[terminal_status]
-    )
+    terminal_reason_known = _terminal_router_non_execution(result)
     terminal_reason_valid = (
-        terminal_status not in _ROUTER_TERMINAL_REASONS
+        terminal_status not in ROUTER_TERMINAL_NON_EXECUTION_REASONS
         or terminal_reason_known
     )
     has_decision_evidence = (
@@ -648,7 +704,7 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
         and result.selected_configuration_id == evidence.configuration_id
         and (
             terminal_reason_known
-            if terminal_status in _ROUTER_TERMINAL_REASONS
+            if terminal_status in ROUTER_TERMINAL_NON_EXECUTION_REASONS
             else result.router_reason in {None, evidence.reason_code}
         )
     )
@@ -761,16 +817,7 @@ def _pipeline_integrity_gate(context: _GateContext) -> GateResult:
             or isinstance(evidence.required_layer_failure, str)
         )
     )
-    terminal_reason = (
-        result.router_reason
-        if isinstance(result.router_reason, str)
-        else None
-    )
-    terminal_router = (
-        result.router_status in _ROUTER_TERMINAL_REASONS
-        and terminal_reason
-        in _ROUTER_TERMINAL_REASONS[result.router_status]
-    )
+    terminal_router = _terminal_router_non_execution(result)
     non_execution_consistent = (
         result.status == "failed"
         and result.pipeline_status == "not_started"
@@ -1265,7 +1312,7 @@ def _safety_gates(context: _GateContext) -> list[GateResult]:
         or (ref.sha256 is not None and re.fullmatch(r"[0-9a-f]{64}", ref.sha256))
         for ref in refs
     )
-    required_paths = {"run.json", f"cases/{context.case.case_id}.json"}
+    required_paths = {"run.json", f"cases/{context.result.case_id}.json"}
     manifest_ok = (
         bool(refs)
         and len(paths) == len(refs)
@@ -1327,15 +1374,25 @@ class UniversalProofEvaluator:
                 EvaluationGateRequirement.UNAVAILABLE_ALLOWED,
             }
         )
-        if {case.case_id for case in corpus.cases} != {
-            item.case_id for item in run_result.cases
-        }:
-            raise EvaluationConfigurationError("CORPUS_RUN_CASE_MISMATCH")
+        corpus_case_ids = {case.case_id for case in corpus.cases}
+        run_case_ids = {item.case_id for item in run_result.cases}
+        if corpus_case_ids == run_case_ids:
+            result_by_id = {item.case_id: item for item in run_result.cases}
+        else:
+            corpus_input_case_ids = {case.input_case_id for case in corpus.cases}
+            if corpus_input_case_ids != run_case_ids:
+                raise EvaluationConfigurationError("CORPUS_RUN_CASE_MISMATCH")
+            result_by_input_case_id = {
+                item.case_id: item for item in run_result.cases
+            }
+            result_by_id = {
+                corpus_case.case_id: result_by_input_case_id[corpus_case.input_case_id]
+                for corpus_case in corpus.cases
+            }
         cache_items = tuple(cache_evidence)
         cache_by_case = {item.case_id: item for item in cache_items}
         if len(cache_by_case) != len(cache_items):
             raise EvaluationConfigurationError("DUPLICATE_CACHE_EVIDENCE_CASE_IDS")
-        result_by_id = {item.case_id: item for item in run_result.cases}
         evaluations = []
         for corpus_case in sorted(corpus.cases, key=lambda item: item.case_id):
             context = _GateContext(

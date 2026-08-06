@@ -101,6 +101,7 @@ def test_canonical_vllm_config_is_no_auth(monkeypatch) -> None:
     )
 
     assert config.adapter.api_key_env is None
+    assert config.pipeline.layer_ids == ()
 
 
 @pytest.mark.parametrize("provider", ("vllm", "openai", "groq"))

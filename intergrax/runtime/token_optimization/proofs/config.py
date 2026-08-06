@@ -23,6 +23,8 @@ from intergrax.runtime.token_optimization.proofs.contracts import (
     UniversalTokenOptimizationProofConfig,
 )
 from intergrax.runtime.token_optimization.contracts import (
+    ProtectedRegion,
+    ProtectedRegionKind,
     TokenOptimizationPolicy,
     TokenOptimizationProfile,
     TokenOptimizationRequest,
@@ -291,8 +293,41 @@ def _parse_policy(table: Mapping[str, Any]) -> TokenOptimizationPolicy:
     )
 
 
+def _parse_protected_regions(value: object) -> tuple[ProtectedRegion, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise _fail("INVALID_PROTECTED_REGIONS")
+    regions: list[ProtectedRegion] = []
+    for item in value:
+        region = _table(item, "protected_region")
+        _strict_keys(region, frozenset({"kind", "value"}), "protected_region")
+        try:
+            kind = ProtectedRegionKind(
+                _strict_string(_required(region, "kind"), "protected_region_kind")
+            )
+        except ValueError as exc:
+            raise _fail("INVALID_PROTECTED_REGION_KIND") from exc
+        regions.append(
+            ProtectedRegion(
+                kind=kind,
+                value=_strict_string(
+                    _required(region, "value"),
+                    "protected_region_value",
+                ),
+            )
+        )
+    return tuple(regions)
+
+
 def _parse_case(table: Mapping[str, Any]) -> ProofCaseInput:
-    _strict_keys(table, frozenset({"case_id", "source_type", "content", "tags", "policy"}), "case")
+    _strict_keys(
+        table,
+        frozenset(
+            {"case_id", "source_type", "content", "tags", "policy", "protected_regions"}
+        ),
+        "case",
+    )
     try:
         source_type = TokenOptimizationSourceType(
             _strict_string(_required(table, "source_type"), "source_type")
@@ -309,6 +344,7 @@ def _parse_case(table: Mapping[str, Any]) -> ProofCaseInput:
             content=_strict_string(_required(table, "content"), "content"),
             source_type=source_type,
             policy=_parse_policy(_table(_required(table, "policy"), "case_policy")),
+            protected_regions=_parse_protected_regions(table.get("protected_regions")),
         ),
         tags=parsed_tags,
     )
