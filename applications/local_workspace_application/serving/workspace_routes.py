@@ -194,6 +194,9 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
 from intergrax.runtime.vendor_knowledge.live.ms365_graph import (
     build_msgraph_live_registration_bundles,
 )
+from intergrax.runtime.vendor_knowledge.live.slack import (
+    build_slack_live_registration_bundles,
+)
 from intergrax.runtime.vendor_knowledge.live.registration import (
     publish_live_registration_bundles,
 )
@@ -686,7 +689,10 @@ def mount_managed_workspace_routes(
         if connected_wiring is None:
             raise RuntimeError("hybrid_ask_wiring_incomplete")
         published_live_registration = publish_live_registration_bundles(
-            build_msgraph_live_registration_bundles()
+            (
+                *build_msgraph_live_registration_bundles(),
+                *build_slack_live_registration_bundles(),
+            )
         )
         ask_service_v2 = WorkspaceAskServiceV2(
             workspace_service=service,
