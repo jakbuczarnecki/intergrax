@@ -55,7 +55,7 @@ A reviewer should not need to inspect raw Docker output or infer what to check f
 | **Product status** | Backend Product Alpha / MVP |
 | **Current proof scope** | Bounded application and platform behavior |
 | **Primary evidence** | Core Platform Proof claims, certification matrix, ProofReceipt documents in MongoDB |
-| **Does not prove** | Complete Hybrid Ask, complete vendor portfolio, real-user validation, commercial validation, or finished SaaS |
+| **Does not prove** | Hybrid Ask combining indexed and live evidence, complete vendor portfolio, real-user validation, commercial validation, or finished SaaS |
 
 > [!NOTE]
 > A **bounded platform proof** validates specific platform and application mechanisms in documented environments. It is **not** product completion, commercial readiness, or universal production certification.
@@ -1763,7 +1763,28 @@ For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZAT
 - Deterministic application-level real RAG path proof (production staging allowlist; real indexing, vector write, retrieval and safe citation)
 - Trusted Ask Workspace over **indexed** RAG with citations and persisted runs
 
+Accepted Web URL product evidence now additionally establishes the **indexed evidence branch of production Hybrid Ask**:
+
+```text
+Web URL
+→ real document intake
+→ real RAG ingest
+→ exact tenant/workspace vector scope
+→ production Hybrid Ask composition
+→ indexed retrieval
+→ grounded answer
+→ non-empty citation / Web URL evidence
+```
+
+Repository verification path:
+
+```text
+uv run pytest applications/local_workspace_application/tests/workspaces/test_web_url_end_to_end.py::test_web_url_http_worker_and_ask_projection_with_test_doubles applications/local_workspace_application/tests/workspaces/test_web_url_end_to_end.py::test_web_url_end_to_end_real_rag_ask_proof tests/unit/rag/vectorstore/test_native_vectorstore_contracts.py::test_count_exact_workspace_scope_does_not_masquerade_as_tenant_only -q
+```
+
 **Proof classification:** not a live external-website certification; not a live provider proof; not final `LKW-LIVE-PLATFORM-PROOF-1`.
+
+This proof does not establish combined indexed + live evidence, complete live-provider behavior, or complete Hybrid Ask.
 
 ### Planned proof (future public claim)
 
@@ -1778,7 +1799,7 @@ For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZAT
 8. Restart with vLLM; repeat without changing LKW domain behavior.
 ```
 
-**Not claimed today:** live vendor querying; Databricks/Power BI/Atlan execution; complete Ollama/vLLM product parity; Hybrid Ask; final Slack platform proof.
+**Not claimed today:** live vendor querying; Databricks/Power BI/Atlan execution; complete Ollama/vLLM product parity; Hybrid Ask combining indexed and authorized live evidence; final Slack platform proof.
 
 Claim types must be labeled: **real provider proof**, **controlled integration proof**, or **deterministic fixture proof**.
 

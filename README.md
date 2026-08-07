@@ -49,18 +49,19 @@ Prefer to understand the experience first? [See the LKW Product Tour](LKW_PRODUC
 
 ### What is boundedly proven today
 
-LKW is a Backend Product Alpha / MVP under active development. The current bounded product proof covers indexed knowledge workflows; complete live or hybrid access, finished end-user packaging, real-user validation, and commercial validation are not complete.
+LKW is a Backend Product Alpha / MVP under active development. The current bounded product proof covers indexed knowledge workflows, including the production indexed Ask path through Hybrid Ask over documented indexed evidence. Hybrid Ask combining indexed and authorized live evidence, finished end-user packaging, real-user validation, and commercial validation are not complete.
 
 **Boundedly demonstrated:**
 
 - indexed knowledge and background ingest;
 - persisted knowledge across documented restart paths;
 - grounded Ask over documented indexed content;
+- production indexed Ask path through Hybrid Ask over documented indexed evidence;
 - hosting, observability and persisted execution evidence.
 
 **Not complete:**
 
-- Hybrid Ask;
+- Hybrid Ask combining indexed and authorized live evidence;
 - complete live-provider access;
 - finished end-user packaging;
 - real-user validation;
@@ -240,7 +241,7 @@ Other routes: [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) · [c
 Intergrax is **not** currently positioned as:
 
 - a finished SaaS;
-- a product with completed Hybrid Ask;
+- a product with completed Hybrid Ask combining indexed and authorized live evidence;
 - a product with completed real-user validation;
 - a product with completed commercial validation;
 - a universal production-readiness claim;

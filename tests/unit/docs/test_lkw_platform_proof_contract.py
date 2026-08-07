@@ -561,3 +561,30 @@ def test_file_watcher_public_reviewer_step_references_are_synchronized() -> None
             assert _uses_current_file_watcher_public_numbering(text), (
                 f"{path.name} lacks current File Watcher Steps 12–13 numbering"
             )
+
+
+def test_lkw_platform_proof_indexed_hybrid_ask_web_url_claim_boundary() -> None:
+    text = _proof_text()
+    assert "indexed evidence branch of production Hybrid Ask" in text
+    assert "real RAG ingest" in text
+    assert "exact tenant/workspace vector scope" in text
+    assert "production Hybrid Ask composition" in text
+    assert (
+        "test_web_url_end_to_end_real_rag_ask_proof" in text
+    ), "Must reference accepted Web URL / real-RAG verification path"
+    assert (
+        "test_count_exact_workspace_scope_does_not_masquerade_as_tenant_only" in text
+    ), "Must reference exact workspace-scope verification path"
+    assert (
+        "This proof does not establish combined indexed + live evidence, "
+        "complete live-provider behavior, or complete Hybrid Ask."
+    ) in text
+    lower = text.lower()
+    assert "complete hybrid ask is complete" not in lower
+    assert "hybrid ask is complete" not in lower
+    # Positive completion claims without the mixed-evidence qualifier are forbidden.
+    assert "complete Hybrid Ask." in text  # limitation sentence only
+    assert "Not claimed today:" in text
+    not_claimed = text[text.index("Not claimed today:") : text.index("Not claimed today:") + 400]
+    assert "Hybrid Ask combining indexed and authorized live evidence" in not_claimed
+    assert not_claimed.count("Hybrid Ask;") == 0

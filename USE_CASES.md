@@ -66,7 +66,7 @@ Knowledge is distributed across private files, Web sources and organizational sy
 - Approved indexed sources
 - Grounded Ask with citations and evidence
 - Controlled conversational access (Slack DM today, partial)
-- Future authorized live evidence through Hybrid Ask — **Hybrid Ask is not complete**
+- Future authorized live evidence combined with indexed evidence through Hybrid Ask — **combining indexed and authorized live evidence is not complete**
 
 ### Current boundary
 
@@ -74,13 +74,13 @@ Knowledge is distributed across private files, Web sources and organizational sy
 
 Verify: [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) · [PROOFS.md](PROOFS.md)
 
-Hybrid Ask and complete live provider access are not currently available.
+Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established.
 
 ## Current bounded-fit use cases
 
 | Use case | User outcome | Current support | Verify |
 |----------|--------------|-----------------|--------|
-| Governed knowledge assistant over indexed sources | Ask over approved indexed knowledge with citations | Bounded through LKW indexed knowledge proof | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
+| Governed knowledge assistant over indexed sources | Ask over approved indexed knowledge with citations | Bounded through LKW indexed knowledge proof, including production Hybrid Ask indexed path | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Reusable foundation for a specialized agent application | Build a product on shared policy, knowledge and evidence foundations | Shared platform mechanisms with bounded supporting evidence; product-specific validation still required | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Evidence-aware agent or integration workflow | Inspect runs with trace, receipts and boundary evidence | Bounded supporting paths; not a certification or compliance claim | [BoundaryAttest case study](docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Governed prompt and context optimization | Deterministic optimization under policy with receipts | **Featured platform-capability proof**; **PARTIAL** with bounded vLLM evidence | [Token Optimization guide](docs/features/token_optimization/README.md) |
@@ -91,7 +91,7 @@ Universal savings are not claimed for Token Optimization.
 
 | Desired user result | What remains unproven |
 |---------------------|----------------------|
-| Multi-source knowledge investigation combining indexed and authorized live evidence | Hybrid Ask end-to-end with unified provenance — **Hybrid Ask is not complete** |
+| Multi-source knowledge investigation combining indexed and authorized live evidence | Hybrid Ask combining indexed and authorized live evidence with unified provenance — **not complete** |
 | Slack as interaction surface and approved knowledge source | Durable connected Slack knowledge workflow |
 | Governed Google Workspace knowledge inside LKW | First bounded Google Workspace proof after prerequisite product proof |
 | Repeatable design-partner deployment | Self-serve setup without ad hoc developer reconstruction |
@@ -106,8 +106,8 @@ See [ROADMAP.md](ROADMAP.md) for outcome-gated direction.
 | Private governed knowledge workspace | **Strongest current fit** | LKW is the Primary product proof with bounded indexed-knowledge path | [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) |
 | Specialized application requiring policy and evidence | **Reasonable technical evaluation** | Shared foundations exist; your product still needs its own validation | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Multiple agent applications sharing foundations | **Reasonable technical evaluation** | Reusable mechanisms with bounded evidence; not a finished platform product | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) |
-| Full multi-provider live assistant needed immediately | **Not a fit today** | Live provider access and Hybrid Ask remain incomplete | [ROADMAP.md](ROADMAP.md) |
-| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask remains incomplete | [ROADMAP.md](ROADMAP.md) |
+| Full multi-provider live assistant needed immediately | **Not a fit today** | Complete live-provider access and Hybrid Ask combining indexed and authorized live evidence remain incomplete | [ROADMAP.md](ROADMAP.md) |
+| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask combining indexed and authorized live evidence remains incomplete | [ROADMAP.md](ROADMAP.md) |
 | Governed Google Workspace knowledge inside LKW | **Planned fit** | The first bounded Google Workspace LKW proof is not complete | [ROADMAP.md](ROADMAP.md) |
 | Generic chatbot prototype | **Not a fit today** | Intergrax targets governed applications, not quick chat demos | Another approach may fit better |
 | Finished no-code SaaS offering | **Not a fit today** | No finished hosted product; active R&D | [PARTNERS.md](PARTNERS.md) for authorized discussions |
@@ -116,7 +116,7 @@ See [ROADMAP.md](ROADMAP.md) for outcome-gated direction.
 ## What Intergrax does not currently offer
 
 - No finished hosted SaaS
-- No complete Hybrid Ask
+- No complete Hybrid Ask combining indexed and authorized live evidence
 - No complete multi-provider live access
 - No universal production certification
 - No compliance certification

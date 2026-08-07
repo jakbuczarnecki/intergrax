@@ -72,12 +72,13 @@ without copying either roadmap.
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | Core application and platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence | Bounded to documented certification profiles; not full live platform proof |
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, indexing, grounded Ask over indexed content | Not live external-website certification |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production Hybrid Ask indexed evidence path, grounded Ask with citation/evidence | Not live external-website certification; Hybrid Ask combining indexed and authorized live evidence is not established; complete live-provider access is not established |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
 ### Not established by the accepted public proof
 
-- Complete Hybrid Ask product behavior is not established by the accepted public proof.
+- Hybrid Ask combining indexed and authorized live evidence is not established by the accepted public proof.
+- Complete live-provider access is not established.
 - A complete Slack connected-knowledge product proof is not established.
 - A Google Workspace LKW product proof is not established.
 - The complete multi-source live platform proof is not established.
@@ -152,7 +153,7 @@ flowchart LR
 > - completed commercial validation
 > - universal production readiness
 > - universal token or cost savings
-> - completed Hybrid Ask
+> - completed Hybrid Ask combining indexed and authorized live evidence
 > - complete vendor integration catalog
 > - production-proven durable compaction rollout
 > - real-user validation at scale

@@ -209,6 +209,25 @@ The implementation plan may advance without changing `PROOFS.md`.
 A `PROOFS.md` update is required only when accepted evidence
 or the allowed public claim changes.
 
+### LKW Hybrid Ask claim boundary
+
+```text
+accepted indexed Ask through production Hybrid Ask
+≠
+complete Hybrid Ask combining indexed + live evidence
+```
+
+The accepted indexed evidence branch of production Hybrid Ask — through the documented Web URL / real-RAG product proof — does **not** establish:
+
+- complete live-provider access;
+- Hybrid Ask combining indexed and authorized live evidence in one answer;
+- complete multi-source Hybrid Ask behavior;
+- production readiness;
+- real-user validation;
+- commercial validation.
+
+Do not promote from architecture status alone. Contributors must not interpret the accepted indexed branch as proof of live-provider completeness, mixed-evidence completion, full multi-source behavior, or production readiness.
+
 ---
 
 ## 7. Token Optimization classification rules

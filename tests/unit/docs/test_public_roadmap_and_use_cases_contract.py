@@ -168,7 +168,8 @@ def _fit_matrix_section(text: str) -> str:
 
 
 _READER_HYBRID_BOUNDARY = (
-    "Hybrid Ask and complete live provider access are not currently available."
+    "Indexed Ask through production Hybrid Ask is boundedly demonstrated; "
+    "authorized live evidence combined with indexed evidence is not yet established."
 )
 
 _FORBIDDEN_READER_MAINTAINER_PHRASES = (
@@ -191,7 +192,7 @@ _ROADMAP_NEGATIVE_BULLETS = (
 
 _USE_CASES_NEGATIVE_BULLETS = (
     "No finished hosted SaaS",
-    "No complete Hybrid Ask",
+    "No complete Hybrid Ask combining indexed and authorized live evidence",
     "No complete multi-provider live access",
     "No universal production certification",
     "No compliance certification",
@@ -433,3 +434,57 @@ def test_no_release_date_promises(roadmap_text: str, use_cases_text: str) -> Non
             assert not pattern.search(text), (
                 f"{path.name}: release-date promise pattern {pattern.pattern!r}"
             )
+
+
+def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
+    readme_text: str, use_cases_text: str, roadmap_text: str
+) -> None:
+    """Cross-document: indexed Hybrid Ask is discoverable; mixed indexed+live is not complete."""
+    proofs_text = _read(PROOFS_PATH)
+    combined = f"{readme_text}\n{proofs_text}\n{use_cases_text}\n{roadmap_text}"
+    combined_norm = _normalize(combined)
+
+    # 1. Indexed Hybrid Ask evidence is discoverable in the public claim surface.
+    assert "production hybrid ask indexed" in _normalize(proofs_text) or (
+        "production indexed ask path through hybrid ask" in _normalize(readme_text)
+    )
+    assert "indexed ask through production hybrid ask" in _normalize(use_cases_text)
+
+    # 2. Complete indexed + live Hybrid Ask remains explicitly incomplete.
+    mixed_markers = (
+        "hybrid ask combining indexed and authorized live evidence",
+        "hybrid ask combining indexed and live evidence",
+        "authorized live evidence combined with indexed evidence",
+    )
+    assert any(marker in combined_norm for marker in mixed_markers)
+    assert "not established" in _normalize(proofs_text) or "not yet established" in combined_norm
+    assert "not complete" in combined_norm
+
+    # 3. ROADMAP still treats combined indexed + live evidence as a future target.
+    next_section = _h2_section(
+        roadmap_text, "## Next — Validate the complete knowledge workflow"
+    )
+    assert "Hybrid Ask combining indexed and live evidence" in next_section
+
+    # 4. No public document positively claims complete Hybrid Ask.
+    # Negated forms such as "No claim that Hybrid Ask is complete" are allowed.
+    for path, text in (
+        (README_PATH, readme_text),
+        (PROOFS_PATH, proofs_text),
+        (USE_CASES_PATH, use_cases_text),
+        (ROADMAP_PATH, roadmap_text),
+    ):
+        lower = _normalize(text)
+        start = 0
+        while True:
+            idx = lower.find("hybrid ask is complete", start)
+            if idx == -1:
+                break
+            context = lower[max(0, idx - 80) : idx + len("hybrid ask is complete") + 40]
+            assert any(marker in context for marker in _NEGATION_MARKERS), (
+                f"{path.name}: positive complete-Hybrid-Ask claim near {context!r}"
+            )
+            start = idx + 1
+    # Blanket incomplete wording must not erase the proven indexed branch.
+    assert "completed Hybrid Ask\n" not in proofs_text
+    assert "- Hybrid Ask;\n" not in readme_text
