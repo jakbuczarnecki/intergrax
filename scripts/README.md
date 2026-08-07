@@ -33,6 +33,20 @@ uv run python scripts/audit/generate_domain_audit_prompts.py
 uv run python scripts/maintenance/check_harness_no_getattr.py
 ```
 
+## Environment conformance
+
+Before declaring `BLOCKED_ENVIRONMENT`, run the canonical local diagnostic:
+
+```bash
+uv run --frozen python scripts/maintenance/check_environment_conformance.py
+```
+
+`PASS` proves that the structural development-environment contract is healthy:
+Python provenance, `.venv` isolation, lock consistency, baseline development
+tools, and lightweight runtime packages. It does not prove that optional or
+heavy integration dependencies, external services, GPU/CUDA, or every test
+suite are available; task-specific failures must still be diagnosed separately.
+
 ## Guidelines
 
 - Do not add new scripts directly to the top-level `scripts/` directory.
