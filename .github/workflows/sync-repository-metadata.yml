@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev-ci --frozen
 
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
       - name: Require repository metadata token
         env:
           REPO_METADATA_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}

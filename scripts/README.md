@@ -38,14 +38,20 @@ uv run python scripts/maintenance/check_harness_no_getattr.py
 Before declaring `BLOCKED_ENVIRONMENT`, run the canonical local diagnostic:
 
 ```bash
+# Local Windows development (strict local provenance)
 uv run --frozen python scripts/maintenance/check_environment_conformance.py
+
+# GitHub Actions (shared CI contract)
+uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
 ```
 
-`PASS` proves that the structural development-environment contract is healthy:
-Python provenance, `.venv` isolation, lock consistency, baseline development
-tools, and lightweight runtime packages. It does not prove that optional or
-heavy integration dependencies, external services, GPU/CUDA, or every test
-suite are available; task-specific failures must still be diagnosed separately.
+The default local profile proves Python provenance, `.venv` isolation, lock
+consistency, Ruff, and baseline runtime packages. The CI profile is run
+automatically after the frozen CI sync in each Python-executing workflow; it
+proves the shared Python/venv/lock/isolation contract without requiring the
+local uv-managed base-interpreter provenance. CI may provision Python through
+`setup-uv` or runner infrastructure. Neither profile proves optional or heavy
+integration dependencies, external services, GPU/CUDA, or every test suite.
 
 ## Guidelines
 

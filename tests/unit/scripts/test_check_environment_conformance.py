@@ -12,14 +12,17 @@ from scripts.maintenance.check_environment_conformance import (
     evaluate_base_provenance,
     evaluate_pythonpath,
     evaluate_venv_paths,
+    profile_contract,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.no_ci]
 
 
+@pytest.mark.parametrize("profile", ["local", "ci"])
 def test_venv_paths_accept_repository_venv_and_reject_external_paths(
-    tmp_path: Path,
+    tmp_path: Path, profile: str
 ) -> None:
+    assert profile_contract(profile).name == profile
     venv_root = tmp_path / ".venv"
     executable = venv_root / "Scripts" / "python.exe"
 
@@ -33,9 +36,30 @@ def test_venv_paths_accept_repository_venv_and_reject_external_paths(
     )
 
 
-def test_non_empty_pythonpath_is_rejected() -> None:
+@pytest.mark.parametrize("profile", ["local", "ci"])
+def test_non_empty_pythonpath_is_rejected(profile: str) -> None:
+    assert profile_contract(profile).name == profile
     assert evaluate_pythonpath({})[0] is True
     assert evaluate_pythonpath({"PYTHONPATH": "C:\\external\\injection"})[0] is False
+
+
+def test_local_profile_requires_managed_base_provenance() -> None:
+    assert profile_contract("local").requires_managed_python is True
+
+
+def test_ci_profile_does_not_require_local_managed_base_provenance() -> None:
+    assert profile_contract("ci").requires_managed_python is False
+
+
+def test_ci_keeps_shared_venv_isolation_and_has_intentional_baseline() -> None:
+    local = profile_contract("local")
+    ci = profile_contract("ci")
+
+    assert {"PYTEST", "PYDANTIC", "FASTAPI"} <= {
+        name for name, *_ in ci.dependencies
+    }
+    assert "RUFF" in {name for name, *_ in local.dependencies}
+    assert "RUFF" not in {name for name, *_ in ci.dependencies}
 
 
 def test_external_base_interpreter_is_rejected(tmp_path: Path) -> None:

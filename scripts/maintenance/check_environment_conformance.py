@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import argparse
 import importlib.metadata
 import importlib.util
 import json
@@ -26,6 +27,43 @@ class Check:
     name: str
     ok: bool
     detail: str
+
+
+@dataclass(frozen=True)
+class EnvironmentProfile:
+    name: str
+    requires_managed_python: bool
+    dependencies: tuple[tuple[str, str | None, bool], ...]
+
+
+_PROFILES = {
+    "local": EnvironmentProfile(
+        name="local",
+        requires_managed_python=True,
+        dependencies=(
+            ("PYTEST", "pytest", "pytest", True),
+            ("RUFF", "ruff", None, True),
+            ("PYDANTIC", "pydantic", "pydantic", False),
+            ("FASTAPI", "fastapi", "fastapi", False),
+        ),
+    ),
+    "ci": EnvironmentProfile(
+        name="ci",
+        requires_managed_python=False,
+        dependencies=(
+            ("PYTEST", "pytest", "pytest", True),
+            ("PYDANTIC", "pydantic", "pydantic", False),
+            ("FASTAPI", "fastapi", "fastapi", False),
+        ),
+    ),
+}
+
+
+def profile_contract(name: str) -> EnvironmentProfile:
+    try:
+        return _PROFILES[name]
+    except KeyError as exc:
+        raise ValueError(f"unknown environment profile: {name}") from exc
 
 
 def _within(path: Path, parent: Path) -> bool:
@@ -259,6 +297,17 @@ def _print_check(check: Check) -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Check the Intergrax repository environment contract."
+    )
+    parser.add_argument(
+        "--profile",
+        choices=tuple(_PROFILES),
+        default="local",
+        help="environment contract to prove (default: local)",
+    )
+    profile = profile_contract(parser.parse_args().profile)
+
     checks: list[Check] = [_repository_root_check()]
 
     version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -287,10 +336,11 @@ def main() -> int:
         VENV_ROOT / "pyvenv.cfg", base_prefix
     )
     checks.append(Check("PYVENV_CFG", cfg_ok, cfg_detail))
-    managed_ok, managed_detail = evaluate_managed_python(
-        REPO_ROOT, base_executable, base_prefix
-    )
-    checks.append(Check("MANAGED_PYTHON", managed_ok, managed_detail))
+    if profile.requires_managed_python:
+        managed_ok, managed_detail = evaluate_managed_python(
+            REPO_ROOT, base_executable, base_prefix
+        )
+        checks.append(Check("MANAGED_PYTHON", managed_ok, managed_detail))
 
     checks.append(_lock_check())
     checks.extend(
@@ -300,33 +350,30 @@ def main() -> int:
                 distribution_name,
                 module_name,
                 VENV_ROOT,
-                require_executable=True,
+                require_executable=require_executable,
             ),
         )
-        for name, distribution_name, module_name in (
-            ("PYTEST", "pytest", "pytest"),
-            ("RUFF", "ruff", None),
-        )
-    )
-    checks.extend(
-        Check(
-            name,
-            *check_distribution(distribution_name, module_name, VENV_ROOT),
-        )
-        for name, distribution_name, module_name in (
-            ("PYDANTIC", "pydantic", "pydantic"),
-            ("FASTAPI", "fastapi", "fastapi"),
-        )
+        for name, distribution_name, module_name, require_executable in profile.dependencies
     )
 
     print(f"ENVIRONMENT_CONFORMANCE: {'PASS' if all(c.ok for c in checks) else 'FAIL'}")
+    print()
+    print(f"Profile: {profile.name}")
     print()
     print("Repository:")
     _print_check(checks[0])
     print()
     print("Python:")
-    for name in ("PYTHON_VERSION", "VENV", "PYVENV_CFG", "MANAGED_PYTHON"):
+    python_checks = ["PYTHON_VERSION", "VENV", "PYVENV_CFG"]
+    if profile.requires_managed_python:
+        python_checks.append("MANAGED_PYTHON")
+    for name in python_checks:
         _print_check(next(check for check in checks if check.name == name))
+    if not profile.requires_managed_python:
+        print(
+            "MANAGED_PYTHON: NOT_REQUIRED "
+            "(CI interpreter provenance is provided by setup-uv/runner)"
+        )
     print(f"executable: {Path(sys.executable).resolve()}")
     print(f"prefix: {Path(sys.prefix).resolve()}")
     print(f"base_prefix: {Path(sys.base_prefix).resolve()}")
@@ -335,7 +382,8 @@ def main() -> int:
     _print_check(next(check for check in checks if check.name == "PYTHONPATH"))
     print()
     print("Dependencies:")
-    for name in ("LOCK_CONSISTENCY", "PYTEST", "RUFF", "PYDANTIC", "FASTAPI"):
+    dependency_checks = ["LOCK_CONSISTENCY", *[item[0] for item in profile.dependencies]]
+    for name in dependency_checks:
         _print_check(next(check for check in checks if check.name == name))
 
     failures = [check for check in checks if not check.ok]
