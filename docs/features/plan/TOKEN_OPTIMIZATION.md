@@ -1926,6 +1926,11 @@ was replaced with a structural contract; production prompt semantics and the
 corpus were not changed. RISK-3 and TOKEN-10H remain open, and no qualification
 run was executed.
 
+**TOKEN-10G-RISK-2-REVIEW-FIX-2: READY_FOR_REVIEW.** The risk contract now uses
+machine-readable semantic identities while the prompt renders the same frozen
+semantics. Unrelated formatter-only delta was removed; the corpus is unchanged.
+RISK-3 and TOKEN-10H remain open, and no qualification run was executed.
+
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
 **Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.

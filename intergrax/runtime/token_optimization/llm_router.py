@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass
+from enum import StrEnum
+from types import MappingProxyType
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -72,92 +74,183 @@ ROUTER_STABLE_PREFIX_BLOCK_ID = "token_optimization.router.system"
 
 @dataclass(frozen=True, slots=True)
 class _RiskLevel:
-    name: str
-    definition: str
+    name: "_RiskLevelId"
+    conditions: tuple["_RiskCondition", ...]
 
 
 @dataclass(frozen=True, slots=True)
 class _RiskInvariant:
-    key: str
-    statement: str
+    key: "_RiskInvariantId"
+
+
+class _RiskLevelId(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class _RiskCondition(StrEnum):
+    LOSSLESS_OR_NO_OPTIMIZATION = "lossless_or_no_optimization"
+    NO_INDEPENDENT_CRITICAL_SIGNAL = "no_independent_critical_signal"
+    NO_MATERIAL_INFORMATION_LOSS_RISK = "no_material_information_loss_risk"
+    LOSSY_MAY_REMOVE_OMIT_OR_COMPRESS = "lossy_may_remove_omit_or_compress"
+    AUTOMATIC_WITHOUT_MANDATORY_REVIEW = "automatic_without_mandatory_review"
+    EXPLICIT_CRITICAL_SIGNAL = "explicit_critical_signal"
+    LOSSY_MAY_TOUCH_PROTECTED_OR_CRITICAL_INFORMATION = (
+        "lossy_may_touch_protected_or_critical_information"
+    )
+    LOSS_MAY_CHANGE_CRITICAL_MEANING = "loss_may_change_critical_meaning"
+    HUMAN_REVIEW_INDEPENDENTLY_REQUIRED = "human_review_independently_required"
+
+
+class _RiskInvariantId(StrEnum):
+    CLASSIFY_BEFORE_FINAL_POLICY_ENFORCEMENT = (
+        "classification_before_final_policy_enforcement"
+    )
+    RISK_MEANS_INFORMATION_LOSS_DISTORTION_OR_OMISSION = "risk_is_information_loss"
+    HIGH_REQUIRES_REVIEW = "high_requires_review"
+    LOSSY_NOT_ALWAYS_HIGH = "lossy_is_not_always_high"
+    PROTECTED_VALUES_NOT_AUTOMATICALLY_HIGH = "protected_values_alone_are_not_high"
+    LOSSLESS_EXACT_PRESERVATION_MAY_BE_LOW = "lossless_exact_preservation_is_low"
+    ORDINARY_NONCRITICAL_LOSSY_EXTRACTION_IS_MEDIUM = (
+        "ordinary_lossy_extractive_filtering_is_medium"
+    )
+    SOURCE_TYPE_ALONE_DOES_NOT_LOWER_LOSSY_RISK = (
+        "source_type_does_not_reduce_lossy_risk"
+    )
+
+
+_RISK_CONDITION_PROSE = MappingProxyType(
+    {
+        _RiskCondition.LOSSLESS_OR_NO_OPTIMIZATION: (
+            "the configuration is lossless or no optimization is performed"
+        ),
+        _RiskCondition.NO_INDEPENDENT_CRITICAL_SIGNAL: ("independent critical signal"),
+        _RiskCondition.NO_MATERIAL_INFORMATION_LOSS_RISK: (
+            "real risk to material information"
+        ),
+        _RiskCondition.LOSSY_MAY_REMOVE_OMIT_OR_COMPRESS: (
+            "the configuration is lossy and may remove, omit, or compress useful "
+            "information"
+        ),
+        _RiskCondition.AUTOMATIC_WITHOUT_MANDATORY_REVIEW: (
+            "may run automatically without mandatory human review"
+        ),
+        _RiskCondition.EXPLICIT_CRITICAL_SIGNAL: "a critical signal exists",
+        _RiskCondition.LOSSY_MAY_TOUCH_PROTECTED_OR_CRITICAL_INFORMATION: (
+            "lossy processing may affect protected or critical information"
+        ),
+        _RiskCondition.LOSS_MAY_CHANGE_CRITICAL_MEANING: (
+            "loss may change the meaning of a warning, evidence, decision, "
+            "safety constraint, or mandatory condition"
+        ),
+        _RiskCondition.HUMAN_REVIEW_INDEPENDENTLY_REQUIRED: (
+            "human review is independently required"
+        ),
+    }
+)
+
+_RISK_INVARIANT_PROSE = MappingProxyType(
+    {
+        _RiskInvariantId.CLASSIFY_BEFORE_FINAL_POLICY_ENFORCEMENT: (
+            "classification occurs before final deterministic policy enforcement"
+        ),
+        _RiskInvariantId.RISK_MEANS_INFORMATION_LOSS_DISTORTION_OR_OMISSION: (
+            "risk is the chance that the configuration loses, distorts, or "
+            "improperly omits material information; it is not the general "
+            "dangerousness of text"
+        ),
+        _RiskInvariantId.HIGH_REQUIRES_REVIEW: (
+            "high risk requires review_required=true"
+        ),
+        _RiskInvariantId.LOSSY_NOT_ALWAYS_HIGH: "not every lossy operation is high",
+        _RiskInvariantId.PROTECTED_VALUES_NOT_AUTOMATICALLY_HIGH: (
+            "protected values alone do not make risk high"
+        ),
+        _RiskInvariantId.LOSSLESS_EXACT_PRESERVATION_MAY_BE_LOW: (
+            "lossless exact preservation may remain low"
+        ),
+        _RiskInvariantId.ORDINARY_NONCRITICAL_LOSSY_EXTRACTION_IS_MEDIUM: (
+            "ordinary lossy extractive filtering without a critical signal is "
+            "medium, regardless of source_type"
+        ),
+        _RiskInvariantId.SOURCE_TYPE_ALONE_DOES_NOT_LOWER_LOSSY_RISK: (
+            "source_type alone does not lower comparable lossy risk"
+        ),
+    }
+)
 
 
 _RISK_LEVELS = (
     _RiskLevel(
-        name="low",
-        definition=(
-            "the configuration is lossless or no optimization is performed, "
-            "with no independent critical signal and no real risk to material information"
+        name=_RiskLevelId.LOW,
+        conditions=(
+            _RiskCondition.LOSSLESS_OR_NO_OPTIMIZATION,
+            _RiskCondition.NO_INDEPENDENT_CRITICAL_SIGNAL,
+            _RiskCondition.NO_MATERIAL_INFORMATION_LOSS_RISK,
         ),
     ),
     _RiskLevel(
-        name="medium",
-        definition=(
-            "the configuration is lossy and may remove, omit, or compress useful "
-            "information, without an independent critical signal, and may run "
-            "automatically without mandatory human review"
+        name=_RiskLevelId.MEDIUM,
+        conditions=(
+            _RiskCondition.LOSSY_MAY_REMOVE_OMIT_OR_COMPRESS,
+            _RiskCondition.NO_INDEPENDENT_CRITICAL_SIGNAL,
+            _RiskCondition.AUTOMATIC_WITHOUT_MANDATORY_REVIEW,
         ),
     ),
     _RiskLevel(
-        name="high",
-        definition=(
-            "a critical signal exists, lossy processing may affect protected or "
-            "critical information, loss may change the meaning of a warning, "
-            "evidence, decision, safety constraint, or mandatory condition, or "
-            "human review is independently required"
+        name=_RiskLevelId.HIGH,
+        conditions=(
+            _RiskCondition.EXPLICIT_CRITICAL_SIGNAL,
+            _RiskCondition.LOSSY_MAY_TOUCH_PROTECTED_OR_CRITICAL_INFORMATION,
+            _RiskCondition.LOSS_MAY_CHANGE_CRITICAL_MEANING,
+            _RiskCondition.HUMAN_REVIEW_INDEPENDENTLY_REQUIRED,
         ),
     ),
 )
 
 _RISK_INVARIANTS = (
+    _RiskInvariant(key=_RiskInvariantId.CLASSIFY_BEFORE_FINAL_POLICY_ENFORCEMENT),
     _RiskInvariant(
-        key="classification_before_final_policy_enforcement",
-        statement="classification occurs before final deterministic policy enforcement",
+        key=_RiskInvariantId.RISK_MEANS_INFORMATION_LOSS_DISTORTION_OR_OMISSION
     ),
+    _RiskInvariant(key=_RiskInvariantId.HIGH_REQUIRES_REVIEW),
+    _RiskInvariant(key=_RiskInvariantId.LOSSY_NOT_ALWAYS_HIGH),
+    _RiskInvariant(key=_RiskInvariantId.PROTECTED_VALUES_NOT_AUTOMATICALLY_HIGH),
+    _RiskInvariant(key=_RiskInvariantId.LOSSLESS_EXACT_PRESERVATION_MAY_BE_LOW),
     _RiskInvariant(
-        key="risk_is_information_loss",
-        statement=(
-            "risk is the chance that the configuration loses, distorts, or "
-            "improperly omits material information; it is not the general "
-            "dangerousness of text"
-        ),
+        key=_RiskInvariantId.ORDINARY_NONCRITICAL_LOSSY_EXTRACTION_IS_MEDIUM
     ),
-    _RiskInvariant(
-        key="high_requires_review",
-        statement="high risk requires review_required=true",
-    ),
-    _RiskInvariant(
-        key="lossy_is_not_always_high",
-        statement="not every lossy operation is high",
-    ),
-    _RiskInvariant(
-        key="protected_values_alone_are_not_high",
-        statement="protected values alone do not make risk high",
-    ),
-    _RiskInvariant(
-        key="lossless_exact_preservation_is_low",
-        statement="lossless exact preservation may remain low",
-    ),
-    _RiskInvariant(
-        key="ordinary_lossy_extractive_filtering_is_medium",
-        statement=(
-            "ordinary lossy extractive filtering without a critical signal is "
-            "medium, regardless of source_type"
-        ),
-    ),
-    _RiskInvariant(
-        key="source_type_does_not_reduce_lossy_risk",
-        statement="source_type alone does not lower comparable lossy risk",
-    ),
+    _RiskInvariant(key=_RiskInvariantId.SOURCE_TYPE_ALONE_DOES_NOT_LOWER_LOSSY_RISK),
 )
 
 
-def _render_risk_semantics() -> str:
-    level_lines = "\n".join(
-        f"- {level.name}: {level.definition}" for level in _RISK_LEVELS
+def _render_risk_level(level: _RiskLevel) -> str:
+    condition_prose = tuple(
+        _RISK_CONDITION_PROSE[condition] for condition in level.conditions
     )
+    if level.name is _RiskLevelId.LOW:
+        definition = (
+            f"{condition_prose[0]}, with no {condition_prose[1]} "
+            f"and no {condition_prose[2]}"
+        )
+    elif level.name is _RiskLevelId.MEDIUM:
+        definition = (
+            f"{condition_prose[0]}, without an {condition_prose[1]}, "
+            f"and {condition_prose[2]}"
+        )
+    elif level.name is _RiskLevelId.HIGH:
+        definition = ", ".join(condition_prose[:-1])
+        definition += f", or {condition_prose[-1]}"
+    else:
+        raise ValueError(f"unknown risk level: {level.name}")
+    return f"- {level.name}: {definition}"
+
+
+def _render_risk_semantics() -> str:
+    level_lines = "\n".join(_render_risk_level(level) for level in _RISK_LEVELS)
     invariant_lines = "\n".join(
-        f"- {invariant.statement}" for invariant in _RISK_INVARIANTS
+        f"- {_RISK_INVARIANT_PROSE[invariant.key]}" for invariant in _RISK_INVARIANTS
     )
     return (
         "Risk semantics are assessed for the selected transformation applied to "
@@ -321,9 +414,7 @@ def _capability_subject(adapter: LLMAdapter) -> LLMAdapter:
 
 
 def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
-    caps = attribute_access.optional(
-        _capability_subject(adapter), "model_capabilities", None
-    )
+    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
     if caps is None:
         return None
     resolved = attribute_access.optional(caps, "resolved", None)
@@ -333,9 +424,7 @@ def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
 
 
 def _adapter_model_capabilities_set(adapter: LLMAdapter) -> frozenset[str] | None:
-    caps = attribute_access.optional(
-        _capability_subject(adapter), "model_capabilities", None
-    )
+    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
     if caps is None:
         return None
     capabilities = attribute_access.optional(caps, "capabilities", None)
@@ -480,7 +569,9 @@ def _assemble_router_prompt(
                 message=ChatMessage(role="system", content=_SYSTEM_PROMPT),
             ),
         ),
-        dynamic_tail=(_build_router_dynamic_tail(catalog, router_request),),
+        dynamic_tail=(
+            _build_router_dynamic_tail(catalog, router_request),
+        ),
         tools_schema=tools_schema,
         previous_state=router_request.previous_prompt_cache_state,
     )
@@ -648,10 +739,7 @@ def _compile_decision(
         )
 
     compiled = catalog.compile(decision.configuration_id)
-    if (
-        decision.configuration_id
-        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
-    ):
+    if decision.configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION:
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.NO_OPTIMIZATION,
             reason=None,
@@ -758,9 +846,7 @@ class TokenOptimizationLLMRouter:
         catalog: TokenOptimizationRouterConfigurationCatalog | None = None,
     ) -> None:
         self._adapter = adapter
-        self._catalog = (
-            catalog or create_token_optimization_router_configuration_catalog()
-        )
+        self._catalog = catalog or create_token_optimization_router_configuration_catalog()
         self._tool_registry = create_token_optimization_router_tool_registry()
 
     @property
@@ -772,11 +858,7 @@ class TokenOptimizationLLMRouter:
         send_payload: CacheStablePromptSendPayload,
         *,
         run_id: str,
-    ) -> tuple[
-        TokenOptimizationRouterToolInput | None,
-        TokenOptimizationRouterReason | None,
-        str | None,
-    ]:
+    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
         planner = ToolPlanningService(
             self._adapter,
             self._tool_registry,
@@ -810,11 +892,7 @@ class TokenOptimizationLLMRouter:
 
         calls = tool_plan.calls
         if not calls:
-            return (
-                None,
-                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
-                tool_call_id,
-            )
+            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
         if len(calls) != 1:
             return None, TokenOptimizationRouterReason.MULTIPLE_TOOL_CALLS, tool_call_id
 
@@ -823,11 +901,7 @@ class TokenOptimizationLLMRouter:
             return None, TokenOptimizationRouterReason.UNEXPECTED_TOOL, tool_call_id
 
         if not isinstance(planned.input, TokenOptimizationRouterToolInput):
-            return (
-                None,
-                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
-                tool_call_id,
-            )
+            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
 
         return planned.input, None, tool_call_id
 
@@ -836,11 +910,7 @@ class TokenOptimizationLLMRouter:
         messages: list[ChatMessage],
         *,
         run_id: str,
-    ) -> tuple[
-        TokenOptimizationRouterToolInput | None,
-        TokenOptimizationRouterReason | None,
-        str | None,
-    ]:
+    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
         try:
             structured: LLMStructuredResult[Any] = self._adapter.generate_structured(
                 messages,
@@ -925,8 +995,7 @@ class TokenOptimizationLLMRouter:
                 router_request=router_request,
                 transport=transport,
                 status=status,
-                reason=failure_reason
-                or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                reason=failure_reason or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
                 adapter=self._adapter,
                 tool_call_id=tool_call_id,
                 prompt_cache_state=assembly.state,
@@ -1105,13 +1174,9 @@ def token_optimization_router_result_to_safe_dict(
         "reason": result.reason.value if result.reason is not None else None,
         "transport": result.transport.value,
         "configuration_id": (
-            result.configuration_id.value
-            if result.configuration_id is not None
-            else None
+            result.configuration_id.value if result.configuration_id is not None else None
         ),
-        "reason_code": result.reason_code.value
-        if result.reason_code is not None
-        else None,
+        "reason_code": result.reason_code.value if result.reason_code is not None else None,
         "risk": result.risk.value if result.risk is not None else None,
         "review_required": result.review_required,
         "confidence": result.confidence,
@@ -1125,9 +1190,7 @@ def token_optimization_router_result_to_safe_dict(
             if result.model_reason_code is not None
             else None
         ),
-        "model_risk": result.model_risk.value
-        if result.model_risk is not None
-        else None,
+        "model_risk": result.model_risk.value if result.model_risk is not None else None,
         "model_review_required": result.model_review_required,
         "policy_override_applied": result.policy_override_applied,
         "policy_override_reason": (
@@ -1167,8 +1230,8 @@ def token_optimization_router_result_to_safe_dict(
         payload["required_failure_layer_id"] = required_failure_layer_id
         payload["original_character_count"] = len(pipeline_result.original_content)
         payload["final_character_count"] = len(pipeline_result.final_content)
-        payload["character_delta"] = len(pipeline_result.final_content) - len(
-            pipeline_result.original_content
+        payload["character_delta"] = (
+            len(pipeline_result.final_content) - len(pipeline_result.original_content)
         )
     else:
         payload["executed_layer_ids"] = []
