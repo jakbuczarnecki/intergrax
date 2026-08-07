@@ -63,7 +63,7 @@ Current feature pairs:
 | 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
 | 22 | `TIER3_APPLICATION_ENVIRONMENT` | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) | [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](plan/TIER3_APPLICATION_ENVIRONMENT.md) |
 | 23 | `APPLICATION_HOSTING` | [`architecture/APPLICATION_HOSTING.md`](architecture/APPLICATION_HOSTING.md) | [`plan/APPLICATION_HOSTING.md`](plan/APPLICATION_HOSTING.md) |
-| 24 | `UNIFIED_CONTEXT_LIFECYCLE` | [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](architecture/UNIFIED_CONTEXT_LIFECYCLE.md) | [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](plan/UNIFIED_CONTEXT_LIFECYCLE.md) � lifecycle owner for conversation context optimization; [`ADR-UCL-001`](adr/entries/2026-08-01/ADR-UCL-001.md) |
+| 24 | `UNIFIED_CONTEXT_LIFECYCLE` | [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](architecture/UNIFIED_CONTEXT_LIFECYCLE.md) | [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](plan/UNIFIED_CONTEXT_LIFECYCLE.md) — lifecycle owner for conversation context optimization; [`ADR-UCL-001`](adr/entries/2026-08-01/ADR-UCL-001.md) |
 
 **Plan-only hubs (no 1:1 architecture basename):** [`plan/HARNESS_EVIDENCE_PACK.md`](plan/HARNESS_EVIDENCE_PACK.md) · [`plan/IDEAL_HARNESS_L3.md`](plan/IDEAL_HARNESS_L3.md) · [`plan/AUDIT_IDEAL_2026.md`](plan/AUDIT_IDEAL_2026.md) · [`plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](plan/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md) (satellite architecture under `architecture/satellites/`).
 

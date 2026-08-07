@@ -171,6 +171,10 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
 _IMPL_PLAN = (
     _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
 )
+_IMPL_PLAN_HISTORICAL = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/docs/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
+)
 _LKW_ARCHITECTURE = (
     _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
 )
@@ -363,22 +367,35 @@ def test_lkw_platform_proof_certification_matrix() -> None:
     )
 
 
+def _proof_portability_section(text: str, task_id: str) -> str:
+    heading = f"### {task_id}"
+    assert heading in text, f"missing authoritative heading {heading}"
+    start = text.index(heading)
+    next_heading = text.find("\n### ", start + len(heading))
+    end = next_heading if next_heading != -1 else start + 1200
+    return text[start:end]
+
+
 def test_lkw_platform_proof_plan_portability_contract() -> None:
-    text = _IMPL_PLAN.read_text(encoding="utf-8")
-    assert "PROOF-PORTABILITY-1A" in text
-    assert "PROOF-PORTABILITY-1B" in text
-    assert "PROOF-PORTABILITY-1C" in text
-    assert "PROOF-PORTABILITY-1D" in text
-    assert "PROOF-PORTABILITY-1D-MATRIX" in text
-    a_idx = text.index("PROOF-PORTABILITY-1A")
-    b_idx = text.index("PROOF-PORTABILITY-1B")
-    c_idx = text.index("PROOF-PORTABILITY-1C")
-    d_idx = text.index("PROOF-PORTABILITY-1D")
-    assert "**Done**" in text[a_idx : a_idx + 160]
-    assert "**Done**" in text[b_idx : b_idx + 160]
-    assert "**Done**" in text[c_idx : c_idx + 200]
-    assert "**Partial**" in text[d_idx : d_idx + 500]
-    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in text
+    # Current product-first plan points at the historical full plan for the
+    # structured PROOF-PORTABILITY status records; do not bind to coincidental
+    # first-string matches in the active roadmap.
+    current = _IMPL_PLAN.read_text(encoding="utf-8")
+    assert "archive/IMPLEMENTATION_PLAN_2026-07-22.md" in current
+    assert "LKW_PLATFORM_PROOF.md" in current
+
+    text = _IMPL_PLAN_HISTORICAL.read_text(encoding="utf-8")
+    section_1a = _proof_portability_section(text, "PROOF-PORTABILITY-1A")
+    section_1b = _proof_portability_section(text, "PROOF-PORTABILITY-1B")
+    section_1c = _proof_portability_section(text, "PROOF-PORTABILITY-1C")
+    section_1d = _proof_portability_section(text, "PROOF-PORTABILITY-1D")
+    section_matrix = _proof_portability_section(text, "PROOF-PORTABILITY-1D-MATRIX")
+
+    assert "**Status:** **Done**" in section_1a
+    assert "**Status:** **Done**" in section_1b
+    assert "**Status:** **Done**" in section_1c
+    assert "**Status:** **Partial**" in section_1d
+    assert "LKW_PLATFORM_CERTIFICATION_MATRIX.md" in section_matrix
     assert "live-certified on native Windows through current shared runner" in text
     assert "live-certified in Linux Docker runtime" in text
     assert "implemented, not live-certified" in text or (

@@ -225,7 +225,7 @@ Claim boundaries: [Token Optimization guardrails](docs/public-adoption/TOKEN_OPT
 | Prepare a partner or pilot discussion | Open [Partners](PARTNERS.md) | Prepare the [pilot brief](PARTNERS.md#pilot-brief) |
 | Perform deep technical review | Open the [Technical Documentation Map](docs/DOCUMENTATION_MAP.md) | Follow the owning technical documents |
 
-Other routes: [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) · [current proof dashboard](PROOFS.md) · [Evaluation Guide](EVALUATION_GUIDE.md) · [collaboration and legal terms](COLLABORATION.md) and [LICENSE](LICENSE).
+Other routes: [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) · [public roadmap](ROADMAP.md) · [current proof dashboard](PROOFS.md) · [Evaluation Guide](EVALUATION_GUIDE.md) · [collaboration and legal terms](COLLABORATION.md) and [LICENSE](LICENSE).
 
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>
