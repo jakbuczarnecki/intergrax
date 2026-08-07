@@ -68,8 +68,32 @@ The historical execution order and detailed task history below are retained for
 traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
+**CURRENT:**
+`VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1` — `READY_FOR_REVIEW`
+
 **NEXT:**
-`VENDOR-KNOWLEDGE-UNIFIED-THREE-MODE-CONTRACT-AUDIT-1`
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`
+
+### VK-2 plugin/capability contract status
+
+The canonical platform discovery boundary is
+`intergrax.runtime.vendor_knowledge.plugin`:
+
+- `VendorKnowledgeSourceIdentity` uses the existing provider ID,
+  `IntegrationCategory` and explicit source kind.
+- `VendorKnowledgeMode` declares `INDEXED`, `DURABLE` and `LIVE`; each
+  `VendorKnowledgeModeCapability` carries mode-scoped operations, constraints,
+  version and an opaque runtime registration reference.
+- `VendorKnowledgeSourcePluginRegistry` is the authoritative catalog for
+  deterministic registration, lookup and discovery. Existing adapter,
+  materialization/sync and live registries remain execution registries.
+- Slack `slack_conversation` proves all three modes. Microsoft Graph
+  `teams_chat` proves Durable + Live and intentionally does not claim Indexed.
+
+Descriptors are immutable, reject tenant/credential/connection state and do not
+execute any mode lifecycle. Application-specific migration, generic Indexed
+bridging, broader provider coverage and LKW/frontend decoupling remain deferred
+to their roadmap tasks.
 
 ### Architecture frozen for this roadmap
 
