@@ -10,8 +10,34 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from local_workspace_application.host.factory import create_local_workspace_backend_app
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.slack_companion.companion import COMPONENT_NAME
+from local_workspace_application.workspaces.connected_source_host_wiring import (
+    ConnectedSourceReadinessState,
+    build_connected_source_host_bundle,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    CreateIndexedSourceMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationCategory
 from intergrax.integrations.contracts.conversation_channel import (
     ConversationDeliveryReceipt,
@@ -27,28 +53,7 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
     SlackConversationKind,
     SlackConversationSummary,
 )
-from local_workspace_application.host.factory import create_local_workspace_backend_app
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.slack_companion.companion import COMPONENT_NAME
-from local_workspace_application.workspaces.connected_source_host_wiring import (
-    ConnectedSourceReadinessState,
-    build_connected_source_host_bundle,
-)
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
-from local_workspace_application.workspaces.knowledge_configuration_handlers import (
-    CreateIndexedSourceMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_configuration_models import (
-    WorkspaceKnowledgeMutationOperationV1,
-)
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
-)
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
-)
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 
 pytestmark = pytest.mark.unit
 
@@ -151,6 +156,10 @@ def test_build_connected_source_host_bundle_shares_slack_integration() -> None:
 
     assert bundle.wiring is not None
     assert bundle.slack_integration is integration
+    assert (
+        bundle.hybrid_ask_connection_registry
+        is bundle.wiring.connection_registry
+    )
     resolved = bundle.wiring.connection_registry.resolve(
         tenant_id=_TENANT,
         connection_ref=_CONNECTION,
@@ -186,6 +195,8 @@ def test_missing_signing_key_returns_no_wiring() -> None:
 
     assert bundle.wiring is None
     assert bundle.slack_integration is None
+    assert bundle.hybrid_ask_connection_registry is not None
+    assert isinstance(bundle.hybrid_ask_connection_registry, KnowledgeConnectionRegistry)
     assert bundle.readiness.state.value == "signing_key_missing"
     assert bundle.readiness.signing_key_configured is False
     assert bundle.readiness.reason == "connected_source_signing_key_missing"
@@ -308,10 +319,81 @@ def test_connected_source_readiness_state_matrix(
         slack_integration=integration,
     )
     assert bundle.readiness.state is expected_state
+    assert bundle.hybrid_ask_connection_registry is not None
+    assert isinstance(bundle.hybrid_ask_connection_registry, KnowledgeConnectionRegistry)
     if expected_state is ConnectedSourceReadinessState.READY:
         assert bundle.wiring is not None
+        assert (
+            bundle.hybrid_ask_connection_registry
+            is bundle.wiring.connection_registry
+        )
     else:
         assert bundle.wiring is None
+
+
+def test_connected_source_host_bundles_isolate_hybrid_ask_registries() -> None:
+    store_a = InMemoryDocumentStore()
+    store_b = InMemoryDocumentStore()
+    settings_a = LocalWorkspaceBackendSettings(
+        data_home="/tmp/lkw-host-isolation-a",
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+        slack_tenant_id=_TENANT,
+        connected_source_slack_connection_ref=_CONNECTION,
+    )
+    settings_b = LocalWorkspaceBackendSettings(
+        data_home="/tmp/lkw-host-isolation-b",
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+        slack_tenant_id="tenant-b",
+        connected_source_slack_connection_ref="conn.slack.b",
+    )
+    repo_a, service_a, config_a, mutation_a, indexing_a, settings_a = _host_services(
+        store_a, settings_a
+    )
+    repo_b, service_b, config_b, mutation_b, indexing_b, settings_b = _host_services(
+        store_b, settings_b
+    )
+    integration_a = SlackConversationChannelIntegration.from_backend(
+        _FakeBackend(),  # type: ignore[arg-type]
+        enabled=True,
+    )
+    integration_b = SlackConversationChannelIntegration.from_backend(
+        _FakeBackend(),  # type: ignore[arg-type]
+        enabled=True,
+    )
+
+    bundle_a = build_connected_source_host_bundle(
+        settings=settings_a,
+        repository=repo_a,
+        workspace_service=service_a,
+        configuration_service=config_a,
+        mutation_engine=mutation_a,
+        indexing_service=indexing_a,
+        slack_integration=integration_a,
+    )
+    bundle_b = build_connected_source_host_bundle(
+        settings=settings_b,
+        repository=repo_b,
+        workspace_service=service_b,
+        configuration_service=config_b,
+        mutation_engine=mutation_b,
+        indexing_service=indexing_b,
+        slack_integration=integration_b,
+    )
+
+    assert (
+        bundle_a.hybrid_ask_connection_registry
+        is not bundle_b.hybrid_ask_connection_registry
+    )
+    assert bundle_a.wiring is not None
+    assert bundle_b.wiring is not None
+    assert (
+        bundle_a.hybrid_ask_connection_registry
+        is bundle_a.wiring.connection_registry
+    )
+    assert (
+        bundle_b.hybrid_ask_connection_registry
+        is bundle_b.wiring.connection_registry
+    )
 
 
 @pytest.mark.parametrize(

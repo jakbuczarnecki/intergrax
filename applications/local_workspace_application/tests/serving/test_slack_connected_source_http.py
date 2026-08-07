@@ -11,18 +11,10 @@ from pathlib import Path
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SlackConversationChannelIntegration,
-)
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
-    SlackConversationInventoryPage,
-    SlackConversationKind,
-    SlackConversationSummary,
-)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.serving.workspace_routes import mount_managed_workspace_routes
+from local_workspace_application.serving.workspace_routes import (
+    mount_managed_workspace_routes,
+)
 from local_workspace_application.workspaces.connected_source_wiring import (
     build_connected_source_wiring,
     register_slack_connection_integration,
@@ -46,8 +38,24 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.sync_runtime import build_managed_workspace_sync_runtime
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
+from local_workspace_application.workspaces.sync_runtime import (
+    build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SlackConversationChannelIntegration,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SlackConversationInventoryPage,
+    SlackConversationKind,
+    SlackConversationSummary,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -278,7 +286,7 @@ def test_discovery_route_returns_signed_candidate(api_client) -> None:
 
 
 def test_create_route_requires_preconditions(api_client) -> None:
-    client, wiring, _ = api_client
+    client, _wiring, _ = api_client
     discovery = client.get(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
         headers={"X-Tenant-Id": _TENANT},
@@ -549,7 +557,9 @@ def test_sync_after_reactivation_returns_202(api_client) -> None:
 
 def test_post_tenant_binding_unavailable_returns_409(api_client, monkeypatch) -> None:
     client, wiring, repo = api_client
-    from local_workspace_application.workspaces.connected_source_models import ConnectedSourceBindingError
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceBindingError,
+    )
 
     monkeypatch.setattr(
         wiring.tenant_binding_service,
@@ -627,3 +637,111 @@ def test_post_cleanup_failed_returns_503(api_client, monkeypatch) -> None:
         json=_create_body(client),
     )
     assert response.status_code == 503 and response.json()["detail"] == "configuration_mutation_cleanup_failed"
+
+
+def test_explicit_connected_source_wiring_registry_precedes_host_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Explicit mount wiring registry B must win over host-bundle registry A."""
+    from local_workspace_application.workspaces.connected_source_host_wiring import (
+        ConnectedSourceHostBundle,
+        ConnectedSourceHostReadiness,
+    )
+    from local_workspace_application.workspaces.connected_source_models import (
+        ConnectedSourceReadinessState,
+    )
+    from local_workspace_application.workspaces.document_indexing import (
+        WorkspaceDocumentIndexingService,
+    )
+    from local_workspace_application.workspaces.hybrid_ask_execution import (
+        KnowledgeConnectionRegistryIntegrationResolverV1,
+    )
+    from local_workspace_application.workspaces.service import ManagedWorkspaceService
+
+    from intergrax.runtime.vendor_knowledge.connections import (
+        KnowledgeConnectionRegistry,
+    )
+
+    store = InMemoryDocumentStore()
+    repo = ManagedWorkspaceRepository(store)
+    data_home = tmp_path / "data"
+    data_home.mkdir()
+    monkeypatch.setenv("DATA_HOME", str(data_home))
+    monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", _SIGNING_KEY)
+    settings = replace(
+        LocalWorkspaceBackendSettings.from_env(),
+        data_home=str(data_home),
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+    )
+    service = ManagedWorkspaceService(repo)
+    config = WorkspaceKnowledgeConfigurationService(repo, service)
+    mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
+        repo,
+        service,
+        config,
+        {
+            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
+        },
+    )
+    executor = _FakeExecutor()
+    indexing = WorkspaceDocumentIndexingService(repo, executor)
+
+    registry_a = KnowledgeConnectionRegistry()
+    registry_b = KnowledgeConnectionRegistry()
+    host_bundle = ConnectedSourceHostBundle(
+        wiring=None,
+        slack_integration=None,
+        readiness=ConnectedSourceHostReadiness(
+            state=ConnectedSourceReadinessState.DISABLED,
+            signing_key_configured=False,
+            slack_integration_available=False,
+            mapping_complete=False,
+            tenant_id=None,
+            connection_ref=None,
+            reason="connected_source_disabled",
+        ),
+        hybrid_ask_connection_registry=registry_a,
+    )
+    monkeypatch.setattr(
+        "local_workspace_application.workspaces.connected_source_host_wiring.build_connected_source_host_bundle",
+        lambda **_kwargs: host_bundle,
+    )
+
+    captured: dict[str, object] = {}
+    real_resolver = KnowledgeConnectionRegistryIntegrationResolverV1
+
+    def _capture_resolver(registry: KnowledgeConnectionRegistry):
+        captured["registry"] = registry
+        return real_resolver(registry)
+
+    monkeypatch.setattr(
+        "local_workspace_application.serving.workspace_routes.KnowledgeConnectionRegistryIntegrationResolverV1",
+        _capture_resolver,
+    )
+
+    explicit_wiring = build_connected_source_wiring(
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,
+        settings=settings,
+        connection_registry=registry_b,
+    )
+    app = FastAPI()
+    mount_managed_workspace_routes(
+        app,
+        task_executor=executor,  # type: ignore[arg-type]
+        settings=settings,
+        repository=repo,
+        connected_source_wiring=explicit_wiring,
+        indexing_service=indexing,
+    )
+
+    assert "registry" in captured
+    assert captured["registry"] is explicit_wiring.connection_registry
+    assert captured["registry"] is registry_b
+    assert captured["registry"] is not host_bundle.hybrid_ask_connection_registry
+    assert captured["registry"] is not registry_a
