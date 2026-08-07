@@ -322,7 +322,7 @@ LKW-GOOGLE-WORKSPACE-PROOF-1
 DEFERRED: LKW-CONNECTED-SOURCE-1
 ```
 
-`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` freezes the complete Google Workspace knowledge architecture and proof-first roadmap so one existing `GoogleWorkspaceCollaborationSuiteIntegration` can support Drive, Docs, Sheets, Calendar, Slides, Mail and Chat through shared provider primitives, separate Vendor Knowledge adapters and provider-neutral LKW consumption immediately after the complete Slack Knowledge vertical. Status: **READY_FOR_REVIEW**. Runtime tasks below remain **PLANNED** — no Google knowledge capability is implemented.
+`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` freezes the complete Google Workspace knowledge architecture and proof-first roadmap so one existing `GoogleWorkspaceCollaborationSuiteIntegration` can support Drive, Docs, Sheets, Calendar, Slides, Mail and Chat through shared provider primitives, separate Vendor Knowledge adapters and provider-neutral LKW consumption immediately after the complete Slack Knowledge vertical. Status: **READY_FOR_REVIEW**. The current tree contains Google Drive/Docs/Sheets and Calendar adapter implementations, but Google application-owned materialization, indexed wiring and live wiring remain unproven; the remaining runtime and application tasks stay **PLANNED**.
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` is the canonical
 [live capability rollout architecture](../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md).
@@ -349,10 +349,33 @@ The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
 task `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1`, status
 **READY_FOR_REVIEW**. It records the current Google `drive`, `docs` and
-`sheets` adapter implementation, the current exact Google Calendar read
-surface, and the remaining application-mode gaps without activating work.
-The historical Google status wording above is retained as a documented
-contradiction and is not capability evidence.
+`sheets` and `calendar` adapter implementations, the current exact Google
+Calendar read surface, and the remaining application-mode gaps without
+activating work. Any older wording that says Google Calendar has no Vendor
+Knowledge adapter is a documentation contradiction and is not capability
+evidence.
+
+### VK-1 — unified three-mode contract audit result
+
+**Status:** `ROADMAP_CORRECTION_REQUIRED`
+
+| Area | Status | Current truth |
+|---|---|---|
+| Plugin model | `PARTIAL` | Provider/source-keyed adapter, connection and live/sync registries exist, but there is no single authoritative three-mode plugin bootstrap. |
+| Capability model | `PARTIAL` | Adapter, indexed-eligibility and live capability metadata are separate; Indexed/Durable/Live support is not one explicit source-kind declaration. |
+| Durable | `PARTIAL` | Generic coordinator, reconciliation, checkpoints, receipts, recovery and injectable sink exist; application-owned materialization is Slack/LKW-specific. |
+| Indexed / RAG | `PARTIAL` | Canonical Vendor Knowledge models and indexing infrastructure exist, but the production provider-to-index bridge is Slack-specific. |
+| Live / Realtime | `PARTIAL` | Shared validated executor, registration, limits, normalized evidence and receipt contracts exist; provider registration is composed in LKW and coverage is selective. |
+| Frontend neutrality | `CONTRADICTED` | LKW composition imports Graph/Slack live registration and contains Slack-specific Ask orchestration and materialization paths. |
+| Identity / ownership | `PARTIAL` | Tenant, connection, provider/source identity and indexed ownership are fenced; Live bindings derive source identity through capability IDs rather than sharing an explicit source-kind field. |
+| Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
+
+The first concrete new-provider boundaries are the missing unified
+plugin/capability registration, the Slack-only application materializer/index
+bridge, and provider-specific registration imports in LKW. VK-2 through VK-8
+remain required; no later phase is accepted by this audit. The current
+Google Calendar adapter contradicts the older matrix wording and requires
+documentation correction, not a roadmap reorder.
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for Indexed / RAG, Durable / Storage / Materialization and Live / Realtime access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
 
