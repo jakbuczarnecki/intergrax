@@ -192,7 +192,11 @@ class KnowledgeReconciliationRunRepository(Protocol):
 
 @runtime_checkable
 class KnowledgeSyncSink(Protocol):
-    """Idempotent durable sink for one synchronized page batch."""
+    """Provider-neutral durable materialization port for one synchronized page batch.
+
+    Applications inject an implementation that persists canonical vendor knowledge
+    state owned by the consumer. Indexing / RAG is out of scope for this port.
+    """
 
     async def apply_batch(
         self,
