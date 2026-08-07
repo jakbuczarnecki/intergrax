@@ -124,7 +124,7 @@ allowed_statuses = ["routed"]
 allowed_configuration_ids = ["extractive_only"]
 allowed_reason_codes = ["noisy_tool_output"]
 review_required = false
-allowed_risk = ["low"]
+allowed_risk = ["medium"]
 
 [cases.pipeline]
 expected_execution = "completed"

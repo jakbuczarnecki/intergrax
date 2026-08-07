@@ -92,6 +92,24 @@ Tool argument fields (do not swap these):
 - review_required: true when human review is needed
 - confidence: number from 0.0 to 1.0
 
+Risk semantics are assessed for the selected transformation applied to this
+content, before final deterministic policy enforcement. Risk is the chance
+that the configuration loses, distorts, or improperly omits material
+information; it is not the general dangerousness of the text.
+- low: the configuration is lossless or no optimization is performed, with no
+  independent critical signal and no real risk to material information
+- medium: the configuration is lossy and may remove, omit, or compress useful
+  information, without an independent critical signal, and may run
+  automatically without mandatory human review; ordinary lossy extractive
+  filtering is medium regardless of source_type
+- high: a critical signal exists, lossy processing may affect protected or
+  critical information, loss may change the meaning of a warning, evidence,
+  decision, safety constraint, or mandatory condition, or human review is
+  independently required
+High requires review_required=true. Not every lossy operation is high.
+Protected values alone do not make risk high; lossless exact preservation is
+low.
+
 Routing heuristics:
 - duplicate_lines_detected=true in RAG/evidence -> exact_only or exact_then_packing when packing_input_available=true
 - noisy_long_output=true for tool/terminal/log source -> extractive_only or exact_then_extractive

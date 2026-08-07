@@ -1912,7 +1912,14 @@ results and public promotion remain outside this phase.
 semantics, its relation to `review_required`, and the RISK-2/RISK-3 case
 consequences are defined only in the
 [feature architecture §8.9.1](../architecture/TOKEN_OPTIMIZATION.md#891-production-risk-semantics-token-10g-risk-1).
-RISK-2, RISK-3 and TOKEN-10H remain unresolved.
+RISK-3 and TOKEN-10H remain unresolved.
+
+**TOKEN-10G-RISK-2 status:** **READY_FOR_REVIEW**. The decision prompt now
+contains the frozen `risk` taxonomy. The `case-terminal-log-output`
+expectation changed from `low` to `medium`; `case-noisy-tool-output` remains
+`medium`, `case-protected-values` remains `low`, and
+`case-high-risk-lossy-content` remains `high`. TOKEN-10G-RISK-3 and TOKEN-10H
+remain open, and Qwen 7B qualification has not been rerun.
 
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 

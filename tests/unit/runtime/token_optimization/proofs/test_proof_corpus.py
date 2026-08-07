@@ -79,6 +79,11 @@ def test_corpus_inputs_are_representative_and_expectations_are_assertive(
         cases["case-terminal-log-output"].request.source_type.value
         == "terminal_output"
     )
+    assert expectations["case-terminal-log-output"].router.allowed_risk == {"medium"}
+    assert expectations["case-noisy-tool-output"].router.allowed_risk == {"medium"}
+    assert expectations["case-protected-values"].router.allowed_risk == {"low"}
+    assert expectations["case-high-risk-lossy-content"].router.allowed_risk == {"high"}
+    assert expectations["case-policy-disabled"].router.allowed_risk == frozenset()
     assert cases["case-rag-context-pack"].request.source_type.value == "rag_context_pack"
     assert cases["case-code-heavy-content"].request.source_type.value == "structured_data"
     assert cases["case-reordered-tools"].request.source_type.value == "tool_catalog"
