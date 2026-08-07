@@ -1949,6 +1949,17 @@ Each run completed `1/16` cases and had `15/16` technical
 returned `FAIL` for both runs with case-level compliance `1/16`; no model
 behavior decision was available for the 15 failed cases.
 
+**TECH-1 root cause (not model behavior):** the live vLLM endpoint at
+`http://127.0.0.1:8100/v1` served a different loaded model
+(`Qwen/Qwen2.5-3B-Instruct`, compose default) while the qualification adapter
+requested `Qwen/Qwen2.5-7B-Instruct-AWQ`. Direct OpenAI-compatible calls and
+`VllmChatAdapter` both returned HTTP `404` / `openai.NotFoundError`
+(`model does not exist`). The single completed case was `policy-disabled`
+(preflight block; no LLM call). The first failing case was `short-clean`.
+Layer: `VLLM_SERVER_FAILURE`. No adapter/prompt/corpus/threshold change is
+warranted; reload vLLM with `VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct-AWQ` and
+rerun TOKEN-10H. Do not treat the 15 `llm_error` rows as model-behavior fails.
+
 Both runs had identical decisions and are **STABLE** under the existing
 repeatability criterion. Required risk-case outcomes were:
 
