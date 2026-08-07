@@ -598,6 +598,8 @@ class ContextPlanner:
             if message_index is None:
                 raise ContextPlanningError("incomplete_model_input_plan")
             if message_index in group_id_by_message_index:
+                if fragment.source is ContextFragmentSource.SESSION_HISTORY:
+                    raise ContextPlanningError("incomplete_canonical_snapshot_group")
                 raise ContextPlanningError("incomplete_model_input_plan")
             token_estimate = self._count_tokens(fragment_message.content or "")
 
@@ -836,6 +838,9 @@ class ContextPlanner:
         )
         available_target_tokens = resolved_global_budget_tokens - non_target_tokens
         if available_target_tokens <= 0:
+            raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
+        minimum_target_tokens = max(1, len(target_source_refs) * 3)
+        if available_target_tokens < minimum_target_tokens:
             raise ContextPlanningError(NO_ELIGIBLE_CONTEXT_OPTIMIZATION_TARGET)
         target_token_budget = available_target_tokens
 

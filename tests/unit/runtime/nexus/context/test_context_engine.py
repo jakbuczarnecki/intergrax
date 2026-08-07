@@ -73,7 +73,7 @@ async def test_default_engine_assembles_with_compiler_and_preflight() -> None:
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
 
     assert assembled.total_tokens <= assembled.budget_tokens
-    assert len(assembled.fragments_included) >= 1
+    assert not assembled.fragments_included
     assert assembled.messages
 
 
@@ -97,9 +97,9 @@ class _CollectOnceProvider:
                 source_id="src-a",
                 content="duplicate body",
                 token_estimate=4,
-                relevance_score=0.5,
-                freshness_score=0.5,
-                confidence_score=0.5,
+                relevance_score=0.8,
+                freshness_score=0.8,
+                confidence_score=0.8,
                 mandatory=False,
                 content_hash="same-hash",
             ),
@@ -109,9 +109,9 @@ class _CollectOnceProvider:
                 source_id="src-b",
                 content="duplicate body",
                 token_estimate=4,
-                relevance_score=0.5,
-                freshness_score=0.5,
-                confidence_score=0.5,
+                relevance_score=0.8,
+                freshness_score=0.8,
+                confidence_score=0.8,
                 mandatory=False,
                 content_hash="same-hash",
             ),

@@ -82,7 +82,15 @@ def build_user_profile_manager(
     if not (profile.enable_user_memory or profile.enable_long_term_memory):
         return None
 
-    resolved_tenant_id = _require_runtime_tenant(tenant_id)
+    # Profile persistence can be constructed before a request tenant is known.
+    # A vector-backed manager remains tenant-strict; the profile-only path uses
+    # UserProfileManager's documented default namespace until request wiring
+    # supplies a tenant-scoped vector stack.
+    resolved_tenant_id = (
+        _require_runtime_tenant(tenant_id)
+        if rag_stack is not None
+        else (tenant_id.strip() if isinstance(tenant_id, str) and tenant_id.strip() else "default")
+    )
     kwargs: dict[str, object] = {
         "tenant_id": resolved_tenant_id,
         "vector_index_namespace": profile.vector_index_namespace,

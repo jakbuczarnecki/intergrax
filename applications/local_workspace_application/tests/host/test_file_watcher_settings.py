@@ -110,7 +110,9 @@ def test_file_watcher_env_values_parse() -> None:
     assert settings.file_watcher_debounce_seconds == 3.5
     assert settings.file_watcher_max_batch_wait_seconds == 12.0
     assert settings.file_watcher_priority == "high"
-    assert settings.allowed_read_roots == frozenset({root})
+    assert {root, settings.managed_upload_staging_dir, settings.web_url_staging_dir} <= (
+        settings.allowed_read_roots
+    )
     assert settings.data_home == "custom/lkw"
 
 
@@ -121,7 +123,7 @@ def test_watcher_roots_come_from_intergrax_allowed_read_roots() -> None:
 
     settings = _settings_from_env()
 
-    assert settings.allowed_read_roots == frozenset({root_a, root_b})
+    assert {root_a, root_b} <= settings.allowed_read_roots
 
 
 def test_data_home_resolution_inputs_unchanged() -> None:

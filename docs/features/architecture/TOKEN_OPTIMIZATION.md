@@ -1275,6 +1275,7 @@ Do **not** claim provider KV cache mutation, deletion, or inferred TTL.
 - No direct Application context → CacheAwareTokenOptimizationRuntime → application activation path.
 - No Application-owned persistence or activation wording.
 - TOKEN-10E-1, TOKEN-10E-2, TOKEN-10E-3, and TOKEN-10E-4 are **ACCEPTED / CLOSED**; TOKEN-10E-CLOSEOUT-1 is **READY_FOR_REVIEW** pending independent acceptance.
+- TOKEN-10E-CLOSEOUT-1 is queued for an independent GitHub audit; no external acceptance result is claimed here.
 - No LKW, Slack, or application-storage dependencies inside Token Optimization.
 - No automatic production enablement.
 

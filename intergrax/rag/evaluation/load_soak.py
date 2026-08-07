@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import math
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -114,7 +117,8 @@ def build_soak_retrieval_service(
     manager = VectorstoreManager(store=store, scope=scope)
     docs = list(docs_by_id.values())
     ids = list(docs_by_id.keys())
-    embeddings = [[0.1, 0.2, 0.3] for _ in docs]
+    embedder = _FakeEmbedder()
+    embeddings = [embedder.embed_one(document.content) for document in docs]
     manager.add_records(
         [
             VectorStoreRecord(
@@ -133,7 +137,7 @@ def build_soak_retrieval_service(
 
     retriever_manager = create_default_retriever_manager(
         vector_store=manager,
-        embedding_manager=_FakeEmbedder(),
+        embedding_manager=embedder,
         graph_store=None,
         profile=resolved,
     )
@@ -170,7 +174,13 @@ def run_retrieval_load_soak(
 
     def _run_one(query: SoakQuery) -> tuple[SoakQuery, float, float]:
         started = time.perf_counter()
-        response = service.retrieve(RetrievalRequest(query=query.query, top_k=query.k))
+        response = service.retrieve(
+            RetrievalRequest(
+                query=query.query,
+                top_k=query.k,
+                scope=VectorStoreScope(tenant_id="soak"),
+            )
+        )
         elapsed_ms = (time.perf_counter() - started) * 1_000.0
         retrieved_ids = [chunk.id for chunk in response.chunks]
         rec = recall_at_k(retrieved_ids, set(query.relevant_ids), query.k)
@@ -269,7 +279,12 @@ def export_load_soak_report(
 
 class _FakeEmbedder:
     def embed_one(self, text: str) -> List[float]:
-        return [0.1, 0.2, 0.3]
+        vector = [0.0] * 64
+        for token in re.findall(r"[a-z0-9]+", text.lower()):
+            index = int.from_bytes(hashlib.sha256(token.encode()).digest()[:2], "big") % 64
+            vector[index] += 1.0
+        norm = math.sqrt(sum(value * value for value in vector)) or 1.0
+        return [value / norm for value in vector]
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        return [[0.1, 0.2, 0.3] for _ in texts]
+        return [self.embed_one(text) for text in texts]

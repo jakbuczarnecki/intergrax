@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.tools.providers.rag.ingest_contracts import RagIngestInput
 from intergrax.tools.providers.rag.ingest_service import perform_rag_ingest
 from intergrax.tools.registry.wiring import ToolWiringContext
@@ -25,6 +26,9 @@ class FakeEmbeddingManager:
     def embed_documents(self, docs):
         return self._Result(docs, [[0.1, 0.2] for _ in docs])
 
+    def embed_texts(self, texts):
+        return [[0.1, 0.2] for _ in texts]
+
 
 class FakeVectorstoreManager:
     def __init__(self) -> None:
@@ -34,26 +38,42 @@ class FakeVectorstoreManager:
         self.added = list(ids)
         return ids
 
+    def add_records(self, records, *, scope):
+        self.added = [record.vector_id for record in records]
+        return self.added
+
 
 class FakeDocumentsLoader:
-    def load_document(self, source: str, *, use_default_metadata=True, call_custom_metadata=None):
-        from langchain_core.documents import Document
-
+    def load_document(
+        self,
+        source: str,
+        *,
+        tenant_id: str,
+        namespace=None,
+        use_default_metadata=True,
+        call_custom_metadata=None,
+    ):
         return [
-            Document(
-                page_content="hello world",
-                metadata={
-                    "integration_parser_trace": {
-                        "parser_id": "docling.local",
-                        "attempts": [{"parser_id": "docling.local", "status": "success"}],
-                    }
-                },
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {"document_id": "ingest-doc", "root_document_id": "ingest-doc"},
+                    "scope": {"tenant_id": tenant_id, "namespace": namespace},
+                    "content": "hello world",
+                    "metadata": {
+                        "integration_parser_trace": {
+                            "parser_id": "docling.local",
+                            "attempts": [{"parser_id": "docling.local", "status": "success"}],
+                        }
+                    },
+                    "provenance": {"source_kind": "test", "source_id": source},
+                }
             )
         ]
 
 
 class FakeSplitter:
-    def split_documents(self, docs):
+    def split_documents(self, docs, strategy_id=None):
         return docs
 
 

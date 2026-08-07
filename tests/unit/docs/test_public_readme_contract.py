@@ -207,7 +207,7 @@ def test_token_optimization_claim_boundary(readme_text: str) -> None:
 
 
 def test_lkw_proof_boundary(readme_text: str) -> None:
-    """PX-13: indexed Hybrid Ask proven; mixed indexed+live still incomplete."""
+    """PX-12 claim boundary: indexed Hybrid Ask proven; mixed indexed+live still incomplete."""
     lower = readme_text.lower()
     assert "hybrid ask" in lower
     assert "indexed" in lower

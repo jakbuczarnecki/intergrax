@@ -6,6 +6,9 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import math
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Sequence
@@ -252,7 +255,12 @@ def _evaluate_case(
 
 class _FakeEmbedder:
     def embed_one(self, text: str) -> List[float]:
-        return [0.1, 0.2, 0.3]
+        vector = [0.0] * 64
+        for token in re.findall(r"[a-z0-9]+", text.lower()):
+            index = int.from_bytes(hashlib.sha256(token.encode()).digest()[:2], "big") % 64
+            vector[index] += 1.0
+        norm = math.sqrt(sum(value * value for value in vector)) or 1.0
+        return [value / norm for value in vector]
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        return [[0.1, 0.2, 0.3] for _ in texts]
+        return [self.embed_one(text) for text in texts]

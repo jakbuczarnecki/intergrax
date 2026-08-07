@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Sequence
+from typing import Generator, List, Sequence
 
 import pytest
-from langchain_core.documents import Document
 from opentelemetry import trace
+from intergrax.knowledge.contracts import KnowledgeDocument
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
@@ -33,7 +33,7 @@ pytestmark = pytest.mark.gate
 
 
 @pytest.fixture(scope="module")
-def span_exporter() -> InMemorySpanExporter:
+def span_exporter() -> Generator[InMemorySpanExporter, None, None]:
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
@@ -42,7 +42,9 @@ def span_exporter() -> InMemorySpanExporter:
 
 
 @pytest.fixture(autouse=True)
-def _enable_rag_spans(span_exporter: InMemorySpanExporter) -> None:
+def _enable_rag_spans(
+    span_exporter: InMemorySpanExporter,
+) -> Generator[None, None, None]:
     span_exporter.clear()
     set_rag_otel_spans_enabled(True)
     yield
@@ -91,8 +93,19 @@ class _StubRetrieverManager(BaseRetrieverManager):
 
 
 class _StubLoader:
-    def load_document(self, source: str, **kwargs: object) -> list[Document]:
-        return [Document(page_content="chunk body", metadata={"source": source})]
+    def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+        return [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {"document_id": "otel-doc", "root_document_id": "otel-doc"},
+                    "scope": {"tenant_id": "otel-test"},
+                    "content": "chunk body",
+                    "metadata": {"source": source},
+                    "provenance": {"source_kind": "test", "source_id": source},
+                }
+            )
+        ]
 
 
 class _StubSplitter:
@@ -106,10 +119,16 @@ class _StubEmbedding:
 
         return SimpleNamespace(documents=docs, embeddings=[[0.1, 0.2]] * len(docs))
 
+    def embed_texts(self, texts):
+        return [[0.1, 0.2] for _ in texts]
+
 
 class _StubVectorstore:
     def add_documents(self, **kwargs: object) -> list[str]:
         return ["id-0"]
+
+    def add_records(self, records, *, scope):
+        return [record.vector_id for record in records]
 
 
 def test_rag_otel_span_registry_is_stable() -> None:
@@ -155,7 +174,12 @@ def test_ingest_pipeline_emits_stage_otel_spans(
         embedding_manager=_StubEmbedding(),
         vectorstore=_StubVectorstore(),
     )
-    result = pipeline.run(IngestRequest(source_path=str(source)))
+    result = pipeline.run(
+        IngestRequest(
+            source_path=str(source),
+            base_metadata={"tenant_id": "otel-test"},
+        )
+    )
 
     assert result.used is True
     names = [span.name for span in span_exporter.get_finished_spans()]

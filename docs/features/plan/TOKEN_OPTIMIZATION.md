@@ -1788,7 +1788,7 @@ Closeout:
 
 **Goal:** Export stable public contracts at `intergrax.runtime.token_optimization` package root; document phase acceptance; synchronize claims guardrails.
 
-**Status:** **READY_FOR_REVIEW**.
+**Status:** **READY_FOR_REVIEW**, pending independent acceptance and an independent GitHub audit.
 
 **Invariants:** no production enablement; architecture invariants unchanged; claims distinguish internal implementation completion from public claimability.
 
