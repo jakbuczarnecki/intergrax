@@ -164,7 +164,9 @@ def _router_evidence(result) -> ProofRouterEvidence:
             if result.configuration_id is not None
             else None
         ),
-        reason_code=result.reason_code.value if result.reason_code is not None else None,
+        reason_code=result.reason_code.value
+        if result.reason_code is not None
+        else None,
         review_required=result.review_required,
         confidence=result.confidence,
         risk=result.risk.value if result.risk is not None else None,
@@ -179,31 +181,15 @@ def _router_evidence(result) -> ProofRouterEvidence:
         model_configuration_id=(
             result.model_configuration_id.value
             if result.model_configuration_id is not None
-            else (
-                result.configuration_id.value
-                if result.configuration_id is not None
-                else None
-            )
+            else None
         ),
         model_reason_code=(
             result.model_reason_code.value
             if result.model_reason_code is not None
-            else result.reason_code.value
-            if result.reason_code is not None
             else None
         ),
-        model_risk=(
-            result.model_risk.value
-            if result.model_risk is not None
-            else result.risk.value
-            if result.risk is not None
-            else None
-        ),
-        model_review_required=(
-            result.model_review_required
-            if result.model_review_required is not None
-            else result.review_required
-        ),
+        model_risk=(result.model_risk.value if result.model_risk is not None else None),
+        model_review_required=result.model_review_required,
         policy_override_applied=result.policy_override_applied,
         policy_override_reason=(
             result.policy_override_reason.value
@@ -259,9 +245,7 @@ def _pipeline_evidence(pipeline_result) -> ProofPipelineEvidence:
         return ProofPipelineEvidence()
     completed = pipeline_result.receipt_metadata.get("completed")
     completed = completed if type(completed) is bool else None
-    required_failure = pipeline_result.receipt_metadata.get(
-        "required_failure_layer_id"
-    )
+    required_failure = pipeline_result.receipt_metadata.get("required_failure_layer_id")
     required_failure = required_failure if isinstance(required_failure, str) else None
     validation = _latest_validation(pipeline_result)
     receipt_validation_status = _safe_receipt_code(
@@ -270,7 +254,9 @@ def _pipeline_evidence(pipeline_result) -> ProofPipelineEvidence:
     validation_status = (
         receipt_validation_status
         if receipt_validation_status is not None
-        else validation.status.value if validation is not None else None
+        else validation.status.value
+        if validation is not None
+        else None
     )
     receipt_validation_reason = _safe_receipt_code(
         pipeline_result.receipt_metadata.get("validation_reason_code")
@@ -292,7 +278,9 @@ def _pipeline_evidence(pipeline_result) -> ProofPipelineEvidence:
     )
 
 
-def _protected_region_evidence(case_request, pipeline_result) -> ProofProtectedRegionEvidence:
+def _protected_region_evidence(
+    case_request, pipeline_result
+) -> ProofProtectedRegionEvidence:
     regions = tuple(case_request.protected_regions)
     input_count = len(regions)
     input_digest = _protected_identity_digest(regions)
@@ -310,8 +298,7 @@ def _protected_region_evidence(case_request, pipeline_result) -> ProofProtectedR
     status = validation.status.value
     preserved_digest = (
         input_digest
-        if status == "passed"
-        and validation.regions_preserved == input_count
+        if status == "passed" and validation.regions_preserved == input_count
         else None
     )
     return ProofProtectedRegionEvidence(
@@ -560,7 +547,9 @@ class _OfflineSmokeAdapter(LLMAdapter):
         super().__init__()
         self.provider = provider
         self.model = model
-        self._configuration_id = TokenOptimizationRouterConfigurationId(configuration_id)
+        self._configuration_id = TokenOptimizationRouterConfigurationId(
+            configuration_id
+        )
         self.model_name_for_token_estimation = model
 
     @property
@@ -624,7 +613,9 @@ class UniversalTokenOptimizationProofRunner:
         self,
         *,
         adapter_registry: type[LLMAdapterRegistry] = LLMAdapterRegistry,
-        router_factory: Callable[..., TokenOptimizationLLMRouter] = TokenOptimizationLLMRouter,
+        router_factory: Callable[
+            ..., TokenOptimizationLLMRouter
+        ] = TokenOptimizationLLMRouter,
         router_catalog_factory: Callable[
             [], TokenOptimizationRouterConfigurationCatalog
         ] = create_token_optimization_router_configuration_catalog,
@@ -657,9 +648,7 @@ class UniversalTokenOptimizationProofRunner:
         )
         if config.run_mode == "offline_smoke":
             try:
-                TokenOptimizationRouterConfigurationId(
-                    config.router.configuration_id
-                )
+                TokenOptimizationRouterConfigurationId(config.router.configuration_id)
             except ValueError as exc:
                 raise ProofCompositionError("UNKNOWN_ROUTER_CONFIGURATION") from exc
             provider = LLMProvider(config.adapter.provider)

@@ -1990,6 +1990,24 @@ Closeout:
 - no qualification was granted
 - public README promotion remains blocked
 
+**SAFETY-1 (runtime fail-safe, post-qualification):** Root cause of the
+historical high-risk runtime-safety FAIL was that deterministic
+`SECURITY_WARNING` enforcement lived only inside `_compile_decision()`, so
+malformed/invalid model tool arguments exited earlier as
+`INVALID_DECISION` / `INVALID_TOOL_ARGUMENTS` and bypassed the fail-closed
+review boundary. Production router now applies the same request-derived
+security-warning helper on model-decision failures (not provider
+`LLM_ERROR`, which remains technically observable under the single-reason
+result contract). Historical Qwen 7B AWQ `14/16` qualification evidence is
+retained unchanged. Live SAFETY-1 single-case proof for
+`case-high-risk-lossy-content` / `high-risk-protected` with the same AWQ
+model still shows unavailable model decision fields (model behavioral
+mismatch remains), while final outcome is `REVIEW_REQUIRED` / risk `HIGH` /
+`review_required=true` / `policy_override_applied=true` / `executed=false`
+(runtime safety PASS for this fail-safe). `case-warm-cache` expectation is
+unchanged. TOKEN-10H remains pending a full frozen qualification rerun after
+audit; this task did not rerun the 16-case suite.
+
 ---
 
 #### TOKEN-9A — LLM Optimization Router Contract (superseded by TOKEN-9)

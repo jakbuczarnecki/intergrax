@@ -63,9 +63,7 @@ def _config(
 ):
     tmp_path.mkdir(parents=True, exist_ok=True)
     path = tmp_path / "proof.toml"
-    api_key_line = (
-        f'api_key_env = "{api_key_env}"\n' if api_key_env is not None else ""
-    )
+    api_key_line = f'api_key_env = "{api_key_env}"\n' if api_key_env is not None else ""
     path.write_text(
         f"""
 schema_version = "token-optimization-proof.v1"
@@ -170,9 +168,9 @@ def test_offline_runner_uses_real_composition_and_deterministic_order(
 
 
 def test_offline_runner_is_network_free_and_has_no_second_engine() -> None:
-    source = Path(
-        "intergrax/runtime/token_optimization/proofs/runner.py"
-    ).read_text(encoding="utf-8")
+    source = Path("intergrax/runtime/token_optimization/proofs/runner.py").read_text(
+        encoding="utf-8"
+    )
 
     assert "LLMAdapterRegistry" in source
     assert "TokenOptimizationLLMRouter" in source
@@ -479,7 +477,28 @@ def _controlled_router_result(
     model_review_required=None,
     policy_override_applied=False,
     policy_override_reason=None,
+    preserve_unavailable_model_decision: bool = False,
 ) -> TokenOptimizationLLMRouterResult:
+    if preserve_unavailable_model_decision:
+        resolved_model_configuration_id = model_configuration_id
+        resolved_model_reason_code = model_reason_code
+        resolved_model_risk = model_risk
+        resolved_model_review_required = model_review_required
+    else:
+        resolved_model_configuration_id = (
+            model_configuration_id
+            if model_configuration_id is not None
+            else configuration_id
+        )
+        resolved_model_reason_code = (
+            model_reason_code if model_reason_code is not None else reason_code
+        )
+        resolved_model_risk = model_risk if model_risk is not None else risk
+        resolved_model_review_required = (
+            model_review_required
+            if model_review_required is not None
+            else review_required
+        )
     return TokenOptimizationLLMRouterResult(
         request_id="controlled-proof-router",
         status=status,
@@ -497,10 +516,10 @@ def _controlled_router_result(
         pipeline_result=None,
         executed=False,
         prompt_assembly_report=prompt_assembly_report,
-        model_configuration_id=model_configuration_id,
-        model_reason_code=model_reason_code,
-        model_risk=model_risk,
-        model_review_required=model_review_required,
+        model_configuration_id=resolved_model_configuration_id,
+        model_reason_code=resolved_model_reason_code,
+        model_risk=resolved_model_risk,
+        model_review_required=resolved_model_review_required,
         policy_override_applied=policy_override_applied,
         policy_override_reason=(
             TokenOptimizationPolicyOverrideReason(policy_override_reason)
@@ -701,6 +720,35 @@ def test_runner_preserves_model_decision_and_policy_override_separately(
     assert result.cases[0].pipeline_status == "not_started"
 
 
+def test_runner_preserves_unavailable_model_decision_under_security_override(
+    tmp_path: Path,
+) -> None:
+    result = _run_controlled_case(
+        tmp_path,
+        router_result=_controlled_router_result(
+            status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
+            configuration_id=None,
+            reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
+            risk=TokenOptimizationRouterRisk.HIGH,
+            review_required=True,
+            confidence=None,
+            reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
+            policy_override_applied=True,
+            policy_override_reason="security_warning_requires_review",
+            preserve_unavailable_model_decision=True,
+        ),
+    )
+
+    evidence = result.cases[0].router_evidence
+    assert evidence.model_configuration_id is None
+    assert evidence.model_reason_code is None
+    assert evidence.model_risk is None
+    assert evidence.model_review_required is None
+    assert evidence.risk == "high"
+    assert evidence.review_required is True
+    assert evidence.policy_override_applied is True
+
+
 @pytest.mark.parametrize(
     ("transport", "expected_fallback", "status", "prompt_report"),
     [
@@ -759,7 +807,9 @@ def test_runner_preserves_router_transport_evidence(
                 if status is TokenOptimizationRouterStatus.ROUTED
                 else None
             ),
-            review_required=False if status is TokenOptimizationRouterStatus.ROUTED else None,
+            review_required=False
+            if status is TokenOptimizationRouterStatus.ROUTED
+            else None,
             confidence=1.0 if status is TokenOptimizationRouterStatus.ROUTED else None,
         ),
         pipeline_result=_controlled_pipeline_result(
@@ -799,7 +849,9 @@ def test_runner_pipeline_evidence_uses_receipt_and_not_measurements(
     )
     result = _run_controlled_case(
         tmp_path,
-        router_result=_controlled_router_result(prompt_assembly_report=_prompt_report()),
+        router_result=_controlled_router_result(
+            prompt_assembly_report=_prompt_report()
+        ),
         pipeline_result=pipeline,
     )
 
@@ -822,7 +874,9 @@ def test_runner_pipeline_incomplete_and_exception_leave_unavailable_evidence(
 ) -> None:
     incomplete = _run_controlled_case(
         tmp_path / "incomplete",
-        router_result=_controlled_router_result(prompt_assembly_report=_prompt_report()),
+        router_result=_controlled_router_result(
+            prompt_assembly_report=_prompt_report()
+        ),
         pipeline_result=_controlled_pipeline_result(
             completed=False,
             fallback_used=True,
@@ -844,7 +898,9 @@ def test_runner_pipeline_incomplete_and_exception_leave_unavailable_evidence(
 
     failed = _run_controlled_case(
         tmp_path / "exception",
-        router_result=_controlled_router_result(prompt_assembly_report=_prompt_report()),
+        router_result=_controlled_router_result(
+            prompt_assembly_report=_prompt_report()
+        ),
         pipeline_runner_factory=_FailingPipeline,
     )
     failed_evidence = failed.cases[0].pipeline_evidence
@@ -939,8 +995,12 @@ def test_protected_identity_digest_changes_with_kind_order_and_value(
     )
     assert _protected_identity_digest(first) == _protected_identity_digest(first)
     assert _protected_identity_digest(first) != _protected_identity_digest(changed_kind)
-    assert _protected_identity_digest(first) != _protected_identity_digest(changed_order)
-    assert _protected_identity_digest(first) != _protected_identity_digest(changed_value)
+    assert _protected_identity_digest(first) != _protected_identity_digest(
+        changed_order
+    )
+    assert _protected_identity_digest(first) != _protected_identity_digest(
+        changed_value
+    )
     evidence = _protected_region_evidence(
         replace(request, protected_regions=first),
         None,
@@ -992,8 +1052,14 @@ def test_prefix_identity_uses_existing_token_10b_assembly_contract() -> None:
     with_tools = assembly("stable-policy", "tail-a", tools)
     with_reordered_tools = assembly("stable-policy", "tail-a", reversed_tools)
     with_identical_tools = assembly("stable-policy", "tail-a", tools)
-    assert with_tools.report.tool_envelope_hash != with_reordered_tools.report.tool_envelope_hash
-    assert with_tools.report.tool_envelope_hash == with_identical_tools.report.tool_envelope_hash
+    assert (
+        with_tools.report.tool_envelope_hash
+        != with_reordered_tools.report.tool_envelope_hash
+    )
+    assert (
+        with_tools.report.tool_envelope_hash
+        == with_identical_tools.report.tool_envelope_hash
+    )
     assert with_tools.report.tool_envelope_hash is not None
 
     same_keys_different_order = (
@@ -1013,7 +1079,9 @@ def test_prefix_identity_uses_existing_token_10b_assembly_contract() -> None:
         },
     )
     canonicalized = assembly("stable-policy", "tail-a", same_keys_different_order)
-    assert canonicalized.report.tool_envelope_hash == with_tools.report.tool_envelope_hash
+    assert (
+        canonicalized.report.tool_envelope_hash == with_tools.report.tool_envelope_hash
+    )
 
     unavailable = _prefix_identity_evidence(None)
     assert unavailable.identity_available is False

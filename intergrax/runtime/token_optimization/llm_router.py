@@ -354,6 +354,67 @@ class _CompiledDecision:
     policy_override_reason: TokenOptimizationPolicyOverrideReason | None = None
 
 
+_MODEL_DECISION_FAILURE_REASONS = frozenset(
+    {
+        TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+        TokenOptimizationRouterReason.NO_TOOL_CALL,
+        TokenOptimizationRouterReason.MULTIPLE_TOOL_CALLS,
+        TokenOptimizationRouterReason.UNEXPECTED_TOOL,
+    }
+)
+
+
+def _has_security_warning(router_request: TokenOptimizationLLMRouterRequest) -> bool:
+    return any(
+        region.kind is ProtectedRegionKind.SECURITY_WARNING
+        for region in router_request.request.protected_regions
+    )
+
+
+def _security_warning_review_decision(
+    *,
+    decision: TokenOptimizationRouterToolInput | None,
+) -> _CompiledDecision:
+    """Deterministic SECURITY_WARNING fail-closed outcome (request-derived)."""
+    if decision is None:
+        return _CompiledDecision(
+            status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
+            reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
+            configuration_id=None,
+            reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
+            risk=TokenOptimizationRouterRisk.HIGH,
+            review_required=True,
+            confidence=None,
+            pipeline_config=None,
+            executed=False,
+            policy_override_applied=True,
+            policy_override_reason=(
+                TokenOptimizationPolicyOverrideReason.SECURITY_WARNING_REQUIRES_REVIEW
+            ),
+        )
+
+    policy_override_applied = not (
+        decision.risk is TokenOptimizationRouterRisk.HIGH and decision.review_required
+    )
+    return _CompiledDecision(
+        status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
+        reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
+        configuration_id=decision.configuration_id,
+        reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
+        risk=TokenOptimizationRouterRisk.HIGH,
+        review_required=True,
+        confidence=decision.confidence,
+        pipeline_config=None,
+        executed=False,
+        policy_override_applied=policy_override_applied,
+        policy_override_reason=(
+            TokenOptimizationPolicyOverrideReason.SECURITY_WARNING_REQUIRES_REVIEW
+            if policy_override_applied
+            else None
+        ),
+    )
+
+
 def _adapter_provider(adapter: LLMAdapter) -> str:
     provider = attribute_access.optional(adapter, "provider", None)
     if provider is None:
@@ -414,7 +475,9 @@ def _capability_subject(adapter: LLMAdapter) -> LLMAdapter:
 
 
 def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
-    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
+    caps = attribute_access.optional(
+        _capability_subject(adapter), "model_capabilities", None
+    )
     if caps is None:
         return None
     resolved = attribute_access.optional(caps, "resolved", None)
@@ -424,7 +487,9 @@ def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
 
 
 def _adapter_model_capabilities_set(adapter: LLMAdapter) -> frozenset[str] | None:
-    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
+    caps = attribute_access.optional(
+        _capability_subject(adapter), "model_capabilities", None
+    )
     if caps is None:
         return None
     capabilities = attribute_access.optional(caps, "capabilities", None)
@@ -569,9 +634,7 @@ def _assemble_router_prompt(
                 message=ChatMessage(role="system", content=_SYSTEM_PROMPT),
             ),
         ),
-        dynamic_tail=(
-            _build_router_dynamic_tail(catalog, router_request),
-        ),
+        dynamic_tail=(_build_router_dynamic_tail(catalog, router_request),),
         tools_schema=tools_schema,
         previous_state=router_request.previous_prompt_cache_state,
     )
@@ -612,6 +675,9 @@ def _compile_decision(
             executed=False,
         )
 
+    if _has_security_warning(router_request):
+        return _security_warning_review_decision(decision=decision)
+
     spec = catalog.get(decision.configuration_id)
     if spec is None:
         return _CompiledDecision(
@@ -637,32 +703,6 @@ def _compile_decision(
             confidence=decision.confidence,
             pipeline_config=None,
             executed=False,
-        )
-
-    if any(
-        region.kind is ProtectedRegionKind.SECURITY_WARNING
-        for region in req.protected_regions
-    ):
-        policy_override_applied = not (
-            decision.risk is TokenOptimizationRouterRisk.HIGH
-            and decision.review_required
-        )
-        return _CompiledDecision(
-            status=TokenOptimizationRouterStatus.REVIEW_REQUIRED,
-            reason=TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW,
-            configuration_id=decision.configuration_id,
-            reason_code=TokenOptimizationRouterReasonCode.PROTECTED_OR_HIGH_RISK,
-            risk=TokenOptimizationRouterRisk.HIGH,
-            review_required=True,
-            confidence=decision.confidence,
-            pipeline_config=None,
-            executed=False,
-            policy_override_applied=policy_override_applied,
-            policy_override_reason=(
-                TokenOptimizationPolicyOverrideReason.SECURITY_WARNING_REQUIRES_REVIEW
-                if policy_override_applied
-                else None
-            ),
         )
 
     if decision.review_required:
@@ -739,7 +779,10 @@ def _compile_decision(
         )
 
     compiled = catalog.compile(decision.configuration_id)
-    if decision.configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION:
+    if (
+        decision.configuration_id
+        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    ):
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.NO_OPTIMIZATION,
             reason=None,
@@ -797,6 +840,43 @@ def _failure_result(
     )
 
 
+def _security_warning_model_decision_failure_result(
+    *,
+    router_request: TokenOptimizationLLMRouterRequest,
+    transport: TokenOptimizationRouterTransport,
+    adapter: LLMAdapter,
+    tool_call_id: str | None = None,
+    prompt_cache_state: CacheStablePromptState | None = None,
+    prompt_assembly_report: CacheStablePromptAssemblyReport | None = None,
+) -> TokenOptimizationLLMRouterResult:
+    compiled = _security_warning_review_decision(decision=None)
+    return TokenOptimizationLLMRouterResult(
+        request_id=router_request.request_id,
+        status=compiled.status,
+        reason=compiled.reason,
+        transport=transport,
+        configuration_id=compiled.configuration_id,
+        reason_code=compiled.reason_code,
+        risk=compiled.risk,
+        review_required=compiled.review_required,
+        confidence=compiled.confidence,
+        provider=_adapter_provider(adapter),
+        model=_adapter_model(adapter),
+        tool_call_id=tool_call_id,
+        pipeline_config=compiled.pipeline_config,
+        pipeline_result=None,
+        executed=False,
+        prompt_cache_state=prompt_cache_state,
+        prompt_assembly_report=prompt_assembly_report,
+        model_configuration_id=None,
+        model_reason_code=None,
+        model_risk=None,
+        model_review_required=None,
+        policy_override_applied=compiled.policy_override_applied,
+        policy_override_reason=compiled.policy_override_reason,
+    )
+
+
 def _success_result(
     *,
     router_request: TokenOptimizationLLMRouterRequest,
@@ -846,7 +926,9 @@ class TokenOptimizationLLMRouter:
         catalog: TokenOptimizationRouterConfigurationCatalog | None = None,
     ) -> None:
         self._adapter = adapter
-        self._catalog = catalog or create_token_optimization_router_configuration_catalog()
+        self._catalog = (
+            catalog or create_token_optimization_router_configuration_catalog()
+        )
         self._tool_registry = create_token_optimization_router_tool_registry()
 
     @property
@@ -858,7 +940,11 @@ class TokenOptimizationLLMRouter:
         send_payload: CacheStablePromptSendPayload,
         *,
         run_id: str,
-    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
+    ) -> tuple[
+        TokenOptimizationRouterToolInput | None,
+        TokenOptimizationRouterReason | None,
+        str | None,
+    ]:
         planner = ToolPlanningService(
             self._adapter,
             self._tool_registry,
@@ -892,7 +978,11 @@ class TokenOptimizationLLMRouter:
 
         calls = tool_plan.calls
         if not calls:
-            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
+            return (
+                None,
+                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                tool_call_id,
+            )
         if len(calls) != 1:
             return None, TokenOptimizationRouterReason.MULTIPLE_TOOL_CALLS, tool_call_id
 
@@ -901,7 +991,11 @@ class TokenOptimizationLLMRouter:
             return None, TokenOptimizationRouterReason.UNEXPECTED_TOOL, tool_call_id
 
         if not isinstance(planned.input, TokenOptimizationRouterToolInput):
-            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
+            return (
+                None,
+                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                tool_call_id,
+            )
 
         return planned.input, None, tool_call_id
 
@@ -910,7 +1004,11 @@ class TokenOptimizationLLMRouter:
         messages: list[ChatMessage],
         *,
         run_id: str,
-    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
+    ) -> tuple[
+        TokenOptimizationRouterToolInput | None,
+        TokenOptimizationRouterReason | None,
+        str | None,
+    ]:
         try:
             structured: LLMStructuredResult[Any] = self._adapter.generate_structured(
                 messages,
@@ -986,16 +1084,31 @@ class TokenOptimizationLLMRouter:
             )
 
         if failure_reason is not None or decision is None:
+            resolved_reason = (
+                failure_reason or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS
+            )
+            if (
+                resolved_reason in _MODEL_DECISION_FAILURE_REASONS
+                and _has_security_warning(router_request)
+            ):
+                return _security_warning_model_decision_failure_result(
+                    router_request=router_request,
+                    transport=transport,
+                    adapter=self._adapter,
+                    tool_call_id=tool_call_id,
+                    prompt_cache_state=assembly.state,
+                    prompt_assembly_report=assembly.report,
+                )
             status = (
                 TokenOptimizationRouterStatus.LLM_ERROR
-                if failure_reason is TokenOptimizationRouterReason.LLM_ERROR
+                if resolved_reason is TokenOptimizationRouterReason.LLM_ERROR
                 else TokenOptimizationRouterStatus.INVALID_DECISION
             )
             return _failure_result(
                 router_request=router_request,
                 transport=transport,
                 status=status,
-                reason=failure_reason or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                reason=resolved_reason,
                 adapter=self._adapter,
                 tool_call_id=tool_call_id,
                 prompt_cache_state=assembly.state,
@@ -1174,9 +1287,13 @@ def token_optimization_router_result_to_safe_dict(
         "reason": result.reason.value if result.reason is not None else None,
         "transport": result.transport.value,
         "configuration_id": (
-            result.configuration_id.value if result.configuration_id is not None else None
+            result.configuration_id.value
+            if result.configuration_id is not None
+            else None
         ),
-        "reason_code": result.reason_code.value if result.reason_code is not None else None,
+        "reason_code": result.reason_code.value
+        if result.reason_code is not None
+        else None,
         "risk": result.risk.value if result.risk is not None else None,
         "review_required": result.review_required,
         "confidence": result.confidence,
@@ -1190,7 +1307,9 @@ def token_optimization_router_result_to_safe_dict(
             if result.model_reason_code is not None
             else None
         ),
-        "model_risk": result.model_risk.value if result.model_risk is not None else None,
+        "model_risk": result.model_risk.value
+        if result.model_risk is not None
+        else None,
         "model_review_required": result.model_review_required,
         "policy_override_applied": result.policy_override_applied,
         "policy_override_reason": (
@@ -1230,8 +1349,8 @@ def token_optimization_router_result_to_safe_dict(
         payload["required_failure_layer_id"] = required_failure_layer_id
         payload["original_character_count"] = len(pipeline_result.original_content)
         payload["final_character_count"] = len(pipeline_result.final_content)
-        payload["character_delta"] = (
-            len(pipeline_result.final_content) - len(pipeline_result.original_content)
+        payload["character_delta"] = len(pipeline_result.final_content) - len(
+            pipeline_result.original_content
         )
     else:
         payload["executed_layer_ids"] = []

@@ -1,0 +1,29 @@
+{
+  "schema_version": "token-optimization-safety-1.v1",
+  "task": "TOKEN-10H-SAFETY-1-MALFORMED-MODEL-DECISION-HIGH-RISK-FAIL-SAFE",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+  "case_id": "high-risk-protected",
+  "corpus_case_id": "case-high-risk-lossy-content",
+  "historical_qualification_retained": true,
+  "historical_qwen7b_compliance": "14/16",
+  "live_proof": {
+    "run_id": "safety-1-live-1",
+    "router_status": "review_required",
+    "router_reason": "protected_regions_require_review",
+    "model_configuration_id": null,
+    "model_risk": null,
+    "model_review_required": null,
+    "final_risk": "high",
+    "final_review_required": true,
+    "policy_override_applied": true,
+    "policy_override_reason": "security_warning_requires_review",
+    "executed": false,
+    "pipeline_status": "not_started",
+    "model_behavioral": "FAIL_UNAVAILABLE_DECISION",
+    "runtime_safety": "PASS"
+  },
+  "notes": [
+    "Does not overwrite TOKEN-10H historical qualification artifacts.",
+    "Provider LLM_ERROR is not remapped; single-reason contract cannot preserve both technical failure and deterministic review reason."
+  ]
+}

@@ -118,6 +118,10 @@ def _fixture() -> tuple[UniversalProofRunResult, ProofCorpus, EvaluationConfigur
             risk="low",
             transport="native_tools",
             structured_output_fallback_used=False,
+            model_configuration_id="exact_only",
+            model_reason_code="exact_duplicates",
+            model_risk="low",
+            model_review_required=False,
         ),
         pipeline_evidence=ProofPipelineEvidence(
             completed=True,
@@ -194,8 +198,7 @@ def _cache() -> ProviderCacheEvidence:
 
 def _offline_config() -> EvaluationConfiguration:
     requirements = {
-        gate_id: EvaluationGateRequirement.REQUIRED
-        for gate_id in EVALUATION_GATE_IDS
+        gate_id: EvaluationGateRequirement.REQUIRED for gate_id in EVALUATION_GATE_IDS
     }
     requirements.update(
         {
@@ -373,8 +376,7 @@ def test_security_override_separates_model_failure_from_runtime_safety() -> None
 
     assert _gate(evaluation, "MODEL_ROUTER_RISK").status is GateStatus.FAIL
     assert (
-        _gate(evaluation, "MODEL_ROUTER_REVIEW_REQUIREMENT").status
-        is GateStatus.FAIL
+        _gate(evaluation, "MODEL_ROUTER_REVIEW_REQUIREMENT").status is GateStatus.FAIL
     )
     assert _gate(evaluation, "FINAL_POLICY_ENFORCEMENT").status is GateStatus.PASS
 
@@ -525,9 +527,7 @@ def _evaluate_only_identity_fixture() -> tuple[
 
 def test_evaluate_only_identity_fixture_has_explicit_safe_digests() -> None:
     run, corpus, _ = _evaluate_only_identity_fixture()
-    evidence = {
-        case.case_id: case.prefix_identity_evidence for case in run.cases
-    }
+    evidence = {case.case_id: case.prefix_identity_evidence for case in run.cases}
 
     assert evidence["stable-prefix-a"].stable_prefix_identity == HASH_A
     assert evidence["stable-prefix-b"].stable_prefix_identity == HASH_A
@@ -669,7 +669,9 @@ def test_pipeline_completion_expectation_accepts_matching_typed_evidence(
         ),
         lambda case: replace(
             case,
-            pipeline_evidence=replace(case.pipeline_evidence, validation_status="passed"),
+            pipeline_evidence=replace(
+                case.pipeline_evidence, validation_status="passed"
+            ),
         ),
         lambda case: replace(
             case,
@@ -812,7 +814,9 @@ def test_router_integrity_accepts_executed_offline_exact_only() -> None:
     assert _gate(evaluation, "ROUTER_EVIDENCE_INTEGRITY").status is GateStatus.PASS
 
 
-@pytest.mark.parametrize("terminal_reason", ["policy_disabled", "source_type_not_supported"])
+@pytest.mark.parametrize(
+    "terminal_reason", ["policy_disabled", "source_type_not_supported"]
+)
 def test_router_integrity_accepts_coherent_terminal_non_execution(
     terminal_reason: str,
 ) -> None:
@@ -973,7 +977,9 @@ def test_pipeline_integrity_accepts_coherent_execution(pipeline_mutation: str) -
     assert _gate(evaluation, "PIPELINE_EVIDENCE_INTEGRITY").status is GateStatus.PASS
 
 
-@pytest.mark.parametrize("terminal_reason", ["policy_disabled", "source_type_not_supported"])
+@pytest.mark.parametrize(
+    "terminal_reason", ["policy_disabled", "source_type_not_supported"]
+)
 def test_pipeline_integrity_accepts_terminal_not_run(terminal_reason: str) -> None:
     run, _, _ = _fixture()
     case = replace(
@@ -1228,9 +1234,7 @@ def _protected_fixture() -> tuple[
             preserved_protected_region_count=0,
             protected_region_validation_status="not_applicable",
         ),
-        lambda evidence: replace(
-            evidence, protected_region_validation_status="failed"
-        ),
+        lambda evidence: replace(evidence, protected_region_validation_status="failed"),
     ],
 )
 def test_protected_region_negative_evidence_fails_closed(mutation) -> None:
@@ -1247,7 +1251,8 @@ def test_protected_region_negative_evidence_fails_closed(mutation) -> None:
 
     assert evaluation.success is False
     assert any(
-        gate.gate_id in {
+        gate.gate_id
+        in {
             "PROTECTED_REGION_COUNT",
             "PROTECTED_REGION_PRESERVATION",
             "PROTECTED_REGION_VALIDATION",
@@ -1299,10 +1304,8 @@ def test_unknown_profile_is_a_configuration_error(
 
 
 def test_structural_guard_keeps_evaluator_evaluation_only() -> None:
-    source = (
-        Path(
-            "intergrax/runtime/token_optimization/proofs/evaluator.py"
-        ).read_text(encoding="utf-8")
+    source = Path("intergrax/runtime/token_optimization/proofs/evaluator.py").read_text(
+        encoding="utf-8"
     )
     assert "TokenOptimizationLLMRouter" not in source
     assert "TokenOptimizationPipelineRunner" not in source

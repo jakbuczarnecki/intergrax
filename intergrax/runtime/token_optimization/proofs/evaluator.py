@@ -59,9 +59,9 @@ _ROUTER_REASON_CODES = frozenset(
     }
 )
 _ROUTER_RISKS = frozenset({"low", "medium", "high"})
-_ROUTER_TRANSPORTS = frozenset(
-    {"native_tools", "structured_output", "unsupported"}
-)
+_ROUTER_TRANSPORTS = frozenset({"native_tools", "structured_output", "unsupported"})
+
+
 def _terminal_router_non_execution(result: UniversalProofCaseResult) -> bool:
     return is_terminal_router_non_execution(
         result.router_status,
@@ -79,18 +79,13 @@ class _GateContext:
     cases_by_id: Mapping[str, UniversalProofCaseResult]
 
 
-def _requirement(
-    gate_id: str, context: _GateContext
-) -> EvaluationGateRequirement:
+def _requirement(gate_id: str, context: _GateContext) -> EvaluationGateRequirement:
     return context.config.requirement_for(gate_id)
 
 
-def _profile_not_applicable(
-    gate_ids: Iterable[str], context: _GateContext
-) -> bool:
+def _profile_not_applicable(gate_ids: Iterable[str], context: _GateContext) -> bool:
     return all(
-        _requirement(gate_id, context)
-        is EvaluationGateRequirement.NOT_APPLICABLE
+        _requirement(gate_id, context) is EvaluationGateRequirement.NOT_APPLICABLE
         for gate_id in gate_ids
     )
 
@@ -342,16 +337,10 @@ def _router_gates(context: _GateContext) -> list[GateResult]:
 def _model_router_gates(context: _GateContext) -> list[GateResult]:
     expectation = context.case.router
     evidence = context.result.router_evidence
-    model_configuration_id = (
-        evidence.model_configuration_id or evidence.configuration_id
-    )
-    model_reason_code = evidence.model_reason_code or evidence.reason_code
-    model_risk = evidence.model_risk or evidence.risk
-    model_review_required = (
-        evidence.model_review_required
-        if evidence.model_review_required is not None
-        else evidence.review_required
-    )
+    model_configuration_id = evidence.model_configuration_id
+    model_reason_code = evidence.model_reason_code
+    model_risk = evidence.model_risk
+    model_review_required = evidence.model_review_required
     gate_ids = (
         "MODEL_ROUTER_CONFIGURATION",
         "MODEL_ROUTER_REASON",
@@ -368,10 +357,7 @@ def _model_router_gates(context: _GateContext) -> list[GateResult]:
         and evidence.configuration_id is None
         and context.result.router_reason in {"policy_disabled", "profile_off"}
     ):
-        return [
-            _not_applicable(gate_id, context)
-            for gate_id in gate_ids
-        ]
+        return [_not_applicable(gate_id, context) for gate_id in gate_ids]
     gates = [
         _allowed(
             "MODEL_ROUTER_CONFIGURATION",
@@ -427,12 +413,8 @@ def _model_router_gates(context: _GateContext) -> list[GateResult]:
 def _final_router_gates(context: _GateContext) -> list[GateResult]:
     expectation = context.case.router
     evidence = context.result.router_evidence
-    model_risk = evidence.model_risk or evidence.risk
-    model_review_required = (
-        evidence.model_review_required
-        if evidence.model_review_required is not None
-        else evidence.review_required
-    )
+    model_risk = evidence.model_risk
+    model_review_required = evidence.model_review_required
     security_warning = any(
         region.kind.value == "security_warning"
         for region in context.case.protected_regions
@@ -472,7 +454,9 @@ def _final_router_gates(context: _GateContext) -> list[GateResult]:
             _pass(
                 "FINAL_POLICY_ENFORCEMENT",
                 context,
-                "security warning final safety" if security_warning else "no policy override",
+                "security warning final safety"
+                if security_warning
+                else "no policy override",
                 "safe final outcome",
             )
             if final_safety
@@ -557,9 +541,15 @@ def _pipeline_gates(context: _GateContext) -> list[GateResult]:
             matches = (
                 context.result.pipeline_status == expected_status
                 and evidence.completed
-                == (expected.expected_execution is PipelineExecutionExpectation.COMPLETED)
+                == (
+                    expected.expected_execution
+                    is PipelineExecutionExpectation.COMPLETED
+                )
                 and evidence.receipt_completion_status
-                == (expected.expected_execution is PipelineExecutionExpectation.COMPLETED)
+                == (
+                    expected.expected_execution
+                    is PipelineExecutionExpectation.COMPLETED
+                )
             )
             gates.append(
                 _pass(
@@ -805,9 +795,7 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
         and fallback_typed
     )
     terminal_reason = (
-        result.router_reason
-        if isinstance(result.router_reason, str)
-        else None
+        result.router_reason if isinstance(result.router_reason, str) else None
     )
     terminal_status = result.router_status if status_consistent else None
     terminal_reason_known = _terminal_router_non_execution(result)
@@ -844,12 +832,9 @@ def _router_integrity_gate(context: _GateContext) -> GateResult:
             else result.router_reason in {None, evidence.reason_code}
         )
     )
-    non_execution_transport = (
-        evidence.transport is None
-        or (
-            evidence.transport == "unsupported"
-            and terminal_reason in {"policy_disabled", "profile_off"}
-        )
+    non_execution_transport = evidence.transport is None or (
+        evidence.transport == "unsupported"
+        and terminal_reason in {"policy_disabled", "profile_off"}
     )
     non_execution_consistent = (
         status_consistent
@@ -934,8 +919,7 @@ def _pipeline_integrity_gate(context: _GateContext) -> GateResult:
     )
     execution_consistent = (
         type(evidence.completed) is bool
-        and result.pipeline_status
-        == ("completed" if evidence.completed else "failed")
+        and result.pipeline_status == ("completed" if evidence.completed else "failed")
         and type(evidence.receipt_completion_status) is bool
         and evidence.receipt_completion_status == evidence.completed
         and type(evidence.fallback_applied) is bool
@@ -1496,9 +1480,7 @@ class UniversalProofEvaluator:
             set(evaluation_config.unavailable_allowed_gate_ids) - _KNOWN_GATE_IDS
         )
         if evaluation_config.gate_requirements:
-            unknown.update(
-                set(evaluation_config.gate_requirements) - _KNOWN_GATE_IDS
-            )
+            unknown.update(set(evaluation_config.gate_requirements) - _KNOWN_GATE_IDS)
         if unknown:
             raise EvaluationConfigurationError("UNKNOWN_GATE_ID")
         required_gate_ids = tuple(
@@ -1518,9 +1500,7 @@ class UniversalProofEvaluator:
             corpus_input_case_ids = {case.input_case_id for case in corpus.cases}
             if corpus_input_case_ids != run_case_ids:
                 raise EvaluationConfigurationError("CORPUS_RUN_CASE_MISMATCH")
-            result_by_input_case_id = {
-                item.case_id: item for item in run_result.cases
-            }
+            result_by_input_case_id = {item.case_id: item for item in run_result.cases}
             result_by_id = {
                 corpus_case.case_id: result_by_input_case_id[corpus_case.input_case_id]
                 for corpus_case in corpus.cases
