@@ -1921,6 +1921,11 @@ expectation changed from `low` to `medium`; `case-noisy-tool-output` remains
 `case-high-risk-lossy-content` remains `high`. TOKEN-10G-RISK-3 and TOKEN-10H
 remain open, and Qwen 7B qualification has not been rerun.
 
+**TOKEN-10G-RISK-2-REVIEW-FIX-1: READY_FOR_REVIEW.** The literal prompt test
+was replaced with a structural contract; production prompt semantics and the
+corpus were not changed. RISK-3 and TOKEN-10H remain open, and no qualification
+run was executed.
+
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
 **Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.

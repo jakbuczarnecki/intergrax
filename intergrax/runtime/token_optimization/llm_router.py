@@ -69,7 +69,107 @@ from intergrax.utils import attribute_access
 ROUTER_TOOL_ID = "token_optimization.select_configuration"
 ROUTER_STABLE_PREFIX_BLOCK_ID = "token_optimization.router.system"
 
-_SYSTEM_PROMPT = """You are a Token Optimization configuration router.
+
+@dataclass(frozen=True, slots=True)
+class _RiskLevel:
+    name: str
+    definition: str
+
+
+@dataclass(frozen=True, slots=True)
+class _RiskInvariant:
+    key: str
+    statement: str
+
+
+_RISK_LEVELS = (
+    _RiskLevel(
+        name="low",
+        definition=(
+            "the configuration is lossless or no optimization is performed, "
+            "with no independent critical signal and no real risk to material information"
+        ),
+    ),
+    _RiskLevel(
+        name="medium",
+        definition=(
+            "the configuration is lossy and may remove, omit, or compress useful "
+            "information, without an independent critical signal, and may run "
+            "automatically without mandatory human review"
+        ),
+    ),
+    _RiskLevel(
+        name="high",
+        definition=(
+            "a critical signal exists, lossy processing may affect protected or "
+            "critical information, loss may change the meaning of a warning, "
+            "evidence, decision, safety constraint, or mandatory condition, or "
+            "human review is independently required"
+        ),
+    ),
+)
+
+_RISK_INVARIANTS = (
+    _RiskInvariant(
+        key="classification_before_final_policy_enforcement",
+        statement="classification occurs before final deterministic policy enforcement",
+    ),
+    _RiskInvariant(
+        key="risk_is_information_loss",
+        statement=(
+            "risk is the chance that the configuration loses, distorts, or "
+            "improperly omits material information; it is not the general "
+            "dangerousness of text"
+        ),
+    ),
+    _RiskInvariant(
+        key="high_requires_review",
+        statement="high risk requires review_required=true",
+    ),
+    _RiskInvariant(
+        key="lossy_is_not_always_high",
+        statement="not every lossy operation is high",
+    ),
+    _RiskInvariant(
+        key="protected_values_alone_are_not_high",
+        statement="protected values alone do not make risk high",
+    ),
+    _RiskInvariant(
+        key="lossless_exact_preservation_is_low",
+        statement="lossless exact preservation may remain low",
+    ),
+    _RiskInvariant(
+        key="ordinary_lossy_extractive_filtering_is_medium",
+        statement=(
+            "ordinary lossy extractive filtering without a critical signal is "
+            "medium, regardless of source_type"
+        ),
+    ),
+    _RiskInvariant(
+        key="source_type_does_not_reduce_lossy_risk",
+        statement="source_type alone does not lower comparable lossy risk",
+    ),
+)
+
+
+def _render_risk_semantics() -> str:
+    level_lines = "\n".join(
+        f"- {level.name}: {level.definition}" for level in _RISK_LEVELS
+    )
+    invariant_lines = "\n".join(
+        f"- {invariant.statement}" for invariant in _RISK_INVARIANTS
+    )
+    return (
+        "Risk semantics are assessed for the selected transformation applied to "
+        "this content.\n"
+        "Risk levels:\n"
+        f"{level_lines}\n"
+        "Frozen risk invariants:\n"
+        f"{invariant_lines}\n\n"
+    )
+
+
+_SYSTEM_PROMPT_PREFIX = """You are a Token Optimization configuration router.
 You select a pre-approved pipeline configuration ID; you do NOT optimize, summarize, or rewrite content.
 Call the provided tool exactly once with your decision.
 Select only from configurations listed as available for this request.
@@ -92,25 +192,9 @@ Tool argument fields (do not swap these):
 - review_required: true when human review is needed
 - confidence: number from 0.0 to 1.0
 
-Risk semantics are assessed for the selected transformation applied to this
-content, before final deterministic policy enforcement. Risk is the chance
-that the configuration loses, distorts, or improperly omits material
-information; it is not the general dangerousness of the text.
-- low: the configuration is lossless or no optimization is performed, with no
-  independent critical signal and no real risk to material information
-- medium: the configuration is lossy and may remove, omit, or compress useful
-  information, without an independent critical signal, and may run
-  automatically without mandatory human review; ordinary lossy extractive
-  filtering is medium regardless of source_type
-- high: a critical signal exists, lossy processing may affect protected or
-  critical information, loss may change the meaning of a warning, evidence,
-  decision, safety constraint, or mandatory condition, or human review is
-  independently required
-High requires review_required=true. Not every lossy operation is high.
-Protected values alone do not make risk high; lossless exact preservation is
-low.
+"""
 
-Routing heuristics:
+_SYSTEM_PROMPT_SUFFIX = """Routing heuristics:
 - duplicate_lines_detected=true in RAG/evidence -> exact_only or exact_then_packing when packing_input_available=true
 - noisy_long_output=true for tool/terminal/log source -> extractive_only or exact_then_extractive
 - Short clean output with noisy_long_output=false -> no_optimization
@@ -125,6 +209,10 @@ Routing heuristics:
   would be appropriate in normal execution. Do not select no_optimization
   solely because the profile is measure_only. The pipeline will measure the
   selected strategy without replacing the final content."""
+
+_SYSTEM_PROMPT = (
+    _SYSTEM_PROMPT_PREFIX + _render_risk_semantics() + _SYSTEM_PROMPT_SUFFIX
+)
 
 
 class _RouterToolOutput(BaseModel):
@@ -233,7 +321,9 @@ def _capability_subject(adapter: LLMAdapter) -> LLMAdapter:
 
 
 def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
-    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
+    caps = attribute_access.optional(
+        _capability_subject(adapter), "model_capabilities", None
+    )
     if caps is None:
         return None
     resolved = attribute_access.optional(caps, "resolved", None)
@@ -243,7 +333,9 @@ def _adapter_model_capabilities_resolved(adapter: LLMAdapter) -> bool | None:
 
 
 def _adapter_model_capabilities_set(adapter: LLMAdapter) -> frozenset[str] | None:
-    caps = attribute_access.optional(_capability_subject(adapter), "model_capabilities", None)
+    caps = attribute_access.optional(
+        _capability_subject(adapter), "model_capabilities", None
+    )
     if caps is None:
         return None
     capabilities = attribute_access.optional(caps, "capabilities", None)
@@ -388,9 +480,7 @@ def _assemble_router_prompt(
                 message=ChatMessage(role="system", content=_SYSTEM_PROMPT),
             ),
         ),
-        dynamic_tail=(
-            _build_router_dynamic_tail(catalog, router_request),
-        ),
+        dynamic_tail=(_build_router_dynamic_tail(catalog, router_request),),
         tools_schema=tools_schema,
         previous_state=router_request.previous_prompt_cache_state,
     )
@@ -558,7 +648,10 @@ def _compile_decision(
         )
 
     compiled = catalog.compile(decision.configuration_id)
-    if decision.configuration_id is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION:
+    if (
+        decision.configuration_id
+        is TokenOptimizationRouterConfigurationId.NO_OPTIMIZATION
+    ):
         return _CompiledDecision(
             status=TokenOptimizationRouterStatus.NO_OPTIMIZATION,
             reason=None,
@@ -665,7 +758,9 @@ class TokenOptimizationLLMRouter:
         catalog: TokenOptimizationRouterConfigurationCatalog | None = None,
     ) -> None:
         self._adapter = adapter
-        self._catalog = catalog or create_token_optimization_router_configuration_catalog()
+        self._catalog = (
+            catalog or create_token_optimization_router_configuration_catalog()
+        )
         self._tool_registry = create_token_optimization_router_tool_registry()
 
     @property
@@ -677,7 +772,11 @@ class TokenOptimizationLLMRouter:
         send_payload: CacheStablePromptSendPayload,
         *,
         run_id: str,
-    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
+    ) -> tuple[
+        TokenOptimizationRouterToolInput | None,
+        TokenOptimizationRouterReason | None,
+        str | None,
+    ]:
         planner = ToolPlanningService(
             self._adapter,
             self._tool_registry,
@@ -711,7 +810,11 @@ class TokenOptimizationLLMRouter:
 
         calls = tool_plan.calls
         if not calls:
-            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
+            return (
+                None,
+                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                tool_call_id,
+            )
         if len(calls) != 1:
             return None, TokenOptimizationRouterReason.MULTIPLE_TOOL_CALLS, tool_call_id
 
@@ -720,7 +823,11 @@ class TokenOptimizationLLMRouter:
             return None, TokenOptimizationRouterReason.UNEXPECTED_TOOL, tool_call_id
 
         if not isinstance(planned.input, TokenOptimizationRouterToolInput):
-            return None, TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS, tool_call_id
+            return (
+                None,
+                TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                tool_call_id,
+            )
 
         return planned.input, None, tool_call_id
 
@@ -729,7 +836,11 @@ class TokenOptimizationLLMRouter:
         messages: list[ChatMessage],
         *,
         run_id: str,
-    ) -> tuple[TokenOptimizationRouterToolInput | None, TokenOptimizationRouterReason | None, str | None]:
+    ) -> tuple[
+        TokenOptimizationRouterToolInput | None,
+        TokenOptimizationRouterReason | None,
+        str | None,
+    ]:
         try:
             structured: LLMStructuredResult[Any] = self._adapter.generate_structured(
                 messages,
@@ -814,7 +925,8 @@ class TokenOptimizationLLMRouter:
                 router_request=router_request,
                 transport=transport,
                 status=status,
-                reason=failure_reason or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
+                reason=failure_reason
+                or TokenOptimizationRouterReason.INVALID_TOOL_ARGUMENTS,
                 adapter=self._adapter,
                 tool_call_id=tool_call_id,
                 prompt_cache_state=assembly.state,
@@ -993,9 +1105,13 @@ def token_optimization_router_result_to_safe_dict(
         "reason": result.reason.value if result.reason is not None else None,
         "transport": result.transport.value,
         "configuration_id": (
-            result.configuration_id.value if result.configuration_id is not None else None
+            result.configuration_id.value
+            if result.configuration_id is not None
+            else None
         ),
-        "reason_code": result.reason_code.value if result.reason_code is not None else None,
+        "reason_code": result.reason_code.value
+        if result.reason_code is not None
+        else None,
         "risk": result.risk.value if result.risk is not None else None,
         "review_required": result.review_required,
         "confidence": result.confidence,
@@ -1009,7 +1125,9 @@ def token_optimization_router_result_to_safe_dict(
             if result.model_reason_code is not None
             else None
         ),
-        "model_risk": result.model_risk.value if result.model_risk is not None else None,
+        "model_risk": result.model_risk.value
+        if result.model_risk is not None
+        else None,
         "model_review_required": result.model_review_required,
         "policy_override_applied": result.policy_override_applied,
         "policy_override_reason": (
@@ -1049,8 +1167,8 @@ def token_optimization_router_result_to_safe_dict(
         payload["required_failure_layer_id"] = required_failure_layer_id
         payload["original_character_count"] = len(pipeline_result.original_content)
         payload["final_character_count"] = len(pipeline_result.final_content)
-        payload["character_delta"] = (
-            len(pipeline_result.final_content) - len(pipeline_result.original_content)
+        payload["character_delta"] = len(pipeline_result.final_content) - len(
+            pipeline_result.original_content
         )
     else:
         payload["executed_layer_ids"] = []
