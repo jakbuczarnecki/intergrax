@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`
+`VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`
 
 ### VK-2 plugin/capability contract status
 
@@ -100,6 +100,35 @@ representative Slack/Graph proofs, and Slack Connected Source contract/E2E.
 The previous pytest basetemp WinError 5 was resolved/avoided by a validated
 clean task-specific test temp root. Six pre-existing Slack sync unit failures
 remain baseline/stale and do not block VK-2.
+
+### VK-3 durable lifecycle closeout status
+
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` is **ACCEPTED / CLOSED**.
+
+Accepted:
+
+- provider-neutral durable coordinator (existing
+  `VendorKnowledgeSyncCoordinator` + reconciliation/leases/publication);
+- provider-neutral application materialization port (`KnowledgeSyncSink`) with
+  production DocumentStore implementation
+  (`DocumentStoreDurableKnowledgeSyncSink`);
+- crash-safe recovery, replay/idempotency, checkpoint/receipt ordering;
+- revision/update and tenant/source ownership isolation;
+- representative cross-provider proof: Slack structured-record durable
+  materialization + Microsoft Graph `teams_chat` full adapter→coordinator→sink
+  path;
+- durable operation independent from indexing (`DURABLE=YES` / `INDEXED=NO`
+  Teams Chat works without any indexing service).
+
+Conservative / deferred:
+
+- provider coverage not audited → VK-6;
+- generic index bridge not done → VK-4;
+- live bootstrap not done → VK-5;
+- frontend neutrality not fully proven → VK-7;
+- Slack adapter sync unit suite remains 6 baseline/stale failures (unchanged);
+- Slack deletion remains `DELETION_UNSUPPORTED` / `UNPROVEN` (`tombstones=False`);
+  Teams Chat proves authoritative `DELETED` materialization.
 
 ### Architecture frozen for this roadmap
 
@@ -194,13 +223,12 @@ not inferred.
 
 #### VK-3 — Durable lifecycle platform closeout
 
-`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` — **ACCEPTED / CLOSED**
 
-Audit and close shared lifecycle primitives, including reconciliation, typed
-continuation, checkpointing, receipts, prepared/applied/committed states,
-recovery, replay, idempotency, publication visibility, revision/update,
-deletion/revocation, ownership, tenant isolation and concurrency. Reuse the
-existing foundation instead of rebuilding provider-specific durable systems.
+Closed shared durable lifecycle primitives on the existing coordinator
+foundation and introduced `DocumentStoreDurableKnowledgeSyncSink` as the
+provider-neutral durable materialization implementation of `KnowledgeSyncSink`.
+Indexing remains optional and out of scope for Durable mode (→ VK-4).
 
 #### VK-4 — Generic Indexed / RAG bridge
 

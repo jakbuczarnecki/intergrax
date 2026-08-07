@@ -207,10 +207,12 @@ Current commercial claims must remain source-kind specific:
 - **Indexed:** no generally accepted Vendor Knowledge commercial claim.
   Slack `slack_conversation` is an accepted demonstrable LKW path, but this
   task does not establish a broad commercial claim.
-- **Durable materialization:** adapter-level synchronization is broader than
-  production application materialization. Slack has an accepted
-  application-owned path for the selected conversation scope; Graph, Google,
-  Jira and Confluence remain outside that claim.
+- **Durable materialization:** provider-neutral durable application
+  materialization is accepted through `KnowledgeSyncSink` /
+  `DocumentStoreDurableKnowledgeSyncSink`. Slack structured-record durable
+  materialization and Microsoft Graph `teams_chat` coordinator→sink proofs are
+  accepted. Broader provider application wiring and commercial coverage remain
+  outside this claim (→ VK-6 / VK-8).
 - **Live:** no Vendor Knowledge provider/source kind is commercially
   supported; all rows are `FOUNDATION_ONLY`.
 
@@ -221,12 +223,14 @@ access.
 ## 10. Cross-provider gaps
 
 1. There is no provider/source-kind index bridge except the accepted Slack LKW
-   path.
-2. Provider adapters and reconciliation are not uniformly connected to
-   application-owned durable sinks.
-3. There is no provider/source-kind live handler registration.
+   path (→ VK-4).
+2. Provider adapters and reconciliation are connected to a provider-neutral
+   durable sink port; broader production application hosts beyond the DocumentStore
+   durable sink and accepted Slack LKW indexed path remain to expand (→ VK-6/VK-8).
+3. There is no provider/source-kind live handler registration completeness claim
+   (→ VK-5/VK-6).
 4. Indexed removal, provenance-preserving refresh and application query proof
-   are not established for non-Slack rows.
+   are not established for non-Slack rows (→ VK-4).
 5. Google `drive`, `docs`, `sheets` and `calendar` have Vendor Knowledge
    adapter implementations despite stale roadmap wording; they still lack
    provider-neutral application-owned indexed wiring, and Calendar still lacks
