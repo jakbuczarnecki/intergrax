@@ -17,6 +17,14 @@ from intergrax.runtime.token_optimization.proofs.evaluation_contracts import (
 
 _ROOT = Path(__file__).resolve().parents[5]
 _CORPUS = _ROOT / "configs/token_optimization/corpus/universal_proof_cases.toml"
+_REPRESENTATIVE_RISK_CASES = (
+    ("case-short-clean-prompt", frozenset({"low"}), False),
+    ("case-protected-values", frozenset({"low"}), False),
+    ("case-noisy-tool-output", frozenset({"medium"}), False),
+    ("case-terminal-log-output", frozenset({"medium"}), False),
+    ("case-high-risk-lossy-content", frozenset({"high"}), True),
+    ("case-policy-disabled", frozenset(), False),
+)
 
 
 def test_checked_in_corpus_is_strict_and_covers_required_categories() -> None:
@@ -79,11 +87,6 @@ def test_corpus_inputs_are_representative_and_expectations_are_assertive(
         cases["case-terminal-log-output"].request.source_type.value
         == "terminal_output"
     )
-    assert expectations["case-terminal-log-output"].router.allowed_risk == {"medium"}
-    assert expectations["case-noisy-tool-output"].router.allowed_risk == {"medium"}
-    assert expectations["case-protected-values"].router.allowed_risk == {"low"}
-    assert expectations["case-high-risk-lossy-content"].router.allowed_risk == {"high"}
-    assert expectations["case-policy-disabled"].router.allowed_risk == frozenset()
     assert cases["case-rag-context-pack"].request.source_type.value == "rag_context_pack"
     assert cases["case-code-heavy-content"].request.source_type.value == "structured_data"
     assert cases["case-reordered-tools"].request.source_type.value == "tool_catalog"
@@ -154,6 +157,32 @@ def test_corpus_inputs_are_representative_and_expectations_are_assertive(
         case.router.allowed_statuses != frozenset({"routed", "blocked"})
         for case in corpus.cases
     )
+
+
+@pytest.mark.parametrize(
+    ("case_id", "expected_risk", "review_required"),
+    _REPRESENTATIVE_RISK_CASES,
+)
+def test_representative_corpus_risk_boundary_is_frozen(
+    case_id: str,
+    expected_risk: frozenset[str],
+    review_required: bool,
+) -> None:
+    cases = {case.case_id: case for case in load_proof_corpus(_CORPUS).cases}
+    router = cases[case_id].router
+    assert router is not None
+    assert router.allowed_risk == expected_risk
+    assert router.review_required is review_required
+
+
+def test_comparable_lossy_tool_and_terminal_cases_have_equal_risk() -> None:
+    cases = {case.case_id: case for case in load_proof_corpus(_CORPUS).cases}
+    tool_case = cases["case-noisy-tool-output"]
+    terminal_case = cases["case-terminal-log-output"]
+    assert tool_case.router is not None
+    assert terminal_case.router is not None
+    assert tool_case.request.source_type.value != terminal_case.request.source_type.value
+    assert tool_case.router.allowed_risk == terminal_case.router.allowed_risk == {"medium"}
 
 
 def test_full_run_corpus_leaves_identity_controls_to_evaluate_only_fixtures() -> None:

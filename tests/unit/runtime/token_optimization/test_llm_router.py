@@ -366,6 +366,10 @@ def test_disabled_policy_blocked() -> None:
     assert result.status is TokenOptimizationRouterStatus.BLOCKED
     assert result.reason is TokenOptimizationRouterReason.POLICY_DISABLED
     assert result.transport is TokenOptimizationRouterTransport.UNSUPPORTED
+    assert result.risk is None
+    assert result.review_required is None
+    assert result.model_risk is None
+    assert result.model_review_required is None
 
 
 def test_off_profile_blocked() -> None:
@@ -417,9 +421,13 @@ def test_protected_lossy_requires_review() -> None:
         source_type=TokenOptimizationSourceType.TOOL_OUTPUT,
         protected_regions=(protected,),
     )
-    result = TokenOptimizationLLMRouter(adapter=adapter).route(request)
+    result = TokenOptimizationLLMRouter(adapter=adapter).route_and_execute(request)
     assert result.status is TokenOptimizationRouterStatus.REVIEW_REQUIRED
     assert result.reason is TokenOptimizationRouterReason.PROTECTED_REGIONS_REQUIRE_REVIEW
+    assert result.model_risk is TokenOptimizationRouterRisk.LOW
+    assert result.risk is TokenOptimizationRouterRisk.LOW
+    assert result.review_required is True
+    assert result.executed is False
 
 
 def test_protected_lossless_can_route_without_review() -> None:
@@ -437,6 +445,37 @@ def test_protected_lossless_can_route_without_review() -> None:
     assert result.review_required is False
     assert result.policy_override_applied is False
     assert result.pipeline_config is not None
+
+
+@pytest.mark.parametrize(
+    "source_type",
+    [
+        TokenOptimizationSourceType.TOOL_OUTPUT,
+        TokenOptimizationSourceType.TERMINAL_OUTPUT,
+    ],
+)
+def test_ordinary_noncritical_lossy_risk_is_medium_across_source_types(
+    source_type: TokenOptimizationSourceType,
+) -> None:
+    adapter = _NativeToolsAdapter(
+        decision=_decision(
+            TokenOptimizationRouterConfigurationId.EXTRACTIVE_ONLY,
+            reason_code=TokenOptimizationRouterReasonCode.NOISY_TOOL_OUTPUT,
+            risk=TokenOptimizationRouterRisk.MEDIUM,
+        )
+    )
+    result = TokenOptimizationLLMRouter(adapter=adapter).route(
+        _router_request(
+            content="INFO\n" * 200,
+            source_type=source_type,
+        )
+    )
+
+    assert result.status is TokenOptimizationRouterStatus.ROUTED
+    assert result.risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.review_required is False
+    assert result.model_risk is TokenOptimizationRouterRisk.MEDIUM
+    assert result.model_review_required is False
 
 
 def test_protected_lossless_preserves_explicit_model_review_and_risk() -> None:

@@ -1931,6 +1931,12 @@ machine-readable semantic identities while the prompt renders the same frozen
 semantics. Unrelated formatter-only delta was removed; the corpus is unchanged.
 RISK-3 and TOKEN-10H remain open, and no qualification run was executed.
 
+**TOKEN-10G-RISK-3: READY_FOR_REVIEW.** Behavioral and invariant coverage for
+low/medium/high is added; representative corpus boundaries are protected;
+deterministic review/policy invariants are protected within the existing scope.
+Corpus semantics were not changed. TOKEN-10H remains open, and Qwen
+qualification was not executed.
+
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
 **Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.
