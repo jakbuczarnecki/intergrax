@@ -6,8 +6,14 @@ from local_workspace_application.workspaces.connected_source_manifest import (
     ConnectedSourceMaterializationManifestV1,
 )
 from local_workspace_application.workspaces.connected_source_models import (
+    ConnectedSourceDeliveryReceipt,
+    ConnectedSourceDeliveryStatus,
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
+)
+from local_workspace_application.workspaces.connected_source_purge_completion_contracts import (
+    migration_gate_for_new_ownership_complete_binding,
+    migration_gate_required,
 )
 from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
     RecoveryRecordKindV1,
@@ -48,6 +54,49 @@ def _request(operation_id: str = "operation-a") -> KnowledgeMaterializationPurge
         knowledge_source_binding_ref="knowledge-binding-a",
         requested_lifecycle_revision=2,
         operation_id=operation_id,
+    )
+
+
+def _seed_cleared_migration_gate(
+    repository: ManagedWorkspaceRepository,
+    request: KnowledgeMaterializationPurgeRequestV1 | None = None,
+) -> None:
+    target = request or _request()
+    repository.put_connected_source_recovery_migration_gate(
+        migration_gate_for_new_ownership_complete_binding(
+            tenant_id=target.tenant_id,
+            workspace_id=target.workspace_id,
+            source_id=target.source_id,
+            indexed_source_binding_id=target.indexed_source_binding_id,
+            knowledge_source_binding_ref=target.knowledge_source_binding_ref,
+            cleared_at=_NOW,
+        )
+    )
+
+
+def _receipt(
+    *,
+    binding_id: str,
+    knowledge_ref: str,
+    delivery_id: str,
+    sequence: int = 1,
+) -> ConnectedSourceDeliveryReceipt:
+    return ConnectedSourceDeliveryReceipt(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        source_id="source-a",
+        indexed_source_binding_id=binding_id,
+        knowledge_source_binding_ref=knowledge_ref,
+        delivery_id=delivery_id,
+        binding_configuration_version=1,
+        materialization_sequence=sequence,
+        operation_id="operation-receipt",
+        status=ConnectedSourceDeliveryStatus.COMPLETED,
+        documents_indexed=1,
+        documents_unchanged=0,
+        items_failed=0,
+        created_at=_NOW,
+        completed_at=_NOW,
     )
 
 
@@ -126,6 +175,7 @@ def test_purge_identity_is_scope_deterministic() -> None:
 def test_empty_purge_invalidates_then_completes_and_replays() -> None:
     store = InMemoryDocumentStore()
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     fence = DocumentStoreKnowledgeSyncPublicationFenceRepository(
         store,
         clock=lambda: _NOW,
@@ -219,6 +269,7 @@ def test_vector_deletion_uses_exact_document_and_scope() -> None:
 def test_purge_pages_exact_document_ownership_and_preserves_other_binding() -> None:
     store = InMemoryDocumentStore(cursor_secret=b"purge-cursor-secret")
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     deletion = _RecordingDeletion()
     target_ownership = KnowledgeMaterializationOwnershipV1.connected(
         tenant_id="tenant-a",
@@ -280,6 +331,7 @@ def test_purge_pages_exact_document_ownership_and_preserves_other_binding() -> N
 def test_purge_deletes_complete_recovery_records_without_operation_scan() -> None:
     store = InMemoryDocumentStore(cursor_secret=b"purge-recovery-secret")
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     delivery_id = "b" * 64
     repository.put_connected_source_sync_enqueue_intent(
         ConnectedSourceSyncEnqueueIntent(
@@ -390,6 +442,7 @@ def _manifest_with_entries(count: int, *, delivery_id: str = 'c' * 64) -> Connec
 def test_manifest_entry_paging_1000_by_137_and_crash_points() -> None:
     store = InMemoryDocumentStore(cursor_secret=b'purge-manifest-secret')
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     fence = _enable_fence(store)
     manifest_repository = ConnectedSourceMaterializationManifestRepository(store)
     manifest = _manifest_with_entries(1000)
@@ -443,6 +496,7 @@ def test_manifest_entry_paging_1000_by_137_and_crash_points() -> None:
 def test_full_bound_page_size_seven_with_100_manifest_entries() -> None:
     store = InMemoryDocumentStore(cursor_secret=b'purge-bound-secret')
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     fence = _enable_fence(store)
     ownership = KnowledgeMaterializationOwnershipV1.connected(
         tenant_id='tenant-a',
@@ -486,6 +540,7 @@ def test_full_bound_page_size_seven_with_100_manifest_entries() -> None:
 def test_recovery_scale_enumerates_only_target_ownership_prefix() -> None:
     store = InMemoryDocumentStore(cursor_secret=b'purge-scale-secret')
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     fence = _enable_fence(store)
     queries: list[tuple[str, str | None]] = []
     original_query = store.query
@@ -557,6 +612,7 @@ def test_recovery_scale_enumerates_only_target_ownership_prefix() -> None:
 def test_concurrent_manifest_workers_do_not_regress_cursor() -> None:
     store = InMemoryDocumentStore(cursor_secret=b'purge-concurrent-secret')
     repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
     fence = _enable_fence(store)
     manifest_repository = ConnectedSourceMaterializationManifestRepository(store)
     manifest_repository._put_immutable(_manifest_with_entries(50, delivery_id='b' * 64))
@@ -624,3 +680,217 @@ def test_manifest_identity_mismatch_blocks() -> None:
     failed = service.start_or_resume(request).state
     assert failed.status is KnowledgeMaterializationPurgeStatusV1.FAILED
     assert failed.last_error_code == 'BLOCKED_CORRUPT_STATE'
+
+
+def test_receipt_cross_binding_isolation_and_completion_no_loop() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-receipt-cross")
+    repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
+    receipt_a = _receipt(
+        binding_id="binding-a",
+        knowledge_ref="knowledge-binding-a",
+        delivery_id="1" * 64,
+    )
+    receipt_b = _receipt(
+        binding_id="binding-b",
+        knowledge_ref="knowledge-binding-b",
+        delivery_id="2" * 64,
+    )
+    repository.put_connected_source_delivery_receipt(receipt_a)
+    repository.put_connected_source_delivery_receipt(receipt_b)
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    assert _run_to_terminal(service, _request()) is (
+        KnowledgeMaterializationPurgeStatusV1.COMPLETED
+    )
+    assert (
+        repository.get_connected_source_delivery_receipt(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            delivery_id="1" * 64,
+        )
+        is None
+    )
+    assert (
+        repository.get_connected_source_delivery_receipt(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            delivery_id="2" * 64,
+        )
+        == receipt_b
+    )
+
+
+def test_receipt_completion_ignores_other_binding_receipt_only() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-receipt-b-only")
+    repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
+    receipt_b = _receipt(
+        binding_id="binding-b",
+        knowledge_ref="knowledge-binding-b",
+        delivery_id="3" * 64,
+    )
+    repository.put_connected_source_delivery_receipt(receipt_b)
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    assert _run_to_terminal(service, _request()) is (
+        KnowledgeMaterializationPurgeStatusV1.COMPLETED
+    )
+    assert (
+        repository.get_connected_source_delivery_receipt(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            delivery_id="3" * 64,
+        )
+        == receipt_b
+    )
+
+
+def test_migration_gate_cleared_allows_completed() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-gate-cleared")
+    repository = ManagedWorkspaceRepository(store)
+    _seed_cleared_migration_gate(repository)
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    assert _run_to_terminal(service, _request()) is (
+        KnowledgeMaterializationPurgeStatusV1.COMPLETED
+    )
+
+
+def test_migration_gate_required_blocks_completion() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-gate-required")
+    repository = ManagedWorkspaceRepository(store)
+    repository.put_connected_source_recovery_migration_gate(
+        migration_gate_required(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            indexed_source_binding_id="binding-a",
+            knowledge_source_binding_ref="knowledge-binding-a",
+        )
+    )
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    status = _run_to_terminal(service, _request())
+    assert status is KnowledgeMaterializationPurgeStatusV1.FAILED
+    failed = service.start_or_resume(_request()).state
+    assert failed.last_error_code == "BLOCKED_LEGACY_MIGRATION"
+
+
+def test_missing_migration_gate_blocks_completion() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-gate-missing")
+    repository = ManagedWorkspaceRepository(store)
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    status = _run_to_terminal(service, _request())
+    assert status is KnowledgeMaterializationPurgeStatusV1.FAILED
+    failed = service.start_or_resume(_request()).state
+    assert failed.last_error_code == "BLOCKED_LEGACY_MIGRATION"
+
+
+def test_cross_binding_migration_gate_isolation() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-gate-cross")
+    repository = ManagedWorkspaceRepository(store)
+    repository.put_connected_source_recovery_migration_gate(
+        migration_gate_for_new_ownership_complete_binding(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            indexed_source_binding_id="binding-b",
+            knowledge_source_binding_ref="knowledge-binding-b",
+            cleared_at=_NOW,
+        )
+    )
+    repository.put_connected_source_recovery_migration_gate(
+        migration_gate_required(
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+            source_id="source-a",
+            indexed_source_binding_id="binding-a",
+            knowledge_source_binding_ref="knowledge-binding-a",
+        )
+    )
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    status = _run_to_terminal(service, _request())
+    assert status is KnowledgeMaterializationPurgeStatusV1.FAILED
+    failed = service.start_or_resume(_request()).state
+    assert failed.last_error_code == "BLOCKED_LEGACY_MIGRATION"
+
+
+def test_corrupt_migration_gate_blocks_completion() -> None:
+    store = InMemoryDocumentStore(cursor_secret=b"purge-gate-corrupt")
+    repository = ManagedWorkspaceRepository(store)
+    gate = migration_gate_for_new_ownership_complete_binding(
+        tenant_id="tenant-a",
+        workspace_id="workspace-a",
+        source_id="source-a",
+        indexed_source_binding_id="binding-a",
+        knowledge_source_binding_ref="knowledge-binding-a",
+        cleared_at=_NOW,
+    )
+    record = gate.to_document()
+    store.put(
+        record.model_copy(
+            update={
+                "data": {
+                    "schema_version": record.data["schema_version"],
+                    "gate": {
+                        **dict(record.data["gate"]),
+                        "indexed_source_binding_id": "binding-mismatch",
+                    },
+                }
+            }
+        )
+    )
+    fence = _enable_fence(store)
+    service = KnowledgeMaterializationPurgeService(
+        repository=repository,
+        publication_authority=fence,
+        deletion_port=_NoopDeletion(),
+        clock=lambda: _NOW,
+        page_size=1,
+    )
+    status = _run_to_terminal(service, _request())
+    assert status is KnowledgeMaterializationPurgeStatusV1.FAILED
+    failed = service.start_or_resume(_request()).state
+    assert failed.last_error_code == "BLOCKED_CORRUPT_STATE"

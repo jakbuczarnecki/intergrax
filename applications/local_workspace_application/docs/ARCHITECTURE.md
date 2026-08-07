@@ -1992,10 +1992,23 @@ canonical is idempotent. The index does not override the canonical record.
 The exact recovery index does not discover historical unindexed legacy rows.
 `LEGACY_MIGRATION_REQUIRED`, `LEGACY_NON_CONNECTED`, local-file and web records
 are not indexed. Full historical migration is not implemented here; purge
-completion applies only after an explicit migration gate confirms that no
-relevant legacy recovery records remain for the target scope. New
+completion applies only after an explicit durable migration gate confirms that no
+relevant legacy recovery records remain for the exact five-part ownership scope.
+Missing or `REQUIRED` gates fail closed as `BLOCKED_LEGACY_MIGRATION`; corrupt or
+scope-mismatched gates fail as `BLOCKED_CORRUPT_STATE`. Empty recovery indexes
+alone never prove historical absence. New connected-source bindings created under
+the ownership-complete schema generation (`ownership_complete_schema.v1`) persist
+the gate as `CLEARED` at first create (no predecessor), because no pre-contract
+recovery rows can exist for that binding. Reactivation and historical scopes remain
+`REQUIRED` until a future deterministic migration clears them. New
 complete-ownership writes are indexed; records created before this contract are
 not retroactively covered.
+
+Delivery receipts keep a canonical row key of
+`workspace:source:delivery_id`. Purge cleanup and completion therefore enumerate
+receipts only through a derived exact-ownership index keyed by the five-part
+binding scope, so a receipt belonging to binding B cannot observe or block
+completion for binding A.
 
 Manifest deletion uses a durable per-entry cursor bound to the purge ID:
 `document_store_cursor` (manifest page continuation), `current_manifest_row_key`,

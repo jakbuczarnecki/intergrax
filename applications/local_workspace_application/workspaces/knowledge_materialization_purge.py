@@ -21,6 +21,13 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.connected_source_purge_completion_contracts import (
+    ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ConnectedSourceDeliveryReceiptOwnershipIndexError,
+    ConnectedSourceDeliveryReceiptOwnershipPageV1,
+    ConnectedSourceRecoveryMigrationGateError,
+    ConnectedSourceRecoveryMigrationGateStatusV1,
+)
 from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
     ConnectedSourceRecoveryOwnershipIndexEntryV1,
     ConnectedSourceRecoveryOwnershipIndexError,
@@ -440,6 +447,19 @@ class KnowledgeMaterializationPurgeService:
                     "status": KnowledgeMaterializationPurgeStatusV1.FAILED,
                     "updated_at": self._now(),
                     "last_error_code": exc.error_code,
+                }
+            )
+            self._replace_state(record, failed)
+            return KnowledgeMaterializationPurgeResultV1(state=failed)
+        except (
+            ConnectedSourceDeliveryReceiptOwnershipIndexError,
+            ConnectedSourceRecoveryMigrationGateError,
+        ):
+            failed = state.model_copy(
+                update={
+                    "status": KnowledgeMaterializationPurgeStatusV1.FAILED,
+                    "updated_at": self._now(),
+                    "last_error_code": "BLOCKED_CORRUPT_STATE",
                 }
             )
             self._replace_state(record, failed)
@@ -1379,13 +1399,23 @@ class KnowledgeMaterializationPurgeService:
                 cursor=cursor.document_store_cursor,
             )
         elif kind == "receipts":
-            page = self._repository.list_connected_source_delivery_receipts_page(
-                tenant_id=request.tenant_id,
-                workspace_id=request.workspace_id,
-                source_id=request.source_id,
-                limit=self._page_size,
-                cursor=cursor.document_store_cursor,
-            )
+            try:
+                receipt_page = (
+                    self._repository.list_connected_source_delivery_receipts_by_owner(
+                        tenant_id=request.tenant_id,
+                        workspace_id=request.workspace_id,
+                        source_id=request.source_id,
+                        indexed_source_binding_id=request.indexed_source_binding_id,
+                        knowledge_source_binding_ref=request.knowledge_source_binding_ref,
+                        limit=self._page_size,
+                        cursor=cursor.document_store_cursor,
+                    )
+                )
+            except ConnectedSourceDeliveryReceiptOwnershipIndexError as exc:
+                raise KnowledgeMaterializationPurgeError(
+                    "BLOCKED_CORRUPT_STATE"
+                ) from exc
+            page = receipt_page
         elif kind == "assignments":
             page = self._store.query(
                 _workspace_partition(
@@ -1418,6 +1448,20 @@ class KnowledgeMaterializationPurgeService:
                 counters = self._process_delivery_receipt(record, request, counters)
             else:
                 counters = self._process_sequence_assignment(record, request, counters)
+        if kind == "receipts":
+            assert isinstance(page, ConnectedSourceDeliveryReceiptOwnershipPageV1)
+            for orphan in page.orphan_index_entries:
+                if self._repository.delete_connected_source_delivery_receipt_ownership_index_entry(
+                    orphan
+                ):
+                    counters = counters.model_copy(
+                        update={
+                            "orphan_index_entries_deleted": (
+                                counters.orphan_index_entries_deleted + 1
+                            ),
+                            "already_absent": counters.already_absent + 1,
+                        }
+                    )
         if page.next_cursor is not None:
             next_cursor = cursor.model_copy(
                 update={"document_store_cursor": page.next_cursor}
@@ -1586,14 +1630,11 @@ class KnowledgeMaterializationPurgeService:
             receipt.tenant_id != request.tenant_id
             or receipt.workspace_id != request.workspace_id
             or receipt.source_id != request.source_id
-        ):
-            return counters
-        if (
-            receipt.indexed_source_binding_id != request.indexed_source_binding_id
+            or receipt.indexed_source_binding_id != request.indexed_source_binding_id
             or receipt.knowledge_source_binding_ref
             != request.knowledge_source_binding_ref
         ):
-            return counters
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
         if receipt.materialization_sequence is None:
             raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
         if (
@@ -1614,7 +1655,13 @@ class KnowledgeMaterializationPurgeService:
             != receipt.materialization_sequence
         ):
             raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        index_entry = ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(
+            receipt
+        )
         self._store.delete(record.partition_key, record.row_key)
+        self._repository.delete_connected_source_delivery_receipt_ownership_index_entry(
+            index_entry
+        )
         return counters.model_copy(
             update={"receipts_deleted": counters.receipts_deleted + 1}
         )
@@ -1855,6 +1902,7 @@ class KnowledgeMaterializationPurgeService:
                                    source_id=request.source_id,
                                    indexed_source_binding_id=request.indexed_source_binding_id,
                                ))
+        self._require_legacy_migration_cleared(request)
         completed_at = self._now()
         return state.model_copy(
             update={
@@ -2038,12 +2086,22 @@ class KnowledgeMaterializationPurgeService:
                         ),
                     }
                 )
-        if self._repository.list_connected_source_delivery_receipts_page(
-            tenant_id=request.tenant_id,
-            workspace_id=request.workspace_id,
-            source_id=request.source_id,
-            limit=1,
-        ).documents:
+        try:
+            receipt_proof = (
+                self._repository.list_connected_source_delivery_receipts_by_owner(
+                    tenant_id=request.tenant_id,
+                    workspace_id=request.workspace_id,
+                    source_id=request.source_id,
+                    indexed_source_binding_id=request.indexed_source_binding_id,
+                    knowledge_source_binding_ref=request.knowledge_source_binding_ref,
+                    limit=1,
+                )
+            )
+        except ConnectedSourceDeliveryReceiptOwnershipIndexError as exc:
+            raise KnowledgeMaterializationPurgeError(
+                "BLOCKED_CORRUPT_STATE"
+            ) from exc
+        if receipt_proof.documents or receipt_proof.orphan_index_entries:
             return state.model_copy(
                 update={
                     "updated_at": self._now(),
@@ -2098,6 +2156,7 @@ class KnowledgeMaterializationPurgeService:
                     ),
                 }
             )
+        self._require_legacy_migration_cleared(request)
         completed_at = self._now()
         return state.model_copy(
             update={
@@ -2108,6 +2167,33 @@ class KnowledgeMaterializationPurgeService:
                 "last_error_code": None,
             }
         )
+
+    def _require_legacy_migration_cleared(
+        self,
+        request: KnowledgeMaterializationPurgeRequestV1,
+    ) -> None:
+        try:
+            gate = self._repository.get_connected_source_recovery_migration_gate(
+                tenant_id=request.tenant_id,
+                workspace_id=request.workspace_id,
+                source_id=request.source_id,
+                indexed_source_binding_id=request.indexed_source_binding_id,
+                knowledge_source_binding_ref=request.knowledge_source_binding_ref,
+            )
+        except ConnectedSourceRecoveryMigrationGateError as exc:
+            raise KnowledgeMaterializationPurgeError(
+                "BLOCKED_CORRUPT_STATE"
+            ) from exc
+        if gate is None:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_LEGACY_MIGRATION")
+        if gate.ownership_scope != request.ownership_scope:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        if gate.status is ConnectedSourceRecoveryMigrationGateStatusV1.REQUIRED:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_LEGACY_MIGRATION")
+        if gate.status is not ConnectedSourceRecoveryMigrationGateStatusV1.CLEARED:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        if gate.cleared_at is None or gate.evidence_revision is None:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
 
     def _delete_document_ref(self, ref: WorkspaceDocumentReference) -> None:
         partition = _workspace_partition(ref.tenant_id, "document")

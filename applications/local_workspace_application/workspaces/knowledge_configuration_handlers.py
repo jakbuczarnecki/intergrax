@@ -9,14 +9,15 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 
-from pydantic import ValidationError
-
 from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     connected_source_id_from_semantic_hash,
     indexed_source_binding_id,
     indexed_source_binding_id_from_semantic_hash,
     workspace_indexed_source_semantic_hash,
+)
+from local_workspace_application.workspaces.connected_source_purge_completion_contracts import (
+    migration_gate_for_new_ownership_complete_binding,
 )
 from local_workspace_application.workspaces.connected_source_source_projection import (
     ConnectedSourceOriginValidationError,
@@ -41,9 +42,9 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeExistingResult,
+    WorkspaceKnowledgeStagedResult,
     WorkspaceKnowledgeStageInspection,
     WorkspaceKnowledgeStageStateV1,
-    WorkspaceKnowledgeStagedResult,
 )
 from local_workspace_application.workspaces.models import (
     WorkspaceSource,
@@ -51,6 +52,7 @@ from local_workspace_application.workspaces.models import (
     WorkspaceSourceType,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from pydantic import ValidationError
 
 _RESULT_ENTITY_TYPE = "indexed_source_binding"
 _CONNECTION_ATTACHMENT_RESULT_TYPE = "connection_attachment"
@@ -836,14 +838,23 @@ class CreateIndexedSourceMutationHandler:
                 repository, mutation=mutation, source_id=source_id,
                 binding=predecessor, base_revision=base_revision,
             )
-        _put_binding_if_absent(
-            repository,
-            _active_binding(
-                binding_id=binding_id, source_id=source_id, semantic_hash=semantic_hash,
-                mutation=mutation, intent=intent, target_revision=target_revision,
-                now=now, created_at=now if predecessor is None else predecessor.created_at,
-            ),
+        binding = _active_binding(
+            binding_id=binding_id, source_id=source_id, semantic_hash=semantic_hash,
+            mutation=mutation, intent=intent, target_revision=target_revision,
+            now=now, created_at=now if predecessor is None else predecessor.created_at,
         )
+        _put_binding_if_absent(repository, binding)
+        if predecessor is None:
+            repository.put_connected_source_recovery_migration_gate(
+                migration_gate_for_new_ownership_complete_binding(
+                    tenant_id=binding.tenant_id,
+                    workspace_id=binding.workspace_id,
+                    source_id=binding.source_id,
+                    indexed_source_binding_id=binding.indexed_source_binding_id,
+                    knowledge_source_binding_ref=binding.knowledge_source_binding_ref,
+                    cleared_at=now,
+                )
+            )
         return WorkspaceKnowledgeStagedResult(
             result_entity_type=_RESULT_ENTITY_TYPE, result_entity_id=binding_id,
         )

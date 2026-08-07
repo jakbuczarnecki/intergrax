@@ -17,6 +17,19 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.connected_source_purge_completion_contracts import (
+    ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ConnectedSourceDeliveryReceiptOwnershipIndexError,
+    ConnectedSourceDeliveryReceiptOwnershipPageV1,
+    ConnectedSourceRecoveryMigrationGateError,
+    ConnectedSourceRecoveryMigrationGateStatusV1,
+    ConnectedSourceRecoveryMigrationGateV1,
+    delivery_receipt_ownership_index_partition,
+    delivery_receipt_ownership_scope_prefix,
+    parse_delivery_receipt_ownership_index_entry,
+    parse_recovery_migration_gate,
+    recovery_migration_gate_partition,
+)
 from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
     ConnectedSourceRecoveryOwnershipIndexEntryV1,
     ConnectedSourceRecoveryOwnershipIndexError,
@@ -359,6 +372,9 @@ class ManagedWorkspaceRepository:
             f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
         )
         self._put(partition_key, row_key, receipt)
+        self.put_connected_source_delivery_receipt_ownership_index_entry(
+            ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(receipt)
+        )
         return receipt
 
     def put_connected_source_delivery_receipt_if_absent(
@@ -369,7 +385,24 @@ class ManagedWorkspaceRepository:
         row_key = (
             f"{receipt.workspace_id}:{receipt.source_id}:{receipt.delivery_id}"
         )
-        return self._put_if_absent(receipt, partition_key=partition_key, row_key=row_key)
+        created = self._put_if_absent(
+            receipt, partition_key=partition_key, row_key=row_key
+        )
+        stored = (
+            receipt
+            if created
+            else self.get_connected_source_delivery_receipt(
+                tenant_id=receipt.tenant_id,
+                workspace_id=receipt.workspace_id,
+                source_id=receipt.source_id,
+                delivery_id=receipt.delivery_id,
+            )
+        )
+        if stored is not None:
+            self.put_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(stored)
+            )
+        return created
 
     def complete_connected_source_delivery_receipt_if_in_progress(
         self,
@@ -379,12 +412,19 @@ class ManagedWorkspaceRepository:
     ) -> bool:
         partition_key = _partition(expected.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT)
         row_key = f"{expected.workspace_id}:{expected.source_id}:{expected.delivery_id}"
-        return self._replace_if_match(
+        replaced = self._replace_if_match(
             expected=expected,
             replacement=replacement,
             partition_key=partition_key,
             row_key=row_key,
         )
+        if replaced:
+            self.put_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(
+                    replacement
+                )
+            )
+        return replaced
 
     def get_connected_source_delivery_receipt(
         self,
@@ -775,10 +815,20 @@ class ManagedWorkspaceRepository:
         source_id: str,
         delivery_id: str,
     ) -> None:
+        receipt = self.get_connected_source_delivery_receipt(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            delivery_id=delivery_id,
+        )
         self._store.delete(
             _partition(tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY_RECEIPT),
             f"{workspace_id}:{source_id}:{delivery_id}",
         )
+        if receipt is not None:
+            self.delete_connected_source_delivery_receipt_ownership_index_entry(
+                ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1.for_receipt(receipt)
+            )
 
     def list_connected_source_delivery_receipts_page(
         self,
@@ -796,6 +846,223 @@ class ManagedWorkspaceRepository:
             row_key_prefix=f"{workspace_id}:{source_id}:",
             cursor=cursor,
         )
+
+    def put_connected_source_delivery_receipt_ownership_index_entry(
+        self,
+        entry: ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ) -> ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_delivery_receipt_ownership_index_entry(existing)
+            if parsed.ownership_scope != entry.ownership_scope or (
+                parsed.delivery_id != entry.delivery_id
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_conflict"
+                )
+            if parsed != entry:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                        "delivery_receipt_ownership_index_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if (
+                        retry is None
+                        or parse_delivery_receipt_ownership_index_entry(retry) != entry
+                    ):
+                        raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                            "delivery_receipt_ownership_index_conflict"
+                        )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                "delivery_receipt_ownership_index_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if (
+                retry is None
+                or parse_delivery_receipt_ownership_index_entry(retry) != entry
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_conflict"
+                )
+        return entry
+
+    def delete_connected_source_delivery_receipt_ownership_index_entry(
+        self,
+        entry: ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1,
+    ) -> bool:
+        record = self._store.get(
+            delivery_receipt_ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_delivery_receipt_ownership_index_entry(record) != entry:
+            raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                "delivery_receipt_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
+
+    def list_connected_source_delivery_receipts_by_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ConnectedSourceDeliveryReceiptOwnershipPageV1:
+        """Exact binding-scoped receipt enumeration via derived ownership index."""
+        validate_document_query_limit(limit)
+        scope = (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        )
+        prefix = delivery_receipt_ownership_scope_prefix(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+        )
+        page = self._store.query(
+            delivery_receipt_ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix,
+            cursor=cursor,
+        )
+        documents: list[DocumentRecord] = []
+        orphan_entries: list[ConnectedSourceDeliveryReceiptOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_delivery_receipt_ownership_index_entry(record)
+            if entry.ownership_scope != scope:
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_scope_mismatch"
+                )
+            canonical = self._store.get(
+                entry.canonical_partition_key,
+                entry.canonical_row_key,
+            )
+            if canonical is None:
+                orphan_entries.append(entry)
+                continue
+            try:
+                receipt = ConnectedSourceDeliveryReceipt.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_reference_mismatch"
+                ) from None
+            if (
+                receipt.tenant_id != tenant_id
+                or receipt.workspace_id != workspace_id
+                or receipt.source_id != source_id
+                or receipt.indexed_source_binding_id != indexed_source_binding_id
+                or receipt.knowledge_source_binding_ref
+                != knowledge_source_binding_ref
+                or receipt.delivery_id != entry.delivery_id
+                or canonical.partition_key != entry.canonical_partition_key
+                or canonical.row_key != entry.canonical_row_key
+            ):
+                raise ConnectedSourceDeliveryReceiptOwnershipIndexError(
+                    "delivery_receipt_ownership_index_reference_mismatch"
+                )
+            documents.append(canonical)
+        return ConnectedSourceDeliveryReceiptOwnershipPageV1(
+            documents=tuple(documents),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
+
+    def put_connected_source_recovery_migration_gate(
+        self,
+        gate: ConnectedSourceRecoveryMigrationGateV1,
+    ) -> ConnectedSourceRecoveryMigrationGateV1:
+        record = gate.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_recovery_migration_gate(existing)
+            if parsed.ownership_scope != gate.ownership_scope:
+                raise ConnectedSourceRecoveryMigrationGateError(
+                    "migration_gate_conflict"
+                )
+            if parsed != gate:
+                if not isinstance(self._store, ConditionalDocumentStore):
+                    raise ConnectedSourceRecoveryMigrationGateError(
+                        "migration_gate_store_unavailable"
+                    )
+                if not self._store.replace_if_match(
+                    expected=existing,
+                    replacement=record,
+                ):
+                    retry = self._store.get(record.partition_key, record.row_key)
+                    if retry is None or parse_recovery_migration_gate(retry) != gate:
+                        raise ConnectedSourceRecoveryMigrationGateError(
+                            "migration_gate_conflict"
+                        )
+            return gate
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceRecoveryMigrationGateError(
+                "migration_gate_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_recovery_migration_gate(retry) != gate:
+                raise ConnectedSourceRecoveryMigrationGateError(
+                    "migration_gate_conflict"
+                )
+        return gate
+
+    def get_connected_source_recovery_migration_gate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+    ) -> ConnectedSourceRecoveryMigrationGateV1 | None:
+        probe = ConnectedSourceRecoveryMigrationGateV1(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            status=ConnectedSourceRecoveryMigrationGateStatusV1.REQUIRED,
+            schema_version=1,
+        )
+        record = self._store.get(
+            recovery_migration_gate_partition(tenant_id),
+            probe.row_key,
+        )
+        if record is None:
+            return None
+        gate = parse_recovery_migration_gate(record)
+        if gate.ownership_scope != (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        ):
+            raise ConnectedSourceRecoveryMigrationGateError(
+                "migration_gate_identity_mismatch"
+            )
+        return gate
 
     # --- Connected source delivery accounting ---
 
