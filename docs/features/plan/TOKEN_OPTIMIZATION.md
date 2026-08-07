@@ -1939,18 +1939,41 @@ qualification was not executed.
 
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
-**Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**.
+**Status:** **TECHNICAL_FAILURE**.
 
-Two repeated local vLLM runs using `Qwen/Qwen2.5-3B-Instruct` were retained as a safe, auditable negative live proof. Offline proof passed `16/16`, runtime safety remained stable, and the two live runs were repeatable, but the selected model failed the behavioral contract in `case-protected-values`, `case-high-risk-lossy-content`, and `case-measure-only`. Public README promotion remains withheld because evaluator success is false and model case-level compliance is only `13/16`.
+The final frozen qualification used `Qwen/Qwen2.5-7B-Instruct-AWQ` with local
+vLLM, `openai_compatible` transport, AWQ quantization, and the canonical
+`proof_vllm_qwen25_7b_awq.toml` configuration. Exactly two runs were executed.
+Each run completed `1/16` cases and had `15/16` technical
+`ROUTER_EXECUTION_FAILED` / `llm_error` failures. The behavioral evaluator
+returned `FAIL` for both runs with case-level compliance `1/16`; no model
+behavior decision was available for the 15 failed cases.
 
-Evidence is retained under `docs/proofs/token_optimization/`. No raw content, protected values, secrets, paths, or provider cache claims are checked in. TOKEN-10H is not closed; changes are required before any promotional wording is considered.
+Both runs had identical decisions and are **STABLE** under the existing
+repeatability criterion. Required risk-case outcomes were:
+
+- `case-protected-values`: expected `exact_only`, low, review `false`; actual
+  configuration/risk/review unavailable because of `llm_error` — **FAIL**.
+- `case-noisy-tool-output`: expected `extractive_only`, medium, review `false`;
+  actual configuration/risk/review unavailable because of `llm_error` — **FAIL**.
+- `case-terminal-log-output`: expected `extractive_only`, medium, review
+  `false`; actual configuration/risk/review unavailable because of `llm_error`
+  — **FAIL**.
+- `case-high-risk-lossy-content`: expected `no_optimization`, high, review
+  `true`; actual configuration/risk/review unavailable because of `llm_error`
+  — **FAIL**.
+
+No manual override was applied. Qwen 3B and larger models were not tested.
+The generated redaction-safe results remain in ignored `.artifacts/` output;
+raw logs, model weights, and caches are not checked in. TOKEN-10H remains
+unqualified and public promotion remains withheld.
 
 Closeout:
 
-- offline proof passed `16/16`
-- runtime safety remained stable
-- two live runs were repeatable
-- the selected local Qwen 2.5 3B model failed the behavioral contract in three cases
+- semantic prequalification passed (`25 passed`)
+- two frozen Qwen 7B AWQ runs completed without input or configuration changes
+- both runs were technically incomplete and repeatable
+- no qualification was granted
 - public README promotion remains blocked
 
 ---
