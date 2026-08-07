@@ -12,7 +12,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.knowledge.contracts.validation import (
+    JsonValue,
+    knowledge_metadata_to_plain,
+)
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     VectorStoreContractError,
@@ -139,7 +142,7 @@ def provider_metadata(
     )
     user_metadata = {
         key: value
-        for key, value in document.metadata.items()
+        for key, value in knowledge_metadata_to_plain(document.metadata).items()
         if key not in SYSTEM_METADATA_KEYS
     }
     return {**user_metadata, **system}

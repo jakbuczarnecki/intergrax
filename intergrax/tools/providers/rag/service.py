@@ -9,6 +9,7 @@ from intergrax.utils import attribute_access
 from typing import Any, List, Sequence
 
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
 from intergrax.rag.retrieval.resolve import resolve_retrieval_service
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
@@ -245,7 +246,8 @@ def _apply_retrieval_poisoning_filter(
 
 
 def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
-    metadata = dict(c.metadata or {})
+    metadata = knowledge_metadata_to_plain(c.metadata or {})
+    metadata.setdefault("document_id", c.id)
     return RagChunkResult(
         id=c.id,
         text=c.text,
@@ -255,7 +257,7 @@ def _to_rag_chunk(c: RetrievalChunk) -> RagChunkResult:
         vector_id=c.vector_id,
         scope=dict(c.scope),
         provenance=dict(c.provenance),
-        user_metadata=dict(c.user_metadata or metadata),
+        user_metadata=knowledge_metadata_to_plain(c.user_metadata or metadata),
         metadata=metadata,
     )
 
@@ -270,7 +272,7 @@ def _to_rag_citation(citation: Citation) -> RagCitationResult:
         page=citation.page,
         score=citation.score,
         excerpt=citation.excerpt,
-        metadata=dict(citation.metadata or {}),
+        metadata=knowledge_metadata_to_plain(citation.metadata or {}),
     )
 
 

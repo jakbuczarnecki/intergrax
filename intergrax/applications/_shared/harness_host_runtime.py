@@ -11,17 +11,6 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from intergrax.harness.application_host import ApplicationHost
 
-from intergrax.applications._shared.environment_wiring import (
-    ApplicationEnvironmentWiring,
-    wire_application_environment,
-)
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
-from intergrax.applications._shared.task_memory_wiring import wire_task_memory_from_profile
-from intergrax.applications._shared.wiring import build_application_registry
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
@@ -33,24 +22,6 @@ from intergrax.applications._shared.application_host_wiring import (
     apply_application_host_wiring,
     apply_hook_runtime_guard_wiring,
 )
-from intergrax.applications._shared.declarative_tool_wiring import (
-    build_declarative_invoker_from_tool_wiring,
-)
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.applications._shared.observability_assembly_resolver import (
-    assert_observability_assembly_valid,
-)
-from intergrax.applications._shared.observability_wiring import wire_application_observability
-from intergrax.applications._shared.reliability_assembly_resolver import (
-    assert_reliability_assembly_valid,
-)
-from intergrax.applications._shared.reliability_wiring import (
-    ApplicationReliabilityWiring,
-    wire_application_reliability,
-)
-from intergrax.applications._shared.security_assembly_resolver import (
-    assert_security_assembly_valid,
-)
 from intergrax.applications._shared.cost_assembly_resolver import (
     assert_cost_assembly_valid,
 )
@@ -61,10 +32,19 @@ from intergrax.applications._shared.cost_wiring import (
 from intergrax.applications._shared.critic_assembly_resolver import (
     assert_critic_assembly_valid,
 )
-from intergrax.applications._shared.critic_tool_wiring import build_critic_eval_tool_client
+from intergrax.applications._shared.critic_tool_wiring import (
+    build_critic_eval_tool_client,
+)
 from intergrax.applications._shared.critic_wiring import (
     ApplicationCriticWiring,
     wire_application_critic,
+)
+from intergrax.applications._shared.declarative_tool_wiring import (
+    build_declarative_invoker_from_tool_wiring,
+)
+from intergrax.applications._shared.environment_wiring import (
+    ApplicationEnvironmentWiring,
+    wire_application_environment,
 )
 from intergrax.applications._shared.evaluation_assembly_resolver import (
     assert_evaluation_assembly_valid,
@@ -80,14 +60,46 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
+from intergrax.applications._shared.nexus_factory import (
+    build_nexus_loop_from_environment,
+)
+from intergrax.applications._shared.observability_assembly_resolver import (
+    assert_observability_assembly_valid,
+)
+from intergrax.applications._shared.observability_wiring import (
+    wire_application_observability,
+)
+from intergrax.applications._shared.reliability_assembly_resolver import (
+    assert_reliability_assembly_valid,
+)
+from intergrax.applications._shared.reliability_wiring import (
+    ApplicationReliabilityWiring,
+    wire_application_reliability,
+)
+from intergrax.applications._shared.security_assembly_resolver import (
+    assert_security_assembly_valid,
+)
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
     wire_application_security,
 )
+from intergrax.applications._shared.task_memory_wiring import (
+    wire_task_memory_from_profile,
+)
+from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 
 
 @dataclass(frozen=True)
@@ -117,6 +129,7 @@ def build_harness_host_runtime(
     environment: ApplicationEnvironmentProfile,
     *,
     settings: Any = None,
+    tenant_id: str | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
@@ -144,6 +157,7 @@ def build_harness_host_runtime(
         resolved_manifest,
         environment,
         settings=settings,
+        tenant_id=tenant_id,
         document_store=document_store,
         boundary_event_buffer=boundary_event_buffer,
     )
@@ -159,7 +173,9 @@ def build_harness_host_runtime(
         integration_profile=environment.integration_profile,
     )
     if use_in_memory_trace:
-        from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
+        from intergrax.runtime.nexus.observability_wiring import (
+            wire_nexus_observability,
+        )
 
         observability = wire_nexus_observability(
             trace_db_path=trace_db_path,
@@ -260,7 +276,9 @@ def build_harness_host_runtime(
         nexus_loop.event_bus,
         environment.observability_profile,
     )
-    from intergrax.applications._shared.reliability_wiring import apply_reliability_governance_wiring
+    from intergrax.applications._shared.reliability_wiring import (
+        apply_reliability_governance_wiring,
+    )
 
     apply_reliability_governance_wiring(nexus_loop, environment)
     return HarnessHostRuntime(

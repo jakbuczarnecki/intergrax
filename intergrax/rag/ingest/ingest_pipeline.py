@@ -5,33 +5,48 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
+from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     copy_parser_runtime_state,
 )
-from intergrax.rag.document_loaders.contracts.base_document_loader import BaseDocumentsLoader
+from intergrax.rag.document_loaders.contracts.base_document_loader import (
+    BaseDocumentsLoader,
+)
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import TRACE_METADATA_KEY
-from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.document_splitters.contracts.base_documents_splitter import (
+    BaseDocumentsSplitter,
+)
+from intergrax.rag.embedding.contracts.base_embedding_manager import (
+    BaseEmbeddingManager,
+)
+from intergrax.rag.governance.embedding_version_policy import (
+    evaluate_ingest_embedding_version,
+)
 from intergrax.rag.graph.contracts.graph_store import GraphStore
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
-from intergrax.rag.governance.embedding_version_policy import evaluate_ingest_embedding_version
-from intergrax.rag.ingest.ingest_policy import semantic_chunking_allowed, sync_ingest_allowed
+from intergrax.rag.indexing.indexing_manager import IndexingManager
+from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
+from intergrax.rag.ingest.ingest_policy import (
+    semantic_chunking_allowed,
+    sync_ingest_allowed,
+)
 from intergrax.rag.ingest.native_document_metadata import (
     add_native_metadata,
     filter_native_metadata,
 )
-from intergrax.rag.indexing.indexing_manager import IndexingManager
-from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.tracking.rag_spans import rag_span
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+    BaseVectorstoreManager,
+)
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
@@ -41,8 +56,8 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 @dataclass(frozen=True)
 class IngestRequest:
     source_path: str
-    base_metadata: Dict[str, Any] = field(default_factory=dict)
-    chunking_strategy_id: Optional[str] = None
+    base_metadata: dict[str, Any] = field(default_factory=dict)
+    chunking_strategy_id: str | None = None
     workspace_id: str | None = None
 
 
@@ -53,10 +68,10 @@ class IngestResult:
     file_size_bytes: int = 0
     async_job_recommended: bool = False
     num_chunks: int = 0
-    vector_ids: List[str] = field(default_factory=list)
-    parser_id: Optional[str] = None
-    parser_trace: Dict[str, Any] = field(default_factory=dict)
-    version_warnings: List[str] = field(default_factory=list)
+    vector_ids: list[str] = field(default_factory=list)
+    parser_id: str | None = None
+    parser_trace: dict[str, Any] = field(default_factory=dict)
+    version_warnings: list[str] = field(default_factory=list)
     reindex_recommended: bool = False
 
 
@@ -68,12 +83,12 @@ class IngestPipeline:
         splitter: BaseDocumentsSplitter,
         embedding_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-        toc_vectorstore: Optional[BaseVectorstoreManager] = None,
-        profile: Optional[RagProfile] = None,
-        contextual_enricher: Optional[ContextualChunkEnricher] = None,
-        graph_store: Optional[GraphStore] = None,
-        llm_for_graph: Optional[LLMAdapter] = None,
-        metadata_callback: Optional[Callable[..., Dict[str, Any]]] = None,
+        toc_vectorstore: BaseVectorstoreManager | None = None,
+        profile: RagProfile | None = None,
+        contextual_enricher: ContextualChunkEnricher | None = None,
+        graph_store: GraphStore | None = None,
+        llm_for_graph: LLMAdapter | None = None,
+        metadata_callback: Callable[..., dict[str, Any]] | None = None,
     ) -> None:
         self._loader = loader
         self._splitter = splitter
@@ -125,7 +140,7 @@ class IngestPipeline:
             if self._profile.embedding_model_version:
                 base_metadata["embedding_model_version"] = self._profile.embedding_model_version
 
-            def _cb(doc: Any, source: str) -> Dict[str, Any]:
+            def _cb(doc: Any, source: str) -> dict[str, Any]:
                 if self._metadata_callback is not None:
                     return filter_native_metadata(self._metadata_callback(doc, source))
                 return filter_native_metadata(base_metadata)
@@ -171,8 +186,8 @@ class IngestPipeline:
                     async_job_recommended=True,
                 )
 
-            parser_trace: Dict[str, Any] = {}
-            parser_id: Optional[str] = None
+            parser_trace: dict[str, Any] = {}
+            parser_id: str | None = None
             first_meta = dict(native_docs[0].metadata)
             if TRACE_METADATA_KEY in first_meta:
                 parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
@@ -251,7 +266,7 @@ class IngestPipeline:
                 num_chunks=len(native_chunks),
                 vector_ids=vector_ids,
                 parser_id=parser_id,
-                parser_trace=parser_trace,
+                parser_trace=knowledge_metadata_to_plain(parser_trace),
                 version_warnings=list(version_policy.warnings),
                 reindex_recommended=version_policy.reindex_enqueued,
             )
