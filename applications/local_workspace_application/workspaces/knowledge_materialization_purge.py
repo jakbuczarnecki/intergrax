@@ -1796,9 +1796,12 @@ class KnowledgeMaterializationPurgeService:
         try:
             manifest_repository._load_immutable(node.descriptor)
         except ConnectedSourceMaterializationManifestConflict as exc:
-            raise KnowledgeMaterializationPurgeError(
-                "BLOCKED_CORRUPT_STATE"
-            ) from exc
+            # MANIFESTS phase intentionally deletes immutables before PUBLICATION_CHAIN.
+            # Missing immutable is therefore expected; identity mismatch still fails closed.
+            if str(exc) != "connected_source_manifest_immutable_missing":
+                raise KnowledgeMaterializationPurgeError(
+                    "BLOCKED_CORRUPT_STATE"
+                ) from exc
         previous_id = node.previous_commit_id
         previous_descriptor = None
         if previous_id is not None:

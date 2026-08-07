@@ -63,13 +63,33 @@ higher sequences supersede the current manifest.
 Immutable commit nodes and manifests are retention-ready only when no
 authoritative head or retained descendant references them, remote-item active
 history has been safely compacted, receipt/replay obligations have expired, and
-the purge operation owns the exact binding. Retention and purge are outside
-this authority.
+the purge operation owns the exact binding.
 
 `DELIVERY_MANIFEST` is the authority for new fenced connected-source
 references. Historical `DELIVERY_RECEIPT` records retain the explicit
 compatibility resolver; connected-source records are never silently treated as
 `LEGACY_IMMEDIATE`. Tombstone activation remains deferred because this sink
 still rejects deletion envelopes; missing page items are not interpreted as
-deletions. The next task is ownership-scoped purge by tenant, workspace and
-indexed-source binding.
+deletions. Active pointers are derived accelerators and cannot independently
+authorize connected-source visibility when the publication fence is
+disabled/detached or when the committed publication chain does not reach the
+candidate.
+
+## Final publication fence closeout invariants
+
+Single publication linearization point: successful same-record fence CAS that
+advances `committed_publication` under the exact current permit and lifecycle
+fence. Before that CAS the immutable manifest, delivery/remote indexes, and
+immutable commit node may already be durable; none of them alone is
+query-visible. After successful CAS no correctness-critical history write is
+required — crash recovery reads the durable head and chain.
+
+Disable/detach rotate lifecycle revision and token on the same CAS boundary; an
+unexpired permit yields `publication_in_progress`, and after disable or purge
+invalidation a stale worker holding an old token, permit, prepared manifest, or
+orphan commit node cannot restore visibility or reacquire authority. Purge first
+invalidates the fence to a detached/disabled tombstone (retaining the
+traversable head), cleans owned materialization, advances the head before
+deleting each commit node, and completes only when the publication head is
+absent. `BLOCKED_LEGACY_MIGRATION` blocks completion without reopening
+publication authority.
