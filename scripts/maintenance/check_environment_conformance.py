@@ -33,7 +33,7 @@ class Check:
 class EnvironmentProfile:
     name: str
     requires_managed_python: bool
-    dependencies: tuple[tuple[str, str | None, bool], ...]
+    dependencies: tuple[tuple[str, str, str | None, bool], ...]
 
 
 _PROFILES = {
