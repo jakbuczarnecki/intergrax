@@ -6,53 +6,52 @@
     "warm_cache_reuse": "UNAVAILABLE"
   },
   "claim_matrix": {
-    "deterministic_high_risk_runtime_enforcement": "PROVEN",
+    "deterministic_high_risk_runtime_enforcement": "NOT_PROVEN",
     "full_model_behavioral_compliance": "NOT_PROVEN",
     "high_risk_recognition_by_model": "NOT_PROVEN",
     "measure_only_final_content_preservation": "PROVEN",
-    "model_case_level_compliance": "PARTIALLY_PROVEN — 13/16",
+    "model_case_level_compliance": "PARTIALLY_PROVEN — 14/16",
     "offline_proof_correctness": "PROVEN",
     "production_wide_savings": "NOT_CLAIMED",
-    "protected_value_preservation_at_final_runtime_boundary": "NOT_PROVEN",
+    "protected_value_preservation_at_final_runtime_boundary": "PROVEN",
     "provider_cache_reuse": "UNAVAILABLE",
-    "runtime_safety_for_16_case_synthetic_corpus": "PROVEN",
+    "runtime_safety_for_16_case_synthetic_corpus": "NOT_PROVEN",
     "stable_repeated_outcomes": "PROVEN for two runs under this configuration",
     "universal_model_provider_behavior": "NOT_CLAIMED"
   },
-  "generated_at": "2026-08-06T13:49:31.204946+00:00",
+  "generated_at": "2026-08-07T09:38:47.869844+00:00",
   "live": {
     "case_count_per_run": 16,
     "evaluation_success": false,
     "gate_counts": {
-      "FAIL": 17,
-      "PASS": 336,
-      "UNAVAILABLE": 8
+      "FAIL": 8,
+      "PASS": 341,
+      "UNAVAILABLE": 12
     },
     "identical_gate_counts": true,
     "model_behavioral_success": false,
-    "model_case_level_compliance": "13/16",
+    "model_case_level_compliance": "14/16",
     "model_mismatch_case_ids": [
-      "case-protected-values",
       "case-high-risk-lossy-content",
-      "case-measure-only"
+      "case-warm-cache"
     ],
     "run_ids": [
-      "bb5bbab04c71476aa49f06f3ec32a5d5",
-      "9349ef2923294bc093fc2240268bc999"
+      "run-1",
+      "run-2"
     ],
     "runs": 2,
-    "runtime_safety_success": true,
+    "runtime_safety_success": false,
     "technical_execution_success": true,
     "technical_failed_count": 0
   },
-  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
   "offline": {
     "case_count": 16,
     "case_level_compliance": "16/16",
     "evaluation_success": true,
     "required_fail_count": 0
   },
-  "proof_id": "token-optimization-vllm-smoke",
+  "proof_id": "token-optimization-qwen25-7b-awq-qualification",
   "provider": "local vLLM",
   "repeatability": {
     "case_level_differences": 0,

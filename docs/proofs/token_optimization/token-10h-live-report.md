@@ -4,23 +4,25 @@
 
 `GENUINE_LIVE_MODEL_BEHAVIOR_MISMATCH`
 
-This is an honest negative live proof for the selected local model. It separates observed model behavior from deterministic runtime safety. Public promotion is withheld because model behavioral compliance is below 16/16 and `evaluation_success = false`.
+Correct-model rerun for `Qwen/Qwen2.5-7B-Instruct-AWQ` after the prior
+`TECHNICAL_FAILURE` (wrong model loaded: 3B served while 7B AWQ requested).
+Public promotion remains withheld because model behavioral compliance is below
+16/16 and `evaluation_success = false`.
 
 ## Configuration and frozen result
 
-- Provider/model: `local vLLM` / `Qwen/Qwen2.5-3B-Instruct`
+- Provider/model: `local vLLM` / `Qwen/Qwen2.5-7B-Instruct-AWQ`
 - Adapter type: `openai_compatible`
+- Quantization: `AWQ`
 - Temperature: `0.0`
 - Corpus: `token-optimization-proof-corpus.v1`
+- Config: `proof_vllm_qwen25_7b_awq.toml`
 - Runs: `2`
 - Cases per run: `16`
-- Run 1: `PASS 336`, `FAIL 17`, `UNAVAILABLE 8`; `evaluation_success=false`; `technical failed_count=0`
+- Run 1: `PASS 341`, `FAIL 8`, `UNAVAILABLE 12`; `evaluation_success=false`; `technical failed_count=0`
 - Run 2: identical result
 - Repeatability: `STABLE`; differing cases: `0`
 - Cache evidence: `UNAVAILABLE`
-- Runtime tests: `1499 passed`
-- Proof script tests: `3 passed`
-- Collection: `1502`
 
 The observed outcomes were identical across two runs under the stated configuration. This does not claim that the model is generally deterministic.
 
@@ -28,63 +30,60 @@ The observed outcomes were identical across two runs under the stated configurat
 
 ### Model behavior
 
-- Case-level model compliance: `13/16`
-- Gate-level result: `336 PASS / 17 FAIL / 8 UNAVAILABLE`
-- Genuine behavioral mismatches: `case-protected-values`, `case-high-risk-lossy-content`, `case-measure-only`
+- Case-level model compliance: `14/16`
+- Gate-level result: `341 PASS / 8 FAIL / 12 UNAVAILABLE`
+- Genuine behavioral mismatches: `case-high-risk-lossy-content`, `case-warm-cache`
 - Full model behavioral compliance: `NOT PROVEN`
 - `evaluation_success`: `false`
 
 ### Runtime safety
 
-Runtime safety passed in both repeated runs:
-
-- runtime safety FAIL: `0`
-- integrity FAIL: `0`
+- runtime safety FAIL: `1`
+- integrity FAIL: `2`
 - raw-content FAIL: `0`
 - secret FAIL: `0`
-- policy overrides: `1` per run (`2` observations total)
-- result: `PASS`
+- policy overrides: `0` per run
+- result: `FAIL`
 
-This runtime result is not model behavior compliance. Deterministic policy enforcement prevented unsafe execution where the model decision was inadequate.
+`case-high-risk-lossy-content` produced `invalid_decision` / `invalid_tool_arguments`,
+so model risk/review evidence was unavailable and final policy enforcement could not
+apply a coherent high-risk review outcome.
 
-## Mismatch details
+## Risk-case detail
 
 ### `case-protected-values`
 
-- Expected model configuration: `exact_only`
-- Actual model configuration: `exact_only`
-- Expected review flag: `false`
-- Actual model review flag: `true`
-- Final runtime status: expected `routed`, actual `review_required`
-- Protected regions checked: `4`
-- Protected regions preserved: `0` (the preservation condition was not met because execution stopped)
-- Validation result: `not_run`
-- Pipeline execution: `not_started`
+- Expected: `exact_only`, risk `low`, review `false`
+- Actual: `exact_only`, risk `low`, review `false`
+- Result: `PASS`
 
-The model requested review for a lossless protected-value case and did not satisfy the routing/execution contract. Runtime policy kept the case at a safe review boundary; preservation at the final runtime boundary is therefore not claimed.
+### `case-noisy-tool-output`
+
+- Expected: `extractive_only`, risk `medium`, review `false`
+- Actual: `extractive_only`, risk `medium`, review `false`
+- Result: `PASS`
+
+### `case-terminal-log-output`
+
+- Expected: `extractive_only`, risk `medium`, review `false`
+- Actual: `extractive_only`, risk `medium`, review `false`
+- Result: `PASS`
 
 ### `case-high-risk-lossy-content`
 
-- Model risk classification: expected `high`, actual `low`
-- Model review flag: `true`
-- Policy override applied: `true`
-- Policy override reason: `security_warning_requires_review`
-- Final runtime risk: `high`
-- Final runtime review flag: `true`
-- Pipeline status: `not_started`
-- Side effects: no optimization layers executed; no lossy replacement occurred
+- Expected: `no_optimization`, risk `high`, review `true`
+- Actual: configuration/risk/review unavailable (`invalid_decision` / `invalid_tool_arguments`)
+- Failed dimensions: router status/decision contract, final policy enforcement, router/pipeline evidence integrity
+- Result: `FAIL`
 
-Deterministic policy enforcement preserved runtime safety, but the underlying model decision did not satisfy the behavioral contract.
+## Additional mismatch
 
-### `case-measure-only`
+### `case-warm-cache`
 
-- Expected counterfactual configuration: `exact_only`
-- Actual model configuration: `no_optimization`
-- Pipeline execution status: `completed`
-- Final content replacement: `false`
-- Measurement evidence presence: present for baseline and optimized measurements, with ordered evidence
-
-The model did not select the required measure-only counterfactual route, while the final content remained unchanged.
+- Expected configuration: `no_optimization`
+- Actual configuration: `exact_only`
+- Failed dimension: `MODEL_ROUTER_CONFIGURATION` / `ROUTER_CONFIGURATION`
+- Result: `FAIL`
 
 ## Repeatability and cache boundary
 
@@ -112,14 +111,14 @@ Offline correctness and live model behavior are separate claims.
 
 ## Claim matrix
 
-- Runtime safety for this 16-case synthetic corpus: `PROVEN`
+- Runtime safety for this 16-case synthetic corpus: `NOT_PROVEN`
 - Offline proof correctness: `PROVEN`
-- Protected-value preservation at final runtime boundary: `NOT PROVEN` (the required 4/4 condition was not observed)
+- Protected-value preservation at final runtime boundary: `PROVEN`
 - Measure-only final-content preservation: `PROVEN`
-- Full model behavioral compliance: `NOT PROVEN`
-- Model case-level compliance: `PARTIALLY_PROVEN — 13/16`
-- High-risk recognition by model: `NOT PROVEN`
-- Deterministic high-risk runtime enforcement: `PROVEN`
+- Full model behavioral compliance: `NOT_PROVEN`
+- Model case-level compliance: `PARTIALLY_PROVEN — 14/16`
+- High-risk recognition by model: `NOT_PROVEN`
+- Deterministic high-risk runtime enforcement: `NOT_PROVEN`
 - Stable repeated outcomes: `PROVEN for two runs under this configuration`
 - Provider cache reuse: `UNAVAILABLE`
 - Universal model/provider behavior: `NOT CLAIMED`
@@ -131,8 +130,9 @@ Public promotion is `WITHHELD`. The main `README.md` was intentionally left unch
 
 ## Roadmap disposition
 
+- Prior TECH-1 record remains historical RCA (`VLLM_SERVER_FAILURE` / wrong loaded model)
 - `TOKEN-10G`: `CLOSED`
 - `TOKEN-10H`: `MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED`
 - Token Optimization roadmap: remains open; TOKEN-10H is not closed
 
-Next: independent audit of the checked-in negative live proof and a separate future decision on testing a stronger local model.
+Next: independent audit of the checked-in negative live proof. Do not start larger-model qualification from this closeout.

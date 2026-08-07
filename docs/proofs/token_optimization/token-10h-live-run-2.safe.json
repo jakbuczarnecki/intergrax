@@ -2,19 +2,18 @@
   "adapter_type": "openai_compatible",
   "aggregate": {
     "gate_counts": {
-      "FAIL": 17,
-      "PASS": 336,
-      "UNAVAILABLE": 8
+      "FAIL": 8,
+      "PASS": 341,
+      "UNAVAILABLE": 12
     },
-    "integrity_failure_count": 0,
+    "integrity_failure_count": 2,
     "model_mismatch_case_ids": [
-      "case-protected-values",
       "case-high-risk-lossy-content",
-      "case-measure-only"
+      "case-warm-cache"
     ],
-    "policy_override_count": 1,
+    "policy_override_count": 0,
     "raw_content_failure_count": 0,
-    "runtime_safety_failure_count": 0,
+    "runtime_safety_failure_count": 1,
     "secret_failure_count": 0,
     "technical_failed_count": 0
   },
@@ -31,7 +30,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -329,7 +328,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -626,7 +625,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -914,7 +913,7 @@
     },
     {
       "actual_execution_status": {
-        "final_runtime_status": "review_required",
+        "final_runtime_status": "invalid_decision",
         "pipeline_completed": null,
         "pipeline_status": "not_started",
         "receipt_completion_status": null
@@ -923,7 +922,7 @@
       "digests": {
         "protected_input_identity": "10e93dede8fdd10e46f8308754e4dad7d09612b5b8c7abed869bb70c41f8af10",
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -932,32 +931,32 @@
       },
       "final_runtime_gate_outcomes": [
         {
-          "actual_safe_summary": "review_required",
+          "actual_safe_summary": "invalid_decision",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_STATUS",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
         },
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_CONFIGURATION",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "protected_or_high_risk",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_REASON",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "True",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "True",
           "gate_id": "ROUTER_REVIEW_REQUIREMENT",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -974,32 +973,32 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "review_required",
+          "actual_safe_summary": "invalid_decision",
           "expected_safe_summary": "<redacted>",
           "gate_id": "FINAL_ROUTER_STATUS",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
         },
         {
-          "actual_safe_summary": "safe final outcome",
-          "expected_safe_summary": "security warning final safety",
+          "actual_safe_summary": "unsafe or inconsistent final outcome",
+          "expected_safe_summary": "safe final outcome",
           "gate_id": "FINAL_POLICY_ENFORCEMENT",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "FINAL_SAFETY_OUTCOME_NOT_ENFORCED",
+          "status": "FAIL"
         },
         {
-          "actual_safe_summary": "consistent typed router execution evidence",
-          "expected_safe_summary": "consistent typed router execution evidence",
+          "actual_safe_summary": "invalid or incomplete evidence",
+          "expected_safe_summary": "consistent typed execution or terminal non-execution evidence",
           "gate_id": "ROUTER_EVIDENCE_INTEGRITY",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "ROUTER_EVIDENCE_PARTIAL",
+          "status": "FAIL"
         },
         {
           "actual_safe_summary": "not_started",
           "expected_safe_summary": "not_started",
           "gate_id": "PIPELINE_COMPLETION",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "NOT_STARTED_EXPECTATION_NOT_SATISFIED",
+          "status": "FAIL"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -1016,11 +1015,11 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "None",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "False",
           "gate_id": "PIPELINE_FALLBACK",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -1037,11 +1036,11 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "coherent terminal non-execution evidence",
-          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "actual_safe_summary": "invalid or contradictory evidence",
+          "expected_safe_summary": "consistent execution or terminal non-execution evidence",
           "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "PIPELINE_EVIDENCE_INCONSISTENT",
+          "status": "FAIL"
         },
         {
           "actual_safe_summary": "2",
@@ -1163,48 +1162,53 @@
       "model_behavioral_failure": true,
       "model_gate_outcomes": [
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_CONFIGURATION",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "clean_no_op",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_REASON",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "low",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_RISK",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "True",
+          "actual_safe_summary": "unavailable",
           "expected_safe_summary": "True",
           "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "EVIDENCE_UNAVAILABLE",
+          "status": "UNAVAILABLE"
         }
       ],
-      "policy_override_applied": true,
-      "policy_override_reason": "security_warning_requires_review",
+      "policy_override_applied": false,
+      "policy_override_reason": null,
       "protected_counts": {
         "checked": 2,
         "preserved": 0,
         "validated": 0,
         "validation_status": "not_run"
       },
-      "runtime_safety_failure": false,
+      "runtime_safety_failure": true,
       "safe_reason_codes": [
+        "EVIDENCE_UNAVAILABLE",
         "EXPECTATION_SATISFIED",
+        "FINAL_SAFETY_OUTCOME_NOT_ENFORCED",
         "NOT_APPLICABLE",
+        "NOT_STARTED_EXPECTATION_NOT_SATISFIED",
+        "PIPELINE_EVIDENCE_INCONSISTENT",
+        "ROUTER_EVIDENCE_PARTIAL",
         "VALUE_NOT_ALLOWED",
-        "protected_regions_require_review"
+        "invalid_tool_arguments"
       ],
       "status": "FAIL"
     },
@@ -1219,7 +1223,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -1507,7 +1511,7 @@
     },
     {
       "actual_execution_status": {
-        "final_runtime_status": "no_optimization",
+        "final_runtime_status": "routed",
         "pipeline_completed": true,
         "pipeline_status": "completed",
         "receipt_completion_status": true
@@ -1516,7 +1520,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -1525,25 +1529,25 @@
       },
       "final_runtime_gate_outcomes": [
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "exact_only",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_CONFIGURATION",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "clean_no_op",
+          "actual_safe_summary": "exact_duplicates",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_REASON",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "False",
@@ -1567,11 +1571,11 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "FINAL_ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "safe final outcome",
@@ -1598,8 +1602,8 @@
           "actual_safe_summary": "<redacted>",
           "expected_safe_summary": "<redacted>",
           "gate_id": "PIPELINE_REQUIRED_LAYERS",
-          "reason_code": "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "<redacted>",
@@ -1665,7 +1669,7 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "73",
+          "actual_safe_summary": "45",
           "expected_safe_summary": "required",
           "gate_id": "OPTIMIZED_MEASUREMENT",
           "reason_code": "EXPECTATION_SATISFIED",
@@ -1749,28 +1753,28 @@
         },
         "optimized": {
           "available": true,
-          "count": 73
+          "count": 45
         },
         "ratios": {
-          "optimized_to_baseline": 1.0,
-          "reduction_ratio": 0.0
+          "optimized_to_baseline": 0.616438,
+          "reduction_ratio": 0.383562
         }
       },
-      "model_behavioral_failure": true,
+      "model_behavioral_failure": false,
       "model_gate_outcomes": [
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "exact_only",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_CONFIGURATION",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "clean_no_op",
+          "actual_safe_summary": "exact_duplicates",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_REASON",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "low",
@@ -1798,11 +1802,9 @@
       "runtime_safety_failure": false,
       "safe_reason_codes": [
         "EXPECTATION_SATISFIED",
-        "NOT_APPLICABLE",
-        "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
-        "VALUE_NOT_ALLOWED"
+        "NOT_APPLICABLE"
       ],
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "actual_execution_status": {
@@ -1815,7 +1817,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -2407,7 +2409,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -2704,7 +2706,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -2992,16 +2994,16 @@
     },
     {
       "actual_execution_status": {
-        "final_runtime_status": "review_required",
-        "pipeline_completed": null,
-        "pipeline_status": "not_started",
-        "receipt_completion_status": null
+        "final_runtime_status": "routed",
+        "pipeline_completed": true,
+        "pipeline_status": "completed",
+        "receipt_completion_status": true
       },
       "case_id": "case-protected-values",
       "digests": {
         "protected_input_identity": "0a766c237bc88b0d84581c73afd4b026ccc8d668b4ade486a01bf937bc76735f",
-        "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "protected_preserved_identity": "0a766c237bc88b0d84581c73afd4b026ccc8d668b4ade486a01bf937bc76735f",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -3010,11 +3012,11 @@
       },
       "final_runtime_gate_outcomes": [
         {
-          "actual_safe_summary": "review_required",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "exact_only",
@@ -3031,11 +3033,11 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "True",
+          "actual_safe_summary": "False",
           "expected_safe_summary": "False",
           "gate_id": "ROUTER_REVIEW_REQUIREMENT",
-          "reason_code": "REVIEW_REQUIREMENT_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -3052,11 +3054,11 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "review_required",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "FINAL_ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "safe final outcome",
@@ -3073,18 +3075,18 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "not_started",
+          "actual_safe_summary": "completed",
           "expected_safe_summary": "completed",
           "gate_id": "PIPELINE_COMPLETION",
-          "reason_code": "EXECUTION_STATE_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "<redacted>",
           "expected_safe_summary": "<redacted>",
           "gate_id": "PIPELINE_REQUIRED_LAYERS",
-          "reason_code": "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "<redacted>",
@@ -3094,7 +3096,7 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "None",
+          "actual_safe_summary": "False",
           "expected_safe_summary": "False",
           "gate_id": "PIPELINE_FALLBACK",
           "reason_code": "EXPECTATION_SATISFIED",
@@ -3115,8 +3117,8 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "coherent terminal non-execution evidence",
-          "expected_safe_summary": "coherent terminal non-execution evidence",
+          "actual_safe_summary": "consistent pipeline execution evidence",
+          "expected_safe_summary": "consistent pipeline execution evidence",
           "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
           "reason_code": "EXPECTATION_SATISFIED",
           "status": "PASS"
@@ -3129,39 +3131,39 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "0",
+          "actual_safe_summary": "4",
           "expected_safe_summary": "4",
           "gate_id": "PROTECTED_REGION_PRESERVATION",
-          "reason_code": "PROTECTED_PRESERVATION_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
-          "expected_safe_summary": "digest equality",
+          "actual_safe_summary": "passed",
+          "expected_safe_summary": "passed",
           "gate_id": "PROTECTED_REGION_VALIDATION",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "262",
           "expected_safe_summary": "required",
           "gate_id": "BASELINE_MEASUREMENT",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "220",
           "expected_safe_summary": "required",
           "gate_id": "OPTIMIZED_MEASUREMENT",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "ordered",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MEASUREMENT_ORDERING",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "available",
@@ -3229,16 +3231,19 @@
       ],
       "measurement_counts_ratios": {
         "baseline": {
-          "available": false,
-          "count": null
+          "available": true,
+          "count": 262
         },
         "optimized": {
-          "available": false,
-          "count": null
+          "available": true,
+          "count": 220
         },
-        "ratios": null
+        "ratios": {
+          "optimized_to_baseline": 0.839695,
+          "reduction_ratio": 0.160305
+        }
       },
-      "model_behavioral_failure": true,
+      "model_behavioral_failure": false,
       "model_gate_outcomes": [
         {
           "actual_safe_summary": "exact_only",
@@ -3255,41 +3260,34 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "medium",
+          "actual_safe_summary": "low",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_RISK",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "True",
+          "actual_safe_summary": "False",
           "expected_safe_summary": "False",
           "gate_id": "MODEL_ROUTER_REVIEW_REQUIREMENT",
-          "reason_code": "REVIEW_REQUIREMENT_MISMATCH",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         }
       ],
       "policy_override_applied": false,
       "policy_override_reason": null,
       "protected_counts": {
         "checked": 4,
-        "preserved": 0,
-        "validated": 0,
-        "validation_status": "not_run"
+        "preserved": 4,
+        "validated": 4,
+        "validation_status": "passed"
       },
       "runtime_safety_failure": false,
       "safe_reason_codes": [
-        "EVIDENCE_UNAVAILABLE",
-        "EXECUTION_STATE_MISMATCH",
         "EXPECTATION_SATISFIED",
-        "NOT_APPLICABLE",
-        "PROTECTED_PRESERVATION_MISMATCH",
-        "REQUIRED_OR_ALLOWED_LAYER_MISMATCH",
-        "REVIEW_REQUIREMENT_MISMATCH",
-        "VALUE_NOT_ALLOWED",
-        "model_requested_review"
+        "NOT_APPLICABLE"
       ],
-      "status": "FAIL"
+      "status": "PASS"
     },
     {
       "actual_execution_status": {
@@ -3302,7 +3300,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -3599,7 +3597,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -3896,7 +3894,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -4193,7 +4191,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -4450,7 +4448,7 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "low",
+          "actual_safe_summary": "medium",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_RISK",
           "reason_code": "EXPECTATION_SATISFIED",
@@ -4481,7 +4479,7 @@
     },
     {
       "actual_execution_status": {
-        "final_runtime_status": "no_optimization",
+        "final_runtime_status": "routed",
         "pipeline_completed": true,
         "pipeline_status": "completed",
         "receipt_completion_status": true
@@ -4490,7 +4488,7 @@
       "digests": {
         "protected_input_identity": null,
         "protected_preserved_identity": null,
-        "stable_prefix_identity": "2b66940effafdff7984117dfbace5a455c38ebd97ddca0a061721dc21d03a93d",
+        "stable_prefix_identity": "a813c2eede3c218c2b3fdd36a0d7470f13eb902ea2222ca13776df818b1b29ca",
         "tool_schema_hash": "dc17504508b389192340c89ffde7d6c208d1a129444cd445700dd3ab7fd080af"
       },
       "expected_execution": {
@@ -4499,18 +4497,18 @@
       },
       "final_runtime_gate_outcomes": [
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_STATUS",
           "reason_code": "EXPECTATION_SATISFIED",
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "exact_only",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_CONFIGURATION",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
         },
         {
           "actual_safe_summary": "clean_no_op",
@@ -4541,7 +4539,7 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "routed",
           "expected_safe_summary": "<redacted>",
           "gate_id": "FINAL_ROUTER_STATUS",
           "reason_code": "EXPECTATION_SATISFIED",
@@ -4730,14 +4728,14 @@
           "reduction_ratio": 0.0
         }
       },
-      "model_behavioral_failure": false,
+      "model_behavioral_failure": true,
       "model_gate_outcomes": [
         {
-          "actual_safe_summary": "no_optimization",
+          "actual_safe_summary": "exact_only",
           "expected_safe_summary": "<redacted>",
           "gate_id": "MODEL_ROUTER_CONFIGURATION",
-          "reason_code": "EXPECTATION_SATISFIED",
-          "status": "PASS"
+          "reason_code": "VALUE_NOT_ALLOWED",
+          "status": "FAIL"
         },
         {
           "actual_safe_summary": "clean_no_op",
@@ -4773,9 +4771,10 @@
       "safe_reason_codes": [
         "EVIDENCE_UNAVAILABLE",
         "EXPECTATION_SATISFIED",
-        "NOT_APPLICABLE"
+        "NOT_APPLICABLE",
+        "VALUE_NOT_ALLOWED"
       ],
-      "status": "UNAVAILABLE"
+      "status": "FAIL"
     }
   ],
   "corpus": {
@@ -4783,13 +4782,13 @@
     "version": "token-optimization-proof-corpus.v1"
   },
   "evaluation_success": false,
-  "generated_at": "2026-08-06T13:49:31.204946+00:00",
-  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "generated_at": "2026-08-07T09:38:47.869844+00:00",
+  "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
   "model_behavioral_success": false,
-  "proof_id": "token-optimization-vllm-smoke",
+  "proof_id": "token-optimization-qwen25-7b-awq-qualification",
   "provider": "local vLLM",
-  "run_id": "9349ef2923294bc093fc2240268bc999",
-  "runtime_safety_success": true,
+  "run_id": "run-2",
+  "runtime_safety_success": false,
   "schema_version": "token-10h-safe-run.v1",
   "technical_execution_success": true,
   "temperature": 0.0

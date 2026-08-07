@@ -1939,51 +1939,54 @@ qualification was not executed.
 
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
-**Status:** **TECHNICAL_FAILURE**.
+**Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**. TOKEN-10H is not closed.
 
-The final frozen qualification used `Qwen/Qwen2.5-7B-Instruct-AWQ` with local
-vLLM, `openai_compatible` transport, AWQ quantization, and the canonical
-`proof_vllm_qwen25_7b_awq.toml` configuration. Exactly two runs were executed.
-Each run completed `1/16` cases and had `15/16` technical
-`ROUTER_EXECUTION_FAILED` / `llm_error` failures. The behavioral evaluator
-returned `FAIL` for both runs with case-level compliance `1/16`; no model
-behavior decision was available for the 15 failed cases.
+**Historical TECH-1 RCA (retained):** an earlier frozen attempt failed as
+**TECHNICAL_FAILURE** because the live vLLM endpoint served
+`Qwen/Qwen2.5-3B-Instruct` while the qualification adapter requested
+`Qwen/Qwen2.5-7B-Instruct-AWQ`, producing HTTP `404` / `openai.NotFoundError`
+and `15/16` `llm_error` rows. That infrastructure mismatch is not model
+behavior.
 
-**TECH-1 root cause (not model behavior):** the live vLLM endpoint at
-`http://127.0.0.1:8100/v1` served a different loaded model
-(`Qwen/Qwen2.5-3B-Instruct`, compose default) while the qualification adapter
-requested `Qwen/Qwen2.5-7B-Instruct-AWQ`. Direct OpenAI-compatible calls and
-`VllmChatAdapter` both returned HTTP `404` / `openai.NotFoundError`
-(`model does not exist`). The single completed case was `policy-disabled`
-(preflight block; no LLM call). The first failing case was `short-clean`.
-Layer: `VLLM_SERVER_FAILURE`. No adapter/prompt/corpus/threshold change is
-warranted; reload vLLM with `VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct-AWQ` and
-rerun TOKEN-10H. Do not treat the 15 `llm_error` rows as model-behavior fails.
+**Final correct-model rerun:** vLLM was restarted with
+`VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct-AWQ`. `/v1/models` served exactly that
+identifier. Smoke (OpenAI-compatible + `short-clean`) succeeded. Semantic
+prequalification passed (`25 passed`). Exactly two frozen qualification runs
+used `proof_vllm_qwen25_7b_awq.toml` with no prompt/corpus/threshold/runtime
+changes between runs.
 
-Both runs had identical decisions and are **STABLE** under the existing
-repeatability criterion. Required risk-case outcomes were:
+Both runs are **STABLE** and returned behavioral evaluator
+`PASS 341 / FAIL 8 / UNAVAILABLE 12`, `evaluation_success=false`, technical
+failed count `0`, model compliance `14/16`. Remaining semantic mismatches:
+
+- `case-high-risk-lossy-content`: expected `no_optimization` / high / review
+  `true`; actual `invalid_decision` / `invalid_tool_arguments` (model failed
+  the required tool/schema decision contract) — **FAIL**.
+- `case-warm-cache`: expected configuration `no_optimization`; actual
+  `exact_only` — **FAIL**.
+
+Required risk-case outcomes on the correct model:
 
 - `case-protected-values`: expected `exact_only`, low, review `false`; actual
-  configuration/risk/review unavailable because of `llm_error` — **FAIL**.
+  `exact_only`, low, review `false` — **PASS**.
 - `case-noisy-tool-output`: expected `extractive_only`, medium, review `false`;
-  actual configuration/risk/review unavailable because of `llm_error` — **FAIL**.
+  actual `extractive_only`, medium, review `false` — **PASS**.
 - `case-terminal-log-output`: expected `extractive_only`, medium, review
-  `false`; actual configuration/risk/review unavailable because of `llm_error`
-  — **FAIL**.
+  `false`; actual `extractive_only`, medium, review `false` — **PASS**.
 - `case-high-risk-lossy-content`: expected `no_optimization`, high, review
-  `true`; actual configuration/risk/review unavailable because of `llm_error`
-  — **FAIL**.
+  `true`; actual unavailable (`invalid_decision`) — **FAIL**.
 
 No manual override was applied. Qwen 3B and larger models were not tested.
-The generated redaction-safe results remain in ignored `.artifacts/` output;
-raw logs, model weights, and caches are not checked in. TOKEN-10H remains
-unqualified and public promotion remains withheld.
+Checked-in safe evidence lives under `docs/proofs/token_optimization/`; raw
+logs, model weights, and caches are not checked in. Public README promotion
+remains withheld.
 
 Closeout:
 
 - semantic prequalification passed (`25 passed`)
+- correct 7B AWQ model load proved before qualification
 - two frozen Qwen 7B AWQ runs completed without input or configuration changes
-- both runs were technically incomplete and repeatable
+- both runs were repeatable (`STABLE`) with semantic mismatches, not HTTP/model-id infrastructure failure
 - no qualification was granted
 - public README promotion remains blocked
 
