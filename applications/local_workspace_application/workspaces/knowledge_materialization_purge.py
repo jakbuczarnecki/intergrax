@@ -521,6 +521,17 @@ class KnowledgeMaterializationPurgeService:
         saved = self._replace_state(record, next_state)
         return KnowledgeMaterializationPurgeResultV1(state=saved)
 
+    def get_state(
+        self,
+        request: KnowledgeMaterializationPurgeRequestV1,
+    ) -> KnowledgeMaterializationPurgeStateV1 | None:
+        """Read the durable purge projection without advancing the purge."""
+        purge_id = knowledge_materialization_purge_id(request)
+        record = self._read_state(request.tenant_id, purge_id)
+        if record is None:
+            return None
+        return self._parse_state(record, request, purge_id)
+
     def _step(
         self, state: KnowledgeMaterializationPurgeStateV1
     ) -> KnowledgeMaterializationPurgeStateV1:

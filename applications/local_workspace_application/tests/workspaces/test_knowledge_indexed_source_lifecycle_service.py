@@ -5,16 +5,9 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
-
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.conversation_channel.slack.integration import SLACK_CONVERSATION_CHANNEL_PROVIDER_ID
-from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import SLACK_CONVERSATION_SOURCE_KIND
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding, KnowledgeSourceBindingStatus, KnowledgeSourceScope
-from intergrax.runtime.vendor_knowledge.tenant_connections import SafeTenantConnectionV1, TenantConnectionAdministrativeStatus
 from local_workspace_application.workspaces.connected_source_ids import (
     connected_source_id,
     connected_source_id_from_semantic_hash,
@@ -54,7 +47,9 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
     WorkspaceKnowledgeMutationRecoveryDispositionV1,
     WorkspaceKnowledgeStageStateV1,
 )
-from local_workspace_application.workspaces.knowledge_configuration_service import WorkspaceKnowledgeConfigurationService
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
 from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
     AttachWorkspaceConnectionCommand,
     WorkspaceConnectionAttachmentService,
@@ -62,11 +57,16 @@ from local_workspace_application.workspaces.knowledge_connection_attachment_serv
 from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
     ActivateWorkspaceIndexedSourceCommand,
     DisableWorkspaceIndexedSourceCommand,
+    IndexedSourceLifecycleCommand,
+    IndexedSourceLifecycleStateV1,
+    IndexedSourceRetryCommand,
+    IndexedSourceSyncCommand,
     WorkspaceIndexedSourceLifecycleError,
     WorkspaceIndexedSourceLifecycleService,
 )
 from local_workspace_application.workspaces.models import (
     Workspace,
+    WorkspaceOperationStatus,
     WorkspaceSource,
     WorkspaceSourceStatus,
     WorkspaceSourceType,
@@ -74,6 +74,30 @@ from local_workspace_application.workspaces.models import (
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
+
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
+    SLACK_CONVERSATION_SOURCE_KIND,
+)
+from intergrax.runtime.vendor_knowledge.bindings import (
+    KnowledgeSourceBinding,
+    KnowledgeSourceBindingStatus,
+    KnowledgeSourceScope,
+)
+from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
+    DocumentStoreKnowledgeSyncPublicationFenceRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    SafeTenantConnectionV1,
+    TenantConnectionAdministrativeStatus,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -139,6 +163,38 @@ class _TenantBindingPort:
         )
 
 
+class _ImmediatePurge:
+    def __init__(self, repository: ManagedWorkspaceRepository) -> None:
+        self._fence = DocumentStoreKnowledgeSyncPublicationFenceRepository(
+            repository.document_store
+        )
+        self._state = None
+
+    def start_or_resume(self, request) -> object:
+        current = self._fence.read_fence(
+            tenant_id=request.tenant_id,
+            binding_id=request.knowledge_source_binding_ref,
+        )
+        assert current is not None
+        if not current.detached:
+            self._fence.detach(
+                tenant_id=request.tenant_id,
+                binding_id=request.knowledge_source_binding_ref,
+                lifecycle_revision=current.lifecycle_revision + 1,
+                lifecycle_token="detach-token",
+                expected_revision=current.lifecycle_revision,
+            )
+        self._state = SimpleNamespace(
+            status="completed",
+            last_error_code=None,
+            updated_at=_NOW,
+        )
+        return SimpleNamespace(state=self._state)
+
+    def get_state(self, request) -> object | None:
+        return self._state
+
+
 def _workspace() -> Workspace:
     return Workspace(
         workspace_id=_WORKSPACE, tenant_id=_TENANT, name="Workspace", status=WorkspaceStatus.ACTIVE,
@@ -146,7 +202,12 @@ def _workspace() -> Workspace:
     )
 
 
-def _build_stack(*, port: _TenantBindingPort | None = None, mutation_ids: list[str] | None = None):
+def _build_stack(
+    *,
+    port: _TenantBindingPort | None = None,
+    mutation_ids: list[str] | None = None,
+    purge_service=None,
+):
     store = InMemoryDocumentStore()
     repo = ManagedWorkspaceRepository(store)
     repo.put_workspace(_workspace())
@@ -174,6 +235,7 @@ def _build_stack(*, port: _TenantBindingPort | None = None, mutation_ids: list[s
     binding_port = port or _TenantBindingPort()
     lifecycle = WorkspaceIndexedSourceLifecycleService(
         repository=repo, configuration_service=config, mutation_engine=engine, tenant_binding_port=binding_port,
+        purge_service=purge_service,
     )
     return attach, lifecycle, repo, binding_port, engine
 
@@ -227,6 +289,96 @@ def test_initial_create_applied_active_source() -> None:
     source = repo.get_source(tenant_id=_TENANT, workspace_id=_WORKSPACE, source_id=_SOURCE_ID)
     assert source is not None
     assert source.source_type is WorkspaceSourceType.CONNECTED_SOURCE
+
+
+def test_production_lifecycle_projection_sync_disable_enable() -> None:
+    attach, lifecycle, repo, _, _ = _build_stack()
+    rev = _attach(attach)
+    attached = lifecycle.attach(_activate_cmd(expected_revision=rev))
+    assert attached.view.lifecycle_state is IndexedSourceLifecycleStateV1.READY
+    requested = lifecycle.request_sync(
+        IndexedSourceSyncCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id=_BINDING_ID,
+            expected_revision=attached.view.lifecycle_revision,
+        )
+    )
+    assert requested.operation_id is not None
+    assert requested.view.lifecycle_state is IndexedSourceLifecycleStateV1.SYNCING
+    operation = repo.get_operation(tenant_id=_TENANT, operation_id=requested.operation_id)
+    assert operation is not None
+    repo.put_operation(
+        operation.model_copy(
+            update={
+                "status": WorkspaceOperationStatus.FAILED,
+                "error": "sync_failed",
+                "error_code": "sync_failed",
+            }
+        )
+    )
+    failed = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    assert failed.sync_state.value == "failed"
+    retried = lifecycle.retry_sync(
+        IndexedSourceRetryCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id=_BINDING_ID,
+            operation_id=requested.operation_id,
+            expected_revision=failed.lifecycle_revision,
+        )
+    )
+    assert retried.operation_id != requested.operation_id
+    disabled = lifecycle.disable(
+        IndexedSourceLifecycleCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id=_BINDING_ID,
+            expected_revision=failed.lifecycle_revision,
+            idempotency_key_hash=_SHA256_C,
+        )
+    )
+    assert disabled.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    enabled = lifecycle.enable(
+        IndexedSourceLifecycleCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id=_BINDING_ID,
+            expected_revision=disabled.view.lifecycle_revision,
+            idempotency_key_hash=_SHA256_E,
+        )
+    )
+    assert enabled.view.lifecycle_state is IndexedSourceLifecycleStateV1.SYNCING
+
+
+def test_detach_is_durable_and_enable_after_detach_is_forbidden() -> None:
+    attach, lifecycle, repo, _, _ = _build_stack()
+    rev = _attach(attach)
+    lifecycle.activate_indexed_source(_activate_cmd(expected_revision=rev))
+    lifecycle._purge_service = _ImmediatePurge(repo)
+    detached = lifecycle.detach(
+        IndexedSourceLifecycleCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            indexed_source_binding_id=_BINDING_ID,
+            expected_revision=1,
+        )
+    )
+    assert detached.view.lifecycle_state is IndexedSourceLifecycleStateV1.DETACHED
+    with pytest.raises(WorkspaceIndexedSourceLifecycleError, match="indexed_source_detached"):
+        lifecycle.enable(
+            IndexedSourceLifecycleCommand(
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                indexed_source_binding_id=_BINDING_ID,
+                expected_revision=detached.view.lifecycle_revision,
+                idempotency_key_hash=_SHA256_E,
+            )
+        )
 
 
 def test_active_noop_existing_result() -> None:

@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from local_workspace_application.workspaces.ask_repository import WorkspaceAskRepository
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    is_workspace_source_product_visible,
+)
 from local_workspace_application.workspaces.managed_files import ManagedFileCleanupPort
 from local_workspace_application.workspaces.models import (
     Workspace,
@@ -25,11 +28,10 @@ from local_workspace_application.workspaces.path_policy import (
     SourcePathPolicyError,
     validate_local_folder_source_path,
 )
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    is_workspace_source_product_visible,
-)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.vector_cleanup import WorkspaceVectorCleanupPort
+from local_workspace_application.workspaces.vector_cleanup import (
+    WorkspaceVectorCleanupPort,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -259,9 +261,7 @@ class ManagedWorkspaceService:
         )
         if source is None:
             raise LookupError("source_not_found")
-        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER:
-            pass
-        elif source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
+        if source.source_type is WorkspaceSourceType.LOCAL_FOLDER or source.source_type is WorkspaceSourceType.CONNECTED_SOURCE:
             pass
         else:
             raise ValueError("source_sync_unsupported_for_source_type")
@@ -282,6 +282,7 @@ class ManagedWorkspaceService:
             source_id=source_id,
             operation_type=WorkspaceOperationType.SOURCE_SYNC,
             status=WorkspaceOperationStatus.QUEUED,
+            created_at=_utc_now(),
         )
         return self._repository.put_operation(operation)
 
