@@ -12,6 +12,10 @@ from intergrax.applications._shared.rag_runtime_bridge import (
     apply_rag_stack_to_runtime_config,
     resolve_rag_stack_for_environment,
 )
+from intergrax.tools.providers.rag.scope import (
+    resolve_tenant_scoped_vectorstore,
+    vectorstore_tenant_id,
+)
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile, ContextProfile
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
@@ -92,6 +96,30 @@ def test_materialize_runtime_config_wires_rag_managers_from_environment_wiring()
     assert config.enable_rag is True
     assert config.vectorstore_manager is not None
     assert config.retrieval_service is not None
+
+
+def test_rag_enabled_host_wires_tenant_neutral_prerequisites() -> None:
+    register_default_integrations()
+    settings = LabApplicationSettings.from_env()
+    env = build_lab_environment_profile(settings)
+    wiring = wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        conformance_check=False,
+    )
+    context = wiring.tool_wiring.wiring_context
+
+    assert env.context_profile.enable_rag is True
+    assert context.embedding_manager is not None
+    assert context.rag_profile is not None
+    assert context.vectorstore_manager is None
+    assert context.integration_profile is not None
+
+    tenant_manager = resolve_tenant_scoped_vectorstore(context, "tenant-lazy")
+
+    assert tenant_manager is not None
+    assert vectorstore_tenant_id(tenant_manager) == "tenant-lazy"
+    assert context.extras["tenant_vectorstore_managers"]["tenant-lazy"] is tenant_manager
 
 
 def test_runtime_requests_bind_rag_managers_to_separate_tenants() -> None:

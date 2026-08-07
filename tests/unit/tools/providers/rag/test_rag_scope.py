@@ -65,6 +65,7 @@ class _Cfg:
 
 class _StoreStub:
     def __init__(self, tenant_id: str) -> None:
+        self._tenant_id = tenant_id
         self.cfg = _Cfg(tenant_id=tenant_id)
 
 
@@ -115,6 +116,70 @@ def test_resolve_tenant_scoped_vectorstore_rebinds_when_wired_tenant_differs(
     assert created == ["lkw-smoke"]
 
 
+def test_resolve_tenant_scoped_vectorstore_bootstraps_and_isolates_tenants(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created: dict[str, VectorstoreManager] = {}
+
+    def _fake_create(*, tenant_id: str | None = None, profile: Any = None, **_: Any):
+        assert profile is not None
+        assert tenant_id is not None
+        manager = VectorstoreManager(_StoreStub(tenant_id))
+        created[tenant_id] = manager
+        return manager
+
+    monkeypatch.setattr(
+        "intergrax.tools.providers.rag.scope.create_vectorstore_manager",
+        _fake_create,
+    )
+
+    ctx = ToolWiringContext(integration_profile=IntegrationProfile())
+    tenant_a_first = resolve_tenant_scoped_vectorstore(ctx, "tenant-a")
+    tenant_a_second = resolve_tenant_scoped_vectorstore(ctx, "tenant-a")
+    tenant_b = resolve_tenant_scoped_vectorstore(ctx, "tenant-b")
+
+    assert tenant_a_first is created["tenant-a"]
+    assert tenant_a_second is tenant_a_first
+    assert tenant_b is created["tenant-b"]
+    assert tenant_b is not tenant_a_first
+    assert tenant_a_first is not None
+    assert tenant_b is not None
+    assert tenant_a_first.bound_scope == VectorStoreScope(tenant_id="tenant-a")
+    assert tenant_b.bound_scope == VectorStoreScope(tenant_id="tenant-b")
+
+
+def test_resolve_tenant_scoped_vectorstore_fails_closed_without_tenant() -> None:
+    ctx = ToolWiringContext(
+        vectorstore_manager=VectorstoreManager(_StoreStub("wired")),
+        integration_profile=IntegrationProfile(),
+    )
+
+    assert resolve_tenant_scoped_vectorstore(ctx, None) is None
+    assert "tenant_vectorstore_managers" not in ctx.extras
+
+
+def test_resolve_tenant_scoped_vectorstore_cache_is_runtime_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _fake_create(*, tenant_id: str | None = None, **_: Any):
+        assert tenant_id is not None
+        return VectorstoreManager(_StoreStub(tenant_id))
+
+    monkeypatch.setattr(
+        "intergrax.tools.providers.rag.scope.create_vectorstore_manager",
+        _fake_create,
+    )
+
+    ctx_a = ToolWiringContext(integration_profile=IntegrationProfile())
+    ctx_b = ToolWiringContext(integration_profile=IntegrationProfile())
+    manager_a = resolve_tenant_scoped_vectorstore(ctx_a, "tenant-a")
+    manager_b = resolve_tenant_scoped_vectorstore(ctx_b, "tenant-a")
+
+    assert manager_a is not manager_b
+    assert ctx_a.extras["tenant_vectorstore_managers"]["tenant-a"] is manager_a
+    assert ctx_b.extras["tenant_vectorstore_managers"]["tenant-a"] is manager_b
+
+
 def test_vectorstore_tenant_id_reads_provider_cfg() -> None:
     assert vectorstore_tenant_id(VectorstoreManager(_StoreStub("tenant-a"))) == "tenant-a"
 
@@ -122,6 +187,7 @@ def test_vectorstore_tenant_id_reads_provider_cfg() -> None:
 def test_vectorstore_tenant_id_unwraps_integration_adapter() -> None:
     class _Bridge:
         def __init__(self) -> None:
+            self._tenant_id = "default"
             self._config = _Cfg(tenant_id="default")
             self._inner = _StoreStub("default")
 
@@ -136,7 +202,9 @@ def test_vectorstore_tenant_id_reads_qdrant_integration_bridge() -> None:
         QdrantIntegrationConfig(collection_name="local_workspace", tenant_id="lkw-smoke"),
         _StoreStub("default"),
     )
-    assert vectorstore_tenant_id(VectorstoreManager(bridge)) == "lkw-smoke"
+    assert vectorstore_tenant_id(
+        VectorstoreManager(bridge, scope=VectorStoreScope(tenant_id="lkw-smoke"))
+    ) == "lkw-smoke"
 
 
 class _FakeEmbeddingManager:
@@ -157,6 +225,7 @@ class _FakeEmbeddingManager:
 
 class _RecordingVectorstore:
     def __init__(self, tenant_id: str) -> None:
+        self._tenant_id = tenant_id
         self.cfg = _Cfg(tenant_id=tenant_id)
         self.added_tenants: list[str | None] = []
 

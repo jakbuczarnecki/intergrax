@@ -141,6 +141,7 @@ class Task(BaseModel):
             session_id=self.session_id or f"sess_{uuid4().hex}",
             agent_id=self.agent_id,
             message=self.message,
+            workspace_id=self.metadata.get("workspace_id"),
             metadata=metadata,
         )
 

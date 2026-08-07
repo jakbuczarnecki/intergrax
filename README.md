@@ -104,6 +104,25 @@ First run may download Docker images and the configured local model; duration de
 
 ---
 
+## Run tests
+
+The repository configures a lightweight default test group, so a fresh checkout
+uses the project environment instead of a globally installed `pytest`:
+
+```powershell
+uv sync --frozen
+uv run pytest tests/unit/runtime/vendor_knowledge/test_plugin_contract.py
+```
+
+For the minimal CI regression gate, use the same dependency set as GitHub:
+
+```powershell
+uv sync --extra dev-ci --frozen
+uv run pytest tests/unit -m "gate and not no_ci"
+```
+
+---
+
 ## Why this matters
 
 Building an impressive AI demo is relatively easy. Operating a controlled application that a team can review and trust is harder.

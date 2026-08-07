@@ -23,6 +23,7 @@ from intergrax.applications._shared.integration_wiring import (
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.rag_runtime_bridge import (
+    resolve_rag_profile_for_environment,
     resolve_rag_stack_for_environment,
 )
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
@@ -53,6 +54,9 @@ from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
     resolve_rag_stack_for_memory_wiring,
+)
+from intergrax.rag.embedding.bootstrap.default_embedding_engine import (
+    create_default_embedding_manager,
 )
 from intergrax.applications._shared.notify_tool_wiring import (
     wire_scheduled_notification_tool_binding,
@@ -165,6 +169,15 @@ def wire_application_environment(
     )
 
     rag_stack = None
+    host_embedding_manager = None
+    host_rag_profile = None
+    if env.context_profile.enable_rag:
+        host_rag_profile = resolve_rag_profile_for_environment(
+            env,
+            integration_profile=resolved_integration,
+        )
+        if tenant_id is None:
+            host_embedding_manager = create_default_embedding_manager()
     if tenant_id is not None:
         rag_stack = resolve_rag_stack_for_memory_wiring(
             env,
@@ -279,12 +292,12 @@ def wire_application_environment(
         else None,
         embedding_manager=rag_stack.embedding_manager
         if rag_stack is not None
-        else None,
+        else host_embedding_manager,
         retriever_manager=rag_stack.retriever_manager
         if rag_stack is not None
         else None,
         reranker_manager=rag_stack.reranker_manager if rag_stack is not None else None,
-        rag_profile=rag_stack.profile if rag_stack is not None else None,
+        rag_profile=rag_stack.profile if rag_stack is not None else host_rag_profile,
         retrieval_service=rag_stack.retrieval_service
         if rag_stack is not None
         else None,

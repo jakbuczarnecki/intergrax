@@ -67,12 +67,13 @@ def resolve_tenant_scoped_vectorstore(
 ) -> BaseVectorstoreManager | None:
     """Return a vectorstore manager whose provider tenant matches ``tenant_id`` when set."""
     manager = ctx.vectorstore_manager
-    if manager is None or not tenant_id:
-        return manager
+    if not tenant_id:
+        return None
 
-    wired_tenant = vectorstore_tenant_id(manager)
-    if wired_tenant is not None and wired_tenant == tenant_id:
-        return manager
+    if manager is not None:
+        wired_tenant = vectorstore_tenant_id(manager)
+        if wired_tenant is not None and wired_tenant == tenant_id:
+            return manager
 
     profile = ctx.integration_profile
     if profile is None:

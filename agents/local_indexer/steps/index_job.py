@@ -180,15 +180,19 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
         )
         for path in validated
     ]
-    num_chunks = sum(int(item.get("num_chunks") or 0) for item in ingested if item.get("status") == "success")
+    successful_ingests = [
+        item
+        for item in ingested
+        if item.get("status") == "success" and item.get("used") is True
+    ]
+    num_chunks = sum(int(item.get("num_chunks") or 0) for item in successful_ingests)
     vector_ids: list[str] = []
-    for item in ingested:
-        if item.get("status") == "success":
-            vector_ids.extend(list(item.get("vector_ids") or []))
+    for item in successful_ingests:
+        vector_ids.extend(list(item.get("vector_ids") or []))
 
-    used = any(item.get("status") == "success" for item in ingested)
-    failed = [item for item in ingested if item.get("status") != "success"]
-    success_count = sum(1 for item in ingested if item.get("status") == "success")
+    used = bool(successful_ingests)
+    failed = [item for item in ingested if item not in successful_ingests]
+    success_count = len(successful_ingests)
     first_tool_reason = next(
         (str(item.get("reason")).strip() for item in failed if item.get("reason")),
         None,
