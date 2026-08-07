@@ -4,14 +4,15 @@
 - Provider/model: `local vLLM` / `Qwen/Qwen2.5-7B-Instruct-AWQ`
 - Runs: `2`
 - Offline: `PASS`
-- Runtime safety: `FAIL`
+- Runtime safety: `PASS`
 - Model behavioral: `PARTIAL` (`14/16`)
 - Public promotion: `WITHHELD`
 
-The checked-in evidence is a safe, auditable negative live proof after correct
-7B AWQ model load. It records model mismatches separately from infrastructure
-failures and does not publish raw content, protected values, secrets, paths, or
-provider cache claims.
+Latest checked-in evidence is the post-SAFETY-1 frozen qualification rerun.
+Historical pre-SAFETY-1 `046c3ad6` evidence remains the truthful prior negative
+proof (runtime safety was FAIL then). Model mismatches are recorded separately
+from deterministic runtime fail-safe success. Raw content, protected values,
+secrets, paths, and provider cache claims are not published.
 
 Artifacts:
 

@@ -6,7 +6,7 @@
     "warm_cache_reuse": "UNAVAILABLE"
   },
   "claim_matrix": {
-    "deterministic_high_risk_runtime_enforcement": "NOT_PROVEN",
+    "deterministic_high_risk_runtime_enforcement": "PROVEN",
     "full_model_behavioral_compliance": "NOT_PROVEN",
     "high_risk_recognition_by_model": "NOT_PROVEN",
     "measure_only_final_content_preservation": "PROVEN",
@@ -15,18 +15,18 @@
     "production_wide_savings": "NOT_CLAIMED",
     "protected_value_preservation_at_final_runtime_boundary": "PROVEN",
     "provider_cache_reuse": "UNAVAILABLE",
-    "runtime_safety_for_16_case_synthetic_corpus": "NOT_PROVEN",
+    "runtime_safety_for_16_case_synthetic_corpus": "PROVEN",
     "stable_repeated_outcomes": "PROVEN for two runs under this configuration",
     "universal_model_provider_behavior": "NOT_CLAIMED"
   },
-  "generated_at": "2026-08-07T09:38:47.869844+00:00",
+  "generated_at": "2026-08-07T10:34:12.267471+00:00",
   "live": {
     "case_count_per_run": 16,
     "evaluation_success": false,
     "gate_counts": {
-      "FAIL": 8,
-      "PASS": 341,
-      "UNAVAILABLE": 12
+      "FAIL": 3,
+      "PASS": 349,
+      "UNAVAILABLE": 9
     },
     "identical_gate_counts": true,
     "model_behavioral_success": false,
@@ -40,7 +40,7 @@
       "run-2"
     ],
     "runs": 2,
-    "runtime_safety_success": false,
+    "runtime_safety_success": true,
     "technical_execution_success": true,
     "technical_failed_count": 0
   },

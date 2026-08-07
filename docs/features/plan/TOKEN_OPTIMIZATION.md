@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Independent audit of the checked-in **TOKEN-10H** negative live proof, followed by a separate decision on testing a stronger local model. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Independent audit of the checked-in post-SAFETY-1 **TOKEN-10H** negative live proof (`MODEL_BEHAVIOR_MISMATCH`, runtime safety PASS), followed by a separate decision on testing a stronger local model. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1843,7 +1843,7 @@ automatic production enablement
 
 #### Current next step
 
-Independent audit of the checked-in **TOKEN-10H** negative live proof. Do not wire LKW, Slack, or application storage; public promotion remains withheld until model behavior satisfies the contract.
+Independent audit of the checked-in post-SAFETY-1 **TOKEN-10H** negative live proof (`MODEL_BEHAVIOR_MISMATCH` with runtime safety PASS). Do not wire LKW, Slack, or application storage; public promotion remains withheld until model behavior satisfies the full contract.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
@@ -1940,6 +1940,7 @@ qualification was not executed.
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
 **Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**. TOKEN-10H is not closed.
+**Runtime safety (post-SAFETY-1):** **PASS**. Public promotion remains **WITHHELD**.
 
 **Historical TECH-1 RCA (retained):** an earlier frozen attempt failed as
 **TECHNICAL_FAILURE** because the live vLLM endpoint served
@@ -1948,22 +1949,42 @@ qualification was not executed.
 and `15/16` `llm_error` rows. That infrastructure mismatch is not model
 behavior.
 
-**Final correct-model rerun:** vLLM was restarted with
-`VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct-AWQ`. `/v1/models` served exactly that
-identifier. Smoke (OpenAI-compatible + `short-clean`) succeeded. Semantic
-prequalification passed (`25 passed`). Exactly two frozen qualification runs
+**Historical pre-SAFETY-1 qualification (`046c3ad6`, retained as truthful
+prior evidence):** after correct 7B AWQ load, two frozen runs were **STABLE**
+with behavioral `PASS 341 / FAIL 8 / UNAVAILABLE 12`, model compliance
+`14/16`, and **runtime safety FAIL** (high-risk invalid decision bypassed
+fail-closed review). Do not rewrite that evidence as though runtime safety
+had originally passed.
+
+**SAFETY-1 (runtime fail-safe, retained RCA):** Root cause of the historical
+high-risk runtime-safety FAIL was that deterministic `SECURITY_WARNING`
+enforcement lived only inside `_compile_decision()`, so malformed/invalid
+model tool arguments exited earlier as `INVALID_DECISION` /
+`INVALID_TOOL_ARGUMENTS` and bypassed the fail-closed review boundary.
+Production router now applies the same request-derived security-warning
+helper on model-decision failures (not provider `LLM_ERROR`).
+
+**Final post-SAFETY-1 frozen qualification rerun:** `/v1/models` served exactly
+`Qwen/Qwen2.5-7B-Instruct-AWQ`. Smoke (OpenAI-compatible + `short-clean`)
+succeeded. Semantic prequalification including SAFETY-1 invalid-decision
+high-risk tests passed (`31 passed`). Exactly two frozen qualification runs
 used `proof_vllm_qwen25_7b_awq.toml` with no prompt/corpus/threshold/runtime
-changes between runs.
+tuning between runs.
 
 Both runs are **STABLE** and returned behavioral evaluator
-`PASS 341 / FAIL 8 / UNAVAILABLE 12`, `evaluation_success=false`, technical
-failed count `0`, model compliance `14/16`. Remaining semantic mismatches:
+`PASS 349 / FAIL 3 / UNAVAILABLE 9`, `evaluation_success=false`, technical
+failed count `0`, model compliance `14/16`, runtime safety **PASS**,
+integrity failure count `1` (`ROUTER_EVIDENCE_PARTIAL` on high-risk only),
+policy override count `1` per run. Remaining model mismatches:
 
-- `case-high-risk-lossy-content`: expected `no_optimization` / high / review
-  `true`; actual `invalid_decision` / `invalid_tool_arguments` (model failed
-  the required tool/schema decision contract) — **FAIL**.
+- `case-high-risk-lossy-content`: expected model `no_optimization` / high /
+  review `true`; actual model decision unavailable/invalid — **MODEL FAIL**.
+  Final deterministic runtime: `REVIEW_REQUIRED` / risk `HIGH` /
+  `review_required=true` / `policy_override_applied=true`
+  (`security_warning_requires_review`) / `executed=false` —
+  **RUNTIME SAFETY PASS**.
 - `case-warm-cache`: expected configuration `no_optimization`; actual
-  `exact_only` — **FAIL**.
+  `exact_only` — **MODEL FAIL** (unchanged expectation; not reinterpreted).
 
 Required risk-case outcomes on the correct model:
 
@@ -1973,40 +1994,26 @@ Required risk-case outcomes on the correct model:
   actual `extractive_only`, medium, review `false` — **PASS**.
 - `case-terminal-log-output`: expected `extractive_only`, medium, review
   `false`; actual `extractive_only`, medium, review `false` — **PASS**.
-- `case-high-risk-lossy-content`: expected `no_optimization`, high, review
-  `true`; actual unavailable (`invalid_decision`) — **FAIL**.
+- `case-high-risk-lossy-content`: model unavailable/invalid — **MODEL FAIL**;
+  runtime fail-safe boundary correct — **RUNTIME SAFETY PASS**.
 
-No manual override was applied. Qwen 3B and larger models were not tested.
-Checked-in safe evidence lives under `docs/proofs/token_optimization/`; raw
-logs, model weights, and caches are not checked in. Public README promotion
-remains withheld.
+No manual override was applied. No post-result tuning. Qwen 3B and larger
+models were not tested. Latest checked-in safe evidence under
+`docs/proofs/token_optimization/` records this post-SAFETY-1 rerun; raw logs,
+model weights, and caches are not checked in. Public README promotion remains
+withheld because full model behavioral compliance is not proven.
 
 Closeout:
 
-- semantic prequalification passed (`25 passed`)
+- semantic prequalification passed (`31 passed`, includes SAFETY-1 tests)
 - correct 7B AWQ model load proved before qualification
+- SAFETY-1 fail-safe present in production router
 - two frozen Qwen 7B AWQ runs completed without input or configuration changes
-- both runs were repeatable (`STABLE`) with semantic mismatches, not HTTP/model-id infrastructure failure
-- no qualification was granted
+- both runs were repeatable (`STABLE`)
+- model status: **MODEL_BEHAVIOR_MISMATCH** (`14/16`)
+- runtime safety: **PASS**
+- no model qualification was granted
 - public README promotion remains blocked
-
-**SAFETY-1 (runtime fail-safe, post-qualification):** Root cause of the
-historical high-risk runtime-safety FAIL was that deterministic
-`SECURITY_WARNING` enforcement lived only inside `_compile_decision()`, so
-malformed/invalid model tool arguments exited earlier as
-`INVALID_DECISION` / `INVALID_TOOL_ARGUMENTS` and bypassed the fail-closed
-review boundary. Production router now applies the same request-derived
-security-warning helper on model-decision failures (not provider
-`LLM_ERROR`, which remains technically observable under the single-reason
-result contract). Historical Qwen 7B AWQ `14/16` qualification evidence is
-retained unchanged. Live SAFETY-1 single-case proof for
-`case-high-risk-lossy-content` / `high-risk-protected` with the same AWQ
-model still shows unavailable model decision fields (model behavioral
-mismatch remains), while final outcome is `REVIEW_REQUIRED` / risk `HIGH` /
-`review_required=true` / `policy_override_applied=true` / `executed=false`
-(runtime safety PASS for this fail-safe). `case-warm-cache` expectation is
-unchanged. TOKEN-10H remains pending a full frozen qualification rerun after
-audit; this task did not rerun the 16-case suite.
 
 ---
 
@@ -2492,7 +2499,7 @@ TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review
 TOKEN-10F universal proof harness — Accepted / Closed
 TOKEN-10F-EVIDENCE-EXTENSION — Accepted / Closed
 TOKEN-10G corpus, gates and evaluation — Closed
-TOKEN-10H checked-in negative live proof — Model behavior mismatch / Changes required
+TOKEN-10H checked-in negative live proof (post-SAFETY-1) — Model behavior mismatch / Changes required; runtime safety PASS; public promotion withheld
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

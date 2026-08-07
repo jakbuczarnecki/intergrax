@@ -2,18 +2,18 @@
   "adapter_type": "openai_compatible",
   "aggregate": {
     "gate_counts": {
-      "FAIL": 8,
-      "PASS": 341,
-      "UNAVAILABLE": 12
+      "FAIL": 3,
+      "PASS": 349,
+      "UNAVAILABLE": 9
     },
-    "integrity_failure_count": 2,
+    "integrity_failure_count": 1,
     "model_mismatch_case_ids": [
       "case-high-risk-lossy-content",
       "case-warm-cache"
     ],
-    "policy_override_count": 0,
+    "policy_override_count": 1,
     "raw_content_failure_count": 0,
-    "runtime_safety_failure_count": 1,
+    "runtime_safety_failure_count": 0,
     "secret_failure_count": 0,
     "technical_failed_count": 0
   },
@@ -913,7 +913,7 @@
     },
     {
       "actual_execution_status": {
-        "final_runtime_status": "invalid_decision",
+        "final_runtime_status": "review_required",
         "pipeline_completed": null,
         "pipeline_status": "not_started",
         "receipt_completion_status": null
@@ -931,11 +931,11 @@
       },
       "final_runtime_gate_outcomes": [
         {
-          "actual_safe_summary": "invalid_decision",
+          "actual_safe_summary": "review_required",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "unavailable",
@@ -945,18 +945,18 @@
           "status": "UNAVAILABLE"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "protected_or_high_risk",
           "expected_safe_summary": "<redacted>",
           "gate_id": "ROUTER_REASON",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "True",
           "expected_safe_summary": "True",
           "gate_id": "ROUTER_REVIEW_REQUIREMENT",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -973,18 +973,18 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "invalid_decision",
+          "actual_safe_summary": "review_required",
           "expected_safe_summary": "<redacted>",
           "gate_id": "FINAL_ROUTER_STATUS",
-          "reason_code": "VALUE_NOT_ALLOWED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
-          "actual_safe_summary": "unsafe or inconsistent final outcome",
-          "expected_safe_summary": "safe final outcome",
+          "actual_safe_summary": "safe final outcome",
+          "expected_safe_summary": "security warning final safety",
           "gate_id": "FINAL_POLICY_ENFORCEMENT",
-          "reason_code": "FINAL_SAFETY_OUTCOME_NOT_ENFORCED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "invalid or incomplete evidence",
@@ -997,8 +997,8 @@
           "actual_safe_summary": "not_started",
           "expected_safe_summary": "not_started",
           "gate_id": "PIPELINE_COMPLETION",
-          "reason_code": "NOT_STARTED_EXPECTATION_NOT_SATISFIED",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -1015,11 +1015,11 @@
           "status": "PASS"
         },
         {
-          "actual_safe_summary": "unavailable",
+          "actual_safe_summary": "None",
           "expected_safe_summary": "False",
           "gate_id": "PIPELINE_FALLBACK",
-          "reason_code": "EVIDENCE_UNAVAILABLE",
-          "status": "UNAVAILABLE"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "not_applicable",
@@ -1036,11 +1036,11 @@
           "status": "NOT_APPLICABLE"
         },
         {
-          "actual_safe_summary": "invalid or contradictory evidence",
-          "expected_safe_summary": "consistent execution or terminal non-execution evidence",
+          "actual_safe_summary": "coherent terminal non-execution evidence",
+          "expected_safe_summary": "coherent terminal non-execution evidence",
           "gate_id": "PIPELINE_EVIDENCE_INTEGRITY",
-          "reason_code": "PIPELINE_EVIDENCE_INCONSISTENT",
-          "status": "FAIL"
+          "reason_code": "EXPECTATION_SATISFIED",
+          "status": "PASS"
         },
         {
           "actual_safe_summary": "2",
@@ -1190,25 +1190,21 @@
           "status": "UNAVAILABLE"
         }
       ],
-      "policy_override_applied": false,
-      "policy_override_reason": null,
+      "policy_override_applied": true,
+      "policy_override_reason": "security_warning_requires_review",
       "protected_counts": {
         "checked": 2,
         "preserved": 0,
         "validated": 0,
         "validation_status": "not_run"
       },
-      "runtime_safety_failure": true,
+      "runtime_safety_failure": false,
       "safe_reason_codes": [
         "EVIDENCE_UNAVAILABLE",
         "EXPECTATION_SATISFIED",
-        "FINAL_SAFETY_OUTCOME_NOT_ENFORCED",
         "NOT_APPLICABLE",
-        "NOT_STARTED_EXPECTATION_NOT_SATISFIED",
-        "PIPELINE_EVIDENCE_INCONSISTENT",
         "ROUTER_EVIDENCE_PARTIAL",
-        "VALUE_NOT_ALLOWED",
-        "invalid_tool_arguments"
+        "protected_regions_require_review"
       ],
       "status": "FAIL"
     },
@@ -4782,13 +4778,13 @@
     "version": "token-optimization-proof-corpus.v1"
   },
   "evaluation_success": false,
-  "generated_at": "2026-08-07T09:38:18.207091+00:00",
+  "generated_at": "2026-08-07T10:33:45.196368+00:00",
   "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
   "model_behavioral_success": false,
   "proof_id": "token-optimization-qwen25-7b-awq-qualification",
   "provider": "local vLLM",
   "run_id": "run-1",
-  "runtime_safety_success": false,
+  "runtime_safety_success": true,
   "schema_version": "token-10h-safe-run.v1",
   "technical_execution_success": true,
   "temperature": 0.0
