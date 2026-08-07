@@ -25,6 +25,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --extra dev-ci --frozen
+
       - name: Require repository metadata token
         env:
           REPO_METADATA_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}
@@ -38,4 +46,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPO_METADATA_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python .github/repo-management/sync_github_repository_metadata.py --apply
+        run: uv run --frozen python .github/repo-management/sync_github_repository_metadata.py --apply

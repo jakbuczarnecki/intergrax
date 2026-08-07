@@ -30,7 +30,7 @@ scripts/ci/test.bat gate
 uv run python scripts/audit/generate_domain_audit_prompts.py
 
 # Harness maintenance gate
-python scripts/maintenance/check_harness_no_getattr.py
+uv run python scripts/maintenance/check_harness_no_getattr.py
 ```
 
 ## Guidelines
