@@ -53,6 +53,14 @@ local uv-managed base-interpreter provenance. CI may provision Python through
 `setup-uv` or runner infrastructure. Neither profile proves optional or heavy
 integration dependencies, external services, GPU/CUDA, or every test suite.
 
+Operational rule: if a task failure appears environment-related, run the
+appropriate checker first. Report `BLOCKED_ENVIRONMENT` only when that checker
+fails on a reported structural invariant, or when the checker itself cannot
+run. If it passes, classify the failure precisely as task dependency,
+optional-heavy dependency, external service, GPU/accelerator, test/code, or
+another established non-structural category. Missing optional or heavy
+packages outside the profile do not make the canonical `.venv` unhealthy.
+
 ## Guidelines
 
 - Do not add new scripts directly to the top-level `scripts/` directory.
