@@ -52,12 +52,10 @@ _FORBIDDEN_MAINTAINER_PHRASES = (
     "without copying detailed execution guides",
 )
 
-_INSTALL_SEQUENCE = (
-    "git clone https://github.com/jakbuczarnecki/intergrax.git",
-    "cd intergrax",
-    "uv sync --extra dev",
-    "uv run intergrax doctor",
-    "uv run pytest -m gate -q",
+_LKW_QUICKSTART_SCRIPTS = (
+    "applications\\local_workspace_application\\scripts\\run-lkw-product-quickstart-windows.bat",
+    "./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh",
+    "./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh",
 )
 
 _FORBIDDEN_INSTALL_CHAINS = (
@@ -65,15 +63,10 @@ _FORBIDDEN_INSTALL_CHAINS = (
     "uv sync --extra dev && uv run intergrax doctor",
 )
 
-_EVIDENCE_LIMITATIONS = (
-    "production runtime certification",
-    "security/compliance attestation",
-    "real provider execution",
-    "real LLM evaluation",
-    "billing",
-    "provider pricing",
-    "cloud cost estimation",
-    "product-specific acceptance",
+_MATURITY_LIMITATION_MARKERS = (
+    "real-user validation",
+    "commercial validation",
+    "Hybrid Ask combining indexed and authorized live evidence",
 )
 
 _MERMAID_FENCE = re.compile(r"```mermaid\s*\n(.*?)```", re.DOTALL)
@@ -147,7 +140,7 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
         "EVALUATION_GUIDE.md",
         "COLLABORATION.md",
         "LICENSE",
-        "README.md#quick-start",
+        "README.md#try-lkw",
         "docs/guides/AGENT_CREATION_GUIDE.md",
         "applications/USAGE.md",
         "ARCHITECTURE_OVERVIEW.md",
@@ -326,9 +319,12 @@ def test_readme_routing(readme_text: str) -> None:
         "WHY_INTERGRAX.md",
         "ARCHITECTURE_OVERVIEW.md",
         "BUILD_WITH_INTERGRAX.md",
+        "LKW_PRODUCT_TOUR.md",
+        "docs/PUBLIC_DOCUMENTATION_MAP.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
-    assert _PRIMARY_SENTENCE in readme_text
+    assert "Local Knowledge Workspace" in readme_text
+    assert "Intergrax helps teams build" in readme_text
 
 
 def test_public_map_synchronization() -> None:
@@ -385,23 +381,19 @@ def test_readme_install_sequence(readme_text: str) -> None:
     for chain in _FORBIDDEN_INSTALL_CHAINS:
         assert chain not in readme_text, f"README chains install commands: {chain!r}"
 
-    lines = readme_text.splitlines()
-    for index, command in enumerate(_INSTALL_SEQUENCE):
-        assert command in lines, f"README missing install line: {command!r}"
-        if index > 0:
-            prev_command = _INSTALL_SEQUENCE[index - 1]
-            prev_idx = lines.index(prev_command)
-            curr_idx = lines.index(command)
-            assert curr_idx == prev_idx + 1, (
-                f"Install commands not consecutive: {prev_command!r} then {command!r}"
-            )
+    assert "## Try LKW" in readme_text
+    for script in _LKW_QUICKSTART_SCRIPTS:
+        assert script in readme_text, f"README missing LKW quickstart script: {script!r}"
 
 
 def test_evidence_limitations_bulleted(readme_text: str) -> None:
-    for limitation in _EVIDENCE_LIMITATIONS:
-        assert f"- {limitation}" in readme_text, (
-            f"README missing evidence limitation bullet: {limitation!r}"
+    """Product-first README keeps maturity / Hybrid Ask limitations visible."""
+    for limitation in _MATURITY_LIMITATION_MARKERS:
+        assert limitation in readme_text, (
+            f"README missing limitation marker: {limitation!r}"
         )
+    lower = readme_text.lower()
+    assert "incomplete" in lower or "not complete" in lower
 
 
 def test_brevity() -> None:

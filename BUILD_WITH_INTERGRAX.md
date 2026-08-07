@@ -151,6 +151,7 @@ Full public proof dashboard: [PROOFS.md](PROOFS.md).
 | Document | Role |
 | -------- | ---- |
 | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Detailed bounded execution companion — timed evaluation passes |
+| [Try LKW](README.md#try-lkw) | Primary product quick start from the repository landing |
 | [README](README.md) | Repository overview and first-contact context |
 | [PROOFS.md](PROOFS.md) | Proof status and verification paths |
 | [Public Documentation Map](docs/PUBLIC_DOCUMENTATION_MAP.md) | Reader-intent routing across public docs |

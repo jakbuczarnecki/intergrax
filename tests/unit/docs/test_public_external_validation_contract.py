@@ -557,17 +557,20 @@ def test_no_stale_reader_language(evaluation_text: str, outreach_text: str) -> N
 
 def test_launch_checklist_readiness(launch_text: str) -> None:
     for section in (
-        "Repository baseline",
+        "Audit baseline",
         "Reader journey readiness",
-        "Validation protocol readiness",
-        "Claims and legal boundaries",
-        "Outreach readiness",
-        "Evidence and privacy",
-        "Final gate",
+        "PX-12 internal readiness evidence",
+        "Claims and legal boundary review",
+        "PX-13 validation-wave preparation",
     ):
         assert section in launch_text, f"Launch checklist missing section: {section}"
-    assert "READY_TO_RUN" in launch_text
+    assert "NOT_STARTED" in launch_text
     assert "BLOCKED" in launch_text
+    norm = _normalize(launch_text)
+    assert "does not mean external validation is complete" in norm
+    assert "checklist completion does not conduct sessions" in norm or (
+        "no fictional session" in norm
+    )
 
 
 def test_outreach_templates(outreach_text: str) -> None:

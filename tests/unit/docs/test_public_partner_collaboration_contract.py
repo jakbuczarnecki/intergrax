@@ -326,7 +326,7 @@ def test_public_map_synchronization() -> None:
     for doc in ("PARTNERS.md", "COLLABORATION.md", "FAQ.md", "LICENSE"):
         assert doc in text, f"PUBLIC_MAP missing reference: {doc}"
     norm = _normalize(text)
-    assert "discuss a pilot" in norm
+    assert "prepare a pilot" in norm
     assert "contribute or provide technical feedback" in norm
     assert "understand permission boundaries" in norm
     assert "read legally authoritative terms" in norm

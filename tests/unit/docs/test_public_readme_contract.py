@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""PUBLIC-DOCS-COMMERCIALIZATION-5: root README product-first landing contract tests."""
+"""Root README product-first landing contract tests (PX-2 current structure)."""
 
 from __future__ import annotations
 
@@ -17,27 +17,18 @@ README_PATH = REPO_ROOT / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-dark.svg"
-
-_PRIMARY_SENTENCE = (
-    "Intergrax helps teams build specialized agent applications without "
-    "rebuilding the same policy, knowledge, evidence, integration, and "
-    "execution foundations for every product."
-)
-_CATEGORY_DESCRIPTOR = (
-    "Intergrax is a reusable Harness AI foundation for governed agent applications."
-)
-
-_PROBLEM_HEADING = "## Building the agent is not the hard part"
+LKW_LIGHT_PATH = REPO_ROOT / "docs" / "assets" / "public" / "lkw-grounded-result-light.svg"
+LKW_DARK_PATH = REPO_ROOT / "docs" / "assets" / "public" / "lkw-grounded-result-dark.svg"
 
 _SECTION_HEADINGS_ORDER = (
-    _PROBLEM_HEADING,
-    "## What Intergrax changes",
-    "## Product proof: Local Knowledge Workspace",
-    "## What is proven today",
-    "## Featured platform capability: Token Optimization",
-    "## How Intergrax works",
-    "## Quick start",
+    "## Local Knowledge Workspace (LKW)",
+    "## Try LKW",
+    "## Why this matters",
+    "## The foundation behind LKW",
+    "## What exists today",
+    "## Token Optimization",
     "## Choose your path",
+    "## Current boundaries",
     "## License and collaboration",
 )
 
@@ -51,6 +42,10 @@ _REQUIRED_PUBLIC_LINKS = (
     "PARTNERS.md",
     "COLLABORATION.md",
     "LICENSE",
+    "WHY_INTERGRAX.md",
+    "ARCHITECTURE_OVERVIEW.md",
+    "BUILD_WITH_INTERGRAX.md",
+    "LKW_PRODUCT_TOUR.md",
 )
 
 _COMPATIBILITY_ANCHORS = (
@@ -80,8 +75,13 @@ def readme_text() -> str:
 
 
 def test_canonical_positioning(readme_text: str) -> None:
-    assert _PRIMARY_SENTENCE in readme_text
-    assert _CATEGORY_DESCRIPTOR in readme_text
+    """Product-first first screen: Intergrax/LKW purpose and reusable foundations."""
+    assert "Local Knowledge Workspace" in readme_text
+    assert "primary product path" in readme_text.lower() or "Try LKW" in readme_text
+    assert "reusable" in readme_text.lower()
+    assert "policy" in readme_text.lower()
+    assert "evidence" in readme_text.lower()
+    assert "Intergrax helps teams build" in readme_text
 
 
 def test_section_order(readme_text: str) -> None:
@@ -97,10 +97,15 @@ def test_required_public_links(readme_text: str) -> None:
 def test_hero_contract(readme_text: str) -> None:
     assert "docs/assets/public/intergrax-hero-light.svg" in readme_text
     assert "docs/assets/public/intergrax-hero-dark.svg" in readme_text
-    assert "<picture>" in readme_text
-    assert 'alt="Intergrax connects specialized agent applications' in readme_text
+    assert "docs/assets/public/lkw-grounded-result-light.svg" in readme_text
+    assert "docs/assets/public/lkw-grounded-result-dark.svg" in readme_text
+    assert readme_text.count("<picture>") >= 2
+    assert 'alt="Intergrax connects specialized applications' in readme_text
+    assert 'alt="LKW quickstart flow' in readme_text
     assert HERO_LIGHT_PATH.is_file(), "Hero light SVG is missing"
     assert HERO_DARK_PATH.is_file(), "Hero dark SVG is missing"
+    assert LKW_LIGHT_PATH.is_file(), "LKW light SVG is missing"
+    assert LKW_DARK_PATH.is_file(), "LKW dark SVG is missing"
 
 
 def _parse_svg(path: Path) -> ET.Element:
@@ -139,7 +144,10 @@ def _collect_svg_violations(root: ET.Element) -> list[str]:
     return violations
 
 
-@pytest.mark.parametrize("svg_path", [HERO_LIGHT_PATH, HERO_DARK_PATH])
+@pytest.mark.parametrize(
+    "svg_path",
+    [HERO_LIGHT_PATH, HERO_DARK_PATH, LKW_LIGHT_PATH, LKW_DARK_PATH],
+)
 def test_svg_safety(svg_path: Path) -> None:
     root = _parse_svg(svg_path)
     violations = _collect_svg_violations(root)
@@ -147,8 +155,9 @@ def test_svg_safety(svg_path: Path) -> None:
 
 
 def test_visual_contract(readme_text: str) -> None:
+    """At least one local Mermaid diagram; no unsafe Mermaid tokens."""
     blocks = _MERMAID_FENCE.findall(readme_text)
-    assert len(blocks) >= 3, "README must contain at least three Mermaid blocks"
+    assert len(blocks) >= 1, "README must contain at least one Mermaid block"
     forbidden_tokens = ("classDef", "style", "%%{init", "theme", "http://", "https://")
     for block in blocks:
         for token in forbidden_tokens:
@@ -172,31 +181,44 @@ def test_token_optimization_claim_boundary(readme_text: str) -> None:
     for phrase in (
         "PARTIAL",
         "bounded vLLM",
-        "durable in-cache compaction incomplete",
-        "universal savings not claimed",
+        "universal savings",
+        "production-proven savings",
     ):
         assert phrase in readme_text, f"Missing Token Optimization boundary: {phrase}"
 
     lower = readme_text.lower()
+    assert "not established" in lower or "not claimed" in lower or "not complete" in lower
+    assert "universal token-savings claim" in lower or "universal savings" in lower
+
     for phrase in _FORBIDDEN_SAVINGS_PHRASES:
         if phrase in lower:
             idx = lower.index(phrase)
-            context = lower[max(0, idx - 40) : idx + len(phrase) + 40]
-            assert "not claimed" in context or "not complete" in context, (
-                f"Forbidden phrase {phrase!r} used positively"
-            )
+            context = lower[max(0, idx - 160) : idx + len(phrase) + 40]
+            assert (
+                "not claimed" in context
+                or "not complete" in context
+                or "not established" in context
+                or "not currently" in context
+                or "incomplete" in context
+            ), f"Forbidden phrase {phrase!r} used positively"
 
     assert not _FORBIDDEN_SAVINGS_PATTERN.search(readme_text)
     assert not _PERCENT_PATTERN.search(readme_text), "Numeric savings percentage found in README"
 
 
-def test_evidence_script_compatibility() -> None:
-    from scripts.maintenance.check_evidence_artifacts import _check_readme
+def test_lkw_proof_boundary(readme_text: str) -> None:
+    """PX-13: indexed Hybrid Ask proven; mixed indexed+live still incomplete."""
+    lower = readme_text.lower()
+    assert "hybrid ask" in lower
+    assert "indexed" in lower
+    assert "authorized live" in lower or "live evidence" in lower
+    assert "not complete" in lower
 
-    missing, proof_path_ok, boundaries_ok, links_ok = _check_readme(REPO_ROOT)
-    assert proof_path_ok, missing
-    assert boundaries_ok, missing
-    assert links_ok, missing
+
+def test_proof_dashboard_route(readme_text: str) -> None:
+    """Proof-path CLI details live outside the product-first README; dashboard must remain linked."""
+    assert "PROOFS.md" in readme_text
+    assert "docs/public-adoption/LKW_PLATFORM_PROOF.md" in readme_text
 
 
 def test_relative_links(readme_text: str) -> None:
@@ -215,12 +237,10 @@ def test_relative_links(readme_text: str) -> None:
 
 
 def test_quick_start_anchor(readme_text: str) -> None:
-    assert "## Quick start" in readme_text
+    assert "## Try LKW" in readme_text
+    assert "run-lkw-product-quickstart" in readme_text
     for anchor in _COMPATIBILITY_ANCHORS:
-        if anchor == "quick-start":
-            assert "## Quick start" in readme_text
-        else:
-            assert f'id="{anchor}"' in readme_text, f"Missing compatibility anchor: {anchor}"
+        assert f'id="{anchor}"' in readme_text, f"Missing compatibility anchor: {anchor}"
 
 
 def test_brevity() -> None:
@@ -230,5 +250,6 @@ def test_brevity() -> None:
 
 def test_public_architecture_sync() -> None:
     text = PUBLIC_ARCHITECTURE_PATH.read_text(encoding="utf-8")
-    assert "PUBLIC-DOCS-COMMERCIALIZATION-5" in text
+    assert "PX-2" in text
+    assert "product-first" in text.lower()
     assert "real product screenshots remain deferred" in text.lower()

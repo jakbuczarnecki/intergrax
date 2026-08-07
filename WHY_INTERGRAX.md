@@ -177,4 +177,5 @@ Detailed proof matrices and claim boundaries remain in [PROOFS.md](PROOFS.md).
 | [PROOFS.md](PROOFS.md) | Reviewing current evidence |
 | [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
 | [BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md) | Beginning a bounded build |
+| [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) | Planning a deeper build or evaluation route |
 | [PARTNERS.md](PARTNERS.md) | Discussing a bounded pilot |
