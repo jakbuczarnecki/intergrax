@@ -69,7 +69,7 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1` — `READY_FOR_REVIEW`
+`VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
 `VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`
@@ -94,6 +94,12 @@ Descriptors are immutable, reject tenant/credential/connection state and do not
 execute any mode lifecycle. Application-specific migration, generic Indexed
 bridging, broader provider coverage and LKW/frontend decoupling remain deferred
 to their roadmap tasks.
+
+Validation closeout confirmed plugin contract, registry compatibility,
+representative Slack/Graph proofs, and Slack Connected Source contract/E2E.
+The previous pytest basetemp WinError 5 was resolved/avoided by a validated
+clean task-specific test temp root. Six pre-existing Slack sync unit failures
+remain baseline/stale and do not block VK-2.
 
 ### Architecture frozen for this roadmap
 
