@@ -10,6 +10,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
+from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
+    ConnectedSourceRecoveryOwnershipIndexError,
+    index_entry_for_index_receipt,
+)
 from local_workspace_application.workspaces.idempotency import logical_document_id
 from local_workspace_application.workspaces.materialization_visibility import (
     KnowledgeMaterializationOwnershipModeV1,
@@ -239,19 +243,38 @@ class WorkspaceDocumentIndexingService:
         document_store = self._repository.document_store
         if not isinstance(document_store, ConditionalDocumentStore):
             raise WorkspaceDocumentIndexingError("index_receipt_store_unavailable")
+        partition_key = _index_receipt_partition(receipt.tenant_id)
+        row_key = _index_receipt_row_key(
+            tenant_id=receipt.tenant_id,
+            workspace_id=receipt.workspace_id,
+            source_id=receipt.source_id,
+            logical_source_path=receipt.logical_source_path,
+            content_hash=receipt.content_hash,
+            materialization_scope=receipt.materialization_scope,
+        )
         record = DocumentRecord(
-            partition_key=_index_receipt_partition(receipt.tenant_id),
-            row_key=_index_receipt_row_key(
-                tenant_id=receipt.tenant_id,
-                workspace_id=receipt.workspace_id,
-                source_id=receipt.source_id,
-                logical_source_path=receipt.logical_source_path,
-                content_hash=receipt.content_hash,
-                materialization_scope=receipt.materialization_scope,
-            ),
+            partition_key=partition_key,
+            row_key=row_key,
             data=receipt.model_dump(mode="json"),
         )
-        return document_store.put_if_absent(record)
+        created = document_store.put_if_absent(record)
+        if (
+            created
+            and receipt.materialization_ownership is not None
+            and receipt.materialization_ownership.ownership_mode
+            is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+        ):
+            try:
+                self._repository.put_connected_source_recovery_ownership_index_entry(
+                    index_entry_for_index_receipt(
+                        receipt,
+                        canonical_partition_key=partition_key,
+                        canonical_row_key=row_key,
+                    )
+                )
+            except ConnectedSourceRecoveryOwnershipIndexError as exc:
+                raise WorkspaceDocumentIndexingError(str(exc)) from exc
+        return created
 
     def _complete_index_receipt(
         self,
@@ -284,6 +307,21 @@ class WorkspaceDocumentIndexingService:
             if reloaded is None or reloaded[1].status != "completed":
                 raise WorkspaceDocumentIndexingError("index_receipt_conflict")
             return reloaded[1]
+        if (
+            completed.materialization_ownership is not None
+            and completed.materialization_ownership.ownership_mode
+            is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+        ):
+            try:
+                self._repository.put_connected_source_recovery_ownership_index_entry(
+                    index_entry_for_index_receipt(
+                        completed,
+                        canonical_partition_key=record.partition_key,
+                        canonical_row_key=record.row_key,
+                    )
+                )
+            except ConnectedSourceRecoveryOwnershipIndexError as exc:
+                raise WorkspaceDocumentIndexingError(str(exc)) from exc
         return completed
 
     async def index_one(

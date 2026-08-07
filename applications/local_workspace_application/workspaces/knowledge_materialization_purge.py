@@ -21,8 +21,16 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
+    ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ConnectedSourceRecoveryOwnershipIndexError,
+    RecoveryRecordKindV1,
+    canonical_record_fingerprint,
+    index_entry_for_delivery_accounting,
+    index_entry_for_enqueue_intent,
+    index_entry_for_index_receipt,
+)
 from local_workspace_application.workspaces.document_indexing import (
-    _index_receipt_partition,
     _WorkspaceDocumentIndexReceipt,
 )
 from local_workspace_application.workspaces.document_ownership_index import (
@@ -173,12 +181,30 @@ class KnowledgeMaterializationPurgeCursorV1(BaseModel):
     )
     current_delivery_id: str | None = Field(default=None, max_length=512)
     record_kind: str | None = Field(default=None, max_length=64)
+    current_manifest_row_key: str | None = Field(default=None, max_length=1024)
+    current_manifest_id: str | None = Field(
+        default=None, min_length=_SHA256_LENGTH, max_length=_SHA256_LENGTH
+    )
+    current_manifest_fingerprint: str | None = Field(
+        default=None, min_length=_SHA256_LENGTH, max_length=_SHA256_LENGTH
+    )
+    manifest_entry_offset: StrictInt | None = Field(default=None, ge=0)
 
     @field_validator("purge_id", "publication_commit_id")
     @classmethod
     def _validate_digest(cls, value: str | None) -> str | None:
         if value is not None and any(char not in "0123456789abcdef" for char in value):
             raise ValueError("purge_cursor_digest_must_be_sha256")
+        return value
+
+    @field_validator("current_manifest_id", "current_manifest_fingerprint")
+    @classmethod
+    def _validate_manifest_digest(cls, value: str | None) -> str | None:
+        if value is not None and (
+            len(value) != _SHA256_LENGTH
+            or any(char not in "0123456789abcdef" for char in value)
+        ):
+            raise ValueError("purge_cursor_manifest_digest_must_be_sha256")
         return value
 
 
@@ -634,35 +660,44 @@ class KnowledgeMaterializationPurgeService:
         cursor = state.cursor
         assert cursor is not None
         kind = cursor.record_kind or "index_receipts"
-        if kind == "index_receipts":
-            page = self._store.query(
-                _index_receipt_partition(request.tenant_id),
-                limit=self._page_size,
-                cursor=cursor.document_store_cursor,
-            )
-        elif kind == "accounting":
-            page = self._repository.list_connected_source_delivery_accounting_page(
-                tenant_id=request.tenant_id,
-                limit=self._page_size,
-                cursor=cursor.document_store_cursor,
-            )
-        elif kind == "enqueue_intents":
-            page = self._repository.list_connected_source_sync_enqueue_intents_page(
-                tenant_id=request.tenant_id,
-                limit=self._page_size,
-                cursor=cursor.document_store_cursor,
-            )
-        else:
+        record_kind = {
+            "index_receipts": RecoveryRecordKindV1.INDEX_RECEIPT,
+            "accounting": RecoveryRecordKindV1.DELIVERY_ACCOUNTING,
+            "enqueue_intents": RecoveryRecordKindV1.ENQUEUE_INTENT,
+        }.get(kind)
+        if record_kind is None:
             raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        try:
+            page = self._repository.list_connected_source_recovery_records_by_owner(
+                tenant_id=request.tenant_id,
+                workspace_id=request.workspace_id,
+                source_id=request.source_id,
+                indexed_source_binding_id=request.indexed_source_binding_id,
+                knowledge_source_binding_ref=request.knowledge_source_binding_ref,
+                record_kind=record_kind,
+                limit=self._page_size,
+                cursor=cursor.document_store_cursor,
+            )
+        except ConnectedSourceRecoveryOwnershipIndexError as exc:
+            raise KnowledgeMaterializationPurgeError(
+                "BLOCKED_CORRUPT_STATE"
+            ) from exc
         counters = state.counters
-        for record in page.documents:
-            if kind == "index_receipts":
-                counters = self._process_index_receipt(record, request, counters)
-            elif kind == "accounting":
-                counters = self._process_accounting_record(record, request, counters)
-            else:
-                counters = self._process_enqueue_record(record, request, counters)
-        if page.next_cursor is not None:
+        for entry in page.orphan_index_entries:
+            if self._repository.delete_connected_source_recovery_ownership_index_entry(
+                entry
+            ):
+                counters = counters.model_copy(
+                    update={
+                        "orphan_index_entries_deleted": (
+                            counters.orphan_index_entries_deleted + 1
+                        ),
+                        "already_absent": counters.already_absent + 1,
+                    }
+                )
+        for entry in page.index_entries:
+            counters = self._delete_recovery_index_entry(entry, request, counters)
+        if page.index_entries or page.orphan_index_entries:
             next_cursor = cursor.model_copy(
                 update={"document_store_cursor": page.next_cursor}
             )
@@ -678,6 +713,11 @@ class KnowledgeMaterializationPurgeService:
                         "phase": KnowledgeMaterializationPurgePhaseV1.MANIFESTS,
                         "document_store_cursor": None,
                         "record_kind": None,
+                        "current_manifest_row_key": None,
+                        "current_manifest_id": None,
+                        "current_manifest_fingerprint": None,
+                        "current_delivery_id": None,
+                        "manifest_entry_offset": None,
                     }
                 )
             else:
@@ -696,8 +736,42 @@ class KnowledgeMaterializationPurgeService:
             }
         )
 
-    def _process_index_receipt(
+    def _delete_recovery_index_entry(
         self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+        request: KnowledgeMaterializationPurgeRequestV1,
+        counters: KnowledgeMaterializationPurgeCountersV1,
+    ) -> KnowledgeMaterializationPurgeCountersV1:
+        if entry.ownership_scope != request.ownership_scope:
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        canonical = self._store.get(
+            entry.canonical_partition_key,
+            entry.canonical_row_key,
+        )
+        if canonical is None:
+            if self._repository.delete_connected_source_recovery_ownership_index_entry(
+                entry
+            ):
+                return counters.model_copy(
+                    update={
+                        "orphan_index_entries_deleted": (
+                            counters.orphan_index_entries_deleted + 1
+                        ),
+                        "already_absent": counters.already_absent + 1,
+                    }
+                )
+            return counters
+        if entry.record_kind is RecoveryRecordKindV1.INDEX_RECEIPT:
+            return self._delete_indexed_index_receipt(entry, canonical, request, counters)
+        if entry.record_kind is RecoveryRecordKindV1.DELIVERY_ACCOUNTING:
+            return self._delete_indexed_accounting(entry, canonical, request, counters)
+        if entry.record_kind is RecoveryRecordKindV1.ENQUEUE_INTENT:
+            return self._delete_indexed_enqueue(entry, canonical, request, counters)
+        raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+
+    def _delete_indexed_index_receipt(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
         record: DocumentRecord,
         request: KnowledgeMaterializationPurgeRequestV1,
         counters: KnowledgeMaterializationPurgeCountersV1,
@@ -712,29 +786,33 @@ class KnowledgeMaterializationPurgeService:
             ) from exc
         ownership = receipt.materialization_ownership
         if ownership is None:
-            if (
-                receipt.workspace_id == request.workspace_id
-                and receipt.source_id == request.source_id
-            ):
-                raise KnowledgeMaterializationPurgeError(
-                    "BLOCKED_LEGACY_MIGRATION"
-                )
-            return counters
+            raise KnowledgeMaterializationPurgeError("BLOCKED_LEGACY_MIGRATION")
         if ownership.ownership_mode is not KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE:
-            return counters
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
         if ownership.identity_scope != receipt.materialization_scope:
             raise KnowledgeMaterializationPurgeError("ownership_mismatch")
-        if ownership.tenant_id != request.tenant_id:
-            return counters
+        scope = (
+            ownership.tenant_id,
+            ownership.workspace_id,
+            ownership.source_id,
+            ownership.indexed_source_binding_id,
+            ownership.knowledge_source_binding_ref,
+        )
+        if scope != request.ownership_scope:
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        if canonical_record_fingerprint(receipt) != entry.canonical_fingerprint:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        expected = index_entry_for_index_receipt(
+            receipt,
+            canonical_partition_key=entry.canonical_partition_key,
+            canonical_row_key=entry.canonical_row_key,
+            indexed_at=entry.indexed_at,
+        )
         if (
-            ownership.workspace_id != request.workspace_id
-            or ownership.source_id != request.source_id
-            or ownership.indexed_source_binding_id
-            != request.indexed_source_binding_id
-            or ownership.knowledge_source_binding_ref
-            != request.knowledge_source_binding_ref
+            expected.row_key != entry.row_key
+            or expected.ownership_scope != entry.ownership_scope
         ):
-            return counters
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
         ref = self._repository.get_document_ref(
             tenant_id=request.tenant_id,
             workspace_id=request.workspace_id,
@@ -750,9 +828,9 @@ class KnowledgeMaterializationPurgeService:
                 expected_ownership=ownership,
             )
             self._delete_document_ref(ref)
-            entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(ref)
+            doc_entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(ref)
             index_deleted = self._repository.delete_document_ownership_index_entry(
-                entry
+                doc_entry
             )
             counters = counters.model_copy(
                 update={
@@ -769,12 +847,14 @@ class KnowledgeMaterializationPurgeService:
                 }
             )
         self._store.delete(record.partition_key, record.row_key)
+        self._repository.delete_connected_source_recovery_ownership_index_entry(entry)
         return counters.model_copy(
             update={"index_receipts_deleted": counters.index_receipts_deleted + 1}
         )
 
-    def _process_accounting_record(
+    def _delete_indexed_accounting(
         self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
         record: DocumentRecord,
         request: KnowledgeMaterializationPurgeRequestV1,
         counters: KnowledgeMaterializationPurgeCountersV1,
@@ -788,14 +868,7 @@ class KnowledgeMaterializationPurgeService:
                 "BLOCKED_CORRUPT_STATE"
             ) from exc
         if item.ownership_classification != "COMPLETE_OWNERSHIP":
-            if (
-                item.workspace_id == request.workspace_id
-                and item.source_id == request.source_id
-            ):
-                raise KnowledgeMaterializationPurgeError(
-                    "BLOCKED_LEGACY_MIGRATION"
-                )
-            return counters
+            raise KnowledgeMaterializationPurgeError("BLOCKED_LEGACY_MIGRATION")
         scope = (
             item.tenant_id,
             item.workspace_id,
@@ -804,20 +877,32 @@ class KnowledgeMaterializationPurgeService:
             item.knowledge_source_binding_ref,
         )
         if scope != request.ownership_scope:
-            return counters
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        if canonical_record_fingerprint(item) != entry.canonical_fingerprint:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        expected = index_entry_for_delivery_accounting(
+            item,
+            canonical_partition_key=entry.canonical_partition_key,
+            canonical_row_key=entry.canonical_row_key,
+            indexed_at=entry.indexed_at,
+        )
+        if expected.row_key != entry.row_key:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
         self._repository.delete_connected_source_delivery_accounting(
             tenant_id=item.tenant_id,
             operation_id=item.operation_id,
             delivery_id=item.delivery_id,
         )
+        self._repository.delete_connected_source_recovery_ownership_index_entry(entry)
         return counters.model_copy(
             update={
                 "delivery_accounting_deleted": counters.delivery_accounting_deleted + 1
             }
         )
 
-    def _process_enqueue_record(
+    def _delete_indexed_enqueue(
         self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
         record: DocumentRecord,
         request: KnowledgeMaterializationPurgeRequestV1,
         counters: KnowledgeMaterializationPurgeCountersV1,
@@ -831,14 +916,7 @@ class KnowledgeMaterializationPurgeService:
                 "BLOCKED_CORRUPT_STATE"
             ) from exc
         if item.ownership_classification != "COMPLETE_OWNERSHIP":
-            if (
-                item.workspace_id == request.workspace_id
-                and item.source_id == request.source_id
-            ):
-                raise KnowledgeMaterializationPurgeError(
-                    "BLOCKED_LEGACY_MIGRATION"
-                )
-            return counters
+            raise KnowledgeMaterializationPurgeError("BLOCKED_LEGACY_MIGRATION")
         scope = (
             item.tenant_id,
             item.workspace_id,
@@ -847,11 +925,22 @@ class KnowledgeMaterializationPurgeService:
             item.knowledge_source_binding_ref,
         )
         if scope != request.ownership_scope:
-            return counters
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        if canonical_record_fingerprint(item) != entry.canonical_fingerprint:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        expected = index_entry_for_enqueue_intent(
+            item,
+            canonical_partition_key=entry.canonical_partition_key,
+            canonical_row_key=entry.canonical_row_key,
+            indexed_at=entry.indexed_at,
+        )
+        if expected.row_key != entry.row_key:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
         self._repository.delete_connected_source_sync_enqueue_intent(
             tenant_id=item.tenant_id,
             operation_id=item.operation_id,
         )
+        self._repository.delete_connected_source_recovery_ownership_index_entry(entry)
         return counters.model_copy(
             update={"enqueue_intents_deleted": counters.enqueue_intents_deleted + 1}
         )
@@ -859,11 +948,32 @@ class KnowledgeMaterializationPurgeService:
     def _delete_manifest_page(
         self, state: KnowledgeMaterializationPurgeStateV1
     ) -> KnowledgeMaterializationPurgeStateV1:
-        request = state.request
         cursor = state.cursor
         if cursor is None:
             raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
-        manifest_repository = ConnectedSourceMaterializationManifestRepository(self._store)
+        manifest_repository = ConnectedSourceMaterializationManifestRepository(
+            self._store,
+            publication_authority=self._publication_authority,
+        )
+        if cursor.current_manifest_id is None:
+            return self._select_next_manifest(state, manifest_repository)
+        return self._delete_manifest_entry_page(state, manifest_repository)
+
+    def _select_next_manifest(
+        self,
+        state: KnowledgeMaterializationPurgeStateV1,
+        manifest_repository: ConnectedSourceMaterializationManifestRepository,
+    ) -> KnowledgeMaterializationPurgeStateV1:
+        request = state.request
+        cursor = state.cursor
+        assert cursor is not None
+        if (
+            cursor.current_manifest_row_key is not None
+            or cursor.current_manifest_fingerprint is not None
+            or cursor.current_delivery_id is not None
+            or cursor.manifest_entry_offset is not None
+        ):
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
         partition = manifest_repository._immutable_partition(request.tenant_id)
         prefix = manifest_repository._scope_prefix(
             workspace_id=request.workspace_id,
@@ -872,7 +982,7 @@ class KnowledgeMaterializationPurgeService:
         ) + "manifest:"
         page = self._store.query(
             partition,
-            limit=self._page_size,
+            limit=1,
             row_key_prefix=prefix,
             cursor=cursor.document_store_cursor,
         )
@@ -886,173 +996,277 @@ class KnowledgeMaterializationPurgeService:
                             "phase": KnowledgeMaterializationPurgePhaseV1.DELIVERY_RECORDS,
                             "document_store_cursor": None,
                             "record_kind": "delivery_indexes",
+                            "current_manifest_row_key": None,
+                            "current_manifest_id": None,
+                            "current_manifest_fingerprint": None,
+                            "current_delivery_id": None,
+                            "manifest_entry_offset": None,
                         }
                     ),
                 }
             )
-        counters = state.counters
-        for record in page.documents:
-            try:
-                manifest = manifest_repository._parse_immutable(
-                    record,
-                    tenant_id=request.tenant_id,
-                    workspace_id=request.workspace_id,
-                    source_id=request.source_id,
-                    indexed_source_binding_id=request.indexed_source_binding_id,
-                )
-            except (ConnectedSourceMaterializationManifestConflict, TypeError, ValueError):
-                raise KnowledgeMaterializationPurgeError(
-                    "BLOCKED_CORRUPT_STATE"
-                ) from None
-            if (
-                manifest.knowledge_source_binding_ref
-                != request.knowledge_source_binding_ref
-            ):
-                raise KnowledgeMaterializationPurgeError("ownership_mismatch")
-            counters = self._delete_manifest_materialization(
-                counters, manifest, manifest_repository
+        record = page.documents[0]
+        try:
+            manifest = manifest_repository._parse_immutable(
+                record,
+                tenant_id=request.tenant_id,
+                workspace_id=request.workspace_id,
+                source_id=request.source_id,
+                indexed_source_binding_id=request.indexed_source_binding_id,
             )
-        return state.model_copy(
-            update={"status": KnowledgeMaterializationPurgeStatusV1.DELETING,
-                    "updated_at": self._now(), "counters": counters,
-                    "cursor": cursor.model_copy(
-                        update={"document_store_cursor": page.next_cursor}
-                    )}
+        except (ConnectedSourceMaterializationManifestConflict, TypeError, ValueError):
+            raise KnowledgeMaterializationPurgeError(
+                "BLOCKED_CORRUPT_STATE"
+            ) from None
+        if (
+            manifest.knowledge_source_binding_ref
+            != request.knowledge_source_binding_ref
+        ):
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        selected = cursor.model_copy(
+            update={
+                "document_store_cursor": page.next_cursor,
+                "current_manifest_row_key": record.row_key,
+                "current_manifest_id": manifest.manifest_id,
+                "current_manifest_fingerprint": manifest.manifest_fingerprint,
+                "current_delivery_id": manifest.delivery_id,
+                "manifest_entry_offset": 0,
+            }
+        )
+        return self._delete_manifest_entry_page(
+            state.model_copy(
+                update={
+                    "status": KnowledgeMaterializationPurgeStatusV1.DELETING,
+                    "updated_at": self._now(),
+                    "cursor": selected,
+                }
+            ),
+            manifest_repository,
         )
 
-    def _delete_manifest_materialization(
+    def _load_current_manifest(
+        self,
+        state: KnowledgeMaterializationPurgeStateV1,
+        manifest_repository: ConnectedSourceMaterializationManifestRepository,
+    ) -> Any:
+        request = state.request
+        cursor = state.cursor
+        assert cursor is not None
+        if (
+            cursor.current_manifest_row_key is None
+            or cursor.current_manifest_id is None
+            or cursor.current_manifest_fingerprint is None
+            or cursor.current_delivery_id is None
+            or cursor.manifest_entry_offset is None
+        ):
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        record = self._store.get(
+            manifest_repository._immutable_partition(request.tenant_id),
+            cursor.current_manifest_row_key,
+        )
+        if record is None:
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        try:
+            manifest = manifest_repository._parse_immutable(
+                record,
+                tenant_id=request.tenant_id,
+                workspace_id=request.workspace_id,
+                source_id=request.source_id,
+                indexed_source_binding_id=request.indexed_source_binding_id,
+            )
+        except (ConnectedSourceMaterializationManifestConflict, TypeError, ValueError):
+            raise KnowledgeMaterializationPurgeError(
+                "BLOCKED_CORRUPT_STATE"
+            ) from None
+        if (
+            manifest.knowledge_source_binding_ref
+            != request.knowledge_source_binding_ref
+            or manifest.manifest_id != cursor.current_manifest_id
+            or manifest.manifest_fingerprint != cursor.current_manifest_fingerprint
+            or manifest.delivery_id != cursor.current_delivery_id
+            or record.row_key != cursor.current_manifest_row_key
+        ):
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        offset = cursor.manifest_entry_offset
+        if offset < 0 or offset > len(manifest.document_entries):
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        return manifest
+
+    def _delete_manifest_entry_page(
+        self,
+        state: KnowledgeMaterializationPurgeStateV1,
+        manifest_repository: ConnectedSourceMaterializationManifestRepository,
+    ) -> KnowledgeMaterializationPurgeStateV1:
+        cursor = state.cursor
+        assert cursor is not None
+        manifest = self._load_current_manifest(state, manifest_repository)
+        offset = cursor.manifest_entry_offset
+        assert offset is not None
+        end = min(offset + self._page_size, len(manifest.document_entries))
+        counters = state.counters
+        for entry in manifest.document_entries[offset:end]:
+            counters = self._delete_one_manifest_entry(
+                counters, manifest, entry, manifest_repository
+            )
+        if end < len(manifest.document_entries):
+            next_cursor = cursor.model_copy(update={"manifest_entry_offset": end})
+            return state.model_copy(
+                update={
+                    "status": KnowledgeMaterializationPurgeStatusV1.DELETING,
+                    "updated_at": self._now(),
+                    "cursor": next_cursor,
+                    "counters": counters,
+                }
+            )
+        counters = self._finalize_manifest_cleanup(
+            counters, manifest, manifest_repository
+        )
+        next_cursor = cursor.model_copy(
+            update={
+                "current_manifest_row_key": None,
+                "current_manifest_id": None,
+                "current_manifest_fingerprint": None,
+                "current_delivery_id": None,
+                "manifest_entry_offset": None,
+            }
+        )
+        return state.model_copy(
+            update={
+                "status": KnowledgeMaterializationPurgeStatusV1.DELETING,
+                "updated_at": self._now(),
+                "cursor": next_cursor,
+                "counters": counters,
+            }
+        )
+
+    def _delete_one_manifest_entry(
+        self,
+        counters: KnowledgeMaterializationPurgeCountersV1,
+        manifest: Any,
+        entry: Any,
+        manifest_repository: ConnectedSourceMaterializationManifestRepository,
+    ) -> KnowledgeMaterializationPurgeCountersV1:
+        counters_update: dict[str, int] = {}
+        ownership = KnowledgeMaterializationOwnershipV1.connected(
+            tenant_id=manifest.tenant_id,
+            workspace_id=manifest.workspace_id,
+            source_id=manifest.source_id,
+            indexed_source_binding_id=manifest.indexed_source_binding_id,
+            knowledge_source_binding_ref=manifest.knowledge_source_binding_ref,
+            delivery_id=manifest.delivery_id,
+            remote_id=entry.remote_id,
+            materialization_generation=entry.materialization_generation,
+            materialization_sequence=manifest.materialization_sequence,
+        )
+        ref = self._repository.get_document_ref(
+            tenant_id=manifest.tenant_id,
+            workspace_id=manifest.workspace_id,
+            document_id=entry.document_id,
+        )
+        if ref is not None and ref.materialization_ownership != ownership:
+            raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+        result = self._deletion_port.delete_document_materialization(
+            tenant_id=manifest.tenant_id,
+            workspace_id=manifest.workspace_id,
+            document_id=entry.document_id,
+            expected_ownership=ownership,
+        )
+        counters_update["chunks_deleted"] = result.chunks_deleted
+        counters_update["embeddings_deleted"] = result.embeddings_deleted
+        counters_update["already_absent"] = result.already_absent
+        if ref is None:
+            counters_update["already_absent"] = (
+                counters_update.get("already_absent", 0) + 1
+            )
+        else:
+            self._delete_document_ref(ref)
+            try:
+                index_entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(ref)
+            except (TypeError, ValueError) as exc:
+                raise KnowledgeMaterializationPurgeError(
+                    "BLOCKED_CORRUPT_STATE"
+                ) from exc
+            if self._repository.delete_document_ownership_index_entry(index_entry):
+                counters_update["ownership_index_entries_deleted"] = 1
+            counters_update["documents_deleted"] = 1
+            counters_update["document_refs_deleted"] = 1
+        pointer = self._repository.get_active_materialization_pointer(
+            tenant_id=ownership.tenant_id,
+            workspace_id=ownership.workspace_id,
+            source_id=ownership.source_id,
+            indexed_source_binding_id=ownership.indexed_source_binding_id or "",
+            remote_id=ownership.remote_id or "",
+        )
+        if pointer is not None:
+            if (
+                pointer.tenant_id != ownership.tenant_id
+                or pointer.workspace_id != ownership.workspace_id
+                or pointer.source_id != ownership.source_id
+                or pointer.indexed_source_binding_id
+                != ownership.indexed_source_binding_id
+                or pointer.delivery_id != ownership.delivery_id
+                or pointer.document_id != entry.document_id
+                or pointer.materialization_generation
+                != ownership.materialization_generation
+            ):
+                raise KnowledgeMaterializationPurgeError("ownership_mismatch")
+            self._store.delete(
+                _workspace_partition(
+                    ownership.tenant_id, "materialization_active_pointer"
+                ),
+                self._repository._active_materialization_pointer_key(
+                    workspace_id=ownership.workspace_id,
+                    source_id=ownership.source_id,
+                    indexed_source_binding_id=ownership.indexed_source_binding_id
+                    or "",
+                    remote_id=ownership.remote_id or "",
+                ),
+            )
+            counters_update["active_pointers_deleted"] = 1
+        candidate = manifest_repository._get_remote_candidate(
+            tenant_id=manifest.tenant_id,
+            workspace_id=manifest.workspace_id,
+            source_id=manifest.source_id,
+            indexed_source_binding_id=manifest.indexed_source_binding_id,
+            remote_id=entry.remote_id,
+            materialization_sequence=manifest.materialization_sequence,
+        )
+        if candidate is not None:
+            if (
+                candidate.delivery_id != manifest.delivery_id
+                or candidate.manifest_id != manifest.manifest_id
+                or candidate.manifest_fingerprint != manifest.manifest_fingerprint
+            ):
+                raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+            self._store.delete(
+                manifest_repository._immutable_partition(manifest.tenant_id),
+                manifest_repository._remote_candidate_row_key(
+                    workspace_id=manifest.workspace_id,
+                    source_id=manifest.source_id,
+                    indexed_source_binding_id=manifest.indexed_source_binding_id,
+                    remote_id=entry.remote_id,
+                    materialization_sequence=manifest.materialization_sequence,
+                ),
+            )
+            counters_update["remote_candidates_deleted"] = 1
+        else:
+            counters_update["already_absent"] = (
+                counters_update.get("already_absent", 0) + 1
+            )
+        return counters.model_copy(
+            update={
+                key: getattr(counters, key) + value
+                for key, value in counters_update.items()
+            }
+        )
+
+    def _finalize_manifest_cleanup(
         self,
         counters: KnowledgeMaterializationPurgeCountersV1,
         manifest: Any,
         manifest_repository: ConnectedSourceMaterializationManifestRepository,
     ) -> KnowledgeMaterializationPurgeCountersV1:
         counters_update: dict[str, int] = {"manifests_deleted": 1}
-        for entry in manifest.document_entries:
-            ownership = KnowledgeMaterializationOwnershipV1.connected(
-                tenant_id=manifest.tenant_id,
-                workspace_id=manifest.workspace_id,
-                source_id=manifest.source_id,
-                indexed_source_binding_id=manifest.indexed_source_binding_id,
-                knowledge_source_binding_ref=manifest.knowledge_source_binding_ref,
-                delivery_id=manifest.delivery_id,
-                remote_id=entry.remote_id,
-                materialization_generation=entry.materialization_generation,
-                materialization_sequence=manifest.materialization_sequence,
-            )
-            ref = self._repository.get_document_ref(
-                tenant_id=manifest.tenant_id,
-                workspace_id=manifest.workspace_id,
-                document_id=entry.document_id,
-            )
-            if ref is not None and ref.materialization_ownership != ownership:
-                raise KnowledgeMaterializationPurgeError("ownership_mismatch")
-            result = self._deletion_port.delete_document_materialization(
-                tenant_id=manifest.tenant_id,
-                workspace_id=manifest.workspace_id,
-                document_id=entry.document_id,
-                expected_ownership=ownership,
-            )
-            counters_update["chunks_deleted"] = counters_update.get(
-                "chunks_deleted", 0
-            ) + result.chunks_deleted
-            counters_update["embeddings_deleted"] = counters_update.get(
-                "embeddings_deleted", 0
-            ) + result.embeddings_deleted
-            counters_update["already_absent"] = counters_update.get(
-                "already_absent", 0
-            ) + result.already_absent
-            if ref is None:
-                counters_update["already_absent"] = counters_update.get(
-                    "already_absent", 0
-                ) + 1
-            else:
-                self._delete_document_ref(ref)
-                try:
-                    index_entry = WorkspaceDocumentOwnershipIndexEntryV1.for_reference(
-                        ref
-                    )
-                except (TypeError, ValueError) as exc:
-                    raise KnowledgeMaterializationPurgeError(
-                        "BLOCKED_CORRUPT_STATE"
-                    ) from exc
-                if self._repository.delete_document_ownership_index_entry(
-                    index_entry
-                ):
-                    counters_update["ownership_index_entries_deleted"] = (
-                        counters_update.get("ownership_index_entries_deleted", 0) + 1
-                    )
-                counters_update["documents_deleted"] = counters_update.get(
-                    "documents_deleted", 0
-                ) + 1
-                counters_update["document_refs_deleted"] = counters_update.get(
-                    "document_refs_deleted", 0
-                ) + 1
-            pointer = self._repository.get_active_materialization_pointer(
-                tenant_id=ownership.tenant_id,
-                workspace_id=ownership.workspace_id,
-                source_id=ownership.source_id,
-                indexed_source_binding_id=ownership.indexed_source_binding_id or "",
-                remote_id=ownership.remote_id or "",
-            )
-            if pointer is not None:
-                if (
-                    pointer.tenant_id != ownership.tenant_id
-                    or pointer.workspace_id != ownership.workspace_id
-                    or pointer.source_id != ownership.source_id
-                    or pointer.indexed_source_binding_id
-                    != ownership.indexed_source_binding_id
-                    or pointer.delivery_id != ownership.delivery_id
-                    or pointer.document_id != entry.document_id
-                    or pointer.materialization_generation
-                    != ownership.materialization_generation
-                ):
-                    raise KnowledgeMaterializationPurgeError("ownership_mismatch")
-                self._store.delete(
-                    _workspace_partition(
-                        ownership.tenant_id, "materialization_active_pointer"
-                    ),
-                    self._repository._active_materialization_pointer_key(
-                        workspace_id=ownership.workspace_id,
-                        source_id=ownership.source_id,
-                        indexed_source_binding_id=ownership.indexed_source_binding_id or "",
-                        remote_id=ownership.remote_id or "",
-                    ),
-                )
-                counters_update["active_pointers_deleted"] = counters_update.get(
-                    "active_pointers_deleted", 0
-                ) + 1
-            candidate = manifest_repository._get_remote_candidate(
-                tenant_id=manifest.tenant_id,
-                workspace_id=manifest.workspace_id,
-                source_id=manifest.source_id,
-                indexed_source_binding_id=manifest.indexed_source_binding_id,
-                remote_id=entry.remote_id,
-                materialization_sequence=manifest.materialization_sequence,
-            )
-            if candidate is not None:
-                if (
-                    candidate.delivery_id != manifest.delivery_id
-                    or candidate.manifest_id != manifest.manifest_id
-                    or candidate.manifest_fingerprint != manifest.manifest_fingerprint
-                ):
-                    raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
-                self._store.delete(
-                    manifest_repository._immutable_partition(manifest.tenant_id),
-                    manifest_repository._remote_candidate_row_key(
-                        workspace_id=manifest.workspace_id,
-                        source_id=manifest.source_id,
-                        indexed_source_binding_id=manifest.indexed_source_binding_id,
-                        remote_id=entry.remote_id,
-                        materialization_sequence=manifest.materialization_sequence,
-                    ),
-                )
-                counters_update["remote_candidates_deleted"] = counters_update.get(
-                    "remote_candidates_deleted", 0
-                ) + 1
-            else:
-                counters_update["already_absent"] = counters_update.get(
-                    "already_absent", 0
-                ) + 1
         receipt = self._repository.get_connected_source_delivery_receipt(
             tenant_id=manifest.tenant_id,
             workspace_id=manifest.workspace_id,
@@ -1081,9 +1295,7 @@ class KnowledgeMaterializationPurgeService:
             )
             counters_update["receipts_deleted"] = 1
         else:
-            counters_update["already_absent"] = counters_update.get(
-                "already_absent", 0
-            ) + 1
+            counters_update["already_absent"] = 1
         assignment = self._repository.get_connected_source_delivery_sequence_assignment(
             tenant_id=manifest.tenant_id,
             workspace_id=manifest.workspace_id,
@@ -1110,11 +1322,19 @@ class KnowledgeMaterializationPurgeService:
             if dict(index_record.data) != dict(expected_index.data):
                 raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
             self._store.delete(index_record.partition_key, index_record.row_key)
+            counters_update["delivery_indexes_deleted"] = (
+                counters_update.get("delivery_indexes_deleted", 0) + 1
+            )
         self._store.delete(
             manifest_repository._immutable_partition(manifest.tenant_id),
             manifest_repository._immutable_row_key(manifest),
         )
-        return counters.model_copy(update=counters_update)
+        return counters.model_copy(
+            update={
+                key: getattr(counters, key) + value
+                for key, value in counters_update.items()
+            }
+        )
 
     def _delete_delivery_record_page(
         self, state: KnowledgeMaterializationPurgeStateV1
@@ -1675,10 +1895,62 @@ class KnowledgeMaterializationPurgeService:
                             "phase": KnowledgeMaterializationPurgePhaseV1.DOCUMENT_REFERENCES,
                             "document_store_cursor": None,
                             "record_kind": None,
+                            "current_manifest_row_key": None,
+                            "current_manifest_id": None,
+                            "current_manifest_fingerprint": None,
+                            "current_delivery_id": None,
+                            "manifest_entry_offset": None,
                         }
                     ),
                 }
             )
+        if (
+            cursor.current_manifest_id is not None
+            or cursor.current_manifest_row_key is not None
+            or cursor.current_manifest_fingerprint is not None
+            or cursor.manifest_entry_offset is not None
+        ):
+            raise KnowledgeMaterializationPurgeError("BLOCKED_CORRUPT_STATE")
+        for record_kind, kind_name in (
+            (RecoveryRecordKindV1.INDEX_RECEIPT, "index_receipts"),
+            (RecoveryRecordKindV1.DELIVERY_ACCOUNTING, "accounting"),
+            (RecoveryRecordKindV1.ENQUEUE_INTENT, "enqueue_intents"),
+        ):
+            try:
+                recovery_page = (
+                    self._repository.list_connected_source_recovery_records_by_owner(
+                        tenant_id=request.tenant_id,
+                        workspace_id=request.workspace_id,
+                        source_id=request.source_id,
+                        indexed_source_binding_id=request.indexed_source_binding_id,
+                        knowledge_source_binding_ref=request.knowledge_source_binding_ref,
+                        record_kind=record_kind,
+                        limit=1,
+                        cursor=None,
+                    )
+                )
+            except ConnectedSourceRecoveryOwnershipIndexError as exc:
+                raise KnowledgeMaterializationPurgeError(
+                    "BLOCKED_CORRUPT_STATE"
+                ) from exc
+            if recovery_page.index_entries or recovery_page.orphan_index_entries:
+                return state.model_copy(
+                    update={
+                        "updated_at": self._now(),
+                        "cursor": cursor.model_copy(
+                            update={
+                                "phase": KnowledgeMaterializationPurgePhaseV1.RECOVERY_RECORDS,
+                                "document_store_cursor": None,
+                                "record_kind": kind_name,
+                                "current_manifest_row_key": None,
+                                "current_manifest_id": None,
+                                "current_manifest_fingerprint": None,
+                                "current_delivery_id": None,
+                                "manifest_entry_offset": None,
+                            }
+                        ),
+                    }
+                )
         manifest_repository = ConnectedSourceMaterializationManifestRepository(
             self._store,
             publication_authority=self._publication_authority,
@@ -1702,6 +1974,11 @@ class KnowledgeMaterializationPurgeService:
                             "phase": KnowledgeMaterializationPurgePhaseV1.MANIFESTS,
                             "document_store_cursor": None,
                             "record_kind": None,
+                            "current_manifest_row_key": None,
+                            "current_manifest_id": None,
+                            "current_manifest_fingerprint": None,
+                            "current_delivery_id": None,
+                            "manifest_entry_offset": None,
                         }
                     ),
                 }

@@ -1964,30 +1964,67 @@ record is removed. Sync permits and stale commits cannot cross that CAS.
 
 Deletion is bounded by a 1–500 record page and a durable, authenticated cursor
 through the phases `DOCUMENT_REFERENCES`, `RECOVERY_RECORDS`, `MANIFESTS`,
-`DELIVERY_RECORDS`, `PUBLICATION_CHAIN` and `COMPLETION_PROOF`. The
-document-ownership index is the only document enumerator: each canonical
+`DELIVERY_RECORDS`, `PUBLICATION_CHAIN` and `COMPLETION_PROOF`. Hard per-invocation
+budgets are: ≤`page_size` document references, ≤`page_size` recovery records,
+≤`page_size` manifest entries, ≤`page_size` delivery records, one publication
+chain node, and one bounded completion-proof check set. No phase may loop all
+pages or all manifest entries inside one `start_or_resume()` call.
+
+The document-ownership index is the only document enumerator: each canonical
 reference is ownership-validated, its exact vector/chunk/embedding materialization
 is deleted first, then the canonical reference and derived index row are removed.
 Missing canonical references are safe orphan-index evidence; index/reference
 fingerprint or five-field ownership mismatches fail closed.
 
-Recovery records are paginated and classified as `COMPLETE_OWNERSHIP`,
-`LEGACY_MIGRATION_REQUIRED` or preserved legacy/non-connected data. Complete
-index receipts, enqueue intents and delivery accounting are deleted only after
-exact ownership validation. Manifest entries, prepared delivery indexes, remote
-candidates, active pointers, receipts and sequence assignments are removed by
-deterministic scope keys; the constant-size sequence head is removed last.
+Complete-ownership recovery records (`_WorkspaceDocumentIndexReceipt`,
+`ConnectedSourceSyncEnqueueIntent`, `ConnectedSourceOperationDeliveryAccounting`)
+are dual-written into an exact recovery-ownership index keyed by the five-part
+ownership scope plus `record_kind`. Enumeration uses the authenticated
+DocumentStore ownership prefix only; tenant-wide recovery partitions are not
+scanned for complete-ownership purge work. Before deletion the purge reloads the
+canonical row, requires `COMPLETE_OWNERSHIP`, revalidates the five ownership
+fields and the SHA-256 canonical fingerprint, then deletes canonical first and
+the index row second. A crash after canonical deletion leaves safe orphan-index
+evidence. Index/canonical mismatches fail closed. Missing canonical rows are
+orphan evidence. Duplicate index repair from a known complete-ownership
+canonical is idempotent. The index does not override the canonical record.
+
+The exact recovery index does not discover historical unindexed legacy rows.
+`LEGACY_MIGRATION_REQUIRED`, `LEGACY_NON_CONNECTED`, local-file and web records
+are not indexed. Full historical migration is not implemented here; purge
+completion applies only after an explicit migration gate confirms that no
+relevant legacy recovery records remain for the target scope. New
+complete-ownership writes are indexed; records created before this contract are
+not retroactively covered.
+
+Manifest deletion uses a durable per-entry cursor bound to the purge ID:
+`document_store_cursor` (manifest page continuation), `current_manifest_row_key`,
+`current_manifest_id`, `current_manifest_fingerprint`, `current_delivery_id` and
+`manifest_entry_offset`. One invocation loads at most one current manifest,
+validates immutable identity (manifest ID, fingerprint, delivery ID, sequence and
+ownership) on every resume, processes `[offset : offset + page_size]` entries,
+and persists the next offset. Receipt, sequence assignment, delivery-index and
+immutable-manifest cleanup run only after all entries are processed. A missing
+or mismatched current manifest before entry completion is `BLOCKED_CORRUPT_STATE`
+and never silently advances. Crash/restart reprocesses idempotently without
+skipping entries; concurrent workers rely on purge-state CAS so the cursor never
+moves backward and a losing worker reloads.
+
+Manifest entries, prepared delivery indexes, remote candidates, active pointers,
+receipts and sequence assignments are otherwise removed by deterministic scope
+keys; the constant-size sequence head is removed last.
 
 The publication chain is traversed from its exact head; each head is CAS-advanced
 to its predecessor before the old immutable node is removed. A restart repeats
 only idempotent exact deletions. Before `COMPLETED`, bounded empty-page checks
-prove the ownership index, manifests, delivery records, active pointers,
-sequence head and publication head are empty. A legacy migration blocker or
-corruption never reports completion. The detached fence remains as bounded
-purge/lifecycle evidence, with no publication permit or committed head.
-Provider data is not mutated. The service is intentionally not an HTTP or
-lifecycle-detach endpoint and is the prerequisite for the final publication-fence
-closeout.
+prove the document ownership index, recovery ownership indexes for all three
+record kinds, manifests (with no partial entry cursor remaining), delivery
+records, active pointers, sequence head and publication head are empty.
+Counters remain non-authoritative. A legacy migration blocker or corruption never
+reports completion. The detached fence remains as bounded purge/lifecycle
+evidence, with no publication permit or committed head. Provider data is not
+mutated. The service is intentionally not an HTTP or lifecycle-detach endpoint
+and is the prerequisite for the final publication-fence closeout.
 
 ## 20. Purge enumeration prerequisites
 
@@ -1998,10 +2035,12 @@ for the same query shape; traversal promises deterministic ordering over an
 unchanged, snapshot-like dataset, not transactional snapshot isolation.
 
 Connected-source index receipts, delivery accounting and enqueue recovery
-intents carry complete binding identity on new writes. Historical records
-without that identity remain explicitly `LEGACY_MIGRATION_REQUIRED` and are
-never associated with a purge by inference. Local-file and web records remain
-legacy records.
+intents carry complete binding identity on new writes and are dual-written into
+the exact recovery-ownership index. Historical records without that identity
+remain explicitly `LEGACY_MIGRATION_REQUIRED` and are never associated with a
+purge by inference. Local-file and web records remain legacy records. The index
+covers only new complete-ownership writes; it does not retroactively cover
+records created before this contract.
 
 Connected-source document references are indexed one-per-row by the exact
 five-part ownership scope. The canonical reference is written first and the

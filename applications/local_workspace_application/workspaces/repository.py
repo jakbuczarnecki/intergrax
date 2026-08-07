@@ -17,6 +17,18 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceOperationDeliveryAccounting,
     ConnectedSourceSyncEnqueueIntent,
 )
+from local_workspace_application.workspaces.connected_source_recovery_ownership_index import (
+    ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ConnectedSourceRecoveryOwnershipIndexError,
+    ConnectedSourceRecoveryOwnershipPageV1,
+    RecoveryRecordKindV1,
+    canonical_record_fingerprint,
+    index_entry_for_delivery_accounting,
+    index_entry_for_enqueue_intent,
+    parse_recovery_ownership_index_entry,
+    recovery_ownership_index_partition,
+    recovery_ownership_scope_prefix,
+)
 from local_workspace_application.workspaces.document_ownership_index import (
     DocumentOwnershipIndexError,
     DocumentReferenceOwnershipPageV1,
@@ -793,11 +805,32 @@ class ManagedWorkspaceRepository:
     ) -> bool:
         partition_key = _partition(accounting.tenant_id, _ENTITY_CONNECTED_SOURCE_DELIVERY)
         row_key = f"{accounting.operation_id}:{accounting.delivery_id}"
-        return self._put_if_absent(
+        created = self._put_if_absent(
             accounting,
             partition_key=partition_key,
             row_key=row_key,
         )
+        stored = (
+            accounting
+            if created
+            else self.get_connected_source_delivery_accounting(
+                tenant_id=accounting.tenant_id,
+                operation_id=accounting.operation_id,
+                delivery_id=accounting.delivery_id,
+            )
+        )
+        if (
+            stored is not None
+            and stored.ownership_classification == "COMPLETE_OWNERSHIP"
+        ):
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_delivery_accounting(
+                    stored,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=row_key,
+                )
+            )
+        return created
 
     def get_connected_source_delivery_accounting(
         self,
@@ -863,6 +896,14 @@ class ManagedWorkspaceRepository:
     ) -> ConnectedSourceSyncEnqueueIntent:
         partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
         self._put(partition_key, intent.operation_id, intent)
+        if intent.ownership_classification == "COMPLETE_OWNERSHIP":
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_enqueue_intent(
+                    intent,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=intent.operation_id,
+                )
+            )
         return intent
 
     def put_connected_source_sync_enqueue_intent_if_absent(
@@ -870,11 +911,31 @@ class ManagedWorkspaceRepository:
         intent: ConnectedSourceSyncEnqueueIntent,
     ) -> bool:
         partition_key = _partition(intent.tenant_id, _ENTITY_CONNECTED_SOURCE_SYNC_ENQUEUE)
-        return self._put_if_absent(
+        created = self._put_if_absent(
             intent,
             partition_key=partition_key,
             row_key=intent.operation_id,
         )
+        stored = (
+            intent
+            if created
+            else self.get_connected_source_sync_enqueue_intent(
+                tenant_id=intent.tenant_id,
+                operation_id=intent.operation_id,
+            )
+        )
+        if (
+            stored is not None
+            and stored.ownership_classification == "COMPLETE_OWNERSHIP"
+        ):
+            self.put_connected_source_recovery_ownership_index_entry(
+                index_entry_for_enqueue_intent(
+                    stored,
+                    canonical_partition_key=partition_key,
+                    canonical_row_key=intent.operation_id,
+                )
+            )
+        return created
 
     def allocate_connected_source_sync_enqueue_generation(
         self,
@@ -945,6 +1006,14 @@ class ManagedWorkspaceRepository:
                 partition_key=partition_key,
                 row_key=operation_id,
             ):
+                if updated.ownership_classification == "COMPLETE_OWNERSHIP":
+                    self.put_connected_source_recovery_ownership_index_entry(
+                        index_entry_for_enqueue_intent(
+                            updated,
+                            canonical_partition_key=partition_key,
+                            canonical_row_key=operation_id,
+                        )
+                    )
                 return updated
         raise RuntimeError("connected_source_enqueue_generation_allocation_failed")
 
@@ -1288,6 +1357,230 @@ class ManagedWorkspaceRepository:
             orphan_index_entries=tuple(orphan_entries),
             next_cursor=page.next_cursor,
         )
+
+    def put_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> ConnectedSourceRecoveryOwnershipIndexEntryV1:
+        record = entry.to_document()
+        existing = self._store.get(record.partition_key, record.row_key)
+        if existing is not None:
+            parsed = parse_recovery_ownership_index_entry(existing)
+            same_identity = (
+                parsed.tenant_id == entry.tenant_id
+                and parsed.workspace_id == entry.workspace_id
+                and parsed.source_id == entry.source_id
+                and parsed.indexed_source_binding_id
+                == entry.indexed_source_binding_id
+                and parsed.knowledge_source_binding_ref
+                == entry.knowledge_source_binding_ref
+                and parsed.record_kind == entry.record_kind
+                and parsed.operation_id == entry.operation_id
+                and parsed.delivery_id == entry.delivery_id
+                and parsed.document_id == entry.document_id
+                and parsed.canonical_partition_key == entry.canonical_partition_key
+                and parsed.canonical_row_key == entry.canonical_row_key
+            )
+            if not same_identity:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_conflict"
+                )
+            if parsed == entry:
+                return entry
+            if not isinstance(self._store, ConditionalDocumentStore):
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_store_unavailable"
+                )
+            if not self._store.replace_if_match(
+                expected=existing,
+                replacement=record,
+            ):
+                retry = self._store.get(record.partition_key, record.row_key)
+                if (
+                    retry is None
+                    or parse_recovery_ownership_index_entry(retry) != entry
+                ):
+                    raise ConnectedSourceRecoveryOwnershipIndexError(
+                        "recovery_ownership_index_conflict"
+                    )
+            return entry
+        if not isinstance(self._store, ConditionalDocumentStore):
+            raise ConnectedSourceRecoveryOwnershipIndexError(
+                "recovery_ownership_index_store_unavailable"
+            )
+        if not self._store.put_if_absent(record):
+            retry = self._store.get(record.partition_key, record.row_key)
+            if retry is None or parse_recovery_ownership_index_entry(retry) != entry:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_conflict"
+                )
+        return entry
+
+    def repair_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> ConnectedSourceRecoveryOwnershipIndexEntryV1:
+        """Idempotent repair from a known complete-ownership canonical record."""
+        return self.put_connected_source_recovery_ownership_index_entry(entry)
+
+    def delete_connected_source_recovery_ownership_index_entry(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+    ) -> bool:
+        record = self._store.get(
+            recovery_ownership_index_partition(entry.tenant_id),
+            entry.row_key,
+        )
+        if record is None:
+            return False
+        if parse_recovery_ownership_index_entry(record) != entry:
+            raise ConnectedSourceRecoveryOwnershipIndexError(
+                "recovery_ownership_index_delete_conflict"
+            )
+        self._store.delete(record.partition_key, record.row_key)
+        return True
+
+    def list_connected_source_recovery_records_by_owner(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        indexed_source_binding_id: str,
+        knowledge_source_binding_ref: str,
+        record_kind: RecoveryRecordKindV1,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ConnectedSourceRecoveryOwnershipPageV1:
+        validate_document_query_limit(limit)
+        scope = (
+            tenant_id,
+            workspace_id,
+            source_id,
+            indexed_source_binding_id,
+            knowledge_source_binding_ref,
+        )
+        prefix = recovery_ownership_scope_prefix(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=source_id,
+            indexed_source_binding_id=indexed_source_binding_id,
+            knowledge_source_binding_ref=knowledge_source_binding_ref,
+            record_kind=record_kind,
+        )
+        page = self._store.query(
+            recovery_ownership_index_partition(tenant_id),
+            limit=limit,
+            row_key_prefix=prefix,
+            cursor=cursor,
+        )
+        index_entries: list[ConnectedSourceRecoveryOwnershipIndexEntryV1] = []
+        orphan_entries: list[ConnectedSourceRecoveryOwnershipIndexEntryV1] = []
+        for record in page.documents:
+            entry = parse_recovery_ownership_index_entry(record)
+            if entry.ownership_scope != scope or entry.record_kind != record_kind:
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_scope_mismatch"
+                )
+            canonical = self._store.get(
+                entry.canonical_partition_key,
+                entry.canonical_row_key,
+            )
+            if canonical is None:
+                orphan_entries.append(entry)
+                continue
+            if not self._recovery_canonical_matches_index(entry, canonical):
+                raise ConnectedSourceRecoveryOwnershipIndexError(
+                    "recovery_ownership_index_reference_mismatch"
+                )
+            index_entries.append(entry)
+        return ConnectedSourceRecoveryOwnershipPageV1(
+            index_entries=tuple(index_entries),
+            orphan_index_entries=tuple(orphan_entries),
+            next_cursor=page.next_cursor,
+        )
+
+    def _recovery_canonical_matches_index(
+        self,
+        entry: ConnectedSourceRecoveryOwnershipIndexEntryV1,
+        canonical: DocumentRecord,
+    ) -> bool:
+        if (
+            canonical.partition_key != entry.canonical_partition_key
+            or canonical.row_key != entry.canonical_row_key
+        ):
+            return False
+        if entry.record_kind is RecoveryRecordKindV1.ENQUEUE_INTENT:
+            try:
+                item = ConnectedSourceSyncEnqueueIntent.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            return (
+                item.ownership_classification == "COMPLETE_OWNERSHIP"
+                and (
+                    item.tenant_id,
+                    item.workspace_id,
+                    item.source_id,
+                    item.indexed_source_binding_id,
+                    item.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        if entry.record_kind is RecoveryRecordKindV1.DELIVERY_ACCOUNTING:
+            try:
+                item = ConnectedSourceOperationDeliveryAccounting.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            return (
+                item.ownership_classification == "COMPLETE_OWNERSHIP"
+                and (
+                    item.tenant_id,
+                    item.workspace_id,
+                    item.source_id,
+                    item.indexed_source_binding_id,
+                    item.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and item.delivery_id == entry.delivery_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        if entry.record_kind is RecoveryRecordKindV1.INDEX_RECEIPT:
+            from local_workspace_application.workspaces.document_indexing import (
+                _WorkspaceDocumentIndexReceipt,
+            )
+
+            try:
+                item = _WorkspaceDocumentIndexReceipt.model_validate(
+                    dict(canonical.data), strict=False
+                )
+            except (TypeError, ValueError):
+                return False
+            ownership = item.materialization_ownership
+            if ownership is None:
+                return False
+            return (
+                ownership.ownership_mode
+                is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
+                and (
+                    ownership.tenant_id,
+                    ownership.workspace_id,
+                    ownership.source_id,
+                    ownership.indexed_source_binding_id,
+                    ownership.knowledge_source_binding_ref,
+                )
+                == entry.ownership_scope
+                and item.operation_id == entry.operation_id
+                and item.document_id == entry.document_id
+                and canonical_record_fingerprint(item) == entry.canonical_fingerprint
+            )
+        return False
 
     def get_document_ref_by_path(
         self,
