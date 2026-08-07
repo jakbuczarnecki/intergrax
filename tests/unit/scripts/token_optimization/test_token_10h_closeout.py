@@ -154,15 +154,20 @@ def test_token_10h_checked_in_evidence_is_safe_and_claim_consistent() -> None:
     assert evaluation["claim_matrix"]["full_model_behavioral_compliance"] == (
         "NOT_PROVEN"
     )
-    assert evaluation["claim_matrix"][
-        "protected_value_preservation_at_final_runtime_boundary"
-    ] == "PROVEN"
-    assert evaluation["claim_matrix"][
-        "runtime_safety_for_16_case_synthetic_corpus"
-    ] == "PROVEN"
-    assert evaluation["claim_matrix"][
-        "deterministic_high_risk_runtime_enforcement"
-    ] == "PROVEN"
+    assert (
+        evaluation["claim_matrix"][
+            "protected_value_preservation_at_final_runtime_boundary"
+        ]
+        == "PROVEN"
+    )
+    assert (
+        evaluation["claim_matrix"]["runtime_safety_for_16_case_synthetic_corpus"]
+        == "PROVEN"
+    )
+    assert (
+        evaluation["claim_matrix"]["deterministic_high_risk_runtime_enforcement"]
+        == "PROVEN"
+    )
     assert evaluation["claim_matrix"]["model_case_level_compliance"] == (
         "PARTIALLY_PROVEN — 14/16"
     )
@@ -175,9 +180,7 @@ def test_token_10h_checked_in_evidence_is_safe_and_claim_consistent() -> None:
     assert high_risk["model_behavioral_failure"] is True
     assert high_risk["runtime_safety_failure"] is False
     assert high_risk["policy_override_applied"] is True
-    assert high_risk["policy_override_reason"] == (
-        "security_warning_requires_review"
-    )
+    assert high_risk["policy_override_reason"] == ("security_warning_requires_review")
     assert high_risk["actual_execution_status"]["final_runtime_status"] == (
         "review_required"
     )
@@ -194,4 +197,6 @@ def test_token_10h_checked_in_evidence_is_safe_and_claim_consistent() -> None:
     assert "Public promotion is `WITHHELD`" in report
     assert "Public promotion: `WITHHELD`" in proof_readme
     assert "TOKEN-10G CLOSED" in roadmap
-    assert "TOKEN-10H is not closed" in roadmap
+    assert "TOKEN-10H CLOSED" in roadmap
+    assert "NOT QUALIFIED" in roadmap
+    assert "TOKEN-10H is not closed" not in roadmap

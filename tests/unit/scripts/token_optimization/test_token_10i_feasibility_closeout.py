@@ -33,14 +33,19 @@ def test_token_10i_feasibility_evidence_is_safe_and_claim_consistent() -> None:
     proof_readme = _README_FILE.read_text(encoding="utf-8")
     roadmap = _ROADMAP_FILE.read_text(encoding="utf-8")
 
-    assert "BLOCKED_HARDWARE_CAPACITY" in feasibility
+    assert "BLOCKED_HARDWARE_CAPACITY_FINAL" in feasibility
     assert "Qwen/Qwen3-14B-AWQ" in feasibility
     assert "9.44 GiB" in feasibility
     assert "-0.89 GiB" in feasibility
+    assert "8192" in feasibility
+    assert "0.95" in feasibility
+    assert "10.79/11.99 GiB" in feasibility
     assert "Frozen qualification for `Qwen/Qwen3-14B-AWQ` did not start" in feasibility
-    assert "TOKEN-10I BLOCKED_HARDWARE_CAPACITY" in roadmap
-    assert "TOKEN-10H is not closed" in roadmap
-    assert "BLOCKED_HARDWARE_CAPACITY" in proof_readme
+    assert "TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL" in roadmap
+    assert "TOKEN-10H CLOSED" in roadmap
+    assert "NOT QUALIFIED" in roadmap
+    assert "TOKEN-10H is not closed" not in roadmap
+    assert "BLOCKED_HARDWARE_CAPACITY_FINAL" in proof_readme
     assert "token-10i-qwen3-14b-awq-feasibility.md" in proof_readme
 
     for text in (feasibility, proof_readme):

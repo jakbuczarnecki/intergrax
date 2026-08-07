@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Token Optimization — Multi-layer Feature Plan
 
-**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY**.
+**Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED (NOT QUALIFIED: MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE)**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
 **Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../audit/TOKEN_OPTIMIZATION.md)  
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
@@ -211,7 +211,7 @@ Done / Closed when:
 
 That historical next step has been completed and superseded by the closed TOKEN-1 through TOKEN-9 sequence.
 
-**Current next step:** Decide hardware/runtime capacity path after **TOKEN-10I** blocked `Qwen/Qwen3-14B-AWQ` on the current local GPU (no frozen-contract qualification). Independent audit of the checked-in post-SAFETY-1 **TOKEN-10H** negative live proof remains open. **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
+**Current next step:** Select a separately approved local model path after **TOKEN-10I** `BLOCKED_HARDWARE_CAPACITY_FINAL` for `Qwen/Qwen3-14B-AWQ` under the approved no-offload profile (no frozen-contract qualification). **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`: `MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`; runtime safety PASS; public promotion WITHHELD). **CTX-UCL-6** accepted/closed through **6D**; **CTX-UCL-CLOSEOUT-1** **ACCEPTED / CLOSED**. **TOKEN-10E-1**, **TOKEN-10E-2**, **TOKEN-10E-3**, **TOKEN-10E-4**, and **TOKEN-10E** are **ACCEPTED / CLOSED**; rollback execution remains outside scope.
 
 ### LKW proof phase map (post-design)
 
@@ -1279,7 +1279,7 @@ TOKEN-9  — LLM tool-calling router, safe compiler and live engine integration 
 TOKEN-10 — Cache-Aware Universal Token Optimization Runtime and Proof — Planned / Active
 ```
 
-Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **Current next step:** independent audit of the checked-in **TOKEN-10H** negative live proof. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
+Subtasks: **TOKEN-10A** (accepted/closed) through **TOKEN-10H** — see §TOKEN-10. **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`). **TOKEN-10I** is `BLOCKED_HARDWARE_CAPACITY_FINAL`. **Current next step:** separately approved local model path. **CTX-UCL-CLOSEOUT-1** is **ACCEPTED / CLOSED**; **TOKEN-10E-1** is **ACCEPTED / CLOSED**.
 
 **Superseded:** “runtime/provider integration remains deferred indefinitely”; “TOKEN-9 is the final phase”; “LKW is the first required place to prove the engine.” Universal platform proof precedes LKW product proof.
 
@@ -1843,7 +1843,7 @@ automatic production enablement
 
 #### Current next step
 
-Resolve **TOKEN-10I** hardware-capacity decision for the Qwen3 14B AWQ candidate, or continue with a separately approved local model path. Independent audit of the checked-in post-SAFETY-1 **TOKEN-10H** negative live proof (`MODEL_BEHAVIOR_MISMATCH` with runtime safety PASS) remains open. Do not wire LKW, Slack, or application storage; public promotion remains withheld until model behavior satisfies the full contract.
+**TOKEN-10I** closed as `BLOCKED_HARDWARE_CAPACITY_FINAL` for `Qwen/Qwen3-14B-AWQ` on this GPU under the approved no-offload profile; continue with a separately approved local model path. **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`: `MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`; runtime safety PASS; public promotion WITHHELD). Do not wire LKW, Slack, or application storage; public promotion remains withheld until a later model satisfies the full contract.
 
 ### TOKEN-10F — Universal TOML Proof Harness and Reproducible Docker Path
 
@@ -1873,7 +1873,7 @@ Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
 Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
 claims, and TOKEN-10H public proof or README promotion.
 
-**Current next step:** Independent audit of the checked-in **TOKEN-10H** negative live proof.
+**Current next step:** Separately approved local model path after **TOKEN-10I** `BLOCKED_HARDWARE_CAPACITY_FINAL`; **TOKEN-10H** qualification process is **CLOSED** (`NOT QUALIFIED`).
 
 #### TOKEN-10F-EVIDENCE-EXTENSION — Safe evaluation evidence contract
 
@@ -1939,7 +1939,8 @@ qualification was not executed.
 
 ### TOKEN-10H — Checked-In Negative Proof and Withheld Public Promotion
 
-**Status:** **MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED**. TOKEN-10H is not closed.
+**Status:** **CLOSED** — qualification process closed; model **NOT QUALIFIED**
+(`MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`).
 **Runtime safety (post-SAFETY-1):** **PASS**. Public promotion remains **WITHHELD**.
 
 **Historical TECH-1 RCA (retained):** an earlier frozen attempt failed as
@@ -2017,47 +2018,55 @@ Closeout:
 
 ### TOKEN-10I — Qwen3 14B AWQ Feasibility and Frozen Qualification Gate
 
-**Status:** **BLOCKED_HARDWARE_CAPACITY**. Frozen qualification was not started.
+**Status:** **BLOCKED_HARDWARE_CAPACITY_FINAL**. Frozen qualification was not
+started. Qwen3 14B AWQ is operationally unsuitable for this GPU under the
+approved no-offload profile.
 
 **Candidate:** `Qwen/Qwen3-14B-AWQ` (official AWQ only) as successor to rejected
 `Qwen/Qwen2.5-7B-Instruct-AWQ` (`MODEL_BEHAVIOR_MISMATCH`, `14/16`, STABLE,
 technical PASS, runtime safety PASS).
 
-**Runtime attempt (canonical local compose except model selection):**
+**Attempt A (preserved) — canonical local compose except model selection:**
 
 - image/version: `vllm/vllm-openai:v0.23.0`
 - model override: `VLLM_MODEL=Qwen/Qwen3-14B-AWQ`
-- endpoint target: existing OpenAI-compatible local vLLM service
-- tool parser left at compose default `hermes` for first attempt
+- tool parser left at compose default `hermes`
 - no gpu-memory-utilization / max-model-len / swap / TP / scheduler tuning
-- no prompt, corpus, risk, threshold, evaluator, or safety semantic changes
-
-**Hardware feasibility:**
-
 - GPU: NVIDIA GeForce RTX 4080 Laptop GPU, 12282 MiB total
-- architecture resolved: `Qwen3ForCausalLM`
-- quantization path: AWQ → runtime `awq_marlin`
-- default `max_model_len` selected by vLLM: `40960`
-- model weight load: **PASS** (`9.44 GiB`)
-- available KV cache memory after load: **`-0.89 GiB`**
-- engine start: **FAIL** at KV-cache initialization
-- error class: `ValueError: No available memory for the cache blocks`
-- OOM stage: post-weight-load KV reservation under existing
-  `--gpu-memory-utilization 0.85`
-- model READY: **FAIL**
-- `/v1/models` identity gate: not reached
-- tool smoke / Token Optimization smoke / prequalification / two-run
-  qualification: not run
+- architecture: `Qwen3ForCausalLM`; AWQ → `awq_marlin`
+- default `max_model_len`: `40960`
+- weight load: **PASS** (`9.44 GiB`)
+- available KV cache after load: **`-0.89 GiB`**
+- READY: **FAIL** (`ValueError: No available memory for the cache blocks`)
+- interim result: `BLOCKED_HARDWARE_CAPACITY`
+
+**Attempt B (this continuation) — one controlled capacity profile only:**
+
+- `--max-model-len 8192`
+- `--gpu-memory-utilization 0.95`
+- no offload / no FP8 KV / no alternate quantization / no other tuning
+- applied via ephemeral local compose override; tracked production compose
+  unchanged
+- tool parser: `hermes` retained after vLLM 0.23.0 + chat-template check
+  (Hermes-style `<tool_call>` JSON; not `qwen3_xml`)
+- host idle VRAM before start: ~`52–64 MiB` used of `12282 MiB`
+- CUDA free-memory gate: free `10.79/11.99 GiB` < desired `0.95` (`11.39 GiB`)
+- weight/KV stages: not reached
+- READY: **FAIL**
+- final result: `BLOCKED_HARDWARE_CAPACITY_FINAL`
+
+**Gates not reached:** `/v1/models`, chat/tool/TO smokes, semantic
+prequalification, context-headroom across 16 cases, two frozen runs.
 
 **Comparison to Qwen 7B:** no frozen-contract behavioral delta — Qwen3 never
 entered qualification. Qwen 7B historical evidence remains preserved.
 
 **Integrity:** prompt/corpus/risk/threshold/evaluator/runtime-safety deltas =
-none. No post-result tuning. No alternate quantization or larger Qwen3 variant
-was tested.
+none. No post-result tuning. Attempt A evidence preserved separately from
+Attempt B.
 
-**Verdict:** `BLOCKED_HARDWARE_CAPACITY`. Separate operator decision required
-before any context/KV architecture adjustment or alternate host.
+**Verdict:** `BLOCKED_HARDWARE_CAPACITY_FINAL`. Do not further tune this
+no-offload profile. Continue only with a separately approved local model path.
 
 Safe evidence: [`docs/proofs/token_optimization/token-10i-qwen3-14b-awq-feasibility.md`](../../proofs/token_optimization/token-10i-qwen3-14b-awq-feasibility.md).
 
@@ -2545,7 +2554,7 @@ TOKEN-10E   policy-governed in-cache compaction — TOKEN-10E-3 Ready for Review
 TOKEN-10F universal proof harness — Accepted / Closed
 TOKEN-10F-EVIDENCE-EXTENSION — Accepted / Closed
 TOKEN-10G corpus, gates and evaluation — Closed
-TOKEN-10H checked-in negative live proof (post-SAFETY-1) — Model behavior mismatch / Changes required; runtime safety PASS; public promotion withheld
+TOKEN-10H checked-in negative live proof (post-SAFETY-1) — CLOSED / NOT QUALIFIED (MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE); runtime safety PASS; public promotion withheld
 ```
 
 TOKEN-7 — broader runtime/adaptive integration remains future work; no production auto-apply.

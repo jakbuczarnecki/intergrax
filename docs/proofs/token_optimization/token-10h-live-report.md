@@ -144,9 +144,10 @@ Public promotion is `WITHHELD`. The main `README.md` was intentionally left unch
   (runtime safety FAIL then; do not rewrite)
 - `TOKEN-10G`: `CLOSED`
 - `TOKEN-10H-SAFETY-1`: runtime fail-safe present
-- `TOKEN-10H`: `MODEL_BEHAVIOR_MISMATCH / CHANGES_REQUIRED` after post-SAFETY-1
-  frozen rerun (`RUNTIME SAFETY PASS`, model still below 16/16)
-- Token Optimization roadmap: remains open; TOKEN-10H is not closed; public
-  promotion withheld
+- `TOKEN-10H`: qualification process **CLOSED**; model **NOT QUALIFIED**
+  (`MODEL_BEHAVIOR_MISMATCH`, `14/16`, `STABLE`) after post-SAFETY-1 frozen
+  rerun (`RUNTIME SAFETY PASS`, model still below 16/16)
+- Public promotion withheld
 
-Next: independent audit of the checked-in post-SAFETY-1 negative live proof. Do not start larger-model qualification from this closeout.
+Independent audit of the checked-in post-SAFETY-1 negative live proof is
+complete. Larger-model qualification continues under TOKEN-10I separately.
