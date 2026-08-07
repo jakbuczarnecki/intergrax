@@ -411,6 +411,45 @@ def test_namespace_query_isolation() -> None:
     assert [hit.vector_id for hit in manager.query([1.0], scope=namespace_b, top_k=5)] == ["b"]
 
 
+def test_count_exact_workspace_scope_does_not_masquerade_as_tenant_only() -> None:
+    """Tenant-only VectorStoreScope is exact; it does not mean all workspaces."""
+    manager = VectorstoreManager(
+        InMemoryVectorStore(tenant_id="tenant-a"),
+        scope=VectorStoreScope(tenant_id="tenant-a"),
+    )
+    workspace_scope = VectorStoreScope(
+        tenant_id="tenant-a",
+        workspace_id="workspace-w",
+    )
+    other_workspace = VectorStoreScope(
+        tenant_id="tenant-a",
+        workspace_id="workspace-other",
+    )
+    manager.add_records(
+        [
+            VectorStoreRecord(
+                document=_document(
+                    document_id="ws-doc",
+                    namespace=None,
+                    workspace_id="workspace-w",
+                ),
+                embedding=[1.0],
+                vector_id="ws-vector",
+            )
+        ],
+        scope=workspace_scope,
+    )
+
+    assert manager.count(scope=workspace_scope) == 1
+    assert manager.count() == 0
+    assert manager.count(scope=VectorStoreScope(tenant_id="tenant-a")) == 0
+    assert manager.count(scope=other_workspace) == 0
+    assert (
+        manager.query([1.0], scope=workspace_scope, top_k=1)[0].vector_id == "ws-vector"
+    )
+    assert manager.query([1.0], scope=other_workspace, top_k=1) == []
+
+
 def test_delete_count_fail_closed_without_tenant_bound_provider() -> None:
     class UnboundProvider:
         def delete(self, ids: object) -> None:

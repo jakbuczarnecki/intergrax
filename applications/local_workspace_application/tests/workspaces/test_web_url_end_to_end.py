@@ -40,6 +40,7 @@ from intergrax.websearch.capture.url_policy import WebUrlAccessPolicy
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -540,7 +541,15 @@ def test_web_url_end_to_end_real_rag_ask_proof(rag_e2e_bundle) -> None:
     tenant_stores = wiring_ctx.extras.get("tenant_vectorstore_managers", {})
     scoped_manager = tenant_stores.get(tenant)
     assert scoped_manager is not None
-    assert scoped_manager.count() >= 1
+    assert (
+        scoped_manager.count(
+            scope=VectorStoreScope(
+                tenant_id=tenant,
+                workspace_id=workspace_id,
+            )
+        )
+        >= 1
+    )
 
     ask = client.post(
         f"{_PREFIX}/workspaces/{workspace_id}/ask",
