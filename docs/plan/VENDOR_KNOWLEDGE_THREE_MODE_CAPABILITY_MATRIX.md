@@ -17,10 +17,11 @@ The accepted adapter-family input proves provider adapters and durable
 reconciliation foundations, not automatically application materialization,
 indexed ingestion or live access. Current repository evidence proves:
 
-- generic indexed/RAG infrastructure and an application indexed path;
-- generic durable sink, checkpoint, reconciliation and recovery foundations;
-- generic live binding, capability, executor, limits, normalized evidence and
-  receipt foundations;
+- generic Indexed / RAG infrastructure and an application indexed path;
+- generic Durable / Storage / Materialization sink, checkpoint, reconciliation
+  and recovery foundations;
+- generic Live / Realtime binding, capability, executor, limits, normalized
+  evidence and receipt foundations;
 - the accepted `ARCH-1` shared live delta is implemented and closed through
   `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`;
 - a provider-specific application indexed path only for Slack
@@ -33,16 +34,21 @@ Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar live access
 and Slack `slack_conversation` live access are `ACCEPTED / CLOSED`; all other
 live provider/source-kind rows remain conservative and unimplemented.
 
+The canonical mode names for this roadmap are **Indexed / RAG**, **Durable /
+Storage / Materialization** and **Live / Realtime**. The machine-readable
+column identifiers `indexed`, `durable` and `live` below are retained for
+compatibility with the matrix format and mean those canonical modes.
+
 ## 2. Mode definitions
 
-### `INDEXED`
+### Indexed / RAG (`INDEXED`)
 
 Provider content is durably or controllably materialized, converted to
 canonical content, written to an index, refreshed, removed when supported,
 retained with provenance, and retrieved through an application query path.
 Generic local-file ingestion is not Vendor Knowledge provider proof.
 
-### `DURABLE_MATERIALIZATION`
+### Durable / Storage / Materialization (`DURABLE_MATERIALIZATION`)
 
 Provider content is synchronized into durable application-controlled storage
 through a source binding, initial sync, continuation or reconciliation,
@@ -50,7 +56,7 @@ deterministic and idempotent delivery, checkpointing, recovery and explicit
 application ownership. The generic DocumentStore sink proves the runtime
 contract; it does not by itself prove a production application sink.
 
-### `LIVE`
+### Live / Realtime (`LIVE`)
 
 An authorized application invokes a typed, provider/source-kind-registered,
 validated read-only capability. Execution is bounded by item, byte and time
@@ -191,7 +197,8 @@ evidence remains transient and is not indexed or durably persisted.
 
 This row does not claim native Slack workspace search, exhaustive history,
 arbitrary token-accessible channel discovery, files/attachments or organization-
-wide Ask Slack. Indexed and durable lifecycle status remains independent.
+  wide Ask Slack. Indexed / RAG and Durable / Storage / Materialization
+  lifecycle status remains independent.
 
 ## 9. Commercially supported mode claims
 
@@ -228,21 +235,27 @@ access.
    adapter-level attachment inventory and from any three-mode claim.
 7. Databricks source-kind selection is still a roadmap decision.
 
-## 11. Follow-up sequencing
+## 11. Follow-up sequencing — superseded by the canonical platform roadmap
 
-The matrix records gaps; it does not activate them. The documented sequence is:
+The matrix records evidence and gaps; it does not activate implementation.
+Its former follow-up sequence is superseded by the canonical VK-1–VK-9 order in
+[`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md):
 
-1. accept this matrix after external review;
-2. keep the accepted Slack connected-source lifecycle proof stable while
-   routing the remaining provider application proofs;
-3. decide whether application-owned materialization is a supported product
-   workflow for each non-LKW provider family;
-4. route provider/source-kind index or materialization tasks only after the
-   product boundary is approved;
-5. route live capability contracts/handlers and application proofs separately;
-6. select one Databricks source kind before any Databricks mode work.
+1. `VENDOR-KNOWLEDGE-UNIFIED-THREE-MODE-CONTRACT-AUDIT-1`;
+2. `VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1`;
+3. `VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`;
+4. `VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`;
+5. `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`;
+6. `VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`;
+7. `VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1`;
+8. `VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`;
+9. `VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`.
 
-These are sequencing findings, not newly activated implementation tasks.
+The current matrix intentionally does not yet provide complete source-kind
+coverage for Atlan, Power BI and Databricks. VK-6 must create that exact
+coverage from verified evidence; Databricks still requires source-kind
+selection. The accepted Slack connected-source result remains
+`LKW-SLACK-CONNECTED-SOURCE-1` **ACCEPTED / CLOSED** and is not reopened.
 
 ## 12. Evidence appendix
 

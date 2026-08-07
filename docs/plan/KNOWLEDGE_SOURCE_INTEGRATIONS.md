@@ -10,15 +10,18 @@
 
 ## 1. Objective
 
-Build one platform-level reusable provider foundation above existing category-specific vendor integrations so applications can consume external enterprise knowledge through **three separate consumption modes**:
+Build one provider-neutral, plugin-based Vendor Knowledge platform above existing
+category-specific vendor integrations so applications can consume external
+enterprise knowledge through **three universal data-access modes**:
 
 ```text
-indexed RAG
-durable materialization without RAG
-bounded live access
+1. Indexed / RAG
+2. Durable / Storage / Materialization
+3. Live / Realtime
 ```
 
-Synchronization is a lifecycle mechanism of the durable modes, not a separate fourth consumption mode.
+Synchronization is a lifecycle mechanism of Durable / Storage / Materialization,
+not a separate fourth mode. Storage technology is an implementation detail.
 
 ```text
 existing provider/category integration
@@ -50,10 +53,202 @@ injected durable sink
 ```
 
 Existing integrations remain low-level and authoritative. Vendor Knowledge Facade
-and Sync Coordinator cover the **durable** path today. Accepted live capability
+and Sync Coordinator cover the **Durable / Storage / Materialization** path today.
+Accepted Live / Realtime capability
 families and Slack's bounded configured-channel Ask path execute through the
-shared validated live boundary; indexed and durable Ask remain separate. The
-facade is not an integration category.
+shared validated live boundary; Indexed / RAG and Durable / Storage /
+Materialization remain separate. The facade is not an integration category.
+
+---
+
+## 1A. Canonical three-mode platform roadmap — current session
+
+This section is the current execution order for Vendor Knowledge platform work.
+The historical execution order and detailed task history below are retained for
+traceability, but any future sequencing that conflicts with this section is
+**SUPERSEDED**.
+
+**NEXT:**
+`VENDOR-KNOWLEDGE-UNIFIED-THREE-MODE-CONTRACT-AUDIT-1`
+
+### Architecture frozen for this roadmap
+
+```text
+Frontend / Application
+        |
+        v
+provider-neutral Vendor Knowledge contracts
+        |
+        +--> Indexed / RAG
+        +--> Durable / Storage / Materialization
+        +--> Live / Realtime
+        |
+        v
+vendor plugin / adapter implementation
+        |
+        +--> Microsoft 365
+        +--> Google Workspace
+        +--> Jira
+        +--> Confluence
+        +--> Slack
+        +--> Atlan
+        +--> Power BI
+        +--> Databricks
+        +--> future vendors
+```
+
+Frontends consume platform contracts and capabilities. They do not contain
+vendor-specific knowledge branches. Adding a vendor should primarily require
+shared-contract implementation, capability registration and provider adapter
+logic, not a redesign of LKW or another frontend.
+
+The three modes mean:
+
+- **Indexed / RAG:** vendor knowledge is synchronized and durably materialized,
+  passed through Knowledge Intake and indexed for Search / Ask. Current
+  provider-to-index E2E proof is not implied for every vendor; the accepted
+  Slack connected-source slice is the strongest accepted proof of the current
+  Indexed / RAG application path.
+- **Durable / Storage / Materialization:** persistent synchronized vendor state
+  governed by reconciliation, typed continuation, cursor ownership, receipts,
+  checkpointing, replay, recovery, publication, revision, deletion/revocation,
+  ownership isolation and tenant/concurrency controls. This is not merely
+  database access.
+- **Live / Realtime:** a provider-neutral, bounded query of current provider
+  data without relying on durable indexed materialization. It may be a bounded
+  request rather than streaming or websocket communication; results are
+  normalized, provenance-bearing and not accidentally persisted.
+
+### Session boundary
+
+**This session — Vendor Knowledge platform**
+
+Owns plugin contracts, provider capability modeling, Indexed / RAG platform
+bridging, Durable / Storage / Materialization lifecycle, Live / Realtime
+contracts, provider adapters and registration, source-kind capability proofs,
+and frontend-neutral platform interfaces.
+
+**Separate LKW session**
+
+Owns Conversation Context, Hybrid Ask product orchestration, workspace UX,
+bot/channel activation, Slack/Teams conversation frontend behavior, LKW
+policies, and mobile/web frontend behavior. `LKW-CONVERSATION-CONTEXT-1` is not
+the next task in this Vendor Knowledge session.
+
+LKW is a consumer of Vendor Knowledge capabilities, not the owner of vendor
+integrations. The same rule applies to web, mobile, Slack, Teams and other
+agents/applications. Vendor-specific implementation remains behind platform
+contracts.
+
+### Required future execution order
+
+#### VK-1 — Unified three-mode contract audit
+
+`VENDOR-KNOWLEDGE-UNIFIED-THREE-MODE-CONTRACT-AUDIT-1`
+
+Audit the repository and classify the existing provider-neutral architecture
+for Indexed / RAG, Durable / Storage / Materialization, Live / Realtime,
+plugin registration, capability discovery and frontend neutrality as
+`ACCEPTED`, `PARTIAL`, `MISSING` or `CONTRADICTED`. This audit determines
+implementation work; no speculative rewriting precedes it.
+
+#### VK-2 — Plugin and capability contract finalization
+
+`VENDOR-KNOWLEDGE-PLUGIN-CAPABILITY-CONTRACT-1`
+
+Finalize one canonical representation of provider, source kind, supported
+access modes, supported operations, constraints, capability registration and
+capability discovery. A source kind may independently support Indexed / RAG,
+Durable / Storage / Materialization and/or Live / Realtime; support is explicit,
+not inferred.
+
+#### VK-3 — Durable lifecycle platform closeout
+
+`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1`
+
+Audit and close shared lifecycle primitives, including reconciliation, typed
+continuation, checkpointing, receipts, prepared/applied/committed states,
+recovery, replay, idempotency, publication visibility, revision/update,
+deletion/revocation, ownership, tenant isolation and concurrency. Reuse the
+existing foundation instead of rebuilding provider-specific durable systems.
+
+#### VK-4 — Generic Indexed / RAG bridge
+
+`VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`
+
+Make the provider-to-index path reusable:
+
+```text
+Vendor Knowledge source
+→ shared durable/materialization contract
+→ shared Knowledge Intake boundary
+→ platform index
+→ generic Search/Ask consumer
+```
+
+The accepted `LKW-SLACK-CONNECTED-SOURCE-1` result remains architecture
+evidence/reference implementation, not the generic contract and not proof that
+all vendors are indexed.
+
+#### VK-5 — Live / Realtime platform closeout
+
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
+
+Close one provider-neutral invocation and registration model preserving
+authorization, bounded calls, normalized results, safe errors, provenance,
+no accidental persistence and provider-specific limits behind the adapter
+boundary. Existing Slack and Microsoft Graph live implementations are evidence
+and input, not work to duplicate.
+
+#### VK-6 — Provider capability coverage
+
+`VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
+
+Build an exact source-kind matrix for Microsoft 365, Google Workspace, Jira,
+Confluence, Slack, Atlan, Power BI and Databricks. For every source kind and
+mode record `SUPPORTED`, `PARTIAL`, `NOT_IMPLEMENTED` or `NOT_APPLICABLE`,
+with exact proof/test references. Vendor integration existence is not proof of
+three-mode completeness; provider-specific tasks are generated only from
+verified gaps.
+
+#### VK-7 — Frontend neutrality proof
+
+`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1`
+
+Prove the invocation path:
+
+```text
+consumer selects capability/source
+→ platform resolves provider plugin
+→ shared contract invocation
+→ provider adapter executes
+```
+
+Classify vendor-specific branching in consumer/application layers. Legitimate
+provider-specific code in adapter and registration layers remains valid.
+
+#### VK-8 — Cross-provider three-mode E2E
+
+`VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`
+
+Prove the plugin architecture across structurally different providers using
+the same platform contracts, without requiring every source kind to support
+every mode. Select representative providers only after the capability audit.
+
+#### VK-9 — Platform closeout
+
+`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`
+
+Final-audit plugin extensibility, three-mode contracts, Durable / Storage /
+Materialization lifecycle, Indexed / RAG bridge, Live / Realtime access,
+capability discovery, provider coverage, frontend neutrality, cross-provider
+proofs and documentation truthfulness. Only after VK-9 may Vendor Knowledge be
+described as a completed reusable platform capability.
+
+The accepted status of `LKW-SLACK-CONNECTED-SOURCE-1` remains
+**ACCEPTED / CLOSED** and is not reopened. It proves the selected Slack
+application/indexed vertical slice; it does not turn Slack-specific
+implementation into the generic platform contract.
 
 ---
 
@@ -159,7 +354,7 @@ surface, and the remaining application-mode gaps without activating work.
 The historical Google status wording above is retained as a documented
 contradiction and is not capability evidence.
 
-`VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for indexed RAG, durable materialization and bounded live access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
+`VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for Indexed / RAG, Durable / Storage / Materialization and Live / Realtime access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
 
 `SLACK-KNOWLEDGE-THREE-MODE-ARCH-1` freezes Slack as a reusable three-mode platform knowledge provider built on the existing `SlackConversationChannelIntegration`, distinguishes Slack-as-frontend from Slack-as-knowledge-source, and reprioritizes the roadmap so the complete Slack Knowledge vertical slice precedes Google Workspace knowledge work. `SLACK-KNOWLEDGE-FOUNDATION-1` platform typed reads, Vendor Knowledge adapter and durable sync proof are **DONE** (membership-correct inventory, root-window scope v2, hardened provider validation). `LKW-CONVERSATION-CONTEXT-ARCH-1` is **ACCEPTED** — provider-neutral Conversation Context Binding with observed-audience validation, binding identity, workspace resolution, thread memory isolation, shared capability boundary and deterministic guards in the LKW application domain. LKW conversation context implementation and shared-channel runtime remain **not** implemented; the separate Slack live capability family is **ACCEPTED / CLOSED**.
 
@@ -171,7 +366,13 @@ evidence. Complete per-user Slack ACL enforcement, organization-wide automatic
 indexing, native Slack search, attachments/file bodies, a Slack conversation
 frontend, and combined indexed-plus-live answers remain unproved or deferred.
 
-**Execution order (frozen) — parallel tracks:**
+**Historical execution order (superseded):**
+
+The following record preserves the previously frozen parallel tracks and their
+task history. It is no longer the current Vendor Knowledge execution order;
+the canonical order is the VK-1–VK-9 roadmap in §1A. In particular, the LKW
+tasks below remain LKW history and must not be promoted to the next Vendor
+Knowledge task.
 
 ```text
 DONE:
@@ -639,10 +840,10 @@ THREE-MODE REUSE ASSESSMENT:
 - shared client/transport:
 - shared provider references:
 - shared exact-read primitives:
-- indexed RAG readiness:
-- durable materialization readiness:
-- live exact-read readiness:
-- live search/query readiness:
+- Indexed / RAG readiness:
+- Durable / Storage / Materialization readiness:
+- Live / Realtime exact-read readiness:
+- Live / Realtime search/query readiness:
 - provider primitive gaps:
 - durable adapter gaps:
 - live capability gaps:
@@ -785,7 +986,11 @@ Deferred until both tracks are stable:
 
 ---
 
-## 7. Implementation roadmap
+## 7. Historical implementation roadmap (superseded sequencing)
+
+This detailed task history is retained to preserve prior statuses and evidence.
+Its future sequencing is superseded by the canonical VK-1–VK-9 roadmap in §1A.
+No status below is changed by this reframe.
 
 ### Phase 0 — Architecture, plan and reuse audit
 
@@ -1341,7 +1546,7 @@ First select one precise source kind: Unity Catalog metadata, workspace tree, vo
 
 ---
 
-### Phase 6 — Post-adapter roadmap (parallel branches)
+### Historical Phase 6 — Post-adapter roadmap (superseded)
 
 After the Microsoft Graph adapter-family audit (`MSGRAPH-KNOWLEDGE-ADAPTERS-1`), platform work splits into durable and live branches converging at Hybrid Ask.
 
@@ -1425,7 +1630,7 @@ LKW-KNOWLEDGE-LIFECYCLE-1
 
 ---
 
-### Phase 7 — LKW convergence
+### Historical Phase 7 — LKW convergence (separate session)
 
 #### `LKW-CONNECTED-SOURCE-1`
 
