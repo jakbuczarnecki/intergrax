@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
+    MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+)
 from intergrax.runtime.vendor_knowledge.live import (
     LiveCapabilityExecutionResultV1,
 )
@@ -12,7 +19,20 @@ from intergrax.runtime.vendor_knowledge.live.schemas import (
     SchemaRegistrationV1,
     SchemaRoleV1,
 )
+from intergrax.runtime.vendor_knowledge.plugin import (
+    VendorKnowledgeMode,
+    VendorKnowledgeModeCapability,
+    VendorKnowledgeSourceIdentity,
+    VendorKnowledgeSourcePlugin,
+)
 
+from .calendar import (
+    MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF,
+    MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF,
+    MsGraphCalendarListLiveHandlerV1,
+    MsGraphCalendarListLiveRequestV1,
+    build_msgraph_calendar_list_descriptor,
+)
 from .drive import (
     MSGRAPH_DRIVE_LIST_REQUEST_SCHEMA_REF,
     MSGRAPH_DRIVE_LIST_RESULT_SCHEMA_REF,
@@ -40,13 +60,6 @@ from .teams_chat import (
     MsGraphTeamsChatListLiveHandlerV1,
     MsGraphTeamsChatListLiveRequestV1,
     build_msgraph_teams_chat_list_descriptor,
-)
-from .calendar import (
-    MSGRAPH_CALENDAR_LIST_REQUEST_SCHEMA_REF,
-    MSGRAPH_CALENDAR_LIST_RESULT_SCHEMA_REF,
-    MsGraphCalendarListLiveHandlerV1,
-    MsGraphCalendarListLiveRequestV1,
-    build_msgraph_calendar_list_descriptor,
 )
 
 
@@ -150,6 +163,43 @@ def build_msgraph_live_registration_bundles() -> (
                 role=SchemaRoleV1.RESULT,
                 model=LiveCapabilityExecutionResultV1,
                 contract_version="1",
+            ),
+        ),
+    )
+
+
+def build_msgraph_teams_chat_vendor_knowledge_source_plugin() -> (
+    VendorKnowledgeSourcePlugin
+):
+    """Compose the Graph Teams Chat Durable + Live source declaration."""
+    live_bundles = build_msgraph_live_registration_bundles()
+    live_capability_refs = tuple(
+        bundle.descriptor.capability_id
+        for bundle in live_bundles
+        if bundle.descriptor.source_kind == MSGRAPH_TEAMS_CHAT_SOURCE_KIND
+    )
+    identity = VendorKnowledgeSourceIdentity(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_category=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+    )
+    return VendorKnowledgeSourcePlugin(
+        identity=identity,
+        capabilities=(
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.DURABLE,
+                contract_version="vendor-knowledge.durable.v1",
+                operations=("inventory", "snapshot", "incremental", "reconciliation", "exact_fetch"),
+                runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_chat",
+                constraints={"application_sink": "platform_foundation"},
+            ),
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.LIVE,
+                contract_version="vendor-knowledge.live.v1",
+                operations=("list",),
+                runtime_ref="live-registration:ms365_graph:teams_chat",
+                capability_refs=live_capability_refs,
+                constraints={"read_only": True, "bounded": True},
             ),
         ),
     )

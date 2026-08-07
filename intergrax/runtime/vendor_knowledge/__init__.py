@@ -99,6 +99,15 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeSourceScope,
     KnowledgeVisibility,
 )
+from intergrax.runtime.vendor_knowledge.plugin import (
+    VendorKnowledgeMode,
+    VendorKnowledgeModeCapability,
+    VendorKnowledgeSourceIdentity,
+    VendorKnowledgeSourcePlugin,
+    VendorKnowledgeSourcePluginConflict,
+    VendorKnowledgeSourcePluginNotFound,
+    VendorKnowledgeSourcePluginRegistry,
+)
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
     RemoteResourceAvailabilityV1,
@@ -370,6 +379,13 @@ __all__ = [
     "VendorKnowledgeErrorCode",
     "VendorKnowledgeFacade",
     "VendorKnowledgeFacadeService",
+    "VendorKnowledgeMode",
+    "VendorKnowledgeModeCapability",
+    "VendorKnowledgeSourceIdentity",
+    "VendorKnowledgeSourcePlugin",
+    "VendorKnowledgeSourcePluginConflict",
+    "VendorKnowledgeSourcePluginNotFound",
+    "VendorKnowledgeSourcePluginRegistry",
     "VendorKnowledgeSyncCoordinator",
     "VendorKnowledgeSyncDispatcher",
     "VendorKnowledgeSyncExecutableRegistration",

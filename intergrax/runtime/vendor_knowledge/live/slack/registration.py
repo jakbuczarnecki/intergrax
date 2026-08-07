@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.conversation_channel.slack.integration import (
+    SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+)
+from intergrax.integrations.providers.conversation_channel.slack.knowledge_read.common import (
+    SLACK_CONVERSATION_SOURCE_KIND,
+)
 from intergrax.runtime.vendor_knowledge.live import LiveCapabilityExecutionResultV1
 from intergrax.runtime.vendor_knowledge.live.registration import (
     LiveRegistrationBundleV1,
@@ -9,6 +16,12 @@ from intergrax.runtime.vendor_knowledge.live.registration import (
 from intergrax.runtime.vendor_knowledge.live.schemas import (
     SchemaRegistrationV1,
     SchemaRoleV1,
+)
+from intergrax.runtime.vendor_knowledge.plugin import (
+    VendorKnowledgeMode,
+    VendorKnowledgeModeCapability,
+    VendorKnowledgeSourceIdentity,
+    VendorKnowledgeSourcePlugin,
 )
 
 from .conversation import (
@@ -80,5 +93,44 @@ def build_slack_live_registration_bundles() -> tuple[LiveRegistrationBundleV1, .
             request_schema_ref=SLACK_CONVERSATION_READ_REQUEST_SCHEMA_REF,
             request_model=SlackConversationReadLiveRequestV1,
             result_schema_ref=SLACK_CONVERSATION_READ_RESULT_SCHEMA_REF,
+        ),
+    )
+
+
+def build_slack_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    """Compose the accepted Slack three-mode source declaration."""
+    live_capability_refs = tuple(
+        bundle.descriptor.capability_id for bundle in build_slack_live_registration_bundles()
+    )
+    identity = VendorKnowledgeSourceIdentity(
+        provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+        integration_category=IntegrationCategory.CONVERSATION_CHANNEL,
+        source_kind=SLACK_CONVERSATION_SOURCE_KIND,
+    )
+    return VendorKnowledgeSourcePlugin(
+        identity=identity,
+        capabilities=(
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.DURABLE,
+                contract_version="vendor-knowledge.durable.v1",
+                operations=("inventory", "snapshot", "incremental", "reconciliation", "exact_fetch"),
+                runtime_ref="knowledge-adapter:slack:conversation_channel:slack_conversation",
+                constraints={"application_sink": "slack_connected_source"},
+            ),
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.INDEXED,
+                contract_version="vendor-knowledge.indexed.v1",
+                operations=("eligible", "materialize", "publish", "index"),
+                runtime_ref="indexed-source:slack:slack_conversation",
+                constraints={"application_proof": "accepted"},
+            ),
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.LIVE,
+                contract_version="vendor-knowledge.live.v1",
+                operations=("list", "read", "thread.read"),
+                runtime_ref="live-registration:slack:slack_conversation",
+                capability_refs=live_capability_refs,
+                constraints={"read_only": True, "bounded": True},
+            ),
         ),
     )
