@@ -387,13 +387,50 @@ def test_readme_routing(readme_text: str) -> None:
     for link in (
         "WHY_INTERGRAX.md",
         "ARCHITECTURE_OVERVIEW.md",
+        "USE_CASES.md",
+        "PROOFS.md",
+        "EVALUATION_GUIDE.md",
+        "BUILDER_QUICKSTART.md",
         "BUILD_WITH_INTERGRAX.md",
         "LKW_PRODUCT_TOUR.md",
+        "PARTNERS.md",
+        "COLLABORATION.md",
+        "FAQ.md",
+        "ROADMAP.md",
+        "DOCUMENTATION_MAP.md",
         "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
+        "docs/project/README.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
     assert "Local Knowledge Workspace" in readme_text
     assert "Intergrax helps teams build" in readme_text
+    assert "Try LKW" in readme_text
+    assert "Primary Product Proof" in readme_text
+    assert "Backend Product Alpha /" in readme_text
+    assert "Featured platform-capability proof" in readme_text
+
+
+def test_readme_architecture_is_responsibility_model(readme_text: str) -> None:
+    normalized = " ".join(_normalize(readme_text).split())
+    for phrase in (
+        "specialized product application",
+        "application operating layer",
+        "model / agent",
+        "knowledge / tools / integrations / models",
+        "evidence / provenance",
+        "not a mandatory execution sequence",
+        "configured resources",
+    ):
+        assert phrase in normalized, f"README missing architecture marker: {phrase}"
+
+    stale_pipeline_fragments = (
+        "applications, orchestration, agents, and the harness each own a clear slice",
+        "app --> n[orchestration]",
+        "n --> h[governed execution]",
+        "h --> k[knowledge and memory]",
+    )
+    for fragment in stale_pipeline_fragments:
+        assert fragment not in normalized, f"README contains stale pipeline: {fragment}"
 
 
 def test_project_documentation_hub_routing() -> None:

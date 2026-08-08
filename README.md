@@ -1,19 +1,26 @@
 # Intergrax
 
-Intergrax helps teams build AI applications that can use their knowledge and tools while keeping access, actions, and evidence under control.
+Intergrax helps teams build specialized AI applications that use controlled
+knowledge and tools while keeping access, actions, and evidence reviewable.
 
-Teams reuse shared policy, knowledge, integration, execution, and evidence foundations instead of rebuilding them for every product.
+It is a reusable governed foundation—an application operating layer around
+execution boundaries—so product teams do not rebuild policy, approvals,
+integrations, recovery, and evidence mechanisms for every workflow.
 
-Local Knowledge Workspace (LKW) is the primary product path: a private-by-default workspace for adding approved knowledge sources, asking questions, and receiving grounded answers with source references and inspectable evidence.
+**Local Knowledge Workspace (LKW)** is the primary product path: add an approved
+source, ask over indexed knowledge, and inspect a grounded answer with source
+references and persisted evidence.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
-[![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](docs/project/proofs/PROOFS.md)
+[![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44e.svg)](docs/project/proofs/PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) · [Choose your path](#choose-your-path)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) · [Review proof](docs/project/proofs/PROOFS.md)
 
-> Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
+> Intergrax is **source-available** and under **active R&D**. LKW is a
+> **Backend Product Alpha / MVP**. **Real-user validation** and **commercial
+> validation** are incomplete.
 
 ---
 
@@ -21,10 +28,13 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 
 ### Product workflow
 
-1. Add an approved knowledge source.
-2. Intergrax processes and indexes it.
-3. Ask a question over indexed knowledge.
-4. Receive a grounded result with source references and inspectable evidence.
+```text
+approved source
+→ ingest / index
+→ Ask
+→ grounded answer
+→ source / evidence
+```
 
 <picture>
   <source
@@ -41,41 +51,29 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
   >
 </picture>
 
-This neutral visual represents the documented Quick Start, not a finished UI screenshot; dynamic workspace and Ask-run IDs are omitted.
-
-**Primary action:** [Run the supported LKW Quick Start](#try-lkw)
-
-Prefer to understand the experience first? [See the LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md).
+This visual represents the documented Quick Start, not a finished UI
+screenshot; dynamic workspace and Ask-run IDs are omitted.
 
 ### What is boundedly proven today
 
-LKW is a Backend Product Alpha / MVP under active development. The current bounded product proof covers indexed knowledge workflows, including the production indexed Ask path through Hybrid Ask over documented indexed evidence. Hybrid Ask combining indexed and authorized live evidence, finished end-user packaging, real-user validation, and commercial validation are not complete.
+LKW is the **Primary Product Proof**, classified as **Backend Product Alpha /
+MVP**, with **PARTIAL** status. Bounded proof exists for indexed knowledge
+workflows, including the production indexed Ask path through Hybrid Ask over
+documented indexed evidence.
 
-**Boundedly demonstrated:**
+**Not yet proven:** Hybrid Ask combining indexed and authorized live evidence,
+complete live-provider access, finished end-user packaging, **real-user validation**,
+and **commercial validation**. Mixed indexed + authorized live Hybrid Ask is
+**not complete**; complete live-provider access remains incomplete.
 
-- indexed knowledge and background ingest;
-- persisted knowledge across documented restart paths;
-- grounded Ask over documented indexed content;
-- production indexed Ask path through Hybrid Ask over documented indexed evidence;
-- hosting, observability and persisted execution evidence.
-
-**Not complete:**
-
-- Hybrid Ask combining indexed and authorized live evidence;
-- complete live-provider access;
-- finished end-user packaging;
-- real-user validation;
-- commercial validation.
-
-**Review the bounded LKW proof** → [docs/project/proofs/LKW_PLATFORM_PROOF.md](docs/project/proofs/LKW_PLATFORM_PROOF.md)
-
-**Check current proof status** → [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md)
-
----
+See the detailed [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md)
+and the current [PROOFS dashboard](docs/project/proofs/PROOFS.md).
 
 ## Try LKW
 
-One supported command takes you from repository checkout to a grounded answer with a source citation over indexed knowledge — using managed file upload, without manual API JSON or local path allowlists.
+One supported command takes you from the repository root to a grounded answer
+with a source citation over indexed knowledge. Detailed prerequisites and
+troubleshooting live in the [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md).
 
 **Windows:**
 
@@ -97,135 +95,84 @@ applications\local_workspace_application\scripts\run-lkw-product-quickstart-wind
 
 **Expected answer marker:** `AURORA-17` · **Expected source file:** `lkw_product_quickstart.txt`
 
-**Detailed guide:** [docs/project/product/lkw/QUICKSTART.md](docs/project/product/lkw/QUICKSTART.md)
-
-First run may download Docker images and the configured local model; duration depends on your environment and is not yet externally validated as a fixed time target.
+First run may download Docker images and the configured local model; duration
+depends on your environment and is not externally validated as a fixed target.
 
 <a id="try-lkw"></a>
 
 ---
 
-## Run tests
-
-The repository configures a lightweight default test group, so a fresh checkout
-uses the project environment instead of a globally installed `pytest`:
-
-```powershell
-uv sync --frozen
-uv run pytest tests/unit/runtime/vendor_knowledge/test_plugin_contract.py
-```
-
-For the minimal CI regression gate, use the same dependency set as GitHub:
-
-```powershell
-uv sync --extra dev-ci --frozen
-uv run pytest tests/unit -m "gate and not no_ci"
-```
-
----
-
 ## Why this matters
 
-Building an impressive AI demo is relatively easy. Operating a controlled application that a team can review and trust is harder.
+Building an impressive AI demo is easier than operating a controlled AI
+application that a team can review and trust. Teams repeatedly rebuild
+knowledge access, policy, integrations, approvals, and evidence foundations
+around each product.
 
-Teams repeatedly rebuild permissions, knowledge access, integrations, policy enforcement, and evidence collection for every new product. Intergrax centralizes those reusable foundations so product teams can focus on the concrete workflow.
+Intergrax centralizes reusable mechanisms so product teams can focus on the
+specialized workflow. Read [Why Intergrax](docs/project/overview/WHY_INTERGRAX.md)
+for the category, problem, and fit.
 
-**Why Intergrax:** [docs/project/overview/WHY_INTERGRAX.md](docs/project/overview/WHY_INTERGRAX.md)
+## Responsibility model
 
----
+The root-level model is about responsibility, not a mandatory execution
+sequence. A request uses only the configured resources its product context
+selects.
 
-## The foundation behind LKW
+| Responsibility | What it owns |
+| --- | --- |
+| **Specialized product application** | Product workflow, UX, business semantics, permissions, and acceptance |
+| **Intergrax** | Reusable application operating layer for policy and approval boundaries, controlled context, governed execution, recovery, observability, and evidence / provenance |
+| **Model / agent** | Reasoning, inference, and decision generation within supplied context and governed boundaries |
+| **Knowledge / tools / integrations / models** | Selected resources behind configured access and effect boundaries |
+| **Evidence / provenance** | Reviewable receipts, traces, and records produced during execution |
 
-Intergrax is a reusable foundation for governed AI applications.
-
-| Outcome | What it means |
-| ------- | ------------- |
-| **Product-first development** | Ship a specialized product workflow on shared foundations instead of inventing a new runtime stack each time. |
-| **Controlled execution and evidence** | Policy, budgets, human review, and trace surround every step — not bolted on after the demo works. |
-| **Reusable foundations across applications** | Indexing, retrieval, receipts, and observability are platform capabilities products compose — not one-off scripts. |
-| **Clear responsibility boundaries** | Applications, orchestration, agents, and the harness each own a clear slice of the system. |
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="docs/project/assets/public/intergrax-hero-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="docs/project/assets/public/intergrax-hero-light.svg"
-  >
-  <img
-    alt="Intergrax connects specialized applications with reusable policy, knowledge, evidence, integration and execution foundations."
-    src="docs/project/assets/public/intergrax-hero-light.svg"
-  >
-</picture>
-
-A specialized product hosts the user workflow; Intergrax supplies orchestration, governed execution, knowledge systems, tools, models, and evidence collection around that workflow.
-
-```mermaid
-flowchart LR
-    U[User or system request] --> APP[Specialized application]
-
-    subgraph I[Intergrax reusable foundation]
-        APP --> N[Orchestration]
-        N --> H[Governed execution]
-        H --> K[Knowledge and memory]
-        H --> T[Tools and integrations]
-        H --> M[Models]
-        H --> E[Trace and evidence]
-    end
-
-    E --> APP
-```
-
-**Deep dive:** [Architecture overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) · [Foundation architecture narrative](docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/project/technical/DOCUMENTATION_MAP.md)
-
----
+See the [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md)
+for the complete responsibility model.
 
 ## What exists today
 
-> [!WARNING]
-> **Implemented code** does not automatically mean **live proof**, **finished product**, **production readiness**, or **commercial validation**.
+Status is capability-specific; implementation is not blanket proof of the whole
+platform.
 
-| Area | Status |
-| ---- | ------ |
-| **LKW** | PARTIAL — Backend Product Alpha / MVP |
-| **Token Optimization** | PARTIAL |
-| **Shared platform foundations** | IMPLEMENTED — bounded supporting evidence |
-
-Full matrices, limitations, and claim boundaries: **[docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md)**
-
----
+| Area | Role | Current status |
+| --- | --- | --- |
+| **LKW** | Primary Product Proof | **PARTIAL — Backend Product Alpha / MVP** |
+| **Token Optimization** | Featured platform-capability proof | **PARTIAL — bounded** |
+| **Other reusable foundations** | Supporting evidence | Varies by capability; inspect [PROOFS](docs/project/proofs/PROOFS.md) |
 
 ## Token Optimization
 
-**Secondary platform capability**
+Token Optimization is a compact example of a reusable platform capability
+below the product surface: policy-governed context and prompt optimization with
+protected-region validation, receipts, fallback, and a bounded vLLM proof path.
 
-Token Optimization is a reusable platform mechanism for deterministic prompt and context optimization under policy — with protected-region validation, receipts and fallback, and a bounded vLLM proof path.
-
-**Implemented today:** deterministic optimization pipeline, approved-configuration routing, protected-region validation, receipts and fallback, cache-stable prompt assembly, exact-send integrity, and cache-aware execution.
-
-**Bounded mechanism:** the durable in-cache compaction repository, validation, and CAS activation are implemented. **Not established:** live provider-wide proof, rollback execution, production rollout, final cross-provider proof, universal savings, or production-proven savings.
-
-**Secondary capability route:** [Explore Token Optimization](docs/project/capabilities/token_optimization/README.md)
-
-Claim boundaries: [Token Optimization guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)
-
----
+Its current status is **PARTIAL**. Live provider-wide proof, production rollout,
+final cross-provider proof, universal savings, and **production-proven savings**
+are **not established**. Details belong to the [Token Optimization guide](docs/project/capabilities/token_optimization/README.md)
+and its [claim guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
 ## Choose your path
 
-| You are or want to… | Primary action | Then |
-| ------------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
-| Try the primary product | [Try LKW](#try-lkw) | Inspect the [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) when deeper evidence is needed |
-| Understand LKW before running it | [See the LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) | Run the [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
-| Build with Intergrax | Open the [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) | Continue to [BUILD_WITH_INTERGRAX](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
-| Review as an architect | Open [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) | Review [PROOFS](docs/project/proofs/PROOFS.md) |
-| Assess fit as a buyer | Open [Use Cases](docs/project/overview/USE_CASES.md) | Review [PROOFS](docs/project/proofs/PROOFS.md) before evaluation or pilot |
-| Prepare a partner or pilot discussion | Open [Partners](docs/project/community/PARTNERS.md) | Prepare the [pilot brief](docs/project/community/PARTNERS.md#pilot-brief) |
-| Perform deep technical review | Open the [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) | Follow the owning technical documents |
+| You want to… | Start here |
+| --- | --- |
+| Try the product | [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
+| Understand the product first | [LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) |
+| Check whether your workflow fits | [Use Cases](docs/project/overview/USE_CASES.md) |
+| Review current evidence | [PROOFS](docs/project/proofs/PROOFS.md) |
+| Evaluate one claim fairly | [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) |
+| Start building | [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) |
+| Plan deeper application composition | [Build With Intergrax](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
+| Review architecture | [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) |
+| Discuss a pilot or design partnership | [Partners](docs/project/community/PARTNERS.md) |
+| Contribute, give feedback, or ask about permissions | [Collaboration](docs/project/community/COLLABORATION.md) |
+| Perform a deep technical review | [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) |
 
-Other routes: [public documentation map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) · [category comparison](docs/project/overview/WHY_INTERGRAX.md#where-intergrax-fits) · [public roadmap](docs/project/overview/ROADMAP.md) · [current proof dashboard](docs/project/proofs/PROOFS.md) · [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) · [collaboration and legal terms](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE).
+Questions? See the [FAQ](docs/project/overview/FAQ.md). For the complete
+public route map, use the [Public Documentation Map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md).
+The [project documentation hub](docs/project/README.md) is the secondary
+all-docs entry point. The [public roadmap](docs/project/overview/ROADMAP.md)
+describes outcome direction.
 
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>
@@ -236,23 +183,15 @@ Other routes: [public documentation map](docs/project/community/PUBLIC_DOCUMENTA
 
 ---
 
-## Current boundaries
-
-Intergrax is **not** currently positioned as:
-
-- a finished SaaS;
-- a product with completed Hybrid Ask combining indexed and authorized live evidence;
-- a product with completed real-user validation;
-- a product with completed commercial validation;
-- a universal production-readiness claim;
-- a universal token-savings claim.
-
----
-
 ## License and collaboration
 
-Intergrax is **source-available** under the Intergrax Evaluation and Collaboration License 1.0.
+Intergrax is **source-available** under the Intergrax Evaluation and
+Collaboration License 1.0. You may clone, install, run, test, and modify the
+repository locally for **non-production evaluation**, subject to the
+[LICENSE](LICENSE).
 
-You may clone, install, run, test, and modify the repository locally for **non-production evaluation**. Authorized collaboration and contribution paths are described in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md).
-
-**Production use**, **commercial use**, hosting, and redistribution require **explicit written permission**. [LICENSE](LICENSE) is legally authoritative.
+Feedback, contribution, permission, and pilot routes are described in
+[Collaboration](docs/project/community/COLLABORATION.md) and
+[Partners](docs/project/community/PARTNERS.md). Production use, commercial use,
+hosting, and redistribution require **explicit written permission or agreement**
+under the legally authoritative [LICENSE](LICENSE).

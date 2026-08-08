@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Root README product-first landing contract tests (PX-2 current structure)."""
+"""Root README product-first landing contract tests."""
 
 from __future__ import annotations
 
@@ -24,11 +24,10 @@ _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
     "## Try LKW",
     "## Why this matters",
-    "## The foundation behind LKW",
+    "## Responsibility model",
     "## What exists today",
     "## Token Optimization",
     "## Choose your path",
-    "## Current boundaries",
     "## License and collaboration",
 )
 
@@ -95,13 +94,12 @@ def test_required_public_links(readme_text: str) -> None:
 
 
 def test_hero_contract(readme_text: str) -> None:
-    assert "docs/project/assets/public/intergrax-hero-light.svg" in readme_text
-    assert "docs/project/assets/public/intergrax-hero-dark.svg" in readme_text
     assert "docs/project/assets/public/lkw-grounded-result-light.svg" in readme_text
     assert "docs/project/assets/public/lkw-grounded-result-dark.svg" in readme_text
-    assert readme_text.count("<picture>") >= 2
-    assert 'alt="Intergrax connects specialized applications' in readme_text
+    assert readme_text.count("<picture>") == 1
     assert 'alt="LKW quickstart flow' in readme_text
+    assert "docs/project/assets/public/intergrax-hero-light.svg" not in readme_text
+    assert "docs/project/assets/public/intergrax-hero-dark.svg" not in readme_text
     assert HERO_LIGHT_PATH.is_file(), "Hero light SVG is missing"
     assert HERO_DARK_PATH.is_file(), "Hero dark SVG is missing"
     assert LKW_LIGHT_PATH.is_file(), "LKW light SVG is missing"
@@ -155,13 +153,10 @@ def test_svg_safety(svg_path: Path) -> None:
 
 
 def test_visual_contract(readme_text: str) -> None:
-    """At least one local Mermaid diagram; no unsafe Mermaid tokens."""
+    """The concrete LKW proof visual is the only README visual."""
     blocks = _MERMAID_FENCE.findall(readme_text)
-    assert len(blocks) >= 1, "README must contain at least one Mermaid block"
-    forbidden_tokens = ("classDef", "style", "%%{init", "theme", "http://", "https://")
-    for block in blocks:
-        for token in forbidden_tokens:
-            assert token not in block, f"Forbidden Mermaid token {token!r} found"
+    assert not blocks, "README should route conceptual architecture to its owner"
+    assert readme_text.count("<picture>") == 1
 
 
 def test_public_maturity_boundary(readme_text: str) -> None:
