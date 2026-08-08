@@ -16,6 +16,12 @@ from local_workspace_application.workspaces.connected_source_discovery import (
     ConnectedSourceRevalidationLimits,
     WorkspaceRemoteResourceDiscoveryService,
 )
+from local_workspace_application.workspaces.connected_source_discovery_slack import (
+    SlackRemoteResourceDiscoveryStrategy,
+)
+from local_workspace_application.workspaces.connected_source_discovery_strategy import (
+    RemoteResourceDiscoveryStrategyRegistry,
+)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceDiscoveryError,
     RemoteResourceTypeV1,
@@ -190,8 +196,15 @@ def discovery_env(codec: RemoteResourceOpaqueRefCodec):
     service = WorkspaceRemoteResourceDiscoveryService(
         workspace_lookup=lookup,
         configuration_reader=config,
-        connection_registry=registry,
         opaque_ref_codec=codec,
+        strategy_registry=RemoteResourceDiscoveryStrategyRegistry(
+            (
+                SlackRemoteResourceDiscoveryStrategy(
+                    connection_registry=registry,
+                    opaque_ref_codec=codec,
+                ),
+            )
+        ),
     )
     return service, registry, integration, backend, codec
 
@@ -309,7 +322,7 @@ async def test_signed_pagination_cursor_and_no_raw_provider_cursor(discovery_env
 
 @pytest.mark.asyncio
 async def test_bounded_revalidation_limit_exceeded(discovery_env) -> None:
-    service, _, _, backend, _ = discovery_env
+    service, _, _, backend, codec = discovery_env
     looping = SlackConversationInventoryPage(
         items=(),
         next_cursor="same",
@@ -321,13 +334,22 @@ async def test_bounded_revalidation_limit_exceeded(discovery_env) -> None:
         max_duration_seconds=1.0,
         page_size=5,
     )
+    candidate_ref = encode_slack_conversation_candidate_ref(
+        codec=codec,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        connection_ref=_CONNECTION,
+        conversation_id="C999",
+        conversation_kind=SlackConversationKindV1.PUBLIC_CHANNEL,
+        safe_display_label="#missing",
+    )
     with pytest.raises(ConnectedSourceDiscoveryError) as exc:
         await service.revalidate_candidate_label(
             tenant_id=_TENANT,
             workspace_id=_WORKSPACE,
             connection_ref=_CONNECTION,
-            conversation_id="C999",
-            conversation_kind=SlackConversationKindV1.PUBLIC_CHANNEL,
+            resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+            opaque_candidate_ref=candidate_ref,
         )
     assert exc.value.error_code == "candidate_revalidation_limit_exceeded"
 

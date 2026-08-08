@@ -19,6 +19,7 @@ from local_workspace_application.workspaces.connected_source_ids import (
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceBindingError,
     ConnectedSourceDiscoveryError,
+    RemoteResourceTypeV1,
     SlackConversationKindV1,
 )
 from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
@@ -219,10 +220,11 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
             workspace_id=workspace_id,
             connection_ref=connection_ref,
         )
-        return await self._discovery.revalidate_msgraph_teams_chat_candidate_label(
+        return await self._discovery.revalidate_candidate_label(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
             opaque_candidate_ref=opaque_candidate_ref,
         )
 
@@ -367,6 +369,6 @@ class SlackConnectedSourceCandidateAdapter:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
-            conversation_id=payload.conversation_id,
-            conversation_kind=payload.conversation_kind,
+            resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+            opaque_candidate_ref=opaque_candidate_ref,
         )

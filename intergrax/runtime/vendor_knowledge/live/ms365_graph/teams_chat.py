@@ -169,6 +169,10 @@ class MsGraphTeamsChatListLiveHandlerV1(LiveCapabilityHandlerV1):
                 if resolved_scope is not None
                 else None
             )
+            # The resolved token is authoritative. The remote-resource fallback
+            # remains for legacy validated calls whose binding scope predates the
+            # resolved-resource envelope; identity validation above still pins it
+            # to the tenant/binding request before the provider adapter sees it.
             source = KnowledgeSourceRef(
                 tenant_id=context.tenant_id,
                 provider_id=self.provider_id,

@@ -50,6 +50,7 @@ _GENERIC_APPLICATION_SURFACES = (
     "applications/local_workspace_application/workspaces/knowledge_administration_service.py",
     "applications/local_workspace_application/workspaces/knowledge_inspection_operations_service.py",
     "applications/local_workspace_application/workspaces/knowledge_plugin_configuration_service.py",
+    "applications/local_workspace_application/workspaces/connected_source_discovery.py",
 )
 
 _FORBIDDEN_PROVIDER_IMPORTS = (

@@ -7,6 +7,11 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from local_workspace_application.workspaces.hybrid_ask_policy import (
+    ExecutableLiveCallV1,
+    ResolvedLiveResourceScopeV1,
+)
+
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
@@ -23,7 +28,6 @@ from intergrax.runtime.vendor_knowledge.live import (
     LiveCapabilityExecutionResultV1,
     LiveExecutionOutcomeV1,
     LiveResultRetentionV1,
-    ValidatedLiveCapabilityCallV1,
 )
 from intergrax.runtime.vendor_knowledge.live.identity import (
     LiveOperationV1,
@@ -107,13 +111,14 @@ def _call(
     request: object | None = None,
     *,
     remote_resource_id: str | None = _SCOPE,
+    scope_token: str | None = _SCOPE,
     max_result_items: int = 10,
     max_upstream_items: int = 10,
     max_provider_page_size: int = 10,
     max_result_bytes: int = 10_000,
     max_content_bytes_per_item: int = 4_096,
     **identity_overrides: object,
-) -> ValidatedLiveCapabilityCallV1:
+) -> ExecutableLiveCallV1:
     values: dict[str, Any] = {
         "call_id": "call-teams-chat-1",
         "capability_id": MSGRAPH_TEAMS_CHAT_LIST_CAPABILITY_ID,
@@ -139,7 +144,13 @@ def _call(
         "source_kind": _SOURCE_KIND,
     }
     values.update(identity_overrides)
-    return ValidatedLiveCapabilityCallV1(**values)
+    return ExecutableLiveCallV1(
+        **values,
+        resolved_resource_scope=ResolvedLiveResourceScopeV1(
+            remote_resource_id=remote_resource_id,
+            scope_token=scope_token,
+        ),
+    )
 
 
 def _context() -> LiveCapabilityExecutionContextV1:
@@ -275,6 +286,19 @@ async def test_teams_chat_handler_uses_opaque_scope_once_and_maps_metadata() -> 
     assert '"attachments":' not in result.items[0].content
     assert "opaque-message" in result.items[0].remote_item_id
     assert "must-not-leak" not in result.model_dump_json()
+
+
+@pytest.mark.asyncio
+async def test_teams_chat_handler_prefers_resolved_scope_token_over_legacy_remote_id() -> None:
+    scope_token = "resolved-scope-token"
+    adapter = _FakeTeamsChatAdapter(KnowledgePage(changes=(_active_change(),)))
+    result = await MsGraphTeamsChatListLiveHandlerV1(adapter=adapter).execute(
+        integration=_integration(),
+        call=_call(scope_token=scope_token),
+        context=_context(),
+    )
+    assert result.normalized_outcome is LiveExecutionOutcomeV1.COMPLETED
+    assert adapter.calls[0]["source"].scope.remote_scope_id == scope_token  # type: ignore[union-attr]
 
 
 @pytest.mark.asyncio
