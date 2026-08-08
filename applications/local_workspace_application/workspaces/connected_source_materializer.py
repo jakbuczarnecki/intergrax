@@ -37,12 +37,6 @@ from intergrax.knowledge.contracts import (
     KnowledgeDocumentProvenance,
     KnowledgeDocumentScope,
 )
-from intergrax.runtime.vendor_knowledge.live.ms365_graph.registration import (
-    build_msgraph_teams_chat_vendor_knowledge_source_plugin,
-)
-from intergrax.runtime.vendor_knowledge.live.slack.registration import (
-    build_slack_vendor_knowledge_source_plugin,
-)
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContent,
     KnowledgeContentMode,
@@ -54,6 +48,9 @@ from intergrax.runtime.vendor_knowledge.plugin import (
     VendorKnowledgeMode,
     VendorKnowledgeSourceIdentity,
     VendorKnowledgeSourcePluginRegistry,
+)
+from intergrax.runtime.vendor_knowledge.plugin_composition import (
+    build_default_vendor_knowledge_source_plugin_registry,
 )
 
 _SLACK_CONVERSATION_MESSAGE_SCHEMA = "slack.conversation.message.knowledge.v1"
@@ -416,10 +413,7 @@ def _build_materialized_document(
 
 
 def _default_plugin_registry() -> VendorKnowledgeSourcePluginRegistry:
-    registry = VendorKnowledgeSourcePluginRegistry()
-    registry.register(build_slack_vendor_knowledge_source_plugin())
-    registry.register(build_msgraph_teams_chat_vendor_knowledge_source_plugin())
-    return registry
+    return build_default_vendor_knowledge_source_plugin_registry()
 
 
 def _safe_conversation_label(record: _SlackConversationMessageKnowledgeRecord) -> str:

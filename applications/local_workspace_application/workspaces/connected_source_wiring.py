@@ -50,6 +50,19 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
 )
+from intergrax.runtime.vendor_knowledge.adapters import (
+    register_confluence_pages_knowledge_adapter,
+    register_google_workspace_calendar_knowledge_adapter,
+    register_google_workspace_docs_knowledge_adapter,
+    register_google_workspace_drive_knowledge_adapter,
+    register_google_workspace_sheets_knowledge_adapter,
+    register_jira_issues_knowledge_adapter,
+    register_msgraph_calendar_knowledge_adapter,
+    register_msgraph_drive_knowledge_adapter,
+    register_msgraph_mail_knowledge_adapter,
+    register_msgraph_teams_channel_knowledge_adapter,
+    register_msgraph_teams_chat_knowledge_adapter,
+)
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     register_slack_conversation_knowledge_adapter,
 )
@@ -131,6 +144,17 @@ def build_connected_source_wiring(
         opaque_ref_codec=codec,
     )
     adapter_registry = KnowledgeAdapterRegistry()
+    register_confluence_pages_knowledge_adapter(adapter_registry)
+    register_google_workspace_calendar_knowledge_adapter(adapter_registry)
+    register_google_workspace_docs_knowledge_adapter(adapter_registry)
+    register_google_workspace_drive_knowledge_adapter(adapter_registry)
+    register_google_workspace_sheets_knowledge_adapter(adapter_registry)
+    register_jira_issues_knowledge_adapter(adapter_registry)
+    register_msgraph_calendar_knowledge_adapter(adapter_registry)
+    register_msgraph_drive_knowledge_adapter(adapter_registry)
+    register_msgraph_mail_knowledge_adapter(adapter_registry)
+    register_msgraph_teams_channel_knowledge_adapter(adapter_registry)
+    register_msgraph_teams_chat_knowledge_adapter(adapter_registry)
     register_slack_conversation_knowledge_adapter(adapter_registry)
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
     resolver = _ConnectionAwareResolver(registry)

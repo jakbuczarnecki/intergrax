@@ -6,6 +6,18 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+    MSGRAPH_CALENDAR_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.drive import (
+    MSGRAPH_DRIVE_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.mail_folders import (
+    MSGRAPH_MAIL_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
+    MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
 )
@@ -168,45 +180,94 @@ def build_msgraph_live_registration_bundles() -> (
     )
 
 
-def build_msgraph_teams_chat_vendor_knowledge_source_plugin() -> (
-    VendorKnowledgeSourcePlugin
-):
-    """Compose the Graph Teams Chat Durable + Indexed + Live declaration."""
+def _build_msgraph_vendor_knowledge_source_plugin(
+    *,
+    source_kind: str,
+    live_runtime_ref: str,
+    durable_runtime_ref: str,
+    indexed_runtime_ref: str | None = None,
+) -> VendorKnowledgeSourcePlugin:
+    """Compose one Graph source declaration from existing runtimes."""
     live_bundles = build_msgraph_live_registration_bundles()
     live_capability_refs = tuple(
         bundle.descriptor.capability_id
         for bundle in live_bundles
-        if bundle.descriptor.source_kind == MSGRAPH_TEAMS_CHAT_SOURCE_KIND
+        if bundle.descriptor.source_kind == source_kind
     )
     identity = VendorKnowledgeSourceIdentity(
         provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
         integration_category=IntegrationCategory.COLLABORATION_SUITE,
-        source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+        source_kind=source_kind,
     )
-    return VendorKnowledgeSourcePlugin(
-        identity=identity,
-        capabilities=(
-            VendorKnowledgeModeCapability(
-                mode=VendorKnowledgeMode.DURABLE,
-                contract_version="vendor-knowledge.durable.v1",
-                operations=("inventory", "snapshot", "incremental", "reconciliation", "exact_fetch"),
-                runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_chat",
-                constraints={"application_sink": "platform_foundation"},
-            ),
+    capabilities = [
+        VendorKnowledgeModeCapability(
+            mode=VendorKnowledgeMode.DURABLE,
+            contract_version="vendor-knowledge.durable.v1",
+            operations=("inventory", "snapshot", "incremental", "reconciliation", "exact_fetch"),
+            runtime_ref=durable_runtime_ref,
+            constraints={"application_sink": "platform_foundation"},
+        ),
+        VendorKnowledgeModeCapability(
+            mode=VendorKnowledgeMode.LIVE,
+            contract_version="vendor-knowledge.live.v1",
+            operations=("list",),
+            runtime_ref=live_runtime_ref,
+            capability_refs=live_capability_refs,
+            constraints={"read_only": True, "bounded": True},
+        ),
+    ]
+    if indexed_runtime_ref is not None:
+        capabilities.append(
             VendorKnowledgeModeCapability(
                 mode=VendorKnowledgeMode.INDEXED,
                 contract_version="vendor-knowledge.indexed.v1",
                 operations=("eligible", "materialize", "publish", "index"),
-                runtime_ref="indexed-source:ms365_graph:teams_chat",
+                runtime_ref=indexed_runtime_ref,
                 constraints={"application_proof": "vk4"},
-            ),
-            VendorKnowledgeModeCapability(
-                mode=VendorKnowledgeMode.LIVE,
-                contract_version="vendor-knowledge.live.v1",
-                operations=("list",),
-                runtime_ref="live-registration:ms365_graph:teams_chat",
-                capability_refs=live_capability_refs,
-                constraints={"read_only": True, "bounded": True},
-            ),
-        ),
+            )
+        )
+    return VendorKnowledgeSourcePlugin(
+        identity=identity,
+        capabilities=tuple(capabilities),
+    )
+
+
+def build_msgraph_drive_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    return _build_msgraph_vendor_knowledge_source_plugin(
+        source_kind=MSGRAPH_DRIVE_SOURCE_KIND,
+        live_runtime_ref="live-registration:ms365_graph:drive",
+        durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:drive",
+    )
+
+
+def build_msgraph_mail_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    return _build_msgraph_vendor_knowledge_source_plugin(
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        live_runtime_ref="live-registration:ms365_graph:mail",
+        durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:mail",
+    )
+
+
+def build_msgraph_teams_channel_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    return _build_msgraph_vendor_knowledge_source_plugin(
+        source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+        live_runtime_ref="live-registration:ms365_graph:teams_channel",
+        durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_channel",
+    )
+
+
+def build_msgraph_teams_chat_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    return _build_msgraph_vendor_knowledge_source_plugin(
+        source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+        live_runtime_ref="live-registration:ms365_graph:teams_chat",
+        durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_chat",
+        indexed_runtime_ref="indexed-source:ms365_graph:teams_chat",
+    )
+
+
+def build_msgraph_calendar_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
+    return _build_msgraph_vendor_knowledge_source_plugin(
+        source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
+        live_runtime_ref="live-registration:ms365_graph:calendar",
+        durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:calendar",
     )
