@@ -6,39 +6,39 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Partners and Pilots
 
-Intergrax is **source-available** and under **active R&D**. Local Knowledge Workspace (LKW) is **Backend Product Alpha / MVP** and remains **PARTIAL**.
+Intergrax is **source-available** and under **active R&D**. LKW is the **Primary Product Proof**, classified as **Backend Product Alpha / MVP**, and remains **PARTIAL**.
 
 A partner discussion or pilot name does **not** grant production, commercial, hosting, redistribution, or endorsement rights. [LICENSE](../../../LICENSE) is legally authoritative.
 
-This guide helps your team determine partner fit, prepare a bounded pilot, and understand when written permission is required before you start.
+This guide answers whether a concrete workflow justifies a bounded pilot or design-partner discussion and what to prepare. It is not a capability catalog, provider roadmap, or generic evaluation guide.
 
-Primary audience: Partner, integrator or design partner with a concrete workflow to evaluate or a bounded pilot to propose.
+Primary audience: a partner, integrator, or design partner with a concrete workflow to evaluate or a bounded pilot to propose.
 
 ---
 
 ## At a glance
 
-**Primary next action:** [prepare the pilot brief](#pilot-brief) in this document before starting a discussion.
+**Primary next action:** [prepare the pilot brief](#pilot-brief) before starting a discussion.
 
 | Question | Answer |
 |----------|--------|
-| Strongest current partner path | Governed private knowledge workflow using LKW |
-| Good-fit partner | Concrete workflow requiring controlled knowledge, policy, evidence, or tool execution |
-| First preparation step | Define workflow, users, data, actions, boundaries, and success |
-| Evaluation-only pilot | Isolated non-production Evaluation subject to [LICENSE](../../../LICENSE) |
-| Operational pilot | Real users, production data, or business processes require explicit written permission before starting |
-| Permission source | [LICENSE](../../../LICENSE) |
-| Contact | jakbu.czarnecki.83@gmail.com |
+| Strongest current engagement | Governed private knowledge workflow using LKW |
+| Partner fit | One concrete workflow, identifiable users, known data, boundaries, evidence needs, and willingness to evaluate |
+| Current evidence | [PROOFS](../proofs/PROOFS.md) |
+| Evaluation route | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
+| Builder route | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) |
+| Permission route | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |
+| Contact | [jakbu.czarnecki.83@gmail.com](mailto:jakbu.czarnecki.83@gmail.com) |
 
 ---
 
 ## Partner qualification sequence
 
-1. Confirm that there is a concrete workflow.
-2. Check whether the workflow fits current product boundaries.
+1. Confirm the concrete workflow and identifiable users.
+2. Check workflow fit and current evidence in [USE_CASES](../overview/USE_CASES.md) and [PROOFS](../proofs/PROOFS.md).
 3. Classify the intended activity as evaluation-only or operational.
 4. Prepare the pilot brief.
-5. Start the appropriate discussion.
+5. Start the appropriate evaluation or permission discussion.
 
 ---
 
@@ -46,43 +46,36 @@ Primary audience: Partner, integrator or design partner with a concrete workflow
 
 ```mermaid
 flowchart TD
-    A[Concrete workflow to validate?]
-    A -->|No| B[Review use cases and proofs]
-    A -->|Yes| C[Can it stay isolated and non-production?]
-    C -->|Yes| D[Evaluation subject to LICENSE]
-    C -->|No| E[Written permission required]
-    D --> F[Define scope and evidence]
+    A[Concrete workflow] --> B[Check fit and current evidence]
+    B --> C[Classify intended use]
+    C -->|Evaluation-only| D[Prepare pilot brief]
+    C -->|Operational or commercial| E[Permission route]
+    D --> F[Evaluation Guide]
     E --> F
-    F --> G[Run bounded pilot]
-    G --> H[Review outcomes and next step]
+    F --> G[Run bounded evaluation or authorized pilot]
+    G --> H[Review decision and next step]
 ```
 
-Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual users, data, processes, and outputs determine the classification under [LICENSE](../../../LICENSE).
+Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual activity and the terms of [LICENSE](../../../LICENSE) control.
 
 ---
 
 ## Who is a good fit
 
-| Partner profile | Concrete need | Best starting path |
-|-----------------|---------------|-------------------|
-| Private knowledge team | Governed assistant over controlled documents and citations | LKW private knowledge workflow |
-| Specialized agent-application product team | Reusable policy, evidence, and execution foundations for one product | Specialized governed application evaluation |
-| AI platform team | Reusable policy, evidence, or knowledge foundations across products | Token Optimization or architecture review |
-| Evidence, observability, or attestation integration team | Boundary events, receipts, or external attestation patterns | Evidence or attestation integration evaluation |
-| Technical evaluator | Bounded proof paths with reproducible friction reports | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) evaluation |
+| Partner characteristic | Stable engagement type | Starting owner |
+|------------------------|------------------------|----------------|
+| Controlled knowledge workflow with identifiable users | **Private governed knowledge** — strongest current product-aligned discussion | LKW path and [PROOFS](../proofs/PROOFS.md) |
+| One specialized AI application to compose | **Specialized AI application** — architecture and builder-fit discussion | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md), then [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md) |
+| Need for inspectable outcomes or controlled integration | **Evidence / integration workflow** — bounded technical discussion where evidence exists | [PROOFS](../proofs/PROOFS.md) and [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
+| Question about one reusable capability | **Platform capability evaluation** — capability-specific evaluation | [PROOFS](../proofs/PROOFS.md) and [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 
-Not every proposal will be accepted. Fit depends on workflow clarity, scope, and current product boundaries.
+These are stable engagement types, not guaranteed active programs. Current capability truth belongs to [PROOFS](../proofs/PROOFS.md). Not every proposal will be accepted; fit depends on workflow clarity, scope, evidence, and current boundaries.
 
 ---
 
-## Current partner and pilot tracks
+## Engagement types
 
-| Track | User outcome | Current boundary | Verify |
-|-------|--------------|------------------|--------|
-| LKW private knowledge workflow | Guided product proof over controlled knowledge | Primary product pilot direction · Backend Product Alpha / MVP · **PARTIAL** | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| Specialized governed application | Validate harness fit for one product workflow | Reasonable technical evaluation; product-specific validation remains required | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) · [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| Token Optimization evaluation | Inspect deterministic optimization mechanisms | Featured platform-capability proof · **PARTIAL** · bounded technical evaluation | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-| Evidence or attestation integration | Test boundary-event and external receipt patterns | Bounded integration evaluation; not certification, compliance approval, or legal attestation | [BoundaryAttest case study](../overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
+The types above describe how to discuss a workflow, not a provider or capability status catalog. If a capability example is relevant, treat it as a bounded example and verify its current status in [PROOFS](../proofs/PROOFS.md).
 
 ---
 
@@ -101,7 +94,7 @@ An evaluation-only pilot stays **isolated and non-production** and is solely for
 
 ### Operational or production pilot
 
-The following normally place the activity **outside** the public evaluation grant:
+The following normally place the activity outside the public evaluation grant:
 
 - real operational users or real customers;
 - production data;
@@ -117,14 +110,13 @@ The following normally place the activity **outside** the public evaluation gran
 
 ## Pilot workflow
 
-1. **Check fit** — Output: confirmed workflow category and relevant proof path.
-2. **Describe the workflow** — Output: one-paragraph workflow summary with users and data sources.
-3. **Classify the intended use** — Output: evaluation-only or operational/production classification.
-4. **Define scope and evidence** — Output: allowed actions, forbidden actions, and required evidence.
-5. **Prepare the environment** — Output: isolated evaluation setup or written permission for operational use.
-6. **Run the bounded evaluation or authorized pilot** — Output: completed tasks with captured evidence.
-7. **Review outcomes** — Output: success review against criteria below.
-8. **Continue, revise, or stop** — Output: decision on next step, scope change, or exit.
+1. **Check fit** — Review [USE_CASES](../overview/USE_CASES.md) and [PROOFS](../proofs/PROOFS.md).
+2. **Describe the workflow** — Name users and data or knowledge sources.
+3. **Classify intended use** — Evaluation-only or operational/production.
+4. **Define scope and evidence** — State allowed actions, forbidden actions, approvals, and evidence.
+5. **Prepare the environment** — Isolated evaluation setup or permission route.
+6. **Run the bounded evaluation or authorized pilot** — Capture completed tasks and evidence.
+7. **Review outcomes** — Decide whether to continue, revise, or stop.
 
 ---
 
@@ -163,37 +155,27 @@ After the pilot, review:
 - blockers;
 - whether further development is justified.
 
-Do not treat a single pilot as proof of universal performance or production readiness.
+Do not treat a successful pilot as proof of universal performance or production readiness.
 
 ---
 
 ## What is not included automatically
 
-A partner discussion or pilot does **not** include:
-
-- production rights;
-- commercial rights;
-- hosting rights;
-- redistribution rights;
-- exclusivity;
-- endorsement;
-- SLA;
-- production support;
-- certification;
-- compliance approval;
-- acceptance of every requested feature;
-- release-date commitment.
+A partner discussion or pilot does **not** automatically include production rights, commercial rights, hosting rights, redistribution rights, exclusivity, endorsement, SLA, support, certification, compliance approval, feature acceptance, or release-date commitment.
 
 ---
 
 ## Start a discussion
 
-**Email:** jakbu.czarnecki.83@gmail.com
+**Email:** [jakbu.czarnecki.83@gmail.com](mailto:jakbu.czarnecki.83@gmail.com)
 
 Start the discussion with a completed or substantially prepared pilot brief. Before contacting, review:
 
-- [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) — use-case fit;
-- [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) — current validation direction;
-- [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) — evaluation paths;
-- [docs/project/community/COLLABORATION.md](COLLABORATION.md) — collaboration and permission routes;
+- [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) — workflow fit;
+- [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) — public outcome direction;
+- [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) — current evidence status;
+- [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) — bounded evaluation method;
+- [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) — builder entry;
+- [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) — composition planning;
+- [docs/project/community/COLLABORATION.md](COLLABORATION.md) — permission and contribution routes;
 - [LICENSE](../../../LICENSE) — legally authoritative terms.

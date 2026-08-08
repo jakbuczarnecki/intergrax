@@ -6,110 +6,65 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Collaborate with Intergrax
 
-Intergrax is **source-available** and under **active R&D**. Collaboration does **not** grant production, commercial, hosting, or redistribution rights. [LICENSE](../../../LICENSE) is legally authoritative.
+Intergrax is **source-available** and under **active R&D**. Collaboration routes feedback and contributions; it does **not** itself grant production, commercial, hosting, or redistribution rights. [LICENSE](../../../LICENSE) is legally authoritative.
 
-This guide helps you choose the correct route for evaluation feedback, documentation changes, code contributions, technical discussion, pilot discussions, permission requests, and security reporting.
+Use this page to choose an action route. It is not the self-service evaluation method or a pilot guide.
 
 ---
 
 ## At a glance
 
-| Goal | Start here |
-|------|------------|
-| Evaluate Intergrax | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
-| Report proof-path friction | GitHub issue with reproducible details |
-| Fix documentation | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
-| Submit code | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
-| Discuss a pilot | [docs/project/community/PARTNERS.md](PARTNERS.md) |
-| Check permission boundaries | [LICENSE](../../../LICENSE) |
-| Request permission | maintainer email |
+| Goal | Correct route |
+|------|---------------|
+| Evaluate a claim or proof | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
+| Report evaluation friction | [Evaluation Guide](../builders/EVALUATION_GUIDE.md), then send a reproducible report |
+| Build or extend | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md), then [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md) |
+| Fix documentation or submit code | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
+| Discuss a pilot or partnership | [Partners](PARTNERS.md) |
+| Request permission | Maintainer contact and [LICENSE](../../../LICENSE) |
 | Report a vulnerability | [SECURITY.md](../../../SECURITY.md) |
 
 ---
 
 ## Evaluation feedback
 
-A useful report should include:
+Run the relevant path in the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) first where possible. A useful report should include:
 
-- exact commit;
+- pinned revision;
+- evaluation target and canonical path;
 - environment;
-- path followed;
-- expected result;
-- observed result;
-- relevant evidence;
-- blocker or limitation.
+- expected result and observed result;
+- evidence;
+- skipped or unavailable steps;
+- friction or blocker;
+- known limitation.
 
-Concrete, reproducible feedback helps reviewers act on friction without expanding permission boundaries.
-
----
-
-## Documentation and code contributions
-
-- Prior discussion is recommended for substantial work.
-- Follow [CONTRIBUTING.md](../../../CONTRIBUTING.md) for development workflow and pull-request requirements.
-- Contribution terms are owned by [LICENSE](../../../LICENSE).
-- Submission does **not** guarantee acceptance.
-- Substantial or potentially patent-relevant work may require a separate Contributor License Agreement before acceptance.
+Do not reproduce the complete evaluation template here. Concrete evidence helps reviewers act on a bounded result without expanding permission boundaries.
 
 ---
 
 ## Feedback and contributions are different
 
-At a high level:
+Issue comments, suggestions, bug reports, and observations are **Feedback**. Material clearly offered for inclusion is a **Code Contribution** or **Documentation Contribution**. The [LICENSE](../../../LICENSE) owns the definitions and grants; ordinary discussion does not automatically become a contribution.
 
-- issue comments and suggestions are **Feedback**;
-- material clearly offered for inclusion is a **Code Contribution** or **Documentation Contribution**;
-- exact definitions and grants are in [LICENSE](../../../LICENSE).
-
-Do not assume that ordinary discussion automatically grants rights beyond the license terms.
+For documentation or code, follow [CONTRIBUTING.md](../../../CONTRIBUTING.md). Prior discussion is recommended for substantial work, and submission does **not** guarantee acceptance.
 
 ---
 
-## Pilots and partner discussions
+## Pilot and partner discussions
 
-For partner fit, pilot preparation, and success review, start with [docs/project/community/PARTNERS.md](PARTNERS.md).
-
-A discussion does **not** create permission. Operational, production, or commercial activity still requires explicit written permission before it starts.
+Use [Partners](PARTNERS.md) for partner fit, pilot preparation, and success review. If the intended activity is operational, production, or commercial, classify it before starting and review the [LICENSE](../../../LICENSE).
 
 ---
 
 ## Permission requests
 
-Contact: **jakbu.czarnecki.83@gmail.com**
+Contact **[jakbu.czarnecki.83@gmail.com](mailto:jakbu.czarnecki.83@gmail.com)** with the organization, workflow, users, data, environment, intended use, hosting or redistribution needs, and desired scope.
 
-Include:
-
-- organization;
-- concrete workflow;
-- users;
-- data;
-- environment;
-- production or commercial intent;
-- hosting or redistribution needs;
-- desired scope.
-
-**A request does not grant permission. Permission exists only when explicitly provided in writing.**
+**A request does not grant permission. Permission exists only when explicitly provided in writing where required by the [LICENSE](../../../LICENSE).**
 
 ---
 
 ## Security issues
 
-Do not open a public issue for a suspected vulnerability.
-
-Follow [SECURITY.md](../../../SECURITY.md).
-
----
-
-## What collaboration does not provide
-
-Collaboration routes feedback and contributions; it does **not** provide:
-
-- production rights;
-- commercial rights;
-- hosting rights;
-- redistribution rights;
-- SLA;
-- support commitment;
-- certification;
-- guaranteed contribution acceptance;
-- guaranteed roadmap placement.
+**Do not open a public issue for a suspected vulnerability.** Follow [SECURITY.md](../../../SECURITY.md).

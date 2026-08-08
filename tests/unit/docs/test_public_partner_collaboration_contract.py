@@ -15,6 +15,10 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 PARTNERS_PATH = REPO_ROOT / "docs" / "project" / "community" / "PARTNERS.md"
 COLLABORATION_PATH = REPO_ROOT / "docs" / "project" / "community" / "COLLABORATION.md"
 FAQ_PATH = REPO_ROOT / "docs" / "project" / "overview" / "FAQ.md"
+EVALUATION_GUIDE_PATH = REPO_ROOT / "docs" / "project" / "builders" / "EVALUATION_GUIDE.md"
+BUILDER_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILDER_QUICKSTART.md"
+BUILD_WITH_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
+PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
 LICENSE_PATH = REPO_ROOT / "LICENSE"
 README_PATH = REPO_ROOT / "README.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
@@ -279,6 +283,8 @@ def test_partner_exclusions(partners_text: str) -> None:
 
 def test_collaboration_routing(collaboration_text: str) -> None:
     for target in (
+        "EVALUATION_GUIDE.md",
+        "BUILDER_QUICKSTART.md",
         "BUILD_WITH_INTERGRAX.md",
         "PARTNERS.md",
         "LICENSE",
@@ -292,6 +298,33 @@ def test_collaboration_routing(collaboration_text: str) -> None:
     assert "explicitly provided in writing" in norm
 
 
+def test_engagement_document_ownership(
+    partners_text: str, collaboration_text: str, faq_text: str
+) -> None:
+    evaluation = _normalize(_read(EVALUATION_GUIDE_PATH))
+    builder = _normalize(_read(BUILDER_QUICKSTART_PATH))
+    composition = _normalize(_read(BUILD_WITH_PATH))
+    proofs = _normalize(_read(PROOFS_PATH))
+
+    assert "self-service method" in evaluation
+    assert "canonical first builder entry point" in builder
+    assert "application composition plan" in composition
+    assert "public proof dashboard" in proofs
+
+    faq_norm = _normalize(faq_text)
+    assert "how do i evaluate intergrax?" in faq_norm
+    assert "how do i build with intergrax?" in faq_norm
+    assert "evaluation guide" in faq_norm
+    assert "builder quick start" in faq_norm
+    assert "application composition planning" in faq_norm
+
+    assert "evaluation guide" in _normalize(collaboration_text)
+    assert "evaluation guide" in _normalize(partners_text)
+    for text in (partners_text, collaboration_text, faq_text):
+        assert "BUILD_WITH_INTERGRAX.md evaluation" not in text
+        assert "evaluation paths" not in _normalize(text)
+
+
 def test_security_boundary(collaboration_text: str) -> None:
     assert "Do not open a public issue for a suspected vulnerability." in collaboration_text
     assert "SECURITY.md" in collaboration_text
@@ -299,6 +332,10 @@ def test_security_boundary(collaboration_text: str) -> None:
 
 def test_faq_ownership(faq_text: str) -> None:
     for target in (
+        "QUICKSTART.md",
+        "LKW_PRODUCT_TOUR.md",
+        "EVALUATION_GUIDE.md",
+        "BUILDER_QUICKSTART.md",
         "PROOFS.md",
         "BUILD_WITH_INTERGRAX.md",
         "USE_CASES.md",
@@ -309,7 +346,7 @@ def test_faq_ownership(faq_text: str) -> None:
         "CONTRIBUTING.md",
         "SECURITY.md",
         "ARCHITECTURE_OVERVIEW.md",
-        "docs/project/technical/DOCUMENTATION_MAP.md",
+        "DOCUMENTATION_MAP.md",
     ):
         assert target in faq_text, f"FAQ missing link: {target}"
 
