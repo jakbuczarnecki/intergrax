@@ -25,6 +25,22 @@ See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL
 - Accepted readiness SHA: `c050b5e6bff1b69a9534b46cab82c73ad572129e`
 - External reader validation: `NOT_STARTED`
 
+## Program readiness state
+
+```text
+PX-12:
+ACCEPTED / CLOSED
+
+PRE-PX13 completion gate:
+IN_PROGRESS
+
+PX-13:
+NOT_STARTED / BLOCKED ON PRE-PX13 COMPLETION
+
+External reader validation:
+NOT_STARTED
+```
+
 ## Reader journey readiness
 
 The internal route review explicitly covered:
@@ -113,17 +129,29 @@ NOT_STARTED
 
 ---
 
+## PRE-PX13 completion gate
+
+The maintainer completion gate in
+[`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
+is `IN_PROGRESS`. PX-13 cannot begin until its product, proof, runnable
+user-like verification, friction, recovery, deployment/onboarding, visual
+experience, clean-room walkthrough, claim-synchronization, and
+no-known-material-rewrite conditions are accepted.
+
 ## PX-13 validation-wave preparation
 
 ```text
 Status:
 NOT_STARTED
 
+Blocked on:
+PRE-PX13 completion
+
 External reader validation:
 NOT_STARTED
 ```
 
-PX-13 owns participant cohorts, immutable participant URLs, invitation placeholders, moderator preparation, session records, and real external sessions. No wave-specific item is marked complete here; no fictional session result exists.
+PX-13 owns participant cohorts, immutable participant URLs, invitation placeholders, moderator preparation, session records, and real external sessions. Wave 1 preparation is not authorized: do not pin participant URLs, add participant slots, or create recruitment records. No wave-specific item is marked complete here; no fictional session result exists.
 
 Checklist completion does not conduct sessions, record fictional feedback, or claim external validation.
 

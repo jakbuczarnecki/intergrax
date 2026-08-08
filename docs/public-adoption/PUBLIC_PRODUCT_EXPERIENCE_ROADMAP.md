@@ -17,8 +17,9 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-13 — NOT_STARTED |
-| Next phase | PX-13 — NOT_STARTED |
+| Current program gate | PRE-PX13 — IN_PROGRESS |
+| Next external phase | PX-13 — BLOCKED_ON_PRE_PX13_COMPLETION |
+| PX-13 status | NOT_STARTED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -106,19 +107,25 @@ Actual completion of these gates requires later external sessions (PX-13, PX-14)
 
 ---
 
-## Known baseline problems
+## Historical baseline problems at program start
 
-The following are **already identified** on the current baseline. They are **not claimed as fixed**:
+The following problems were recorded at program start for traceability. This is
+not a current unresolved-blocker list: current phase status and accepted PX
+blocks determine whether each problem was subsequently closed.
 
-- Root Quick Start currently promotes lab/echo rather than the primary LKW product path.
-- Product value is less concrete than the architecture description.
-- LKW product presentation lacks reviewed real visual material.
-- The full LKW proof is too heavy to serve as the only product introduction.
-- Builder onboarding reaches deep reference material too quickly.
-- Some deep documents expose maintainer task vocabulary.
-- Some product status descriptions may drift across documents.
-- CTA hierarchy is not consistently product-first.
-- External reader validation has not started.
+- At program start, Root Quick Start promoted lab/echo rather than the primary LKW product path.
+- At program start, product value was less concrete than the architecture description.
+- At program start, LKW product presentation lacked reviewed real visual material.
+- At program start, the full LKW proof was too heavy to serve as the only product introduction.
+- At program start, builder onboarding reached deep reference material too quickly.
+- At program start, some deep documents exposed maintainer task vocabulary.
+- At program start, some product status descriptions could drift across documents.
+- At program start, CTA hierarchy was not consistently product-first.
+- At program start, external reader validation had not started.
+
+The historical root lab/echo Quick Start problem is not presented here as a
+current readiness finding; accepted PX blocks and current route contracts
+determine its subsequent closure.
 
 ---
 
@@ -587,9 +594,79 @@ PX-12 acceptance means that the readiness audit is accepted. It does not claim p
 
 ---
 
+## PRE-PX13 — Product, Proof & Public Experience Completion Gate
+
+**Status:** IN_PROGRESS
+
+This is a maintainer completion gate, not a numbered PX phase. PX-13 cannot
+begin and external reader validation remains `NOT_STARTED` until every
+condition below is accepted for the selected first external-validation
+candidate.
+
+### Completion conditions
+
+1. **Complete the selected LKW product experience.** The intended first
+   external-validation LKW scope is internally complete as a coherent,
+   supported knowledge experience. The selected scope may use one accepted
+   conforming plugin or fixture; it does not require the entire future vendor
+   catalog. Detailed implementation sequencing remains owned by the LKW
+   implementation plan.
+2. **Converge claims and evidence.** Every positive reader-facing claim is
+   backed by accepted evidence at the correct level in
+   `PUBLIC_PROOF_AND_CLAIMS_MODEL.md`. No claim is promoted from roadmap state
+   alone.
+3. **Verify runnable claims.** Every public claim with a documented executable
+   path is executed through that exact documented path from a user
+   perspective. Passing unit tests alone is insufficient for a product
+   workflow claim.
+4. **Apply the stop-and-fix friction rule.** If user-like execution finds a
+   failure, undocumented maintainer knowledge, material confusion, avoidable
+   manual reconstruction, unexpected slowness without useful progress
+   feedback, broken navigation, or output that contradicts expectation, the
+   roadmap stops. The issue is corrected or explicitly accepted before
+   progressing.
+5. **Verify restart and recovery claims.** Any public restart-safe,
+   persistence, retry, recovery, or idempotency claim is exercised with its
+   corresponding real operation. Documentation-only inference is not evidence.
+6. **Complete deployment and onboarding.** The selected external-validation
+   path runs from a documented supported environment without ad hoc developer
+   reconstruction.
+7. **Pass final product acceptance proof.** The owning LKW acceptance proof
+   selected for the first external-validation candidate passes. Its
+   implementation detail remains owned by the LKW proof and implementation
+   documents.
+8. **Synchronize public claims.** After evidence is accepted, update
+   `PROOFS.md` only when allowed public claims change, and update affected
+   overview documents only when their summaries become inaccurate.
+9. **Complete the visual experience review.** Normal reader-facing documents
+   are deliberately reviewed for visual communication quality. Where a
+   concrete visual materially improves understanding, require concise workflow
+   diagrams, Mermaid journeys, truthful result/evidence visuals, responsive
+   light/dark SVG, accessible alt text, clear hierarchy, and tables or callouts
+   instead of avoidable walls of text. No fabricated product UI or decorative
+   diagram is allowed.
+10. **Complete a clean-room internal user walkthrough.** Beginning at the root
+    `README`, an internal evaluator follows only public reader documentation:
+    root README → chosen product action → supported setup → LKW result →
+    citation/evidence → proof/status route → restart/recovery where claimed →
+    next action. No undocumented maintainer shortcuts are used. Record only
+    technical/readiness findings. This is not external validation and must not
+    be called user validation.
+11. **Have no known intentional pre-external rewrite.** Before PX-13 opens,
+    maintainers must not know of a material public documentation, product
+    workflow, or proof change they already intend to complete before showing
+    the candidate to external participants. Minor future evolution is allowed;
+    known material unfinished work blocks PX-13.
+
+Until all conditions are accepted, the current program gate remains
+`IN_PROGRESS`, PX-13 remains `NOT_STARTED / BLOCKED_ON_PRE_PX13_COMPLETION`,
+and external reader validation remains `NOT_STARTED`.
+
+---
+
 ## PX-13 — External comprehension and trial sessions
 
-**Status:** NOT_STARTED
+**Status:** NOT_STARTED / BLOCKED_ON_PRE_PX13_COMPLETION
 
 **User-visible outcome:** Real independent external sessions test comprehension and trial paths against pinned revision.
 

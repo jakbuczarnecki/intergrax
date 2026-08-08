@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 EVALUATION_GUIDE_PATH = REPO_ROOT / "EVALUATION_GUIDE.md"
 PROTOCOL_PATH = REPO_ROOT / "docs" / "public-adoption" / "EXTERNAL_READER_VALIDATION_PROTOCOL.md"
 LAUNCH_CHECKLIST_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_LAUNCH_CHECKLIST.md"
+PX_ROADMAP_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md"
 OUTREACH_KIT_PATH = REPO_ROOT / "docs" / "public-adoption" / "OUTREACH_KIT.md"
 PUBLIC_ADOPTION_INDEX_PATH = REPO_ROOT / "docs" / "public-adoption" / "README.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
@@ -167,6 +168,10 @@ _MD_LINK = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
 _INTERNAL_TASK_PATTERN = re.compile(
     r"(CTX-UCL-|TOKEN-10|LKW-SLACK-|GOOGLE-WORKSPACE-|"
     r"MSGRAPH-|PUBLIC-DOCS-COMMERCIALIZATION-)",
+    re.IGNORECASE,
+)
+_LKW_IMPLEMENTATION_TASK_PATTERN = re.compile(
+    r"\bLKW-[A-Z0-9]+(?:-[A-Z0-9]+)+-\d+\b",
     re.IGNORECASE,
 )
 
@@ -570,10 +575,53 @@ def test_launch_checklist_readiness(launch_text: str) -> None:
     assert "blocked_on_px_12_acceptance" not in norm
     assert "Status:\nNOT_STARTED" in launch_text
     assert "External reader validation:\nNOT_STARTED" in launch_text
+    for state in (
+        "PX-12:\nACCEPTED / CLOSED",
+        "PRE-PX13 completion gate:\nIN_PROGRESS",
+        "PX-13:\nNOT_STARTED / BLOCKED ON PRE-PX13 COMPLETION",
+    ):
+        assert state in launch_text, f"Launch checklist missing readiness state: {state}"
+    assert "Wave 1 preparation is not authorized" in launch_text
     assert "does not mean external validation is complete" in norm
     assert "checklist completion does not conduct sessions" in norm or (
         "no fictional session" in norm
     )
+
+
+def test_pre_px13_gate_blocks_external_validation() -> None:
+    roadmap_text = _read(PX_ROADMAP_PATH)
+    roadmap_norm = _normalize(roadmap_text)
+    gate = _extract_h2_section(
+        roadmap_text,
+        "PRE-PX13 — Product, Proof & Public Experience Completion Gate",
+    )
+    gate_norm = _normalize(gate)
+
+    assert "Current program gate | PRE-PX13 — IN_PROGRESS" in roadmap_text
+    assert "Next external phase | PX-13 — BLOCKED_ON_PRE_PX13_COMPLETION" in roadmap_text
+    assert "External reader validation | NOT_STARTED" in roadmap_text
+    assert "## PX-12" in roadmap_text and "Status:** ACCEPTED / CLOSED" in roadmap_text
+    assert "**Status:** NOT_STARTED / BLOCKED_ON_PRE_PX13_COMPLETION" in roadmap_text
+    assert "external reader validation remains notstarted" in gate_norm
+    for condition in (
+        "complete the selected lkw product experience",
+        "converge claims and evidence",
+        "verify runnable claims",
+        "stop-and-fix friction rule",
+        "verify restart and recovery claims",
+        "complete deployment and onboarding",
+        "pass final product acceptance proof",
+        "synchronize public claims",
+        "complete the visual experience review",
+        "complete a clean-room internal user walkthrough",
+        "no known intentional pre-external rewrite",
+    ):
+        assert condition in gate_norm, f"PRE-PX13 gate missing condition: {condition}"
+    assert "no fictional" in roadmap_norm
+    assert not _LKW_IMPLEMENTATION_TASK_PATTERN.search(gate), (
+        "PRE-PX13 gate mirrors detailed LKW implementation task IDs"
+    )
+    assert not re.search(r"\|\s*S-\d{3}\s*\|", gate, re.IGNORECASE)
 
 
 def test_outreach_templates(outreach_text: str) -> None:
