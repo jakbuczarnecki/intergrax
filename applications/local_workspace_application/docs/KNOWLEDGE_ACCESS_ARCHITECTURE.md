@@ -292,6 +292,36 @@ neither
 
 Neither binding automatically grants the other.
 
+#### 4.4.1 Live Access lifecycle authority
+
+The production lifecycle is exposed by the provider-neutral
+`LiveAccessLifecycleService`. `WorkspaceKnowledgeConfigurationV1` and its
+revision/CAS mutation history remain the configuration authority; the
+tenant connection record, workspace attachment and published capability
+catalog are the runtime authority. The lifecycle view is derived from those
+authorities and is therefore reconstructible after restart:
+
+```text
+attach → READY / ACTIVE → disable → enable → detach
+```
+
+`ACTIVE` is reported only when the binding is enabled and the attached
+connection plus all selected read-only capabilities are currently usable.
+An enabled binding with a temporary runtime outage remains configured and is
+reported as `READY` or `ERROR`; it is not implicitly detached. `DISABLED`
+removes the binding from Ask eligibility while preserving its identity and
+connection. `ENABLE` reuses the same binding, connection, capability scope
+and audience policy. `DETACH` records the terminal binding state
+(`REVOKED`, projected as `DETACHED`) and never deletes a tenant connection.
+
+Every live execution performs a fresh binding/attachment/connection/catalog
+authority check immediately before the provider call. Query Policy remains
+the separate authority for whether a caller and capability may be queried;
+it is not duplicated by the lifecycle service. Indexed Source bindings,
+documents, manifests, publication, vectors and purge are not touched by any
+Live Access lifecycle mutation. Sharing one connection across modes,
+workspaces or capabilities therefore does not cascade lifecycle changes.
+
 ### 4.5 Workspace Knowledge Configuration
 
 The aggregate configuration that determines what knowledge one workspace can use.

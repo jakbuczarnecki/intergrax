@@ -8,16 +8,33 @@ import hashlib
 import logging
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, File, Header, HTTPException, Request, UploadFile, status
-
-from intergrax.fastapi_core.context import get_request_context
-from intergrax.integrations.contracts.object_storage import ObjectStorage
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
-from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
-from local_workspace_application.serving.run_metadata import attach_lkw_evidence_metadata
+from local_workspace_application.serving.knowledge_connected_source_routes import (
+    mount_connected_source_knowledge_routes,
+)
+from local_workspace_application.serving.knowledge_connection_attachment_routes import (
+    mount_knowledge_connection_attachment_routes,
+)
+from local_workspace_application.serving.knowledge_live_access_routes import (
+    mount_knowledge_live_access_routes,
+)
+from local_workspace_application.serving.knowledge_query_policy_routes import (
+    mount_knowledge_query_policy_routes,
+)
+from local_workspace_application.serving.run_metadata import (
+    attach_lkw_evidence_metadata,
+)
 from local_workspace_application.serving.source_projection import safe_source_label
 from local_workspace_application.serving.workspace_schemas import (
     CreateWorkspaceRequestV1,
@@ -56,6 +73,15 @@ from local_workspace_application.workspaces.ask_service import (
     WorkspaceAskPersistenceError,
     WorkspaceAskService,
 )
+from local_workspace_application.workspaces.connected_source_wiring import (
+    ConnectedSourceWiring,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.document_store_factory import (
+    resolve_managed_workspace_document_store,
+)
 from local_workspace_application.workspaces.hybrid_ask_execution import (
     KnowledgeConnectionRegistryIntegrationResolverV1,
     KnowledgeQueryOrchestratorV1,
@@ -78,14 +104,32 @@ from local_workspace_application.workspaces.hybrid_ask_service import (
     WorkspaceAskV2LookupError,
     WorkspaceAskV2PersistenceError,
 )
-from local_workspace_application.workspaces.document_store_factory import (
-    resolve_managed_workspace_document_store,
-)
-from local_workspace_application.workspaces.document_indexing import (
-    WorkspaceDocumentIndexingService,
-)
 from local_workspace_application.workspaces.ingestion_recovery import (
     KnowledgeIngestionRecoveryService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_handlers import (
+    AttachConnectionMutationHandler,
+    CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceKnowledgeMutationOperationV1,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+    WorkspaceKnowledgeConfigurationServiceError,
+)
+from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
+    WorkspaceConnectionAttachmentService,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
+    DetachConnectionMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_connection_detachment_service import (
+    WorkspaceConnectionDetachmentService,
 )
 from local_workspace_application.workspaces.knowledge_ingestion import (
     KnowledgeIngestionProcessorRouter,
@@ -95,6 +139,23 @@ from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeInputSourceResolverRouter,
     KnowledgeIntakeDispatchError,
     KnowledgeIntakeService,
+)
+from local_workspace_application.workspaces.knowledge_live_access_handlers import (
+    CreateLiveAccessBindingMutationHandler,
+    DetachLiveAccessBindingMutationHandler,
+    DisableLiveAccessBindingMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_live_access_service import (
+    LiveAccessLifecycleService,
+    LiveAccessRemoteResourceLookupPort,
+    WorkspaceLiveAccessBindingService,
+    WorkspaceLiveAccessRuntimeAuthority,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
+    UpdateQueryPolicyMutationHandler,
+)
+from local_workspace_application.workspaces.knowledge_query_policy_service import (
+    WorkspaceQueryPolicyService,
 )
 from local_workspace_application.workspaces.local_folder_indexing import (
     LocalFolderIndexingService,
@@ -122,6 +183,15 @@ from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceSource,
 )
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.search_evidence import (
+    SearchEvidenceIncompleteError,
+    map_search_hits,
+)
+from local_workspace_application.workspaces.service import (
+    ConcurrentSyncError,
+    ManagedWorkspaceService,
+)
 from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateAlreadyRegistered,
     SourceCandidateIdempotencyConflict,
@@ -132,20 +202,19 @@ from local_workspace_application.workspaces.source_candidates import (
     SourceCandidateSourceResolver,
     SourceCandidateUnavailable,
 )
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.search_evidence import (
-    SearchEvidenceIncompleteError,
-    map_search_hits,
+from local_workspace_application.workspaces.sync_enqueue import (
+    enqueue_managed_workspace_sync,
 )
-from local_workspace_application.workspaces.service import (
-    ConcurrentSyncError,
-    ManagedWorkspaceService,
-)
-from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
 from local_workspace_application.workspaces.sync_runtime import (
     ManagedWorkspaceSyncRuntime,
     build_managed_workspace_sync_runtime,
+)
+from local_workspace_application.workspaces.sync_service import (
+    ManagedWorkspaceSyncService,
+)
+from local_workspace_application.workspaces.vector_cleanup import (
+    VectorstoreManagerWorkspaceCleanup,
 )
 from local_workspace_application.workspaces.web_url_ingestion import (
     WebUrlAlreadyRegistered,
@@ -158,70 +227,19 @@ from local_workspace_application.workspaces.web_url_ingestion import (
     WebUrlValidationError,
     http_status_for_web_url_error,
 )
-from local_workspace_application.workspaces.sync_service import ManagedWorkspaceSyncService
-from local_workspace_application.workspaces.knowledge_configuration_handlers import (
-    AttachConnectionMutationHandler,
-    CreateIndexedSourceMutationHandler,
-    DisableIndexedSourceMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_live_access_handlers import (
-    CreateLiveAccessBindingMutationHandler,
-    DisableLiveAccessBindingMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_query_policy_handlers import (
-    UpdateQueryPolicyMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_connection_detachment_handler import (
-    DetachConnectionMutationHandler,
-)
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
-)
-from local_workspace_application.workspaces.knowledge_configuration_models import (
-    WorkspaceKnowledgeMutationOperationV1,
-)
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
-    WorkspaceKnowledgeConfigurationServiceError,
-)
-from local_workspace_application.workspaces.connected_source_wiring import (
-    ConnectedSourceWiring,
+
+from intergrax.fastapi_core.context import get_request_context
+from intergrax.integrations.contracts.object_storage import ObjectStorage
+from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+    build_vendor_knowledge_live_registration_registry,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     TenantConnectionPort,
     TenantLiveCapabilityCatalogPort,
 )
-from intergrax.runtime.vendor_knowledge.live.bootstrap import (
-    build_vendor_knowledge_live_registration_registry,
-)
-from local_workspace_application.serving.knowledge_live_access_routes import (
-    mount_knowledge_live_access_routes,
-)
-from local_workspace_application.workspaces.knowledge_live_access_service import (
-    LiveAccessRemoteResourceLookupPort,
-    WorkspaceLiveAccessBindingService,
-)
-from local_workspace_application.workspaces.knowledge_connection_attachment_service import (
-    WorkspaceConnectionAttachmentService,
-)
-from local_workspace_application.workspaces.knowledge_connection_detachment_service import (
-    WorkspaceConnectionDetachmentService,
-)
-from local_workspace_application.serving.knowledge_connected_source_routes import (
-    mount_connected_source_knowledge_routes,
-)
-from local_workspace_application.serving.knowledge_connection_attachment_routes import (
-    mount_knowledge_connection_attachment_routes,
-)
-from local_workspace_application.serving.knowledge_query_policy_routes import (
-    mount_knowledge_query_policy_routes,
-)
-from local_workspace_application.workspaces.knowledge_query_policy_service import (
-    WorkspaceQueryPolicyService,
-)
-from local_workspace_application.workspaces.vector_cleanup import (
-    VectorstoreManagerWorkspaceCleanup,
-)
+from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
 
 logger = logging.getLogger(__name__)
 
@@ -402,7 +420,10 @@ def mount_managed_workspace_routes(
     from pathlib import Path
 
     from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
-    from intergrax.websearch.capture import SecureHttpWebContentCapture, WebUrlAccessPolicy
+    from intergrax.websearch.capture import (
+        SecureHttpWebContentCapture,
+        WebUrlAccessPolicy,
+    )
 
     configured = settings.allowed_read_roots or read_allowlist_roots_from_env()
     allowlist = frozenset(
@@ -459,6 +480,9 @@ def mount_managed_workspace_routes(
             ),
             WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING: (
                 DisableLiveAccessBindingMutationHandler()
+            ),
+            WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING: (
+                DetachLiveAccessBindingMutationHandler()
             ),
             WorkspaceKnowledgeMutationOperationV1.UPDATE_QUERY_POLICY: (
                 UpdateQueryPolicyMutationHandler()
@@ -568,6 +592,7 @@ def mount_managed_workspace_routes(
         tenant_live_capability_catalog,
         live_access_remote_resource_lookup_port,
     )
+    live_runtime_authority: WorkspaceLiveAccessRuntimeAuthority | None = None
     if any(dep is not None for dep in live_access_deps):
         if not all(dep is not None for dep in live_access_deps):
             raise RuntimeError("live_access_wiring_incomplete")
@@ -581,6 +606,18 @@ def mount_managed_workspace_routes(
             tenant_connection_port=tenant_connection_port,
             capability_catalog=tenant_live_capability_catalog,
             remote_resource_lookup_port=live_access_remote_resource_lookup_port,
+        )
+        app.state.lkw_live_access_lifecycle_service = LiveAccessLifecycleService(
+            configuration_service=configuration_service,
+            live_access_binding_service=live_access_service,
+            connection_attachment_service=connection_attachment_service,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
+        )
+        live_runtime_authority = WorkspaceLiveAccessRuntimeAuthority(
+            configuration_service=configuration_service,
+            tenant_connection_port=tenant_connection_port,
+            capability_catalog=tenant_live_capability_catalog,
         )
         mount_knowledge_live_access_routes(
             app,
@@ -710,6 +747,7 @@ def mount_managed_workspace_routes(
                     integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
                         hybrid_ask_connection_registry
                     ),
+                    runtime_authority=live_runtime_authority,
                 ),
             ),
             llm_adapter=llm_adapter,

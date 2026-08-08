@@ -105,6 +105,7 @@ class WorkspaceKnowledgeMutationOperationV1(StrEnum):
     DISABLE_INDEXED_SOURCE = "disable_indexed_source"
     CREATE_LIVE_ACCESS_BINDING = "create_live_access_binding"
     DISABLE_LIVE_ACCESS_BINDING = "disable_live_access_binding"
+    DETACH_LIVE_ACCESS_BINDING = "detach_live_access_binding"
     UPDATE_QUERY_POLICY = "update_query_policy"
 
 

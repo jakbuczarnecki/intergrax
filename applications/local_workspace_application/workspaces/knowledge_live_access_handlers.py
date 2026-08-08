@@ -7,11 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from intergrax.integrations.contracts.base import IntegrationCategory
 from local_workspace_application.workspaces.knowledge_configuration_hashing import (
     live_access_binding_id_from_semantic_hash,
     live_access_binding_stage_manifest_hash,
     normalize_create_live_access_binding_request_hash,
+    normalize_detach_live_access_binding_request_hash,
     normalize_disable_live_access_binding_request_hash,
     normalize_live_access_capability_set,
     normalize_live_access_remote_resource_id,
@@ -27,11 +27,13 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeExistingResult,
+    WorkspaceKnowledgeStagedResult,
     WorkspaceKnowledgeStageInspection,
     WorkspaceKnowledgeStageStateV1,
-    WorkspaceKnowledgeStagedResult,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+
+from intergrax.integrations.contracts.base import IntegrationCategory
 
 _RESULT_ENTITY_TYPE = "live_access_binding"
 _REACTIVATION_PREDECESSOR_STATUSES = frozenset({
@@ -40,6 +42,11 @@ _REACTIVATION_PREDECESSOR_STATUSES = frozenset({
 })
 _DISABLE_PREDECESSOR_STATUSES = frozenset({
     LiveAccessBindingStatusV1.ACTIVE, LiveAccessBindingStatusV1.UNAVAILABLE, LiveAccessBindingStatusV1.REVOKED,
+})
+_DETACH_PREDECESSOR_STATUSES = frozenset({
+    LiveAccessBindingStatusV1.ACTIVE,
+    LiveAccessBindingStatusV1.DISABLED,
+    LiveAccessBindingStatusV1.UNAVAILABLE,
 })
 
 
@@ -96,6 +103,11 @@ class CreateLiveAccessBindingMutationIntent:
 
 @dataclass(frozen=True, slots=True)
 class DisableLiveAccessBindingMutationIntent:
+    live_access_binding_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class DetachLiveAccessBindingMutationIntent:
     live_access_binding_id: str
 
 
@@ -576,4 +588,150 @@ class DisableLiveAccessBindingMutationHandler:
             mutation=mutation,
             inspection=inspection,
             reinspect=lambda: _inspect_disable_live_staged(repository, mutation),
+        )
+
+
+def _detach_live_access_identity(
+    *,
+    mutation: WorkspaceKnowledgeMutationRecord,
+    target_revision: int,
+    intent: DetachLiveAccessBindingMutationIntent,
+) -> str:
+    if mutation.operation is not WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING:
+        raise RuntimeError("detach_live_access_binding_operation_required")
+    if mutation.target_revision != target_revision:
+        raise RuntimeError("detach_live_access_binding_target_revision_mismatch")
+    binding_id = intent.live_access_binding_id.strip()
+    expected_request = normalize_detach_live_access_binding_request_hash(
+        tenant_id=mutation.tenant_id,
+        workspace_id=mutation.workspace_id,
+        live_access_binding_id=binding_id,
+    )
+    if mutation.normalized_request_hash != expected_request:
+        raise RuntimeError("detach_live_access_binding_request_hash_mismatch")
+    if mutation.result_entity_type is not None and mutation.result_entity_type != _RESULT_ENTITY_TYPE:
+        raise RuntimeError("detach_live_access_binding_result_type_mismatch")
+    if mutation.result_entity_id is not None and mutation.result_entity_id != binding_id:
+        raise RuntimeError("detach_live_access_binding_result_id_mismatch")
+    return binding_id
+
+
+def _inspect_detach_live_staged(
+    repository: ManagedWorkspaceRepository,
+    mutation: WorkspaceKnowledgeMutationRecord,
+) -> WorkspaceKnowledgeStageInspection:
+    owned_bindings = _owned_live_bindings(repository, mutation)
+    if len(owned_bindings) > 1 or mutation.target_revision is None:
+        return _stage_conflict()
+    if not owned_bindings:
+        return WorkspaceKnowledgeStageInspection(state=WorkspaceKnowledgeStageStateV1.ABSENT)
+    staged = owned_bindings[0]
+    if staged.effective_revision != mutation.target_revision:
+        return _stage_conflict()
+    try:
+        binding_id = _detach_live_access_identity(
+            mutation=mutation,
+            target_revision=mutation.target_revision,
+            intent=DetachLiveAccessBindingMutationIntent(
+                live_access_binding_id=staged.live_access_binding_id,
+            ),
+        )
+    except RuntimeError:
+        return _stage_conflict()
+    if staged.live_access_binding_id != binding_id:
+        return _stage_conflict()
+    predecessor = _select_latest_live_predecessor(
+        repository,
+        mutation=mutation,
+        binding_id=binding_id,
+        base_revision=mutation.target_revision - 1,
+    )
+    if predecessor is None or predecessor.status not in _DETACH_PREDECESSOR_STATUSES:
+        return _stage_conflict()
+    expected = predecessor.model_copy(
+        update={
+            "status": LiveAccessBindingStatusV1.REVOKED,
+            "mutation_id": mutation.mutation_id,
+            "effective_revision": mutation.target_revision,
+            "updated_at": staged.updated_at,
+        }
+    )
+    if staged != expected:
+        return _stage_conflict()
+    return _stage_valid(binding_id)
+
+
+class DetachLiveAccessBindingMutationHandler:
+    operation = WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING
+
+    def find_existing_result(self, *, configuration: WorkspaceKnowledgeConfigurationV1, intent: object):
+        if not isinstance(intent, DetachLiveAccessBindingMutationIntent):
+            raise TypeError("detach_live_access_binding_intent_required")
+        binding_id = intent.live_access_binding_id.strip()
+        for binding in configuration.live_access_bindings:
+            if (
+                binding.live_access_binding_id == binding_id
+                and binding.status is LiveAccessBindingStatusV1.REVOKED
+            ):
+                return WorkspaceKnowledgeExistingResult(
+                    result_entity_type=_RESULT_ENTITY_TYPE,
+                    result_entity_id=binding_id,
+                )
+        return None
+
+    def stage(
+        self,
+        *,
+        repository: ManagedWorkspaceRepository,
+        mutation: WorkspaceKnowledgeMutationRecord,
+        target_revision: int,
+        intent: object,
+        now: datetime,
+    ) -> WorkspaceKnowledgeStagedResult:
+        if not isinstance(intent, DetachLiveAccessBindingMutationIntent):
+            raise TypeError("detach_live_access_binding_intent_required")
+        binding_id = _detach_live_access_identity(
+            mutation=mutation,
+            target_revision=target_revision,
+            intent=intent,
+        )
+        predecessor = _select_latest_live_predecessor(
+            repository,
+            mutation=mutation,
+            binding_id=binding_id,
+            base_revision=target_revision - 1,
+        )
+        if predecessor is None:
+            raise RuntimeError("detach_live_access_binding_predecessor_missing")
+        if predecessor.live_access_binding_id != binding_id:
+            raise RuntimeError("detach_live_access_binding_identity_conflict")
+        if predecessor.status not in _DETACH_PREDECESSOR_STATUSES:
+            raise RuntimeError("detach_live_access_binding_predecessor_transition_invalid")
+        binding = predecessor.model_copy(
+            update={
+                "status": LiveAccessBindingStatusV1.REVOKED,
+                "mutation_id": mutation.mutation_id,
+                "effective_revision": target_revision,
+                "updated_at": now,
+            }
+        )
+        if not repository.put_knowledge_live_access_version_if_absent(binding):
+            raise RuntimeError("detach_live_access_binding_stage_conflict")
+        return WorkspaceKnowledgeStagedResult(
+            result_entity_type=_RESULT_ENTITY_TYPE,
+            result_entity_id=binding_id,
+        )
+
+    def inspect_staged(self, *, repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord):
+        return _inspect_detach_live_staged(repository, mutation)
+
+    def cleanup_staged(
+        self, *, repository: ManagedWorkspaceRepository, mutation: WorkspaceKnowledgeMutationRecord,
+        inspection: WorkspaceKnowledgeStageInspection,
+    ) -> bool:
+        return _cleanup_staged_owned_row(
+            repository=repository,
+            mutation=mutation,
+            inspection=inspection,
+            reinspect=lambda: _inspect_detach_live_staged(repository, mutation),
         )

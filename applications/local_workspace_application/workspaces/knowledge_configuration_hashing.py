@@ -7,7 +7,6 @@ from __future__ import annotations
 import hashlib
 import json
 
-from intergrax.integrations.contracts.base import IntegrationCategory
 from local_workspace_application.workspaces.connected_source_ids import (
     workspace_indexed_source_semantic_hash,
 )
@@ -21,6 +20,8 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     QueryPolicyModeV2,
     WorkspaceKnowledgeMutationOperationV1,
 )
+
+from intergrax.integrations.contracts.base import IntegrationCategory
 
 _QUERY_POLICY_ENTITY_ID = "query-policy"
 
@@ -277,6 +278,23 @@ def normalize_disable_live_access_binding_request_hash(
     payload = _canonical_json(
         {
             "operation": WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING.value,
+            "tenant_id": tenant_id.strip(),
+            "workspace_id": workspace_id.strip(),
+            "live_access_binding_id": live_access_binding_id.strip(),
+        }
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def normalize_detach_live_access_binding_request_hash(
+    *,
+    tenant_id: str,
+    workspace_id: str,
+    live_access_binding_id: str,
+) -> str:
+    payload = _canonical_json(
+        {
+            "operation": WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING.value,
             "tenant_id": tenant_id.strip(),
             "workspace_id": workspace_id.strip(),
             "live_access_binding_id": live_access_binding_id.strip(),

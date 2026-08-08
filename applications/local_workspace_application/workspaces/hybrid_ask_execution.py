@@ -130,7 +130,7 @@ class LiveCapabilityHandlerRegistryV1:
     def from_published_registration(
         cls,
         published: PublishedLiveRegistrationV1,
-    ) -> "LiveCapabilityHandlerRegistryV1":
+    ) -> LiveCapabilityHandlerRegistryV1:
         return cls(tuple(published.handlers.values()))
 
     @staticmethod
@@ -221,6 +221,20 @@ class KnowledgeConnectionRegistryIntegrationResolverV1:
             provider_id=provider_id,
             integration_kind=integration_kind,
         )
+
+
+@runtime_checkable
+class LiveRuntimeAuthorityPort(Protocol):
+    def is_usable(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        live_access_binding_id: str,
+        connection_ref: str,
+        capability_id: str,
+    ) -> bool:
+        ...
 
 
 @runtime_checkable
@@ -509,6 +523,7 @@ class LiveCapabilityExecutorV1:
         handler_registry: LiveCapabilityHandlerRegistryV1 | None = None,
         published_registration: PublishedLiveRegistrationV1 | None = None,
         integration_resolver: TenantConnectionIntegrationResolverPort,
+        runtime_authority: LiveRuntimeAuthorityPort | None = None,
         clock: Callable[[], datetime] = _utc_now,
         monotonic: Callable[[], float] = time.monotonic,
         id_factory: Callable[[], str] = lambda: str(uuid4()),
@@ -523,6 +538,7 @@ class LiveCapabilityExecutorV1:
             else handler_registry or LiveCapabilityHandlerRegistryV1()
         )
         self._integration_resolver = integration_resolver
+        self._runtime_authority = runtime_authority
         self._clock = clock
         self._monotonic = monotonic
         self._id_factory = id_factory
@@ -578,6 +594,26 @@ class LiveCapabilityExecutorV1:
                 run_id=run_id,
                 retention=retention,
             )
+
+        if self._runtime_authority is not None:
+            try:
+                runtime_usable = self._runtime_authority.is_usable(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    live_access_binding_id=call.live_access_binding_id,
+                    connection_ref=call.connection_ref,
+                    capability_id=call.capability_id,
+                )
+            except Exception:  # noqa: BLE001 - runtime authority must fail closed
+                runtime_usable = False
+            if not runtime_usable:
+                return self._failure(
+                    call=call,
+                    started_at=started_at,
+                    error_code="live_binding_unavailable",
+                    run_id=run_id,
+                    retention=retention,
+                )
 
         try:
             integration = self._integration_resolver.resolve(

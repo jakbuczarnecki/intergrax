@@ -42,13 +42,20 @@ from local_workspace_application.workspaces.knowledge_connection_attachment_serv
 from local_workspace_application.workspaces.knowledge_live_access_handlers import (
     CreateLiveAccessBindingMutationHandler,
     CreateLiveAccessBindingMutationIntent,
+    DetachLiveAccessBindingMutationHandler,
     DisableLiveAccessBindingMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_live_access_service import (
+    AttachLiveAccessCommand,
     CreateWorkspaceLiveAccessBindingCommand,
+    DetachWorkspaceLiveAccessBindingCommand,
     DisableWorkspaceLiveAccessBindingCommand,
+    EnableWorkspaceLiveAccessBindingCommand,
+    GetLiveAccessCommand,
+    LiveAccessLifecycleService,
     WorkspaceLiveAccessBindingError,
     WorkspaceLiveAccessBindingService,
+    WorkspaceLiveAccessRuntimeAuthority,
 )
 from local_workspace_application.workspaces.models import Workspace, WorkspaceStatus
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
@@ -248,6 +255,7 @@ def _build_stack(
         WorkspaceKnowledgeMutationOperationV1.ATTACH_CONNECTION: AttachConnectionMutationHandler(),
         WorkspaceKnowledgeMutationOperationV1.CREATE_LIVE_ACCESS_BINDING: CreateLiveAccessBindingMutationHandler(),
         WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING: DisableLiveAccessBindingMutationHandler(),
+        WorkspaceKnowledgeMutationOperationV1.DETACH_LIVE_ACCESS_BINDING: DetachLiveAccessBindingMutationHandler(),
     }
     engine = WorkspaceKnowledgeConfigurationMutationEngine(
         repo,
@@ -313,6 +321,16 @@ def _disable_cmd(**overrides: object) -> DisableWorkspaceLiveAccessBindingComman
     }
     payload.update(overrides)
     return DisableWorkspaceLiveAccessBindingCommand(**payload)
+
+
+def _lifecycle(attach_svc, live_svc) -> LiveAccessLifecycleService:
+    return LiveAccessLifecycleService(
+        configuration_service=live_svc._configuration_service,
+        live_access_binding_service=live_svc,
+        connection_attachment_service=attach_svc,
+        tenant_connection_port=live_svc._tenant_connection_port,
+        capability_catalog=live_svc._capability_catalog,
+    )
 
 
 @pytest.mark.asyncio
@@ -454,6 +472,104 @@ async def test_reactivation_same_id() -> None:
 
 
 @pytest.mark.asyncio
+async def test_lifecycle_attach_disable_enable_detach_and_restart_view() -> None:
+    attach, service, _, _, _, _ = _build_stack()
+    lifecycle = _lifecycle(attach, service)
+    attached = await lifecycle.attach(
+        AttachLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            connection_ref=_CONNECTION,
+            remote_resource_id=None,
+            allowed_capability_ids=(_CAP_READ,),
+            expected_revision=0,
+            idempotency_key_hash=_SHA256_A,
+        )
+    )
+    assert attached.view.lifecycle_state.value == "active"
+    assert attached.view.runtime_available is True
+    assert attached.view.enabled is True
+
+    disabled = lifecycle.disable(
+        DisableWorkspaceLiveAccessBindingCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+            expected_revision=attached.configuration_revision,
+            idempotency_key_hash=_SHA256_B,
+        )
+    )
+    assert disabled.view.lifecycle_state.value == "disabled"
+    assert disabled.view.runtime_available is False
+
+    enabled = await lifecycle.enable(
+        EnableWorkspaceLiveAccessBindingCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+            expected_revision=disabled.configuration_revision,
+            idempotency_key_hash=_SHA256_C,
+        )
+    )
+    assert enabled.binding.live_access_binding_id == _BINDING_ID
+    assert enabled.view.lifecycle_state.value == "active"
+
+    detached = lifecycle.detach(
+        DetachWorkspaceLiveAccessBindingCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+            expected_revision=enabled.configuration_revision,
+            idempotency_key_hash=_SHA256_D,
+        )
+    )
+    assert detached.view.lifecycle_state.value == "detached"
+    assert detached.view.detached is True
+    with pytest.raises(WorkspaceLiveAccessBindingError, match="live_access_detached"):
+        await lifecycle.enable(
+            EnableWorkspaceLiveAccessBindingCommand(
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                live_access_binding_id=_BINDING_ID,
+                expected_revision=detached.configuration_revision,
+                idempotency_key_hash=_SHA256_E,
+            )
+        )
+
+    restarted = _lifecycle(attach, service)
+    assert restarted.get(
+        GetLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+        )
+    ).lifecycle_state.value == "detached"
+
+
+@pytest.mark.asyncio
+async def test_runtime_authority_rejects_disabled_connection() -> None:
+    attach, service, _, _, _, _ = _build_stack()
+    rev = _attach(attach)
+    port = service._tenant_connection_port
+    authority = WorkspaceLiveAccessRuntimeAuthority(
+        configuration_service=service._configuration_service,
+        tenant_connection_port=port,
+        capability_catalog=service._capability_catalog,
+    )
+    await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    port._result = _safe_connection(
+        administrative_status=TenantConnectionAdministrativeStatus.DISABLED
+    )
+    assert authority.is_usable(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        live_access_binding_id=_BINDING_ID,
+        connection_ref=_CONNECTION,
+        capability_id=_CAP_READ,
+    ) is False
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("overrides", "error", "capability_id"),
     [
@@ -546,7 +662,7 @@ async def test_resource_lookup_unavailable() -> None:
 
 @pytest.mark.asyncio
 async def test_disable_replay_skips_ports() -> None:
-    attach, service, repo, catalog, lookup, _ = _build_stack()
+    attach, service, _, catalog, lookup, _ = _build_stack()
     rev = _attach(attach)
     await service.create_live_access_binding(_create_cmd(expected_revision=rev))
     service.disable_live_access_binding(_disable_cmd(expected_revision=rev + 1))
