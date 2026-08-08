@@ -13,12 +13,19 @@ from intergrax.runtime.vendor_knowledge.live.contracts import (
 )
 from intergrax.runtime.vendor_knowledge.live.identity import (
     CapabilityIdentityV1,
+    LIVE_CONTRACT_VERSION,
     exact_capability_key,
     validate_capability_identity,
 )
 from intergrax.runtime.vendor_knowledge.live.schemas import (
     SchemaRegistrationV1,
     SchemaRegistryV1,
+)
+from intergrax.runtime.vendor_knowledge.plugin import (
+    VendorKnowledgeMode,
+    VendorKnowledgeSourceIdentity,
+    VendorKnowledgeSourcePlugin,
+    VendorKnowledgeSourcePluginRegistry,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
@@ -219,3 +226,173 @@ def publish_live_registration_bundles(
         handlers=MappingProxyType(dict(handlers)),
         schemas=schema_registry,
     )
+
+
+class VendorKnowledgeLiveRegistrationRegistry:
+    """Provider-neutral source registration and publication boundary."""
+
+    def __init__(
+        self,
+        *,
+        plugin_registry: VendorKnowledgeSourcePluginRegistry | None = None,
+    ) -> None:
+        self._plugins = plugin_registry or VendorKnowledgeSourcePluginRegistry()
+        self._bundles: dict[
+            tuple[str, IntegrationCategory, str, str],
+            LiveRegistrationBundleV1,
+        ] = {}
+
+    def register(self, bundles: Iterable[LiveRegistrationBundleV1]) -> None:
+        """Register bundles atomically; identical registrations are idempotent."""
+        bundle_list = tuple(bundles)
+        validated: list[
+            tuple[tuple[str, IntegrationCategory, str, str], LiveRegistrationBundleV1]
+        ] = []
+        for bundle in bundle_list:
+            identity, _request_model, _result_model = _validate_bundle(bundle)
+            validated.append((exact_capability_key(identity), bundle))
+
+        pending: dict[
+            tuple[str, IntegrationCategory, str, str],
+            LiveRegistrationBundleV1,
+        ] = {}
+        for key, bundle in validated:
+            existing = self._bundles.get(key) or pending.get(key)
+            if existing is None:
+                for candidate in (*self._bundles.values(), *pending.values()):
+                    if (
+                        candidate.descriptor.capability_id
+                        == bundle.descriptor.capability_id
+                        and candidate.descriptor.contract_version
+                        == bundle.descriptor.contract_version
+                        and not self._same_registration(candidate, bundle)
+                    ):
+                        raise ValueError("conflicting_live_capability_registration")
+                pending[key] = bundle
+                continue
+            if not self._same_registration(existing, bundle):
+                raise ValueError("conflicting_live_capability_registration")
+
+        self._bundles.update(pending)
+        for plugin in self._plugins.list_plugins():
+            self._validate_plugin_live_capabilities(plugin)
+
+    def register_plugin(self, plugin: VendorKnowledgeSourcePlugin) -> None:
+        """Register a VK-2 plugin only when all declared LIVE refs resolve."""
+        if not isinstance(plugin, VendorKnowledgeSourcePlugin):
+            raise TypeError("source_plugin_invalid")
+        self._validate_plugin_live_capabilities(plugin)
+        self._plugins.register(plugin)
+
+    def list_registrations(self) -> tuple[LiveRegistrationBundleV1, ...]:
+        """Return registrations in deterministic identity order."""
+        return tuple(
+            self._bundles[key]
+            for key in sorted(
+                self._bundles,
+                key=lambda item: (item[0], item[1].value, item[2], item[3]),
+            )
+        )
+
+    def resolve_for_source(
+        self,
+        identity: VendorKnowledgeSourceIdentity,
+    ) -> tuple[LiveRegistrationBundleV1, ...]:
+        """Resolve exactly the LIVE registrations declared by one VK-2 source."""
+        if not isinstance(identity, VendorKnowledgeSourceIdentity):
+            raise TypeError("source_identity_required")
+        plugin = self._plugins.require(identity)
+        self._validate_plugin_live_capabilities(plugin)
+        live = plugin.capability(VendorKnowledgeMode.LIVE)
+        assert live is not None
+        return tuple(
+            self._bundles[
+                self._key_for_identity(
+                    identity,
+                    capability_id=capability_id,
+                )
+            ]
+            for capability_id in live.capability_refs
+        )
+
+    def publish(self) -> PublishedLiveRegistrationV1:
+        """Publish one immutable snapshot for the canonical Live executor."""
+        return publish_live_registration_bundles(self.list_registrations())
+
+    def publish_for_source(
+        self,
+        identity: VendorKnowledgeSourceIdentity,
+    ) -> PublishedLiveRegistrationV1:
+        """Publish only the source subset declared by a VK-2 plugin."""
+        return publish_live_registration_bundles(self.resolve_for_source(identity))
+
+    def publish_to_tenant_catalog(self, catalog: object) -> tuple[LiveCapabilityDescriptorV1, ...]:
+        """Publish provider-neutral descriptors into a tenant catalog boundary."""
+        register = getattr(catalog, "register", None)
+        if not callable(register):
+            raise TypeError("tenant_live_capability_catalog_not_registrable")
+        descriptors = tuple(bundle.descriptor for bundle in self.list_registrations())
+        for descriptor in descriptors:
+            register(descriptor)
+        return descriptors
+
+    @staticmethod
+    def _key_for_identity(
+        identity: VendorKnowledgeSourceIdentity,
+        *,
+        capability_id: str,
+    ) -> tuple[str, IntegrationCategory, str, str]:
+        return (
+            identity.provider_id,
+            identity.integration_category,
+            capability_id,
+            LIVE_CONTRACT_VERSION,
+        )
+
+    def _validate_plugin_live_capabilities(
+        self,
+        plugin: VendorKnowledgeSourcePlugin,
+    ) -> None:
+        live = plugin.capability(VendorKnowledgeMode.LIVE)
+        if live is None:
+            raise ValueError("live_capability_not_declared")
+        for capability_id in live.capability_refs:
+            key = self._key_for_identity(plugin.identity, capability_id=capability_id)
+            bundle = self._bundles.get(key)
+            if bundle is None:
+                raise LookupError("live_capability_registration_missing")
+            descriptor = bundle.descriptor
+            if (
+                descriptor.provider_id != plugin.identity.provider_id
+                or descriptor.integration_kind != plugin.identity.integration_category
+                or descriptor.source_kind != plugin.identity.source_kind
+                or descriptor.capability_id != capability_id
+            ):
+                raise ValueError("live_capability_source_mismatch")
+
+    @staticmethod
+    def _same_registration(
+        left: LiveRegistrationBundleV1,
+        right: LiveRegistrationBundleV1,
+    ) -> bool:
+        handler_fields = (
+            "provider_id",
+            "integration_kind",
+            "source_kind",
+            "capability_id",
+            "contract_version",
+            "request_schema_ref",
+            "result_schema_ref",
+            "expected_request_model",
+        )
+        return (
+            left.descriptor == right.descriptor
+            and left.request_schema == right.request_schema
+            and left.result_schema == right.result_schema
+            and type(left.handler) is type(right.handler)
+            and all(
+                getattr(left.handler, field, object())
+                == getattr(right.handler, field, object())
+                for field in handler_fields
+            )
+        )

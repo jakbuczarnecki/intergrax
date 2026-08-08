@@ -191,14 +191,8 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     TenantConnectionPort,
     TenantLiveCapabilityCatalogPort,
 )
-from intergrax.runtime.vendor_knowledge.live.ms365_graph import (
-    build_msgraph_live_registration_bundles,
-)
-from intergrax.runtime.vendor_knowledge.live.slack import (
-    build_slack_live_registration_bundles,
-)
-from intergrax.runtime.vendor_knowledge.live.registration import (
-    publish_live_registration_bundles,
+from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+    build_vendor_knowledge_live_registration_registry,
 )
 from local_workspace_application.serving.knowledge_live_access_routes import (
     mount_knowledge_live_access_routes,
@@ -691,12 +685,8 @@ def mount_managed_workspace_routes(
         )
 
     if ask_service_v2 is None:
-        published_live_registration = publish_live_registration_bundles(
-            (
-                *build_msgraph_live_registration_bundles(),
-                *build_slack_live_registration_bundles(),
-            )
-        )
+        live_registration_registry = build_vendor_knowledge_live_registration_registry()
+        published_live_registration = live_registration_registry.publish()
         ask_service_v2 = WorkspaceAskServiceV2(
             workspace_service=service,
             workspace_repository=repository,
