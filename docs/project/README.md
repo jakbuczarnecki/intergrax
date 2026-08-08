@@ -1,33 +1,69 @@
-# Intergrax project documentation
+# Intergrax Documentation
 
-This is the canonical home for human-facing Intergrax documentation. Choose a route by intent:
+This is the canonical documentation home for Intergrax. Choose the next document by
+what you want to understand, try, inspect, build, or review.
 
-| I want to… | Start here |
-|---|---|
-| Understand why Intergrax exists | [Overview](overview/WHY_INTERGRAX.md) |
-| Try the primary LKW product path | [LKW Product Tour](product/lkw/LKW_PRODUCT_TOUR.md) → [LKW Quick Start](product/lkw/QUICKSTART.md) |
-| Review bounded product proof | [Proofs](proofs/PROOFS.md) → [LKW Platform Proof](proofs/LKW_PLATFORM_PROOF.md) |
-| Build with Intergrax | [Builder Quick Start](builders/BUILDER_QUICKSTART.md) |
-| Review architecture | [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md) |
-| Explore reusable capabilities | [Capabilities](capabilities/README.md) |
-| Explore integrations | [Integrations](integrations/README.md) |
-| Partner or collaborate | [Partners](community/PARTNERS.md) · [Collaboration](community/COLLABORATION.md) |
-| Perform a deep technical review | [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) |
-| Maintain or govern the documentation | [Maintainer Documentation](maintainers/public-adoption/README.md) |
+## Start here
 
-Intergrax is source-available and under active R&D. LKW is a Backend Product Alpha / MVP; real-user and commercial validation remain incomplete. See the [public documentation map](community/PUBLIC_DOCUMENTATION_MAP.md) for reader-oriented routing and the [technical map](technical/DOCUMENTATION_MAP.md) for implementation and operator material.
+- **Understand Intergrax** — [Why Intergrax](overview/WHY_INTERGRAX.md) explains the
+  problem, value, and fit.
+- **Try LKW** — [LKW Product Tour](product/lkw/LKW_PRODUCT_TOUR.md) →
+  [LKW Quick Start](product/lkw/QUICKSTART.md). This is the primary product action.
+- **Review proof** — [Proofs](proofs/PROOFS.md) shows evidence status; [LKW Platform
+  Proof](proofs/LKW_PLATFORM_PROOF.md) provides the deeper product evidence route.
+- **Build with Intergrax** — [Builder Quick Start](builders/BUILDER_QUICKSTART.md) →
+  [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md).
+- **Review architecture** — [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md)
+  gives the project-level architecture route.
 
-## Directory intent
+## Choose your path
+
+- **Public or product-oriented reader** — use the
+  [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md) for detailed
+  intent routing.
+- **Builder** — start with the [Builder Quick Start](builders/BUILDER_QUICKSTART.md),
+  then choose [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md) or the
+  [Evaluation Guide](builders/EVALUATION_GUIDE.md).
+- **Architect** — read the [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md);
+  continue to the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) for
+  deep engineering material.
+- **Deep technical reviewer** — go directly to the
+  [Technical Documentation Map](technical/DOCUMENTATION_MAP.md).
+- **Maintainer** — use [Maintainer Documentation](maintainers/public-adoption/README.md);
+  maintainer controls are not a normal reader route.
+
+## Explore the platform
+
+- [Capabilities](capabilities/README.md) — reusable platform capability areas.
+- [Integrations](integrations/README.md) — canonical integration documentation.
+- [Products](product/lkw/LKW_PRODUCT_TOUR.md) — begin with the documented LKW product
+  route.
+
+## Documentation depth
+
+- **Project landing and first contact** — the [root README](../../README.md).
+- **Public reader routes** — the [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md).
+- **Proof and evidence** — [Intergrax Proofs](proofs/PROOFS.md) and the
+  [LKW Platform Proof](proofs/LKW_PLATFORM_PROOF.md).
+- **Technical routing** — the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md).
+- **Maintainer controls** — [Maintainer Documentation](maintainers/public-adoption/README.md).
+
+## Current maturity
+
+Intergrax is **source-available** and under **active R&D**. LKW is a **Backend
+Product Alpha / MVP**. Indexed proof is bounded; mixed indexed + authorized live
+Hybrid Ask remains incomplete. **Real-user validation** and **commercial validation**
+remain incomplete. Detailed evidence and claim boundaries belong in
+[Intergrax Proofs](proofs/PROOFS.md).
+
+## Browse by documentation area
 
 - `overview/` — project context, use cases, FAQ, roadmap, and positioning.
-- `product/` — product-specific reader routes, including LKW.
+- `product/` — product reader routes, including LKW.
 - `builders/` — build and evaluation routes.
-- `architecture/` — stable architecture canon.
-- `proofs/` — bounded public evidence and proof status.
-- `capabilities/` — reusable platform capabilities and their proofs.
-- `integrations/` — provider and integration documentation.
-- `community/` — partner and collaboration guidance.
-- `technical/` — deep architecture, application, agent, ADR, guide, and reference material.
-- `maintainers/` — documentation governance, plans, audit procedures, and public-adoption controls.
-- `assets/` — documentation images, diagrams, and other static visual resources.
-- `archive/` — superseded or historical documentation.
+- `architecture/` — project architecture canon.
+- `proofs/` — bounded evidence and proof status.
+- `capabilities/` and `integrations/` — platform areas and integration documentation.
+- `community/` — public navigation, partner, and collaboration guidance.
+- `technical/` — deep engineering and operator material.
+- `maintainers/` — documentation governance and maintainer controls.

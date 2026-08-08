@@ -13,6 +13,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
+HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "ARCHITECTURE_OVERVIEW.md"
 BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
@@ -149,6 +150,7 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
 }
 
 _LINK_CHECK_PATHS = (
+    HUB_PATH,
     WHY_PATH,
     ARCHITECTURE_OVERVIEW_PATH,
     BUILD_PATH,
@@ -291,7 +293,7 @@ def test_unsupported_claims_not_positive() -> None:
         "not currently claim",
         "another approach",
     )
-    for path in _READER_PATHS:
+    for path in (*_READER_PATHS, HUB_PATH):
         lower = _normalize(_read(path))
         for phrase in _FORBIDDEN_CLAIM_PHRASES:
             start = 0
@@ -308,7 +310,7 @@ def test_unsupported_claims_not_positive() -> None:
 
 
 def test_no_internal_task_status_leakage() -> None:
-    for path in _READER_PATHS:
+    for path in (*_READER_PATHS, HUB_PATH):
         text = _read(path)
         match = _INTERNAL_TASK_PATTERN.search(text)
         assert match is None, f"{path.name} contains internal task ID: {match.group()}"
@@ -325,6 +327,44 @@ def test_readme_routing(readme_text: str) -> None:
         assert link in readme_text, f"README missing link: {link}"
     assert "Local Knowledge Workspace" in readme_text
     assert "Intergrax helps teams build" in readme_text
+
+
+def test_project_documentation_hub_routing() -> None:
+    assert HUB_PATH.is_file()
+    text = _read(HUB_PATH)
+    for route in (
+        "Understand Intergrax",
+        "Try LKW",
+        "Review proof",
+        "Build with Intergrax",
+        "Review architecture",
+        "product/lkw/LKW_PRODUCT_TOUR.md",
+        "product/lkw/QUICKSTART.md",
+        "proofs/PROOFS.md",
+        "proofs/LKW_PLATFORM_PROOF.md",
+        "builders/BUILDER_QUICKSTART.md",
+        "architecture/ARCHITECTURE_OVERVIEW.md",
+        "community/PUBLIC_DOCUMENTATION_MAP.md",
+        "technical/DOCUMENTATION_MAP.md",
+        "maintainers/public-adoption/README.md",
+        "../../README.md",
+    ):
+        assert route in text, f"Documentation hub missing route: {route}"
+
+    normalized = " ".join(_normalize(text).split())
+    for phrase in ("source-available", "active r&d", "backend product alpha"):
+        assert phrase in normalized
+    assert "real-user validation" in normalized
+    assert "commercial validation" in normalized
+    assert "mixed indexed + authorized live hybrid ask remains incomplete" in normalized
+
+
+def test_project_documentation_hub_is_not_a_map_duplicate() -> None:
+    hub_text = _read(HUB_PATH)
+    public_map_text = _read(PUBLIC_MAP_PATH)
+    assert len(hub_text.splitlines()) < len(public_map_text.splitlines())
+    assert "## Public documents" not in hub_text
+    assert "| Document | Purpose |" not in hub_text
 
 
 def test_public_map_synchronization() -> None:
