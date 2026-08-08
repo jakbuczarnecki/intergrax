@@ -149,6 +149,16 @@ def _source_sync_operation_index_row_key(*, workspace_id: str, source_id: str) -
     return f"{workspace_id}:{source_id}:latest"
 
 
+def _source_sync_operation_history_row_key(
+    *,
+    workspace_id: str,
+    source_id: str,
+    sort_timestamp: str,
+    operation_id: str,
+) -> str:
+    return f"{workspace_id}:{source_id}:history:{sort_timestamp}:{operation_id}"
+
+
 def _revision_row_key(
     *,
     workspace_id: str,
@@ -1393,9 +1403,9 @@ class ManagedWorkspaceRepository:
 
     def put_operation(self, operation: WorkspaceOperation) -> WorkspaceOperation:
         if operation.operation_type is WorkspaceOperationType.SOURCE_SYNC:
-            # Publish the bounded source pointer first.  A crash before the
-            # canonical write leaves only a stale pointer, which readers
-            # validate and ignore; replaying this write repairs the pointer.
+            # Publish derived source indexes before the canonical write.  A
+            # crash before the canonical write leaves only stale evidence,
+            # which readers validate and ignore.
             is_new_operation = (
                 self.get_operation(
                     tenant_id=operation.tenant_id,
@@ -1403,6 +1413,7 @@ class ManagedWorkspaceRepository:
                 )
                 is None
             )
+            self._put_source_sync_operation_history_index(operation)
             self._put_source_sync_operation_index(
                 operation,
                 force_latest=is_new_operation,
@@ -1487,6 +1498,35 @@ class ManagedWorkspaceRepository:
             if self._store.replace_if_match(expected=existing, replacement=record):
                 return
         raise RuntimeError("source_sync_operation_index_concurrency_conflict")
+
+    def _put_source_sync_operation_history_index(
+        self,
+        operation: WorkspaceOperation,
+    ) -> None:
+        sort_timestamp, sort_operation_id = self._source_sync_operation_sort_key(operation)
+        self._store.put(
+            DocumentRecord(
+                partition_key=_partition(
+                    operation.tenant_id,
+                    _ENTITY_SOURCE_SYNC_OPERATION_INDEX,
+                ),
+                row_key=_source_sync_operation_history_row_key(
+                    workspace_id=operation.workspace_id,
+                    source_id=operation.source_id,
+                    sort_timestamp=sort_timestamp,
+                    operation_id=sort_operation_id,
+                ),
+                data={
+                    "tenant_id": operation.tenant_id,
+                    "workspace_id": operation.workspace_id,
+                    "source_id": operation.source_id,
+                    "operation_type": operation.operation_type.value,
+                    "operation_id": operation.operation_id,
+                    "sort_timestamp": sort_timestamp,
+                    "sort_operation_id": sort_operation_id,
+                },
+            )
+        )
 
     def replace_operation_if_match(
         self,
@@ -2054,6 +2094,24 @@ class ManagedWorkspaceRepository:
             cursor=cursor,
         )
 
+    def list_source_sync_operation_history_page(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        source_id: str,
+        limit: int,
+        cursor: str | None = None,
+    ) -> DocumentQueryPageV1:
+        """Read bounded exact-source source-sync operation history."""
+        validate_document_query_limit(limit)
+        return self._store.query(
+            _partition(tenant_id, _ENTITY_SOURCE_SYNC_OPERATION_INDEX),
+            limit=limit,
+            row_key_prefix=f"{workspace_id}:{source_id}:history:",
+            cursor=cursor,
+        )
+
     def list_ingestion_operations(
         self,
         *,
@@ -2135,41 +2193,48 @@ class ManagedWorkspaceRepository:
         active = {
             WorkspaceOperationStatus.QUEUED,
             WorkspaceOperationStatus.RUNNING,
+            WorkspaceOperationStatus.PROCESSING,
         }
-        page = self.list_source_sync_operations_page(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            source_id=source_id,
-            limit=1,
-        )
-        for record in page.documents:
-            data = dict(record.data)
-            if any(
-                data.get(field) != expected
-                for field, expected in (
-                    ("tenant_id", tenant_id),
-                    ("workspace_id", workspace_id),
-                    ("source_id", source_id),
-                    ("operation_type", WorkspaceOperationType.SOURCE_SYNC.value),
-                )
-            ):
-                continue
-            operation_id = data.get("operation_id")
-            if not isinstance(operation_id, str) or not operation_id.strip():
-                continue
-            operation = self.get_operation(
+        cursor: str | None = None
+        while True:
+            page = self.list_source_sync_operation_history_page(
                 tenant_id=tenant_id,
-                operation_id=operation_id,
+                workspace_id=workspace_id,
+                source_id=source_id,
+                limit=100,
+                cursor=cursor,
             )
-            if (
-                operation is not None
-                and operation.tenant_id == tenant_id
-                and operation.workspace_id == workspace_id
-                and operation.source_id == source_id
-                and operation.operation_type is WorkspaceOperationType.SOURCE_SYNC
-                and operation.status in active
-            ):
-                return operation
+            for record in page.documents:
+                data = dict(record.data)
+                if any(
+                    data.get(field) != expected
+                    for field, expected in (
+                        ("tenant_id", tenant_id),
+                        ("workspace_id", workspace_id),
+                        ("source_id", source_id),
+                        ("operation_type", WorkspaceOperationType.SOURCE_SYNC.value),
+                    )
+                ):
+                    continue
+                operation_id = data.get("operation_id")
+                if not isinstance(operation_id, str) or not operation_id.strip():
+                    continue
+                operation = self.get_operation(
+                    tenant_id=tenant_id,
+                    operation_id=operation_id,
+                )
+                if (
+                    operation is not None
+                    and operation.tenant_id == tenant_id
+                    and operation.workspace_id == workspace_id
+                    and operation.source_id == source_id
+                    and operation.operation_type is WorkspaceOperationType.SOURCE_SYNC
+                    and operation.status in active
+                ):
+                    return operation
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
         return None
 
     def mark_running_operations_failed_for_tenant(

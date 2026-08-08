@@ -533,10 +533,21 @@ def test_lifecycle_get_uses_exact_source_operation_pointer(monkeypatch) -> None:
             source_id=_SOURCE_ID,
             allow_concurrent=True,
         )
-        for _ in range(3)
+        for _ in range(2)
     ]
+    older_active = target_operations[0]
+    repo.put_operation(
+        older_active.model_copy(update={"status": WorkspaceOperationStatus.RUNNING})
+    )
     latest = target_operations[-1]
     repo.put_operation(latest.model_copy(update={"status": WorkspaceOperationStatus.FAILED}))
+    latest_page = repo.list_source_sync_operations_page(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE_ID,
+        limit=1,
+    )
+    assert latest_page.documents[0].data["operation_id"] == latest.operation_id
     for index in range(1001):
         repo.put_operation(
             WorkspaceOperation(
@@ -554,6 +565,13 @@ def test_lifecycle_get_uses_exact_source_operation_pointer(monkeypatch) -> None:
         raise AssertionError(f"tenant operation scan: {tenant_id}")
 
     monkeypatch.setattr(repo, "list_operations", tenant_scan_forbidden)
+    active = repo.find_active_sync_operation(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE_ID,
+    )
+    assert active is not None
+    assert active.operation_id == older_active.operation_id
     view = lifecycle.get(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
