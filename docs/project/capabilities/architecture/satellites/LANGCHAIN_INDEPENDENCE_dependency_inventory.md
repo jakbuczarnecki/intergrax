@@ -42,7 +42,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 15 |
+| direct production/runtime imports | 14 |
 | direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
@@ -50,14 +50,14 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | generated lock rows | 1 |
 | core contract leaks | 0 |
 | core implementation dependencies | 0 |
-| provider-bound dependencies | 13 |
+| provider-bound dependencies | 12 |
 | optional compatibility paths | 0 |
 | legacy optional paths | 2 |
 | tooling dependencies | 1 |
 | test-only | 46 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 73 |
+| total detailed inventory rows | 72 |
 
 ## C. Detailed inventory table
 
@@ -71,7 +71,6 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | LCI-INV-0011 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/unstructured/opens.py` | 10 | `UnstructuredHTMLLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5C | verified import |
 | LCI-INV-0029 | `langchain_ollama` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 9 | `ChatOllama` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-6B | verified import |
 | LCI-INV-0030 | `langchain_core.messages` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 250 | `AIMessage, HumanMessage, SystemMessage, ToolMessage` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-6B | verified import |
-| LCI-INV-0054 | `langchain_community.document_loaders` | `intergrax/rag/document_loaders/parsers/text_smart_parser.py` | 9 | `TextLoader` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-5A | verified import |
 | LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 34 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional | Optional provider loaded lazily; explicit registry registration | LCI-2E | verified lazy import |
 | LCI-INV-0074 | `langchain_openai` | `intergrax/rag/embedding/providers/llama_cpp_embedding_provider.py` | 12 | `OpenAIEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
 | LCI-INV-0075 | `langchain_ollama` | `intergrax/rag/embedding/providers/ollama_embedding_provider.py` | 13 | `OllamaEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
@@ -174,7 +173,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
 | langchain-core | Document/messages ABI leak | 47 | 51 | 1 | 99 | yes | compat extra only | LCI-7A |
-| langchain-community | Community loader bridges | 4 | 0 | 0 | 4 | yes | integrations extra | LCI-5C |
+| langchain-community | Community loader bridges | 3 | 0 | 0 | 3 | yes | integrations extra | LCI-5C |
 | langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
 | langchain-text-splitters | Recursive splitter optional provider | 1 | 0 | 0 | 1 | optional | rag-langchain-splitters extra | LCI-2E |
