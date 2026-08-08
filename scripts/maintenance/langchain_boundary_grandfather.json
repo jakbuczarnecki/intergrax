@@ -3,15 +3,6 @@
   "policy": "LCI-0B",
   "entries": [
     {
-      "inventory_id": "LCI-INV-0054",
-      "path": "intergrax/rag/document_loaders/parsers/text_smart_parser.py",
-      "kind": "from",
-      "module": "langchain_community.document_loaders",
-      "names": [
-        "TextLoader"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0066",
       "path": "intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py",
       "kind": "from",

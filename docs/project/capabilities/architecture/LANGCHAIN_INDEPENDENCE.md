@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **READY_FOR_REVIEW**; LCI-5A **PLANNED / NEXT AFTER ACCEPTANCE**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **READY_FOR_REVIEW**; LCI-5B **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-5C **PLANNED**; LCI-6 **PLANNED**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-4D — Auxiliary native document leak cleanup
+**Current active task:** LCI-5A — Native text document loader replacement
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -32,6 +32,13 @@ Use, modification, or distribution without written permission is prohibited.
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
 **LCI-4D decision:** Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical `KnowledgeDocument` boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain `Document`. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6.
+
+**LCI-5A decision:** Plain-text parsing uses a native Intergrax reader and emits
+`ParsedDocumentFragment` directly. The default text parser no longer imports or
+constructs LangChain `TextLoader` or LangChain `Document`. Text decoding
+preserves supported encoding behavior without introducing a new required
+dependency. Provider-local LangChain document loaders remain assigned to
+LCI-5C.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 

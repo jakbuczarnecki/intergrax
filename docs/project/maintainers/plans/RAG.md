@@ -75,9 +75,12 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-3D | P1 | APPROVED | native provider adapters with scoped native records and hits | LCI-4A |
 | LCI-4A | P1 | APPROVED | native immutable retrieval hit/result contract and native RAG tool output | LCI-4B |
 | LCI-4B | P1 | APPROVED | native immutable reranker candidate/result contract and RetrievalHit boundary | LCI-4C |
-| LCI-4C-A1 | P1 | READY_FOR_REVIEW | canonical workspace-aware KnowledgeDocumentScope ABI propagation | LCI-4D |
-| LCI-4C | P1 | READY_FOR_REVIEW | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
-| LCI-4D | P1 | READY_FOR_REVIEW | native auxiliary memory, multimedia, legacy answer, evaluation and soak document paths | LCI-5A |
+| LCI-4C-A1 | P1 | APPROVED | canonical workspace-aware KnowledgeDocumentScope ABI propagation | LCI-4D |
+| LCI-4C | P1 | APPROVED | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
+| LCI-4D | P1 | APPROVED | native auxiliary memory, multimedia, legacy answer, evaluation and soak document paths | LCI-5A |
+| LCI-5A | P1 | READY_FOR_REVIEW | native plain-text reader emitting ParsedDocumentFragment without LangChain TextLoader | LCI-5B |
+| LCI-5B | P1 | PLANNED / NEXT AFTER ACCEPTANCE | native OpenAI embedding provider | LCI-5C |
+| LCI-5C | P1 | PLANNED | optional provider-local LangChain loaders and embeddings | LCI-6 |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
 native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map
@@ -97,11 +100,15 @@ namespace and workspace isolation are enforced by the bound Graph indexer scope
 fence before writes. A single indexer instance cannot switch tenant, namespace or
 workspace after binding. GraphStore backend internals remain unchanged.
 
-LCI-4D is READY_FOR_REVIEW for auxiliary memory, multimedia, legacy RAG,
-evaluation and soak paths. These paths use `KnowledgeDocument` and native
+LCI-4D is APPROVED for auxiliary memory, multimedia, legacy RAG, evaluation
+and soak paths. These paths use `KnowledgeDocument` and native
 `VectorStoreRecord`/`VectorStoreScope` boundaries while preserving identity,
-scope, provenance and source metadata. LCI-5A remains PLANNED / NEXT AFTER
-ACCEPTANCE.
+scope, provenance and source metadata. LCI-5A is READY_FOR_REVIEW: plain-text
+parsing uses a native Intergrax reader and emits `ParsedDocumentFragment`
+directly. The default text parser no longer imports or constructs LangChain
+`TextLoader` or LangChain `Document`. Text decoding preserves supported
+encoding behavior without introducing a new required dependency. Provider-local
+LangChain document loaders remain assigned to LCI-5C.
 
 LCI-4C-A1 records that `workspace_id` is a canonical system-owned
 `KnowledgeDocumentScope` field. The canonical identity boundary is
