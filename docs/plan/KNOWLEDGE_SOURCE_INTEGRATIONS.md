@@ -74,6 +74,27 @@ traceability, but any future sequencing that conflicts with this section is
 **NEXT:**
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
 
+### VK-4 indexed bridge acceptance proof
+
+The accepted VK-4 proof covers:
+
+- provider-neutral Indexed materializer/runtime resolution through VK-2 source identity;
+- Slack `slack_conversation` and Microsoft Graph `teams_chat` on the same generic
+  connected-source execution boundary;
+- canonical `KnowledgeDocument` intake and deterministic tenant/workspace/provider/
+  source-kind/binding/remote-item document identity;
+- idempotent replay, revision/stale protection and authoritative removal where
+  the provider emits tombstones;
+- fail-closed registration, identity, document validation and index-write errors,
+  with durable receipt/manifest state preserved for retry convergence;
+- existing generic index/Search/Ask proof for the representative Slack path and
+  canonical Graph Teams Chat materialization/index proof.
+
+Full provider coverage remains VK-6, live bootstrap remains VK-5, frontend
+neutrality remains VK-7, and complete cross-provider product E2E remains VK-8.
+Slack deletion remains unsupported/unproven while its adapter emits no
+authoritative tombstones.
+
 ### VK-2 plugin/capability contract status
 
 The canonical platform discovery boundary is
@@ -731,7 +752,9 @@ Hosted-content bytes: excluded
 
 Authoritative ACL: not implemented
 
-LKW connected-source bridge: not implemented
+LKW connected-source bridge: generic Indexed bridge accepted through VK-4;
+provider-neutral Search/Ask coverage beyond the representative proof remains
+deferred.
 
 Live capability layer: bounded list implemented; body/content reads deferred
 
@@ -829,9 +852,10 @@ The Microsoft Graph Teams Chat Vendor Knowledge adapter and its review correctio
 are implemented.
 
 The Teams Chat live capability is one binding-scoped metadata-only list page.
-Provider-neutral live search and the LKW connected-source bridge are not
-implemented. Message bodies, mentions, reactions, attachment inventory/bytes
-and hosted content remain excluded.
+Provider-neutral live search remains unsupported. The LKW connected-source
+bridge is implemented through the generic VK-4 Indexed path; message bodies,
+mentions, reactions, attachment inventory/bytes and hosted content remain
+excluded from this live capability.
 
 File attachment URLs are retained only as hidden provider references and are
 not downloaded directly. A later Microsoft Vendor Knowledge adapter can resolve
@@ -896,7 +920,8 @@ Microsoft Graph Teams Chat Vendor Knowledge adapter is implemented.
 Microsoft Graph Calendar Vendor Knowledge adapter is **ACCEPTED** through
 `REVIEW-FIX-1-REVIEW-CORRECTION-1`; its prior review fix remains
 **CHANGES_REQUIRED**.
-LKW connected-source bridge not implemented
+The generic VK-4 Indexed connected-source bridge is implemented; this historical
+status block does not claim broader provider coverage.
 ```
 
 Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
@@ -904,7 +929,8 @@ Notes after `VENDOR-KNOWLEDGE-SYNC-1B`:
 - generic delayed queue scheduling was **not** added;
 - retry/backoff is scoped to the Vendor Knowledge sync handler only;
 - the sink remains an injected port (`KnowledgeSyncSink`);
-- LKW intake / connected-source bridge remains a separate later task.
+- LKW intake remains application-owned; the generic connected-source Indexed
+  bridge is accepted through VK-4.
 
 ---
 
@@ -1011,7 +1037,8 @@ durable reconciliation adapter: implemented
 exact message read foundation: implemented
 provider-neutral live bounded list: ACCEPTED / CLOSED
 provider-neutral live search/discovery capability: unsupported by provider
-LKW bridge: not implemented
+LKW Indexed bridge: generic VK-4 bridge implemented for `teams_chat`
+provider-specific Search/Ask E2E: deferred to VK-8
 ```
 
 ### Microsoft Graph Calendar
@@ -1758,7 +1785,7 @@ No duplicate parsing or embedding path is allowed.
 
 ### Phase 8 — Slack Knowledge vertical (`SLACK-KNOWLEDGE-THREE-MODE-ARCH-1`)
 
-**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; bounded configured-channel Ask readiness **ACCEPTED / CLOSED**; indexed/durable LKW bridge remains **IN_PROGRESS / CHANGES_REQUIRED**.
+**Classification:** architecture frozen; platform foundation **IMPLEMENTED**; Slack live family **ACCEPTED / CLOSED**; bounded configured-channel Ask readiness **ACCEPTED / CLOSED**; generic Indexed bridge **ACCEPTED / CLOSED** through VK-4; Slack deletion remains unproven.
 
 One existing `SlackConversationChannelIntegration` is reused across indexed RAG, durable materialization without RAG and bounded live access. LKW application tasks remain outside platform ownership.
 

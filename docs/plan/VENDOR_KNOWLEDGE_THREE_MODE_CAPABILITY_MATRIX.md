@@ -24,8 +24,9 @@ indexed ingestion or live access. Current repository evidence proves:
   evidence and receipt foundations;
 - the accepted `ARCH-1` shared live delta is implemented and closed through
   `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`;
-- a provider-specific application indexed path only for Slack
-  `slack_conversation`, with accepted LKW durable and indexed closeout;
+- accepted provider-neutral Indexed bridge proofs for Slack
+  `slack_conversation` and Microsoft Graph `teams_chat`, with the Slack path
+  carrying the existing Search/Ask application closeout;
 - provider/source-kind live handlers and registrations are implemented for the
   five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
   Teams Chat and Calendar, plus the three Slack conversation live capabilities;
@@ -108,7 +109,7 @@ from the exact matrix because no source kind has been selected.
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `drive` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Graph-to-index bridge or application query proof; preserve accepted delta/full-reconciliation and ACL limits. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted adapter/reconciliation exists, but no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Drive list/query only; search and exact read are unsupported, child read is not applicable, content read is deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1A-DRIVE`; focused live tests | Preserve the accepted Drive list proof and exact operation matrix. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `mail` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No folder-scoped Graph Mail index bridge; attachment presence is not attachment inventory or bytes. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted reconciliation is folder-scoped; no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Mail live handler and registration are implemented; body, thread and attachment reads remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1B-MAIL`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL`; focused live tests | Preserve folder-scoped delta/removal and attachment non-goals. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_channel` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No channel-to-index bridge or application proof; deletion evidence remains explicit `deletedDateTime`. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter snapshot/reconciliation is proven, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Live remains limited to one root post and does not list replies or all channel messages. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1C-TEAMS-CHANNEL`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL`; focused live tests | Preserve explicit deletion semantics and the bounded root-post list. |
-| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No chat-to-index bridge or application proof; fixed-window scope does not prove live or indexed lifecycle. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application sink ownership is absent. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Fixed-window metadata-only list; bodies, mentions, reactions, attachments and hosted content remain excluded. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1D-TEAMS-CHAT`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT`; focused live tests | Preserve fixed-window and explicit-deletion semantics. |
+| Microsoft Graph | `ms365_graph / collaboration_suite` | `teams_chat` | `ACCEPTED` | `ACCEPTED` | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | VK-4 generic bridge and canonical Graph Teams Chat materialization/index proof are accepted; full provider-specific Search/Ask E2E remains deferred to VK-8. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Adapter fixed-window snapshot/reconciliation exists, but application-owned durable sink coverage remains representative. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Fixed-window metadata-only list; bodies, mentions, reactions, attachments and hosted content remain excluded. | NONE | `applications/local_workspace_application/tests/workspaces/test_connected_source_materializer.py`; `tests/unit/runtime/vendor_knowledge/test_durable_lifecycle_cross_provider.py`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT` | Preserve fixed-window and explicit-deletion semantics; broader provider E2E remains VK-8. |
 | Microsoft Graph | `ms365_graph / collaboration_suite` | `calendar` | `ACCEPTED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | No Calendar-to-index bridge or application proof; primary delta and non-primary snapshot paths must remain separate. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Accepted primary/non-primary reconciliation exists, but no production application-owned sink was found. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | One binding-selected initial metadata-only page; complete traversal, replay and event content remain deferred. | NONE | `MSGRAPH-KNOWLEDGE-ADAPTERS-1E-CALENDAR`; `MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR`; focused live tests | Preserve primary-delta versus non-primary-snapshot semantics and window removals. |
 | Slack | `slack / conversation_channel` | `slack_conversation` | `ACCEPTED` | `ACCEPTED` | YES | YES | YES | YES | NO | YES | FOCUSED_TESTS | Indexed HTTP→sync→materialization→index→Search/Ask proof passes with replay/recovery; Slack removal propagation remains unproved. | `ACCEPTED` | YES | YES | YES | YES | YES | FOCUSED_TESTS | Removal propagation and complete per-user ACL enforcement remain unproved. | `ACCEPTED / CLOSED` | YES | YES | YES | YES | YES | YES | YES | FOCUSED_TESTS | Bounded recent configured-channel activity, bounded multi-channel Ask, fetched-evidence filtering, one-page thread summary and exact message read are supported; native search, exhaustive history, arbitrary accessible-channel discovery, permissions and file/attachment reads remain deferred. | NONE | `test_slack_connected_source_end_to_end.py`; `test_connected_source_continuation.py`; `test_connected_source_recovery.py`; `test_slack_live.py`; `test_slack_ask_orchestration.py` | Keep ACL, native search, exhaustive history, removal propagation and attachment/file-body claims conservative. |
 | Google Workspace | `google_workspace / collaboration_suite` | `drive` | `IMPLEMENTED_UNREVIEWED` | `FOUNDATION_ONLY` | YES | NO | NO | NO | NO | NO | UNPROVEN | Adapter and sync tests exist, but no Google application binding, index bridge or indexed proof exists. | `PARTIAL` | YES | YES | NO | YES | YES | PARTIAL | Provider adapter/reconciliation exists; application-owned materialization is not wired. | `FOUNDATION_ONLY` | YES | NO | YES | YES | YES | YES | NO | UNPROVEN | No Google Drive live handler or application invocation. | NONE | `google_workspace_drive` adapter/sync tests named by accepted audit; roadmap Google status is stale | Correct status only through matrix routing; route application proof separately if product support is approved. |
@@ -132,7 +133,8 @@ classified here.
 ## 6. Indexed-mode findings
 
 The repository has a real generic index/RAG path and a real LKW connected
-source path. The latter is provider-specific only for Slack:
+source path. The accepted provider-specific materializers cover Slack and
+Microsoft Graph Teams Chat:
 
 - `connected_source_wiring.py` registers the Slack Vendor Knowledge adapter and
   binds the sync/index services;
@@ -140,13 +142,15 @@ source path. The latter is provider-specific only for Slack:
   safe indexed documents;
 - `test_slack_connected_source_end_to_end.py` exercises discovery, binding,
   synchronization, vector-store population, Search and Ask citations;
+- `test_connected_source_materializer.py` proves Graph Teams Chat resolution,
+  canonical `KnowledgeDocument` materialization and entry into the generic
+  index service;
 - the Slack application task is `ACCEPTED / CLOSED` through its focused
   continuation, recovery, materialization and indexed Search/Ask proof.
 
-No Microsoft Graph, Google, Jira or Confluence source kind has an exact
-provider-to-index bridge in the inspected application wiring. Generic LKW
-local-file indexing and generic RAG infrastructure are not transferred to
-those rows.
+Google, Jira and Confluence source kinds have no exact provider-to-index bridge
+in the inspected application wiring. Generic LKW local-file indexing and
+generic RAG infrastructure are not transferred to those rows.
 
 Removal propagation is deliberately not inferred from adapter reconciliation.
 Slack has no removal tombstones in the accepted audit; Graph removal semantics
