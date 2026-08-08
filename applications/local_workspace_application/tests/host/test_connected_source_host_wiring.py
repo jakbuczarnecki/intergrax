@@ -20,6 +20,9 @@ from local_workspace_application.workspaces.connected_source_host_wiring import 
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
+from local_workspace_application.workspaces.knowledge_administration_service import (
+    KnowledgeAdministrationService,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
 )
@@ -31,6 +34,10 @@ from local_workspace_application.workspaces.knowledge_configuration_mutation_eng
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeInspectionService,
+    KnowledgeOperationsService,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
@@ -223,6 +230,10 @@ def test_create_local_workspace_backend_app_wires_connected_source(
     monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_OPAQUE_REF_SIGNING_KEY", _SIGNING_KEY)
     monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_TENANT_ID", _TENANT)
     monkeypatch.setenv("LOCAL_WORKSPACE_CONNECTED_SOURCE_SLACK_CONNECTION_REF", _CONNECTION)
+    monkeypatch.setenv(
+        "LOCAL_WORKSPACE_KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
+        "host-admin-confirmation-secret",
+    )
     monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_COMPANION_ENABLED", "true")
     monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_APPROVED_TEAM_ID", "T1")
     monkeypatch.setenv("LOCAL_WORKSPACE_SLACK_APPROVED_USER_ID", "U1")
@@ -274,6 +285,12 @@ def test_create_local_workspace_backend_app_wires_connected_source(
         lifecycle = app.state.lkw_host_lifecycle
         slack = next(item for item in lifecycle.component_health() if item.name == COMPONENT_NAME)
         assert slack.enabled is True
+        assert isinstance(app.state.lkw_knowledge_inspection_service, KnowledgeInspectionService)
+        assert isinstance(app.state.lkw_knowledge_operations_service, KnowledgeOperationsService)
+        assert isinstance(
+            app.state.lkw_knowledge_administration_service,
+            KnowledgeAdministrationService,
+        )
 
 
 @pytest.mark.parametrize(
@@ -473,6 +490,9 @@ def test_create_local_workspace_backend_app_connected_source_readiness_states(
     with TestClient(app):
         readiness = app.state.lkw_connected_source_readiness
         assert readiness.state is expected_state
+        assert isinstance(app.state.lkw_knowledge_inspection_service, KnowledgeInspectionService)
+        assert isinstance(app.state.lkw_knowledge_operations_service, KnowledgeOperationsService)
+        assert app.state.lkw_knowledge_administration_service is None
         if expected_state is ConnectedSourceReadinessState.READY:
             assert hasattr(app.state, "lkw_connected_source_wiring")
             assert app.state.lkw_connected_source_wiring is not None

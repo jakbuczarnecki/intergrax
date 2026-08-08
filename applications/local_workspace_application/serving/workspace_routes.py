@@ -107,6 +107,12 @@ from local_workspace_application.workspaces.hybrid_ask_service import (
 from local_workspace_application.workspaces.ingestion_recovery import (
     KnowledgeIngestionRecoveryService,
 )
+from local_workspace_application.workspaces.knowledge_administration_service import (
+    DeterministicKnowledgeAdministrationIntentInterpreter,
+    HmacKnowledgeAdministrationConfirmationCodec,
+    KnowledgeAdministrationService,
+    Sha256KnowledgeAdministrationIdempotencyKeyFactory,
+)
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     AttachConnectionMutationHandler,
     CreateIndexedSourceMutationHandler,
@@ -134,6 +140,10 @@ from local_workspace_application.workspaces.knowledge_connection_detachment_serv
 from local_workspace_application.workspaces.knowledge_ingestion import (
     KnowledgeIngestionProcessorRouter,
     KnowledgeIngestionService,
+)
+from local_workspace_application.workspaces.knowledge_inspection_operations_service import (
+    KnowledgeInspectionService,
+    KnowledgeOperationsService,
 )
 from local_workspace_application.workspaces.knowledge_intake import (
     KnowledgeInputSourceResolverRouter,
@@ -592,6 +602,7 @@ def mount_managed_workspace_routes(
         tenant_live_capability_catalog,
         live_access_remote_resource_lookup_port,
     )
+    live_access_lifecycle_service: LiveAccessLifecycleService | None = None
     live_runtime_authority: WorkspaceLiveAccessRuntimeAuthority | None = None
     if any(dep is not None for dep in live_access_deps):
         if not all(dep is not None for dep in live_access_deps):
@@ -607,13 +618,14 @@ def mount_managed_workspace_routes(
             capability_catalog=tenant_live_capability_catalog,
             remote_resource_lookup_port=live_access_remote_resource_lookup_port,
         )
-        app.state.lkw_live_access_lifecycle_service = LiveAccessLifecycleService(
+        live_access_lifecycle_service = LiveAccessLifecycleService(
             configuration_service=configuration_service,
             live_access_binding_service=live_access_service,
             connection_attachment_service=connection_attachment_service,
             tenant_connection_port=tenant_connection_port,
             capability_catalog=tenant_live_capability_catalog,
         )
+        app.state.lkw_live_access_lifecycle_service = live_access_lifecycle_service
         live_runtime_authority = WorkspaceLiveAccessRuntimeAuthority(
             configuration_service=configuration_service,
             tenant_connection_port=tenant_connection_port,
@@ -624,6 +636,42 @@ def mount_managed_workspace_routes(
             live_access_service=live_access_service,
             repository=repository,
             prefix=prefix,
+        )
+
+    indexed_source_lifecycle_service = (
+        connected_wiring.indexed_source_lifecycle_service
+        if connected_wiring is not None
+        else (
+            host_bundle.wiring.indexed_source_lifecycle_service
+            if host_bundle.wiring is not None
+            else None
+        )
+    )
+    knowledge_inspection_service = KnowledgeInspectionService(
+        configuration_service=configuration_service,
+        indexed_source_lifecycle_service=indexed_source_lifecycle_service,
+        live_access_lifecycle_service=live_access_lifecycle_service,
+    )
+    knowledge_operations_service = KnowledgeOperationsService(
+        inspection_service=knowledge_inspection_service,
+        indexed_source_lifecycle_service=indexed_source_lifecycle_service,
+        live_access_lifecycle_service=(
+            live_access_lifecycle_service
+            if live_access_lifecycle_service is not None
+            else None
+        ),
+    )
+    knowledge_administration_service: KnowledgeAdministrationService | None = None
+    confirmation_secret = settings.knowledge_admin_confirmation_secret.strip()
+    if confirmation_secret:
+        knowledge_administration_service = KnowledgeAdministrationService(
+            inspection_service=knowledge_inspection_service,
+            operations_service=knowledge_operations_service,
+            interpreter=DeterministicKnowledgeAdministrationIntentInterpreter(),
+            idempotency_key_factory=Sha256KnowledgeAdministrationIdempotencyKeyFactory(),
+            confirmation_port=HmacKnowledgeAdministrationConfirmationCodec(
+                secret=confirmation_secret.encode("utf-8")
+            ),
         )
 
     source_candidate_registry = SourceCandidateRegistry.load(settings.source_candidates_file)
@@ -761,6 +809,9 @@ def mount_managed_workspace_routes(
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
     app.state.lkw_ask_service_v2 = ask_service_v2
+    app.state.lkw_knowledge_inspection_service = knowledge_inspection_service
+    app.state.lkw_knowledge_operations_service = knowledge_operations_service
+    app.state.lkw_knowledge_administration_service = knowledge_administration_service
     app.state.lkw_managed_file_intake_service = managed_file_intake_service
     app.state.lkw_knowledge_intake_service = knowledge_intake_service
     app.state.lkw_knowledge_ingestion_service = knowledge_ingestion_service

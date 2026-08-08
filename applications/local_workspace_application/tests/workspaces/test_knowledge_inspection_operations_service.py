@@ -253,6 +253,39 @@ def test_missing_live_lifecycle_fails_closed_for_persisted_live_binding() -> Non
         inspection.list_items(tenant_id=_TENANT, workspace_id=_WORKSPACE)
 
 
+def test_inventory_scales_with_bounded_workspace_configuration_enumeration() -> None:
+    configuration = _configuration()
+    configuration.live_access_bindings = ()
+    configuration.indexed_sources = tuple(
+        SimpleNamespace(
+            indexed_source_binding_id=f"indexed-binding-{index}",
+            cached_safe_display_label=f"Indexed {index}",
+        )
+        for index in range(100)
+    )
+
+    class _ManyIndexedLifecycle:
+        calls = 0
+
+        def get(self, **kwargs: object) -> SimpleNamespace:
+            self.calls += 1
+            view = _indexed_view()
+            view.indexed_source_binding_id = str(kwargs["indexed_source_binding_id"])
+            return view
+
+    lifecycle = _ManyIndexedLifecycle()
+    inspection = KnowledgeInspectionService(
+        configuration_service=_ConfigurationService(configuration),
+        indexed_source_lifecycle_service=lifecycle,
+        live_access_lifecycle_service=None,
+    )
+
+    inventory = inspection.list_items(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+    assert inventory.summary.total == 100
+    assert lifecycle.calls == 100
+
+
 def test_list_items_maps_indexed_lifecycle_failure_to_inventory_error() -> None:
     inspection, _, indexed, _ = _services()
 

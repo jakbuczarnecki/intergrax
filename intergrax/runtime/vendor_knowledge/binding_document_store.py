@@ -22,6 +22,7 @@ from intergrax.runtime.vendor_knowledge.bindings import (
 _PARTITION_PREFIX = "vendor_knowledge_bindings"
 _ROW_PREFIX = "binding"
 _MAX_BINDING_LIST_SCAN = 10_000
+_DOCUMENT_QUERY_PAGE_LIMIT = 5_000
 _FORBIDDEN_SECRET_FIELDS: frozenset[str] = frozenset(
     {
         "access_token",
@@ -186,22 +187,44 @@ class DocumentStoreKnowledgeSourceBindingRepository:
         if limit <= 0:
             raise ValueError("limit must be greater than zero")
 
-        result = self._document_store.query(
-            binding_partition_key(cleaned_tenant),
-            limit=_MAX_BINDING_LIST_SCAN + 1,
-            row_key_prefix=f"{_ROW_PREFIX}:",
-        )
-        if len(result.documents) > _MAX_BINDING_LIST_SCAN:
-            raise KnowledgeSourceBindingCorruptRecord(
-                "binding list exceeds scan limit"
+        partition_key = binding_partition_key(cleaned_tenant)
+        row_key_prefix = f"{_ROW_PREFIX}:"
+        documents: list[DocumentRecord] = []
+        cursor: str | None = None
+        while len(documents) <= _MAX_BINDING_LIST_SCAN:
+            page_limit = min(
+                _DOCUMENT_QUERY_PAGE_LIMIT,
+                _MAX_BINDING_LIST_SCAN + 1 - len(documents),
             )
-        if result.total > _MAX_BINDING_LIST_SCAN:
+            if cursor is None:
+                page = self._document_store.query(
+                    partition_key,
+                    limit=page_limit,
+                    row_key_prefix=row_key_prefix,
+                )
+            else:
+                page = self._document_store.query(
+                    partition_key,
+                    limit=page_limit,
+                    row_key_prefix=row_key_prefix,
+                    cursor=cursor,
+                )
+            documents.extend(page.documents)
+            if getattr(page, "total", len(page.documents)) > _MAX_BINDING_LIST_SCAN:
+                raise KnowledgeSourceBindingCorruptRecord(
+                    "binding list exceeds scan limit"
+                )
+            next_cursor = getattr(page, "next_cursor", None)
+            if next_cursor is None:
+                break
+            cursor = next_cursor
+        if len(documents) > _MAX_BINDING_LIST_SCAN:
             raise KnowledgeSourceBindingCorruptRecord(
                 "binding list exceeds scan limit"
             )
 
         bindings: list[KnowledgeSourceBinding] = []
-        for document in result.documents:
+        for document in documents:
             binding = binding_from_document(document)
             if binding.tenant_id != cleaned_tenant:
                 raise KnowledgeSourceBindingCorruptRecord(

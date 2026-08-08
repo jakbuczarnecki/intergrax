@@ -140,6 +140,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     web_url_preflight_timeout_seconds: float = 10.0
     connected_source_opaque_ref_signing_key: str = ""
     connected_source_slack_connection_ref: str = ""
+    knowledge_admin_confirmation_secret: str = field(default="", repr=False)
     conversation_thread_memory_max_messages: int = 20
     conversation_thread_memory_max_bytes: int = 16 * 1024
     conversation_thread_memory_max_age_seconds: int = 24 * 60 * 60
@@ -565,6 +566,10 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "CONNECTED_SOURCE_SLACK_CONNECTION_REF",
             default=cls._field_default("connected_source_slack_connection_ref"),  # type: ignore[arg-type]
         )
+        knowledge_admin_confirmation_secret = env.str(
+            "KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
+            default=cls._field_default("knowledge_admin_confirmation_secret"),  # type: ignore[arg-type]
+        )
 
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
@@ -630,4 +635,5 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "managed_file_max_batch_files": managed_file_max_batch_files,
             "connected_source_opaque_ref_signing_key": connected_source_opaque_ref_signing_key,
             "connected_source_slack_connection_ref": connected_source_slack_connection_ref,
+            "knowledge_admin_confirmation_secret": knowledge_admin_confirmation_secret,
         }

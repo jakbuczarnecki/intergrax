@@ -26,6 +26,7 @@ from intergrax.runtime.vendor_knowledge.tenant_connections import (
 _PARTITION_PREFIX = "vendor_knowledge_connections"
 _ROW_PREFIX = "connection"
 _MAX_LIST_SCAN = 10_000
+_DOCUMENT_QUERY_PAGE_LIMIT = 5_000
 
 
 def connection_partition_key(tenant_id: str) -> str:
@@ -186,18 +187,40 @@ class DocumentStoreTenantConnectionRepository:
         if limit < 1 or limit > 1000:
             raise ValueError("limit must be between 1 and 1000 inclusive")
 
-        result = self._document_store.query(
-            connection_partition_key(cleaned_tenant),
-            limit=_MAX_LIST_SCAN + 1,
-            row_key_prefix=f"{_ROW_PREFIX}:",
-        )
-        if len(result.documents) > _MAX_LIST_SCAN:
-            raise TenantConnectionCorruptRecord("connection list exceeds scan limit")
-        if result.total > _MAX_LIST_SCAN:
+        partition_key = connection_partition_key(cleaned_tenant)
+        row_key_prefix = f"{_ROW_PREFIX}:"
+        documents: list[DocumentRecord] = []
+        cursor: str | None = None
+        while len(documents) <= _MAX_LIST_SCAN:
+            page_limit = min(
+                _DOCUMENT_QUERY_PAGE_LIMIT,
+                _MAX_LIST_SCAN + 1 - len(documents),
+            )
+            if cursor is None:
+                page = self._document_store.query(
+                    partition_key,
+                    limit=page_limit,
+                    row_key_prefix=row_key_prefix,
+                )
+            else:
+                page = self._document_store.query(
+                    partition_key,
+                    limit=page_limit,
+                    row_key_prefix=row_key_prefix,
+                    cursor=cursor,
+                )
+            documents.extend(page.documents)
+            if getattr(page, "total", len(page.documents)) > _MAX_LIST_SCAN:
+                raise TenantConnectionCorruptRecord("connection list exceeds scan limit")
+            next_cursor = getattr(page, "next_cursor", None)
+            if next_cursor is None:
+                break
+            cursor = next_cursor
+        if len(documents) > _MAX_LIST_SCAN:
             raise TenantConnectionCorruptRecord("connection list exceeds scan limit")
 
         connections: list[TenantConnection] = []
-        for document in result.documents:
+        for document in documents:
             connection = connection_from_document(document)
             if connection.tenant_id != cleaned_tenant:
                 raise TenantConnectionCorruptRecord(

@@ -1490,7 +1490,10 @@ class ManagedWorkspaceRepository:
                     str(existing_data.get("sort_timestamp") or ""),
                     str(existing_data.get("sort_operation_id") or ""),
                 )
-                should_replace = (sort_timestamp, sort_operation_id) > existing_sort_key
+                should_replace = (
+                    sort_timestamp != existing_sort_key[0]
+                    and (sort_timestamp, sort_operation_id) > existing_sort_key
+                )
             if not should_replace:
                 return
             if not isinstance(self._store, ConditionalDocumentStore):
