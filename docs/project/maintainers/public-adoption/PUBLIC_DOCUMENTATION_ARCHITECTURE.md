@@ -43,6 +43,123 @@ The reader must not need to understand internal tiers, Cursor workflow, issue au
 
 ---
 
+## Frozen documentation ownership model
+
+Freeze three documentation layers. The project-documentation/public-experience
+stream owns project reader experience and the editorial presentation of project
+projections. The relevant module or product stream owns implementation truth.
+
+### PROJECT DOCUMENTATION
+
+This stream owns project-level reader experience, including:
+
+```text
+README.md
+docs/project/README.md
+docs/project/overview/WHY_INTERGRAX.md
+docs/project/overview/USE_CASES.md
+docs/project/overview/ROADMAP.md
+docs/project/overview/FAQ.md
+docs/project/architecture/ARCHITECTURE_OVERVIEW.md
+docs/project/builders/BUILDER_QUICKSTART.md
+docs/project/builders/BUILD_WITH_INTERGRAX.md
+docs/project/builders/EVALUATION_GUIDE.md
+docs/project/community/PARTNERS.md
+docs/project/community/COLLABORATION.md
+docs/project/community/PUBLIC_DOCUMENTATION_MAP.md
+```
+
+Its purpose is positioning, reader routing, project architecture explanation,
+use-case communication, builder experience, buyer and partner experience,
+public navigation, and visual communication.
+
+### PROJECT PROJECTIONS
+
+Project projections are reader-facing summaries owned editorially by this
+stream. Their factual content must come from accepted module evidence. Examples
+include `docs/project/proofs/PROOFS.md`, the LKW Product Tour, README LKW
+sections, capability spotlights, project-level capability summaries,
+integration/support summaries, and selected diagrams whose meaning depends on
+completed capabilities.
+
+Presentation ownership does not transfer implementation truth. A projection
+may be promoted only from accepted evidence: roadmap implementation status,
+code existence, or unit tests alone is insufficient when a claim requires
+live/product proof. Removing or weakening a claim is allowed when the evidence
+boundary requires it.
+
+### MODULE SOURCES OF TRUTH
+
+Module or product streams own detailed implementation status, technical proof,
+benchmarks, capability architecture, and module-specific execution truth. This
+includes, for example:
+
+```text
+LKW:
+docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md
+module architecture, operational proof, and lifecycle details
+
+Token Optimization:
+docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md
+architecture, model qualification, benchmarks, and technical proof artifacts
+
+Vendor Knowledge:
+provider-neutral architecture, provider/plugin roadmaps, reconciliation,
+provider proofs, and adapter-specific behavior
+
+Other module families:
+UCL / Context, LangChain Independence, runtime/model infrastructure,
+and future platform capabilities
+```
+
+The project-documentation stream may read, link, cite, and summarize accepted
+evidence. It must not casually become the implementation owner of module
+sources of truth. Module implementation roadmaps remain module-owned and are not
+public claim dashboards.
+
+### Public Evidence Packet
+
+The compact handoff from a module stream to project documentation may provide:
+
+```text
+CAPABILITY
+STATUS
+ACCEPTED SHA
+PROVEN
+USER-VISIBLE OUTCOME
+NOT PROVEN
+VERIFICATION PATH
+PUBLIC CLAIM CANDIDATE
+VISUAL OPPORTUNITY
+PUBLIC DOCS POTENTIALLY AFFECTED
+```
+
+This is a handoff contract, not a requirement to create evidence-packet files.
+
+### Non-blocking rule and claim promotion
+
+A module still being developed does not globally block unrelated Project
+Documentation work. For example, unfinished mixed indexed plus live Hybrid Ask
+may block only a mixed indexed-and-live claim, its evidence-result visual, or
+promotion of the relevant `PROOFS.md` row. It must not block `WHY_INTERGRAX`,
+generic architecture explanation, unrelated use cases, builder structure, FAQ,
+partner material, navigation, or the visual system.
+
+The frozen promotion pipeline is:
+
+```text
+module implementation
+→ module acceptance
+→ appropriate user-like/live proof where required
+→ accepted evidence
+→ project projection
+→ optional README promotion
+```
+
+Implementation does not directly become a marketing claim.
+
+---
+
 ## Proof and roadmap ownership
 
 The public documentation ownership contract is:

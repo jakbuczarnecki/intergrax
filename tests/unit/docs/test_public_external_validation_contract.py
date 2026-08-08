@@ -664,6 +664,50 @@ def test_architecture_synchronization() -> None:
     assert "does not constitute external validation" in text.lower()
 
 
+def test_documentation_ownership_model() -> None:
+    normalized = " ".join(_normalize(_read(PUBLIC_ARCHITECTURE_PATH)).split())
+    for layer in (
+        "project documentation",
+        "project projections",
+        "module sources of truth",
+    ):
+        assert layer in normalized, f"Missing ownership layer: {layer}"
+
+    for invariant in (
+        "accepted module evidence",
+        "unit tests alone is insufficient",
+        "does not globally block unrelated project documentation work",
+        "implementation roadmaps remain module-owned and are not public claim dashboards",
+    ):
+        assert invariant in normalized, f"Missing ownership invariant: {invariant}"
+
+    evidence_packet_fields = (
+        "capability",
+        "status",
+        "accepted sha",
+        "proven",
+        "user-visible outcome",
+        "not proven",
+        "verification path",
+        "public claim candidate",
+        "visual opportunity",
+        "public docs potentially affected",
+    )
+    for field in evidence_packet_fields:
+        assert field in normalized, f"Missing evidence handoff field: {field}"
+
+    pipeline = (
+        "module implementation",
+        "module acceptance",
+        "accepted evidence",
+        "project projection",
+        "optional readme promotion",
+    )
+    ownership_section = normalized[normalized.index("## non-blocking rule and claim promotion") :]
+    positions = [ownership_section.index(step) for step in pipeline]
+    assert positions == sorted(positions), "Claim promotion pipeline is out of order"
+
+
 def test_relative_link_integrity() -> None:
     for doc_path in _LINK_CHECK_PATHS:
         base = doc_path.parent
