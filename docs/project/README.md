@@ -11,6 +11,8 @@ what you want to understand, try, inspect, build, or review.
   [LKW Quick Start](product/lkw/QUICKSTART.md). This is the primary product action.
 - **Review proof** — [Proofs](proofs/PROOFS.md) shows evidence status; [LKW Platform
   Proof](proofs/LKW_PLATFORM_PROOF.md) provides the deeper product evidence route.
+- **Evaluate** — use the [Evaluation Guide](builders/EVALUATION_GUIDE.md) to test one
+  selected claim or workflow.
 - **Build with Intergrax** — [Builder Quick Start](builders/BUILDER_QUICKSTART.md) →
   [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md).
 - **Review architecture** — [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md)
@@ -22,8 +24,9 @@ what you want to understand, try, inspect, build, or review.
   [Public Documentation Map](community/PUBLIC_DOCUMENTATION_MAP.md) for detailed
   intent routing.
 - **Builder** — start with the [Builder Quick Start](builders/BUILDER_QUICKSTART.md),
-  then choose [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md) or the
-  [Evaluation Guide](builders/EVALUATION_GUIDE.md).
+  then continue to [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md).
+- **Evaluator** — use the [Evaluation Guide](builders/EVALUATION_GUIDE.md) as the
+  separate bounded evaluation route.
 - **Architect** — read the [Architecture Overview](architecture/ARCHITECTURE_OVERVIEW.md);
   continue to the [Technical Documentation Map](technical/DOCUMENTATION_MAP.md) for
   deep engineering material.

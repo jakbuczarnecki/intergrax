@@ -101,7 +101,7 @@ For example, if a knowledge application needs a new product-specific behavior, k
 - Public claim or evidence behavior → the owning proof or document contract.
 - Repository-wide gate → a broader confidence check, not automatically the first validation of every edit.
 
-Setup and verification are route-owned. There is no universal builder setup command on this page. Follow the commands and prerequisites in the canonical documentation for the selected application, capability, or evaluation route. The [Evaluation Guide](EVALUATION_GUIDE.md#30-minute-bounded-technical-evaluation) owns its 30-minute repository evaluation sequence; it is not a generic builder acceptance check.
+Setup and verification are route-owned. There is no universal builder setup command on this page. Follow the commands and prerequisites in the canonical documentation for the selected application, capability, or evaluation route. The [Evaluation Guide](EVALUATION_GUIDE.md) owns the bounded repository evaluation sequence; it is not a generic builder acceptance check.
 
 ## Continue when the checkpoint is clear
 

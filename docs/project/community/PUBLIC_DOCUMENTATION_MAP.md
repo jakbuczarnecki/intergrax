@@ -14,20 +14,23 @@ Start here if you want to understand Intergrax, evaluate proof paths, or find th
 
 ```mermaid
 flowchart TD
-    S[What do you want to do?]
+    S[Primary reader intent]
     S -->|Try the primary product| Q[LKW Quick Start]
-    S -->|Understand LKW first| T[LKW Product Tour]
+    S -->|Understand the product| T[LKW Product Tour]
+    S -->|Check workflow fit| U[Use Cases]
+    S -->|Check current evidence| R[PROOFS]
+    S -->|Evaluate one claim| E[Evaluation Guide]
     S -->|Build| B[Builder Quick Start]
     S -->|Review architecture| A[Architecture Overview]
-    S -->|Assess fit| U[Use Cases]
     S -->|Prepare a pilot| P[Partners]
-    S -->|Explore a platform capability| O[Token Optimization]
     S -->|Deep technical review| D[Technical Documentation Map]
 
     T --> Q
     Q --> L[LKW Platform Proof]
-    A --> R[docs/project/proofs/PROOFS.md]
     U --> R
+    E -->|PROCEED to build| B
+    B --> C[Build With Intergrax]
+    A --> R
 ```
 
 The primary product route leads from orientation to execution
@@ -93,19 +96,19 @@ Intergrax includes a deterministic, policy-governed Token Optimization Engine wi
 | [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) | Problem, value, audience, category fit and fair comparison with common approaches |
 | [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) | Public architecture overview — responsibility boundaries and system flow |
 | [Builder Quick Start](../builders/BUILDER_QUICKSTART.md) | First bounded builder orientation and progressive-disclosure route |
-| [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) | Deeper builder route selection and planning |
-| [Evaluation Guide](../builders/EVALUATION_GUIDE.md) | Bounded 5–60 minute evaluation paths |
-| [Use Cases](../overview/USE_CASES.md) | Concrete fit map: current strongest use case, bounded fits, planned validation and not-fit boundaries |
+| [BUILD_WITH_INTERGRAX](../builders/BUILD_WITH_INTERGRAX.md) | Deeper application composition planning |
+| [Evaluation Guide](../builders/EVALUATION_GUIDE.md) | Bounded evaluation method for one selected claim/workflow using a pinned revision, canonical path, evidence and PROCEED / DEFER / STOP decision |
+| [Use Cases](../overview/USE_CASES.md) | Workflow fit using strongest current fit, bounded technical fit, not yet proven and not a fit boundaries |
 | [Partners](PARTNERS.md) | Partner fit, evaluation-versus-operational pilot boundary, pilot preparation and success review |
 | [FAQ](../overview/FAQ.md) | Concise first-contact questions |
-| [Roadmap](../overview/ROADMAP.md) | Outcome-gated product-validation direction: now, next and later without implementation task IDs |
+| [Roadmap](../overview/ROADMAP.md) | Outcome-gated direction across repeatability, complete intended outcome, real-user validation, evidence-driven expansion and hardening/packaging |
 | [Collaboration](COLLABORATION.md) | Evaluation feedback, contribution, pilot-discussion, permission-request and security routes |
 | [LICENSE](../../../LICENSE) | Legal evaluation and collaboration terms |
 | [LKW Product Tour](../product/lkw/LKW_PRODUCT_TOUR.md) | Non-executable product-first walkthrough of the supported LKW experience and boundaries |
 | [LKW Quick Start](../product/lkw/QUICKSTART.md) | Supported executable indexed LKW product evaluation |
 | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
-| [Intergrax Proofs](../proofs/PROOFS.md) | Public proof dashboard — status legend and verification paths |
+| [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard — status legend and verification paths |
 
 Maintainer contracts and claim controls are intentionally excluded
 from normal reader navigation and remain indexed

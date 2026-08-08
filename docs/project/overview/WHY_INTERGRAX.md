@@ -196,5 +196,5 @@ If the category appears relevant:
 | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
 | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
 | [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |
-| [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning a deeper build or evaluation route |
+| [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning deeper application composition |
 | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) | Discussing a bounded pilot |

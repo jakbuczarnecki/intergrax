@@ -482,12 +482,14 @@ def test_project_documentation_hub_routing() -> None:
         "Understand Intergrax",
         "Try LKW",
         "Review proof",
+        "Evaluate",
         "Build with Intergrax",
         "Review architecture",
         "product/lkw/LKW_PRODUCT_TOUR.md",
         "product/lkw/QUICKSTART.md",
         "proofs/PROOFS.md",
         "proofs/LKW_PLATFORM_PROOF.md",
+        "builders/EVALUATION_GUIDE.md",
         "builders/BUILDER_QUICKSTART.md",
         "architecture/ARCHITECTURE_OVERVIEW.md",
         "community/PUBLIC_DOCUMENTATION_MAP.md",
@@ -503,6 +505,63 @@ def test_project_documentation_hub_routing() -> None:
     assert "real-user validation" in normalized
     assert "commercial validation" in normalized
     assert "mixed indexed + authorized live hybrid ask remains incomplete" in normalized
+    assert (
+        "[Builder Quick Start](builders/BUILDER_QUICKSTART.md) →\n"
+        "  [Build With Intergrax](builders/BUILD_WITH_INTERGRAX.md)."
+    ) in text
+    assert "or the\n  [Evaluation Guide]" not in text
+
+
+def test_public_map_reader_route_ownership_and_primary_intents() -> None:
+    text = _read(PUBLIC_MAP_PATH)
+    normalized = " ".join(_normalize(text).split())
+    for phrase in (
+        "product tour",
+        "quick start",
+        "proofs",
+        "evaluation guide",
+        "builder quick start",
+        "build with intergrax",
+        "architecture overview",
+        "use cases",
+        "partners",
+        "technical documentation map",
+    ):
+        assert phrase in normalized, f"PUBLIC_MAP missing route: {phrase}"
+
+    assert "deeper application composition planning" in normalized
+    assert (
+        "bounded evaluation method for one selected claim/workflow using a pinned revision"
+        in normalized
+    )
+    assert "current evidence status / public evidence dashboard" in normalized
+    assert (
+        "outcome-gated direction across repeatability, complete intended outcome"
+        in normalized
+    )
+    assert "planned validation" not in normalized
+    assert "now, next and later" not in normalized
+    assert "5–60" not in text
+    assert not _INTERNAL_TASK_PATTERN.search(text)
+
+    primary = _MERMAID_FENCE.findall(text)[0]
+    for intent in (
+        "Try the primary product",
+        "Understand the product",
+        "Check workflow fit",
+        "Check current evidence",
+        "Evaluate one claim",
+        "Build",
+        "Review architecture",
+        "Prepare a pilot",
+        "Deep technical review",
+    ):
+        assert intent in primary, f"PUBLIC_MAP Mermaid missing intent: {intent}"
+    for forbidden in ("classDef", "style", "%%{init", "theme", "http://", "https://"):
+        assert forbidden not in primary
+    assert "B --> E" not in primary
+    assert "Permission" not in primary
+    assert "PROOFS" in primary
 
 
 def test_project_documentation_hub_is_not_a_map_duplicate() -> None:
