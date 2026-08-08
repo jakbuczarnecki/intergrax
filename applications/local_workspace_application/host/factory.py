@@ -89,6 +89,7 @@ def create_local_workspace_backend_app(
         LocalWorkspaceBackendSettings,
         settings if settings is not None else LocalWorkspaceBackendSettings.from_env(),
     )
+    resolved_settings.validate_for_runtime()
     if observability_export is None:
         observability_export = resolved_settings.build_observability_export_config()
     api_key_config = (
@@ -244,6 +245,64 @@ def create_local_workspace_backend_app(
         shared_slack_integration=shared_slack_integration,
         ask_service_v2=hybrid_ask_service,
     )
+    repository = app.state.lkw_managed_workspace_repository
+    try:
+        repository.document_store.query("lkw:startup_probe", limit=1)
+    except Exception:
+        raise RuntimeError("lkw_durable_store_unavailable") from None
+    if host_lifecycle is not None:
+        connected_source_readiness = getattr(
+            app.state,
+            "lkw_connected_source_readiness",
+            None,
+        )
+        live_state = getattr(getattr(connected_source_readiness, "state", None), "value", "")
+        live_enabled = bool(live_state and live_state != "disabled")
+        live_healthy = not live_enabled or live_state == "ready"
+        live_detail = (
+            "disabled"
+            if not live_enabled
+            else ("ready" if live_healthy else f"unavailable:{live_state}")
+        )
+        host_lifecycle.register_component(
+            "durable_store",
+            enabled=True,
+            required=True,
+            healthy=True,
+            detail="ready",
+        )
+        host_lifecycle.register_component(
+            "indexed",
+            enabled=resolved_settings.enable_rag,
+            required=resolved_settings.enable_rag,
+            healthy=True,
+            detail="enabled" if resolved_settings.enable_rag else "disabled",
+        )
+        host_lifecycle.register_component(
+            "live",
+            enabled=live_enabled,
+            required=False,
+            healthy=live_healthy,
+            detail=live_detail,
+        )
+        host_lifecycle.register_component(
+            "nl_administration",
+            enabled=app.state.lkw_knowledge_administration_service is not None,
+            required=False,
+            healthy=True,
+            detail=(
+                "enabled"
+                if app.state.lkw_knowledge_administration_service is not None
+                else "disabled:confirmation_secret_missing"
+            ),
+        )
+        host_lifecycle.register_component(
+            "sync_runtime",
+            enabled=True,
+            required=True,
+            healthy=False,
+            detail="starting",
+        )
     mount_local_workspace_readiness_routes(
         app,
         resolved_readiness,

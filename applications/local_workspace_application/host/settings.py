@@ -117,6 +117,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     observability_sentry_debug: bool = False
     observability_sentry_flush_after_capture: bool = False
     data_home: str = _DEFAULT_DATA_HOME
+    document_store_backend: Literal["auto", "mongodb", "inmemory"] = "auto"
     file_watcher_enabled: bool = False
     file_watcher_tenant_id: str = ""
     file_watcher_workspace_id: str = ""
@@ -184,6 +185,53 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     @property
     def run_dir(self) -> str:
         return _data_home_path(self.data_home, "run")
+
+    def validate_for_runtime(self) -> None:
+        """Reject unsafe or incomplete production configuration before wiring."""
+        if self.environment != ApiEnvironment.PROD:
+            return
+
+        if self.data_home.strip() in {"", _DEFAULT_DATA_HOME}:
+            raise ValueError(
+                "LOCAL_WORKSPACE_DATA_HOME is required for production durable storage."
+            )
+        if self.document_store_backend not in {"auto", "mongodb", "inmemory"}:
+            raise ValueError("local_workspace_document_store_backend_invalid")
+        if self.document_store_backend == "inmemory":
+            raise ValueError(
+                "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND=inmemory is development-only."
+            )
+        if not (os.environ.get("INTERGRAX_MONGODB_URI") or "").strip():
+            raise ValueError(
+                "INTERGRAX_MONGODB_URI is required for production durable workspace state."
+            )
+
+        vector_store = (os.environ.get("LOCAL_WORKSPACE_VECTOR_STORE") or "qdrant").strip().lower()
+        if vector_store == "inmemory":
+            raise ValueError(
+                "LOCAL_WORKSPACE_VECTOR_STORE=inmemory is development-only."
+            )
+        if vector_store == "qdrant" and not (
+            os.environ.get("INTERGRAX_QDRANT_URL") or ""
+        ).strip():
+            raise ValueError(
+                "INTERGRAX_QDRANT_URL is required for production indexed storage."
+            )
+
+        live_values = (
+            self.connected_source_opaque_ref_signing_key.strip(),
+            self.slack_tenant_id.strip(),
+            self.connected_source_slack_connection_ref.strip(),
+        )
+        if any(live_values) and not all(live_values):
+            raise ValueError(
+                "connected_source_live_configuration_incomplete"
+            )
+        confirmation_secret = self.knowledge_admin_confirmation_secret.strip()
+        if confirmation_secret and len(confirmation_secret) < 32:
+            raise ValueError(
+                "LOCAL_WORKSPACE_KNOWLEDGE_ADMIN_CONFIRMATION_SECRET is too short."
+            )
 
     @property
     def enabled_tool_ids(self) -> list[str]:
@@ -570,6 +618,13 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
             default=cls._field_default("knowledge_admin_confirmation_secret"),  # type: ignore[arg-type]
         )
+        document_store_backend = (
+            env.str("DOCUMENT_STORE_BACKEND", default="auto").strip().lower() or "auto"
+        )
+        if document_store_backend not in {"auto", "mongodb", "inmemory"}:
+            raise ValueError(
+                "LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND must be one of: auto, mongodb, inmemory."
+            )
 
         managed_staging_root = _data_home_path(data_home, "run", "managed_upload_staging")
         web_url_staging_root = _data_home_path(data_home, "run", "web_url_staging")
@@ -615,6 +670,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "observability_sentry_shutdown_timeout_seconds": observability_sentry_shutdown_timeout_seconds,
             "observability_sentry_debug": observability_sentry_debug,
             "observability_sentry_flush_after_capture": observability_sentry_flush_after_capture,
+            "document_store_backend": document_store_backend,
             "file_watcher_enabled": file_watcher_enabled,
             "file_watcher_tenant_id": file_watcher_tenant_id,
             "file_watcher_workspace_id": file_watcher_workspace_id,

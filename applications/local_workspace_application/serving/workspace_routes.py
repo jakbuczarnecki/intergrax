@@ -440,8 +440,18 @@ def mount_managed_workspace_routes(
         set(configured) | {settings.managed_upload_staging_dir, settings.web_url_staging_dir}
     )
     shadow_roots = (Path(settings.shadow_workspaces_dir),)
+    owns_repository = repository is None
     if repository is None:
-        repository = ManagedWorkspaceRepository(resolve_managed_workspace_document_store())
+        store = (
+            resolve_managed_workspace_document_store()
+            if settings.document_store_backend == "auto"
+            else resolve_managed_workspace_document_store(
+                backend=settings.document_store_backend,
+            )
+        )
+        repository = ManagedWorkspaceRepository(
+            store
+        )
     ask_repository = WorkspaceAskRepository(repository.document_store)
     vector_cleanup = None
     if vectorstore_manager is not None:
@@ -755,11 +765,39 @@ def mount_managed_workspace_routes(
             import asyncio
 
             sync_runtime.bind_main_loop(asyncio.get_running_loop())
-            sync_runtime.start()
+            try:
+                sync_runtime.start()
+            except BaseException as exc:
+                lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
+                if lifecycle is not None:
+                    lifecycle.update_component(
+                        "sync_runtime",
+                        healthy=False,
+                        detail="startup_failed",
+                    )
+                raise RuntimeError("lkw_sync_runtime_start_failed") from exc
+            lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
+            if lifecycle is not None:
+                lifecycle.update_component(
+                    "sync_runtime",
+                    healthy=True,
+                    detail="running",
+                )
 
         @app.on_event("shutdown")
         async def _stop_managed_workspace_sync_runtime() -> None:
-            sync_runtime.stop()
+            try:
+                sync_runtime.stop()
+            finally:
+                lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
+                if lifecycle is not None:
+                    lifecycle.update_component(
+                        "sync_runtime",
+                        healthy=False,
+                        detail="stopped",
+                    )
+                if owns_repository:
+                    repository.document_store.close()
 
     if ask_service is None:
         ask_service = WorkspaceAskService(
@@ -808,6 +846,7 @@ def mount_managed_workspace_routes(
 
     app.state.lkw_managed_workspace_service = service
     app.state.lkw_managed_workspace_repository = repository
+    app.state.lkw_managed_workspace_repository_owned = owns_repository
     app.state.lkw_managed_workspace_sync_runtime = sync_runtime
     app.state.lkw_ask_service = ask_service
     app.state.lkw_ask_service_v2 = ask_service_v2

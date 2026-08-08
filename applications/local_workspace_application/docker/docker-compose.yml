@@ -91,7 +91,7 @@ services:
       OLLAMA_HOST: http://ollama:11434
       LOCAL_WORKSPACE_OBSERVABILITY_OTLP_ENDPOINT: http://otel-collector:4318/v1/logs
     volumes:
-      - lkw_application_data:/app/applications/local_workspace_application/build/local_workspace
+      - lkw_application_data:/var/lib/intergrax/lkw
     depends_on:
       lkw-mongodb:
         condition: service_healthy

@@ -15,6 +15,11 @@ def mount_local_workspace_readiness_routes(
 ) -> None:
     router = APIRouter(prefix=prefix, tags=["local_workspace"])
 
+    @router.get("/liveness")
+    async def liveness_endpoint() -> dict[str, bool]:
+        """The HTTP event loop is alive when this endpoint can respond."""
+        return {"alive": True}
+
     @router.get("/readiness")
     async def readiness_endpoint() -> dict[str, object]:
         snapshot = readiness.readiness_snapshot()

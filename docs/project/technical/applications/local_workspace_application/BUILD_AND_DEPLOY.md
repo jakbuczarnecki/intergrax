@@ -45,6 +45,55 @@ Minimum local stack variables are documented in `.env.example`:
 
 Agent roster and integrations: `manifest.py`, `host/environment_profile.py`, `host/tool_wiring.py`.
 
+### Production operator contract
+
+The canonical process entry point is:
+
+```text
+local_workspace_application.host.main:app
+```
+
+The host reads `LOCAL_WORKSPACE_*` settings plus the platform `INTERGRAX_*`
+settings. In production (`INTERGRAX_ENV=prod`), configure all of the following:
+
+- `LOCAL_WORKSPACE_DATA_HOME` — explicit operator-owned data root;
+- `INTERGRAX_MONGODB_URI` — durable workspace configuration, lifecycle,
+  publication, operation and recovery state;
+- `LOCAL_WORKSPACE_VECTOR_STORE=qdrant` and `INTERGRAX_QDRANT_URL` — indexed
+  content backend;
+- the production API-key settings already required by the host.
+
+`LOCAL_WORKSPACE_DOCUMENT_STORE_BACKEND=auto` selects MongoDB when
+`INTERGRAX_MONGODB_URI` is present. `inmemory` is development/test-only and
+production startup fails instead of silently downgrading. The LLM/runtime
+provider is configured through the existing `INTERGRAX_LLM_*` contract.
+
+Live Access is optional. A complete connected-source configuration enables it;
+an incomplete production mapping fails configuration validation. Without that
+configuration, Indexed functionality remains available and Live is reported as
+disabled. NL administration is also optional: omit
+`LOCAL_WORKSPACE_KNOWLEDGE_ADMIN_CONFIRMATION_SECRET` to disable it explicitly.
+When configured, keep the same secret across restarts; rotating it immediately
+invalidates tokens signed with the previous key. Secrets are never part of
+health or readiness payloads.
+
+Use `/health` as the process liveness probe,
+`/v1/local_workspace/liveness` as the LKW HTTP liveness probe, and
+`/v1/local_workspace/readiness` as the authoritative readiness/capability
+projection. Readiness reports durable-store, Indexed, Live, NL administration
+and sync-runtime status; transient provider outages do not make an optional
+capability a process outage, while a mandatory durable-store failure blocks
+startup/readiness.
+
+Stop the single LKW process using the normal service/container stop operation.
+Shutdown stops the sync worker and closes host-owned resources without marking
+unfinished durable work successful. MongoDB, Qdrant, and the
+`LOCAL_WORKSPACE_DATA_HOME` volume must survive process/container replacement;
+runtime staging and logs may be ephemeral. On restart, the host reconstructs
+state from those stores and reclaims resumable work. The supported topology is
+one worker-owning LKW process per durable store; multi-instance worker
+coordination is not claimed by this application contract.
+
 ### Model runtime profiles (conversation LLM)
 
 LKW receives a provider-neutral `LLMAdapter` through application wiring. The LKW domain must not branch on `ollama` vs `vllm`.

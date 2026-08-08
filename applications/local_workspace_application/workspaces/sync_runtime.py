@@ -98,12 +98,21 @@ class ManagedWorkspaceSyncRuntime:
         self._connected_source_recovery = recovery_service
 
     def start(self) -> None:
-        if self._recovery_service is not None:
-            self._recovery_service.recover_all()
-        if self._connected_source_recovery is not None:
-            self._connected_source_recovery.recover_running_operations()
-        self.worker.start()
-        self._started = True
+        if self._started:
+            raise RuntimeError("sync_runtime_already_started")
+        try:
+            if self._recovery_service is not None:
+                self._recovery_service.recover_all()
+            if self._connected_source_recovery is not None:
+                self._connected_source_recovery.recover_running_operations()
+            self.worker.start()
+            self._started = True
+        except BaseException:
+            try:
+                self.worker.stop()
+            except Exception:
+                pass
+            raise
 
     def stop(self) -> None:
         self.worker.stop()
