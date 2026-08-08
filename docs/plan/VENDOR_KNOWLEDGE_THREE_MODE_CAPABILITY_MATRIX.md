@@ -165,10 +165,11 @@ queue/worker continuation and recovery states. Provider adapters and focused
 sync tests exist for the accepted Graph family, Slack, Google
 `drive`/`docs`/`sheets`, Jira and Confluence.
 
-Only the Slack connected-source path proves a production application-owned
-materialization/index sink and crash-safe recovery in the inspected application
-surfaces. For all other adapter rows, `PARTIAL` means adapter/reconciliation layers are present
-while application materialization is not proven.
+Representative application-owned materialization/index proof covers Slack and
+Microsoft Graph Teams Chat through the provider-neutral coordinator→sink path;
+broader provider/source-kind coverage remains VK-6/VK-8. For adapter rows
+without that representative proof, `PARTIAL` means adapter/reconciliation
+layers are present while application materialization is not proven.
 
 The DocumentStore runtime itself is not counted as provider-specific
 application materialization.

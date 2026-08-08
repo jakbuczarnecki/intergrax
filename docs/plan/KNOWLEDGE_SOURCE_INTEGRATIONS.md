@@ -490,17 +490,17 @@ evidence.
 |---|---|---|
 | Plugin model | `PARTIAL` | Provider/source-keyed adapter, connection and live/sync registries exist, but there is no single authoritative three-mode plugin bootstrap. |
 | Capability model | `PARTIAL` | Adapter, indexed-eligibility and live capability metadata are separate; Indexed/Durable/Live support is not one explicit source-kind declaration. |
-| Durable | `PARTIAL` | Generic coordinator, reconciliation, checkpoints, receipts, recovery and injectable sink exist; application-owned materialization is Slack/LKW-specific. |
-| Indexed / RAG | `PARTIAL` | Canonical Vendor Knowledge models and indexing infrastructure exist, but the production provider-to-index bridge is Slack-specific. |
+| Durable | `ACCEPTED / CLOSED` | Provider-neutral durable coordinator, `KnowledgeSyncSink` and `DocumentStoreDurableKnowledgeSyncSink` are accepted, with representative Slack + Microsoft Graph Teams Chat proof; broader provider coverage remains VK-6/VK-8. |
+| Indexed / RAG | `ACCEPTED / CLOSED` | Provider-neutral generic Indexed bridge is accepted, with representative Slack + Microsoft Graph Teams Chat proof through canonical `KnowledgeDocument`; full provider coverage remains VK-6 and complete cross-provider product E2E remains VK-8. |
 | Live / Realtime | `ACCEPTED / CLOSED` | Provider-neutral registration/bootstrap now feeds the existing validated executor and tenant catalog; capability coverage remains selective by design. |
 | Frontend neutrality | `PARTIAL` | Generic LKW Live composition is provider-neutral; Slack-specific Ask orchestration and materialization paths remain application-owned. |
 | Identity / ownership | `PARTIAL` | Tenant, connection, provider/source identity and indexed ownership are fenced; Live bindings derive source identity through capability IDs rather than sharing an explicit source-kind field. |
 | Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
 
-The remaining concrete new-provider boundaries are the Slack-only application
-materializer/index bridge and broader provider coverage. VK-2 through VK-8
-remain roadmap phases, with VK-5 accepted/closed and VK-6 through VK-8 still
-required. The current
+The remaining concrete new-provider boundaries concern broader provider/source-kind
+coverage (→ VK-6), remaining frontend/application-specific orchestration (→ VK-7),
+and complete cross-provider E2E (→ VK-8). VK-2 through VK-8 remain roadmap
+phases, with VK-5 accepted/closed and VK-6 through VK-8 still required. The current
 Google Calendar adapter contradicts the older matrix wording and requires
 documentation correction, not a roadmap reorder.
 
