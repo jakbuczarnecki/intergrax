@@ -425,7 +425,7 @@ provider-specific production registrations:
 all other provider/source-kind live handlers and registrations:
   not implemented
 
-cross-provider production proof: not implemented
+cross-provider production proof: ACCEPTED / CLOSED through VK-8
 ```
 
 Rows without an accepted or review-ready provider task use the same planned
@@ -634,3 +634,20 @@ Google source-kind live tasks: PLANNED / GATED_BY_CORE_READINESS
 Google live family closeout: PLANNED
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1: PLANNED
 ```
+
+## 14. VK-9 platform closeout reconciliation
+
+`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` is **ACCEPTED / CLOSED**. The
+provider/source-kind matrix above remains authoritative for selective coverage:
+`ACCEPTED`, `FOUNDATION_ONLY`, `UNSUPPORTED` and `NOT IMPLEMENTED` are truthful
+capability statuses, not platform defects.
+
+The matrix is consumed together with the final closeout in
+[`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md). The
+platform has zero `PLATFORM_BLOCKER` items. Durable, Indexed and Live remain
+independently composable through explicit plugin mode declarations; provider
+ACL, deletion/tombstone, content/history, commercial and SDK/API packaging
+limitations remain outside the platform-completeness claim.
+
+The roadmap is complete at VK-9. Future provider/source-kind expansion is
+separate product work and must not be represented as VK-10.

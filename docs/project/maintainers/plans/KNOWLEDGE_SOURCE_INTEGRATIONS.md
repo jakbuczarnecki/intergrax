@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`
+`NONE — VENDOR KNOWLEDGE ARCHITECTURE ROADMAP COMPLETE`
 
 VK-8 is closed by the focused product-level proof for Slack
 `slack_conversation` and Microsoft Graph `teams_chat` coexisting in the same
@@ -82,6 +82,173 @@ normalized inspection/lifecycle operations, tenant isolation and failure
 isolation. Slack deletion propagation and complete per-user ACL semantics remain
 unproven; other providers retain their VK-6 classifications, and this closeout
 does not imply commercial or GA support.
+
+### VK-9 final platform closeout
+
+`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` is **ACCEPTED / CLOSED**.
+
+The final audit was performed against current runtime code, composition roots,
+focused VK-2 through VK-8 tests and the accepted Slack plus Microsoft Graph
+Teams Chat proof. No production-code correction was required.
+
+#### Final platform verdict
+
+```text
+plugin/capability contract       CLOSED
+Durable                          CLOSED
+Indexed                          CLOSED
+Live                             CLOSED
+provider coverage                CLOSED — truthful, source-kind specific
+frontend neutrality              CLOSED
+cross-provider E2E               CLOSED
+identity/ownership               ACCEPTED / CLOSED
+removal/revocation               PLATFORM CLOSED; provider limitations remain
+public/internal platform surface ACCEPTED / INTERNAL PLATFORM SURFACE
+PLATFORM_BLOCKER                 0
+```
+
+The three-mode architecture is complete and internally consistent. Durable,
+Indexed and Live are independently composable; a plugin declares only the modes
+that its source kind actually supports. The accepted architecture is:
+
+```text
+Frontend / Bot / Application
+        |
+        v
+provider-neutral application contracts
+        |
+        v
+VendorKnowledgeSourcePlugin + VendorKnowledgeSourceIdentity
+        |
+        +-----------------------------+
+        |             |               |
+        v             v               v
+     DURABLE        INDEXED          LIVE
+        |             |               |
+        v             v               v
+adapter/sync      materializer     capability
+coordinator       registry         executor
+sink              KnowledgeDoc     registration
+        |             |               |
+        +-------------+---------------+
+                      |
+                      v
+                provider adapter
+```
+
+#### New-provider final path
+
+A new provider/source kind adds provider-owned adapter/discovery composition,
+one plugin declaration and only the mode-specific extension points it supports:
+
+```text
+DURABLE  adapter + plugin DURABLE declaration; reuse coordinator and sink
+INDEXED  plugin INDEXED declaration + KnowledgeDocument materializer registration
+LIVE     plugin LIVE declaration + provider capability handler/registration bundle
+```
+
+The generic route, inspection, lifecycle operations, Ask strategy port and
+discovery service do not require provider-specific edits. Provider
+authentication and setup remain provider-owned. `RemoteResourceDiscoveryStrategyRegistry`,
+Slack strategy and Graph Teams Chat strategy are the active discovery route;
+`WorkspaceRemoteResourceDiscoveryService` resolves a strategy and contains no
+concrete Slack or Graph behavior.
+
+#### Identity, ownership and lifecycle reconciliation
+
+Tenant, workspace, connection, source identity, binding, remote item,
+canonical document, materialization ownership, revision and Live capability
+are fenced by explicit identifiers and validation. Document provenance includes
+stable tenant/workspace/provider/source-kind/binding/remote-item identity;
+revision and CAS/publication fences prevent stale ownership from being applied.
+Cross-provider keys are distinct, and tenant/source/binding mismatches fail
+closed. Live identity is resolved from the same source-kind and binding
+contract as the plugin declaration.
+
+`VK1-GAP-08` is therefore **ACCEPTED / CLOSED**. Provider item ACL coverage and
+complete per-user visibility projection remain provider limitations, not an
+identity architecture defect.
+
+Removal/revocation is **PLATFORM_CLOSED_PROVIDER_LIMITATIONS_REMAIN**. The
+lifecycle/index platform consumes authoritative deletion evidence when a
+provider supplies it and does not infer deletion from snapshot absence.
+Microsoft Graph Teams Chat proves authoritative `DELETED` materialization;
+Slack deletion propagation remains `DELETION_UNPROVEN` because its accepted
+adapter emits no authoritative tombstones. This is truthful provider behavior,
+not a platform blocker, so `VK1-GAP-09` is closed at the platform level.
+
+#### Public/internal platform surface
+
+The reusable internal platform surface is complete: plugin contracts and
+registry, adapter composition, Durable coordinator/sink, Indexed materializer
+registry and canonical `KnowledgeDocument` bridge, Live registration/catalog/
+executor, and provider-neutral application ports are available for reuse by
+another Intergrax application. This is **ACCEPTED / INTERNAL PLATFORM SURFACE**.
+There is no standalone pip-facing SDK, formal public REST facade, commercial
+GA package or public SLA; those are productization/commercial decisions, not
+architecture blockers.
+
+#### Security closeout
+
+Accepted boundaries preserve tenant isolation, workspace/connection/source/
+binding ownership, revision/CAS checks, opaque candidate integrity, exact
+provider/source/capability matching, credential secrecy, normalized errors,
+bounded Live execution and provider-neutral exception handling. Known
+limitations are provider item ACL completeness, per-user query ACL
+propagation, provider deletion semantics, and bounded content/history scope.
+They are not tenant-isolation failures.
+
+#### Final limitations register
+
+```text
+PLATFORM_BLOCKER
+  none
+
+PROVIDER_LIMITATION
+  selective provider/mode coverage; provider item and per-user ACL scope;
+  Slack deletion tombstones; bounded content/history and source-specific reads
+
+PRODUCTIZATION_LIMITATION
+  no standalone public SDK or formal public REST facade; UX is not identical
+  across providers
+
+COMMERCIAL_LIMITATION
+  no broad commercial/GA/SLA claim for Vendor Knowledge modes
+```
+
+“Platform complete” means that the provider-neutral architecture, lifecycle
+contracts, extension model and representative cross-provider execution proof
+are complete and production-grade for their documented scope. It does not mean
+that every provider is implemented, every provider supports every mode, every
+provider supplies authoritative deletion, complete per-user ACL propagation,
+commercial GA status, a public SLA, standalone SDK packaging or identical UX.
+
+#### Final VK-1 gap register
+
+```text
+VK1-GAP-01 plugin model                         CLOSED
+VK1-GAP-02 capability model                     CLOSED
+VK1-GAP-03 Durable lifecycle                    CLOSED
+VK1-GAP-04 generic Indexed bridge               CLOSED
+VK1-GAP-05 Live capability platform             CLOSED
+VK1-GAP-06 frontend neutrality                  CLOSED
+VK1-GAP-07 provider coverage                    CLOSED
+VK1-GAP-08 identity/ownership                   CLOSED
+VK1-GAP-09 lifecycle removal/revocation         CLOSED at platform level
+VK1-GAP-10 documentation                        CLOSED
+```
+
+#### Final roadmap state
+
+```text
+VENDOR KNOWLEDGE ROADMAP
+VK-1 through VK-9 — COMPLETE
+```
+
+Future Google Indexed expansion, Jira/Confluence Live work, Atlan/Power BI
+implementation, Databricks source-kind selection, full ACL propagation and
+commercial API packaging are separate provider/product tasks. They are not
+`VK-10` and do not reopen this architecture roadmap.
 
 ### VK-4 indexed bridge acceptance proof
 
@@ -548,7 +715,7 @@ evidence.
 
 ### VK-1 — unified three-mode contract audit result
 
-**Status:** `ROADMAP_CORRECTION_REQUIRED`
+**Status:** `ACCEPTED / CLOSED`
 
 | Area | Status | Current truth |
 |---|---|---|
@@ -558,15 +725,14 @@ evidence.
 | Indexed / RAG | `ACCEPTED / CLOSED` | Provider-neutral generic Indexed bridge is accepted, with representative Slack + Microsoft Graph Teams Chat proof through canonical `KnowledgeDocument`; full provider coverage remains VK-6 and complete cross-provider product E2E remains VK-8. |
 | Live / Realtime | `ACCEPTED / CLOSED` | Provider-neutral registration/bootstrap now feeds the existing validated executor and tenant catalog; capability coverage remains selective by design. |
 | Frontend neutrality | `ACCEPTED / CLOSED` | Generic LKW inspection/operations, plugin configuration, route boundaries and Hybrid Ask routing are provider-neutral; optional provider-owned strategies remain behind explicit composition boundaries. |
-| Identity / ownership | `PARTIAL` | Canonical provider/category/source-kind identity is accepted and reused across modes; remaining partial status reflects broader provider/application ownership proof, not missing Live source identity. |
-| Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
+| Identity / ownership | `ACCEPTED / CLOSED` | Tenant, workspace, connection, source, binding, document, materialization and Live identity fences are explicit and fail closed; provider ACL completeness remains a provider limitation. |
+| Public platform surface | `ACCEPTED / INTERNAL PLATFORM SURFACE` | Reusable runtime contracts and provider extension/composition boundaries are complete for Intergrax applications; standalone SDK/API packaging is productization, not an architecture requirement. |
 
-The remaining concrete new-provider boundaries concern broader provider/source-kind
-coverage (→ VK-6), remaining frontend/application-specific orchestration (→ VK-7),
-and complete cross-provider E2E (→ VK-8). VK-2 through VK-8 remain roadmap
-phases, with VK-5 accepted/closed and VK-6 through VK-8 still required. The current
-Google Calendar adapter contradicts the older matrix wording and requires
-documentation correction, not a roadmap reorder.
+The remaining provider/source-kind expansion is covered by the truthful VK-6
+matrix and is not a platform blocker. VK-2 through VK-8 are accepted/closed,
+and VK-9 is the final roadmap closeout. The current Google Calendar adapter
+contradicted older matrix wording and was corrected as documentation truth,
+not as a roadmap reorder.
 
 `VENDOR-KNOWLEDGE-THREE-MODE-REUSE-ARCH-1` is the architecture/plan correction that freezes reusable provider foundations and separate consumption lifecycles for Indexed / RAG, Durable / Storage / Materialization and Live / Realtime access. The architecture itself does not accept provider mode claims; the Slack live family is now separately **ACCEPTED / CLOSED** through its focused production proof.
 
