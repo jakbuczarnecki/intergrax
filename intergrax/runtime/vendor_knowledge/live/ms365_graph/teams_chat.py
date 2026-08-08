@@ -163,6 +163,12 @@ class MsGraphTeamsChatListLiveHandlerV1(LiveCapabilityHandlerV1):
                     source_kind=self.source_kind,
                     retryable=False,
                 )
+            resolved_scope = getattr(call, "resolved_resource_scope", None)
+            scope_token = (
+                getattr(resolved_scope, "scope_token", None)
+                if resolved_scope is not None
+                else None
+            )
             source = KnowledgeSourceRef(
                 tenant_id=context.tenant_id,
                 provider_id=self.provider_id,
@@ -170,7 +176,7 @@ class MsGraphTeamsChatListLiveHandlerV1(LiveCapabilityHandlerV1):
                 source_kind=self.source_kind,
                 connection_ref=call.connection_ref,
                 scope=KnowledgeSourceScope(
-                    remote_scope_id=call.remote_resource_id,
+                    remote_scope_id=scope_token or call.remote_resource_id,
                     remote_scope_type=MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
                     safe_display_name="Microsoft Graph Teams Chat",
                     parameters={},

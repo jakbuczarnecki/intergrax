@@ -4,11 +4,20 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+    Ms365GraphCollaborationSuiteIntegration,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MsGraphKnowledgeContinuation,
+    MsGraphKnowledgeContinuationKind,
+)
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
     SlackConversationChannelIntegration,
@@ -84,12 +93,16 @@ class WorkspaceRemoteResourceDiscoveryService:
         configuration_reader: WorkspaceKnowledgeConfigurationService,
         connection_registry: KnowledgeConnectionRegistry,
         opaque_ref_codec: RemoteResourceOpaqueRefCodec,
+        msgraph_mailbox_user_id: str | None = None,
         revalidation_limits: ConnectedSourceRevalidationLimits | None = None,
     ) -> None:
         self._workspace_lookup = workspace_lookup
         self._configuration_reader = configuration_reader
         self._connection_registry = connection_registry
         self._codec = opaque_ref_codec
+        self._msgraph_mailbox_user_id = (
+            msgraph_mailbox_user_id.strip() if msgraph_mailbox_user_id else None
+        )
         self._revalidation_limits = revalidation_limits or ConnectedSourceRevalidationLimits()
 
     async def list_remote_resources(
@@ -102,7 +115,10 @@ class WorkspaceRemoteResourceDiscoveryService:
         cursor: str | None,
         limit: int,
     ) -> RemoteResourceDiscoveryPageV1:
-        if resource_type is not RemoteResourceTypeV1.SLACK_CONVERSATION:
+        if resource_type not in {
+            RemoteResourceTypeV1.SLACK_CONVERSATION,
+            RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
+        }:
             raise ConnectedSourceDiscoveryError("resource_type_unsupported")
         if limit < 1 or limit > 100:
             raise ConnectedSourceDiscoveryError("discovery_limit_invalid")
@@ -112,10 +128,11 @@ class WorkspaceRemoteResourceDiscoveryService:
             workspace_id=workspace_id,
             connection_ref=connection_ref,
         )
-        integration = self._resolve_slack_integration(
+        integration = self._resolve_integration(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
+            resource_type=resource_type,
         )
 
         provider_cursor: str | None = None
@@ -128,35 +145,74 @@ class WorkspaceRemoteResourceDiscoveryService:
                 resource_type=resource_type,
             )
 
-        page = await integration.list_accessible_conversations_page(
-            cursor=provider_cursor,
-            limit=limit,
-        )
+        if resource_type is RemoteResourceTypeV1.SLACK_CONVERSATION:
+            page = await integration.list_accessible_conversations_page(
+                cursor=provider_cursor,
+                limit=limit,
+            )
+        else:
+            if self._msgraph_mailbox_user_id is None:
+                raise ConnectedSourceDiscoveryError("connection_unavailable")
+            continuation = (
+                MsGraphKnowledgeContinuation(
+                    kind=MsGraphKnowledgeContinuationKind.NEXT_PAGE,
+                    url=provider_cursor,
+                )
+                if provider_cursor is not None
+                else None
+            )
+            page = await asyncio.to_thread(
+                integration.read_teams_chats_page,
+                mailbox_user_id=self._msgraph_mailbox_user_id,
+                continuation=continuation,
+                limit=min(limit, 50),
+            )
 
         items: list[RemoteResourceCandidateV1] = []
-        for summary in page.items:
-            kind = _map_kind(summary.kind)
-            candidate_ref = encode_slack_conversation_candidate_ref(
-                codec=self._codec,
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                connection_ref=connection_ref,
-                conversation_id=summary.conversation_id,
-                conversation_kind=kind,
-                safe_display_label=summary.safe_name,
-            )
-            description = summary.safe_topic or summary.safe_purpose
-            items.append(
-                RemoteResourceCandidateV1(
-                    opaque_candidate_ref=candidate_ref,
-                    resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
-                    safe_display_label=summary.safe_name,
+        if resource_type is RemoteResourceTypeV1.SLACK_CONVERSATION:
+            for summary in page.items:
+                kind = _map_kind(summary.kind)
+                candidate_ref = encode_slack_conversation_candidate_ref(
+                    codec=self._codec,
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    connection_ref=connection_ref,
+                    conversation_id=summary.conversation_id,
                     conversation_kind=kind,
-                    is_archived=summary.is_archived,
-                    is_private=summary.is_private,
-                    safe_description=description,
+                    safe_display_label=summary.safe_name,
                 )
-            )
+                description = summary.safe_topic or summary.safe_purpose
+                items.append(
+                    RemoteResourceCandidateV1(
+                        opaque_candidate_ref=candidate_ref,
+                        resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+                        safe_display_label=summary.safe_name,
+                        conversation_kind=kind,
+                        is_archived=summary.is_archived,
+                        is_private=summary.is_private,
+                        safe_description=description,
+                    )
+                )
+        else:
+            for chat in page.items:
+                label = chat.topic or f"Teams chat {chat.remote_id}"
+                candidate_ref = self._codec.encode_msgraph_teams_chat_candidate(
+                    tenant_id=tenant_id,
+                    workspace_id=workspace_id,
+                    connection_ref=connection_ref,
+                    mailbox_user_id=chat.mailbox_user_id,
+                    chat_remote_id=chat.remote_id,
+                    safe_display_label=label,
+                )
+                items.append(
+                    RemoteResourceCandidateV1(
+                        opaque_candidate_ref=candidate_ref,
+                        resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
+                        safe_display_label=label,
+                        remote_resource_id=chat.remote_id,
+                        safe_description="Microsoft Graph Teams Chat",
+                    )
+                )
 
         return RemoteResourceDiscoveryPageV1(
             items=tuple(items),
@@ -165,7 +221,15 @@ class WorkspaceRemoteResourceDiscoveryService:
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
                 resource_type=resource_type,
-                provider_cursor=page.next_cursor,
+                provider_cursor=(
+                    page.next_cursor
+                    if resource_type is RemoteResourceTypeV1.SLACK_CONVERSATION
+                    else (
+                        page.continuation.url
+                        if page.continuation is not None
+                        else None
+                    )
+                ),
             ),
         )
 
@@ -244,6 +308,38 @@ class WorkspaceRemoteResourceDiscoveryService:
             raise ConnectedSourceDiscoveryError("candidate_revalidation_limit_exceeded")
         raise ConnectedSourceDiscoveryError("candidate_inaccessible")
 
+    async def revalidate_msgraph_teams_chat_candidate_label(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        opaque_candidate_ref: str,
+    ) -> str:
+        payload = self._codec.decode_msgraph_teams_chat_candidate(opaque_candidate_ref)
+        if (
+            payload.tenant_id != tenant_id
+            or payload.workspace_id != workspace_id
+            or payload.connection_ref != connection_ref
+        ):
+            raise ConnectedSourceDiscoveryError("candidate_inaccessible")
+        integration = self._resolve_integration(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
+        )
+        page = await asyncio.to_thread(
+            integration.read_teams_chats_page,
+            mailbox_user_id=payload.mailbox_user_id,
+            continuation=None,
+            limit=min(self._revalidation_limits.page_size, 50),
+        )
+        for chat in page.items:
+            if chat.remote_id == payload.chat_remote_id:
+                return chat.topic or payload.safe_display_label
+        raise ConnectedSourceDiscoveryError("candidate_inaccessible")
+
     def _resolve_slack_integration(
         self,
         *,
@@ -286,5 +382,32 @@ class WorkspaceRemoteResourceDiscoveryService:
                 raise ConnectedSourceDiscoveryError("connection_unavailable") from exc
             raise ConnectedSourceDiscoveryError("connection_unavailable") from exc
         if not isinstance(integration, SlackConversationChannelIntegration):
+            raise ConnectedSourceDiscoveryError("connection_incompatible")
+        return integration
+
+    def _resolve_integration(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        resource_type: RemoteResourceTypeV1,
+    ) -> object:
+        if resource_type is RemoteResourceTypeV1.SLACK_CONVERSATION:
+            return self._resolve_slack_integration(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+        try:
+            integration = self._connection_registry.resolve(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            )
+        except VendorKnowledgeError as exc:
+            raise ConnectedSourceDiscoveryError("connection_unavailable") from exc
+        if not isinstance(integration, Ms365GraphCollaborationSuiteIntegration):
             raise ConnectedSourceDiscoveryError("connection_incompatible")
         return integration

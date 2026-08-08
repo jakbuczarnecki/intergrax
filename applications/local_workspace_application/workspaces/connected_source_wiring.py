@@ -22,6 +22,7 @@ from local_workspace_application.workspaces.connected_source_sync_service import
     ManagedWorkspaceConnectedSourceSyncService,
 )
 from local_workspace_application.workspaces.connected_source_tenant_binding import (
+    ProviderNeutralConnectedSourceCandidateAdapter,
     SlackConnectedSourceCandidateAdapter,
     WorkspaceConnectedSourceTenantBindingService,
 )
@@ -48,6 +49,9 @@ from local_workspace_application.workspaces.sync_runtime import (
 )
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+)
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
 )
@@ -121,6 +125,7 @@ def build_connected_source_wiring(
     opaque_ref_codec: RemoteResourceOpaqueRefCodec | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
     materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
+    msgraph_mailbox_user_id: str | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
@@ -129,8 +134,14 @@ def build_connected_source_wiring(
         configuration_reader=configuration_service,
         connection_registry=registry,
         opaque_ref_codec=codec,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
     )
     candidate_adapter = SlackConnectedSourceCandidateAdapter(
+        codec=codec,
+        discovery_service=discovery,
+    )
+    candidate_dispatcher = ProviderNeutralConnectedSourceCandidateAdapter(
+        slack=candidate_adapter,
         codec=codec,
         discovery_service=discovery,
     )
@@ -188,7 +199,7 @@ def build_connected_source_wiring(
         indexed_source_lifecycle_service=indexed_source_lifecycle,
         workspace_service=workspace_service,
         tenant_binding_port=tenant_binding_port,
-        candidate_adapter=candidate_adapter,
+        candidate_adapter=candidate_dispatcher,
     )
     return ConnectedSourceWiring(
         connection_registry=registry,
@@ -226,5 +237,21 @@ def register_slack_connection_integration(
         connection_ref=connection_ref,
         provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+        integration=integration,
+    )
+
+
+def register_msgraph_connection_integration(
+    *,
+    wiring: ConnectedSourceWiring,
+    tenant_id: str,
+    connection_ref: str,
+    integration,
+) -> None:
+    wiring.connection_registry.register(
+        tenant_id=tenant_id,
+        connection_ref=connection_ref,
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         integration=integration,
     )

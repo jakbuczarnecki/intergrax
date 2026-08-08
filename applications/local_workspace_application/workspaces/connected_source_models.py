@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 class RemoteResourceTypeV1(StrEnum):
     SLACK_CONVERSATION = "slack_conversation"
+    MSGRAPH_TEAMS_CHAT = "teams_chat"
 
 
 class SlackConversationKindV1(StrEnum):
@@ -29,6 +30,7 @@ class RemoteResourceCandidateV1(BaseModel):
     resource_type: RemoteResourceTypeV1
     safe_display_label: str = Field(..., min_length=1, max_length=256)
     conversation_kind: SlackConversationKindV1 | None = None
+    remote_resource_id: str | None = Field(default=None, min_length=1, max_length=256)
     is_archived: bool = False
     is_private: bool = False
     safe_description: str | None = Field(default=None, max_length=512)

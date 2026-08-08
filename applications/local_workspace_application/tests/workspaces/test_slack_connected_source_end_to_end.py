@@ -39,6 +39,7 @@ from local_workspace_application.workspaces.document_indexing import (
 )
 from local_workspace_application.workspaces.knowledge_configuration_handlers import (
     CreateIndexedSourceMutationHandler,
+    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
@@ -111,6 +112,7 @@ _ATLAS_MITIGATION = "Atlas deployment mitigation is to increase the database con
 _UNRELATED_MESSAGE = "routine social update: lunch is at noon"
 _CONVERSATION_ID = "C01234567"
 _CONNECTION = "conn.slack"
+_GRAPH_MAILBOX = "user-abc-123"
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
 _OLDEST = "1704067200.000001"
@@ -401,7 +403,10 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         repo,
         service,
         config,
-        {WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler()},
+        {
+            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
+            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
+        },
     )
     indexing = WorkspaceDocumentIndexingService(repo, task_executor)
     wiring = build_connected_source_wiring(
@@ -411,6 +416,7 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         mutation_engine=mutation_engine,
         indexing_service=indexing,
         settings=settings,
+        msgraph_mailbox_user_id=_GRAPH_MAILBOX,
     )
     backend = _SlackFakeBackend()
     integration = SlackConversationChannelIntegration.from_backend(
