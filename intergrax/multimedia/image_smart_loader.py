@@ -87,11 +87,13 @@ class ImageSmartLoader:
         except Exception:
             return ""
 
-    def _infer_ollama_model(self) -> Optional[str]:
+    def _resolved_ollama_model(self) -> Optional[str]:
         """
-        Try to infer model name from the LangChainOllamaAdapter.
+        Resolve the model name for the LangChainOllamaAdapter.
         - Prefer adapter.defaults.get("model")
-        - Fallbacks are possible (chat.model), else None
+        - Fallbacks are possible (chat.model)
+        - Use the vision bridge default when no model is exposed
+        - Return None for non-Ollama adapters
         """
         from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
 
@@ -120,7 +122,7 @@ class ImageSmartLoader:
                                 return obj[k].strip()
                 except Exception:
                     pass
-        return None
+        return "llava-llama3:latest"
 
     def _caption_via_ollama(self, img_path: str) -> str:
         """
@@ -129,7 +131,7 @@ class ImageSmartLoader:
         """
         from intergrax.multimedia.images_loader import transcribe_image
 
-        model = self._infer_ollama_model() or "llava-llama3:latest"
+        model = self._resolved_ollama_model()
         prompt = "Describe the image in detail."
 
 
@@ -214,7 +216,7 @@ class ImageSmartLoader:
                 content = "(No caption nor OCR text produced.)"
 
         caption_model = (
-            self._infer_ollama_model()
+            self._resolved_ollama_model()
             if (
                 self.text_mode in ("caption", "both")
                 and self.caption_llm is not None
@@ -236,11 +238,7 @@ class ImageSmartLoader:
             "image_text_mode": self.text_mode,                 # "ocr" | "caption" | "both"
             "ocr_lang": self.ocr_lang if (self.text_mode in ("ocr", "both")) else None,
             "caption_llm": type(self.caption_llm).__name__ if (self.text_mode in ("caption", "both") and self.caption_llm) else None,
-            "caption_model_inferred": (
-                caption_model or "llava-llama3:latest"
-                if caption_model is not None
-                else None
-            ),
+            "caption_model_inferred": caption_model,
         }
 
         source_id = str(Path(self.path).resolve())

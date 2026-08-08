@@ -11,7 +11,7 @@ from intergrax.knowledge.contracts import KnowledgeDocument
 
 class VideoSmartLoader:
     """
-    Loads video files and converts them into a list of LangChain Documents.
+    Loads video files and converts them into a list of KnowledgeDocuments.
 
     For each subtitle (VTT) segment:
       - content: transcript text
