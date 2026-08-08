@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
+`VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
 
 ### VK-4 indexed bridge acceptance proof
 
@@ -90,10 +90,40 @@ The accepted VK-4 proof covers:
 - existing generic index/Search/Ask proof for the representative Slack path and
   canonical Graph Teams Chat materialization/index proof.
 
-Full provider coverage remains VK-6, live bootstrap remains VK-5, frontend
-neutrality remains VK-7, and complete cross-provider product E2E remains VK-8.
+Full provider coverage remains VK-6, frontend neutrality remains VK-7, and
+complete cross-provider product E2E remains VK-8.
 Slack deletion remains unsupported/unproven while its adapter emits no
 authoritative tombstones.
+
+### VK-5 Live / Realtime capability closeout
+
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1` is **ACCEPTED / CLOSED**.
+
+Accepted proof:
+
+- provider-neutral Live registration/bootstrap through
+  `VendorKnowledgeLiveRegistrationRegistry`;
+- VK-2 provider/category/source-kind identity resolution and declared LIVE
+  capability matching;
+- tenant descriptor publication with existing active-connection and binding
+  authorization boundaries;
+- the existing `LiveCapabilityExecutorV1` remains the sole execution runtime;
+- representative Slack `slack_conversation` and Microsoft Graph `teams_chat`
+  discovery/execution, plus smoke coverage for Graph Drive, Mail, Teams Channel
+  and Calendar;
+- registration-driven test-only provider addition without LKW provider
+  switches;
+- duplicate/conflicting registration, source mismatch, schema, budget,
+  authorization and safe-error behavior remains fail-closed;
+- normalized evidence remains ephemeral unless an explicit receipt retention
+  contract is selected; Live does not write Durable or Indexed state.
+
+`VK1-GAP-05` (provider-specific Live registration/bootstrap leakage) is
+**CLOSED**. Provider/source-kind capability subsets remain valid and
+provider-owned limits remain outside generic bootstrap. Full provider/source
+coverage remains VK-6, full frontend neutrality remains VK-7, and complete
+cross-provider product E2E remains VK-8. Slack-specific Ask evidence
+orchestration remains application-owned until VK-7.
 
 ### VK-2 plugin/capability contract status
 
@@ -145,7 +175,7 @@ Conservative / deferred:
 
 - provider coverage not audited → VK-6;
 - generic Indexed bridge accepted and closed → VK-4;
-- live bootstrap not done → VK-5;
+- Live bootstrap accepted and closed → VK-5;
 - frontend neutrality not fully proven → VK-7;
 - Slack adapter sync unit suite remains 6 baseline/stale failures (unchanged);
 - Slack deletion remains `DELETION_UNSUPPORTED` / `UNPROVEN` (`tombstones=False`);
@@ -277,7 +307,7 @@ index service.
 Conservative / deferred:
 
 - full provider capability coverage → VK-6;
-- Live bootstrap and invocation closeout → VK-5;
+- Live bootstrap and invocation closeout accepted/closed → VK-5;
 - full LKW/frontend neutrality → VK-7;
 - broader cross-provider product E2E → VK-8;
 - Slack deletion remains unproven where the adapter does not emit authoritative
@@ -289,11 +319,13 @@ Conservative / deferred:
 
 `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
 
+**ACCEPTED / CLOSED.**
+
 Close one provider-neutral invocation and registration model preserving
 authorization, bounded calls, normalized results, safe errors, provenance,
 no accidental persistence and provider-specific limits behind the adapter
-boundary. Existing Slack and Microsoft Graph live implementations are evidence
-and input, not work to duplicate.
+boundary. The accepted implementation is registration-driven; existing Slack
+and Microsoft Graph live implementations remain evidence, not work to duplicate.
 
 #### VK-6 — Provider capability coverage
 
@@ -460,15 +492,15 @@ evidence.
 | Capability model | `PARTIAL` | Adapter, indexed-eligibility and live capability metadata are separate; Indexed/Durable/Live support is not one explicit source-kind declaration. |
 | Durable | `PARTIAL` | Generic coordinator, reconciliation, checkpoints, receipts, recovery and injectable sink exist; application-owned materialization is Slack/LKW-specific. |
 | Indexed / RAG | `PARTIAL` | Canonical Vendor Knowledge models and indexing infrastructure exist, but the production provider-to-index bridge is Slack-specific. |
-| Live / Realtime | `PARTIAL` | Shared validated executor, registration, limits, normalized evidence and receipt contracts exist; provider registration is composed in LKW and coverage is selective. |
-| Frontend neutrality | `CONTRADICTED` | LKW composition imports Graph/Slack live registration and contains Slack-specific Ask orchestration and materialization paths. |
+| Live / Realtime | `ACCEPTED / CLOSED` | Provider-neutral registration/bootstrap now feeds the existing validated executor and tenant catalog; capability coverage remains selective by design. |
+| Frontend neutrality | `PARTIAL` | Generic LKW Live composition is provider-neutral; Slack-specific Ask orchestration and materialization paths remain application-owned. |
 | Identity / ownership | `PARTIAL` | Tenant, connection, provider/source identity and indexed ownership are fenced; Live bindings derive source identity through capability IDs rather than sharing an explicit source-kind field. |
 | Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
 
-The first concrete new-provider boundaries are the missing unified
-plugin/capability registration, the Slack-only application materializer/index
-bridge, and provider-specific registration imports in LKW. VK-2 through VK-8
-remain required; no later phase is accepted by this audit. The current
+The remaining concrete new-provider boundaries are the Slack-only application
+materializer/index bridge and broader provider coverage. VK-2 through VK-8
+remain roadmap phases, with VK-5 accepted/closed and VK-6 through VK-8 still
+required. The current
 Google Calendar adapter contradicts the older matrix wording and requires
 documentation correction, not a roadmap reorder.
 
