@@ -204,9 +204,10 @@ arbitrary token-accessible channel discovery, files/attachments or organization-
 
 Current commercial claims must remain source-kind specific:
 
-- **Indexed:** no generally accepted Vendor Knowledge commercial claim.
-  Slack `slack_conversation` is an accepted demonstrable LKW path, but this
-  task does not establish a broad commercial claim.
+- **Indexed:** no broad Vendor Knowledge commercial claim.
+  Slack `slack_conversation` and Microsoft Graph `teams_chat` have accepted
+  provider-neutral indexed bridge proofs; this does not establish full provider
+  coverage.
 - **Durable materialization:** provider-neutral durable application
   materialization is accepted through `KnowledgeSyncSink` /
   `DocumentStoreDurableKnowledgeSyncSink`. Slack structured-record durable
@@ -222,15 +223,18 @@ access.
 
 ## 10. Cross-provider gaps
 
-1. There is no provider/source-kind index bridge except the accepted Slack LKW
-   path (→ VK-4).
+1. The provider-neutral indexed bridge is accepted for Slack
+   `slack_conversation` and Microsoft Graph `teams_chat`; broader application
+   wiring remains to expand (→ VK-6/VK-8).
 2. Provider adapters and reconciliation are connected to a provider-neutral
    durable sink port; broader production application hosts beyond the DocumentStore
-   durable sink and accepted Slack LKW indexed path remain to expand (→ VK-6/VK-8).
+   durable sink and representative Slack/Teams Chat indexed paths remain to
+   expand (→ VK-6/VK-8).
 3. There is no provider/source-kind live handler registration completeness claim
    (→ VK-5/VK-6).
 4. Indexed removal, provenance-preserving refresh and application query proof
-   are not established for non-Slack rows (→ VK-4).
+   are established for the representative Slack and Teams Chat bridge paths;
+   broader source-kind proof remains deferred (→ VK-6/VK-8).
 5. Google `drive`, `docs`, `sheets` and `calendar` have Vendor Knowledge
    adapter implementations despite stale roadmap wording; they still lack
    provider-neutral application-owned indexed wiring, and Calendar still lacks

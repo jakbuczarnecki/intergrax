@@ -364,6 +364,7 @@ class WorkspaceDocumentIndexingService:
         safe_file_name: str,
         content_hash: str,
         materialization_ownership: KnowledgeMaterializationOwnershipV1,
+        document_id: str | None = None,
     ) -> WorkspaceDocumentIndexingResult:
         if (
             materialization_ownership.ownership_mode
@@ -385,6 +386,7 @@ class WorkspaceDocumentIndexingService:
             safe_file_name=safe_file_name,
             content_hash=content_hash,
             materialization_ownership=materialization_ownership,
+            document_id=document_id,
         )
 
     async def _index_one(
@@ -399,6 +401,7 @@ class WorkspaceDocumentIndexingService:
         safe_file_name: str,
         content_hash: str,
         materialization_ownership: KnowledgeMaterializationOwnershipV1,
+        document_id: str | None = None,
     ) -> WorkspaceDocumentIndexingResult:
         materialization_scope = (
             materialization_ownership.identity_scope
@@ -406,7 +409,7 @@ class WorkspaceDocumentIndexingService:
             is KnowledgeMaterializationOwnershipModeV1.CONNECTED_SOURCE
             else None
         )
-        document_id = logical_document_id(
+        document_id = document_id or logical_document_id(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             source_id=source_id,
@@ -547,6 +550,7 @@ class WorkspaceDocumentIndexingService:
                 safe_file_name=safe_file_name,
                 content_hash=content_hash,
                 materialization_ownership=materialization_ownership,
+                document_id=document_id,
             )
 
         task = Task(

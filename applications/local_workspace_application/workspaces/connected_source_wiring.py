@@ -7,6 +7,45 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.workspaces.connected_source_discovery import (
+    WorkspaceRemoteResourceDiscoveryService,
+)
+from local_workspace_application.workspaces.connected_source_materializer import (
+    ConnectedSourceContentMaterializerRegistry,
+)
+from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    RemoteResourceOpaqueRefCodec,
+)
+from local_workspace_application.workspaces.connected_source_sync_service import (
+    ConnectedSourceSyncDependencies,
+    ManagedWorkspaceConnectedSourceSyncService,
+)
+from local_workspace_application.workspaces.connected_source_tenant_binding import (
+    WorkspaceConnectedSourceTenantBindingService,
+)
+from local_workspace_application.workspaces.document_indexing import (
+    WorkspaceDocumentIndexingService,
+)
+from local_workspace_application.workspaces.knowledge_access_service import (
+    TenantKnowledgeSourceBindingPort,
+    WorkspaceKnowledgeAccessService,
+)
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationEngine,
+)
+from local_workspace_application.workspaces.knowledge_configuration_service import (
+    WorkspaceKnowledgeConfigurationService,
+)
+from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+    WorkspaceIndexedSourceLifecycleService,
+)
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
+from local_workspace_application.workspaces.service import ManagedWorkspaceService
+from local_workspace_application.workspaces.sync_runtime import (
+    ManagedWorkspaceSyncRuntime,
+)
+
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -24,37 +63,6 @@ from intergrax.runtime.vendor_knowledge.bindings import (
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
 from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.workspaces.connected_source_discovery import (
-    WorkspaceRemoteResourceDiscoveryService,
-)
-from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
-    RemoteResourceOpaqueRefCodec,
-)
-from local_workspace_application.workspaces.connected_source_sync_service import (
-    ConnectedSourceSyncDependencies,
-    ManagedWorkspaceConnectedSourceSyncService,
-)
-from local_workspace_application.workspaces.connected_source_tenant_binding import (
-    WorkspaceConnectedSourceTenantBindingService,
-)
-from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
-from local_workspace_application.workspaces.knowledge_access_service import (
-    TenantKnowledgeSourceBindingPort,
-    WorkspaceKnowledgeAccessService,
-)
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
-)
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
-)
-from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
-    WorkspaceIndexedSourceLifecycleService,
-)
-from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.service import ManagedWorkspaceService
-from local_workspace_application.workspaces.sync_runtime import ManagedWorkspaceSyncRuntime
 
 
 class _ConnectionAwareResolver:
@@ -112,6 +120,7 @@ def build_connected_source_wiring(
     connection_registry: KnowledgeConnectionRegistry | None = None,
     opaque_ref_codec: RemoteResourceOpaqueRefCodec | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
+    materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
@@ -168,6 +177,7 @@ def build_connected_source_wiring(
         dependencies_factory=dependencies_factory,
         continuation=continuation,
         sync_enqueue_context=sync_enqueue_context,
+        materializer_registry=materializer_registry,
     )
     knowledge_access = WorkspaceKnowledgeAccessService(
         discovery_service=discovery,
@@ -194,7 +204,9 @@ class _SyncRuntimeContinuation:
         self._runtime = runtime
 
     def requeue(self, job) -> None:
-        from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
+        from local_workspace_application.workspaces.sync_enqueue import (
+            enqueue_managed_workspace_sync,
+        )
 
         enqueue_managed_workspace_sync(self._runtime.wiring_context, job)
 

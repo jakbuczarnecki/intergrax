@@ -97,7 +97,7 @@ def test_identity_and_mode_subsets_are_explicit() -> None:
     assert graph.identity.source_kind == MSGRAPH_TEAMS_CHAT_SOURCE_KIND
     assert graph.supports(VendorKnowledgeMode.DURABLE)
     assert graph.supports(VendorKnowledgeMode.LIVE)
-    assert not graph.supports(VendorKnowledgeMode.INDEXED)
+    assert graph.supports(VendorKnowledgeMode.INDEXED)
 
 
 def test_live_capability_refs_are_existing_registrations() -> None:
@@ -168,7 +168,7 @@ def test_registry_discovery_is_deterministic_and_unknown_is_distinct() -> None:
             _identity(provider_id="missing", source_kind="missing"),
             VendorKnowledgeMode.DURABLE,
         )
-    assert not first.supports(graph.identity, VendorKnowledgeMode.INDEXED)
+    assert first.supports(graph.identity, VendorKnowledgeMode.INDEXED)
 
 
 def test_duplicate_registration_is_idempotent_and_conflict_fails_closed() -> None:

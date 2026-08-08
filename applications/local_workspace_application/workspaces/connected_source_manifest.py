@@ -18,6 +18,7 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     DocumentStore,
 )
+from intergrax.runtime.vendor_knowledge.models import KnowledgeItemRevision
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     DocumentStoreKnowledgeSyncPublicationFenceRepository,
     KnowledgeSyncCommittedPublicationV1,
@@ -82,6 +83,7 @@ class ConnectedSourceMaterializationManifestEntryV1(BaseModel):
     document_id: str = Field(..., min_length=1, max_length=512)
     materialization_generation: str = Field(..., min_length=1, max_length=512)
     content_hash: str = Field(..., min_length=1, max_length=512)
+    source_revision: KnowledgeItemRevision | None = None
 
     _validate_ids = field_validator(
         "remote_id",

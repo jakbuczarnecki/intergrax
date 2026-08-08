@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-DURABLE-LIFECYCLE-CLOSEOUT-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`
+`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1`
 
 ### VK-2 plugin/capability contract status
 
@@ -88,7 +88,7 @@ The canonical platform discovery boundary is
   deterministic registration, lookup and discovery. Existing adapter,
   materialization/sync and live registries remain execution registries.
 - Slack `slack_conversation` proves all three modes. Microsoft Graph
-  `teams_chat` proves Durable + Live and intentionally does not claim Indexed.
+  `teams_chat` now proves Durable + Indexed + Live.
 
 Descriptors are immutable, reject tenant/credential/connection state and do not
 execute any mode lifecycle. Application-specific migration, generic Indexed
@@ -123,7 +123,7 @@ Accepted:
 Conservative / deferred:
 
 - provider coverage not audited → VK-6;
-- generic index bridge not done → VK-4;
+- generic Indexed bridge accepted and closed → VK-4;
 - live bootstrap not done → VK-5;
 - frontend neutrality not fully proven → VK-7;
 - Slack adapter sync unit suite remains 6 baseline/stale failures (unchanged);
@@ -234,6 +234,8 @@ Indexing remains optional and out of scope for Durable mode (→ VK-4).
 
 `VENDOR-KNOWLEDGE-INDEXED-BRIDGE-1`
 
+**ACCEPTED / CLOSED.**
+
 Make the provider-to-index path reusable:
 
 ```text
@@ -245,8 +247,22 @@ Vendor Knowledge source
 ```
 
 The accepted `LKW-SLACK-CONNECTED-SOURCE-1` result remains architecture
-evidence/reference implementation, not the generic contract and not proof that
-all vendors are indexed.
+evidence/reference implementation. VK-4 adds the provider-neutral source
+identity/materializer registry, canonical `KnowledgeDocument` intake boundary,
+stable document identity, replay/revision/removal semantics and a second
+Microsoft Graph Teams Chat indexed proof through the same bridge and generic
+index service.
+
+Conservative / deferred:
+
+- full provider capability coverage → VK-6;
+- Live bootstrap and invocation closeout → VK-5;
+- full LKW/frontend neutrality → VK-7;
+- broader cross-provider product E2E → VK-8;
+- Slack deletion remains unproven where the adapter does not emit authoritative
+  tombstones;
+- provider-specific ACL enforcement remains subject to each adapter's visibility
+  contract.
 
 #### VK-5 — Live / Realtime platform closeout
 

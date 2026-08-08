@@ -14,6 +14,9 @@ from typing import Protocol
 from local_workspace_application.workspaces.connected_source_delivery import (
     ConnectedSourceDeliveryApplyResult,
 )
+from local_workspace_application.workspaces.connected_source_materializer import (
+    ConnectedSourceContentMaterializerRegistry,
+)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReconciliationStateV1,
     ConnectedSourceSyncSinkError,
@@ -150,6 +153,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         continuation: ConnectedSourceSyncContinuationPort | None = None,
         sync_enqueue_context: ToolWiringContext | None = None,
         lease_ttl_seconds: int = 60,
+        materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
     ) -> None:
         self._repository = repository
         self._indexing_service = indexing_service
@@ -162,6 +166,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
         self._continuation = continuation
         self._sync_enqueue_context = sync_enqueue_context
         self._lease_ttl_seconds = lease_ttl_seconds
+        self._materializer_registry = materializer_registry
 
     def attach_continuation(self, continuation: ConnectedSourceSyncContinuationPort) -> None:
         self._continuation = continuation
@@ -354,6 +359,7 @@ class ManagedWorkspaceConnectedSourceSyncService:
                 configuration_reader=self._configuration_reader,
                 tenant_binding_port=self._tenant_binding_port,
                 context=sink_context,
+                materializer_registry=self._materializer_registry,
                 publication_fence_port=DocumentStoreKnowledgeSyncPublicationFenceRepository(
                     document_store
                 ),

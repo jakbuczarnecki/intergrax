@@ -287,10 +287,10 @@ async def test_slack_durable_materialization_of_structured_records() -> None:
     ) == (_SLACK_REMOTE,)
 
 
-async def test_teams_chat_durable_materialization_without_indexing() -> None:
+async def test_teams_chat_durable_materialization_does_not_require_indexing() -> None:
     teams_plugin = build_msgraph_teams_chat_vendor_knowledge_source_plugin()
     assert teams_plugin.supports(VendorKnowledgeMode.DURABLE)
-    assert not teams_plugin.supports(VendorKnowledgeMode.INDEXED)
+    assert teams_plugin.supports(VendorKnowledgeMode.INDEXED)
 
     coordinator, sink, _state_repo, _backend = _build_teams_chat_durable()
     results = await durable_reconcile_until_complete(

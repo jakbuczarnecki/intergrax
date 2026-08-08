@@ -67,9 +67,13 @@ from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBindingStatus,
     to_source_ref,
 )
+from intergrax.runtime.vendor_knowledge.durable_materialization import (
+    knowledge_item_revision_order_key,
+)
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeChangeKind,
     KnowledgeContentMode,
+    KnowledgeItemRevision,
 )
 from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncBatch,
@@ -371,7 +375,12 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         documents_unchanged = 0
         items_processed = 0
         materialized_documents: list[
-            tuple[KnowledgeMaterializationOwnershipV1, str, str]
+            tuple[
+                KnowledgeMaterializationOwnershipV1,
+                str,
+                str,
+                KnowledgeItemRevision | None,
+            ]
         ] = []
         revoked_remote_ids: list[str] = []
         seen_remote_ids: set[str] = set()
@@ -390,6 +399,34 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 continue
             if envelope.content is None:
                 raise ConnectedSourceSyncSinkError("connected_source_content_missing")
+            current_manifest = self._manifest_repository.get_current(
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                source_id=self._context.source_id,
+                indexed_source_binding_id=self._context.indexed_source_binding_id,
+                knowledge_source_binding_ref=self._context.knowledge_source_binding_ref,
+            )
+            current_entry = None
+            if current_manifest is not None:
+                current_entry = next(
+                    (
+                        entry
+                        for entry in current_manifest.document_entries
+                        if entry.remote_id == envelope.remote_id
+                    ),
+                    None,
+                )
+            incoming_revision = (
+                None if envelope.descriptor is None else envelope.descriptor.revision
+            )
+            if (
+                current_entry is not None
+                and knowledge_item_revision_order_key(current_entry.source_revision)
+                > knowledge_item_revision_order_key(incoming_revision)
+            ):
+                raise ConnectedSourceSyncSinkError(
+                    "connected_source_revision_stale"
+                )
             if envelope.content.mode is not KnowledgeContentMode.STRUCTURED_RECORD:
                 raise ConnectedSourceSyncSinkError("connected_source_content_mode_invalid")
             record = envelope.content.structured_record
@@ -398,11 +435,20 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             schema_name = record.get("schema")
             if not isinstance(schema_name, str) or not schema_name:
                 raise ConnectedSourceSyncSinkError("connected_source_schema_unsupported")
-            materializer = self._materializers.resolve(schema_name)
+            materializer = self._materializers.resolve(
+                batch.source,
+                schema_name=schema_name,
+            )
             materialized = materializer.materialize(
+                source=batch.source,
+                tenant_id=self._context.tenant_id,
+                workspace_id=self._context.workspace_id,
+                binding_id=self._context.knowledge_source_binding_ref,
                 source_id=self._context.source_id,
                 remote_id=envelope.remote_id,
                 content=envelope.content,
+                revision=incoming_revision,
+                permissions=envelope.permissions,
             )
             result = await self._index_materialized_document(
                 materialized,
@@ -424,6 +470,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                     ),
                     result.document_id,
                     materialized.content_hash,
+                    materialized.source_revision,
                 )
             )
             items_processed += 1
@@ -478,7 +525,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             items_processed=items_processed,
             items_failed=0,
         )
-        for ownership, document_id, _content_hash in materialized_documents:
+        for ownership, document_id, _content_hash, _source_revision in materialized_documents:
             try:
                 self._activate_materialization(
                     ownership=ownership,
@@ -507,7 +554,14 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
         *,
         batch: KnowledgeSyncBatch,
         receipt,
-        materialized_documents: list[tuple[KnowledgeMaterializationOwnershipV1, str, str]],
+        materialized_documents: list[
+            tuple[
+                KnowledgeMaterializationOwnershipV1,
+                str,
+                str,
+                KnowledgeItemRevision | None,
+            ]
+        ],
         revoked_remote_ids: tuple[str, ...],
         payload_fingerprint: str,
     ) -> ConnectedSourceMaterializationManifestV1:
@@ -562,10 +616,17 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
 
     @staticmethod
     def _manifest_entries(
-        materialized_documents: list[tuple[KnowledgeMaterializationOwnershipV1, str, str]],
+        materialized_documents: list[
+            tuple[
+                KnowledgeMaterializationOwnershipV1,
+                str,
+                str,
+                KnowledgeItemRevision | None,
+            ]
+        ],
     ) -> list[ConnectedSourceMaterializationManifestEntryV1]:
         entries: list[ConnectedSourceMaterializationManifestEntryV1] = []
-        for ownership, document_id, content_hash in materialized_documents:
+        for ownership, document_id, content_hash, source_revision in materialized_documents:
             assert ownership.remote_id is not None
             assert ownership.materialization_generation is not None
             entries.append(
@@ -574,6 +635,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                     document_id=document_id,
                     materialization_generation=ownership.materialization_generation,
                     content_hash=content_hash,
+                    source_revision=source_revision,
                 )
             )
         return entries
@@ -759,6 +821,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
                 logical_source_path=materialized.logical_source_path,
                 safe_file_name=materialized.safe_file_name,
                 content_hash=materialized.content_hash,
+                document_id=materialized.document_id,
                 materialization_ownership=KnowledgeMaterializationOwnershipV1.connected(
                     tenant_id=self._context.tenant_id,
                     workspace_id=self._context.workspace_id,

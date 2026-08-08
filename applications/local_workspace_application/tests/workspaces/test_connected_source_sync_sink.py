@@ -76,6 +76,7 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeChangeKind,
     KnowledgeContent,
     KnowledgeContentMode,
+    KnowledgeItemRevision,
     KnowledgeSourceRef,
     KnowledgeSourceScope,
 )
@@ -406,8 +407,13 @@ def _envelope(
     *,
     text: str = "marker",
     remote_id: str = "remote-message-1",
+    revision_version: str | None = None,
 ) -> KnowledgeSyncEnvelope:
     descriptor = make_descriptor(content_mode=KnowledgeContentMode.STRUCTURED_RECORD)
+    if revision_version is not None:
+        descriptor = descriptor.model_copy(
+            update={"revision": KnowledgeItemRevision(version=revision_version)}
+        )
     descriptor = descriptor.model_copy(
         update={
             "identity": descriptor.identity.model_copy(update={"remote_id": remote_id}),
@@ -435,6 +441,72 @@ def _envelope(
     )
 
 
+@pytest.mark.asyncio
+async def test_stale_source_revision_cannot_overwrite_newer_indexed_materialization(
+    sink_env,
+) -> None:
+    _repo, sink, indexing = sink_env
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(
+                _envelope(
+                    KnowledgeChangeKind.UPSERT,
+                    text="newer",
+                    revision_version="2",
+                ),
+            ),
+            delivery_id=_DELIVERY,
+        )
+    )
+    with pytest.raises(
+        ConnectedSourceSyncSinkError,
+        match="connected_source_revision_stale",
+    ):
+        await sink.apply_batch(
+            batch=_batch(
+                envelopes=(
+                    _envelope(
+                        KnowledgeChangeKind.UPSERT,
+                        text="older",
+                        revision_version="1",
+                    ),
+                ),
+                delivery_id=_DELIVERY_2,
+            )
+        )
+    assert indexing.index_connected_source_one.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_newer_revision_reuses_stable_document_identity(sink_env) -> None:
+    _repo, sink, indexing = sink_env
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(
+                _envelope(
+                    KnowledgeChangeKind.UPSERT,
+                    text="version one",
+                    revision_version="1",
+                ),
+            ),
+            delivery_id=_DELIVERY,
+        )
+    )
+    await sink.apply_batch(
+        batch=_batch(
+            envelopes=(
+                _envelope(
+                    KnowledgeChangeKind.UPSERT,
+                    text="version two",
+                    revision_version="2",
+                ),
+            ),
+            delivery_id=_DELIVERY_2,
+        )
+    )
+    calls = indexing.index_connected_source_one.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["document_id"] == calls[1].kwargs["document_id"]
 @pytest.mark.asyncio
 async def test_two_document_manifest_is_the_single_visibility_transition(sink_env, monkeypatch) -> None:
     repo, sink, _indexing = sink_env

@@ -171,7 +171,7 @@ def build_msgraph_live_registration_bundles() -> (
 def build_msgraph_teams_chat_vendor_knowledge_source_plugin() -> (
     VendorKnowledgeSourcePlugin
 ):
-    """Compose the Graph Teams Chat Durable + Live source declaration."""
+    """Compose the Graph Teams Chat Durable + Indexed + Live declaration."""
     live_bundles = build_msgraph_live_registration_bundles()
     live_capability_refs = tuple(
         bundle.descriptor.capability_id
@@ -192,6 +192,13 @@ def build_msgraph_teams_chat_vendor_knowledge_source_plugin() -> (
                 operations=("inventory", "snapshot", "incremental", "reconciliation", "exact_fetch"),
                 runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_chat",
                 constraints={"application_sink": "platform_foundation"},
+            ),
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.INDEXED,
+                contract_version="vendor-knowledge.indexed.v1",
+                operations=("eligible", "materialize", "publish", "index"),
+                runtime_ref="indexed-source:ms365_graph:teams_chat",
+                constraints={"application_proof": "vk4"},
             ),
             VendorKnowledgeModeCapability(
                 mode=VendorKnowledgeMode.LIVE,
