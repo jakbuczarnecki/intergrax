@@ -69,10 +69,19 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`
+`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`
+
+VK-8 is closed by the focused product-level proof for Slack
+`slack_conversation` and Microsoft Graph `teams_chat` coexisting in the same
+tenant and workspace through generic discovery/binding, Durable sync, Indexed
+materialization and canonical `KnowledgeDocument` indexing, Search, Ask, Live,
+normalized inspection/lifecycle operations, tenant isolation and failure
+isolation. Slack deletion propagation and complete per-user ACL semantics remain
+unproven; other providers retain their VK-6 classifications, and this closeout
+does not imply commercial or GA support.
 
 ### VK-4 indexed bridge acceptance proof
 
@@ -399,8 +408,7 @@ generic application surfaces against concrete provider imports and provider
 switch literals.
 
 The existing Slack connected-source flow remains an explicit provider-owned
-strategy/composition path; this closeout does not claim visually identical UX
-or complete cross-provider product E2E. The latter is owned by VK-8.
+strategy/composition path; this closeout does not claim visually identical UX.
 
 #### VK-8 — Cross-provider three-mode E2E
 
@@ -409,6 +417,14 @@ or complete cross-provider product E2E. The latter is owned by VK-8.
 Prove the plugin architecture across structurally different providers using
 the same platform contracts, without requiring every source kind to support
 every mode. Select representative providers only after the capability audit.
+
+Status: **ACCEPTED / CLOSED**. The representative proof covers Slack
+`slack_conversation` and Microsoft Graph `teams_chat` in one tenant/workspace,
+with distinct bindings and document identities, generic discovery/binding,
+Durable, Indexed, Search, Ask, Live, inspection/lifecycle, tenant isolation and
+failure isolation. Slack deletion propagation and complete per-user ACL
+semantics remain unproven; other providers retain their VK-6 classifications;
+commercial/GA support is not implied.
 
 #### VK-9 — Platform closeout
 
