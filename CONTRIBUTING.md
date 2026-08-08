@@ -62,12 +62,29 @@ Think as a **Harness AI architect** first, then as an engineer.
 ```bash
 git clone https://github.com/jakbuczarnecki/intergrax.git
 cd intergrax
+uv sync
+```
+
+The normal repository environment provides the baseline development tools:
+`pytest`, `ruff`, and `pyright`. Use the optional `dev` extra only when
+heavyweight development integrations are needed:
+
+```bash
 uv sync --extra dev
 ```
 
-### Verify platform health
+### Verify the baseline toolchain
 
 ```bash
+uv run pytest --version
+uv run ruff --version
+uv run pyright --version
+```
+
+### Verify platform health (optional development integrations)
+
+```bash
+uv sync --extra dev
 uv run pytest -m gate -q
 python scripts/maintenance/check_harness_no_getattr.py
 uv run intergrax doctor

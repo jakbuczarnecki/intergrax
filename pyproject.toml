@@ -124,6 +124,10 @@ test = [
   "pytest>=8.4,<9",
   "pytest-asyncio>=0.23,<0.24",
 ]
+quality = [
+  "ruff",
+  "pyright",
+]
 
 [tool.uv]
 # Resolve for CI (linux) and local dev (win32). Do not restrict to a single OS.
@@ -132,7 +136,7 @@ environments = [
   "sys_platform == 'win32'",
 ]
 # ``uv run pytest`` must not fall through to a globally installed pytest.
-default-groups = ["test"]
+default-groups = ["test", "quality"]
 
 [tool.uv.workspace]
 # Explicit member list — excludes applications/build and non-project folders.

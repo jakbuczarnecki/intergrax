@@ -1813,6 +1813,10 @@ rag-langchain-splitters = [
 ]
 
 [package.dev-dependencies]
+quality = [
+    { name = "pyright", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "ruff", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 test = [
     { name = "pytest", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest-asyncio", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1946,6 +1950,10 @@ requires-dist = [
 provides-extras = ["rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
+quality = [
+    { name = "pyright" },
+    { name = "ruff" },
+]
 test = [
     { name = "pytest", specifier = ">=8.4,<9" },
     { name = "pytest-asyncio", specifier = ">=0.23,<0.24" },

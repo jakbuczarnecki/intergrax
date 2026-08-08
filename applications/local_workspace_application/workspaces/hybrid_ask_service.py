@@ -40,6 +40,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
     HybridAskPolicyError,
     LiveCallProposalV1,
     LiveResourceScopeValidationPort,
+    ResolvedLiveResourceScopeV1,
     ValidatedEvidencePlanV1,
     resolve_effective_query_policy,
     validate_evidence_plan,
@@ -47,6 +48,7 @@ from local_workspace_application.workspaces.hybrid_ask_policy import (
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     LiveResultRetentionV1,
     QueryPolicyModeV2,
+    WorkspaceLiveAccessBinding,
     WorkspaceKnowledgeConfigurationV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_service import (
@@ -154,15 +156,11 @@ class BindingResourceScopeValidator:
     def validate_resource_scope(
         self,
         *,
-        binding: Any,
+        binding: WorkspaceLiveAccessBinding,
         capability_id: str,
-        validated_request: dict[str, Any],
-    ) -> Any:
+        validated_request: BaseModel,
+    ) -> ResolvedLiveResourceScopeV1:
         del capability_id, validated_request
-        from local_workspace_application.workspaces.hybrid_ask_policy import (
-            ResolvedLiveResourceScopeV1,
-        )
-
         return ResolvedLiveResourceScopeV1(
             remote_resource_id=binding.remote_resource_id,
             scope_token=None,

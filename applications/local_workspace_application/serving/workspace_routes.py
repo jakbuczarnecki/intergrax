@@ -575,6 +575,7 @@ def mount_managed_workspace_routes(
             prefix=prefix,
         )
 
+    connection_attachment_service: WorkspaceConnectionAttachmentService | None = None
     if tenant_connection_port is not None:
         connection_attachment_service = WorkspaceConnectionAttachmentService(
             connection_port=tenant_connection_port,
@@ -610,6 +611,7 @@ def mount_managed_workspace_routes(
         assert tenant_connection_port is not None
         assert tenant_live_capability_catalog is not None
         assert live_access_remote_resource_lookup_port is not None
+        assert connection_attachment_service is not None
         live_access_service = WorkspaceLiveAccessBindingService(
             repository=repository,
             configuration_service=configuration_service,
