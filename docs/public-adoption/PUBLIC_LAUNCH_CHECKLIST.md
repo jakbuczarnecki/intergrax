@@ -22,6 +22,7 @@ See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL
 - Audit base: `62c47a311a32bb3e9e530bc1f2983c39c55ec74c`
 - Audit remote: `62c47a311a32bb3e9e530bc1f2983c39c55ec74c`
 - Required PX-11 ancestor: `b942121d0a509d059681d6f1df55ff09d7aaf6a2`
+- Accepted readiness SHA: `c050b5e6bff1b69a9534b46cab82c73ad572129e`
 - External reader validation: `NOT_STARTED`
 
 ## Reader journey readiness
@@ -61,26 +62,33 @@ No unresolved navigation finding remains after the final static pass.
 
 This is the single internal readiness record for PX-12. Execution results and reviewed evidence are labeled separately.
 
+### Previous readiness snapshot / blockers
+
+The previous readiness snapshot recorded three blockers: the `transformers`/metadata collection failure, the Windows LKW `stack_start` failure, and stale Token public-claims contract failures. All three are **CLOSED** in the final accepted readiness revalidation below. The Memory tenant regression is also **CLOSED**; an explicit tenant is required and no implicit default tenant is used.
+
+### Final accepted readiness revalidation
+
 | Check | Mode | Result | Evidence or limitation |
 |---|---|---|---|
-| Audit base | pinned commit | `62c47a311a32bb3e9e530bc1f2983c39c55ec74c` | Exact `$AuditBase`; equal to `origin/development` after concurrency recheck |
+| Accepted readiness snapshot | pinned commit | `c050b5e6bff1b69a9534b46cab82c73ad572129e` | Independently accepted final PX-12 readiness state |
 | Public local links | executed | PASS | 17 scoped documents, 421 local link targets |
 | Required anchors | executed | PASS | 9 explicitly required anchors; checklist anchor is this section |
 | Public local assets | executed | PASS | 18 local `src`/`srcset` and Markdown image references |
 | Mermaid fences | reviewed | PASS | 16 Mermaid fences; all Markdown fences structurally complete |
 | `uv sync --extra dev` | executed | PASS | Exit 0 |
 | `uv run intergrax doctor` | executed | PASS | All doctor checks passed |
-| `uv run pytest -m gate -q` | executed | FAIL | 150 collection errors; `TypeError: 'NoneType' object is not subscriptable` in the `transformers`/metadata import chain |
-| LKW Product Quick Start | executed | FAIL | Windows marker `lkw_quickstart_result=FAIL`; `failed_stage=stack_start`; no answer marker reached |
-| LKW certification matrix | executed | PASS | `--check` returned `matrix_check=PASS` |
-| Token unit gate | executed | FAIL | 983 passed, 424 deselected, 2 existing public-claims contract tests failed because they require removed phase/status wording |
+| Global gate | executed | PASS | `4282 passed`, `0 failed`, `0 errors`, `16181 deselected` |
+| Documentation gate | executed | PASS | `161 passed`, `0 failed` |
+| LKW Product Quick Start | executed | PASS | Supported Windows path; answer marker `AURORA-17`; citation/source `lkw_product_quickstart.txt`; `persisted_run_verified=true` |
+| LKW certification matrix | executed | PASS | `matrix_check=PASS` |
+| Token unit gate | executed | PASS | `985 passed`, `0 failed` |
 | Token plugin contract | executed | PASS | 35 passed |
 | Token evaluation packs | executed | PASS | Corrected explicit-file command: 78 passed |
 | Token vLLM no-server gates | executed | PASS | 45 passed |
 | LKW deep proof | evidence reviewed | PASS | Matrix `VALID`; Windows native and Linux Docker profiles PASS; full multi-phase proof not certified by those profiles |
 | vLLM live proof | evidence reviewed | PASS | Named evidence is limited to vLLM 0.23.0, Qwen/Qwen2.5-3B-Instruct, Windows Docker Desktop/WSL2 and RTX 4080 Laptop 12 GB |
 | Documentation blockers | review | NONE | Static link, anchor, asset and fence findings corrected |
-| Technical blockers | review | LISTED | Global gate collection, LKW stack-start, and Token public-claims contract failures remain unresolved |
+| Technical blockers | review | CLOSED | Transformers/metadata collection, LKW `stack_start`, and stale Token public-claims failures resolved |
 
 ### Claims and legal boundary review
 
@@ -92,14 +100,10 @@ This is the single internal readiness record for PX-12. Execution results and re
 ### Internal outcome
 
 ```text
-CHANGES_REQUIRED_TECHNICAL
+ACCEPTED / CLOSED
 ```
 
-Technical blockers:
-
-- Global gate collection: owner is the shared test/dependency environment and RAG embedding import chain; the documented command is correct.
-- LKW Product Quick Start: owner is the local LKW stack startup/infrastructure path; the documented command is correct and failed at `stack_start`.
-- Token unit gate: owner is the existing public-claims contract test; the test expects removed roadmap-phase wording, and PX-12 does not change tests or restore that mirror.
+PX-12 readiness audit accepted at `c050b5e6bff1b69a9534b46cab82c73ad572129e`. This is an internal readiness acceptance only; it does not claim production readiness, commercial validation, real-user validation, customer validation, or completed external validation.
 
 External reader validation:
 
@@ -113,7 +117,7 @@ NOT_STARTED
 
 ```text
 Status:
-BLOCKED_ON_PX_12_ACCEPTANCE
+NOT_STARTED
 
 External reader validation:
 NOT_STARTED

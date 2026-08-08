@@ -565,8 +565,11 @@ def test_launch_checklist_readiness(launch_text: str) -> None:
     ):
         assert section in launch_text, f"Launch checklist missing section: {section}"
     assert "NOT_STARTED" in launch_text
-    assert "BLOCKED" in launch_text
     norm = _normalize(launch_text)
+    assert "accepted / closed" in norm
+    assert "blocked_on_px_12_acceptance" not in norm
+    assert "Status:\nNOT_STARTED" in launch_text
+    assert "External reader validation:\nNOT_STARTED" in launch_text
     assert "does not mean external validation is complete" in norm
     assert "checklist completion does not conduct sessions" in norm or (
         "no fictional session" in norm

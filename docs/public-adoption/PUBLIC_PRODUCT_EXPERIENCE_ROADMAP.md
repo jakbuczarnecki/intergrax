@@ -17,8 +17,8 @@ This document is a **Layer 5 maintainer control**. It governs the public product
 | Roadmap status | ACTIVE |
 | Baseline revision | 27957df0d32bdf3a7a0b07dfb92b19c891096283 |
 | Previous public-documentation foundation | ACCEPTED / CLOSED through 9A |
-| Current phase | PX-12 — CHANGES_REQUIRED |
-| Next phase after acceptance | PX-13 |
+| Current phase | PX-13 — NOT_STARTED |
+| Next phase | PX-13 — NOT_STARTED |
 | External reader validation | NOT_STARTED |
 | Real-user validation | INCOMPLETE |
 | Commercial validation | INCOMPLETE |
@@ -545,7 +545,9 @@ the roadmap’s changing task and review status.
 
 ## PX-12 — Editorial, factual, link and executable readiness audit
 
-**Status:** CHANGES_REQUIRED
+**Status:** ACCEPTED / CLOSED
+
+**Acceptance evidence:** `c050b5e6bff1b69a9534b46cab82c73ad572129e`
 
 **User-visible outcome:** The complete public journey received a human editorial, factual and cross-document consistency review before external sessions.
 
@@ -568,13 +570,26 @@ the roadmap’s changing task and review status.
 - no code, test, script, dependency, evidence or asset changed;
 - external reader validation remains `NOT_STARTED`.
 
-**Completion gate:** Not met. The global gate suite failed during collection with 150 errors caused by a `transformers`/metadata `TypeError`; the supported Windows LKW Product Quick Start failed at `stack_start`; and the Token unit gate had two existing public-claims contract test failures because those tests require the removed roadmap-phase wording. These are technical blockers owned by the shared test/dependency environment, LKW stack startup/infrastructure, and the existing public-claims contract test respectively; runtime and test repairs are outside PX-12.
+**Closeout:** Previously identified blockers were resolved, and final readiness validation established:
+
+- global gate: `4282 PASS / 0 FAIL / 0 ERROR` (`16181 deselected`);
+- documentation gate: `161 PASS / 0 FAIL`;
+- Token gate: `985 PASS / 0 FAIL`;
+- supported Windows LKW Product Quick Start: `PASS`;
+- answer marker: `AURORA-17`;
+- citation/source evidence: `lkw_product_quickstart.txt`;
+- persisted Ask verification: `persisted_run_verified=true`;
+- doctor: `PASS`;
+- certification matrix: `PASS`;
+- no external reader validation has occurred; external reader validation remains `NOT_STARTED`.
+
+PX-12 acceptance means that the readiness audit is accepted. It does not claim production readiness, commercial validation, real-user validation, customer validation, or completion of external validation.
 
 ---
 
 ## PX-13 — External comprehension and trial sessions
 
-**Status:** BLOCKED_ON_PX_12_ACCEPTANCE
+**Status:** NOT_STARTED
 
 **User-visible outcome:** Real independent external sessions test comprehension and trial paths against pinned revision.
 
