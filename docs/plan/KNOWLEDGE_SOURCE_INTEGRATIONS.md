@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-LIVE-CAPABILITY-CLOSEOUT-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
+`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1`
 
 ### VK-4 indexed bridge acceptance proof
 
@@ -331,12 +331,40 @@ and Microsoft Graph live implementations remain evidence, not work to duplicate.
 
 `VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
 
-Build an exact source-kind matrix for Microsoft 365, Google Workspace, Jira,
-Confluence, Slack, Atlan, Power BI and Databricks. For every source kind and
-mode record `SUPPORTED`, `PARTIAL`, `NOT_IMPLEMENTED` or `NOT_APPLICABLE`,
-with exact proof/test references. Vendor integration existence is not proof of
-three-mode completeness; provider-specific tasks are generated only from
-verified gaps.
+**Status:** `ACCEPTED / CLOSED`
+
+The canonical matrix audits every implemented source kind separately:
+Microsoft Graph `drive`, `mail`, `teams_channel`, `teams_chat` and `calendar`;
+Slack `slack_conversation`; Google Workspace `drive`, `docs`, `sheets` and
+`calendar`; Jira `issues`; and Confluence `pages`. It records adapter status,
+plugin declaration, runtime registration, mode status, deletion semantics, ACL
+scope, proof level, limitations and evidence.
+
+The default plugin composition covers all twelve implemented source kinds.
+Microsoft Graph has five accepted bounded Live registrations; Teams Chat and
+Slack retain the accepted Indexed bridge and representative Durable proof.
+Google, Jira and Confluence remain Durable `FOUNDATION_ONLY` with Indexed
+foundation only and Live `UNSUPPORTED` until separately proven. Atlan and Power
+BI have no Vendor Knowledge implementation. Databricks has only a relational
+integration and no selected Vendor Knowledge source kind.
+
+The exact new-provider requirements are intentionally small:
+
+```text
+DURABLE: adapter + plugin DURABLE + existing coordinator/sink
+INDEXED: plugin INDEXED + registered materializer -> KnowledgeDocument
+LIVE: plugin LIVE + registration bundles/handlers -> generic Live bootstrap
+```
+
+No generic platform, LKW or frontend change is required merely to add a
+provider; only provider composition/registration and the provider adapter are
+owned by that provider task. Full frontend neutrality remains VK-7 and
+cross-provider product E2E remains VK-8.
+
+`VK1-GAP-07` (provider coverage without complete accepted source-kind proof) is
+**CLOSED** by the authoritative matrix. This closeout means the coverage is
+truthful and platform-aligned; it does not claim every provider supports every
+mode.
 
 #### VK-7 — Frontend neutrality proof
 

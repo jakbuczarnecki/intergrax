@@ -1,7 +1,7 @@
 # Vendor Knowledge Three-Mode Capability Matrix
 
-**Task:** `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1`  
-**Status:** `READY_FOR_REVIEW`  
+**Task:** `VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1`
+**Status:** `ACCEPTED / CLOSED`
 **Branch:** `development`  
 **Input:** [`VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md`](VENDOR_KNOWLEDGE_ADAPTER_FAMILY_AUDIT.md)  
 **Roadmap:** [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md)
@@ -10,8 +10,9 @@
 ## 1. Executive summary
 
 This document is the canonical capability matrix at the exact
-`provider_family × source_kind × mode` boundary. It does not implement,
-activate or accept any missing mode.
+`provider_family × source_kind × mode` boundary. VK-6 audits and registers
+existing provider/source-kind coverage; it does not inflate or activate a
+missing mode.
 
 The accepted adapter-family input proves provider adapters and durable
 reconciliation foundations, not automatically application materialization,
@@ -30,6 +31,10 @@ indexed ingestion or live access. Current repository evidence proves:
 - provider/source-kind live handlers and registrations are implemented for the
   five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
   Teams Chat and Calendar, plus the three Slack conversation live capabilities;
+- a canonical default plugin composition covers every implemented adapter:
+  Microsoft Graph, Slack, Google Workspace, Jira and Confluence;
+- Atlan and Power BI have no Vendor Knowledge implementation, while Databricks
+  has only a relational integration and no selected Vendor Knowledge source kind;
 
 Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar live access
 and Slack `slack_conversation` live access are `ACCEPTED / CLOSED`; all other
@@ -75,24 +80,22 @@ Evidence precedence is:
 5. accepted architecture;
 6. roadmap wording.
 
-Mode statuses use only the required vocabulary:
+VK-6 mode statuses use only the required vocabulary:
 
 | Status | Matrix meaning |
 |---|---|
 | `ACCEPTED` | Exact mode has production wiring, focused proof and accepted closeout. |
-| `IMPLEMENTED_UNREVIEWED` | Implementation and focused proof exist; accepted mode closeout is absent. |
-| `PARTIAL` | A meaningful subset exists, but the user-facing workflow is incomplete. |
 | `FOUNDATION_ONLY` | Generic contracts/runtime or low-level reads exist without exact mode wiring. |
-| `PLANNED` | Explicitly routed work is not implemented. |
-| `DEFERRED` | Intentionally postponed work has no active implementation route. |
-| `NOT_IMPLEMENTED` | No implementation or committed roadmap route exists. |
-| `NOT_APPLICABLE` | The mode genuinely does not apply to the source contract. |
+| `IMPLEMENTED_UNREVIEWED` | Implementation exists but this audit did not establish complete acceptance proof. |
+| `UNSUPPORTED` | The capability intentionally does not exist for the source kind. |
+| `UNPROVEN` | The repository does not establish the capability or its semantics. |
 
-Subcolumns use only `YES`, `NO`, `PARTIAL`, `NOT_APPLICABLE` and `UNPROVEN`.
-`UNPROVEN` describes evidence; it is never used as a mode status.
+The historical detail table may retain its older evidence vocabulary, but it is
+not authoritative for current VK-6 status.
 
-The audit inventory is authoritative for source kinds. Databricks is excluded
-from the exact matrix because no source kind has been selected.
+The audit inventory is authoritative for source kinds. Databricks has no
+source-kind mode row because no Vendor Knowledge source kind has been selected;
+its implementation state is explicitly recorded below.
 
 ## 4. Platform foundation summary
 
@@ -102,7 +105,42 @@ from the exact matrix because no source kind has been selected.
 | Durable materialization | `YES` — `DocumentStore`, idempotent sink, remote-item state, checkpoints, leases, reconciliation, queue/worker and recovery | Provider adapter/sync proof is not application-owned materialization proof. |
 | Live | `YES` — current typed binding/catalog contracts, exact handler registry, validated executor, bounded limits, normalized evidence, receipts and retention | `FOUNDATION-1` provides the accepted shared boundary; the Graph family closeout verifies five provider-specific list handlers on the same integration and executor. |
 
-## 5. Exact provider/source-kind matrix
+## 5. VK-6 authoritative provider/source-kind coverage
+
+`ACCEPTED` means technically accepted for the documented scope only; it is not
+a commercial, GA, SLA, exhaustive-history or complete-ACL claim.
+
+| provider | source kind | adapter | DURABLE | INDEXED | LIVE | plugin declaration | runtime registration | proof level | deletion semantics | ACL status | known limitations | evidence |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Microsoft Graph | `drive` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | ACCEPTED | DURABLE, LIVE | adapter + Graph live bundle | FOCUSED_TESTS | authoritative delta/removal | provider, tenant, source binding; item/per-user UNPROVEN | bounded list/query; no index bridge or content-read claim | `test_msgraph_drive_knowledge_adapter.py`, `test_msgraph_drive_knowledge_sync.py`, `test_msgraph_drive_live.py` |
+| Microsoft Graph | `mail` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | ACCEPTED | DURABLE, LIVE | adapter + Graph live bundle | FOCUSED_TESTS | folder-scoped delta/removal | provider, tenant, source binding; item/per-user UNPROVEN | metadata/list only; bodies, threads, attachments deferred | `test_msgraph_mail_knowledge_adapter.py`, `test_msgraph_mail_knowledge_sync.py`, `test_msgraph_mail_live.py` |
+| Microsoft Graph | `teams_channel` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | ACCEPTED | DURABLE, LIVE | adapter + Graph live bundle | FOCUSED_TESTS | explicit `deletedDateTime` | provider, tenant, source binding; item/per-user UNPROVEN | one bounded root post; replies/all history deferred | `test_msgraph_teams_channel_knowledge_adapter.py`, `test_msgraph_teams_channel_knowledge_sync.py`, `test_msgraph_teams_channel_live.py` |
+| Microsoft Graph | `teams_chat` | ACCEPTED | ACCEPTED | ACCEPTED | ACCEPTED | DURABLE, INDEXED, LIVE | adapter + materializer + Graph live bundle | ACCEPTED / FOCUSED_TESTS | authoritative `DELETED` | tenant/source binding; item/per-user UNPROVEN | fixed-window metadata-oriented content; broader E2E is VK-8 | `test_msgraph_teams_chat_knowledge_adapter.py`, `test_msgraph_teams_chat_knowledge_sync.py`, `test_msgraph_teams_chat_live.py`, `test_connected_source_materializer.py` |
+| Microsoft Graph | `calendar` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | ACCEPTED | DURABLE, LIVE | adapter + Graph live bundle | FOCUSED_TESTS | primary delta and window removals | provider, tenant, source binding; item/per-user UNPROVEN | one binding-selected metadata page; full traversal/event content deferred | `test_msgraph_calendar_knowledge_adapter.py`, `test_msgraph_calendar_knowledge_sync.py`, `test_msgraph_calendar_live.py` |
+| Slack | `slack_conversation` | ACCEPTED | ACCEPTED | ACCEPTED | ACCEPTED | DURABLE, INDEXED, LIVE | adapter + materializer + Slack live bundles | ACCEPTED / FOCUSED_TESTS | DELETION_UNPROVEN; no tombstones | tenant/source binding; complete per-user ACL UNPROVEN | bounded configured channels; native search, exhaustive history and files deferred | `test_slack_connected_source_end_to_end.py`, `test_slack_conversation_knowledge_sync.py`, `test_slack_live.py` |
+| Google Workspace | `drive` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | snapshot absence not authoritative | provider, tenant, source binding; item ACL UNPROVEN | no application sink, index bridge or live handler | `test_google_workspace_drive_knowledge_adapter.py`, `test_google_workspace_drive_knowledge_sync.py` |
+| Google Workspace | `docs` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | snapshot absence not authoritative | provider, tenant, source binding; item ACL UNPROVEN | known-document scope; no discovery, index bridge or live handler | `test_google_workspace_docs_knowledge_adapter.py`, `test_google_workspace_docs_knowledge_sync.py` |
+| Google Workspace | `sheets` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | snapshot absence not authoritative | provider, tenant, source binding; item ACL UNPROVEN | known-spreadsheet scope; no index bridge or live handler | `test_google_workspace_sheets_knowledge_adapter.py`, `test_google_workspace_sheets_knowledge_sync.py` |
+| Google Workspace | `calendar` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | snapshot absence not authoritative | provider, tenant, source binding; item ACL UNPROVEN | adapter/reconciliation only; no index bridge or live handler | `test_google_workspace_calendar_knowledge_adapter.py`, `test_google_workspace_calendar_knowledge_sync.py` |
+| Jira | `issues` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | project reconciliation only; no incremental feed, index bridge or live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py` |
+| Confluence | `pages` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | space reconciliation only; no incremental feed, index bridge or live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py` |
+
+### Explicitly unimplemented providers
+
+| provider | implementation state | supported modes | classification |
+|---|---|---|---|
+| Atlan | no Vendor Knowledge adapter, plugin or runtime | none | UNSUPPORTED / NOT IMPLEMENTED |
+| Power BI | no Vendor Knowledge adapter, plugin or runtime | none | UNSUPPORTED / NOT IMPLEMENTED |
+| Databricks | relational-store integration exists, but no Vendor Knowledge adapter and no source kind is selected | none | UNSUPPORTED / NOT IMPLEMENTED |
+
+`VK1-GAP-07` is **CLOSED**: provider coverage is now deterministic, truthful and
+aligned with the accepted platform boundaries. Frontend neutrality remains
+VK-7 and complete cross-provider product E2E remains VK-8.
+
+The following legacy detail table is retained for traceability; the VK-6 table
+above is authoritative for current status.
+
+## 5A. Historical detailed provider/source-kind matrix
 
 | provider_family | integration_identity | source_kind | adapter_status | indexed_status | indexed_platform_foundation | indexed_provider_wiring | indexed_application_wiring | indexed_refresh | indexed_removal | indexed_provenance | indexed_proof | indexed_gap | durable_status | durable_platform_foundation | durable_provider_wiring | durable_application_sink | durable_checkpoint | durable_recovery | durable_proof | durable_gap | live_status | live_platform_foundation | live_provider_wiring | live_executor | live_limits | live_evidence | live_receipt | live_application_wiring | live_proof | live_gap | commercially_supported_modes | primary_evidence | next_action |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -124,11 +162,11 @@ from the exact matrix because no source kind has been selected.
 
 ### Databricks decision note
 
-Databricks has no matrix row: **mode classification blocked by source-kind
-selection**. The roadmap must select exactly one source kind before any
-provider/source-kind/mode row is created. Unity Catalog metadata, workspace
-tree, volume files and query snapshots remain hypothetical and are not
-classified here.
+Databricks has no source-kind mode row: **classification is blocked by
+source-kind selection**. The explicit provider decision above is authoritative;
+the roadmap must select exactly one source kind before a provider/source-kind
+mode row is created. Unity Catalog metadata, workspace tree, volume files and
+query snapshots remain hypothetical and are not classified here.
 
 ## 6. Indexed-mode findings
 
@@ -136,8 +174,8 @@ The repository has a real generic index/RAG path and a real LKW connected
 source path. The accepted provider-specific materializers cover Slack and
 Microsoft Graph Teams Chat:
 
-- `connected_source_wiring.py` registers the Slack Vendor Knowledge adapter and
-  binds the sync/index services;
+- `connected_source_wiring.py` registers all implemented Vendor Knowledge
+  adapters and binds the sync/index services;
 - `connected_source_materializer.py` converts Slack structured records into
   safe indexed documents;
 - `test_slack_connected_source_end_to_end.py` exercises discovery, binding,
@@ -166,10 +204,10 @@ sync tests exist for the accepted Graph family, Slack, Google
 `drive`/`docs`/`sheets`, Jira and Confluence.
 
 Representative application-owned materialization/index proof covers Slack and
-Microsoft Graph Teams Chat through the provider-neutral coordinator→sink path;
-broader provider/source-kind coverage remains VK-6/VK-8. For adapter rows
-without that representative proof, `PARTIAL` means adapter/reconciliation
-layers are present while application materialization is not proven.
+Microsoft Graph Teams Chat through the provider-neutral coordinator→sink path.
+For adapter rows without that representative proof, `FOUNDATION_ONLY` means
+adapter/reconciliation layers are present while application materialization is
+not proven; this is an intentional VK-6 boundary, not a platform regression.
 
 The DocumentStore runtime itself is not counted as provider-specific
 application materialization.
@@ -181,12 +219,11 @@ capability descriptors, an exact handler registry, bounded execution,
 normalized result items, byte/item/time limits, safe retention and receipts.
 Hybrid Ask can orchestrate indexed and live evidence.
 
-The Microsoft Graph `drive` row has one accepted provider/source-kind live
-handler: bounded list/query through the existing `read_drive_delta_page`
-boundary. The Microsoft Graph `mail` row has one review-ready provider/source-
-kind live handler and registration for bounded mailbox-folder list/query.
-Other provider/source-kind rows remain `FOUNDATION_ONLY`. Exact provider reads,
-remote-resource descriptors and live binding tests do not change the operation
+Microsoft Graph has five accepted bounded provider/source-kind live handlers
+and registrations: Drive, Mail, Teams Channel, Teams Chat and Calendar. Slack
+has its accepted bounded conversation live family. Other provider/source-kind
+rows are explicitly `UNSUPPORTED` for Live. Exact provider reads,
+remote-resource descriptors and adapter tests do not change the operation
 matrix: an adapter exact read is not a live capability.
 
 ### Slack bounded Ask closeout
@@ -220,7 +257,8 @@ Current commercial claims must remain source-kind specific:
   accepted. Broader provider application wiring and commercial coverage remain
   outside this claim (→ VK-6 / VK-8).
 - **Live:** no Vendor Knowledge provider/source kind is commercially
-  supported; all rows are `FOUNDATION_ONLY`.
+  supported; technically accepted Graph and Slack Live rows remain scoped to
+  their bounded handlers.
 
 Prohibited claims: all Vendor Knowledge providers support indexed mode, all
 adapters have production materialization, or all providers support live
@@ -235,15 +273,15 @@ access.
    durable sink port; broader production application hosts beyond the DocumentStore
    durable sink and representative Slack/Teams Chat indexed paths remain to
    expand (→ VK-6/VK-8).
-3. There is no provider/source-kind live handler registration completeness claim
-   (→ VK-5/VK-6).
+3. VK-6 proves registration completeness for the accepted Graph and Slack Live
+   source kinds; Google, Jira and Confluence remain explicitly unsupported.
 4. Indexed removal, provenance-preserving refresh and application query proof
    are established for the representative Slack and Teams Chat bridge paths;
-   broader source-kind proof remains deferred (→ VK-6/VK-8).
+   broader product E2E proof remains deferred to VK-8.
 5. Google `drive`, `docs`, `sheets` and `calendar` have Vendor Knowledge
    adapter implementations despite stale roadmap wording; they still lack
-   provider-neutral application-owned indexed wiring, and Calendar still lacks
-   a live handler.
+   provider-neutral application-owned indexed wiring and all four remain
+   explicitly unsupported for Live.
 6. Microsoft Graph Mail low-level attachment reads must remain distinct from
    adapter-level attachment inventory and from any three-mode claim.
 7. Databricks source-kind selection is still a roadmap decision.
@@ -264,10 +302,9 @@ Its former follow-up sequence is superseded by the canonical VK-1–VK-9 order i
 8. `VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`;
 9. `VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1`.
 
-The current matrix intentionally does not yet provide complete source-kind
-coverage for Atlan, Power BI and Databricks. VK-6 must create that exact
-coverage from verified evidence; Databricks still requires source-kind
-selection. The accepted Slack connected-source result remains
+The current matrix records Atlan and Power BI as not implemented and Databricks
+as lacking a selected Vendor Knowledge source kind; no capability is inferred
+for any of them. The accepted Slack connected-source result remains
 `LKW-SLACK-CONNECTED-SOURCE-1` **ACCEPTED / CLOSED** and is not reopened.
 
 ## 12. Evidence appendix
