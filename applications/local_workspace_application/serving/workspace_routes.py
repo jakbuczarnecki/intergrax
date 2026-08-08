@@ -767,16 +767,7 @@ def mount_managed_workspace_routes(
             sync_runtime.bind_main_loop(asyncio.get_running_loop())
             try:
                 sync_runtime.start()
-            except Exception as exc:
-                try:
-                    sync_runtime.stop()
-                except Exception:
-                    pass
-                if owns_repository:
-                    try:
-                        repository.document_store.close()
-                    except Exception:
-                        pass
+            except BaseException as exc:
                 lifecycle = getattr(app.state, "lkw_host_lifecycle", None)
                 if lifecycle is not None:
                     lifecycle.update_component(
