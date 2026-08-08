@@ -114,8 +114,8 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 
 | Capability | Owner | Does | Does not |
 |------------|-------|------|----------|
-| **Host (Tier-3)** | `applications/governed_contractor_application/` | Inject integrations + policy evaluator; tenant/env; public API; workspace allowlists; present quotes / HITL surfaces (product); observe proof metadata | Own External Work contracts; evaluate policy rules in the adapter; implement providers; treat proof as receipt/authz |
-| **Tier-2 adapter** | `agents/external_contractor_adapter/` | Map/normalize External Work; preserve correlation + idempotency; surface/forward continuation; describe side effects; compose `GovernedProofProfile` after ALLOW + success | Decide accept/reject; resume Nexus; embed policy rules; persist/sign proofs; poll/retry engines; import `applications.*` |
+| **Host (Tier-3)** | `applications/governed_contractor_application` | Inject integrations + policy evaluator; tenant/env; public API; workspace allowlists; present quotes / HITL surfaces (product); observe proof metadata | Own External Work contracts; evaluate policy rules in the adapter; implement providers; treat proof as receipt/authz |
+| **Tier-2 adapter** | `agents/external_contractor_adapter` | Map/normalize External Work; preserve correlation + idempotency; surface/forward continuation; describe side effects; compose `GovernedProofProfile` after ALLOW + success | Decide accept/reject; resume Nexus; embed policy rules; persist/sign proofs; poll/retry engines; import `applications.*` |
 | **Provider** | Implements `ExternalWorkIntegration` | Execute discover/create/quote/accept/cancel/timeline/deliverables/evidence behind the Protocol | Evaluate policy; authorize acceptance; compose Intergrax proofs; own Nexus identity |
 | **Policy** | Runtime `PolicyEngine` / injected `MeaningfulSideEffectEvaluator` (prefer `RuntimePolicyBundleEvaluator` for attested packs) | Authorize or deny meaningful side effects before provider calls against a concrete `ImmutableRuntimePolicyBundle`; map REQUIRE_HUMAN to continuation | Resume Nexus; execute provider transport; invent business rules inside Tier-2 |
 | **Continuation** | Platform composition + Nexus/HITL | Pause for governance; carry decision evidence; resume orchestration | Execute external work; decide commercial outcomes inside Tier-2; introduce `ContinuationRuntime` |
@@ -130,7 +130,7 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 |-------|------------|
 | User intent / product API | Host |
 | Nexus task / run orchestration | Runtime Nexus |
-| External Work contracts | Platform (`intergrax/contracts/`) |
+| External Work contracts | Platform (`intergrax/contracts`) |
 | Integration Protocol | Platform (`ExternalWorkIntegration`) |
 | Mapping / normalization / correlation forward | Tier-2 |
 | Policy allow/deny/require-human | Policy engine (+ host rule packs) |
@@ -160,7 +160,7 @@ Collected from accepted ADRs and GEC-3…GEC-6 architecture (not invented here).
 12. **External Work status ≠ Nexus `TaskState`.** Commercial/quote stages stay in `ExternalWorkStatus`.
 13. **Observational reads are not mutation gates.** e.g. `get_quote` may surface continuation; it is not itself a meaningful side-effect gate.
 14. **Contracts stay transport-free.** No HTTP/A2A/REST/partner SDK types in External Work, continuation, side-effect, or proof contracts.
-15. **Tier boundaries hold.** `intergrax/` ↛ agents/applications; agents ↛ applications.
+15. **Tier boundaries hold.** `intergrax` ↛ agents/applications; agents ↛ applications.
 
 ---
 

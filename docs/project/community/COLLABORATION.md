@@ -16,11 +16,11 @@ This guide helps you choose the correct route for evaluation feedback, documenta
 
 | Goal | Start here |
 |------|------------|
-| Evaluate Intergrax | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
+| Evaluate Intergrax | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
 | Report proof-path friction | GitHub issue with reproducible details |
 | Fix documentation | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
 | Submit code | [CONTRIBUTING.md](../../../CONTRIBUTING.md) |
-| Discuss a pilot | [PARTNERS.md](PARTNERS.md) |
+| Discuss a pilot | [docs/project/community/PARTNERS.md](PARTNERS.md) |
 | Check permission boundaries | [LICENSE](../../../LICENSE) |
 | Request permission | maintainer email |
 | Report a vulnerability | [SECURITY.md](../../../SECURITY.md) |
@@ -67,7 +67,7 @@ Do not assume that ordinary discussion automatically grants rights beyond the li
 
 ## Pilots and partner discussions
 
-For partner fit, pilot preparation, and success review, start with [PARTNERS.md](PARTNERS.md).
+For partner fit, pilot preparation, and success review, start with [docs/project/community/PARTNERS.md](PARTNERS.md).
 
 A discussion does **not** create permission. Operational, production, or commercial activity still requires explicit written permission before it starts.
 

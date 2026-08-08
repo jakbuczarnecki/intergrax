@@ -3,8 +3,8 @@
 **Status:** `DONE / READY_FOR_REVIEW`  
 **Task:** `VENDOR-KNOWLEDGE-FACADE-AUDIT-1`  
 **Branch:** `development`  
-**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
-**Plan:** [`../plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
+**Plan:** [`../plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 
 ---
 

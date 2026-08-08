@@ -1,11 +1,11 @@
 # Reliability, Failure Model, and Human-in-the-Loop
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 22  
-**Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/audit/RELIABILITY_FAILURE_AND_HITL.md)  
+**Audit instruction:** [`audit/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/audit/RELIABILITY_FAILURE_AND_HITL.md)
 **Last updated:** 2026-06-20 — **P2-ARCH-09** Attempt Ledger + retry ownership; REL + HITL **Done**
 
 ---
@@ -96,7 +96,7 @@ Intergrax has **two independent retry layers**. Configure each explicitly; avoid
 
 A future `RetryCoordinator` may delegate to both with explicit `RETRY_SCHEDULED` / `RETRY_STARTED` events (§42.34). Until then, agents emit **intent** (`AgentDecision.RETRY`); runtime executes policy — no agent-internal `for attempt in range(n)` against adapters.
 
-**Full retry-layer taxonomy (R0–R4) and attempt reconstruction:** [Attempt Ledger](#attempt-ledger) below. **As-built mapping:** graph/validation ≈ **R3**; run-level ≈ **R2**; whole-run graph retry ≈ **R3** (coordinator scope).
+**Full retry-layer taxonomy (R0–R4) and attempt reconstruction:** [Attempt Ledger](.#attempt-ledger) below. **As-built mapping:** graph/validation ≈ **R3**; run-level ≈ **R2**; whole-run graph retry ≈ **R3** (coordinator scope).
 
 ---
 

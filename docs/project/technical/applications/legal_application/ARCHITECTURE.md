@@ -1,6 +1,6 @@
 ﻿# legal_application — architecture
 
-Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Product-style Tier-3 host for scaffold `LegalAgent` — auth, FastAPI core, MCP,
 
 ## Serving
 
-- FastAPI router under `serving/`
+- FastAPI router under `serving`
 - Compliance policy stub route for gate smoke
 
 ## Observability

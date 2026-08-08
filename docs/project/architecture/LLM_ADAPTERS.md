@@ -1,12 +1,12 @@
 # Intergrax LLM Adapters
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
-**Audit layers:** 6 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md)  
-**Audit instruction:** [`audit/LLM_ADAPTERS.md`](../maintainers/audit/LLM_ADAPTERS.md)  
-**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/LLM_ADAPTERS.md`](../maintainers/plans/LLM_ADAPTERS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5
+**Audit layers:** 6 · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md)
+**Audit instruction:** [`audit/LLM_ADAPTERS.md`](../maintainers/audit/LLM_ADAPTERS.md)
+**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../../../intergrax/llm_adapters/USAGE.md)
 **ADR:** [ADR-LLM-001](../technical/adr/entries/2026-06-06/ADR-LLM-001.md) (envelope) · [ADR-LLM-002](../technical/adr/entries/2026-06-14/ADR-LLM-002.md) (ModelCatalog) · [ADR-LLM-003](../technical/adr/entries/2026-06-19/ADR-LLM-003.md) (routing rules)
 
 ---
@@ -75,15 +75,15 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 | `finish_reason` | `LLMFinishReason` | Includes `CONTENT_FILTER`, `REFUSAL`, `LENGTH`, `TOOL_CALLS` — normalized via `parse_finish_reason()` |
 | `usage` | `LLMTokenUsage` | Per-call token accounting |
 | `model` / `provider` | `str` | Identity metadata |
-| `response_id` | `str \| None` | Provider correlation id |
-| `refusal` | `str \| None` | Provider-native safety/refusal text when present |
+| `response_id` | `str /| None` | Provider correlation id |
+| `refusal` | `str /| None` | Provider-native safety/refusal text when present |
 | *(post-adapter)* | `GuardrailScanResult` | Optional Tier-3 `llm_guardrail` via middleware (`AFTER_LLM_OUTPUT`) — [`INTEGRATIONS.md`](INTEGRATIONS.md) §47 |
 | `tool_calls` | `tuple[LLMToolCall, ...]` | Native tool calls |
 | `provider_extensions` | `LLMProviderExtensions` | Tagged optional slices (usage source, vendor fields) |
 
 ### Structured output (AUDIT-IDEAL-6.1 — Done)
 
-`generate_structured(..., output_model: type[T])` returns `LLMStructuredResult[T]`. Adapters parse provider JSON and validate with Pydantic via `_validate_with_model()` (see `openai_responses_adapter.py`, OpenAI-compat delegate). Reference agents and certified paths MUST use this method — not manual `json.loads` on bare strings. Gate: `check_agents_llm_adapter_response.py` + conformance tests under `tests/unit/llm_adapters/`.
+`generate_structured(..., output_model: type[T])` returns `LLMStructuredResult[T]`. Adapters parse provider JSON and validate with Pydantic via `_validate_with_model()` (see `openai_responses_adapter.py`, OpenAI-compat delegate). Reference agents and certified paths MUST use this method — not manual `json.loads` on bare strings. Gate: `check_agents_llm_adapter_response.py` + conformance tests under `tests/unit/llm_adapters`.
 
 **Ollama generation schema projection:** the canonical Pydantic `model_json_schema()` remains the final validation contract. `LangChainOllamaAdapter` passes a provider-compatible generation projection to `with_structured_output(..., method="json_schema")` (see `intergrax/llm_adapters/providers/_ollama_schema.py`). The projection is generic, provider-specific, and may relax generation-only constraints (for example `maxLength` values Ollama cannot compile). Returned payloads are always revalidated with the original `output_model`; no field rewriting or aliasing occurs. The projection does not guarantee semantic correctness — only grammar-safe constrained generation.
 
@@ -247,7 +247,7 @@ intergrax/llm_adapters/registry/context_window.py  — resolve_context_window_to
 | `supports_tools` | `bool` | no | Default true for chat models |
 | `supports_structured_output` | `bool` | no | |
 | `provider_hints` | `tuple[str, ...]` | no | Slugs where this id is valid |
-| `family_prefix` | `str \| None` | no | For prefix rules |
+| `family_prefix` | `str /| None` | no | For prefix rules |
 
 `CatalogCapabilityAdapter` overlays catalog capability flags on the concrete adapter returned by `LLMAdapterRegistry.create()` but does not erase provider-specific `model_capabilities` on the inner adapter. Consumers that need concrete capability state (for example Token Optimization router preflight) call `unwrap_catalog_capability_adapter()` for inspection only and keep using the outer wrapper for generation, tool calling, structured output, and usage accounting.
 

@@ -1,13 +1,13 @@
 # Ephemeral Code Craft (ECC)
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/CODE_CRAFT.md`](../maintainers/plans/CODE_CRAFT.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6  
-**ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../technical/adr/entries/2026-06-10/ADR-CODECRAFT-001.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/CODE_CRAFT.md`](../maintainers/plans/CODE_CRAFT.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6
+**ADR:** [`adr/entries/2026-06-10/ADR-CODECRAFT-001.md`](../technical/adr/entries/2026-06-10/ADR-CODECRAFT-001.md)
 **Audit layer:** 11b (Ephemeral Code Craft)  
-**Audit instruction:** [`audit/CODE_CRAFT.md`](../maintainers/audit/CODE_CRAFT.md)  
-**Implementation:** `intergrax/codecraft/` · `intergrax/runtime/codecraft/` · `intergrax/tools/providers/codecraft/`  
+**Audit instruction:** [`audit/CODE_CRAFT.md`](../maintainers/audit/CODE_CRAFT.md)
+**Implementation:** `intergrax/codecraft` · `intergrax/runtime/codecraft` · `intergrax/tools/providers/codecraft`
 **Last updated:** 2026-06-20 — **P2-ARCH-12** CodeCraft safety boundary; ECC-0…ECC-6 + S7–S11 + §6.1av Done (L3+)
 
 ---
@@ -90,7 +90,7 @@ ECC closes these gaps **without** violating tier boundaries or duplicating CVL /
 
 ## 4. Design principles
 
-1. **Reuse before create** — compose `runtime/sandbox/`, `ToolRuntime`, CVL L0/L1, `security.scan`, `sandbox_host` integrations.
+1. **Reuse before create** — compose `runtime/sandbox`, `ToolRuntime`, CVL L0/L1, `security.scan`, `sandbox_host` integrations.
 2. **Harness orchestrates, agents declare goals** — Tier-2 invokes `codecraft.*`; no craft loops in agent modules.
 3. **Ephemeral by default** — generated code and virtual tools die with `craft_id` unless explicitly promoted as artifacts.
 4. **L0 before exec** — static gate always runs before `run_python` / `run_script` in autonomous modes.

@@ -17,7 +17,7 @@ Intergrax already ships **Adaptive Harness Intelligence (AHI)** — a governed T
 
 - Fork a second governance/evaluation/archive stack
 - Place ADAS logic in Tier-3 applications
-- Allow MAS strategy agents to mutate production `agents/` or Nexus runtime directly
+- Allow MAS strategy agents to mutate production `agents` or Nexus runtime directly
 
 ## Decision
 
@@ -31,9 +31,9 @@ ADAPTIVE_HARNESS_INTELLIGENCE
 
 Concrete rules:
 
-1. **Tier-1 ownership** — control plane lives at `intergrax/runtime/adaptive/agent_design_search/`; reuses AHI signal, governance, verification, and promotion lifecycle patterns.
+1. **Tier-1 ownership** — control plane lives at `intergrax/runtime/adaptive/agent_design_search`; reuses AHI signal, governance, verification, and promotion lifecycle patterns.
 2. **Not a separate top-level harness layer** — no parallel PolicyEngine, evaluation registry, trace system, or promotion stack.
-3. **Not Tier-3-only** — optional `applications/adas_lab/` is operator UI/wiring only; archive, evaluation, governance, and promotion semantics remain Tier-1.
+3. **Not Tier-3-only** — optional `applications/adas_lab` is operator UI/wiring only; archive, evaluation, governance, and promotion semantics remain Tier-1.
 4. **Candidate materialization via scaffold only** — `AgentCandidateDraft` → existing scaffold bridge → sandbox/archive; no direct production source overwrite.
 5. **MAS is a strategy, not the architecture** — Tier-2 agents may propose drafts; they must not self-approve promotion or bypass static/eval/archive gates.
 6. **Evidence over declaration** — promotion requires auditable `AgentCandidateEvidenceBundle` and governed active registration (registry pointer + tenant binding in v1).
@@ -44,7 +44,7 @@ Concrete rules:
 |-------------|--------------|
 | ADAS as new Tier-1 domain parallel to AHI | Duplicates governance, evaluation, and lifecycle; drift risk |
 | ADAS as Tier-3-only application | Core archive/eval/governance logic would leak into applications tier |
-| MAS agents write directly to `agents/` | Breaks tier boundaries; untyped mutations; no rollback |
+| MAS agents write directly to `agents` | Breaks tier boundaries; untyped mutations; no rollback |
 | External AutoML / agent-builder SaaS | Vendor lock-in; breaks offline/air-gapped lab requirements |
 
 ## Consequences
@@ -62,7 +62,7 @@ Concrete rules:
 
 ## Compliance
 
-- Tier boundaries preserved (`intergrax/` ↛ `agents/` direct mutation by MAS; agents ↛ applications)
+- Tier boundaries preserved (`intergrax` ↛ `agents` direct mutation by MAS; agents ↛ applications)
 - PolicyEngine and human approval remain mandatory for production promotion by default
 - Linked architecture hub § ADAS, satellite canon, and plan Phase AHI-ADAS updated
 

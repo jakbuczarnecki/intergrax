@@ -22,14 +22,14 @@
 
 ## Code entry (grep first — F5-B)
 
-- `intergrax/runtime/nexus/critic/` — CVL orchestrator
+- `intergrax/runtime/nexus/critic` — CVL orchestrator
 
 ## Do not load unless cited
 
 - Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
-- `docs/audit_results/` (unless RESUME)
+- `docs/audit_results` (unless RESUME)
 - Unrelated domain pairs
-- Other domains' `audit_slices/`
+- Other domains' `audit_slices`
 
 ## Evidence rule (unchanged)
 

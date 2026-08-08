@@ -22,15 +22,15 @@
 
 ## Code entry (grep first — F5-B)
 
-- `intergrax/integrations/` — integration catalog
+- `intergrax/integrations` — integration catalog
 - `intergrax/integrations/registry.py` — slug registration
 
 ## Do not load unless cited
 
 - Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
-- `docs/audit_results/` (unless RESUME)
+- `docs/audit_results` (unless RESUME)
 - Unrelated domain pairs
-- Other domains' `audit_slices/`
+- Other domains' `audit_slices`
 
 ## Evidence rule (unchanged)
 

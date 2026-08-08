@@ -1,10 +1,10 @@
 # Llm Adapters — Implementation Plan
 
-**Architecture (1:1):** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). LLM_ADAPTERS provides tokenizer-consistent token counting, context window metadata, usage accounting, and model/cost signals consumed by Token Optimization. Do not create a parallel tokenizer or duplicate adapter usage accounting.
 
@@ -14,13 +14,13 @@
 
 **Do not read this entire file in one session** (LLM_ADAPTERS plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + row `TOKEN-LLM-1`; validate consumption of existing `count_messages_tokens`, `context_window_tokens`, `LLMAdapterResponse.usage`, and ModelCatalog signals only.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/LLM_ADAPTERS.md`](../../technical/guides/audit_slices/LLM_ADAPTERS.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -39,8 +39,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase TOKEN-LLM — Token Optimization adapter guardrail (Planned)
 
-**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)  
-**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)  
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
 **Priority:** P1 validation row, not a new adapter feature  
 **Delivery rule:** keep Token Optimization dependent on existing adapter token/cost contracts.
 
@@ -54,7 +54,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Done** (2026-06-18) — all AUDIT-IDEAL §6 rows closed
 
@@ -75,11 +75,11 @@ Load **only** the satellite matching your task or cited gap ID.
 ## Phase M-LLM-X — LLM Developer Excellence (post-audit 2026-06-14)
 
 **Source:** Deep production audit 2026-06-14 — contract L3, model metadata L1–L2, routing L1–L2, DX L2.  
-**Canon:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) §Model catalog · §Routing · §Audit register  
+**Canon:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) §Model catalog · §Routing · §Audit register
 **Goal:** Elevate Tier-0 LLM layer from **production L3 foundation** to **best-in-class developer engine** — correct context for any model string, unified token accounting, runtime routing/failover, single agent API.  
 **Status:** **LC baseline Done** (2026-06-14) — P0/P1 closed · **M-LLM-X partial waves** = P2+ backlog (not blocking layer maturity)  
-**Priority ladder:** Band **2ba** (after M-LLM-R closeout) · queue [§6.1ax](#61ax-harness-implementation-queue--llm-developer-excellence-m-llm-x)  
-**Execution order:** [§6.2af](#62af-phase-m-llm-x-execution-order)  
+**Priority ladder:** Band **2ba** (after M-LLM-R closeout) · queue [§6.1ax](.#61ax-harness-implementation-queue--llm-developer-excellence-m-llm-x)
+**Execution order:** [§6.2af](.#62af-phase-m-llm-x-execution-order)
 **Target maturity:** Model metadata **L3**, routing **L3**, DX **L3+** (see architecture maturity table).
 
 **Hard rules (non-negotiable):**
@@ -89,7 +89,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - **Preflight / history budget** MUST use `adapter.count_messages_tokens` when adapter is in scope.
 - **No** vendor SDK imports in Tier-2 — unchanged tier boundary.
 - One **M-LLM-X.*** task group per PR → update master table + architecture audit register → gate green.
-- **ADR:** [ADR-LLM-002](../../technical/adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.  
+- **ADR:** [ADR-LLM-002](../../technical/adr/entries/2026-06-14/ADR-LLM-002.md) **Done** — prerequisite for M-LLM-X.1 code merge.
 **ADR:** [ADR-LLM-003](../../technical/adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted** — prerequisite for M-LLM-X.9 code merge.
 
 **Explicitly excluded:** Central LLM gateway microservice (needs separate platform ADR), rewriting all 19 SDK clients, product HTTP DTOs, Phase K agents.
@@ -98,7 +98,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase LLM-PROVIDER-PLUGIN — Provider plugin registration layer (Backlog)
 
-**Architecture:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) §Provider selection · §Provider plugin layer (planned)  
+**Architecture:** [`architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md) §Provider selection · §Provider plugin layer (planned)
 **Priority:** P2 (P1 if external provider packages become a near-term requirement) — **not blocking** current layer maturity  
 **Status:** Planned / Backlog  
 **Goal:** Add a provider metadata and plugin registration layer for LLM providers **without** replacing the existing `LLMAdapter` execution contract.

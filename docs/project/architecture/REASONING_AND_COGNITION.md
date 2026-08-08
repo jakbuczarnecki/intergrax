@@ -1,11 +1,11 @@
 # Reasoning and Cognition
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/REASONING_AND_COGNITION.md`](../maintainers/plans/REASONING_AND_COGNITION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5
 **Audit layers:** 7 (Reasoning, Planning and Cognition) · cross-ref 17 (Prompt Registry input)  
-**Audit instruction:** [`audit/REASONING_AND_COGNITION.md`](../maintainers/audit/REASONING_AND_COGNITION.md)  
+**Audit instruction:** [`audit/REASONING_AND_COGNITION.md`](../maintainers/audit/REASONING_AND_COGNITION.md)
 ---
 
 ## Cursor read scope (token budget)
@@ -33,31 +33,31 @@ Load **only** the satellite matching your task or cited §.
 
 ## Table of contents
 
-1. [Purpose](#1-purpose)
-2. [Problem statement](#2-problem-statement)
-3. [Terminology](#3-terminology)
-4. [Design principles](#4-design-principles)
-5. [Three cognition planes](#5-three-cognition-planes)
-6. [Ideal Cognition Layer alignment](#6-ideal-cognition-layer-alignment)
-7. [Tier placement and responsibility matrix](#7-tier-placement-and-responsibility-matrix)
-8. [Domain boundaries](#8-domain-boundaries)
-9. [Task classification](#9-task-classification)
-10. [Nexus planning](#10-nexus-planning)
-11. [Declarative graph seeding](#11-declarative-graph-seeding)
-12. [Retired engine planner stack](#12-retired-engine-planner-stack)
-13. [Tool planning](#13-tool-planning)
-14. [UAEP step cognition and DecisionRecord](#14-uaep-step-cognition-and-decisionrecord)
-15. [Prompt compilation as cognition input](#15-prompt-compilation-as-cognition-input)
-16. [Model selection for reasoning](#16-model-selection-for-reasoning)
-17. [Reasoning failure taxonomy](#17-reasoning-failure-taxonomy)
-18. [Observability and trace contracts](#18-observability-and-trace-contracts)
-19. [Integration with adjacent subsystems](#19-integration-with-adjacent-subsystems)
-20. [End-to-end cognition flow](#20-end-to-end-cognition-flow)
-21. [Maturity scorecard and gap register](#21-maturity-scorecard-and-gap-register)
-22. [Related documents](#22-related-documents)
-23. [Appendix A — Code map](#appendix-a--code-map)
-24. [Appendix B — Configuration surface](#appendix-b--configuration-surface)
-25. [Appendix C — Audit and ideal traceability](#appendix-c--audit-and-ideal-traceability)
+1. [Purpose](.#1-purpose)
+2. [Problem statement](.#2-problem-statement)
+3. [Terminology](.#3-terminology)
+4. [Design principles](.#4-design-principles)
+5. [Three cognition planes](.#5-three-cognition-planes)
+6. [Ideal Cognition Layer alignment](.#6-ideal-cognition-layer-alignment)
+7. [Tier placement and responsibility matrix](.#7-tier-placement-and-responsibility-matrix)
+8. [Domain boundaries](.#8-domain-boundaries)
+9. [Task classification](.#9-task-classification)
+10. [Nexus planning](.#10-nexus-planning)
+11. [Declarative graph seeding](.#11-declarative-graph-seeding)
+12. [Retired engine planner stack](.#12-retired-engine-planner-stack)
+13. [Tool planning](.#13-tool-planning)
+14. [UAEP step cognition and DecisionRecord](.#14-uaep-step-cognition-and-decisionrecord)
+15. [Prompt compilation as cognition input](.#15-prompt-compilation-as-cognition-input)
+16. [Model selection for reasoning](.#16-model-selection-for-reasoning)
+17. [Reasoning failure taxonomy](.#17-reasoning-failure-taxonomy)
+18. [Observability and trace contracts](.#18-observability-and-trace-contracts)
+19. [Integration with adjacent subsystems](.#19-integration-with-adjacent-subsystems)
+20. [End-to-end cognition flow](.#20-end-to-end-cognition-flow)
+21. [Maturity scorecard and gap register](.#21-maturity-scorecard-and-gap-register)
+22. [Related documents](.#22-related-documents)
+23. [Appendix A — Code map](.#appendix-a--code-map)
+24. [Appendix B — Configuration surface](.#appendix-b--configuration-surface)
+25. [Appendix C — Audit and ideal traceability](.#appendix-c--audit-and-ideal-traceability)
 
 ---
 

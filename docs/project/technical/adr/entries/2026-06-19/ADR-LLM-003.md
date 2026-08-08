@@ -16,7 +16,7 @@ Tier-3 hosts configure **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile
 
 - `default_profile: LLMProfile`
 - `allowed_profiles: tuple[LLMProfile, ...]` — mandatory allowlist guardrail
-- `rules: tuple[LLMRoutingRule, ...]` — built-in parametric rules **and** custom classes from `applications/`
+- `rules: tuple[LLMRoutingRule, ...]` — built-in parametric rules **and** custom classes from `applications`
 
 **`LLMRoutingEvaluator`** (Tier-0/1) sorts rules by descending priority, returns the first `matches()` hit, validates `resolve()` against `allowed_profiles`, then delegates to existing **`ModelRouter`** + **`FailoverLLMAdapter`**.
 
@@ -34,9 +34,9 @@ Layer 3 — AHI ROUTING_TUNING (optional)                 → proposes ProfileVe
 
 | Tier | Responsibility |
 |------|----------------|
-| Tier-0 `intergrax/llm_adapters/routing/` | Protocol, evaluator, built-in rules, `RoutingContext` |
-| Tier-3 `applications/<app>/` | Custom rule classes; wired in manifest / `LLMRoutingProfile` |
-| Tier-2 `agents/` | May supply `model_hint` via `StepLLMRouter`; MUST NOT import vendor SDKs or select providers directly |
+| Tier-0 `intergrax/llm_adapters/routing` | Protocol, evaluator, built-in rules, `RoutingContext` |
+| Tier-3 `applications/<app>` | Custom rule classes; wired in manifest / `LLMRoutingProfile` |
+| Tier-2 `agents` | May supply `model_hint` via `StepLLMRouter`; MUST NOT import vendor SDKs or select providers directly |
 
 **Forbidden:** string-based `eval` / dynamic import paths for rules — only importable typed classes registered in manifest.
 

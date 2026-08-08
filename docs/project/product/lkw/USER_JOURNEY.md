@@ -6,7 +6,7 @@
 
 **Status:** target onboarding narrative for the final LKW experience  
 **Scope:** from GitHub discovery to first useful local workspace run  
-**Related:** [`README.md`](../../../../applications/local_workspace_application/README.md) · [`ARCHITECTURE.md`](../../technical/applications/local_workspace_application/ARCHITECTURE.md) · [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md) · [`PLATFORM_PROOF_LOOP.md`](../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
+**Related:** [`../../technical/applications/local_workspace_application/README.md`](../../../../applications/local_workspace_application/README.md) · [`../../technical/applications/local_workspace_application/ARCHITECTURE.md`](../../technical/applications/local_workspace_application/ARCHITECTURE.md) · [`../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) · [`../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md) · [`../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md`](../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
 
 ---
 
@@ -68,19 +68,19 @@ Uploaded folder snapshot ≠ connected local folder. Slack and other remote chat
 | Step | Status |
 |------|--------|
 | Install / start LKW | **IMPLEMENTED** (local dev, Docker) |
-| Select Ollama or vLLM conversation runtime | **PLANNED** (`LKW-MODEL-RUNTIME-1`; `INTERGRAX_LLM_PROVIDER` exists; portability not proven) |
+| Select Ollama or vLLM conversation runtime | **PLANNED** (`../../technical/applications/local_workspace_application/LKW-MODEL-RUNTIME-1`; `../../technical/applications/local_workspace_application/INTERGRAX_LLM_PROVIDER` exists; portability not proven) |
 | Create workspace | **IMPLEMENTED** |
 | Upload files | **IMPLEMENTED** (HTTP; Slack attachments via adapter) |
-| Add Web URL | **ACCEPTED** (`1B-5-2`, including C1 and C2) |
-| Configure Connections (MS365, Google Workspace, Jira, …) | **PLANNED** (`LKW-KNOWLEDGE-ACCESS-1`; Google — `LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` **PLANNED**) |
-| Attach Slack conversation as indexed source | **IMPLEMENTED** (`LKW-SLACK-CONNECTED-SOURCE-1` — HTTP discovery/create/sync, PERSONAL_ONLY) |
-| Attach Google Workspace resources as indexed source | **PLANNED** (`LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` — reuses generic Connected Source; first proof `LKW-GOOGLE-WORKSPACE-PROOF-1`) |
+| Add Web URL | **ACCEPTED** (`../../technical/applications/local_workspace_application/1B-5-2`, including C1 and C2) |
+| Configure Connections (MS365, Google Workspace, Jira, …) | **PLANNED** (`../../technical/applications/local_workspace_application/LKW-KNOWLEDGE-ACCESS-1`; Google — `../../technical/applications/local_workspace_application/LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` **PLANNED**) |
+| Attach Slack conversation as indexed source | **IMPLEMENTED** (`../../technical/applications/local_workspace_application/LKW-SLACK-CONNECTED-SOURCE-1` — HTTP discovery/create/sync, PERSONAL_ONLY) |
+| Attach Google Workspace resources as indexed source | **PLANNED** (`../../technical/applications/local_workspace_application/LKW-GOOGLE-WORKSPACE-CONNECTED-SOURCE-1` — reuses generic Connected Source; first proof `../../technical/applications/local_workspace_application/LKW-GOOGLE-WORKSPACE-PROOF-1`) |
 | Choose indexed vs live access per resource | **PLANNED** |
 | Ask through Slack with Hybrid Ask | **PARTIAL** — indexed Ask **IMPLEMENTED**; live/hybrid **PLANNED** |
 | Inspect citations and live freshness | **PARTIAL** — indexed citations **IMPLEMENTED**; live freshness **PLANNED** |
 | Switch model runtime and repeat | **PLANNED** |
 
-Full journey reference: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md).
+Full journey reference: [`../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) · [`../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md).
 
 ---
 
@@ -145,7 +145,7 @@ Current development fallback:
 uv sync
 ```
 
-The final product should not require every heavy experimental dependency for the first LKW run. If the current dependency model still requires a full install, that is a platform packaging gap to close through `pyproject.toml` and optional dependency groups.
+The final product should not require every heavy experimental dependency for the first LKW run. If the current dependency model still requires a full install, that is a platform packaging gap to close through `../../technical/applications/local_workspace_application/pyproject.toml` and optional dependency groups.
 
 ### Step 3 — Open the LKW application folder
 
@@ -187,13 +187,13 @@ Final product rule:
 
 - dev mode may be permissive when explicitly configured;
 - prod mode must fail closed when required security/policy/auth settings are missing;
-- `.env.example` must match `host/settings.py` and generated application scaffold behavior.
+- `../../technical/applications/local_workspace_application/.env.example` must match `../../technical/applications/local_workspace_application/host/settings.py` and generated application scaffold behavior.
 
 ### Step 5 — Choose data access
 
 #### Target path — channel-neutral Knowledge Intake (PLANNED / FROZEN CONTRACT)
 
-Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md).
+Replaceable clients (Slack, web, mobile, desktop, MCP, HTTP) submit a Knowledge Input to the public LKW Knowledge Intake capability. LKW accepts a durable Ingestion Operation, processes asynchronously, and notifies through a channel-neutral lifecycle event. See [`../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md).
 
 Asynchronous user journey (target):
 
@@ -212,7 +212,7 @@ The following remain valid **current development** mechanisms. They are **not** 
 
 ##### Explicit files for a single run
 
-The user sends `metadata.source_paths` in the request.
+The user sends `../../technical/applications/local_workspace_application/metadata.source_paths` in the request.
 
 This is the first LKW.1 path (developer/low-level).
 
@@ -264,7 +264,7 @@ Expected result:
 
 - `/health` confirms that the host is running;
 - `/agents` shows the local agent roster;
-- the user can see at least `local_indexer`, `local_search`, and `local_synthesizer` or their declared capabilities.
+- the user can see at least `../../technical/applications/local_workspace_application/local_indexer`, `../../technical/applications/local_workspace_application/local_search`, and `../../technical/applications/local_workspace_application/local_synthesizer` or their declared capabilities.
 
 ### Step 8 — Index a document
 

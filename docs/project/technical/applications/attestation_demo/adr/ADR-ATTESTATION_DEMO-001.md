@@ -46,13 +46,13 @@ Rejected for PoC v1:
 
 ## Compliance
 
-- Tier boundaries preserved — no `agents/` or `applications/` imports in `intergrax/`
+- Tier boundaries preserved — no `agents` or `applications` imports in `intergrax`
 - BoundaryAttest remains external; no vendor SDK in platform
 - Trust documentation states `client_observed`; no `server_attested` claim from Intergrax
 
 ## Implementation notes
 
-- Platform: `intergrax/runtime/attestation/`, hook in `RuntimeToolInvoker`
-- Host: `applications/attestation_demo/`
-- Agent: `agents/boundary_demo/`
+- Platform: `intergrax/runtime/attestation`, hook in `RuntimeToolInvoker`
+- Host: `applications/attestation_demo`
+- Agent: `agents/boundary_demo`
 - Verify: `uv run pytest applications/attestation_demo/tests -q`

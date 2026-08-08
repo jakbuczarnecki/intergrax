@@ -22,15 +22,15 @@
 
 ## Code entry (grep first — F5-B)
 
-- `intergrax/runtime/nexus/orchestration/` — intake, NexusLoop
-- `intergrax/runtime/nexus/orchestration/graph/` — execution graph
+- `intergrax/runtime/nexus/orchestration` — intake, NexusLoop
+- `intergrax/runtime/nexus/orchestration/graph` — execution graph
 
 ## Do not load unless cited
 
 - Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
-- `docs/audit_results/` (unless RESUME)
+- `docs/audit_results` (unless RESUME)
 - Unrelated domain pairs
-- Other domains' `audit_slices/`
+- Other domains' `audit_slices`
 
 ## Evidence rule (unchanged)
 

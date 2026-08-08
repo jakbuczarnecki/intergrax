@@ -8,7 +8,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 **Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G CLOSED**; **TOKEN-10H CLOSED (NOT QUALIFIED: MODEL_BEHAVIOR_MISMATCH, 14/16, STABLE)**; **TOKEN-10I BLOCKED_HARDWARE_CAPACITY_FINAL**.
 **Feature architecture (1:1):** [`../architecture/TOKEN_OPTIMIZATION.md`](../architecture/TOKEN_OPTIMIZATION.md)  
-**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../maintainers/audit/TOKEN_OPTIMIZATION.md)  
+**Source audit instruction:** [`../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../maintainers/audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`  
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
@@ -44,7 +44,7 @@ Default read scope for Token Optimization work:
 
 Do not create `docs/project/maintainers/plans/TOKEN_OPTIMIZATION.md`. This is a multi-layer feature plan, not a domain-layer plan.
 
-**Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+**Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -63,7 +63,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 | `TOKEN-6` telemetry and regression gates | `docs/project/maintainers/plans/OBSERVABILITY.md` plus affected domain plans |
 | `TOKEN-7` adaptive optimization | `docs/project/maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md` |
 
-**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
+**LKW proof workload:** LKW is a **later product client and product proof** for Token Optimization — not the owner of Token Optimization mechanisms. The universal platform proof (**TOKEN-10A**–**TOKEN-10G**) must complete before LKW product proof (**LKW-PF6-A**–**C**). Token Optimization is a cross-layer platform capability owned by runtime and domain plans. **LKW-PF6-0** proof design is **Done / Closed** (§LKW-PF6-0 below); **TOKEN-ARCH-0** engine architecture is **Done / Closed**; **TOKEN-1** through **TOKEN-9** are closed per their closeout records. Active roadmap: **TOKEN-10** (§TOKEN-10 below). See [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) for LKW-PF6 scheduling.
 
 ---
 
@@ -73,7 +73,7 @@ This file coordinates cross-layer delivery. Concrete implementation rows must st
 
 **Maturity level:** proof design only — does not close `LKW-PF6` platform proof.
 
-**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md`](../../docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md) §10 and [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
+**Purpose:** Define exactly what the LKW Token Optimization proof must demonstrate before **TOKEN-1A** code starts. This section is the canonical source; [`docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md`](../../technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md) §10 and [`docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md`](../../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) §LKW-PF6-0 closeout mirror it for LKW scheduling.
 
 **Narrative:** Intergrax proves that agent applications can be built as configurable, observable, cost-aware runtime systems — not hand-wired demos.
 
@@ -749,7 +749,7 @@ Receipts and `TokenSavingsMeasurement` records must carry `strategy` (`TokenOpti
 
 | Principle | Rule |
 |-----------|------|
-| Engine ownership | **Token Optimization Engine** is platform-owned (`intergrax/runtime/token_optimization/`). |
+| Engine ownership | **Token Optimization Engine** is platform-owned (`intergrax/runtime/token_optimization`). |
 | Application role | Applications provide workload, evidence, profiles, and validation expectations. Applications **do not** own optimizer algorithms. |
 | LKW | LKW is a **later product proof client** after universal platform proof (**TOKEN-10G**); not the owner of the optimization engine. |
 | Plugins | Strategies must be replaceable through platform/plugin contracts (`TokenOptimizationPluginDescriptor`, `TokenOptimizationPluginCapability`). |
@@ -1589,7 +1589,7 @@ Do not collapse these into one implementation commit.
 
 **Closeout:**
 
-- Module documentation moved under `docs/project/capabilities/token_optimization/`.
+- Module documentation moved under `docs/project/capabilities/token_optimization`.
 - Central engine guide created at `docs/project/capabilities/token_optimization/README.md`.
 - Proof guide relocated to `docs/project/capabilities/token_optimization/proofs/VLLM_PREFIX_CACHE_LIVE_PROOF.md`.
 - Architecture and plan pair preserved.
@@ -1864,11 +1864,11 @@ profiles without changing the proof runner. The local vLLM compose path and
 operator README are provided, but live vLLM execution was not performed in
 this task.
 
-Canonical paths: `intergrax/runtime/token_optimization/proofs/`,
+Canonical paths: `intergrax/runtime/token_optimization/proofs`,
 `configs/token_optimization/proof_vllm.toml`,
 `scripts/token_optimization/run_universal_proof.py`,
 `infra/docker/vllm/docker-compose.yml`,
-`.artifacts/token_optimization/proof/`.
+`.artifacts/token_optimization/proof`.
 
 Out of scope: TOKEN-10G corpus, report, eval framework, hard gates, benchmark
 claims, and TOKEN-10H public proof or README promotion.
@@ -2000,7 +2000,7 @@ Required risk-case outcomes on the correct model:
 
 No manual override was applied. No post-result tuning. Qwen 3B and larger
 models were not tested. Latest checked-in safe evidence under
-`docs/project/proofs/token_optimization/` records this post-SAFETY-1 rerun; raw logs,
+`docs/project/proofs/token_optimization` records this post-SAFETY-1 rerun; raw logs,
 model weights, and caches are not checked in. Public README promotion remains
 withheld because full model behavioral compliance is not proven.
 

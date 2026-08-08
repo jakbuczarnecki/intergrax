@@ -8,11 +8,11 @@
 **Prerequisites:** Phases **V**, **P-Ext**, **W-ML**, **W-OPS**, §4.1 **Done**.  
 **Goal:** Close every **Partial** / **Gap** topic from the harness application-layer audit — full Tier-3 configurability of agent workspaces via `ApplicationEnvironmentProfile` and unified wiring (IDEAL §17), **without** Band 3 product agents (K.1/K.2).
 **Priority ladder:** **Band 2e** (§4.0) — default implementation queue after §6.1 maintenance.  
-**Execution order:** [§6.2x](#62x-phase-h-app-execution-order-band-2e--active).
+**Execution order:** [§6.2x](.#62x-phase-h-app-execution-order-band-2e--active).
 
 **Delivery rule:** One `H-APP.*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
 
-**Out of scope (audit §7.7 — not counted in 43):** integration marketplace UI, catalog hot-reload, skill-as-LangGraph-pack, **IDEAL L4 runtime adaptation** (scheduled in [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime), Band 2y), new Tier-0 integration categories without §5.2.4 RFC, K.1/K.2 business agents.
+**Out of scope (audit §7.7 — not counted in 43):** integration marketplace UI, catalog hot-reload, skill-as-LangGraph-pack, **IDEAL L4 runtime adaptation** (scheduled in [Phase W-ADAPT](.#phase-w-adapt--adaptive-harness-intelligence-l4-runtime), Band 2y), new Tier-0 integration categories without §5.2.4 RFC, K.1/K.2 business agents.
 
 ```text
 Wave H0 — Docs & hygiene (5 tasks)
@@ -50,9 +50,9 @@ Total: 43
 | ID | Wave | Deliverable | Status | Priority | Location / acceptance |
 |----|------|-------------|--------|----------|------------------------|
 | H-APP.0.1 | H0 | **Harness terminology glossary** — Harness vs Tier-1 Nexus vs Tier-3 Application vs Tier-2 Agent vs Product; map to IDEAL §0.2 chain | **Done** | Medium | `intergrax_runtime_architecture.md` §5.3 + `IDEAL_HARNESS_AI_ARCHITECTURE.md` §26 cross-link |
-| H-APP.0.2 | H0 | **Author guide: environment vs agent** — what belongs in `applications/` vs `agents/`; forbidden patterns | **Done** | Medium | `guides/EXTENSION_AUTHOR_GUIDE.md` or `guides/AGENT_CREATION_GUIDE.md` |
+| H-APP.0.2 | H0 | **Author guide: environment vs agent** — what belongs in `applications` vs `agents`; forbidden patterns | **Done** | Medium | `guides/EXTENSION_AUTHOR_GUIDE.md` or `guides/AGENT_CREATION_GUIDE.md` |
 | H-APP.0.3 | H0 | Fix `poc_template_application/host/wiring.py` — `manifest.integration_profile` (no `getattr`) | **Done** | High | Typed access; gate test |
-| H-APP.0.4 | H0 | **`check_agent_registry_bypass.py`** — CI fails if Tier-2 agents import integrations/tools directly | **Done** | High | `scripts/` + `pytest -m gate` |
+| H-APP.0.4 | H0 | **`check_agent_registry_bypass.py`** — CI fails if Tier-2 agents import integrations/tools directly | **Done** | High | `scripts` + `pytest -m gate` |
 | H-APP.0.5 | H0 | **Conformance test** — `ApplicationManifest` + `ApplicationBuildContext` round-trip (lab/legal/poc) | **Done** | High | `tests/unit/applications/test_manifest_conformance.py` |
 | H-APP.1.1 | H1 | **`ApplicationEnvironmentProfile`** Pydantic model aggregating Tool/Skill/Modality/Policy/LLM/Context/Memory/Reliability/Observability/Orchestration/Identity profiles + `ApplicationFeatures` | **Done** | **Critical** | `intergrax/applications/contracts/environment_profile.py` |
 | H-APP.1.2 | H1 | Extend **`ApplicationManifest`** with optional `environment` + `environment_defaults()` for `lab` / `product` | **Done** | **Critical** | `applications/contracts/manifest.py` |
@@ -64,12 +64,12 @@ Total: 43
 | H-APP.1.8 | H1 | Gate tests: lab manifest + full `ApplicationEnvironmentProfile` | **Done** | High | `tests/unit/applications/test_environment_profile.py` |
 | H-APP.2.1 | H2 | **`IdentityProfile`** — API key, tenant_required, role_claims_header, service_identities | **Done** | High | Part of `ApplicationEnvironmentProfile` |
 | H-APP.2.2 | H2 | **`wire_application_identity(app, profile)`** — harness auth from profile | **Done** | High | `applications/_shared/identity_wiring.py` |
-| H-APP.2.3 | H2 | **`ApplicationScopePolicy`** Protocol + static implementation — roles/scopes → tool_id / agent_id | **Done** | Medium | `applications/contracts/` or `runtime/identity/` |
-| H-APP.2.4 | H2 | **`PolicyRulesProfile`** — declarative YAML/JSON rules + typed handler registry (no eval/getattr) | **Done** | **Critical** | `runtime/policy/rules/` + schema |
+| H-APP.2.3 | H2 | **`ApplicationScopePolicy`** Protocol + static implementation — roles/scopes → tool_id / agent_id | **Done** | Medium | `applications/contracts` or `runtime/identity` |
+| H-APP.2.4 | H2 | **`PolicyRulesProfile`** — declarative YAML/JSON rules + typed handler registry (no eval/getattr) | **Done** | **Critical** | `runtime/policy/rules` + schema |
 | H-APP.2.5 | H2 | **`ExecutionMode`** enum: STRICT \| BALANCED \| EXPLORATORY → RuntimePolicies defaults | **Done** | High | `applications/contracts/execution_mode.py` |
 | H-APP.2.6 | H2 | **`wire_policy_bundle(env)`** merges rules + fragments + ExecutionMode | **Done** | High | Extend `policy_wiring.py` |
 | H-APP.2.7 | H2 | **`ApplicationSecurityProfile`** — per-app V-SEC toggles (prompt/tool/retrieval/tenant) | **Done** | Medium | Bridge to `runtime/architecture` V-SEC |
-| H-APP.2.8 | H2 | Lab reference: `policy/rules/harness_lab.yaml` | **Done** | Low | `applications/lab_application/policy/` + test |
+| H-APP.2.8 | H2 | Lab reference: `policy/rules/harness_lab.yaml` | **Done** | Low | `applications/lab_application/policy` + test |
 | H-APP.3.1 | H3 | **`OrchestrationProfile`** — planner/classifier kinds, retry, long_running, max_delegation_depth | **Done** | High | Typed fields on environment |
 | H-APP.3.2 | H3 | **`ApplicationGraphSpec`** — declarative multi-agent topology validated against roster | **Done** | High | `applications/contracts/graph_spec.py` |
 | H-APP.3.3 | H3 | **`build_nexus_loop_from_environment(registry, integrations, env)`** | **Done** | **Critical** | `applications/_shared/nexus_factory.py` |
@@ -88,9 +88,9 @@ Total: 43
 | H-APP.5.2 | H5 | **`legal_application`** + **`research_application`** — product environment defaults + domain fragments | **Done** | High | Legal modality + skill bundles preserved |
 | H-APP.5.3 | H5 | **`poc_template_application`** + **`docker_verify_application`** — environment template | **Done** | High | Scaffold emits profile stub |
 | H-APP.5.4 | H5 | **Migration checklist** — per-file before/after (see table below) | **Done** | Low | `HARNESS_APPLICATION_LAYER_AUDIT.md` §7.6 + this phase |
-| H-APP.5.5 | H5 | **`intergrax scaffold new-application`** — `environment_profile.py`, `policy/rules/`, wired manifest | **Done** | Medium | CLI parity with H-APP.1 |
+| H-APP.5.5 | H5 | **`intergrax scaffold new-application`** — `environment_profile.py`, `policy/rules`, wired manifest | **Done** | Medium | CLI parity with H-APP.1 |
 | H-APP.6.1 | H6 | Record **2 release cycles** via `record_harness_release_cycle.py --verify-gate` | **Done** | **Critical** | `build/architecture_hardening/release_cycles.json` |
-| H-APP.6.2 | H6 | CI job: `phase_w_ops_evidence.py --enforce` on release tags | **Done** | High | `.github/workflows/` |
+| H-APP.6.2 | H6 | CI job: `phase_w_ops_evidence.py --enforce` on release tags | **Done** | High | `.github/workflows` |
 | H-APP.6.3 | H6 | Mark Operational L3 **Signed off** in audit §4 with dates | **Done** | Low | `HARNESS_APPLICATION_LAYER_AUDIT.md` after H-APP.6.1 |
 
 ### H-APP — Per-application migration checklist (H-APP.5.4)
@@ -110,7 +110,7 @@ Total: 43
 | Integration marketplace UI | Out of P-Ext / audit §3.8 scope |
 | Catalog hot-reload | Out of P-Ext scope |
 | LangGraph skill packs | Separate initiative |
-| IDEAL L4 adaptive / policy learning (runtime) | [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · Band **2y** · AHIA |
+| IDEAL L4 adaptive / policy learning (runtime) | [Phase W-ADAPT](.#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · Band **2y** · AHIA |
 | New Tier-0 integration categories | Requires canon §5.2.4 RFC (H-APP.0.2 documents process) |
 | K.1 / K.2 business agents | Band 3 frozen (§6.3) |
 
@@ -159,8 +159,8 @@ Total: 43
 | N.2.2 | Strongly typed `AgentBinding.mount(AgentClass, factory=...)` | **Done** | §7.4.10 | `type[Agent]` + callable factory; `deserialize()` for scaffold strings only |
 | N.3 | `python -m intergrax.scaffold new-application` (profile `lab`) | **Done** | §7.4.8 | `new_application.py`, `agent_catalog.py`, `cli.py`; lab templates + smoke |
 | N.4 | Scaffold profile `product` (fastapi_core skeleton) | **Done** | §7.4.8 | `new_application_product.py`; FastAPI Core + auth stub + `/health`; `--agents` list |
-| N.5 | Docker templates under `applications/<app>/docker/` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml` + `build-docker.sh` / `.bat`; monorepo-root context |
-| N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application/`; README three-command quickstart; gate smoke |
+| N.5 | Docker templates under `applications/<app>/docker` | **Done** | §7.4.8 | Dockerfile + `.dockerignore` + `docker-compose.yml` + `build-docker.sh` / `.bat`; monorepo-root context |
+| N.6 | Reference app `poc_template_application` (committed example) | **Done** | §7.4.8 | `applications/poc_template_application`; README three-command quickstart; gate smoke |
 | N.7 | Backfill `.env.example` on existing apps | **Done** | §7.4.8 | `lab_application`, `legal_application`, `research_application`, `poc_template_application` |
 | N.8 | `guides/AGENT_CREATION_GUIDE.md` Step 4E (dedicated application) | **Done** | — | Step 4E + Appendix F cross-links; gate doc test |
 | N.9 | Acceptance `test_scaffold_application` (gate) | **Done** | — | `test_scaffold_acceptance.py` — lab/product E2E, CLI profiles, docker scripts |
@@ -177,7 +177,7 @@ Execute **strictly in order**; do not skip ahead without completing acceptance f
 | 3 | N.3 | Implement `new_application.py` + `lab` profile templates | `uv run python -m intergrax.scaffold new-application test_lab --profile lab --agents echo` creates tree; smoke test green |
 | 4 | N.3b | Wire `build_parser()` subcommand; post-create hints (uvicorn, pytest, docker) | CLI prints next commands; gate test added (N.9 partial) |
 | 5 | N.5 | Add Docker/docker-compose + build scripts to scaffold | `applications/<app>/docker/build-docker.sh` (or `.bat`) builds image from repo root |
-| 6 | N.6 | Commit `applications/poc_template_application/` from scaffold | README three-command quickstart verified |
+| 6 | N.6 | Commit `applications/poc_template_application` from scaffold | README three-command quickstart verified |
 | 7 | N.7 | Add per-app `.env.example` to legal, research, lab | Vars match each `settings.py`; no secrets committed |
 | 8 | N.4 | Add `product` profile to scaffold | **Done** — `test_scaffold_product_application.py`; FastAPI Core + `/health` |
 | 9 | N.8 | Update agent guide Step 4E | **Done** — scaffold lab/product, Docker scripts, three-command quickstart |
@@ -201,7 +201,7 @@ python -m intergrax.scaffold new-application my_lab \
 
 #### Tier-3 application layer — readiness (2026-05-30)
 
-**Status: ready** to generate new applications via scaffold. Checklist: [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md).
+**Status: ready** to generate new applications via scaffold. Checklist: [`applications/TIER3_READINESS.md`](../../../../../applications/TIER3_READINESS.md).
 
 | Track | ID | Status | Notes |
 |-------|-----|--------|-------|
@@ -269,7 +269,7 @@ uv run pytest -m gate -q
 
 ## Phase H-APP-CON — Application Environment Architecture canon (APP-CON)
 
-**Status:** **Done** (2026-06-11) — architecture §24–§51 frozen; APP-CON · APP-PROD master registers **Done** — see [Master backlog](#master-implementation-backlog-app-unified)  
+**Status:** **Done** (2026-06-11) — architecture §24–§51 frozen; APP-CON · APP-PROD master registers **Done** — see [Master backlog](.#master-implementation-backlog-app-unified)
 **Prerequisites:** Phase H-APP **Done** · H-APP-DOC **Done** · H-APP-WIRING **Done**  
 **Goal:** Deliver **symmetric authoring canon** to ACP for Tier-3 — contracts, facades, hooks, checklists — without a new domain pair or Nexus fork.
 
@@ -280,8 +280,8 @@ uv run pytest -m gate -q
 | H-APP-CON-DOC.1 | Architecture §24–§51 + TOC + fidelity matrix (this plan) | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` + §Architecture fidelity matrix |
 | H-APP-CON-DOC.2 | Hub § Application in harness environment | **Done** | High | `intergrax_runtime_architecture.md` |
 | H-APP-CON-DOC.3 | Cross-ref ACP §39 → TIER3 §39 canonical home | **Done** | Low | ACP §39.8 pointer |
-| APP-CON-1..8 | Host contracts — see [APP-CON master](#app-con--host-contracts-architecture-25-32--42--48) | **Done** | **Critical** | middleware · env state · hooks · artifacts |
-| APP-PROD-1..9 | Release gates — see [APP-PROD master](#app-prod--release-gates-architecture-40--46) | **Done** | High | `check_application_production_gates.py` |
+| APP-CON-1..8 | Host contracts — see [APP-CON master](.#app-con--host-contracts-architecture-25-32--42--48) | **Done** | **Critical** | middleware · env state · hooks · artifacts |
+| APP-PROD-1..9 | Release gates — see [APP-PROD master](.#app-prod--release-gates-architecture-40--46) | **Done** | High | `check_application_production_gates.py` |
 | APP-CON-DX.* | Author + audit DX | **Done** | Medium | `APPLICATION_CREATION_GUIDE.md` · `check_tier3_audit_prompt.py` |
 
 **Explicitly out of scope:** `Application.on_next_orchestration_step()`; new domain pair; Nexus runtime changes for product-specific orchestration.
@@ -309,7 +309,7 @@ uv run pytest -m gate -q
 | APP-EVOL-6 | `ApplicationEnvironmentDiff` + `doctor diff-app` | **Done** | Medium | `check_application_environment_diff.py` |
 | APP-EVOL-7 | `ApplicationPackage` + dependency resolver | **Done** | Medium | `check_application_package.py` |
 | APP-EVOL-8-DOC | Architecture §22.6 hierarchical bundles | **Done** | **Critical** | `architecture/TIER3_APPLICATION_ENVIRONMENT.md` §22.6 · ADR-APP-003 |
-| APP-EVOL-8.1–8.5, 8.7 | Bundle models + shims + presets + shared pack | **Done** (M1–M2) | See [APP-EVOL-8 register](#app-evol-8--hierarchical-profile-bundles-p1-arch-01) |
+| APP-EVOL-8.1–8.5, 8.7 | Bundle models + shims + presets + shared pack | **Done** (M1–M2) | See [APP-EVOL-8 register](.#app-evol-8--hierarchical-profile-bundles-p1-arch-01) |
 | APP-EVOL-8.6 | `spec_version` 2.0 nested canonical wire | **Done** (M3) | `ProfileMigration` extension · `with_spec_v2_wire()` · `apply_profile_migration()` |
 
 **Explicitly out of scope:** marketplace UI; Nexus fork; Tier-3 cognition loop; second composition root.

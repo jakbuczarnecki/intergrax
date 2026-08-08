@@ -700,7 +700,7 @@ Developer code path:
 | `UAEPAgent` protocol | **Done** | `intergrax/agents/uaep_protocol.py` |
 | `UAEPExecutor` | **Done** | `intergrax/agents/uaep.py` |
 | `AgentEngine` | **Done** | `intergrax/agents/agent_engine.py` |
-| `IntergraxAgent` + `@step` | **Done** | `intergrax/agents/authoring/` |
+| `IntergraxAgent` + `@step` | **Done** | `intergrax/agents/authoring` |
 | `HarnessReferenceAgent` | **Done** | `intergrax/agents/harness_reference_agent.py` |
 | `CognitiveAgent` base | **Done** ACP-1 | `intergrax/agents/authoring/patterns/base.py` |
 | Pattern classes | **Done** ACP-2–6 | `intergrax/agents/authoring/patterns/*.py` |
@@ -911,16 +911,16 @@ AgentRunResult:
 |-------|------|-----------|
 | `identity` | `RequestIdentity` | **`tenant_id` + optional `user_id`** — from authenticated intake §30.9; propagated to memory namespace |
 | `identity.tenant_id` | `str` | Hard boundary — all memory/RAG/trace labels |
-| `identity.user_id` | `str \| null` | End-user when `principal_type=user`; required for default user-scoped memory |
+| `identity.user_id` | `str /| null` | End-user when `principal_type=user`; required for default user-scoped memory |
 | `identity.principal_type` | enum | `user` (interactive), `service` (daemon), `org_system` (org-wide background agent) |
-| `input` | `str \| dict` | Domain payload after application normalization; immutable for session |
+| `input` | `str /| dict` | Domain payload after application normalization; immutable for session |
 | `metadata` | `dict[str, JSONValue]` | External params; read-only for agent; host-owned schema per product |
-| `state` | `dict \| null` | Wire/checkpoint blob of `acp.state.v1` on resume; authors use `AcpSessionState` §32.0 — not raw dict in Tier-2 |
-| `environment_overrides` | `AgentEnvironmentOverrides \| null` | Per-run narrow of tools/memory/RAG/LLM slices §30; policy-bound |
-| `execution_options` | `AgentExecutionOptions \| null` | See below |
+| `state` | `dict /| null` | Wire/checkpoint blob of `acp.state.v1` on resume; authors use `AcpSessionState` §32.0 — not raw dict in Tier-2 |
+| `environment_overrides` | `AgentEnvironmentOverrides /| null` | Per-run narrow of tools/memory/RAG/LLM slices §30; policy-bound |
+| `execution_options` | `AgentExecutionOptions /| null` | See below |
 | `trace` | `AgentRunTrace` | Authoritative Plane B journal §31 |
-| `terminal_reason` | `TerminalReason \| null` | Required when `status ∈ {succeeded, failed, paused, cancelled}` |
-| `governance` | `GovernanceSnapshot \| null` | HITL ticket id, pause cause, approver, resume token when paused |
+| `terminal_reason` | `TerminalReason /| null` | Required when `status ∈ {succeeded, failed, paused, cancelled}` |
+| `governance` | `GovernanceSnapshot /| null` | HITL ticket id, pause cause, approver, resume token when paused |
 | `cost` | `AgentRunCost` | Rollup: `{tokens_in, tokens_out, llm_usd, tool_units, total_usd}` |
 | `duration_ms` | `int` | Wall clock session duration |
 | `warnings` / `errors` | `list[AgentRunError]` | Structured; `errors` non-empty ⇒ `status=failed` unless recovered |
@@ -1177,7 +1177,7 @@ def build_analyst(ctx: LabHarnessContext) -> AnalystAgent:
     return AnalystAgent(harness=ctx, tool_profile=ctx.tool_profile)
 ```
 
-Factory MUST NOT import `applications.*` from `agents/` package.
+Factory MUST NOT import `applications.*` from `agents` package.
 
 ### Pattern D — Multi-database / multi-knowledge
 
@@ -1242,7 +1242,7 @@ Agent uses **multiple tools** bound to different integration slugs (`postgres.le
 | `SharedContextView` | **Done** ACP-STATE-1 | `intergrax/contracts/shared_context.py` |
 | `OrganizationalPolicyEnvelope` | **Done** ACP-ORG-1 | `intergrax/applications/contracts/org_policy.py` |
 | `OrganizationalPolicyContext` | **Done** ACP-ORG-2 | `intergrax/agents/run_environment.py` |
-| Per-agent binding on manifest | **Done** ACP-DX-5 | `intergrax/applications/contracts/` |
+| Per-agent binding on manifest | **Done** ACP-DX-5 | `intergrax/applications/contracts` |
 | Reference merge in lab | **Done** ACP-CFG | `intergrax/agents/reference_harness.py` |
 
 **Cross-domain:** [`MEMORY.md`](MEMORY.md) §5 user LTM + org profile · [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md) `IdentityProfile` · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) identity.
@@ -1628,7 +1628,7 @@ Domain narrative belongs in `diagnostics` (typed `StepDiagnostics` model) — op
 | `intergrax/contracts/agent_run.py` | `StepOutcome`, enums, `AgentStepContext` (ACP-DX-1, ACP-STEP-1) |
 | `intergrax/agents/authoring/step_outcome.py` | Factories + validation (ACP-DX-6) |
 | `intergrax/agents/authoring/state_access.py` | `load_session_state`, `session_state_delta` (ACP-DX-6) |
-| `scripts/maintenance/check_agent_typed_state.py` | CI: forbid raw dict state in `agents/` (ACP-DX-6) |
+| `scripts/maintenance/check_agent_typed_state.py` | CI: forbid raw dict state in `agents` (ACP-DX-6) |
 
 **Plan rows:** ACP-0, ACP-DX-1, ACP-DX-6, ACP-STEP-1, ACP-CON-1.
 
@@ -1892,7 +1892,7 @@ SharedContextView:
 
 - Available when `run()` invoked from Nexus graph node with task shared store.
 - Direct lab `run()`: `shared_context=None` — agent MUST tolerate absence.
-- Agents MUST NOT import `intergrax/runtime/nexus/` for graph state.
+- Agents MUST NOT import `intergrax/runtime/nexus` for graph state.
 
 ## 34.4 Handoff pattern (multi-agent)
 

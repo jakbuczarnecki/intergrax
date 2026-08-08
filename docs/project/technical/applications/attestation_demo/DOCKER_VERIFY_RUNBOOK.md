@@ -34,7 +34,7 @@ Related docs: [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) · [`partner_handoff/
 | `curl` or PowerShell | For HTTP smoke tests |
 | Optional: [uv](https://docs.astral.sh/uv/) | For automated pytest in Step 10 |
 
-**Build context is always the monorepo root** — not `applications/attestation_demo/` alone.
+**Build context is always the monorepo root** — not `applications/attestation_demo` alone.
 
 ---
 
@@ -395,7 +395,7 @@ docker compose -f applications/attestation_demo/docker/docker-compose.yml down
 | Connection refused on `:8097` | Container still starting | Wait 30–120 s; check `docker logs attestation-demo` |
 | `boundary_events` empty | EBE profile not wired | Rebuild image from current `main`; run Step 10 pytest |
 | HTTP 401 on `/poc/run` | API key required | Set `X-Api-Key` header or unset `INTERGRAX_HARNESS_API_KEY` for dev |
-| Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo/` |
+| Build fails on Windows path | Wrong build context | Run `docker build` from **repo root**, not `applications/attestation_demo` |
 | `unknown flag: --ignorefile` or buildx error | Local BuildKit / buildx version | Use classic `docker build` (Step 2 — recommended); or `build-docker.bat` on Windows |
 | `jq` not found | Optional formatter | Use `python -m json.tool` or PowerShell `ConvertTo-Json` |
 

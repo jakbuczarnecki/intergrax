@@ -9,7 +9,7 @@
 
 ## Context
 
-Advanced agentic systems need to synthesize, test, and iteratively refine executable code when catalog tools are insufficient. Intergrax already provides sandbox execution (`runtime/sandbox/`, `code.exec`, `sandbox.exec`) and compositional skills (`sandbox.code_exec`, `sandbox.refactor_loop`), but agents must implement generate→test→fix loops themselves in Tier-2.
+Advanced agentic systems need to synthesize, test, and iteratively refine executable code when catalog tools are insufficient. Intergrax already provides sandbox execution (`runtime/sandbox`, `code.exec`, `sandbox.exec`) and compositional skills (`sandbox.code_exec`, `sandbox.refactor_loop`), but agents must implement generate→test→fix loops themselves in Tier-2.
 
 AUDIT-IDEAL-11.1 (sandboxed execution for side-effectful tools) is **Done** — it covers **single-shot** isolated execution, not harness-orchestrated ephemeral tool synthesis.
 
@@ -24,9 +24,9 @@ Options considered:
 
 - Introduce **Ephemeral Code Craft (ECC)** as the **21st platform domain pair**: `architecture/CODE_CRAFT.md` ↔ `plan/CODE_CRAFT.md`.
 - Implement as a **Harness engine** that **composes** existing substrates — not a parallel sandbox:
-  - **Tier-0** `intergrax/codecraft/` — contracts, static gate, tool providers (`codecraft.*`).
-  - **Tier-1** `intergrax/runtime/codecraft/` — `CodeCraftOrchestrator`, session lifecycle, UAEP/CVL integration.
-  - **Execution substrate** remains `runtime/sandbox/` + optional `sandbox_host` integrations (`e2b`, `modal`, `daytona`).
+  - **Tier-0** `intergrax/codecraft` — contracts, static gate, tool providers (`codecraft.*`).
+  - **Tier-1** `intergrax/runtime/codecraft` — `CodeCraftOrchestrator`, session lifecycle, UAEP/CVL integration.
+  - **Execution substrate** remains `runtime/sandbox` + optional `sandbox_host` integrations (`e2b`, `modal`, `daytona`).
 - Expose LLM-facing operations via catalog tools (`codecraft.start`, `codecraft.run`, …) routed through `ToolRuntime` — same pattern as `rag.*` and `eval.judge`.
 - Add `CodeCraftProfile` on `ApplicationEnvironmentProfile` (Tier-3) with modes: `disabled`, `dry_run`, `assist_only`, `supervised`, `autonomous`.
 - **Ephemeral tools** live in task-scoped registry only — they MUST NOT be registered in the global Tool Library catalog.

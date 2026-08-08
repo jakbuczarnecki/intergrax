@@ -1,9 +1,9 @@
 # Intergrax — Application Creation Guide
 
-**Canonical author workflow for Tier-3 application environments** (`applications/<app>/`).
+**Canonical author workflow for Tier-3 application environments** (`applications/<app>`).
 
 Product hypothesis (required first): [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md)  
-Architecture canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §31 · §45 · §47  
+Architecture canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §31 · §45 · §47
 Cross-domain invariants: [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — especially APP-INV / SYS-INV tier boundaries (P2-ARCH-01)  
 Agent roster and Nexus path: [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) Step 4E · Appendix F  
 Composition engine: [`intergrax/applications/USAGE.md`](../../../../intergrax/applications/USAGE.md) · [`applications/USAGE.md`](../../../../applications/USAGE.md)
@@ -21,8 +21,8 @@ Tier-3 **wires** the Harness; Tier-2 **thinks**. Pick one recipe:
 | Recipe | When | Key artifacts |
 |--------|------|----------------|
 | **47.1 Minimal lab** | Spike / echo host | `manifest.py`, `host/factory.py`, `lab_defaults()` |
-| **47.2 Product** | Shipped API (STRICT) | + `serving/`, deploy triad, `ARCHITECTURE.md` |
-| **47.3 Virtual org** | UC-A7 policy simulation | `OrganizationalPolicyEnvelope`, `host/policy/rules/` |
+| **47.2 Product** | Shipped API (STRICT) | + `serving`, deploy triad, `ARCHITECTURE.md` |
+| **47.3 Virtual org** | UC-A7 policy simulation | `OrganizationalPolicyEnvelope`, `host/policy/rules` |
 | **47.4 Simulation** | Graph/scenario host | `ApplicationGraphSpec`, `*.pipeline` capabilities |
 | **47.5 Mutating prod** | Tools that change external state | + `ReliabilityProfile`, ACP-TOK gates, HITL routes |
 
@@ -53,7 +53,7 @@ See [`plan/ORCHESTRATION.md`](../../maintainers/plans/ORCHESTRATION.md) §6.1av 
 | `TopologyBundle` | `ApplicationGraphSpec` |
 | `IsolationBundle` | shadow workspace, sandbox |
 
-Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (2026-06-17):** nested bundles + flat shims — `environment_profile/` package. Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
+Until M1, use the flat fields in §22.1 (`env.tool_profile`, …). **M1 Done (2026-06-17):** nested bundles + flat shims — `environment_profile` package. Canon: [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) §22.6 · [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md).
 
 ---
 
@@ -160,7 +160,7 @@ python scripts/maintenance/check_harness_no_getattr.py
 | Scenario matrix / UC-A* | architecture §35 · §44 |
 | Evolution (snapshot, migrations, package) | architecture §49 |
 | Ops (health, registry, capability graph) | architecture §50 |
-| Domain audit | [`../audit/TIER3_APPLICATION_ENVIRONMENT.md`](../../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md) |
+| Domain audit | [`../../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md`](../../maintainers/audit/TIER3_APPLICATION_ENVIRONMENT.md) |
 
 ---
 
@@ -204,7 +204,7 @@ agents.dispute_sim.risk_threshold_exceeded
     → HUMAN_APPROVAL_REQUESTED   # existing spine
 ```
 
-Keep adapters in `host/` wiring modules, registered at `build_harness_host_runtime()` — not in `intergrax/runtime/`.
+Keep adapters in `host` wiring modules, registered at `build_harness_host_runtime()` — not in `intergrax/runtime`.
 
 ### 8.4 Checklist (add to §45 when emitting custom signals)
 

@@ -69,7 +69,7 @@ Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **no
 | Specialized agent-application product team | Reusable policy, evidence, and execution foundations for one product | Specialized governed application evaluation |
 | AI platform team | Reusable policy, evidence, or knowledge foundations across products | Token Optimization or architecture review |
 | Evidence, observability, or attestation integration team | Boundary events, receipts, or external attestation patterns | Evidence or attestation integration evaluation |
-| Technical evaluator | Bounded proof paths with reproducible friction reports | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) evaluation |
+| Technical evaluator | Bounded proof paths with reproducible friction reports | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) evaluation |
 
 Not every proposal will be accepted. Fit depends on workflow clarity, scope, and current product boundaries.
 
@@ -79,8 +79,8 @@ Not every proposal will be accepted. Fit depends on workflow clarity, scope, and
 
 | Track | User outcome | Current boundary | Verify |
 |-------|--------------|------------------|--------|
-| LKW private knowledge workflow | Guided product proof over controlled knowledge | Primary product pilot direction · Backend Product Alpha / MVP · **PARTIAL** | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [PROOFS.md](../proofs/PROOFS.md) |
-| Specialized governed application | Validate harness fit for one product workflow | Reasonable technical evaluation; product-specific validation remains required | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) · [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| LKW private knowledge workflow | Guided product proof over controlled knowledge | Primary product pilot direction · Backend Product Alpha / MVP · **PARTIAL** | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| Specialized governed application | Validate harness fit for one product workflow | Reasonable technical evaluation; product-specific validation remains required | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) · [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
 | Token Optimization evaluation | Inspect deterministic optimization mechanisms | Featured platform-capability proof · **PARTIAL** · bounded technical evaluation | [Token Optimization guide](../capabilities/token_optimization/README.md) |
 | Evidence or attestation integration | Test boundary-event and external receipt patterns | Bounded integration evaluation; not certification, compliance approval, or legal attestation | [BoundaryAttest case study](../overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 
@@ -192,8 +192,8 @@ A partner discussion or pilot does **not** include:
 
 Start the discussion with a completed or substantially prepared pilot brief. Before contacting, review:
 
-- [USE_CASES.md](../overview/USE_CASES.md) — use-case fit;
-- [ROADMAP.md](../overview/ROADMAP.md) — current validation direction;
-- [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) — evaluation paths;
-- [COLLABORATION.md](COLLABORATION.md) — collaboration and permission routes;
+- [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) — use-case fit;
+- [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) — current validation direction;
+- [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) — evaluation paths;
+- [docs/project/community/COLLABORATION.md](COLLABORATION.md) — collaboration and permission routes;
 - [LICENSE](../../../LICENSE) — legally authoritative terms.

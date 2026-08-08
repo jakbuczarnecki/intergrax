@@ -40,8 +40,8 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 | MEM-VEC-2.2 | **Write path** — `SessionTurnIndexService` on `append_message`; tombstone on delete; `enable_session_vector_index` on `MemoryProfile` | P1 | **Done** | `session_manager.py`, `memory_runtime_bridge.py` |
 | MEM-VEC-2.3 | **`SessionSemanticRecallStep`** — semantic search episodic index; inject in CE provider before history layer; trace diag | P1 | **Done** | `memory_context_invocation.py`, `tool_runtime.py`, `uaep.py` |
 | MEM-VEC-2.4 | **CE fragment source** — `SESSION_HISTORY_SEMANTIC` in `ContextCompiler` classification + degradation ladder | P1 | **Done** (CE-VEC-1) | `context/contracts.py`, `runtime_state_handle_bridge.py` |
-| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | **Done** | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/session_turn_index_plugin/` |
-| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | **Done** | `tools/providers/memory/`, `skills/providers/memory/` |
+| MEM-VEC-3.1 | **`SessionTurnIndexStorePlugin`** EP + fixture package | P2 | **Done** | `intergrax.memory_stores`, `tests/fixtures/plugin_packages/session_turn_index_plugin` |
+| MEM-VEC-3.2 | **`memory.semantic_search` skill runtime** — delegates to `ltm.search` + episodic recall (not prompt-only) | P2 | **Done** | `tools/providers/memory`, `skills/providers/memory` |
 
 ### MEM-VEC — Paydown log
 
@@ -59,7 +59,7 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 
 ### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CTX](plan/MEMORY.md) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+**Status:** **Done** · register: [Phase CTX](plan/MEMORY.md) · queue: [§6.1f](.#61f-harness-implementation-queue--context-engineering-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -73,7 +73,7 @@ Work **MEM-VEC-1.*** before MEM-VEC-2.* — LTM wiring is a small diff that unbl
 
 ### 6.2aa Phase MEM execution order (Band 2h — closed)
 
-**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
+**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](.#mem--master-deliverables-register-all-48-tasks).
 
 Work **one MEM ID per PR**; after each step update the MEM master table + paydown log; keep §6.1 scripts green. **Start with MEM-1.*** before MEM-3/MEM-7 — bridge must exist before plugins/hooks.
 
@@ -92,7 +92,7 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 ### 6.2ab Phase MEM-DEPTH execution order (Band 2am — closed)
 
-**Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
+**Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](.#mem-depth--master-deliverables-register-all-26-tasks).
 
 Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master table + paydown log; keep §6.1 scripts green. **Start with MEM-DEPTH-0.3 (ADR) then MEM-DEPTH-1.*** — architecture decision before Context Compiler code.
 
@@ -118,7 +118,7 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 **Prerequisites:** Phases **I** (TaskMemory), **R-Context**, **H-APP** (profile models), **DX-5.7** (ops:memory hints) **Done**; **H-APP.4.3** closed via **MEM-1.***.  
 **Goal:** Close every gap from the **memory platform audit** — short-term session, user/org LTM, task KV, context compression, H-APP→runtime wiring, persistence, recovery, observability, developer hooks, and market-parity documentation — **without** Band 3 product agents (K.1/K.2) or Mem0-like SaaS product layer (MEM-8 deferred P3).  
 **Priority ladder:** **Band 2h** (§4.0) — **closed**; default queue = §6.1 maintenance.  
-**Execution order:** [§6.2aa](#62aa-phase-mem-execution-order-band-2h--closed).  
+**Execution order:** [§6.2aa](.#62aa-phase-mem-execution-order-band-2h--closed).
 **Canon refs:** §27 Memory model · §28.1 Context assembly · §42.35 MemoryView · Appendix G in [`guides/AGENT_CREATION_GUIDE.md`](guides/AGENT_CREATION_GUIDE.md).
 
 **Delivery rule:** One `MEM-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
@@ -230,18 +230,18 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 
 | Module | Tier | Role |
 |--------|------|------|
-| `intergrax/memory/` | 0 | ConversationalMemory, UserProfileManager |
-| `intergrax/runtime/task_memory/` | 1 | Coordinator, MemoryView, SQLite store, delegation |
-| `intergrax/runtime/nexus/session/` | 1 | SessionManager, InMemory/SQLite storage |
-| `intergrax/runtime/nexus/context/` | 1 | ContextManager, context_budget, engine_history_layer |
+| `intergrax/memory` | 0 | ConversationalMemory, UserProfileManager |
+| `intergrax/runtime/task_memory` | 1 | Coordinator, MemoryView, SQLite store, delegation |
+| `intergrax/runtime/nexus/session` | 1 | SessionManager, InMemory/SQLite storage |
+| `intergrax/runtime/nexus/context` | 1 | ContextManager, context_budget, engine_history_layer |
 | `intergrax/runtime/user_profile/session_memory_consolidation_service.py` | 1 | LLM session → LTM extraction |
 | `intergrax/applications/_shared/runtime_config_bridge.py` | 3 | **Gap:** line ~112 always `InMemorySessionStorage()` |
 | `intergrax/applications/_shared/task_memory_wiring.py` | 3 | Enables task DB from profile flags; does not enable LTM/org Nexus steps |
 | `intergrax/applications/contracts/environment_profile.py` | 3 | `MemoryProfile`, `ContextProfile` |
-| `intergrax/rag/graph/` | 0 | Graph RAG retrieval — **not** agent memory |
-| `integrations/examples/custom_memory_kv/` | 0 | KV plugin example — not wired to TaskMemory |
+| `intergrax/rag/graph` | 0 | Graph RAG retrieval — **not** agent memory |
+| `integrations/examples/custom_memory_kv` | 0 | KV plugin example — not wired to TaskMemory |
 
-**Existing gate tests:** `tests/unit/runtime/task_memory/`, `tests/acceptance/.../test_acceptance_08_memory_handoff`, context budget, profile steps, sqlite session integration.
+**Existing gate tests:** `tests/unit/runtime/task_memory`, `tests/acceptance/.../test_acceptance_08_memory_handoff`, context budget, profile steps, sqlite session integration.
 
 **Known gaps in tests:** `engine_history_layer` summarization; E2E LTM consolidation; `MemoryProfile` → runtime wiring; external memory backends; graph-as-memory.
 
@@ -289,29 +289,29 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 | MEM-1.4 | Map **`MemoryProfile.enable_org_memory`** → `RuntimeConfig.enable_org_profile_memory` | **Done** | **P0** | `runtime_config_bridge.py` |
 | MEM-1.5 | **Gate test:** `ApplicationEnvironmentProfile` memory + context → `RuntimeConfig` round-trip | **Done** | **P0** | `tests/unit/applications/test_memory_profile_runtime_bridge.py` |
 | MEM-1.6 | **Reconcile H-APP.4.3** — mark **Done** only when MEM-1.1–MEM-1.4 **Done** | **Done** | **P0** | H-APP register row |
-| MEM-2.1 | **`SQLiteUserProfileStore`** — mirror `SQLiteOrganizationProfileStore` pattern | **Done** | **P0 Critical** | `intergrax/memory/` or `runtime/user_profile/` |
+| MEM-2.1 | **`SQLiteUserProfileStore`** — mirror `SQLiteOrganizationProfileStore` pattern | **Done** | **P0 Critical** | `intergrax/memory` or `runtime/user_profile` |
 | MEM-2.2 | **Wire `SQLiteUserProfileStore`** in sqlite integration bundle + lab/legal/research profiles | **Done** | **P0** | integration bundle wiring |
-| MEM-2.3 | **Unit tests:** `UserProfileManager` CRUD + search with SQLite backend (fake RetrievalService) | **Done** | **P0** | `tests/unit/memory/` |
+| MEM-2.3 | **Unit tests:** `UserProfileManager` CRUD + search with SQLite backend (fake RetrievalService) | **Done** | **P0** | `tests/unit/memory` |
 
 #### Wave MEM2 — P1: gates, plugins prep, context docs, graph clarification
 
 | ID | Deliverable | Status | Priority | Location / acceptance |
 |----|-------------|--------|----------|------------------------|
-| MEM-3.1 | **`UserProfileStore` / `SessionStorage` plugin Protocol** (typed, no Tier-2 imports) | **Done** | P1 | `intergrax/memory/contracts/` |
+| MEM-3.1 | **`UserProfileStore` / `SessionStorage` plugin Protocol** (typed, no Tier-2 imports) | **Done** | P1 | `intergrax/memory/contracts` |
 | MEM-3.2 | **Entry point group `intergrax.memory_stores`** + `bootstrap_memory_stores()` | **Done** | P1 | Mirror P-Ext pattern |
-| MEM-3.3 | **Reference external memory store** + gate (fixture package) | **Done** | P1 | `tests/fixtures/` + unit test |
-| MEM-4.1 | **Gate:** session SQLite persist + resume round-trip via H-APP host | **Done** | P1 | `tests/integration/` |
-| MEM-4.2 | **Gate:** LTM consolidation E2E with deterministic fake LLM | **Done** | P1 | `tests/acceptance/` (not notebook-only) |
+| MEM-3.3 | **Reference external memory store** + gate (fixture package) | **Done** | P1 | `tests/fixtures` + unit test |
+| MEM-4.1 | **Gate:** session SQLite persist + resume round-trip via H-APP host | **Done** | P1 | `tests/integration` |
+| MEM-4.2 | **Gate:** LTM consolidation E2E with deterministic fake LLM | **Done** | P1 | `tests/acceptance` (not notebook-only) |
 | MEM-4.3 | **Gate:** full memory stack on lab profile (task + session + LTM + org) | **Done** | P1 | acceptance or integration |
-| MEM-5.1 | **Unit tests:** `engine_history_layer` — `SUMMARIZE_OLDEST` + truncate fallback | **Done** | P1 | `tests/unit/runtime/nexus/context/` |
+| MEM-5.1 | **Unit tests:** `engine_history_layer` — `SUMMARIZE_OLDEST` + truncate fallback | **Done** | P1 | `tests/unit/runtime/nexus/context` |
 | MEM-5.2 | **Document context compression strategy matrix** (FULL / SUMMARY / SUMMARIZE_OLDEST / hard trim) | **Done** | P1 | Guide + canon §28.1 |
 | MEM-CTX.1 | **`ContextDecisionProfile`** (or extend `ContextProfile`) — unified memory vs context vs RAG assembly policy for Tier-3 authors | **Done** | P1 | `environment_profile.py` |
 | MEM-DOC.1 | **Author cookbook:** session vs checkpoint vs task KV mental model (LangGraph thread analogy) | **Done** | P1 | `guides/AGENT_CREATION_GUIDE.md` |
 | MEM-DOC.2 | Document **`wire_task_memory_from_profile` vs Nexus LTM/org steps** gap | **Done** | P1 | Guide + this plan |
 | MEM-DOC.3 | **Org memory scope** — profile + instructions vs shared episodic / team knowledge | **Done** | P1 | Guide |
 | MEM-DOC.4 | **Recovery semantics** per memory layer (table in guide) | **Done** | P1 | Guide or `guides/HARNESS_ENVIRONMENT.md` |
-| MEM-DOC.6 | Clarify **`custom_memory_kv` example** — integration KV vs Nexus TaskMemory | **Done** | P1 | `integrations/examples/` README |
-| MEM-GRAPH.1 | **Document:** Graph RAG (`intergrax/rag/graph/`) ≠ agent entity graph memory | **Done** | P1 | Canon + RAG docs |
+| MEM-DOC.6 | Clarify **`custom_memory_kv` example** — integration KV vs Nexus TaskMemory | **Done** | P1 | `integrations/examples` README |
+| MEM-GRAPH.1 | **Document:** Graph RAG (`intergrax/rag/graph`) ≠ agent entity graph memory | **Done** | P1 | Canon + RAG docs |
 | MEM-TASK.1 | **Lab profile:** explicit task memory enable policy (replace silent default-off + log warning only) | **Done** | P1 | `lab_application` environment profile |
 | MEM-TASK.2 | **Author cookbook:** MemoryView namespaces + delegation paths | **Done** | P1 | Guide Appendix G |
 
@@ -321,13 +321,13 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 |----|-------------|--------|----------|------------------------|
 | MEM-6.1 | **Enforce `MemoryProfile.retention_days`** on session + task stores (TTL / purge job or read filter) | **Done** | P2 | session + task_memory |
 | MEM-6.2 | **Enforce `scope_boundary`** on `PolicyScopedMemoryView` writes | **Done** | P2 | `memory_view.py` + policy |
-| MEM-7.1 | **HookPoint `BEFORE_MEMORY_WRITE`** (+ optional `AFTER_MEMORY_WRITE`) | **Done** | P2 | `runtime/nexus/hooks/` |
+| MEM-7.1 | **HookPoint `BEFORE_MEMORY_WRITE`** (+ optional `AFTER_MEMORY_WRITE`) | **Done** | P2 | `runtime/nexus/hooks` |
 | MEM-7.2 | **Gate:** hook can deny or mutate memory write | **Done** | P2 | unit test |
 | MEM-OBS.1 | **Memory SLO metrics** — LTM hit rate, retention violations, memory write volume | **Done** | P2 | observability / Prometheus hooks |
 | MEM-DOC.5 | **Cookbook:** swap `UserProfileStore` to external backend via EP | **Done** | P2 | `guides/EXTENSION_AUTHOR_GUIDE.md` |
 | MEM-CTX.2 | **Token-aware context trim** evaluation (vs char-cut only) — spike + recommendation | **Done** | P2 | `context_budget.py` RFC or impl |
 | MEM-PERS.2 | **Optional:** Mongo `document_store` path for user memory artifacts | **Done** | P2 | Tier-0 integration wiring |
-| MEM-ST.4 | **Optional:** `ConversationalMemoryStore` backend beyond in-memory | **Done** | P2 | `intergrax/memory/` |
+| MEM-ST.4 | **Optional:** `ConversationalMemoryStore` backend beyond in-memory | **Done** | P2 | `intergrax/memory` |
 
 #### Wave MEM4 — P3: product memory layer (Band 3 option) + entity graph RFC
 
@@ -363,7 +363,7 @@ Trace:          RunTraceWriter / RuntimeEvents (immutable audit, not agent-mutab
 **Prerequisites:** Phase **MEM** (**Done**), Phase **CTX** (**Done**), Phase **R-Delegate** (**Done**), Phase **H-APP** (**Done**).  
 **Goal:** Raise Memory Layer from **L2 → L4** and Context Compiler from fragmented steps to a **unified, never-overflow** pipeline — context compiler, memory lifecycle automation, explore delegation, entity intelligence — **without** Band 3 business agents or Mem0 SaaS product.  
 **Priority ladder:** **Band 2am** (§4.0) — **closed** (2026-06-08); default queue = §6.1 maintenance.  
-**Execution order:** [§6.2ab](#62ab-phase-mem-depth-execution-order-band-2am--active).  
+**Execution order:** [§6.2ab](.#62ab-phase-mem-depth-execution-order-band-2am--active).
 **Canon refs:** [`architecture/MEMORY.md`](architecture/MEMORY.md) · architecture §27–§28.1 · IDEAL §3.7, §16 · audit map §15–16.
 
 **Delivery rule:** One `MEM-DEPTH-*` ID per PR → update status in tables below + paydown log → `pytest -m gate` + §6.1 audit scripts green.
@@ -476,7 +476,7 @@ Total: 26
 
 **Priority ladder:** **Band 2n** (§4.0) — closed; default queue = **§6.1** maintenance.
 
-**Execution order:** [§6.2bf](#62bf-phase-ctx-execution-order-band-2n--closed) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+**Execution order:** [§6.2bf](.#62bf-phase-ctx-execution-order-band-2n--closed) · queue: [§6.1f](.#61f-harness-implementation-queue--context-engineering-closeout-closed)
 
 ### CTX — Master register
 

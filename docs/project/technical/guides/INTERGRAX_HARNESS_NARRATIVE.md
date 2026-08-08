@@ -52,7 +52,7 @@ This sequence verifies local ability to produce and aggregate:
 - cost evidence
 - evidence posture scoreboard
 
-Artifacts land under `build/evidence/`. Start with `build/evidence/posture/posture.md`, then drill into individual reports.
+Artifacts land under `build/evidence`. Start with `build/evidence/posture/posture.md`, then drill into individual reports.
 
 After the proof path has been run, a lightweight checker confirms expected artifacts and README proof-path references:
 

@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Intergrax is **source-available** and under **active R&D**. LKW is **Backend Product Alpha / MVP** and remains **PARTIAL**. Real-user and commercial validation are incomplete.
 
-This FAQ answers common first-contact questions. It does not replace [LICENSE](../../../LICENSE), [PARTNERS.md](../community/PARTNERS.md), or the complete technical architecture.
+This FAQ answers common first-contact questions. It does not replace [LICENSE](../../../LICENSE), [docs/project/community/PARTNERS.md](../community/PARTNERS.md), or the complete technical architecture.
 
 ---
 
@@ -20,10 +20,10 @@ This FAQ answers common first-contact questions. It does not replace [LICENSE](.
 | Strongest current proof | LKW — Primary product proof · Backend Product Alpha / MVP · **PARTIAL** |
 | Current maturity | Source-available, active R&D; real-user and commercial validation incomplete |
 | Primary next action | [See the LKW workflow](../product/lkw/LKW_PRODUCT_TOUR.md) |
-| Builder route | [BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) |
-| Where to compare approaches | [WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
-| Where to discuss a pilot | [PARTNERS.md](../community/PARTNERS.md) |
-| Where to check permissions | [COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
+| Builder route | [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) |
+| Where to compare approaches | [docs/project/overview/WHY_INTERGRAX.md#where-intergrax-fits](WHY_INTERGRAX.md#where-intergrax-fits) |
+| Where to discuss a pilot | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
+| Where to check permissions | [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
 
 ---
 
@@ -47,13 +47,13 @@ Teams building governed agent applications repeatedly rebuild policy, knowledge,
 
 ## What is Local Knowledge Workspace?
 
-Local Knowledge Workspace (LKW) is the **Primary product proof** — **Backend Product Alpha / MVP** — **PARTIAL**. It demonstrates a governed private knowledge workflow over controlled documents. See [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and [PROOFS.md](../proofs/PROOFS.md).
+Local Knowledge Workspace (LKW) is the **Primary product proof** — **Backend Product Alpha / MVP** — **PARTIAL**. It demonstrates a governed private knowledge workflow over controlled documents. See [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
 
 ---
 
 ## What is proven today?
 
-Proof status varies by capability. See [PROOFS.md](../proofs/PROOFS.md) for the public proof dashboard and current claim boundaries.
+Proof status varies by capability. See [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) for the public proof dashboard and current claim boundaries.
 
 ---
 
@@ -75,7 +75,7 @@ Builders who want to create or extend an application should use the [Builder Qui
 
 ## Which use cases fit today?
 
-See [USE_CASES.md](USE_CASES.md) for current fit, bounded validation paths, and not-fit boundaries.
+See [docs/project/overview/USE_CASES.md](USE_CASES.md) for current fit, bounded validation paths, and not-fit boundaries.
 
 ---
 
@@ -87,25 +87,25 @@ Yes. Internal, non-production Evaluation by a commercial organization is permitt
 
 ## How do I discuss a pilot?
 
-See [PARTNERS.md](../community/PARTNERS.md) for partner fit, pilot preparation, and evaluation-versus-operational boundaries.
+See [docs/project/community/PARTNERS.md](../community/PARTNERS.md) for partner fit, pilot preparation, and evaluation-versus-operational boundaries.
 
 ---
 
 ## Can I use Intergrax in production or commercially?
 
-Not without explicit written permission. Local isolated non-production Evaluation is permitted subject to [LICENSE](../../../LICENSE). Production use and commercial use require explicit written permission. See [COLLABORATION.md](../community/COLLABORATION.md).
+Not without explicit written permission. Local isolated non-production Evaluation is permitted subject to [LICENSE](../../../LICENSE). Production use and commercial use require explicit written permission. See [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
 
 ---
 
 ## Can I contribute?
 
-Yes, under the terms in [LICENSE](../../../LICENSE). Start with [COLLABORATION.md](../community/COLLABORATION.md) for routes and [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the development workflow.
+Yes, under the terms in [LICENSE](../../../LICENSE). Start with [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) for routes and [CONTRIBUTING.md](../../../CONTRIBUTING.md) for the development workflow.
 
 ---
 
 ## Where is the technical architecture?
 
-See [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) for the public architecture overview. For deep technical review, see [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md).
+See [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) for the public architecture overview. For deep technical review, see [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md).
 
 ---
 
@@ -121,12 +121,12 @@ Follow [SECURITY.md](../../../SECURITY.md). Do not open a public issue for a sus
 
 | Document | Purpose |
 |----------|---------|
-| [PROOFS.md](../proofs/PROOFS.md) | Proof status and claim boundaries |
-| [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Evaluation and building routes |
-| [USE_CASES.md](USE_CASES.md) | Use-case fit map |
-| [ROADMAP.md](ROADMAP.md) | Product-validation direction |
-| [PARTNERS.md](../community/PARTNERS.md) | Partner fit and pilot workflow |
-| [COLLABORATION.md](../community/COLLABORATION.md) | Collaboration and permission routes |
+| [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Proof status and claim boundaries |
+| [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Evaluation and building routes |
+| [docs/project/overview/USE_CASES.md](USE_CASES.md) | Use-case fit map |
+| [docs/project/overview/ROADMAP.md](ROADMAP.md) | Product-validation direction |
+| [docs/project/community/PARTNERS.md](../community/PARTNERS.md) | Partner fit and pilot workflow |
+| [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) | Collaboration and permission routes |
 | [LICENSE](../../../LICENSE) | Legally authoritative terms |
 | [CONTRIBUTING.md](../../../CONTRIBUTING.md) | Development workflow |
 | [SECURITY.md](../../../SECURITY.md) | Vulnerability reporting |

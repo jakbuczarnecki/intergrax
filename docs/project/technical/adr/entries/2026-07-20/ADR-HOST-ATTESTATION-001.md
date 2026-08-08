@@ -41,5 +41,5 @@ Partner validation needs one portable attested export binding the governed bound
 
 ## Implementation notes
 
-- `intergrax/runtime/execution_evidence/` attestor + verifier
+- `intergrax/runtime/execution_evidence` attestor + verifier
 - Host orchestration after Tier-2 returns proof

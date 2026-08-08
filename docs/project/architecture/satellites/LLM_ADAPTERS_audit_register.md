@@ -113,7 +113,7 @@ Workflows: `unit-tests.yml`, `llm-adapters-guard.yml`, optional `llm-network-smo
 | AHI `ProfileVersion` llm_routing persistence | AHI-MAINT-06 |
 | Product HTTP API DTOs | Tier-3 applications |
 
-**Out of scope:** per-business-agent adapter code in `llm_adapters/`, YOLO/ONNX engines, Phase K business agents.
+**Out of scope:** per-business-agent adapter code in `llm_adapters`, YOLO/ONNX engines, Phase K business agents.
 
 ## Model routing and failover
 
@@ -146,12 +146,12 @@ AHI `RoutingTuningEngine` **recommends** profile order; policy engine **approves
 
 Authors configure dynamic model selection through a **Protocol contract** — not a rigid enum DSL. Built-in parametric rules and **custom classes** from Tier-3 share the same interface.
 
-#### Contracts (target location: `intergrax/llm_adapters/routing/`)
+#### Contracts (target location: `intergrax/llm_adapters/routing`)
 
 | Type | Role |
 |------|------|
 | `RoutingContext` | Immutable snapshot: `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `model_hint`, `tenant_id`, `agent_id`, … |
-| `RoutingTarget` | Rule output: `LLMProfile \| None`, `RoutingHint \| None`, `reason: str` (for trace) |
+| `RoutingTarget` | Rule output: `LLMProfile /| None`, `RoutingHint /| None`, `reason: str` (for trace) |
 | `LLMRoutingRule` | **Protocol** — `rule_id`, `priority`, `matches(ctx)`, `resolve(ctx)` |
 | `LLMRoutingRuleBase` | Optional ABC with helper methods (`budget_below`, `task_is`, …) |
 | `LLMRoutingProfile` | Tier-3: `default_profile`, `allowed_profiles`, `rules: tuple[LLMRoutingRule, ...]` |
@@ -175,10 +175,10 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 | Class | Status | Covers |
 |-------|--------|--------|
-| `BudgetBelowRule(threshold, profile\|hint)` | **Done** | `budget_remaining_ratio < threshold` |
-| `BudgetAboveRule(threshold, profile\|hint)` | **Done** | `budget_remaining_ratio > threshold` |
+| `BudgetBelowRule(threshold, profile/|hint)` | **Done** | `budget_remaining_ratio < threshold` |
+| `BudgetAboveRule(threshold, profile/|hint)` | **Done** | `budget_remaining_ratio > threshold` |
 | `BudgetExceededDegradeRule()` | **Done** | `budget_degrade_active` → `CHEAPEST` |
-| `TaskClassInRule(classes, profile\|hint)` | **Done** (alias `TaskClassRule`) | `task_class in classes` |
+| `TaskClassInRule(classes, profile/|hint)` | **Done** (alias `TaskClassRule`) | `task_class in classes` |
 | `TaskClassNotInRule(classes, …)` | **Done** | negated task class |
 | `TokenUsedAboveRule(threshold, hint)` | **Done** (alias `TokenThresholdRule`) | `tokens_used > threshold` |
 | `TokenUsedBelowRule(threshold, …)` | **Done** | low token usage |
@@ -187,7 +187,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 | `ModelHintPresentRule` | **Done** | honour agent `model_hint` |
 | `PolicyHintRule(hint)` | **Done** | force `RoutingHint` |
 | `CompositeAllRule` / `CompositeAnyRule` | **Done** | AND / OR composition |
-| `AlwaysRule(profile\|hint)` | **Done** | explicit catch-all fallback |
+| `AlwaysRule(profile/|hint)` | **Done** | explicit catch-all fallback |
 
 #### Enterprise routing (M-LLM-X.10 — Done · scope)
 
@@ -338,7 +338,7 @@ RoutingContext (snapshot from Nexus / budget meter / classifier)
 
 1. `budget_remaining_ratio` in `RoutingContext` reflects **actual** run token usage on core adapter path.
 2. Context sync runs on **UAEP + Nexus graph + context-engine** paths before routing eval.
-3. No Tier-0 import from `applications/` for routing hot path.
+3. No Tier-0 import from `applications` for routing hot path.
 4. Per-eval trace on **ACP and Nexus** with correlated `run_id` (no process-global observers).
 5. Acceptance test: budget threshold → model swap **without** mocking `create_adapter_for_routing_evaluation`.
 6. Audit register **LLM-AUDIT-19** → **Done**.
@@ -417,13 +417,13 @@ Today: `StepLLMRouter` in `agents/authoring/llm_router.py` — separate stub por
 
 ## Modality plane A — generative multimodal (LLM)
 
-LLM adapters own **Plane A** ([`MODALITY.md`](MODALITY.md) §7.1.9). Plane C (YOLO, ONNX, …) stays in `model_inference/`.
+LLM adapters own **Plane A** ([`MODALITY.md`](MODALITY.md) §7.1.9). Plane C (YOLO, ONNX, …) stays in `model_inference`.
 
 | Concern | Owner |
 |---------|-------|
-| Chat reasoning | `llm_adapters/` |
-| Native vision/audio in dialog | `llm_adapters/` — capability flags (W-ML.1) |
-| Deterministic CV / TTS tools | `model_inference/` + `speech_adapters/` |
+| Chat reasoning | `llm_adapters` |
+| Native vision/audio in dialog | `llm_adapters` — capability flags (W-ML.1) |
+| Deterministic CV / TTS tools | `model_inference` + `speech_adapters` |
 
 ### Capability flags
 

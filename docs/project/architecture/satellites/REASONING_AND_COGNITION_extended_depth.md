@@ -243,7 +243,7 @@ GraphSpecSeedingPlanner wraps inner planner
 
 **Status:** **Removed** (ACP-CLOSE-LEG-5 · [ADR-FLOW-005](../adr/entries/2026-06-12/ADR-FLOW-005.md)).
 
-The Tier-1 **agent session** pipeline (`RuntimeEngine`, `RuntimePipeline`, `runtime_steps/`, pipeline-bound `plan_loop_controller`) was deleted (ACP-CLOSE-LEG-5). Per-run step decomposition and replan are **author responsibilities** inside **`on_next_step`** (cognitive patterns: ReAct, plan-execute, reflection). Nexus **task** planning (`EngineBackedNexusPlanner`, `nexus_llm_plan_builder`, `TaskPlanner`) is unchanged — it schedules multi-agent work, not in-session cognitive steps.
+The Tier-1 **agent session** pipeline (`RuntimeEngine`, `RuntimePipeline`, `runtime_steps`, pipeline-bound `plan_loop_controller`) was deleted (ACP-CLOSE-LEG-5). Per-run step decomposition and replan are **author responsibilities** inside **`on_next_step`** (cognitive patterns: ReAct, plan-execute, reflection). Nexus **task** planning (`EngineBackedNexusPlanner`, `nexus_llm_plan_builder`, `TaskPlanner`) is unchanged — it schedules multi-agent work, not in-session cognitive steps.
 
 **Active planning paths:**
 
@@ -321,7 +321,7 @@ class DecisionRecord(BaseModel):
 
 **Emission:** `AgentEngine` / UAEP emits `RuntimeEventType.DECISION_EMITTED` with `decision_record` payload on governed step paths (FLOW-12).
 
-**Gate:** regression test verifies emit on UAEP decision paths — `tests/integration/agents/`.
+**Gate:** regression test verifies emit on UAEP decision paths — `tests/integration/agents`.
 
 ### 14.2 AgentDecision vs DecisionRecord
 
@@ -570,7 +570,7 @@ All implementation tasks: [`plan/REASONING_AND_COGNITION.md`](../plan/REASONING_
 | `applications/_shared/orchestration_wiring.py` | 3 | 1 | Profile → planner/classifier |
 | `applications/contracts/graph_builder.py` | 3 | 1 | Declarative graph authoring |
 | `applications/contracts/environment_profile.py` | 3 | — | `OrchestrationProfile` |
-| `prompts/registry/` | 0 | input | Prompt assets |
+| `prompts/registry` | 0 | input | Prompt assets |
 | `runtime/architecture/prompt_composition.py` | 1 | input | Layer composition |
 
 ---
@@ -583,8 +583,8 @@ From `ApplicationEnvironmentProfile.orchestration_profile`:
 
 | Field | Type | Cognition effect |
 |-------|------|------------------|
-| `planner_kind` | `str \| null` | `default` → `TaskPlanner`; `engine` → LLM planner |
-| `classifier_kind` | `str \| null` | `default` \| `rules` \| `llm` |
+| `planner_kind` | `str /| null` | `default` → `TaskPlanner`; `engine` → LLM planner |
+| `classifier_kind` | `str /| null` | `default` \| `rules` \| `llm` |
 | `multi_agent_order` | `str` | Agent ordering in MULTI_AGENT plans |
 | `allow_dynamic_replan` | `bool` | Agent `on_next_step` replan boundary (AUDIT-IDEAL-7.2) |
 | `merge_strategy` | `str` | **Orchestration** — post-execution merge, not planning |

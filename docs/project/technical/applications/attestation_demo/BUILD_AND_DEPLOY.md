@@ -1,8 +1,8 @@
 # Build & deploy — Attestation Demo
 
-Tier-3 application package: `applications/attestation_demo/`. Operational runbook for local development, verification, and container deployment.
+Tier-3 application package: `applications/attestation_demo`. Operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](README.md) · Layout canon: [`applications/USAGE.md`](../../../../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../../../applications/USAGE.md)
 
 ---
 
@@ -12,10 +12,10 @@ Tier-3 application package: `applications/attestation_demo/`. Operational runboo
 |------|---------|
 | [uv](https://docs.astral.sh/uv/) | Workspace lock + application project `applications/attestation_demo/pyproject.toml` |
 | Repo clone | Monorepo; **build context is always repository root** |
-| Docker (optional) | Image build via `docker/` |
+| Docker (optional) | Image build via `docker` |
 | Docker Buildx (recommended) | Per-app `.dockerignore` via `--ignorefile` |
 
-Tier-2 agents used by this host: **boundary_demo** (under `agents/` on `PYTHONPATH`).
+Tier-2 agents used by this host: **boundary_demo** (under `agents` on `PYTHONPATH`).
 
 ---
 

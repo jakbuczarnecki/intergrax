@@ -44,7 +44,7 @@ For current `<DOMAIN>`:
 4. Implement minimal diff; reuse Tier-0 mechanisms.
 5. Run domain-relevant tests and gate scripts from plan row / `AGENTS.md`.
 6. Update plan row status to **Done**.
-7. Add implementation journal entry when behavior changed ([`implementation-journal/`](../implementation-journal/README.md)).
+7. Add implementation journal entry when behavior changed ([`implementation-journal`](../implementation-journal/README.md)).
 8. Update `results/<run_id>/progress.json` → `status: completed`, `item_id`, `plan_updated: true`.
 9. Brief checkpoint; **continue** to next domain.
 

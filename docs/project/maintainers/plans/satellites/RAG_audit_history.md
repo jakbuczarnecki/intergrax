@@ -44,21 +44,21 @@
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
 | M-RAG.1 | `RagProfile` + env (`INTERGRAX_RAG_*`) | **Done** | `intergrax/rag/profiles/rag_profile.py` |
-| M-RAG.2 | `RetrievalService` (route → retrieve → rerank) | **Done** | `intergrax/rag/retrieval/`; wired to `rag.retrieve` + Nexus |
+| M-RAG.2 | `RetrievalService` (route → retrieve → rerank) | **Done** | `intergrax/rag/retrieval`; wired to `rag.retrieve` + Nexus |
 | M-RAG.3 | Adaptive `QueryRouter` (fast / standard / deep) | **Done** | `intergrax/rag/routing/query_router.py` — heuristic only; LLM tier: M-RAG.32 |
-| M-RAG.4 | `IngestPipeline` + configurable chunking strategy | **Done** | `intergrax/rag/ingest/`; `rag.ingest_document` |
+| M-RAG.4 | `IngestPipeline` + configurable chunking strategy | **Done** | `intergrax/rag/ingest`; `rag.ingest_document` |
 | M-RAG.5 | Contextual chunk enricher (optional LLM) | **Done** | `INTERGRAX_RAG_CONTEXTUAL_ENRICH`; injected `LLMAdapter` |
 | M-RAG.6 | Query expansion (`deterministic` / `llm`) | **Done** | `MultiQueryRetriever` + `query_expander_from_profile()` wired via bootstrap; deep tier → `multiquery` when `query_expansion != off` (M-RAG.23) |
 | M-RAG.7 | Evaluation metrics (`recall@k`, MRR) | **Done** | `intergrax/rag/evaluation/metrics.py` |
 | M-RAG.8 | `create_default_rag_stack()` bootstrap | **Done** | `intergrax/rag/bootstrap/rag_stack_bootstrap.py` |
 | M-RAG.9 | Tool/Nexus wiring (`retrieval_service`, profile on `ToolWiringContext`) | **Done** | `RuntimeConfig.retrieval_service` |
 | M-RAG.10 | Native sparse / BM25 in vector backends | **Done** | `LexicalHybridSupport` + `query_hybrid` on InMemory/Qdrant/Weaviate; RRF fusion |
-| M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden/`, `golden_harness.py`, `rag-guard.yml` |
-| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (stable) | `graph/` + `graph_rag` retriever **stable** (M-RAG.42); prod contract: M-RAG.33 |
+| M-RAG.11 | RAG eval CI gate + golden datasets | **Done** | `tests/fixtures/rag_golden`, `golden_harness.py`, `rag-guard.yml` |
+| M-RAG.12 | GraphRAG (`GraphStore` contract) | **Done** (stable) | `graph` + `graph_rag` retriever **stable** (M-RAG.42); prod contract: M-RAG.33 |
 | M-RAG.13 | Platform agentic retrieval loop (budgeted) | **Done** | `AgenticRetrievalLoop` + M-RAG.34 iteration schedule / latency budget trace |
 | M-RAG.14 | Qdrant native sparse vectors + RRF fusion | **Done** | `INTERGRAX_RAG_QDRANT_SPARSE`, `bm25_sparse_encoder.py` |
 | M-RAG.15 | Weaviate native `query.hybrid` | **Done** | Live client + `INTERGRAX_RAG_WEAVIATE_NATIVE_HYBRID`; fallback to in-memory |
-| M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm\|heuristic_then_llm` |
+| M-RAG.16 | LLM graph indexer (optional adapter) | **Done** | `INTERGRAX_RAG_GRAPH_INDEXER_MODE=llm/|heuristic_then_llm` |
 | M-RAG.17 | LLM agentic query refinement | **Done** | `INTERGRAX_RAG_AGENTIC_QUERY_MODE=llm` + injected `LLMAdapter` |
 | M-RAG.18 | Neo4j GraphRAG backend | **Done** | `Neo4jRagGraphStore` + `INTERGRAX_RAG_GRAPH_STORE=neo4j` |
 | M-RAG.19 | SPLADE / learned sparse encoder | **Done** | `sparse_encoder.py`; `INTERGRAX_RAG_SPARSE_ENCODER=splade` (optional `fastembed`) |
@@ -72,7 +72,7 @@
 
 **Source:** Full engine depth audit · canon [`architecture/RAG.md`](../architecture/RAG.md) §Engine depth audit register  
 **Status:** **Done** (2026-06-10) — runs in parallel with §6.1 gate maintenance ([`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md))  
-**Policy:** See [Step-by-step rollout](#step-by-step-rollout--phase-m-rag-depth) waves 1–3
+**Policy:** See [Step-by-step rollout](.#step-by-step-rollout--phase-m-rag-depth) waves 1–3
 
 | # | ID | Deliverable | Priority | Status | GAP-RAG | Acceptance |
 |---|-----|-------------|----------|--------|---------|------------|
@@ -269,7 +269,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 
 **Suggested PR order:** RAG-MAINT-03 → RAG-MAINT-01 → RAG-MAINT-02 → RAG-MAINT-04.
 
-**Environment note:** Windows `pytest tests/unit/rag/` teardown crash (`-1073741819`) — track under DX if reproducible; not blocking L3 verdict.
+**Environment note:** Windows `pytest tests/unit/rag` teardown crash (`-1073741819`) — track under DX if reproducible; not blocking L3 verdict.
 
 **Cross-domain:** INT-MAINT-01 — integration slug maturity · M-RAG.58 — [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
@@ -283,7 +283,7 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **RAG-MAINT-vllm-1** | Code | P2 | **Done** | `vllm_embedding_provider.py` + default registry | `provider_id=vllm` in `EmbeddingProviderRegistry` |
-| 2 | **RAG-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm-embed` + integration profile `vllm` service | `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http://127.0.0.1:8101/v1` |
+| 2 | **RAG-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm-embed` + integration profile `vllm` service | `INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL=http:/127.0.0.1:8101/v1` |
 | 3 | **RAG-MAINT-vllm-3** | Tests | P2 | **Done** | Unit mocks + optional integration pipeline test | `tests/unit/rag/embedding/test_vllm_embedding_provider.py` green |
 
 **ADR:** no ADR needed — mirrors `OpenAIEmbeddingProvider` against self-hosted vLLM embed server.
@@ -298,8 +298,8 @@ uv run pytest tests/unit/rag/ tests/unit/tools/providers/rag/ tests/unit/applica
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **RAG-MAINT-llama-cpp-1** | Code | P2 | **Done** | `llama_cpp_embedding_provider.py` + default registry | `provider_id=llama_cpp` in `EmbeddingProviderRegistry` |
-| 2 | **RAG-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp-embed` + integration profile `llama-cpp` service | `INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http://127.0.0.1:8103/v1` |
-| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + E2E embed pipeline in `tests/e2e/llama_cpp/` (`no_ci`) | `test_llama_cpp_embedding_pipeline_documents` with live embed server |
+| 2 | **RAG-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp-embed` + integration profile `llama-cpp` service | `INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL=http:/127.0.0.1:8103/v1` |
+| 3 | **RAG-MAINT-llama-cpp-3** | Tests | P2 | **Done** | Unit mocks + E2E embed pipeline in `tests/e2e/llama_cpp` (`no_ci`) | `test_llama_cpp_embedding_pipeline_documents` with live embed server |
 
 **Phase status:** **Done** (2026-06-19) — 3/3 Done.
 

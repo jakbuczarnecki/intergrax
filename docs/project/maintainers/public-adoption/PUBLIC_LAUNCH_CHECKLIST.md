@@ -10,7 +10,7 @@ This checklist is for maintainers preparing external-reader sessions, reviewer r
 
 It does not create a release, license grant, support obligation, partnership term, production claim, certification, or compliance statement. **Checklist completion does not mean external validation is complete.**
 
-Use it together with [README.md](../../../../README.md), [FAQ.md](../../overview/FAQ.md), [COLLABORATION.md](../../community/COLLABORATION.md), [ROADMAP.md](../../overview/ROADMAP.md), [PARTNERS.md](../../community/PARTNERS.md), [USE_CASES.md](../../overview/USE_CASES.md), and [EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
+Use it together with [README.md](../../../../README.md), [docs/project/overview/FAQ.md](../../overview/FAQ.md), [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md), [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md), [docs/project/community/PARTNERS.md](../../community/PARTNERS.md), [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md), and [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
 
 See [EXTERNAL_READER_VALIDATION_PROTOCOL.md](EXTERNAL_READER_VALIDATION_PROTOCOL.md) for validation methodology and [OUTREACH_KIT.md](OUTREACH_KIT.md) for recruitment templates.
 
@@ -110,8 +110,8 @@ The previous readiness snapshot recorded three blockers: the `transformers`/meta
 
 - `source-available`, active R&D, LKW Backend Product Alpha / MVP and PARTIAL remain unchanged.
 - No production-ready, compliance, security, universal-savings or external-validation claim was introduced.
-- Permission routes remain owned by [LICENSE](../../../../LICENSE) and [COLLABORATION.md](../../community/COLLABORATION.md).
-- Token Optimization remains secondary, PARTIAL, and bounded by `PROOFS.md` and its claim guardrails.
+- Permission routes remain owned by [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
+- Token Optimization remains secondary, PARTIAL, and bounded by `../../proofs/PROOFS.md` and its claim guardrails.
 
 ### Internal outcome
 
@@ -132,7 +132,7 @@ NOT_STARTED
 ## PRE-PX13 completion gate
 
 The maintainer completion gate in
-[`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
+[`../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
 is `IN_PROGRESS`. PX-13 cannot begin until its product, proof, runnable
 user-like verification, friction, recovery, deployment/onboarding, visual
 experience, clean-room walkthrough, claim-synchronization, and

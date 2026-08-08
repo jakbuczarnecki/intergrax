@@ -1,9 +1,9 @@
 # Background Tasks — Platform Architecture
 
 **Status:** Target platform architecture (not production implementation yet)  
-**Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Generalizes:** LKW.4 background ingest proof ([`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../technical/applications/local_workspace_application/ARCHITECTURE.md) §8.7)  
+**Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Generalizes:** LKW.4 background ingest proof ([`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../technical/applications/local_workspace_application/ARCHITECTURE.md) §8.7)
 **Last updated:** 2026-07-08 — **BG-TASKS-ARCH-1** / **LKW.4E-ARCH-1** / **LKW.4E-PROOF-DOC-1**
 
 ---
@@ -344,8 +344,8 @@ Operators and developers should be able to answer:
 | `TaskRequest`, `TaskHandle`, `TaskResult`, `TaskStatus` | Same | Enqueue and inspection envelopes |
 | `MessageBus` | [`intergrax/integrations/contracts/message_bus.py`](../../../intergrax/integrations/contracts/message_bus.py) | Alias for `TaskQueue` |
 | `MessageBusIntegrationContract` | [`intergrax/runtime/integrations/categories/messaging.py`](../../../intergrax/runtime/integrations/categories/messaging.py) | Provider category contract |
-| `message_bus.*` tools | [`intergrax/tools/providers/message_bus/`](../../intergrax/tools/providers/message_bus/) | Provider-neutral enqueue and pull surface |
-| LKW proof workload | [`applications/local_workspace_application/background_ingest/`](../../applications/local_workspace_application/background_ingest/) | First `TaskDefinition` proof |
+| `message_bus.*` tools | [`intergrax/tools/providers/message_bus`](../../../intergrax/tools/providers/message_bus) | Provider-neutral enqueue and pull surface |
+| LKW proof workload | [`applications/local_workspace_application/background_ingest`](../../../applications/local_workspace_application/background_ingest) | First `TaskDefinition` proof |
 
 **Evolution:**
 

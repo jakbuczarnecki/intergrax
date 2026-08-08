@@ -4,8 +4,8 @@
 
 Status: **Done** (canonical lab scaffold reference)
 
-Architecture: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-POC
+Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md) · Phase AA-POC
 
 ---
 

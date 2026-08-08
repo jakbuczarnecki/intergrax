@@ -2,7 +2,7 @@
 
 **Status:** `ACTIVE`  
 **Branch:** `development`  
-**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
+**Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 **Reuse audit:** [`../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
 **LKW intake discovery:** [`../../docs/project/technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md`](../../technical/applications/local_workspace_application/KNOWLEDGE_INTAKE_DISCOVERY.md)
 
@@ -2029,7 +2029,7 @@ Add safe source discovery, selection, sync request and status through Slack. Sla
 
 ### Phase 10 — Google Workspace Knowledge vertical (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
-**Architecture:** [`../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. **Provider usage:** [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md).
+**Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8. **Provider usage:** [`../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md`](../../../../intergrax/integrations/providers/collaboration_suite/google_workspace/USAGE.md).
 
 `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` is **READY_FOR_REVIEW**. All runtime tasks below are **PLANNED** — no Google knowledge read surface, Vendor Knowledge adapter, live capability or LKW Connected Source is implemented.
 

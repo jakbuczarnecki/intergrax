@@ -43,4 +43,4 @@ Rejected: stuffing governed facts into harness EBE `input`/`output` dicts (loses
 ## Implementation notes
 
 - `intergrax/contracts/execution_evidence/boundary_event.py`
-- Host composer in `applications/governed_contractor_application/host/`
+- Host composer in `applications/governed_contractor_application/host`

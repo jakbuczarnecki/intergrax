@@ -4,9 +4,9 @@
 **Purpose:** structured audit map for comparing Intergrax against the target Harness AI architecture
 **Primary reference:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
 **Current architecture hub:** `intergrax_runtime_architecture.md`
-**Current architecture detail:** `architecture/` (domain documents)
+**Current architecture detail:** `architecture` (domain documents)
 **Implementation hub:** `intergrax_runtime_architecture.md`
-**Implementation detail:** `plan/`
+**Implementation detail:** `plan`
 
 ---
 
@@ -67,7 +67,7 @@ This document solves that problem by dividing the platform into auditable Harnes
 
 # 3. Audit Philosophy
 
-**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`../audit/README.md`](../../maintainers/audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`../bootstrap/`](../../maintainers/bootstrap/README.md). **Idea intake before build (Mode I):** [`../bootstrap/idea_audit.txt`](../../maintainers/bootstrap/idea_audit.txt) · [`../audit/IDEA_AUDIT_ORCHESTRATOR.md`](../../maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md) — live verdict in chat; on operator approval update the affected domain-layer pair or multi-layer feature pair under `docs/project/capabilities/` (no `audit_results/` folder). Use this document for layer map, scoring, and output format; use `../audit/<DOMAIN>.md` for the runnable agent instruction.
+**Per-domain copy-paste prompts:** For deep single-domain audits (RAG, Tools, Memory, UAEP, …), use [`../../maintainers/audit/README.md`](../../maintainers/audit/README.md) — 22 prompts aligned 1:1 with `architecture/<DOMAIN>.md` ↔ `plan/<DOMAIN>.md`. **Multi-domain orchestration** (all 22 pairs in one Cursor session): [`../../maintainers/bootstrap`](../../maintainers/bootstrap/README.md). **Idea intake before build (Mode I):** [`../../maintainers/bootstrap/idea_audit.txt`](../../maintainers/bootstrap/idea_audit.txt) · [`../../maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md`](../../maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md) — live verdict in chat; on operator approval update the affected domain-layer pair or multi-layer feature pair under `docs/project/capabilities` (no `audit_results` folder). Use this document for layer map, scoring, and output format; use `../../maintainers/audit/<DOMAIN>.md` for the runnable agent instruction.
 
 Do not audit the entire system at once.
 
@@ -256,8 +256,8 @@ Out-of-scope finding:
 The agent must always distinguish:
 
 * **Target architecture:** `IDEAL_HARNESS_AI_ARCHITECTURE.md`
-* **Current architecture:** `intergrax_runtime_architecture.md` + `architecture/`
-* **Implementation plan:** `intergrax_runtime_architecture.md` + `plan/`
+* **Current architecture:** `intergrax_runtime_architecture.md` + `architecture`
+* **Implementation plan:** `intergrax_runtime_architecture.md` + `plan`
 * **Actual implementation:** source code
 * **Verification:** tests and gates
 
@@ -741,7 +741,7 @@ Tool Layer Score: L0-L4
 
 ## 11b. Ephemeral Code Craft Layer
 
-**Authoring map:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) · audit prompt [`../audit/CODE_CRAFT.md`](../../maintainers/audit/CODE_CRAFT.md)
+**Authoring map:** [`architecture/CODE_CRAFT.md`](architecture/CODE_CRAFT.md) · [`plan/CODE_CRAFT.md`](plan/CODE_CRAFT.md) · audit prompt [`../../maintainers/audit/CODE_CRAFT.md`](../../maintainers/audit/CODE_CRAFT.md)
 
 ### Purpose
 
@@ -951,7 +951,7 @@ Memory Architecture Score: L0-L4
 
 ## 16. Context Engineering Layer
 
-**Domain pair:** [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../maintainers/plans/CONTEXT_ENGINEERING.md) · **ADR-CTX-001**  
+**Domain pair:** [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../maintainers/plans/CONTEXT_ENGINEERING.md) · **ADR-CTX-001**
 **Authoring map (control plane):** `guides/AGENT_CREATION_GUIDE.md` **Appendix L** · CTX control plane **Done** · plugin engine **CE-EXT Planned**
 
 ### Purpose

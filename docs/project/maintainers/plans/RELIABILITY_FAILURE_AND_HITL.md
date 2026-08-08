@@ -1,7 +1,7 @@
 # Reliability Failure And Hitl — Implementation Plan
 
-**Architecture (1:1):** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
@@ -19,7 +19,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md`](../../technical/guides/audit_slices/RELIABILITY_FAILURE_AND_HITL.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -35,7 +35,7 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.8 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.8 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -51,7 +51,7 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 
 ### 6.2bl Phase REL execution order (Band 2u — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase REL](RELIABILITY_FAILURE_AND_HITL.md) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)
+**Status:** **Done** · register: [Phase REL](RELIABILITY_FAILURE_AND_HITL.md) · queue: [§6.1o](.#61o-harness-implementation-queue--reliability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -60,7 +60,7 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 | 3 | REL-2 | `reliability_assembly_resolver` | High |
 | 4 | REL-3 | `check_harness_reliability_wiring.py` | Medium |### 6.2bk Phase OBS execution order (Band 2t — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase OBS](plan/OBSERVABILITY.md) · queue: [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed)
+**Status:** **Done** · register: [Phase OBS](plan/OBSERVABILITY.md) · queue: [§6.1n](.#61n-harness-implementation-queue--observability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -86,9 +86,9 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 | REL-DOC.1 | REL0 | **Appendix R** — reliability control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | REL-1 | REL1 | **`reliability_runtime_bridge`** + **`reliability_wiring`** | **Done** | `reliability_runtime_bridge.py`, `reliability_wiring.py`, `runtime_config_bridge.py` | `test_harness_reliability_wiring.py` |
 | REL-2 | REL2 | **`reliability_assembly_resolver`** — profile ↔ stores conformance | **Done** | `reliability_assembly_resolver.py`, `harness_host_runtime.py` | assembly validation tests |
-| REL-3 | REL3 | **Host reliability CI** — `check_harness_reliability_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| REL-3 | REL3 | **Host reliability CI** — `check_harness_reliability_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product-only retry/fallback policies — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product-only retry/fallback policies — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -98,9 +98,9 @@ Architecture: [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| F.1 | ShadowWorkspace | **Done** | `runtime/workspace/`; UAEP + NexusLoop integration |
-| F.2 | SandboxRuntime | **Done** | `runtime/sandbox/`; `sandbox.exec` via BoundToolGateway |
-| F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human/` store + NexusLoop reject/escalate |
+| F.1 | ShadowWorkspace | **Done** | `runtime/workspace`; UAEP + NexusLoop integration |
+| F.2 | SandboxRuntime | **Done** | `runtime/sandbox`; `sandbox.exec` via BoundToolGateway |
+| F.3 | Advanced HITL (reject/escalation store) | **Done** | `runtime/human` store + NexusLoop reject/escalate |
 | F.4 | Long-running tasks / Slack-Teams | **Done (partial)** | Checkpoints ✅; Slack/Teams = notification stub only |
 
 | F.5 | Typed task contract | **Done** | `TaskExecutionOptions`, `TaskRuntimeState`, `TaskResultSummary`, bridge |
@@ -125,7 +125,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 | REL-ADV.3 | REL-ADV3 | **`AutonomyLevel`** on `TaskExecutionOptions` + effective level middleware | **Done** | `autonomy_resolver.py`, `autonomy_middleware.py` | `test_autonomy_resolver.py` |
 | REL-ADV.4 | REL-ADV4 | **Mid-run autonomy API** — set level on active task | **Done** | `harness_task_routes.py`, `task_control.py` | `ActiveTaskRegistry` + HTTP route |
 | REL-ADV.5 | REL-ADV5 | **Trace events** — `AUTONOMY_LEVEL_*`, `RECOVERY_REBOOT` | **Done** | `runtime_event.py`, `phase_coverage.py` | `test_schema_registry_b07.py` |
-| REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Done** | `scripts/` | lab host audit OK |
+| REL-ADV.6 | REL-ADV6 | **CI** — `check_harness_resilience_policy.py` | **Done** | `scripts` | lab host audit OK |
 | REL-ADV.7 | Tier-3 | **Product host parity** — reliability enricher + autonomy HTTP on scaffold-opt-in hosts | **Done** | H-APP-WIRING.1 **Done** | `UnifiedTaskRunner(task_enricher=…)` |
 
 **ADR policy:** REL-ADV.1 → ADR-REL-001 (resilience policy unification) when implementation starts; REL-ADV.3 → no ADR if enum-only on existing PolicyEngine path.
@@ -168,7 +168,7 @@ Long-running **full** §26 (scheduler, UAEP mid-step) and Slack/Teams **full** �
 
 ### 6.1av Harness implementation queue — Reliability audit maintenance (planned)
 
-**Source:** Layer 17 audit (2026-06-18) — `RELIABILITY_FAILURE_AND_HITL` layer 22 · [`../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md`](../../../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md)  
+**Source:** Layer 17 audit (2026-06-18) — `RELIABILITY_FAILURE_AND_HITL` layer 22 · [`../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md`](../../../audit_results/2026-06-18/RELIABILITY_FAILURE_AND_HITL.md)
 **Priority ladder:** **Band 1** (§6.1) — IDEAL-L3 W2 depth + cross-domain wiring; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |

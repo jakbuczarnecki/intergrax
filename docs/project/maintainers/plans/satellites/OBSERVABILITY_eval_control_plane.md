@@ -1,7 +1,7 @@
 # OBSERVABILITY — Eval Control Plane (OECP)
 
 **Parent hub:** [OBSERVABILITY.md](../OBSERVABILITY.md)  
-**Architecture:** [architecture/OBSERVABILITY.md](../../../architecture/OBSERVABILITY.md#observability--evaluation-control-plane) · [architecture/satellites/OBSERVABILITY_extended_depth.md](../../../architecture/satellites/OBSERVABILITY_extended_depth.md)  
+**Architecture:** [architecture/OBSERVABILITY.md](../../../architecture/OBSERVABILITY.md#observability--evaluation-control-plane) · [architecture/satellites/OBSERVABILITY_extended_depth.md](../../../architecture/satellites/OBSERVABILITY_extended_depth.md)
 **Audit source:** [audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md](../../audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
 **Status:** Active implementation register — **2026-06-24**
 

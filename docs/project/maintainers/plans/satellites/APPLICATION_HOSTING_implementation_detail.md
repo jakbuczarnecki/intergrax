@@ -1,8 +1,8 @@
 # APPLICATION_HOSTING — implementation detail
 
 **Parent plan:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)
-**Architecture:** [`../../architecture/APPLICATION_HOSTING.md`](../../../architecture/APPLICATION_HOSTING.md)
-**Architecture detail:** [`../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)
+**Architecture:** [`../../../architecture/APPLICATION_HOSTING.md`](../../../architecture/APPLICATION_HOSTING.md)
+**Architecture detail:** [`../../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)
 
 > Load only the section for the selected `APP-HOST-*` task. This document contains implementation detail, code targets, acceptance criteria, and verification guidance. The parent plan remains the queue/status authority.
 

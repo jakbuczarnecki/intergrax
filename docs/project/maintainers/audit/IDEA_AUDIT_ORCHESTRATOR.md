@@ -60,11 +60,11 @@ The project rule `.cursor/rules/intergrax-idea-audit.mdc` routes the agent to [`
 
 | Policy | Meaning |
 |--------|---------|
-| **Source of truth** | Live `docs/project/architecture/`, `docs/project/maintainers/plans/`, and code |
+| **Source of truth** | Live `docs/project/architecture`, `docs/project/maintainers/plans`, and code |
 | **Deliverable** | Operator-facing summary in chat |
 | **Duplicate detection** | Search plan registers, architecture canon, code, and ADRs — not prior chat logs |
 | **After operator approval** | Update affected **architecture + plan** domain pair(s); add ADR when significant |
-| **No persistence layer** | Do not create `ideas_results/`, `IDEA_AUDIT.md`, or similar sidecar files |
+| **No persistence layer** | Do not create `ideas_results`, `IDEA_AUDIT.md`, or similar sidecar files |
 
 Re-running the same idea months later is expected — each session re-reads current canon and code.
 
@@ -74,12 +74,12 @@ Re-running the same idea months later is expected — each session re-reads curr
 
 | `IDEA_TYPE` | Primary domain pair(s) | Code search roots | Authoring guide |
 |-------------|------------------------|-------------------|-----------------|
-| `integration` | `INTEGRATIONS` | `intergrax/integrations/` | [`AGENT_CREATION_GUIDE.md`](../../technical/guides/AGENT_CREATION_GUIDE.md) Appendix K |
-| `tool` | `TOOLS` | `intergrax/tools/` | [`TOOLS.md`](../../architecture/TOOLS.md) · `intergrax/tools/USAGE.md` |
-| `skill` | `SKILLS` | `intergrax/skills/` | [`SKILLS.md`](../../architecture/SKILLS.md) |
-| `agent` | `AGENT_CONTRACTS_AND_ASSEMBLY` | `agents/` | [`AGENT_CREATION_GUIDE.md`](../../technical/guides/AGENT_CREATION_GUIDE.md) |
-| `application` | `TIER3_APPLICATION_ENVIRONMENT` | `applications/` | [`APPLICATION_CREATION_GUIDE.md`](../../technical/guides/APPLICATION_CREATION_GUIDE.md) |
-| `harness_capability` | map via [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) | `intergrax/` · `intergrax/runtime/` (Tier-1 only when justified) | hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) |
+| `integration` | `INTEGRATIONS` | `intergrax/integrations` | [`AGENT_CREATION_GUIDE.md`](../../technical/guides/AGENT_CREATION_GUIDE.md) Appendix K |
+| `tool` | `TOOLS` | `intergrax/tools` | [`TOOLS.md`](../../architecture/TOOLS.md) · `intergrax/tools/USAGE.md` |
+| `skill` | `SKILLS` | `intergrax/skills` | [`SKILLS.md`](../../architecture/SKILLS.md) |
+| `agent` | `AGENT_CONTRACTS_AND_ASSEMBLY` | `agents` | [`AGENT_CREATION_GUIDE.md`](../../technical/guides/AGENT_CREATION_GUIDE.md) |
+| `application` | `TIER3_APPLICATION_ENVIRONMENT` | `applications` | [`APPLICATION_CREATION_GUIDE.md`](../../technical/guides/APPLICATION_CREATION_GUIDE.md) |
+| `harness_capability` | map via [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) | `intergrax` · `intergrax/runtime` (Tier-1 only when justified) | hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) |
 | `improvement` | affected domain(s) from task routing | existing component paths | — |
 | `analysis` | as inferred | as needed | — |
 | `cross_cutting` | 2+ domain pairs | union of roots | safety fuse mandatory |
@@ -98,7 +98,7 @@ Search **current** repository state:
 2. `docs/project/architecture/<DOMAIN>.md` — existing contracts, catalog slugs, capabilities
 3. Code paths from classification table — modules, manifests, registry entries, tests
 4. `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` §6.3 — product backlog
-5. `docs/project/technical/adr/` and tier-2/3 `adr/` — precedent decisions
+5. `docs/project/technical/adr` and tier-2/3 `adr` — precedent decisions
 
 Report overlaps in chat. **Do not** rely on prior Cursor sessions or sidecar audit files.
 
@@ -167,7 +167,7 @@ When the operator approves:
 
 1. **Domain-layer work:** update `docs/project/architecture/<DOMAIN>.md` when contracts or capability surface changes; add or update rows in `docs/project/maintainers/plans/<DOMAIN>.md`.
 2. **Multi-layer feature work:** create or update `docs/project/capabilities/architecture/<FEATURE>.md` and `docs/project/capabilities/plan/<FEATURE>.md`, then update affected domain pairs. Domain-specific implementation rows still belong in owning `docs/project/maintainers/plans/<DOMAIN>.md` files.
-3. Create ADR in the correct domain when significant (`docs/project/technical/adr/` or agent/app `adr/`)
+3. Create ADR in the correct domain when significant (`docs/project/technical/adr` or agent/app `adr`)
 4. Record **"no ADR needed"** with rationale when applicable
 5. Add implementation-journal entry when the approved idea changes harness architecture or registers significant plan rows (see [`implementation-journal/README.md`](../implementation-journal/README.md)); otherwise record **"no journal needed"** in chat.
 
@@ -183,13 +183,13 @@ Kryterium sukcesu: wysyłka przez ToolRuntime pod polityką Nexus.
 Poza zakresem: inbound webhook, szablony Phase K.
 ```
 
-Agent should classify → `INTEGRATIONS`, scan `intergrax/integrations/` for `twilio`, `notify.send`, deliver verdict in Polish, then STOP.
+Agent should classify → `INTEGRATIONS`, scan `intergrax/integrations` for `twilio`, `notify.send`, deliver verdict in Polish, then STOP.
 
 ---
 
 ## Anti-patterns (forbidden)
 
-- Writing idea-audit sidecar files (`IDEA_AUDIT.md`, `ideas_results/`, etc.)
+- Writing idea-audit sidecar files (`IDEA_AUDIT.md`, `ideas_results`, etc.)
 - Shallow opinion without code/plan evidence
 - Creating new Tier-0 mechanisms when an existing one fits
 - Editing architecture/plan before operator approval

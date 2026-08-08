@@ -78,7 +78,7 @@ The diagram is intentionally split into two evidence paths:
 - **This is not production certification** or a guarantee of production readiness for any deployment.
 - **This is not compliance or legal attestation** — no regulatory, security, or legal approval is implied.
 - **This is not a general guarantee** that every Intergrax deployment is secure or correctly configured.
-- **This does not grant production or commercial use rights** — see [LICENSE](../../../../LICENSE) and [COLLABORATION.md](../../community/COLLABORATION.md).
+- **This does not grant production or commercial use rights** — see [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
 
 ## How to inspect the demo
 
@@ -94,8 +94,8 @@ Start with the application documentation:
 **Suggested path:**
 
 1. Read the [Attestation Demo README](../../../../applications/attestation_demo/README.md) for scope, disclaimers, and the primary PoC endpoint.
-2. Run the local demo if consistent with [LICENSE](../../../../LICENSE) and [COLLABORATION.md](../../community/COLLABORATION.md) (see [BUILD_AND_DEPLOY.md](../../technical/applications/attestation_demo/BUILD_AND_DEPLOY.md)).
-3. Inspect `boundary_events[]` and the `trust_model` response from `POST /v1/attestation_demo/poc/run`; compare host attestation envelopes with the EBE-9 golden vector in `partner_handoff/`.
+2. Run the local demo if consistent with [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) (see [BUILD_AND_DEPLOY.md](../../technical/applications/attestation_demo/BUILD_AND_DEPLOY.md)).
+3. Inspect `boundary_events[]` and the `trust_model` response from `POST /v1/attestation_demo/poc/run`; compare host attestation envelopes with the EBE-9 golden vector in `partner_handoff`.
 
 ## Acknowledgement
 
@@ -106,8 +106,8 @@ This acknowledgement does not imply formal certification, bundling, ownership, p
 ## Related documents
 
 - [README.md](../../../../README.md) — project overview and proof paths
-- [ROADMAP.md](../ROADMAP.md) — public adoption roadmap and collaboration tracks
-- [COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permitted use
+- [docs/project/overview/ROADMAP.md](../ROADMAP.md) — public adoption roadmap and collaboration tracks
+- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permitted use
 - [LICENSE](../../../../LICENSE) — proprietary terms
 - [INTERGRAX_HARNESS_NARRATIVE.md](../../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) — harness narrative for external readers
 - [Attestation Demo README](../../../../applications/attestation_demo/README.md) — full PoC documentation and partner mapping

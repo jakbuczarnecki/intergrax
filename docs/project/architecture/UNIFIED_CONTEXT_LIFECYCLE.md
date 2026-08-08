@@ -610,7 +610,7 @@ Do not change TOKEN-10D router/timing result semantics in this architecture pass
 
 ## 9. Canonical data model (CTX-UCL-1 contracts)
 
-Implemented in `intergrax/runtime/context_lifecycle/` — contracts only; no repository or runtime integration.
+Implemented in `intergrax/runtime/context_lifecycle` — contracts only; no repository or runtime integration.
 
 ### 9.0 Core durable concepts
 

@@ -1,10 +1,10 @@
 # Research — Architecture Decision Records
 
-**Domain:** Tier-3 application host (`applications/research_application/`)
+**Domain:** Tier-3 application host (`applications/research_application`)
 
 Architecture: [`../ARCHITECTURE.md`](ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
-Platform ADRs: [`../../docs/project/technical/adr/README.md`](README.md)
+Platform ADRs: [`../project/technical/adr/README.md`](README.md)
 
 ---
 
@@ -17,7 +17,7 @@ Create an ADR for **product-environment** decisions, for example:
 - Serving API shape, auth model, deployment topology, or MCP exposure
 - Cross-agent orchestration declared in this application (not Nexus core semantics)
 
-**Not required:** Nexus platform contract changes (use `docs/project/technical/adr/`), single-agent domain logic (use agent ADRs),
+**Not required:** Nexus platform contract changes (use `docs/project/technical/adr`), single-agent domain logic (use agent ADRs),
 or configuration-only tweaks with no architectural impact.
 
 ## Naming

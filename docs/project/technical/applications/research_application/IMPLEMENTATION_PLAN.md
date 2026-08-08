@@ -4,9 +4,9 @@
 
 Status: **Harness baseline Done** — graph depth optional
 
-Architecture: [`ARCHITECTURE.md`](docs/ARCHITECTURE.md)  
-Agent plan: [`docs/project/technical/agents/research/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/research/IMPLEMENTATION_PLAN.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md) · Phase AA-RESAPP
+Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+Agent plan: [`docs/project/technical/agents/research/IMPLEMENTATION_PLAN.md`](../../agents/research/IMPLEMENTATION_PLAN.md)
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md) · Phase AA-RESAPP
 
 ---
 

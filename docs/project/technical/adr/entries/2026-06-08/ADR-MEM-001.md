@@ -19,7 +19,7 @@ Alternatives considered:
 
 ## Decision
 
-Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context/`) that:
+Introduce **`ContextCompiler`** in Tier-1 (`runtime/nexus/context`) that:
 
 1. Collects `messages_for_llm` as scored **`ContextCandidate`** fragments after all injection steps.
 2. Enforces **`ContextDecisionProfile`** from `RuntimeConfig.context_decision_profile`.

@@ -1,10 +1,10 @@
 # Nexus Execution Flow — Implementation Plan
 
-**Architecture (1:1):** [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (NEXUS_EXECUTION_FLOW plan).
 
-- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/satellites/`](plan/satellites) satellite on demand
+- **Implement / audit default:** §6.1 FLOW maintenance · open P0/P1 rows · Phase AUDIT-IDEAL gap table. Historical flow registers — [`plan/satellites`](plan/satellites) satellite on demand
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/NEXUS_EXECUTION_FLOW.md`](../../technical/guides/audit_slices/NEXUS_EXECUTION_FLOW.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -37,7 +37,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §5, §6 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §5, §6 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -80,20 +80,20 @@ Load **only** the satellite matching your task or cited gap ID.
 | 18 | **FLOW-DOC.2** | Docs | **Done** | §3.1 interaction scenario table | Cross-ref TIER3 §23, ORCH §55 |
 | — | **FLOW-8** | Harness + Product | **Partial** | Harness: `test_orchestration_cfg_simulation.py` · Product §42.43: **§6.3** |
 
-**Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).
+**Suggested PR order:** See [Phase FLOW — Suggested PR order](.#flow--suggested-pr-order).
 
 **Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
 
 ### 6.1av Harness implementation queue — Nexus execution flow audit maintenance (closed)
 
-**Source:** Layer 4 audit (2026-06-18) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
+**Source:** Layer 4 audit (2026-06-18) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)
 **Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **FLOW-MAINT-01** | Code | P2 | **Done** | Wire `ResiliencePolicy.allow_partial_result` into `graph_runner` lifecycle transitions | When `False`, non-all-completed multi-node graph → `FAILED` not `PARTIALLY_COMPLETED`; unit/integration test |
 | 2 | **FLOW-MAINT-02** | Docs | P3 | **Done** | Production-ready checklist in architecture §1.4 (strict profile + W-OPS SLO + reference host presets) | Operator runbook cross-ref; no new mechanisms |
-| 3 | **FLOW-MAINT-03** | Test/CI | P3 | **Done** | Windows acceptance teardown guard for `signals.db` lock flake | `tests/acceptance/agent_os/` stable on Windows CI |
+| 3 | **FLOW-MAINT-03** | Test/CI | P3 | **Done** | Windows acceptance teardown guard for `signals.db` lock flake | `tests/acceptance/agent_os` stable on Windows CI |
 | 4 | **FLOW-MAINT-04** | Test | P3 | **Done** | Bootstrap fail-fast test when engine planner path lacks `llm_adapter` | `test_orchestration_wiring.py::test_engine_planner_requires_llm_adapter` |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-18).
@@ -102,14 +102,14 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.1aw Harness implementation queue — Nexus execution flow audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md) · prior: [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)  
+**Source:** Interactive layer audit (2026-06-19) — `NEXUS_EXECUTION_FLOW` layers 8–10 · [`../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-19/NEXUS_EXECUTION_FLOW.md) · prior: [`../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md`](../../../audit_results/2026-06-18/NEXUS_EXECUTION_FLOW.md)
 **Priority ladder:** **Band 1** (§6.1) — test depth + doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **FLOW-MAINT-05** | Test | P3 | **Done** | Lifecycle regression: multi-node partial graph + `allow_partial_result=False` → `TaskState.FAILED`; `True` → `PARTIALLY_COMPLETED` | `test_graph_runner_resilience.py`; gate green |
 | 2 | **FLOW-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; sync architecture §1.4 partial-results test row with FLOW-MAINT-05 | Canon matches test evidence |
-| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `NEXUS_EXECUTION_FLOW.md` + `progress.json`; L3 verdict layers 8–10 |
+| 3 | **FLOW-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `NEXUS_EXECUTION_FLOW.md` + `progress.json`; L3 verdict layers 8–10 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 
@@ -117,7 +117,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.1ax Harness implementation queue — Nexus scenario production status (closed)
 
-**Source:** Maturity taxonomy rollout — [`guides/MATURITY_TAXONOMY.md`](../../technical/guides/MATURITY_TAXONOMY.md) · architecture §12.2  
+**Source:** Maturity taxonomy rollout — [`guides/MATURITY_TAXONOMY.md`](../../technical/guides/MATURITY_TAXONOMY.md) · architecture §12.2
 **Priority ladder:** **Band 1** (§6.1) — docs only; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -144,7 +144,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | 8 | **CRIT-V-7.*** | Code/Docs | **Done** | FAUDIT-EVAL.1 + flow reference sync | Closeout gate green |
 | 9 | **CRIT-V-FOLLOWUP** | Code | **Done** | L1 client, L2 HITL, UAEP hook, policy bridge | `test_critic_closeout.py`, gate green |
 
-**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed).
+**Suggested PR order:** See [§6.2ak](.#62ak-phase-crit-v-execution-order-band-2ak--closed).
 
 **Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
 
@@ -152,7 +152,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.2aj Phase FLOW execution order (Band 2aj — closed 2026-06-07)
 
-**Status:** **Done** · register: [Phase FLOW](plan/ORCHESTRATION.md) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)
+**Status:** **Done** · register: [Phase FLOW](plan/ORCHESTRATION.md) · queue: [§6.1aj](.#61aj-harness-implementation-queue--nexus-execution-depth-closed)
 
 Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj + Appendix N; keep §6.1 scripts green.
 
@@ -191,8 +191,8 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 **Prerequisites:** Phase ORCH **Done**; [ADR-FLOW-001](adr/entries/2026-06-07/ADR-FLOW-001.md) **Accepted** (delegation target semantics)  
 **Goal:** Close **all** orchestration depth gaps (`FLOW-GAP-01`…`16`) from flow reference — uplift AUDIT_MAP §5, §7, §8, §9, §10, §25 from L2/L3-partial to **L3+** operational maturity  
 **Priority ladder:** **Band 2aj** (§4.0) — **maintenance only** — §6.1 gate (Band 3 §6.3 frozen)  
-**Execution order:** [§6.2aj](#62aj-phase-flow-execution-order-band-2aj--active) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)  
-**Traceability:** **Appendix N (FLOW)** — [`§Appendix N`](#appendix-n--nexus-execution-flow-traceability-phase-flow)
+**Execution order:** [§6.2aj](.#62aj-phase-flow-execution-order-band-2aj--active) · queue: [§6.1aj](.#61aj-harness-implementation-queue--nexus-execution-depth-closed)
+**Traceability:** **Appendix N (FLOW)** — [`§Appendix N`](.#appendix-n--nexus-execution-flow-traceability-phase-flow)
 
 **Delivery rule:** One **FLOW-*** ID per PR → update master table + §6.1aj + Appendix N paydown → `pytest -m gate` + §6.1 scripts green.
 
@@ -224,7 +224,7 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 | FLOW-11 | FLOW3 | FLOW-GAP-09 | **Pre-plan / pre-LLM policy extension points** — document + wire hooks at planning boundary | **Done** | Medium | `planning_runner.py`, `policy_engine.py` | Hook tests + Appendix H cross-ref |
 | FLOW-5 | FLOW4 | FLOW-GAP-05 | **`AgentGraph.on_error(retry)`** — wire to `RetryPolicy` / graph executor | **Done** | Low | `graph_builder.py`, `orchestration_wiring.py` | Integration test declared retry |
 | FLOW-10 | FLOW4 | FLOW-GAP-08 | **Reserved lifecycle states** — ADR: implement `WAITING_FOR_RESOURCES`/`EXPIRED` **or** trim enum + canon sync | **Done** | Low | `task_lifecycle.py`, `adr/entries/2026-06-07/ADR-FLOW-002.md` | [ADR-FLOW-002](adr/entries/2026-06-07/ADR-FLOW-002.md) accepted; reserved v1 semantics |
-| FLOW-12 | FLOW4 | §24 / FAUDIT-COG | **`DecisionRecord` regression gate** — verify FAUDIT-COG.1 emit on every UAEP decision path; gate test; sync flow §24 | **Done** | Medium | `uaep.py`, `tests/integration/agents/` | `DECISION_EMITTED` + `decision_record` on each step decision |
+| FLOW-12 | FLOW4 | §24 / FAUDIT-COG | **`DecisionRecord` regression gate** — verify FAUDIT-COG.1 emit on every UAEP decision path; gate test; sync flow §24 | **Done** | Medium | `uaep.py`, `tests/integration/agents` | `DECISION_EMITTED` + `decision_record` on each step decision |
 | FLOW-13 | FLOW4 | FLOW-GAP-12 | **`max_inflight_nodes` profile + wire** — field on `OrchestrationProfile`; `resolve_max_inflight_nodes()`; `nexus_factory` → `GraphExecutor` | **Done** | Medium | `environment_profile.py`, `orchestration_wiring.py`, `nexus_factory.py` | `GRAPH_BACKPRESSURE` event when cap hit; profile round-trip test |
 | FLOW-14 | FLOW4 | FLOW-GAP-13 | **`SubtaskContract` in delegation expansion** — `graph_spec_to_plan` / ADR-FLOW-001 child node uses `SubtaskContract.to_delegation_spec()` (`objective`, `permission_scopes`, `inherit_tool_policy=False`) | **Done** | Medium | `graph_spec_to_plan.py`, `subtask_contract.py` | Unit test scopes + objective on child `DelegationSpec` |
 | FLOW-15 | FLOW4 | FLOW-GAP-14 | **Subagent budget envelope** — optional `budget_envelope` on `SubtaskContract` / `DelegationSpec`; enforce in child `GraphExecutor` run via existing budget bridge | **Done** | Medium | `subtask_contract.py`, `delegation.py`, `graph_executor.py` | Child run exceeds envelope → fail with trace |
@@ -241,7 +241,7 @@ FLOW-2 → FLOW-14 → FLOW-3 → FLOW-15 → FLOW-6 → FLOW-1 → FLOW-4 → F
 
 **Parallel OK after FLOW-2:** FLOW-1, FLOW-6, FLOW-13 (disjoint modules). **FLOW-14** same PR as FLOW-2 or immediately after.
 
-**FLOW-8:** Schedule only after explicit product decision ([§6.3](#63-end-of-plan--deferred-product-work-only)).
+**FLOW-8:** Schedule only after explicit product decision ([§6.3](.#63-end-of-plan--deferred-product-work-only)).
 
 ### FLOW — Paydown log
 

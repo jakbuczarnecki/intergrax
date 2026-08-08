@@ -16,7 +16,7 @@ GEC-1/GEC-2 introduced platform contracts and `ExternalWorkIntegration`. Without
 1. **Tier-2 owns mapping only** — request/snapshot/quote/timeline/deliverables/evidence normalization, correlation preservation, and idempotency forwarding.
 2. **Tier-2 does not own governance** — no quote accept/reject, policy, wallet/payment, ProofReceipt, HITL decisions, retry/poll/resume engines, or Nexus `TaskState` commercial extensions.
 3. **Consume only `ExternalWorkIntegration`** — inject via agent constructor / host settings; never construct providers or branch on provider type/protocol.
-4. **Prove with a deterministic in-memory fake** in agent tests (`tests/fakes/`) — not an A2A/REST stub and not the GEC-8/9 partner stub. No networking.
+4. **Prove with a deterministic in-memory fake** in agent tests (`tests/fakes`) — not an A2A/REST stub and not the GEC-8/9 partner stub. No networking.
 
 ## Consequences
 
@@ -33,7 +33,7 @@ GEC-1/GEC-2 introduced platform contracts and `ExternalWorkIntegration`. Without
 
 ## Compliance
 
-- No `applications/` imports in the agent package
+- No `applications` imports in the agent package
 - No transport libraries in mapping modules
 - Sync Protocol calls only
 

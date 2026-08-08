@@ -604,7 +604,7 @@ profile = ApplicationEnvironmentProfile(
 | Full session dump to LLM | HistoryLayer + CE budget |
 | Silent fragment drop | Emit `CONTEXT_CANDIDATE_DROPPED` with reason |
 | RAG chunks without citation metadata | `ContextFragment.metadata.citations` |
-| Custom CE fork in `agents/` | `ContextPlugin` in application package |
+| Custom CE fork in `agents` | `ContextPlugin` in application package |
 | Storing CE diagnostics in task KV | Trace + RuntimeEvent only |
 
 ---

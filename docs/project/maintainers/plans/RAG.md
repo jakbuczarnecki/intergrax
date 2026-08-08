@@ -1,10 +1,10 @@
 # RAG — Implementation Plan
 
-**Architecture (1:1):** [`architecture/RAG.md`](../../architecture/RAG.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/RAG.md`](../../architecture/RAG.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (RAG plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/RAG_audit_history.md`](plan/satellites/RAG_audit_history.md) · [`plan/satellites/RAG_embedded_detail.md`](plan/satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/RAG_audit_history.md`](plan/satellites/RAG_audit_history.md) · [`plan/satellites/RAG_embedded_detail.md`](plan/satellites/RAG_embedded_detail.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/RAG.md`](../../architecture/RAG.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/RAG.md`](../../technical/guides/audit_slices/RAG.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -38,7 +38,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — RAG gap register (layer 14)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Engine depth audit:** 2026-06-10 — full register in [`architecture/RAG.md`](../../architecture/RAG.md) §Engine depth audit register
 
@@ -56,7 +56,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Delivery rule:** One **AUDIT-IDEAL-\*** ID per PR (when applicable) → update this table + master register → gate green. Additional GAP-RAG rows without AUDIT-IDEAL IDs use M-RAG.\* only.
 
-**Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** — **Frozen**. Closeout: [Phase M-RAG-CONVERGE](#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
+**Engine audit (2026-06-13):** Maturity **L3 implementation / L3 control plane** — **Frozen**. Closeout: [Phase M-RAG-CONVERGE](.#phase-m-rag-converge--doc--diagnostics-closeout-2026-06-13).
 
 ---
 
@@ -86,7 +86,7 @@ native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map
 system-owned at each provider boundary. LangChain `Document` compatibility is
 absent from vector-store paths. Retrieval result migration is complete for active retrievers and RAG tools under LCI-4A; reranking is complete under LCI-4B; graph retrieval is the active LCI-4C review target.
 
-**Contract spec:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../../capabilities/plan/LANGCHAIN_INDEPENDENCE.md)
+**Contract spec:** [`../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) · **Feature plan:** [`features/plan/LANGCHAIN_INDEPENDENCE.md`](../../capabilities/plan/LANGCHAIN_INDEPENDENCE.md)
 
 LCI-4B reranking preserves the native `KnowledgeDocument`, identity, scope,
 provenance and user metadata while adding only rerank/fusion scores and final

@@ -1,4 +1,4 @@
-Before submitting substantial work, read [COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE).
+Before submitting substantial work, read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE).
 
 ## Summary
 
@@ -62,4 +62,4 @@ uv run pytest -m gate -q
 - [ ] No secrets committed
 - [ ] Copyright header on new files
 - [ ] Follows [CONTRIBUTING.md](../CONTRIBUTING.md) work cycle
-- [ ] Read [COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE) for substantial changes
+- [ ] Read [docs/project/community/COLLABORATION.md](../docs/project/community/COLLABORATION.md) and [LICENSE](../LICENSE) for substantial changes

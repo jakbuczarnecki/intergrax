@@ -20,7 +20,7 @@
 | Artifact | Status | ECP architecture § |
 |----------|--------|-------------------|
 | `max_inflight_nodes` / `GRAPH_BACKPRESSURE` | **Done** (FLOW-13) | §13 |
-| `queueing/` workers | **Done** | §14 |
+| `queueing` workers | **Done** | §14 |
 | W-OPS.4 SLO catalog | **Done** | §10, §18 |
 | W-OPS.12 Celery modality | **Done** | §14 |
 | `kubernetes` integration beta | **Done** | §12.3 |

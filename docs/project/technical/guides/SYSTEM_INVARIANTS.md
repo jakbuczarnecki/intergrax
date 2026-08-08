@@ -21,7 +21,7 @@ Intergrax spreads **non-negotiable architectural rules** across 22 domain pairs,
 
 | Situation | Action |
 |-----------|--------|
-| **Onboarding** | Read [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 (execution stack) before opening a domain pair |
+| **Onboarding** | Read [Cross-Layer System Invariants](.#cross-layer-system-invariants) + §4 (execution stack) before opening a domain pair |
 | **Code review** | Check diff against cross-layer rules and §5 index; escalate violations before merge |
 | **Domain implementation** | Read your domain pair; use cross-layer rules as guardrails |
 | **External audit** | Cross-layer rules + §5 + §7 (CI mapping) + §8 (rejected patterns) + [MATURITY_TAXONOMY.md](MATURITY_TAXONOMY.md) four-axis statements |
@@ -45,11 +45,11 @@ Normative rules that **MUST** hold across Tier-0..3, Nexus, agents, tools, conte
 
 ## 1. Tier boundary invariants
 
-- Tier-0 `intergrax/` provides universal, domain-agnostic primitives.
-- Tier-0 **MUST NOT** import from `agents/` or `applications/`.
-- Tier-1 `intergrax/runtime/` owns Nexus, AgentEngine, UAEP, policy, runtime events, orchestration execution.
-- Tier-2 `agents/` owns domain-specific reasoning and domain step decisions.
-- Tier-3 `applications/` owns deployable hosts, manifests, profiles, rosters, intake surfaces and product composition.
+- Tier-0 `intergrax` provides universal, domain-agnostic primitives.
+- Tier-0 **MUST NOT** import from `agents` or `applications`.
+- Tier-1 `intergrax/runtime` owns Nexus, AgentEngine, UAEP, policy, runtime events, orchestration execution.
+- Tier-2 `agents` owns domain-specific reasoning and domain step decisions.
+- Tier-3 `applications` owns deployable hosts, manifests, profiles, rosters, intake surfaces and product composition.
 - Business/product logic **MUST NOT** be implemented in Tier-0 or Tier-1 unless it is truly domain-agnostic.
 - Applications compose the harness; they **MUST NOT** become agents.
 - Agents run inside the harness; they **MUST NOT** become private runtimes.
@@ -256,8 +256,8 @@ Format: **ID · Layer · Rule · Canon · CI (if enforced)**
 
 | ID | Layer | Rule | Canon | CI |
 |----|-------|------|-------|-----|
-| **SYS-INV-01** | Tier-0 | `intergrax/` **never** imports `agents/` or `applications/`. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.1 · §5.3 | `check_intergrax_no_applications_imports.py` |
-| **SYS-INV-02** | Tier-2 | `agents/` **never** imports `applications/`. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.3 | `check_agents_no_tier3_imports.py` |
+| **SYS-INV-01** | Tier-0 | `intergrax` **never** imports `agents` or `applications`. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.1 · §5.3 | `check_intergrax_no_applications_imports.py` |
+| **SYS-INV-02** | Tier-2 | `agents` **never** imports `applications`. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.3 | `check_agents_no_tier3_imports.py` |
 | **SYS-INV-03** | Tier-0 | Platform catalogs **never** orchestrate, route agents, or host HTTP product surfaces. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.1.2 | review |
 | **SYS-INV-04** | Tier-1 | Nexus **never** implements agent business workflows or domain prompts. | [`PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) §5.2 | review |
 | **SYS-INV-05** | Tier-2 | Agents **never** own global orchestration, HTTP host wiring, or `AgentRegistry` lifecycle. | ACP §21.2 **ACP-INV-01** · §21.3 Rejected | `check_acp_ci_conformance_matrix.py` |
@@ -380,7 +380,7 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 
 | Event | Action |
 |-------|--------|
-| New cross-layer rule | Add or update [Cross-Layer System Invariants](#cross-layer-system-invariants) subsection; add §5 row if CI-mapped |
+| New cross-layer rule | Add or update [Cross-Layer System Invariants](.#cross-layer-system-invariants) subsection; add §5 row if CI-mapped |
 | New domain invariant (ACP-INV-*, APP-INV-*) | Add or update §5 row; link domain section — do not duplicate prose |
 | New CI gate for an existing rule | Update §7 and the row's CI column |
 | Semantic change | Domain architecture + ADR first; then this index |
@@ -394,9 +394,9 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 
 ## 10. Reading order
 
-1. This file — [Cross-Layer System Invariants](#cross-layer-system-invariants) + §4 execution stack  
+1. This file — [Cross-Layer System Invariants](.#cross-layer-system-invariants) + §4 execution stack
 2. [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md) — four-axis maturity vocabulary  
-3. Hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
-4. **One** domain pair for your task ([`AGENTS.md`](../../../../AGENTS.md) task routing)  
+3. Hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
+4. **One** domain pair for your task ([`AGENTS.md`](../../../../AGENTS.md) task routing)
 5. Author guides when building: [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
 6. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)

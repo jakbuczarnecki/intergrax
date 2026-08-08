@@ -1,11 +1,11 @@
 # Ideal Architecture Gap Register — Post-L3 Audit (2026-06-09)
 
-**Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0–§26  
-**Platform canon (scope):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) · cross-domain register (no 1:1 pair)  
-**Audit map:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 (32 layers)  
+**Architecture target:** [`guides/IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0–§26
+**Platform canon (scope):** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) · cross-domain register (no 1:1 pair)
+**Audit map:** [`guides/INTEGRAX_HARNESS_AUDIT_MAP.md`](../../technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8 (32 layers)
 **Baseline:** **32/32 L3** (`scripts/gates/harness_maturity_report.py`, IDEAL-L3 W2 Done)  
 **Hub:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) · Band **2az** · queue **§6.1au**  
-**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../../technical/guides/ARCHITECTURE_DEBT_REGISTER.md)  
+**Debt register:** [`guides/ARCHITECTURE_DEBT_REGISTER.md`](../../technical/guides/ARCHITECTURE_DEBT_REGISTER.md)
 **Status:** **AUDIT-IDEAL complete** (2026-06-18) — **90/90 Done** · **0 Deferred §6.3** · **0 Planned**
 
 > **Scope:** Close gaps between **L3 Production Harness OS** and **full ideal architecture** (modular, elastic, complete). Harness infrastructure only unless row is explicitly **Deferred §6.3** (product).

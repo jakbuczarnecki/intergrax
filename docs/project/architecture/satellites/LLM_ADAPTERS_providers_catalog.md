@@ -28,7 +28,7 @@ OpenAI-compatible slugs share `openai_compat_factory.py`. ABC defaults: streamin
 | `vertex_gemini` | `vertex_gemini_adapter` | `GOOGLE_APPLICATION_CREDENTIALS` | yes | yes | |
 | `azure_ai_inference` | `azure_ai_inference_adapter` | `AZURE_AI_*` | yes | partial | |
 
-Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.md`](../../intergrax/llm_adapters/USAGE.md)).
+Per-provider model env vars: `INTERGRAX_DEFAULT_<PROVIDER>_MODEL` (see [`USAGE.md`](../../../../intergrax/llm_adapters/USAGE.md)).
 
 ### Self-hosted inference (Ollama vs vLLM vs llama.cpp)
 
@@ -64,7 +64,7 @@ Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000
 
 **Live smoke (vLLM only):** `test_vllm_live_one_shot` in `tests/unit/llm_adapters/test_network_smoke.py` (marker `network`; weekly GitHub workflow).
 
-**llama.cpp verification (local only, not GitHub CI):** [`infra/docker/llama-cpp/VERIFY_RUNBOOK.md`](../../infra/docker/llama-cpp/VERIFY_RUNBOOK.md) · `tests/e2e/llama_cpp/` (`e2e`, `no_ci`, `network`).
+**llama.cpp verification (local only, not GitHub CI):** [`infra/docker/llama-cpp/VERIFY_RUNBOOK.md`](../../infra/docker/llama-cpp/VERIFY_RUNBOOK.md) · `tests/e2e/llama_cpp` (`e2e`, `no_ci`, `network`).
 
 ---
 
@@ -84,7 +84,7 @@ Port **8100** (vLLM) and **8102** (llama.cpp) avoid conflict with Chroma (**8000
 
 ## Observability (Prometheus & governance)
 
-Tier-0 metrics: `intergrax/llm_adapters/tracking/`.
+Tier-0 metrics: `intergrax/llm_adapters/tracking`.
 
 ### Scrape (recommended)
 

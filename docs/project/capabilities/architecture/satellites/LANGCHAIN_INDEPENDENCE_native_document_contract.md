@@ -7,7 +7,7 @@ Use, modification, or distribution without written permission is prohibited.
 # Native Knowledge Document Contract — LCI-1A
 
 **Status:** LCI-1A architecture: **APPROVED**; LCI-1B implementation: **APPROVED**; LCI-1C bridge: **APPROVED**; LCI-1D conformance gate: **READY_FOR_REVIEW**
-**Owner:** RAG (functional) · Tier-0 `intergrax/knowledge/` (neutral shared core)
+**Owner:** RAG (functional) · Tier-0 `intergrax/knowledge` (neutral shared core)
 **Feature hub:** [`../LANGCHAIN_INDEPENDENCE.md`](../LANGCHAIN_INDEPENDENCE.md)
 **Feature plan:** [`../../plan/LANGCHAIN_INDEPENDENCE.md`](../../plan/LANGCHAIN_INDEPENDENCE.md)
 **Anchor domain architecture:** [`../../../architecture/RAG.md`](../../../architecture/RAG.md)
@@ -61,7 +61,7 @@ Chunk lineage remains the native contract: chunk identity and parent/root relati
 | **Canonical type** | `KnowledgeDocument` |
 | **Target module (LCI-1B)** | `intergrax/knowledge/contracts/document.py` |
 | **Public import** | `from intergrax.knowledge.contracts import KnowledgeDocument` |
-| **Package tier** | Tier-0 shared core — neutral, not under `intergrax/rag/` |
+| **Package tier** | Tier-0 shared core — neutral, not under `intergrax/rag` |
 | **Functional owner** | RAG domain owns contract semantics and evolution |
 | **Shared consumers** | Memory, modality, integrations import from `intergrax.knowledge.contracts`; they must not define parallel document types |
 
@@ -137,7 +137,7 @@ Normalization adapter implementation is **out of scope** for LCI-1A; belongs to 
    - use them in `KnowledgeDocument`;
    - rewire Vendor Knowledge to the same component;
    - preserve current Vendor Knowledge behavior via regression tests.
-6. Two independent implementations of the same security policy are not allowed. Do not choose a final module name without checking the existing `intergrax/` layout.
+6. Two independent implementations of the same security policy are not allowed. Do not choose a final module name without checking the existing `intergrax` layout.
 
 ---
 
@@ -429,7 +429,7 @@ Serializers and deserializers are **LCI-1B** deliverables. This document defines
 
 ## 12. LangChain Document mapping
 
-Bridge implementation: **LCI-1C** (`intergrax/compat/langchain/`). Conversion rules defined here for LCI-1B/LCI-1C alignment.
+Bridge implementation: **LCI-1C** (`intergrax/compat/langchain`). Conversion rules defined here for LCI-1B/LCI-1C alignment.
 
 ### 12.1 Field mapping table
 
@@ -491,7 +491,7 @@ All validation is **fail-closed**:
 |------|-------------|------------|
 | **LCI-1A** (this doc) | Architecture + contract spec + mappings | LCI-0C |
 | **LCI-1B** | `intergrax/knowledge/contracts/document.py`; Pydantic models; serializers/validators; unit tests | LCI-1A acceptance |
-| **LCI-1C** | `from_langchain_document` / `to_langchain_document` in `intergrax/compat/langchain/` | LCI-1B |
+| **LCI-1C** | `from_langchain_document` / `to_langchain_document` in `intergrax/compat/langchain` | LCI-1B |
 | **LCI-1D** | Conformance gate: import without `langchain*`; round-trip; identity/metadata tests; CI wiring | LCI-1B |
 
 **LCI-1A explicitly does not:** implement Python modules, migrate consumers, create bridge, create serializers, add tests, modify inventory or CI.

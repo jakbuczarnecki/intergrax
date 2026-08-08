@@ -20,8 +20,8 @@ Tier-2 **partner sandbox** agent for Execution Boundary Export (EBE). One step s
 |------|------|
 | `boundary_demo_agent.py` | `BoundaryDemoAgent` — UAEP `get_steps` / `run_step` |
 | `capabilities.py` | Capability ids |
-| `tests/` | Standalone contract smoke tests |
-| `docs/project/technical/adr/` | Agent ADRs — [`adr/README.md`](adr/README.md) |
+| `tests` | Standalone contract smoke tests |
+| `docs/project/technical/adr` | Agent ADRs — [`adr/README.md`](adr/README.md) |
 
 ## Runtime
 
@@ -51,7 +51,7 @@ run_step(store_demo_record):
 
 ## Tier hygiene
 
-- Imports only `intergrax.*` and `boundary_demo` — **no** `applications/` imports
+- Imports only `intergrax.*` and `boundary_demo` — **no** `applications` imports
 - Tool wiring supplied by `applications/attestation_demo/host/tool_wiring.py`
 
 ## Registration

@@ -5,7 +5,7 @@
 | **Status** | Accepted |
 | **Date** | 2026-06-19 |
 | **Deciders** | Harness platform + BoundaryAttest partner |
-| **Related** | [ADR-OBS-002](2026-06-13/ADR-OBS-002.md) · [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §18 · `applications/attestation_demo/partner_handoff/` |
+| **Related** | [ADR-OBS-002](2026-06-13/ADR-OBS-002.md) · [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) §18 · `applications/attestation_demo/partner_handoff` |
 
 ## Context
 
@@ -45,7 +45,7 @@ Add optional **EBE-9 host signing** to Execution Boundary Export:
 ## Compliance
 
 - HOS spine unchanged
-- Tier boundaries preserved (`intergrax/runtime/attestation/`)
+- Tier boundaries preserved (`intergrax/runtime/attestation`)
 - Webhook delivery (EBE-7) remains deferred
 
 ## Verification

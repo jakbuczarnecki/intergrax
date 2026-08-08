@@ -12,7 +12,7 @@
 Plane C speech (TTS/STT) was delivered in two parallel paths:
 
 1. **Integration Library** — `speech_provider` category, `SpeechProviderBackend` Protocol, manifest + factory registration (`elevenlabs`, `deepgram`), Tier-3 `IntegrationProfile` resolution, `wire_integration_tool_context()` → `speech.*` tools.
-2. **`speech_adapters/`** — closed `SpeechProvider` enum (`stub`, `elevenlabs` only), `SpeechAdapterRegistry` builtins, `SpeechProfile` enum coercion, `speech_provider_for_slug()` hardcoded mapping (`deepgram` → `STUB`).
+2. **`speech_adapters`** — closed `SpeechProvider` enum (`stub`, `elevenlabs` only), `SpeechAdapterRegistry` builtins, `SpeechProfile` enum coercion, `speech_provider_for_slug()` hardcoded mapping (`deepgram` → `STUB`).
 
 Integration canon states catalog identity is a string **slug** — not a central enum — and third-party providers **must not** extend a core enum. The enum path violates **SYS-INV-10** (one canonical path per universal concern) and blocks extension without editing platform source.
 
@@ -44,7 +44,7 @@ Operator constraint: **remove legacy immediately** — no deprecation phases or 
 ### Negative
 
 - Breaking change for code importing `SpeechProvider` enum — must migrate to slug strings or `IntegrationProfile` in the same PR series.
-- `speech_adapters/` shrinks to bridge + optional local adapters; documentation and tests must be updated atomically.
+- `speech_adapters` shrinks to bridge + optional local adapters; documentation and tests must be updated atomically.
 
 ## Compliance
 
@@ -57,5 +57,5 @@ Operator constraint: **remove legacy immediately** — no deprecation phases or 
 
 - Remove: `intergrax/speech_adapters/contracts/speech_provider.py` enum (replace with slug constant module or delete file).
 - Refactor: `speech_integration_bridge.py`, `registry/profile.py`, `registry/speech_adapter_registry.py`, `applications/_shared/modality_wiring.py`, `applications/_shared/integration_tool_wiring.py`.
-- Tests: `tests/unit/speech_adapters/`, `tests/unit/applications/test_p6_integration_tool_wiring.py`, speech tool provider tests.
+- Tests: `tests/unit/speech_adapters`, `tests/unit/applications/test_p6_integration_tool_wiring.py`, speech tool provider tests.
 - Verify: `uv run pytest tests/unit/speech_adapters/ tests/unit/applications/test_p6_integration_tool_wiring.py tests/unit/tools/providers/test_modality_tools.py -q` · `python scripts/maintenance/check_harness_adr.py`.

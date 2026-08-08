@@ -35,7 +35,7 @@ Rejected: per-agent guardrail SDK imports; duplicate scan paths outside security
 
 ## Compliance
 
-- Tier boundaries preserved — vendors only under `integrations/providers/llm_guardrail/`.
+- Tier boundaries preserved — vendors only under `integrations/providers/llm_guardrail`.
 - Linked architecture §47 and plan register M-P12 updated.
 
 ## Implementation notes

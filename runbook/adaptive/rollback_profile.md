@@ -43,4 +43,4 @@ executor.rollback(
 
 - `build/adaptive_harness/verification_report.json`
 - `build/adaptive_harness/l4_runtime_evidence.json`
-- [architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md](../docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) §9.6
+- [architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md](../../docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) §9.6

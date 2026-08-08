@@ -10,7 +10,7 @@ This document defines a practical, step-by-step public-adoption strategy for Int
 
 It is intentionally a **public-safe visibility and partner strategy**, not a confidential fundraising plan, valuation memo, acquisition strategy, investor data room, sales forecast, or binding commercial offer.
 
-Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, Authorized Forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../../../LICENSE). Controlled internal evaluation by organizations — including multiple Evaluation Participants — is permitted. Contributors retain copyright in Code Contributions and Documentation Contributions but license submitted contributions to the maintainer upon submission. Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../../../LICENSE), [`COLLABORATION.md`](../../community/COLLABORATION.md), and [`PARTNERS.md`](../../community/PARTNERS.md).
+Intergrax remains **source-available proprietary**. It is **not** open source. Evaluation, collaboration, Authorized Forks, patches, and pull requests are permitted under the [Intergrax Evaluation and Collaboration License 1.0](../../../../LICENSE). Controlled internal evaluation by organizations — including multiple Evaluation Participants — is permitted. Contributors retain copyright in Code Contributions and Documentation Contributions but license submitted contributions to the maintainer upon submission. Production use, commercial use, hosted services, redistribution, incorporation into products or services, and commercial derivative works require **explicit written permission**. See [`LICENSE`](../../../../LICENSE), [`../../community/COLLABORATION.md`](../../community/COLLABORATION.md), and [`../../community/PARTNERS.md`](../../community/PARTNERS.md).
 
 ---
 
@@ -362,12 +362,12 @@ This checklist turns the strategy into a concrete asset backlog.
 | LKW hardening log | `docs/project/maintainers/public-adoption/LKW_PLATFORM_HARDENING_LOG.md` | Show what real product work forced the platform to fix |
 | What LKW proves | `docs/project/maintainers/public-adoption/WHAT_LKW_PROVES.md` | Explain the platform claim in one focused document |
 | Main review issue | GitHub issue | Capture all proof feedback in one place |
-| Kibana screenshot | `docs/project/maintainers/public-adoption/assets/lkw-platform-proof/` | Visual proof that runtime events are inspectable |
-| Proof-helper PASS screenshot | `docs/project/maintainers/public-adoption/assets/lkw-platform-proof/` | Visual proof of duplicate/safety checks |
+| Kibana screenshot | `docs/project/maintainers/public-adoption/assets/lkw-platform-proof` | Visual proof that runtime events are inspectable |
+| Proof-helper PASS screenshot | `docs/project/maintainers/public-adoption/assets/lkw-platform-proof` | Visual proof of duplicate/safety checks |
 | Social preview image | GitHub repository settings | Improve link previews in social feeds |
 | 2-4 minute demo video | Linked from README and proof docs | Reduce friction for non-local evaluators |
 | One-page memo | Website / direct outreach | Explain problem, proof, market thesis, and ask |
-| Design-partner brief | `PARTNERS.md` or a linked public page | Convert interest into structured conversations |
+| Design-partner brief | `../../community/PARTNERS.md` or a linked public page | Convert interest into structured conversations |
 | Investor/scout memo | Private or semi-private | Support fundraising/scout conversations after signals exist |
 
 ### 7.2 Private or semi-private materials

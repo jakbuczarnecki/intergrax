@@ -4,11 +4,11 @@
 
 # ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search — Implementation Plan
 
-**Architecture (1:1):** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
-**Parent architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Architecture (1:1):** [`architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
+**Parent architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Parent plan hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md)  
 **Detailed plan satellite:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
-**ADR:** [`ADR-ADAPT-002`](../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)  
+**ADR:** [`ADR-ADAPT-002`](../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)
 **Status:** Planned — Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
 **Last updated:** 2026-06-22
 
@@ -187,7 +187,7 @@ Link evidence bundle when evaluation or promotion gates apply.
 
 ## 5. Normative implementation principles
 
-1. **Extend AHI, do not fork it.** ADAS lives under `intergrax/runtime/adaptive/agent_design_search/` and reuses AHI patterns.
+1. **Extend AHI, do not fork it.** ADAS lives under `intergrax/runtime/adaptive/agent_design_search` and reuses AHI patterns.
 2. **No parallel governance stack.** Add adapters only where agent candidates differ from profile versions.
 3. **No parallel scaffold.** Candidate materialization goes through `AgentScaffoldBridge` and existing scaffold.
 4. **No direct production mutation.** Candidate source starts in sandbox/archive; production routing requires promotion.

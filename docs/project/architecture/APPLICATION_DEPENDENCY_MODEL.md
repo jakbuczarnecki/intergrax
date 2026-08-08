@@ -1,7 +1,7 @@
 # Application Dependency Model
 
 **Status:** Canonical architecture (platform packaging)  
-**Plan (1:1):** [`plan/APPLICATION_DEPENDENCY_MODEL.md`](../maintainers/plans/APPLICATION_DEPENDENCY_MODEL.md)  
+**Plan (1:1):** [`plan/APPLICATION_DEPENDENCY_MODEL.md`](../maintainers/plans/APPLICATION_DEPENDENCY_MODEL.md)
 **Last updated:** 2026-07-23
 
 ---
@@ -30,8 +30,8 @@ uv workspace (monorepo phase)
 
 | Dependency kind | Belongs in | Rule |
 |-----------------|------------|------|
-| Platform base | root `[project.dependencies]` | Mandatory `intergrax/` execution path imports it |
-| Platform capability | root `[project.optional-dependencies]` | Optional provider / capability under `intergrax/` |
+| Platform base | root `[project.dependencies]` | Mandatory `intergrax` execution path imports it |
+| Platform capability | root `[project.optional-dependencies]` | Optional provider / capability under `intergrax` |
 | Application-only | `applications/<app>/pyproject.toml` | Only application code needs it |
 | Agent (Tier-2) | `agents/<agent>/pyproject.toml` | Reusable workspace package (`intergrax-*-agent`); never depends on Tier-3 |
 
@@ -70,7 +70,7 @@ intergrax-local-search-agent = { workspace = true }
 ```
 
 `package = false` means the application is a dependency project: source stays importable via
-`PYTHONPATH=applications/` (existing host layout). Hatch does not need to wheel the application tree.
+`PYTHONPATH=applications` (existing host layout). Hatch does not need to wheel the application tree.
 
 ## 4. Isolated application environments
 

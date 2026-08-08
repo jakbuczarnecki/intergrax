@@ -9,8 +9,8 @@
 **Prerequisites:** Phase **V** **Done** · Phase **V-REM** **Done** · Phase **W-OPS** **Done** · Phase **H-APP** **Done** · Phases **EVAL**, **COST**, **CG** closeouts **Done** (signal sources + governance envelopes exist)  
 **Goal:** Close the gap between **L4 governance contracts** (`adaptive_governance.py`, `phase_v_closeout_gate.py --enforce-l4`) and **L4 adaptive runtime** — governed closed loop: **observe → propose → gate → shadow/canary → apply → verify → rollback**  
 **Priority ladder:** **Band 2y** (§4.0) — **closed**; default queue = **§6.1 maintenance**  
-**Execution order:** [§6.2ac](#62ac-phase-w-adapt-execution-order-band-2y--closed) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)  
-**Traceability:** [Appendix K](#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt)
+**Execution order:** [§6.2ac](.#62ac-phase-w-adapt-execution-order-band-2y--closed) · queue: [§6.1t](.#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
+**Traceability:** [Appendix K](.#appendix-k--adaptive-harness-intelligence-traceability-phase-w-adapt)
 
 **Delivery rule:** One **W-ADAPT.\*** ID per PR → update master table + Appendix K + paydown log → `pytest -m gate` green → run `phase_w_adapt_report.py` when touching signal/proposal paths.
 
@@ -68,7 +68,7 @@ Total: 70 deliverables
 |----|-------------|--------|----------|------------|
 | W-ADAPT-0.1 | **Plan + canon sync** — Phase W-ADAPT section, §4.0 Band 2y, §6.1t, §6.2ac, Appendix K; AHIA ↔ plan cross-links | **Done** | **Critical** | This section + AHIA Appendix B |
 | W-ADAPT-0.2 | **`docs/project/technical/adr/entries/2026-06-05/ADR-ADAPT-001.md`** — Adaptive Harness Intelligence over classical RL (AHIA Appendix C) | **Done** | High | ADR accepted; linked from AHIA + canon §54 |
-| W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive/` with `contracts.py`, `__init__.py`, re-exports | **Done** | **Critical** | Importable; no runtime side effects |
+| W-ADAPT-0.3 | **Package scaffold** — `intergrax/runtime/adaptive` with `contracts.py`, `__init__.py`, re-exports | **Done** | **Critical** | Importable; no runtime side effects |
 | W-ADAPT-0.4 | **Extend `runtime/architecture/__init__.py`** — export adaptive contracts without duplicating `adaptive_governance.py` | **Done** | Medium | Unit smoke import |
 | W-ADAPT-0.5 | **Gate test stub** — `tests/unit/runtime/adaptive/test_package_imports.py` | **Done** | Medium | `pytest -m gate` green |
 
@@ -78,7 +78,7 @@ Total: 70 deliverables
 |----|-------------|--------|----------|------------|
 | W-ADAPT-1.1 | **`HarnessOutcomeSignal`** + **`UtilityWeights`** Pydantic contracts | **Done** | **Critical** | Schema validated; AHIA §10.1 |
 | W-ADAPT-1.2 | **`ProfileVersionRecord`**, **`ProfileVersionDraft`**, **`ProcessPatternProposal`** contract stubs | **Done** | High | Validators; status enum |
-| W-ADAPT-1.3 | **`SignalStore`** — SQLite persistence under `build/adaptive_harness/` | **Done** | **Critical** | CRUD + list by tenant/window |
+| W-ADAPT-1.3 | **`SignalStore`** — SQLite persistence under `build/adaptive_harness` | **Done** | **Critical** | CRUD + list by tenant/window |
 | W-ADAPT-1.4 | **`SignalCollector`** — integrate `export_run_metrics()` / `RunMetricsExport` | **Done** | **Critical** | behavioral + cost fields populated |
 | W-ADAPT-1.5 | **`SignalCollector`** — integrate `ExecutionGuard` + `HistoryAwareEvaluator` regression flags | **Done** | High | `regression_flags` on signal |
 | W-ADAPT-1.6 | **`SignalCollector`** — integrate online/shadow eval (`OnlineEvaluationRegistry`) | **Done** | High | `quality_score`, `eval_mode` |
@@ -115,7 +115,7 @@ Total: 70 deliverables
 | W-ADAPT-3.3 | **`AdaptationExecutor.shadow()`** — allocate candidate version for shadow runs | **Done** | **Critical** | Trace tag `candidate_profile_version_id` |
 | W-ADAPT-3.4 | **Extend `RuntimeArchitectureGovernanceBridge`** — candidate version in shadow observation | **Done** | High | Extends W-OPS.11 hook |
 | W-ADAPT-3.5 | **`ProfilePromotionEvidence`** — mirror `agent_promotion.py` checklist for profiles | **Done** | Medium | evaluation + rollback plan refs |
-| W-ADAPT-3.6 | **Integration test** — shadow run records observation with candidate version | **Done** | High | `tests/integration/runtime/adaptive/` |
+| W-ADAPT-3.6 | **Integration test** — shadow run records observation with candidate version | **Done** | High | `tests/integration/runtime/adaptive` |
 | W-ADAPT-3.7 | **`QueryRouter` override** — load RAG tier weights from active/candidate profile | **Done** | Medium | Unit test per profile version |
 
 #### Wave W-ADAPT-4 — Apply (L4-A)
@@ -169,7 +169,7 @@ Total: 70 deliverables
 | W-ADAPT-7.3 | **`guides/AGENT_CREATION_GUIDE.md` Appendix V** — Adaptive Harness authoring | **Done** | High | Control plane map |
 | W-ADAPT-7.4 | **`guides/HARNESS_ENVIRONMENT.md`** — adaptive ops section + env vars | **Done** | Medium | Lab enable observe mode docs |
 | W-ADAPT-7.5 | **Lab debug routes** (optional) — list proposals / signals read-only | **Done** | Low | Behind lab profile flag |
-| W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | **Done** | High | `tests/acceptance/adaptive/` |
+| W-ADAPT-7.6 | **Acceptance test** — end-to-end observe → recommend (no apply) | **Done** | High | `tests/acceptance/adaptive` |
 | W-ADAPT-7.7 | **Docs sync** — README, docs/README, Appendix H row for IDEAL §25 runtime | **Done** | Medium | Zero stale "out of scope L4" |
 
 ### W-ADAPT — Execution matrix (dependencies)

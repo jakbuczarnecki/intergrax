@@ -22,17 +22,17 @@ Primary decision audience: CTO, product lead or technical buyer assessing fit, m
 | Best fit for platform evaluators | Specialized applications requiring policy, evidence, knowledge or controlled tools |
 | Next product fit to validate | Multi-source indexed + authorized live evidence workflow |
 | Not a fit today | Finished SaaS, generic no-code builder or unrestricted open-source framework |
-| Primary next action after apparent fit | Review the current proof status in [PROOFS.md](../proofs/PROOFS.md) |
+| Primary next action after apparent fit | Review the current proof status in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 
 ## Buyer decision path
 
 | Decision question | Where to check | Decision output |
 | ----------------- | -------------- | --------------- |
 | Does the concrete workflow fit the current product or platform direction? | This Use Cases guide | Fit, bounded fit, planned fit or not a fit |
-| What is actually implemented or boundedly proven? | [PROOFS.md](../proofs/PROOFS.md) | Current evidence and claim limits |
-| Which important capabilities remain incomplete? | Current boundaries in this guide and [ROADMAP.md](ROADMAP.md) | Known product and validation risk |
-| Is a non-production technical evaluation justified? | [EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) | Proceed, defer or stop |
-| Does the intended activity require a pilot or written permission? | [PARTNERS.md](../community/PARTNERS.md), [COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) | Correct partner and permission route |
+| What is actually implemented or boundedly proven? | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Current evidence and claim limits |
+| Which important capabilities remain incomplete? | Current boundaries in this guide and [docs/project/overview/ROADMAP.md](ROADMAP.md) | Known product and validation risk |
+| Is a non-production technical evaluation justified? | [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) | Proceed, defer or stop |
+| Does the intended activity require a pilot or written permission? | [docs/project/community/PARTNERS.md](../community/PARTNERS.md), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) | Correct partner and permission route |
 
 The primary buyer next action after confirming apparent fit is to [review the current proof status](../proofs/PROOFS.md) before starting a pilot or commercial discussion.
 
@@ -72,7 +72,7 @@ Knowledge is distributed across private files, Web sources and organizational sy
 
 **Primary product proof** · **Backend Product Alpha / MVP** · **PARTIAL**
 
-Verify: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [PROOFS.md](../proofs/PROOFS.md)
+Verify: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md)
 
 Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established.
 
@@ -81,7 +81,7 @@ Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized 
 | Use case | User outcome | Current support | Verify |
 |----------|--------------|-----------------|--------|
 | Governed knowledge assistant over indexed sources | Ask over approved indexed knowledge with citations | Bounded through LKW indexed knowledge proof, including production Hybrid Ask indexed path | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Reusable foundation for a specialized agent application | Build a product on shared policy, knowledge and evidence foundations | Shared platform mechanisms with bounded supporting evidence; product-specific validation still required | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
+| Reusable foundation for a specialized agent application | Build a product on shared policy, knowledge and evidence foundations | Shared platform mechanisms with bounded supporting evidence; product-specific validation still required | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
 | Evidence-aware agent or integration workflow | Inspect runs with trace, receipts and boundary evidence | Bounded supporting paths; not a certification or compliance claim | [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
 | Governed prompt and context optimization | Deterministic optimization under policy with receipts | **Featured platform-capability proof**; **PARTIAL** with bounded vLLM evidence | [Token Optimization guide](../capabilities/token_optimization/README.md) |
 
@@ -97,20 +97,20 @@ Universal savings are not claimed for Token Optimization.
 | Repeatable design-partner deployment | Self-serve setup without ad hoc developer reconstruction |
 | Recurring knowledge-workspace usage by real users | Real-user validation incomplete; commercial validation incomplete |
 
-See [ROADMAP.md](ROADMAP.md) for outcome-gated direction.
+See [docs/project/overview/ROADMAP.md](ROADMAP.md) for outcome-gated direction.
 
 ## Fit matrix
 
 | Your need | Current fit | Why | Best next step |
 |-----------|-------------|-----|----------------|
 | Private governed knowledge workspace | **Strongest current fit** | LKW is the Primary product proof with bounded indexed-knowledge path | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Specialized application requiring policy and evidence | **Reasonable technical evaluation** | Shared foundations exist; your product still needs its own validation | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
-| Multiple agent applications sharing foundations | **Reasonable technical evaluation** | Reusable mechanisms with bounded evidence; not a finished platform product | [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| Full multi-provider live assistant needed immediately | **Not a fit today** | Complete live-provider access and Hybrid Ask combining indexed and authorized live evidence remain incomplete | [ROADMAP.md](ROADMAP.md) |
-| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask combining indexed and authorized live evidence remains incomplete | [ROADMAP.md](ROADMAP.md) |
-| Governed Google Workspace knowledge inside LKW | **Planned fit** | The first bounded Google Workspace LKW proof is not complete | [ROADMAP.md](ROADMAP.md) |
+| Specialized application requiring policy and evidence | **Reasonable technical evaluation** | Shared foundations exist; your product still needs its own validation | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
+| Multiple agent applications sharing foundations | **Reasonable technical evaluation** | Reusable mechanisms with bounded evidence; not a finished platform product | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| Full multi-provider live assistant needed immediately | **Not a fit today** | Complete live-provider access and Hybrid Ask combining indexed and authorized live evidence remain incomplete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
+| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask combining indexed and authorized live evidence remains incomplete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
+| Governed Google Workspace knowledge inside LKW | **Planned fit** | The first bounded Google Workspace LKW proof is not complete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
 | Generic chatbot prototype | **Not a fit today** | Intergrax targets governed applications, not quick chat demos | Another approach may fit better |
-| Finished no-code SaaS offering | **Not a fit today** | No finished hosted product; active R&D | [PARTNERS.md](../community/PARTNERS.md) for authorized discussions |
+| Finished no-code SaaS offering | **Not a fit today** | No finished hosted product; active R&D | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) for authorized discussions |
 | Unrestricted open-source framework | **Not a fit today** | Source-available under evaluation license, not unrestricted OSS | [LICENSE](../../../LICENSE) |
 
 ## What Intergrax does not currently offer
@@ -141,12 +141,12 @@ A good evaluation description should capture:
 
 | Current conclusion | Next action |
 | ------------------ | ----------- |
-| Strong or bounded fit, but evidence not yet reviewed | Review [PROOFS.md](../proofs/PROOFS.md) |
-| Evidence is relevant and a technical trial is justified | Use [EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
-| A partner, pilot or operational discussion is needed | Use [PARTNERS.md](../community/PARTNERS.md) |
+| Strong or bounded fit, but evidence not yet reviewed | Review [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| Evidence is relevant and a technical trial is justified | Use [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
+| A partner, pilot or operational discussion is needed | Use [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
 | The use case is currently not supported | Stop or choose another approach |
-| Unsure which class of solution matches the need | Compare common approaches in [WHY_INTERGRAX.md](WHY_INTERGRAX.md#where-intergrax-fits) |
-| Rights or permission are unclear | Review [COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
+| Unsure which class of solution matches the need | Compare common approaches in [docs/project/overview/WHY_INTERGRAX.md](WHY_INTERGRAX.md#where-intergrax-fits) |
+| Rights or permission are unclear | Review [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
 
 **Primary next action after apparent fit:** [Review the current proof status](../proofs/PROOFS.md).
 

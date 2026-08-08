@@ -1,8 +1,8 @@
 # Memory Platform — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/MEMORY.md`](../../architecture/MEMORY.md) · [`plan/MEMORY.md`](../plans/MEMORY.md)  
-**Audit map layers:** 15 · compact slice: [`audit_slices/MEMORY.md`](../../technical/guides/audit_slices/MEMORY.md)  
+**Domain pair:** [`architecture/MEMORY.md`](../../architecture/MEMORY.md) · [`plan/MEMORY.md`](../plans/MEMORY.md)
+**Audit map layers:** 15 · compact slice: [`audit_slices/MEMORY.md`](../../technical/guides/audit_slices/MEMORY.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ MEMORY-LC Done · MEM-DEPTH Done · §6.1av depth closed (procedural/org/tempora
 **Load first:** [`docs/project/technical/guides/audit_slices/MEMORY.md`](../../technical/guides/audit_slices/MEMORY.md) — compact slice (layers **15**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ MEMORY-LC Done · MEM-DEPTH Done · §6.1av depth closed (procedural/org/tempora
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/MEMORY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/MEMORY.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/MEMORY.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/MEMORY.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/MEMORY.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix G** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -91,7 +91,7 @@ applications/_shared/memory_wiring.py · memory_runtime_bridge.py
 EntityGraphMemoryStore · workspace_index_spike.py (RFC — CE owns production wiring)
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

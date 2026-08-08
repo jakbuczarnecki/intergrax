@@ -1,8 +1,8 @@
 # Agent Contracts and Assembly — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Audit map layers:** 17–20, 31 · ACP §21 · compact slice: [`audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Domain pair:** [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)
+**Audit map layers:** 17–20, 31 · ACP §21 · compact slice: [`audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md)
 **ADR:** [`ADR-AGENT-001`](../../adr/ADR-AGENT-001.md) · [`ADR-AGENT-002`](../../adr/ADR-AGENT-002.md) · [`ADR-AGENT-003`](../../adr/ADR-AGENT-003.md)  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
@@ -64,8 +64,8 @@ GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-ID
 **Load first:** [`docs/project/technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md) — compact slice (layers **17–20, 31 · ACP §21**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -73,8 +73,8 @@ GAP-ACP-36/37 Closed (ACP-TOK-*) · GAP register 37 Closed · 0 Open · AUDIT-ID
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/AGENT_CONTRACTS_AND_ASSEMBLY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **ADR-AGENT-001 · ADR-AGENT-002 · ADR-AGENT-003 · Appendix M/N/O/P · Appendix AC** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -99,7 +99,7 @@ agents/ (Tier-2 roster) · applications/_shared/prompt_wiring.py
 scripts/maintenance/check_agents_lifecycle_metadata.py · check_agents_vendor_imports.py
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

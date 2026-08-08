@@ -9,8 +9,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Status:** Audit control prompt (copy-paste for LLM agents)  
 **Feature:** `TOKEN_OPTIMIZATION`  
 **Type:** multi-layer feature / cross-domain capability anchored in `CONTEXT_ENGINEERING`  
-**Feature architecture target:** [`../features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)  
-**Feature plan target:** [`../features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)  
+**Feature architecture target:** [`../../capabilities/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
+**Feature plan target:** [`../../capabilities/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Related domains:** `CONTEXT_ENGINEERING`, `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`  
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
@@ -77,7 +77,7 @@ Follow Intergrax token-budget discipline.
 - Read only scoped sections.
 - Do not load full architecture hubs unless explicitly necessary.
 - Do not load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` unless a compact slice or read-scope block requires it.
-- Do not read `docs/audit_results/` unless a RESUME note explicitly points there.
+- Do not read `docs/audit_results` unless a RESUME note explicitly points there.
 - Do not use subagents unless the operator asks.
 - If more than the listed files are needed, stop and ask.
 

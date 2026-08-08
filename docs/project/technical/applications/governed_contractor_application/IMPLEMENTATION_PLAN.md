@@ -5,7 +5,7 @@
 **Status:** Working draft (2026-07-20) — **GEC-0…GEC-6 Done**; GEC-7…GEC-11 Planned  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Application ADRs:** [`adr/README.md`](adr/README.md)  
-**Agent tracker:** [`docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md`](../../agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md)  
+**Agent tracker:** [`docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md`](../../agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md)
 **Partner handoff:** [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md)
 
 Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is not an orchestrator** · **no unsupported maturity claims**
@@ -18,10 +18,10 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|--------|
 | Host purpose, trust, lifecycle, non-goals | **ARCHITECTURE.md** |
 | Task status, phases, gates | **This file** |
-| Application architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
+| Application architecture decisions | **`adr`** — [`adr/README.md`](adr/README.md) |
 | Deploy runbook | **BUILD_AND_DEPLOY.md** |
 | Partner quickstart | **PARTNER_HANDOFF.md** |
-| Adapter contracts / prohibited duties | `agents/external_contractor_adapter/docs/` |
+| Adapter contracts / prohibited duties | `../../agents/external_contractor_adapter` |
 
 ---
 
@@ -80,10 +80,10 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|---------|
 | **Goal** | Define reusable, provider-neutral contractor/quote/status/deliverable contracts in platform space |
 | **Architecture impact** | Shared types for quote-first lifecycle; consumed by adapter and host; **not** owned by Tier-3 |
-| **Implementation tasks** | Reuse audit; platform contracts in `intergrax/contracts/`; unit tests; ADR-EXTWORK-001 |
+| **Implementation tasks** | Reuse audit; platform contracts in `intergrax/contracts`; unit tests; ADR-EXTWORK-001 |
 | **Files / packages** | `intergrax/contracts/money.py`, `intergrax/contracts/external_work.py` |
 | **Tests** | `tests/unit/contracts/test_money.py`, `tests/unit/contracts/test_external_work.py` |
-| **Acceptance gates** | Contracts importable without `applications/` or partner URLs; docs updated |
+| **Acceptance gates** | Contracts importable without `applications` or partner URLs; docs updated |
 | **Non-goals** | HTTP client, partner mapping, HITL UI, adapter lifecycle logic |
 | **Dependencies** | GEC-0 |
 | **Closeout evidence** | Contract tests green; reuse audit below; ADR-EXTWORK-001 accepted |
@@ -136,7 +136,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | Provider / work identity | `ExternalContractorIdentity`, `ExternalTaskCorrelation` | **reuse** |
 | Quote / acceptance / status / deliverables | GEC-1 models | **reuse** |
 | Discovery metadata | No external-work descriptor | **new** — `ExternalWorkProviderDescriptor` (+ `ExternalWorkCapability`) |
-| Integration interface style | Sync `Protocol` under `integrations/contracts/` | **extend** — `ExternalWorkIntegration` |
+| Integration interface style | Sync `Protocol` under `integrations/contracts` | **extend** — `ExternalWorkIntegration` |
 | Result/error model | `IntegrationError` family | **extend** — `ExternalWorkError` + `ExternalWorkErrorCode` |
 | Cancellation / idempotency | Idempotency keys on correlation + tool ledger (tools only) | **reuse** keys on mutating ops; document retry rules (no new middleware) |
 | Timeline | Runtime traces / events (different domain) | **new** — `ExternalWorkTimelineEvent` (provider-observed facts) |
@@ -156,9 +156,9 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **Goal** | Implement `ExternalContractorAdapterAgent` as domain adapter (map external lifecycle → Intergrax contracts) |
 | **Architecture impact** | Typed steps/hooks; correlation; idempotency; **no** orchestration ownership |
 | **Implementation tasks** | `ExternalWorkAdapter` mapping; DI for `ExternalWorkIntegration`; deterministic fake tests |
-| **Files / packages** | `agents/external_contractor_adapter/` (+ host builder injection hook) |
+| **Files / packages** | `agents/external_contractor_adapter` (+ host builder injection hook) |
 | **Tests** | Agent unit tests with `DeterministicExternalWorkFake`; capability `external_contractor.adapt` |
-| **Acceptance gates** | Adapter has no HITL accept/reject; no policy decisions; no `applications/` imports; no transport |
+| **Acceptance gates** | Adapter has no HITL accept/reject; no policy decisions; no `applications` imports; no transport |
 | **Non-goals** | Public API; ProofReceipt store; partner-specific URLs; polling/resume; real providers |
 | **Dependencies** | GEC-1, GEC-2 |
 | **Status** | **Done** (2026-07-20) |
@@ -191,7 +191,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **Goal** | Authorize meaningful external side effects via platform policy before provider execution |
 | **Architecture impact** | Platform `MeaningfulSideEffectRequest` + `evaluate_meaningful_side_effect`; host injects evaluator; adapter remains rule-free |
 | **Implementation tasks** | Platform contract + PolicyEngine method; Tier-2 gates CREATE/ACCEPT/CANCEL; host DI; docs/ADR |
-| **Files / packages** | `intergrax/contracts/meaningful_side_effect.py`; `intergrax/runtime/policy/`; adapter; `host/agent_builders.py` |
+| **Files / packages** | `intergrax/contracts/meaningful_side_effect.py`; `intergrax/runtime/policy`; adapter; `host/agent_builders.py` |
 | **Tests** | Ordering ALLOW/DENY/REQUIRE_HUMAN; fail-closed; observational quote receipt; host smoke |
 | **Acceptance gates** | Policy before mutation; evidence ≠ allow; no Tier-2 rules; boundaries intact |
 | **Non-goals** | Payment/wallet; product policy packs; policy admin UX; provider transport |
@@ -222,8 +222,8 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 |-------|---------|
 | **Goal** | Product API for intake, quote presentation, status, deliverables, trace/receipt exposure |
 | **Architecture impact** | Serving routes beyond scaffold `/run`; proof workflow entrypoints |
-| **Implementation tasks** | Extend `serving/`; schemas; host smoke + API contract tests |
-| **Files / packages** | `applications/governed_contractor_application/serving/`, `host/` |
+| **Implementation tasks** | Extend `serving`; schemas; host smoke + API contract tests |
+| **Files / packages** | `applications/governed_contractor_application/serving`, `host` |
 | **Tests** | Host API tests; happy-path stub workflow |
 | **Acceptance gates** | Public task API does not embed partner URLs; auth/tenant settings respected |
 | **Non-goals** | Tray frontend; Slack Socket Mode |
@@ -239,9 +239,9 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **Goal** | Document partner field maps and operator handoff without contaminating core |
 | **Architecture impact** | Handoff package / docs only; mapping tables for design partner(s) |
 | **Implementation tasks** | Expand PARTNER_HANDOFF; sample fixtures; mapping ADR if needed |
-| **Files / packages** | `docs/PARTNER_HANDOFF.md`, optional `partner_handoff/` samples |
+| **Files / packages** | `docs/PARTNER_HANDOFF.md`, optional `partner_handoff` samples |
 | **Tests** | Fixture/schema assertion tests (as appropriate) |
-| **Acceptance gates** | No partner identity in `intergrax/` |
+| **Acceptance gates** | No partner identity in `intergrax` |
 | **Non-goals** | Live production partner SLA |
 | **Dependencies** | GEC-7 |
 | **Closeout evidence** | Handoff checklist complete |
@@ -287,7 +287,7 @@ Principle: **compose Tier-0** · **no business logic in Nexus** · **adapter is 
 | **Goal** | Public-adoptable proof path with explicit PASS matrix |
 | **Architecture impact** | Ties GEC into public adoption docs without overstating maturity |
 | **Implementation tasks** | PASS matrix; link from public-adoption docs; finalize wording (source-available) |
-| **Files / packages** | App docs + optional `docs/project/maintainers/public-adoption/` entry |
+| **Files / packages** | App docs + optional `docs/project/maintainers/public-adoption` entry |
 | **Tests** | Automated stub matrix + documented live optional row |
 | **Acceptance gates** | Matrix rows evidence-backed; no “production-ready” claim |
 | **Non-goals** | Marketplace listing; open-source relicensing |

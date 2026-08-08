@@ -119,13 +119,13 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ---
 
-**Default answer (infrastructure):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
+**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
 
 **Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
 
-**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](#63a-business-backlog-register-consolidated)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
+**Not default:** K.1, K.2, Legal UAEP domain steps, new product Tier-3 apps — **[§6.3](.#63-end-of-plan--deferred-product-work-only)** · **[§6.3a](.#63a-business-backlog-register-consolidated)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated) / [§6.1aa](#61aa-harness-implementation-queue-memory-platform).
+**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](.#61z-harness-implementation-queue-consolidated) / [§6.1aa](.#61aa-harness-implementation-queue-memory-platform).
 
 ### 6.1i Harness implementation queue — prompt registry closeout (closed)
 
@@ -168,7 +168,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Suggested PR order (complete):** AS-DOC.1 → AS-1 → AS-2 → AS-3.
 
-**Explicitly excluded:** K.1, K.2, new product agents, domain-only contract packs — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, new product agents, domain-only contract packs — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1l Harness implementation queue — registry architecture closeout (closed)
 
@@ -314,7 +314,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Suggested PR order (complete):** TS-1 → TS-2 → TS-3 → TS-DOC.*.
 
-**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1aa Harness implementation queue — memory platform (closed)
 
@@ -333,7 +333,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 8 | **MEM-6.*–MEM-7.*** | Code | **Done** | Retention enforcement + memory hooks | P2 after P0/P1 |
 | 9 | **MEM-8.*–MEM-9.*** | RFC | **Done (RFC)** | Product memory layer + entity graph design | §6.3 gate for implementation |
 
-**Suggested PR order:** See [Phase MEM — Suggested PR order](#mem--paydown-log).
+**Suggested PR order:** See [Phase MEM — Suggested PR order](.#mem--paydown-log).
 
 **Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
 
@@ -363,7 +363,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 17 | **FLOW-DOC.*** | Docs | **Done** | Flow reference + Appendix N paydown | Zero open FLOW-GAP |
 | — | **FLOW-8** | Product | **Deferred** | §42.43 reference app | **§6.3** gate only |
 
-**Suggested PR order:** See [Phase FLOW — Suggested PR order](#flow--suggested-pr-order).
+**Suggested PR order:** See [Phase FLOW — Suggested PR order](.#flow--suggested-pr-order).
 
 **Explicitly excluded:** K.1, K.2 (unless FLOW-8 activated), nested harness per child.
 
@@ -385,7 +385,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 8 | **CRIT-V-7.*** | Code/Docs | **Done** | FAUDIT-EVAL.1 + flow reference sync | Closeout gate green |
 | 9 | **CRIT-V-FOLLOWUP** | Code | **Done** | L1 client, L2 HITL, UAEP hook, policy bridge | `test_critic_closeout.py`, gate green |
 
-**Suggested PR order:** See [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed).
+**Suggested PR order:** See [§6.2ak](.#62ak-phase-crit-v-execution-order-band-2ak--closed).
 
 **Explicitly excluded:** FLOW-8 product app; domain rubric packs in Tier-0; mandatory universal LLM-judge.
 
@@ -405,7 +405,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 7 | **OBS-BUS-6** | Code | **Done** | OTLP/journal dual-write | `test_journal_export.py`, `test_export_bridge.py` |
 | 8 | **OBS-BUS-7** | CI | **Done** | L4 §21 gates | `check_observability_gates.py` in CI; audit map §21 → L4 |
 
-**Suggested PR order:** See [Phase OBS-BUS — Execution order](#obs-bus--execution-order-recommended).
+**Suggested PR order:** See [Phase OBS-BUS — Execution order](.#obs-bus--execution-order-recommended).
 
 **Explicitly excluded:** Product dashboards (§6.3a); vendor-only APM as sole store.
 
@@ -415,7 +415,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Suggested PR order:** See [§6.2ab](plan/MEMORY.md#62ab-phase-mem-depth-execution-order-band-2am--closed).
 
-**Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1b Harness implementation queue — orchestration closeout (closed)
 
@@ -432,7 +432,7 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 **Suggested PR order (complete):** ORCH-1 → ORCH-2 → ORCH-3 → ORCH-4.
 
-**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1g Harness implementation queue — governance audit (closed)
 
@@ -447,11 +447,11 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 
 ### 6.1z Harness implementation queue (consolidated — closed 2026-06-05)
 
-**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](#63a-business-backlog-register-consolidated). **Closed 2026-06-05** — Phase V-REM complete. Prior DX/AA/MEM/W-OPS/H-APP rows remain **Done**.
+**Purpose:** Single ordered list of **infrastructure** work. Excludes Band 3 / [§6.3a](.#63a-business-backlog-register-consolidated). **Closed 2026-06-05** — Phase V-REM complete. Prior DX/AA/MEM/W-OPS/H-APP rows remain **Done**.
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
-| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green; scripts in [§6.1](#61-harness-platform-maintenance-default--band-1) |
+| 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green; scripts in [§6.1](.#61-harness-platform-maintenance-default--band-1) |
 | 1 | **V-REM-CG.1** | Code | **Done** | Fix per-application capability graph system edges | V-CG.2–4 closed |
 | 2 | **V-REM-CG.2** | Test/CI | **Done** | Re-validate lineage/impact/compatibility on corrected graph | `phase_v_capability_graph_guard.py` green |
 | 3 | **V-REM-ALG.1** | Code | **Done** | Runtime filter retired/deprecated agents | Unit tests green |
@@ -470,25 +470,25 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 |----|------------|
 | DX-0.3–DX-8.2 (except DX-5.7) | **Done** — 2026-06-02 DX residual closeout |
 | AA-LABAG.1, AA-SIG.2, AA-LABAPP.6 | **Done** |
-| AA-LABAG.2 | **Won't fix** — mocks remain in `agents/lab/` until leadership requests move |
+| AA-LABAG.2 | **Won't fix** — mocks remain in `agents/lab` until leadership requests move |
 | W-OPS.1–15, H-APP.0–6.3, P-Ext, Q–V contracts, MEM 48/48 | **Done** |
 | V-REM.0.1, V-REM.0.2 | **Done** — 2026-06-05 plan sync |
 | V-REM-CG.1–A.1 | **Done** — 2026-06-05 runtime remediation |
 
-**Explicitly excluded from this queue (business — implement only after §6.3 decision):** K.1, K.2, K.6, B.15, S-Ops.4, A.5, AA-LEG.2.2+, AA-LEGAPP.6–8, AA-RES.4–5, AA-RESAPP.6, AA-ORG.3–4, new Tier-3 product apps, domain skills — full list: [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded from this queue (business — implement only after §6.3 decision):** K.1, K.2, K.6, B.15, S-Ops.4, A.5, AA-LEG.2.2+, AA-LEGAPP.6–8, AA-RES.4–5, AA-RESAPP.6, AA-ORG.3–4, new Tier-3 product apps, domain skills — full list: [§6.3a](.#63a-business-backlog-register-consolidated).
 
 **Suggested PR order:** V-REM-CG.1 → V-REM-CG.2 → V-REM-ALG.1 → V-REM-ALG.2 → V-REM-SEC.1 → V-REM-SEC.2 → V-REM-SEC.3 → V-REM-PE.1 → V-REM-PE.2 → V-REM-A.1. Regressions → **REG-*** under §6.1.
 
-**Explicitly excluded:** K.1, K.2, new product eval modes requiring business datasets — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, new product eval modes requiring business datasets — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1t Harness implementation queue — Adaptive Harness Intelligence (closed)
 
-**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Closed 2026-06-02** — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 **Done**). Maintenance-only; see [§6.1](#61-harness-platform-maintenance-default--band-1).
+**Purpose:** Single ordered list for **Phase W-ADAPT** (Band 2y). **Closed 2026-06-02** — **70/70 Done** (Wave W-ADAPT-0 through Wave W-ADAPT-7 **Done**). Maintenance-only; see [§6.1](.#61-harness-platform-maintenance-default--band-1).
 
 | Order | ID | Type | Status | Deliverable | Acceptance |
 |-------|-----|------|--------|-------------|------------|
 | 0 | **§6.1** | Continuous | **Active** | Gate + audit scripts on every harness PR | `pytest -m gate` green |
-| 1 | **W-ADAPT-0.2–0.5** | Docs/Code | **Done** | ADR-ADAPT-001 + `intergrax/runtime/adaptive/` scaffold | Import + gate stub |
+| 1 | **W-ADAPT-0.2–0.5** | Docs/Code | **Done** | ADR-ADAPT-001 + `intergrax/runtime/adaptive` scaffold | Import + gate stub |
 | 2 | **W-ADAPT-1.1–1.12** | Code | **Done** | Observe (L4-O): signals + utility + report | `phase_w_adapt_report.py` |
 | 3 | **W-ADAPT-2.1–2.12** | Code | **Done** | Recommend (L4-R): engines + proposals (no apply) | Proposals in report |
 | 4 | **W-ADAPT-3.1–3.7** | Code | **Done** | Shadow (L4-S): ProfileVersionStore + executor.shadow | Integration test green |
@@ -497,9 +497,9 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 7 | **W-ADAPT-6.1–6.5** | Code | **Done** | ProcessPatternMiner + daily scheduler | pattern report |
 | 8 | **W-ADAPT-7.1–7.7** | Code/Docs | **Done** | Tier-3 AdaptiveProfile + Appendix V + acceptance | E2E observe→recommend |
 
-**Suggested PR order:** See [Phase W-ADAPT — Suggested PR order](#w-adapt--suggested-pr-order).
+**Suggested PR order:** See [Phase W-ADAPT — Suggested PR order](.#w-adapt--suggested-pr-order).
 
-**Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, deep RL, foundation model training, autonomous prompt edits — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1v Harness implementation queue — LLM completion response envelope (closed)
 
@@ -518,14 +518,14 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 8 | **M-LLM-R.7.1–7.5** | Code | **Done** | Usage alignment + replay/trace bridge | `test_replay_engine` + diagnostics |
 | 9 | **M-LLM-R.8.1–8.4** | Docs/CI | **Done** | Docs + conformance + closeout | M-LLM.14 Done; Appendix L complete |
 
-**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06).
+**Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](.#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06).
 
-**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
 
 **Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.  
-**Register:** [M.6 P4 — Master register](#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Register:** [M.6 P4 — Master register](.#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](.#62ae-phase-m6-p4-execution-order--done)
 **Policy:** One slug per PR; runs **in parallel** with §6.1 maintenance — pull only when harness ops/adaptive/INT health needs the slug.
 
 | Order | Wave | IDs | Slugs | Priority | Status |
@@ -537,14 +537,14 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 4 | H-INT-4 | M-P4.12–M-P4.16 | `unleash`, `launchdarkly`, `github_actions`, `redpanda`, `cloudflare_r2` | P0/P1 | **Done** |
 | 5 | H-INT-5 | M-P4.17–M-P4.28 | `memgraph`, `falkordb`, `incident_io`, `kubernetes`, `servicenow`, `bitbucket`, `asana`, `sendgrid`, `mailgun`, `mlflow`, `huggingface_hub`, `ollama` | P1/P2 | **Done** |
 
-**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `architecture/INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
+**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>` → unit tests → `USAGE.md` → `layout.py` → `architecture/INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
 
-**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](#m6-p4--harness-platform-expansion-planned).
+**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](.#m6-p4--harness-platform-expansion-planned).
 
 ### 6.1x Harness implementation queue — Integration depth (M.6 P5 done)
 
 **Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.  
-**Register:** [M.6 P5 — Master register](#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](#62af-phase-m6-p5-execution-order-band-2ab--planned)  
+**Register:** [M.6 P5 — Master register](.#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
 **Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance — pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -556,12 +556,12 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Done** |
 | 5 | PRE | M-P5-PRE.1 | Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` | **P0** | **Done** |
 
-**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).
+**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](.#m6-p5--harness-integration-depth-done--3334).
 
 ### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
 
 **Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
-**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--done)  
+**Register:** [M.6 P6 — Master register](.#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
 **Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -578,13 +578,13 @@ Out of scope: FLOW-8 product reference app (§6.3), domain rubric packs, L4 adap
 | 9 | PRE | M-P6-PRE.1 | Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack` | **P0** | **Done** |
 | 10 | WIRE | M-P6-WIRE.1–7 | Tool surface + sandbox/speech/identity bridges + promote gate + infra `p6` | **P0** | **Done** |
 
-**Per-slug checklist:** see [M.6 P6 register](#m6-p6--harness-integration-expansion-planned).
+**Per-slug checklist:** see [M.6 P6 register](.#m6-p6--harness-integration-expansion-planned).
 
 **Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS`; four Tier-3 presets; gate green.
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Next product work** = [§6.3](#63-end-of-plan--deferred-product-work-only) (product prioritization only).
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Next product work** = [§6.3](.#63-end-of-plan--deferred-product-work-only) (product prioritization only).
 
 ```text
 Verify (every harness PR):
@@ -614,15 +614,15 @@ Verify (every harness PR):
   uv run python scripts/release/phase_v_capability_graph_guard.py --enforce
 ```
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3.
 
 **Maintenance depth (2026-06-07):** **OBS-DEPTH.1 Done** — unified run journal. **T10-DEPTH.1 Done** — broker task index + PagerDuty acknowledge adapter. **T-EXPAND T11 Done** — 160 tools. **LEG-DEPTH.1–3 + O.5 depth Done** — planner schema uses `tool_ids`; legacy booleans accepted with deprecation trace; `from_legacy()` gated by `check_legacy_tool_plan_booleans.py`. **OBS-DEPTH.2 Done** — `check_trace_bridge_event_catalog.py` + gate test. **OBS live emit Done** — `RuntimeState.trace_event` → `runtime_event_bus`. **Celery purge_completed Done** — optional KV task index. **notify.dispatch_due Done** — Tier-0 dispatcher tool. **T-EXPAND T12 Done** — 170 tools (health slot probes + notify dispatcher). **T-EXPAND T13 Done** — 172 tools (`eval.judge`, `eval.trajectory` / CRIT-V). **L2→L3 §21 Done** — `test_observability_layer_depth_gate.py` regression gate.
 
 ### 6.1ah Harness implementation queue — FAUDIT-32 remediation (closed)
 
 **Status:** **Done** (2026-06-06) — **23/23 Done**  
-**Source:** [Phase FAUDIT-32](#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M**  
-**Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture/`
+**Source:** [Phase FAUDIT-32](.#phase-faudit-32--full-architecture-audit-closeout) · **Appendix M**
+**Priority ladder:** **Band 2ad** (§4.0) — runs **after** FAUDIT-TIER.1 on every harness PR that touches `intergrax/runtime/architecture`
 
 **Execution order (recommended):**
 
@@ -657,7 +657,7 @@ Wave P3 (orchestration + cognition + memory):
 | FAUDIT-ORCH.1 | **Done** | Medium | `GraphExecutor` inflight backpressure |
 | FAUDIT-SUB.1 | **Done** | High | `SubtaskContract` + safer defaults |
 | FAUDIT-MEM.1 | **Done** | High | `retention_enforcement.py` + `PolicyScopedMemoryView` STM purge |
-| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + `tests/fixtures/prompt_golden/` + CI script |
+| FAUDIT-PE.1 | **Done** | High | `prompt_golden_catalog.py` + `tests/fixtures/prompt_golden` + CI script |
 | FAUDIT-ALG.1 | **Done** | High | lifecycle states + reference agent `owner_team` adoption + CI script |
 | FAUDIT-REG.1 | **Done** | High | `HarnessRegistrySnapshot` agent/eval fields |
 | FAUDIT-CG.1 | **Done** | High | prompt seeds in `capability_graph_wiring.py` |
@@ -678,7 +678,7 @@ Wave P3 (orchestration + cognition + memory):
 
 | ID | Status | Deliverable |
 |----|--------|-------------|
-| FAUDIT-PE.1+ | **Done** | Real `prompts/` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/maintenance/check_harness_prompt_golden_catalog.py`; gate test |
+| FAUDIT-PE.1+ | **Done** | Real `prompts` golden hashes in `tests/fixtures/prompt_golden/expectations.json`; `scripts/maintenance/check_harness_prompt_golden_catalog.py`; gate test |
 | FAUDIT-ALG.1+ | **Done** | `lifecycle_state` + `owner_team` on reference Tier-2 agents; `scripts/maintenance/check_agents_lifecycle_metadata.py` |
 | FAUDIT-MEM.1+ | **Done** | `should_forget_stm_record` wired in `PolicyScopedMemoryView.read` |
 
@@ -686,7 +686,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bo Phase EVAL execution order (Band 2x — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase EVAL](#phase-eval--evaluation-control-plane-closeout) · queue: [§6.1s](#61s-harness-implementation-queue--evaluation-closeout-closed)
+**Status:** **Done** · register: [Phase EVAL](.#phase-eval--evaluation-control-plane-closeout) · queue: [§6.1s](.#61s-harness-implementation-queue--evaluation-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -697,7 +697,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bn Phase COST execution order (Band 2w — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase COST](#phase-cost--cost-governance-control-plane-closeout) · queue: [§6.1r](#61r-harness-implementation-queue--cost-governance-closeout-closed)
+**Status:** **Done** · register: [Phase COST](.#phase-cost--cost-governance-control-plane-closeout) · queue: [§6.1r](.#61r-harness-implementation-queue--cost-governance-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -708,7 +708,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bm Phase SEC execution order (Band 2v — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase SEC](#phase-sec--security-control-plane-closeout) · queue: [§6.1q](#61q-harness-implementation-queue--security-closeout-closed)
+**Status:** **Done** · register: [Phase SEC](.#phase-sec--security-control-plane-closeout) · queue: [§6.1q](.#61q-harness-implementation-queue--security-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -719,7 +719,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bl Phase REL execution order (Band 2u — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase REL](#phase-rel--reliability-control-plane-closeout) · queue: [§6.1o](#61o-harness-implementation-queue--reliability-closeout-closed)
+**Status:** **Done** · register: [Phase REL](.#phase-rel--reliability-control-plane-closeout) · queue: [§6.1o](.#61o-harness-implementation-queue--reliability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -730,7 +730,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bk Phase OBS execution order (Band 2t — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase OBS](#phase-obs--observability-control-plane-closeout) · queue: [§6.1n](#61n-harness-implementation-queue--observability-closeout-closed)
+**Status:** **Done** · register: [Phase OBS](.#phase-obs--observability-control-plane-closeout) · queue: [§6.1n](.#61n-harness-implementation-queue--observability-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -741,7 +741,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bj Phase CG execution order (Band 2s — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CG](#phase-cg--capability-graph-control-plane-closeout) · queue: [§6.1m](#61m-harness-implementation-queue--capability-graph-closeout-closed)
+**Status:** **Done** · register: [Phase CG](.#phase-cg--capability-graph-control-plane-closeout) · queue: [§6.1m](.#61m-harness-implementation-queue--capability-graph-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -752,7 +752,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bi Phase REG execution order (Band 2r — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase REG](#phase-reg--registry-architecture-control-plane-closeout) · queue: [§6.1l](#61l-harness-implementation-queue--registry-architecture-closeout-closed)
+**Status:** **Done** · register: [Phase REG](.#phase-reg--registry-architecture-control-plane-closeout) · queue: [§6.1l](.#61l-harness-implementation-queue--registry-architecture-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -763,7 +763,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bg Phase AS execution order (Band 2q — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase AS](#phase-as--agent-assembly-control-plane-closeout) · queue: [§6.1k](#61k-harness-implementation-queue--agent-assembly-closeout-closed)
+**Status:** **Done** · register: [Phase AS](.#phase-as--agent-assembly-control-plane-closeout) · queue: [§6.1k](.#61k-harness-implementation-queue--agent-assembly-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -774,7 +774,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bh Phase CLEAN execution order (closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CLEAN](#phase-clean--legacy-module-closeout) · queue: [§6.1j](#61j-harness-implementation-queue--legacy-module-closeout-closed)
+**Status:** **Done** · register: [Phase CLEAN](.#phase-clean--legacy-module-closeout) · queue: [§6.1j](.#61j-harness-implementation-queue--legacy-module-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -785,7 +785,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bf Phase CTX execution order (Band 2n — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase CTX](#phase-ctx--context-engineering-control-plane-closeout) · queue: [§6.1f](#61f-harness-implementation-queue--context-engineering-closeout-closed)
+**Status:** **Done** · register: [Phase CTX](.#phase-ctx--context-engineering-control-plane-closeout) · queue: [§6.1f](.#61f-harness-implementation-queue--context-engineering-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -795,7 +795,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2be Phase RAG execution order (Band 2m — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase RAG](#phase-rag--rag-retrieval-control-plane-closeout) · queue: [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed)
+**Status:** **Done** · register: [Phase RAG](.#phase-rag--rag-retrieval-control-plane-closeout) · queue: [§6.1e](.#61e-harness-implementation-queue--rag-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -804,7 +804,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase INT](#phase-int--integration-control-plane-closeout) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+**Status:** **Done** · register: [Phase INT](.#phase-int--integration-control-plane-closeout) · queue: [§6.1d](.#61d-harness-implementation-queue--integration-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -814,7 +814,7 @@ Wave P3 (orchestration + cognition + memory):
 
 ### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase TS](#phase-ts--tools--skills-control-plane-closeout) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+**Status:** **Done** · register: [Phase TS](.#phase-ts--tools--skills-control-plane-closeout) · queue: [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
 Work **one TS ID per PR**; after each step update the TS master table + §6.1c + paydown log; keep §6.1 scripts green.
 
@@ -827,7 +827,7 @@ Work **one TS ID per PR**; after each step update the TS master table + §6.1c +
 
 ### 6.2aj Phase FLOW execution order (Band 2aj — closed 2026-06-07)
 
-**Status:** **Done** · register: [Phase FLOW](#phase-flow--nexus-execution-depth) · queue: [§6.1aj](#61aj-harness-implementation-queue--nexus-execution-depth-closed)
+**Status:** **Done** · register: [Phase FLOW](.#phase-flow--nexus-execution-depth) · queue: [§6.1aj](.#61aj-harness-implementation-queue--nexus-execution-depth-closed)
 
 Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj + Appendix N; keep §6.1 scripts green.
 
@@ -853,7 +853,7 @@ Work **one FLOW ID per PR**; after each step update FLOW master table + §6.1aj 
 
 ### 6.2ak Phase CRIT-V execution order (Band 2ak — closed)
 
-**Status:** **Done** (2026-06-08) · register: [Phase CRIT-V](#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
+**Status:** **Done** (2026-06-08) · register: [Phase CRIT-V](.#phase-crit-v--critic--verification-layer) · queue: [§6.1ak](.#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
 Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.1ak; keep §6.1 scripts green.
 
@@ -879,7 +879,7 @@ Work **one CRIT-V ID per PR**; after each step update CRIT-V master table + §6.
 
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase ORCH](#phase-orch--orchestration-control-plane-closeout) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
+**Status:** **Done** · register: [Phase ORCH](.#phase-orch--orchestration-control-plane-closeout) · queue: [§6.1b](.#61b-harness-implementation-queue--orchestration-closeout-closed)
 
 Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.1b + paydown log; keep §6.1 scripts green.
 
@@ -892,7 +892,7 @@ Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.
 
 ### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase V-REM](#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
+**Status:** **Done** · register: [Phase V-REM](.#phase-v-rem--phase-v-runtime-remediation-audit-closeout) · queue: [§6.1z](.#61z-harness-implementation-queue-consolidated) (closed)
 
 Work **one V-REM ID per PR**; after each step update the V-REM master table + Appendix J + paydown log; keep §6.1 scripts green.
 
@@ -913,7 +913,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ### 6.2w Phase W-OPS execution order (Band 2d — complete 2026-06-06)
 
-**Status:** **Done** · register: [Phase W-OPS](#phase-w-ops--operational-harness-maturity-ideal-l3-ops)
+**Status:** **Done** · register: [Phase W-OPS](.#phase-w-ops--operational-harness-maturity-ideal-l3-ops)
 
 Work **one W-OPS ID per PR**; after each step update the W-OPS table + paydown log; keep §6.1 scripts green.
 
@@ -941,7 +941,7 @@ Work **one W-OPS ID per PR**; after each step update the W-OPS table + paydown l
 
 ### 6.2x Phase H-APP execution order (Band 2e — complete 2026-06-03)
 
-**Status:** **Done** · canonical register: [Phase H-APP — Master deliverables register](#h-app--master-deliverables-register-all-43-tasks) · audit narrative: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.
+**Status:** **Done** · canonical register: [Phase H-APP — Master deliverables register](.#h-app--master-deliverables-register-all-43-tasks) · audit narrative: [`HARNESS_APPLICATION_LAYER_AUDIT.md`](HARNESS_APPLICATION_LAYER_AUDIT.md) §7.
 
 Work **one H-APP ID per PR**; after each step update the H-APP master table + paydown log; keep §6.1 scripts green.
 
@@ -962,7 +962,7 @@ Work **one H-APP ID per PR**; after each step update the H-APP master table + pa
 
 ### 6.2y Phase DX execution order (Band 2f — mostly done)
 
-**Status:** **Done** (2026-06-02) · **47/47 Done** · canonical register: [Phase DX — Master deliverables register](#dx--master-deliverables-register-all-47-tasks).
+**Status:** **Done** (2026-06-02) · **47/47 Done** · canonical register: [Phase DX — Master deliverables register](.#dx--master-deliverables-register-all-47-tasks).
 
 Work **one DX ID per PR**; after each step update the DX master table + paydown log; keep §6.1 scripts green. **Start with DX1 (scaffold/H-APP alignment)** before DX2 facades — otherwise new authors copy broken `factory.py` patterns.
 
@@ -981,13 +981,13 @@ Work **one DX ID per PR**; after each step update the DX master table + paydown 
 
 **Suggested PR order:** DX-1.1 → DX-1.2 → DX-1.3 → DX-1.6 → DX-8.3 → DX-2.1 → DX-2.2 → DX-2.3 → DX-2.5 → DX-3.1 → DX-3.2 → DX-3.5 → DX-3.6 → DX-4.1 → DX-4.4 → DX-1.4–DX-1.5 → DX-2.4 → DX-2.6 → DX-3.3–DX-3.4 → DX-5.1–DX-5.2 → DX-6.1–DX-6.2 → DX-4.2–DX-4.3 → DX-5.3–DX-5.8 → DX-6.3–DX-6.5 → DX-7.1–DX-7.5 → DX-8.1–DX-8.2 → DX-0.1–DX-0.4.
 
-**Success gate for Phase DX full closeout:** All rows **Done** or **Won't fix**; DX-3.5 + DX-8.1 green in CI; DX-3.6 quickstart validated; DX-7.1 schemas under `build/harness_specs/`. **Core path (DX1–DX2, DX3.2–3.3, DX8.3) already meets harness authoring needs.**
+**Success gate for Phase DX full closeout:** All rows **Done** or **Won't fix**; DX-3.5 + DX-8.1 green in CI; DX-3.6 quickstart validated; DX-7.1 schemas under `build/harness_specs`. **Core path (DX1–DX2, DX3.2–3.3, DX8.3) already meets harness authoring needs.**
 
 **Explicitly out of NOW:** K.1, K.2, visual environment builder UI, new product Tier-3 apps, Problem Radar wave 2+.
 
 ### 6.2z Phase AA execution order (Band 2g — mostly done)
 
-**Status:** **Mostly Done** (2026-06-02) · platform **Done** · domain **Deferred** · canonical register: [Phase AA — Master deliverables register](#aa--master-deliverables-register-all-tasks).
+**Status:** **Mostly Done** (2026-06-02) · platform **Done** · domain **Deferred** · canonical register: [Phase AA — Master deliverables register](.#aa--master-deliverables-register-all-tasks).
 
 Work **one AA ID per PR/session**; after each step update the AA master table + paydown log + conformance matrix; keep §6.1 scripts green. **Legal:** follow **hard reset** policy (AA-LEG.0.1) — no incremental preservation of legacy pipeline code.
 
@@ -1024,7 +1024,7 @@ Work **one AA ID per PR/session**; after each step update the AA master table + 
 
 ### 6.2aa Phase MEM execution order (Band 2h — closed)
 
-**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](#mem--master-deliverables-register-all-48-tasks).
+**Status:** **Done** (2026-06-02) · **48/48 Done** · canonical register: [Phase MEM — Master deliverables register](.#mem--master-deliverables-register-all-48-tasks).
 
 Work **one MEM ID per PR**; after each step update the MEM master table + paydown log; keep §6.1 scripts green. **Start with MEM-1.*** before MEM-3/MEM-7 — bridge must exist before plugins/hooks.
 
@@ -1043,7 +1043,7 @@ Work **one MEM ID per PR**; after each step update the MEM master table + paydow
 
 ### 6.2ab Phase MEM-DEPTH execution order (Band 2am — closed)
 
-**Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](#mem-depth--master-deliverables-register-all-26-tasks).
+**Status:** **Done** (2026-06-08) · **26/26 Done** · canonical register: [Phase MEM-DEPTH — Master deliverables register](.#mem-depth--master-deliverables-register-all-26-tasks).
 
 Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master table + paydown log; keep §6.1 scripts green. **Start with MEM-DEPTH-0.3 (ADR) then MEM-DEPTH-1.*** — architecture decision before Context Compiler code.
 
@@ -1067,7 +1067,7 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 
 | Order | ID | Deliverable | Priority |
 |-------|-----|-------------|----------|
-| 1 | P-Ext.0.5 | Fixture pip package (`tests/fixtures/plugin_packages/`) | P0 |
+| 1 | P-Ext.0.5 | Fixture pip package (`tests/fixtures/plugin_packages`) | P0 |
 | 2 | P-Ext.0.6 | EP discovery tests (all three groups) | P0 |
 | 3 | P-Ext.1.6 | Integration EP test via fixture | P0 |
 | 4 | P-Ext.1.10 | Tier-3 `integration_wiring` → `bootstrap_catalogs()` | P0 |
@@ -1080,13 +1080,13 @@ Work **one MEM-DEPTH ID per PR**; after each step update the MEM-DEPTH master ta
 | 11 | P-Ext.1.3a, 1.4, 1.9, 1.11–1.12 | Typed resolve expansion, health API, integration wiring helper | P3 |
 | 12 | P-Ext.5.1, 3.10, 3.12 | Scaffold CLI (all three catalogs) + harness `requires_skills` demo | P3 |
 
-Full task register: [Appendix I](#appendix-i--plugin-catalog-traceability-phase-p-ext).
+Full task register: [Appendix I](.#appendix-i--plugin-catalog-traceability-phase-p-ext).
 
-**Out of scope for §6.1:** K.1, K.2, new `applications/<product>/`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
+**Out of scope for §6.1:** K.1, K.2, new `applications/<product>`, Problem Radar wave 2+, Legal live LLM E2E — see §6.3. **Feature queues:** Phase W-ADAPT — §6.1t; Phase M-LLM-R — §6.1v; Phase M.6 P4 — §6.1w (closed); Phase M.6 P5 — §6.1x (closed); Phase M.6 P6 — §6.1y (closed).
 
 ### 6.2ag Phase M.6 P6 execution order (Band 2ac — Done)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P6](#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)
+**Status:** **Done** (2026-06-02) · register: [M.6 P6](.#m6-p6--harness-integration-expansion-planned) · queue: [§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P6-CAT.1 → M-P6-CAT.2 → M-P6-CAT.3 → M-P6-CAT.4 → M-P6-CAT.5 → M-P6-CAT.6 → M-P6-CAT.7 → M-P6-CAT.8 → M-P6-CAT.9
@@ -1107,7 +1107,7 @@ Wave PRE (presets):         M-P6-PRE.1  (after H-INT-10 P0 slugs wired)
 
 ### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done)
+**Status:** **Done** (2026-06-02) · register: [M.6 P5](.#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P5-CAT.1 → M-P5-CAT.2 → M-P5-CAT.3
@@ -1124,7 +1124,7 @@ Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
 
 ### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P4](#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
+**Status:** **Done** (2026-06-02) · register: [M.6 P4](.#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](.#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
 
 ```text
 Wave H-INT-0 (categories):  M-P4-CAT.1 → M-P4-CAT.2  (before first slug in new category)
@@ -1141,7 +1141,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
 
-**Status:** **Done** · register: [Phase M-LLM-R](#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+**Status:** **Done** · register: [Phase M-LLM-R](.#phase-m-llm-r--llm-completion-response-envelope-audit-2026-06-06) · queue: [§6.1v](.#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ```text
 Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
@@ -1159,11 +1159,11 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
 
-**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
+**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters` gate green (M-LLM-R.8.3, M-LLM-R.6.4).
 
 ### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
-**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
+**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](.#phase-w-adapt--adaptive-harness-intelligence-l4-runtime) · queue: [§6.1t](.#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
 
 ```text
 Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (**Done**)
@@ -1200,13 +1200,13 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 | ID | Deliverable | Status | Gate to start |
 |----|-------------|--------|----------------|
-| K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](#appendix-a--agent-operating-system-certification-checklist) |
+| K.1 | Problem Radar prototype | **Deferred** | Explicit product decision + [Appendix A](.#appendix-a--agent-operating-system-certification-checklist) |
 | K.2 | Vendor Discovery prototype | **Deferred** | Same as K.1 |
 | K.6 / B.15 / S-Ops.4 | Legal live LLM E2E | **Deferred** | Product/CI budget decision |
-| `agents/legal` UAEP domain steps | Scaffold shell **Done** (Band 2g); step port **Deferred** | **Business** | [§6.3a](#63a-business-backlog-register-consolidated) AA-LEG.2.2+ |
-| Tier-3 product apps | New `applications/<product>/` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
+| `agents/legal` UAEP domain steps | Scaffold shell **Done** (Band 2g); step port **Deferred** | **Business** | [§6.3a](.#63a-business-backlog-register-consolidated) AA-LEG.2.2+ |
+| Tier-3 product apps | New `applications/<product>` beyond lab + reference hosts | **Deferred** | Product decision; scaffold exists (Phase N **Done**) |
 | Domain skills | Product agent skill packs (non-`harness.*`) | **Deferred** | With K.1 or K.2 |
-| `agents/problem_radar/` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
+| `agents/problem_radar` | Wave 1 scaffold frozen | **Deferred** | Do not extend until K.1 reprioritized |
 
 **When Band 3 may start:** Record the decision in this plan (date + chosen K.1 vs K.2), then follow [guides/AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md). Tier-3 scaffold reference (Phase N) applies **only after** that decision — not as ongoing harness work.
 
@@ -1216,7 +1216,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 python -m intergrax.scaffold new-stack <slug> --profile lab --capability <slug>.basic
 ```
 
-See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work. **Product:** [`local_workspace_application`](../applications/local_workspace_application) — Local Knowledge Workspace (LKW) — first business environment after harness GA; see [ARCHITECTURE.md](../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md).
+See [`applications/TIER3_READINESS.md`](../../../../../applications/TIER3_READINESS.md). Existing hosts (`lab_application`, `legal_application`, `research_application`, `poc_template_application`) are sufficient for **all harness** work. **Product:** [`local_workspace_application`](../../../../../applications/local_workspace_application) — Local Knowledge Workspace (LKW) — first business environment after harness GA; see [ARCHITECTURE.md](../../../technical/applications/local_workspace_application/ARCHITECTURE.md).
 
 ### 6.3a Business backlog register (consolidated)
 
@@ -1224,44 +1224,44 @@ See [`applications/TIER3_READINESS.md`](../applications/TIER3_READINESS.md). Exi
 
 | ID | Deliverable | Module | Priority | Depends on |
 |----|-------------|--------|----------|------------|
-| **LKW.0** | Local Knowledge Workspace — scaffold + architecture baseline | `agents/local_{indexer,search,synthesizer}/`, `applications/local_workspace_application/` | **High** | Product reprioritization (2026-06-07) — **Done** |
-| **LKW.1** | Wave 1 — ingest + search smoke on explicit paths | `agents/local_*/steps/` | **High** | LKW.0 |
-| **LKW.2** | Multi-agent pipeline (`local.workspace.pipeline` graph) | `local_workspace_application/` + Nexus graph | High | LKW.1 |
-| **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | `intergrax/tools/providers/filesystem/` | Medium | LKW.1 |
+| **LKW.0** | Local Knowledge Workspace — scaffold + architecture baseline | `agents/local_{indexer,search,synthesizer}`, `applications/local_workspace_application` | **High** | Product reprioritization (2026-06-07) — **Done** |
+| **LKW.1** | Wave 1 — ingest + search smoke on explicit paths | `agents/local_*/steps` | **High** | LKW.0 |
+| **LKW.2** | Multi-agent pipeline (`local.workspace.pipeline` graph) | `local_workspace_application` + Nexus graph | High | LKW.1 |
+| **LKW.3** | Tier-0 `filesystem.*` read tools + allowlist policy | `intergrax/tools/providers/filesystem` | Medium | LKW.1 |
 | **LKW.4** | Background ingest queue + incremental index | Tier-0 queue + Tier-3 worker | Medium | LKW.2 |
 | **LKW.5** | `LKW_DATA_HOME` + Chroma persistent local index | `local_workspace_application/host/settings.py` | High | LKW.1 |
-| **LKW.6** | Local OS daemon (Win/Linux/macOS) + interaction intake on host | `local_workspace_application/` | High | LKW.1 |
+| **LKW.6** | Local OS daemon (Win/Linux/macOS) + interaction intake on host | `local_workspace_application` | High | LKW.1 |
 | **LKW.6b** | Slack Socket Mode + slash command → Nexus (interaction surface) | Tier-3 + `slack` integration | Medium | LKW.6 |
 | **LKW.7** | Background file watcher + incremental index + optional Slack notify | Tier-0 queue + Tier-3 worker | Medium | LKW.3 |
 | **LKW.8** | Tray / file-picker UI (localhost HTTP/MCP client) | Product (out of harness) | Low | LKW.6 |
-| **DSW.0** | Dispute Simulation Workspace — scaffold + architecture baseline | `agents/dispute_{intake,analyst,strategist,scenario}/`, `applications/dispute_sim_application/` | **High** | Product reprioritization (2026-06-07) — **Done** |
-| **DSW.1** | Wave 1 — case intake + RAG ingest + timeline artifact | `agents/dispute_intake/steps/` | **High** | DSW.0 |
-| **DSW.2** | Multi-agent pipeline (`dispute.pipeline` graph) | `dispute_sim_application/` + Nexus graph | High | DSW.1 |
-| **DSW.3** | Analyst matrix + strategist brief domain steps | `agents/dispute_analyst/`, `agents/dispute_strategist/` | High | DSW.1 |
-| **DSW.4** | Scenario variants + correspondence review + HITL | `agents/dispute_scenario/` | High | DSW.3 |
+| **DSW.0** | Dispute Simulation Workspace — scaffold + architecture baseline | `agents/dispute_{intake,analyst,strategist,scenario}`, `applications/dispute_sim_application` | **High** | Product reprioritization (2026-06-07) — **Done** |
+| **DSW.1** | Wave 1 — case intake + RAG ingest + timeline artifact | `agents/dispute_intake/steps` | **High** | DSW.0 |
+| **DSW.2** | Multi-agent pipeline (`dispute.pipeline` graph) | `dispute_sim_application` + Nexus graph | High | DSW.1 |
+| **DSW.3** | Analyst matrix + strategist brief domain steps | `agents/dispute_analyst`, `agents/dispute_strategist` | High | DSW.1 |
+| **DSW.4** | Scenario variants + correspondence review + HITL | `agents/dispute_scenario` | High | DSW.3 |
 | **DSW.5** | Optional subgraph to `legal.review` for clause drill-down | Nexus graph | Medium | DSW.3 |
 | **DSW.6** | Case persistence + retention policy | `dispute_sim_application/host/settings.py` | Medium | DSW.1 |
-| **DSW.7** | Polish dispute eval fixtures + regression | `tests/` / agent eval | Medium | DSW.4 |
-| **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar/` | Product | Explicit reprioritization |
+| **DSW.7** | Polish dispute eval fixtures + regression | `tests` / agent eval | Medium | DSW.4 |
+| **K.1** | Problem Radar prototype (wave 2+) | `agents/problem_radar` | Product | Explicit reprioritization |
 | **K.2** | Vendor Discovery prototype | (greenfield) | Product | K.1 decision or parallel product call |
-| **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps/` | High | Product/legal owner |
-| **AA-LEG.2.3** | Remove any parallel legal runtime (Nexus gateway only) | `agents/legal/` | High | AA-LEG.2.2 |
-| **AA-LEG.2.4** | Legal agent tests per ported step | `agents/legal/tests/` | High | AA-LEG.2.2 |
-| **AA-LEGAPP.6** | `legal_application` host smoke on real steps | `legal_tests/` | High | AA-LEG.2.2 |
-| **AA-LEGAPP.8** | Consolidate duplicate legal test trees | `legal_tests/` vs agent tests | Low | AA-LEG.2.4 |
-| **AA-RES.4** | Research skill ids on contracts | `agents/research/` | Medium | Product |
-| **AA-RES.5** | Research UAEP + graph delegation tests | `agents/research/tests/` | High | Product |
-| **AA-RESAPP.6** | Research application smoke + manifest wiring | `research_application_tests/` | High | AA-RES.5 |
-| **AA-ORG.3** | Organization worker scaffold-align (`contract`, `steps/`) | `agents/organization_worker/` | Medium | Harness demo |
+| **AA-LEG.2.2** | Legal UAEP steps (one step per PR from `SPEC_FROM_LEGACY.md`) | `agents/legal/steps` | High | Product/legal owner |
+| **AA-LEG.2.3** | Remove any parallel legal runtime (Nexus gateway only) | `agents/legal` | High | AA-LEG.2.2 |
+| **AA-LEG.2.4** | Legal agent tests per ported step | `agents/legal/tests` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.6** | `legal_application` host smoke on real steps | `legal_tests` | High | AA-LEG.2.2 |
+| **AA-LEGAPP.8** | Consolidate duplicate legal test trees | `legal_tests` vs agent tests | Low | AA-LEG.2.4 |
+| **AA-RES.4** | Research skill ids on contracts | `agents/research` | Medium | Product |
+| **AA-RES.5** | Research UAEP + graph delegation tests | `agents/research/tests` | High | Product |
+| **AA-RESAPP.6** | Research application smoke + manifest wiring | `research_application_tests` | High | AA-RES.5 |
+| **AA-ORG.3** | Organization worker scaffold-align (`contract`, `steps`) | `agents/organization_worker` | Medium | Harness demo |
 | **AA-ORG.4** | Lab manifest flag + integration test | `lab_application/manifest.py` | Medium | AA-ORG.3 |
 | ~~AA-LABAPP.6~~ | ~~Extra lab host smoke~~ | — | — | **Done** (2026-06-02) — not in business queue |
 | **K.6 / B.15 / S-Ops.4** | Legal full E2E with live LLM | CI / acceptance | Low | CI budget approval |
-| **Tier-3 product** | New `applications/<product>/` beyond four reference hosts | `applications/` | Product | Phase N scaffold + §6.3 decision |
-| **Domain skills** | Non-`harness.*` skill packs for product agents | `intergrax/skills/providers/` | Product | With K.1 or K.2 |
+| **Tier-3 product** | New `applications/<product>` beyond four reference hosts | `applications` | Product | Phase N scaffold + §6.3 decision |
+| **Domain skills** | Non-`harness.*` skill packs for product agents | `intergrax/skills/providers` | Product | With K.1 or K.2 |
 | **A.5** | Full Legal regression (all steps, live model) | Phase A row | Low | K.6 / B.15 |
-| **Phase E** | Legal agent refactoring (parallel track) | `agents/legal/` | On demand | Product architecture |
+| **Phase E** | Legal agent refactoring (parallel track) | `agents/legal` | On demand | Product architecture |
 
-**Not business (infrastructure — closed; see [§6.1z](#61z-harness-implementation-queue-consolidated)):** DX-5.7, AA-LEG.0.2, OPS-L3.1 **Done**; ongoing **§6.1** maintenance only.
+**Not business (infrastructure — closed; see [§6.1z](.#61z-harness-implementation-queue-consolidated)):** DX-5.7, AA-LEG.0.2, OPS-L3.1 **Done**; ongoing **§6.1** maintenance only.
 
 ### 6.1u Archived — Phase U cadence (complete 2026-06-01)
 
@@ -1326,7 +1326,7 @@ HTTP: `GET/POST /debug/experiments`, `POST /debug/experiments/{id}/decision`, `P
 
 ### D.4 Experiment workflow API (Done)
 
-Platform-level `notebooks/` was **removed** (2026-06-12). §35 workflow: `intergrax.experiments.workflow.ExperimentSession`; tests in `tests/unit/experiments/`.
+Platform-level `notebooks` was **removed** (2026-06-12). §35 workflow: `intergrax.experiments.workflow.ExperimentSession`; tests in `tests/unit/experiments`.
 
 ```python
 from pathlib import Path
@@ -1362,7 +1362,7 @@ task = Task(
 
 UAEP agents receive `ctx.metadata["shadow_workspace"]` in `run_step`. Result metadata includes `shadow_workspace_id`.
 
-Root directory: `INTERGRAX_SHADOW_ROOT` (default `build/shadow_workspaces/`).
+Root directory: `INTERGRAX_SHADOW_ROOT` (default `build/shadow_workspaces`).
 
 ### F.2 Sandbox runtime (Done)
 
@@ -1382,7 +1382,7 @@ await ctx.invoke_tool(ToolRequest(
 ))
 ```
 
-Operations: `echo`, `write_file`, `read_file`, `list_files`. Root: `INTERGRAX_SANDBOX_ROOT` (default `build/sandbox_sessions/`).
+Operations: `echo`, `write_file`, `read_file`, `list_files`. Root: `INTERGRAX_SANDBOX_ROOT` (default `build/sandbox_sessions`).
 
 ### F.3 Advanced HITL (Done)
 
@@ -1449,7 +1449,7 @@ Env:
 
 Reference flow for §38 — virtual worker via Slack / Teams without orchestration in adapters.
 
-**Agent:** `agents/organization_worker/` — capability `org.vendor_report`.
+**Agent:** `agents/organization_worker` — capability `org.vendor_report`.
 
 **Lab app factory:**
 
@@ -1513,7 +1513,7 @@ Reuse:
 
 
 
-- `SQLiteRunTraceStore` / `RunTraceReader` — `intergrax/runtime/nexus/tracing/`
+- `SQLiteRunTraceStore` / `RunTraceReader` — `intergrax/runtime/nexus/tracing`
 
 - `trace_bridge` — `intergrax/runtime/events/trace_bridge.py`
 
@@ -1526,7 +1526,7 @@ Reuse:
 # Audit Result: Critic & Verification Layer (CVL)
 
 **Audit date:** 2026-06-13  
-**Method:** Layer Completion Mode vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §18 · `INTEGRAX_HARNESS_AUDIT_MAP.md` §25 · code `runtime/critic/` · `tools/providers/eval/` · Tier-3 critic wiring  
+**Method:** Layer Completion Mode vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §18 · `INTEGRAX_HARNESS_AUDIT_MAP.md` §25 · code `runtime/critic` · `tools/providers/eval` · Tier-3 critic wiring
 **Verdict:** **CRIT-V-0…7 + FOLLOWUP Done** — domain **CRITIC_VERIFICATION** closed at **L3+** (Architecturally Mature).
 
 ---

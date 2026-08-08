@@ -24,18 +24,18 @@ The goal is not merely to implement existing architecture. The goal is to bring 
 |-------------|-------------|------|
 | [`.cursor/rules/intergrax-iteration.mdc`](../../../../.cursor/rules/intergrax-iteration.mdc) | One coherent plan item | Default Cursor sessions |
 | **This guide (Layer Completion Mode)** | Full domain layer → maturity | Deep layer closeout (journal: “Layer Completion Mode”) |
-| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../../maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../bootstrap/05_closeout_all_domains.txt`](../../maintainers/bootstrap/05_closeout_all_domains.txt) |
+| [audit/LAYER_COMPLETION_ORCHESTRATOR.md](../../maintainers/audit/LAYER_COMPLETION_ORCHESTRATOR.md) | All 22 pairs sequentially | Paste [`../../maintainers/bootstrap/05_closeout_all_domains.txt`](../../maintainers/bootstrap/05_closeout_all_domains.txt) |
 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | Cross-domain never-violate rules | Skim **before every** Step 1 and Step 6 |
 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Hard repo rules, verification bundle | On demand (`@docs/project/technical/guides/AGENT_INSTRUCTIONS.md`) |
 | [AGENTS.md](../../../../AGENTS.md) | Cursor auto-load stub (tiers, boundaries) | Always (Cursor) |
 
-**Operator paste:** canonical multi-domain bootstrap lives under [`../bootstrap/`](../../maintainers/bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external/` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
+**Operator paste:** canonical multi-domain bootstrap lives under [`../../maintainers/bootstrap`](../../maintainers/bootstrap/README.md) (English). Personal PL notes may stay in `docs/_external` (gitignored). **This file is the linkable canonical definition** for single-domain LCM steps.
 
 ---
 
 ## 3. Repository bootstrap (before Step 1)
 
-Read **only** documents required for the designated layer — do **not** load all of `docs/`.
+Read **only** documents required for the designated layer — do **not** load all of `docs`.
 
 | Priority | Document | Role |
 |----------|----------|------|
@@ -43,7 +43,7 @@ Read **only** documents required for the designated layer — do **not** load al
 | 2 | [SYSTEM_INVARIANTS.md](SYSTEM_INVARIANTS.md) | `SYS-INV-*` never-violate index (P2-ARCH-01) — mandatory skim |
 | 3 | [intergrax_runtime_architecture.md](../../architecture/intergrax_runtime_architecture.md) | Hub — domain pair picker |
 | 4 | `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md` | Canon + plan for **this layer only** (1:1 basename) |
-| 4b | [`features/README.md`](../../capabilities/README.md) + matching feature pair | When closing a **multi-layer feature** — feature architecture + feature plan, then smallest domain-owned slice |
+| 4b | [`capabilities/README.md`](../../capabilities/README.md) + matching feature pair | When closing a **multi-layer feature** — feature architecture + feature plan, then smallest domain-owned slice |
 | 5 | [INTEGRAX_HARNESS_AUDIT_MAP.md](INTEGRAX_HARNESS_AUDIT_MAP.md) | Audit layer → `<DOMAIN>` mapping |
 | 6 | [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) | Tier imports, scope, verification commands |
 | 7 | [IDEAL_HARNESS_AI_ARCHITECTURE.md](IDEAL_HARNESS_AI_ARCHITECTURE.md) | North star for Step 1A strategic review |
@@ -173,7 +173,7 @@ Prevents correct layer behavior or breaks fundamental architecture assumptions.
 
 Examples:
 
-- `SYS-INV-*` violation (e.g. agent orchestrates, kernel replans, tools bypass `ToolRuntime`, Tier-0 imports `agents/`),
+- `SYS-INV-*` violation (e.g. agent orchestrates, kernel replans, tools bypass `ToolRuntime`, Tier-0 imports `agents`),
 - wrong responsibility split,
 - conflicting contracts,
 - incorrect control flow,
@@ -329,7 +329,7 @@ Before ending the session, present:
 
 ### Journal
 
-- path under `docs/project/maintainers/implementation-journal/entries/YYYY-MM-DD/` — **required** for layer closeout (milestone); see [README §milestone triggers](../../maintainers/implementation-journal/README.md).
+- path under `docs/project/maintainers/implementation-journal/entries/YYYY-MM-DD` — **required** for layer closeout (milestone); see [README §milestone triggers](../../maintainers/implementation-journal/README.md).
 
 ### Remaining risks
 

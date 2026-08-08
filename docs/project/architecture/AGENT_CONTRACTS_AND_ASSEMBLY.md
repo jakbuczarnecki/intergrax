@@ -1,12 +1,12 @@
 # Agent Contracts, Registry, and Capability Model
 
 **Status:** Canonical architecture (domain pair 1:1) · **Production coding gate:** §40 + ACP-PROD-* + **ACP-CLOSE-PROD-*** **Done** (mutating agents platform-ready)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 17–20, 31 (+ ACP cognitive patterns §21)  
-**Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
-**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability  
+**Audit instruction:** [`audit/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/audit/AGENT_CONTRACTS_AND_ASSEMBLY.md)
+**ADR:** [`adr/entries/2026-06-11/ADR-AGENT-001.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md) · [`adr/entries/2026-06-11/ADR-AGENT-002.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-002.md) · [`adr/entries/2026-06-11/ADR-AGENT-003.md`](../technical/adr/entries/2026-06-11/ADR-AGENT-003.md) — ACP · `run()` · `on_next_step` · dual observability
 
 > **Practical minimal authoring path:** [`guides/AGENT_AUTHOR_MINIMAL_PATH.md`](../technical/guides/AGENT_AUTHOR_MINIMAL_PATH.md)
 
@@ -44,40 +44,40 @@ Load **only** the satellite matching your task or cited §.
 
 | § | Topic |
 |---|--------|
-| [§12](#12-agent-contract) | Agent contract |
-| [§13](#13-agent-interface-run-facade-step-loop-and-uaep) | Agent interface: `run()`, step loop, UAEP |
-| [§14](#14-agent-execution-result) | Agent execution result |
-| [§15](#15-agent-registry) | Agent registry |
-| [§16](#16-capability-model) | Capability model |
-| [§17](#17-prompt-registry-architecture) | Prompt registry |
-| [§18](#18-registry-architecture) | Registry architecture |
-| [§19](#19-capability-graph-architecture) | Capability graph |
-| [§20](#20-agent-lifecycle-governance) | Agent lifecycle governance |
-| [§21](#21-agent-cognitive-architecture-acp) | **Agent Cognitive Architecture (ACP)** |
-| [§22](#22-tier-and-terminology-canon) | Tier and terminology canon |
-| [§23](#23-three-cognition-planes) | Three cognition planes |
-| [§24](#24-agent-class-hierarchy) | Agent class hierarchy |
-| [§25](#25-runtime-execution-context-state-model) | Runtime execution context / state |
-| [§25.4](#254-invocation-time-token-usage-agent-vs-environment) | Invocation-time token usage (agent vs environment) |
-| [§25.5](#255-token-budget-limits-enforcement-and-application-reactions) | Token budget limits, enforcement, application reactions |
-| [§26](#26-cognitive-pattern-catalog) | Cognitive pattern catalog |
-| [§27](#27-end-to-end-execution-flows) | End-to-end execution flows |
-| [§28](#28-acp-code-map-maturity-and-gaps) | ACP code map, maturity, gaps |
-| [§29](#29-author-facing-run-facade) | **Author-facing `run()` facade** |
-| [§30](#30-per-agent-environment-and-resource-binding) | **Per-agent environment & resources** |
-| [§30.9](#309-identity-tenantuser-and-memory-scope) | **Identity, tenant/user, memory scope** |
-| [§31](#31-dual-observability-application-and-agent-planes) | **Dual observability planes** |
-| [§32](#32-agent-step-loop-on_next_step) | **Agent step loop (`on_next_step`)** |
-| [§32.0](#320-author-readability-and-typed-contracts-normative) | **Author readability & typed contracts (normative)** |
-| [§33](#33-per-step-llm-routing) | **Per-step LLM routing** |
-| [§34](#34-shared-state-and-cross-agent-visibility) | **Shared state & cross-agent visibility** |
-| [§35](#35-use-case-catalog-agent--environment) | **Use-case catalog** |
-| [§36](#36-final-architecture-agent--environment-cooperation) | **Final architecture synthesis** |
-| [§37](#37-pre-implementation-operational-contracts) | **Pre-implementation operational contracts** |
-| [§38](#38-execution-responsibility-stack-nexusloop-vs-step-kernel) | **Execution stack: NexusLoop vs step kernel** |
-| [§39](#39-organizational-policy-envelope-virtual-workforce) | **Organizational policy envelope & virtual workforce** |
-| [§40](#40-production-reliability-safety-persistence-and-release-gates) | **Production reliability, safety, persistence, release gates** |
-| [§45](#45-checklist-for-new-agent-implementation) | New agent checklist |
+| [§12](.#12-agent-contract) | Agent contract |
+| [§13](.#13-agent-interface-run-facade-step-loop-and-uaep) | Agent interface: `run()`, step loop, UAEP |
+| [§14](.#14-agent-execution-result) | Agent execution result |
+| [§15](.#15-agent-registry) | Agent registry |
+| [§16](.#16-capability-model) | Capability model |
+| [§17](.#17-prompt-registry-architecture) | Prompt registry |
+| [§18](.#18-registry-architecture) | Registry architecture |
+| [§19](.#19-capability-graph-architecture) | Capability graph |
+| [§20](.#20-agent-lifecycle-governance) | Agent lifecycle governance |
+| [§21](.#21-agent-cognitive-architecture-acp) | **Agent Cognitive Architecture (ACP)** |
+| [§22](.#22-tier-and-terminology-canon) | Tier and terminology canon |
+| [§23](.#23-three-cognition-planes) | Three cognition planes |
+| [§24](.#24-agent-class-hierarchy) | Agent class hierarchy |
+| [§25](.#25-runtime-execution-context-state-model) | Runtime execution context / state |
+| [§25.4](.#254-invocation-time-token-usage-agent-vs-environment) | Invocation-time token usage (agent vs environment) |
+| [§25.5](.#255-token-budget-limits-enforcement-and-application-reactions) | Token budget limits, enforcement, application reactions |
+| [§26](.#26-cognitive-pattern-catalog) | Cognitive pattern catalog |
+| [§27](.#27-end-to-end-execution-flows) | End-to-end execution flows |
+| [§28](.#28-acp-code-map-maturity-and-gaps) | ACP code map, maturity, gaps |
+| [§29](.#29-author-facing-run-facade) | **Author-facing `run()` facade** |
+| [§30](.#30-per-agent-environment-and-resource-binding) | **Per-agent environment & resources** |
+| [§30.9](.#309-identity-tenantuser-and-memory-scope) | **Identity, tenant/user, memory scope** |
+| [§31](.#31-dual-observability-application-and-agent-planes) | **Dual observability planes** |
+| [§32](.#32-agent-step-loop-on_next_step) | **Agent step loop (`on_next_step`)** |
+| [§32.0](.#320-author-readability-and-typed-contracts-normative) | **Author readability & typed contracts (normative)** |
+| [§33](.#33-per-step-llm-routing) | **Per-step LLM routing** |
+| [§34](.#34-shared-state-and-cross-agent-visibility) | **Shared state & cross-agent visibility** |
+| [§35](.#35-use-case-catalog-agent--environment) | **Use-case catalog** |
+| [§36](.#36-final-architecture-agent--environment-cooperation) | **Final architecture synthesis** |
+| [§37](.#37-pre-implementation-operational-contracts) | **Pre-implementation operational contracts** |
+| [§38](.#38-execution-responsibility-stack-nexusloop-vs-step-kernel) | **Execution stack: NexusLoop vs step kernel** |
+| [§39](.#39-organizational-policy-envelope-virtual-workforce) | **Organizational policy envelope & virtual workforce** |
+| [§40](.#40-production-reliability-safety-persistence-and-release-gates) | **Production reliability, safety, persistence, release gates** |
+| [§45](.#45-checklist-for-new-agent-implementation) | New agent checklist |
 
 ---
 
@@ -202,7 +202,7 @@ Legacy UAEP names (implementation today):
 
 | Path | Status |
 |------|--------|
-| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps/` | **Removed** — [ADR-FLOW-005](../technical/adr/entries/2026-06-12/ADR-FLOW-005.md) |
+| `RuntimeEngine` / `RuntimePipeline` / `runtime_steps` | **Removed** — [ADR-FLOW-005](../technical/adr/entries/2026-06-12/ADR-FLOW-005.md) |
 | `agents/*/steps/pipeline.py` / `uaep_pipeline_bridge.py` | **Removed** — use `on_next_step` + cognitive patterns |
 | `execute()` pseudocode | Replaced by `run()` + `on_next_step` |
 | Override `execute_next_step` / `advance_step` | **Forbidden** — bypasses policy/trace |
@@ -217,7 +217,7 @@ Legacy UAEP names (implementation today):
 | **ACP session** | `metadata["acp.session.v1"]` (Tier-3 harness task enricher sets by default) | `run_acp_session` → `AgentRuntime.advance_step` (multi-iteration) | `on_next_step` each iteration |
 | **UAEP bridge (Nexus default)** | `CognitiveAgent` / fleet agents | `UAEPExecutor` over `get_steps()` (typically **one** cognitive step) | `run_step` → `acp_uaep_shim` → **`on_next_step`**; ReAct/plan-execute loop **inside** `on_next_step` |
 
-`UaepPipelineStubAgent` in `testing_support/` is **test-only**. Product agents MUST NOT author custom `get_steps`/`run_step` beyond `CognitiveAgent` defaults — implement domain logic in `on_next_step` / pattern hooks.
+`UaepPipelineStubAgent` in `testing_support` is **test-only**. Product agents MUST NOT author custom `get_steps`/`run_step` beyond `CognitiveAgent` defaults — implement domain logic in `on_next_step` / pattern hooks.
 
 ```text
 # ACP session (opt-in via acp.session.v1)
@@ -230,14 +230,14 @@ Agent.run(AgentRunRequest)
 AgentEngine → UAEPExecutor → run_step → on_next_step → HarnessKernel (via uaep_step_bridge)
 ```
 
-No Tier-1 code path may inject fixed step order (retired `RuntimePipeline` / `runtime_steps/`). Tool loops (ReAct) run **inside** `on_next_step` via `run_bounded_tool_loop` + `ctx.invoke_tool`, not via Nexus graph scheduling (ADR-TOOL-002).
+No Tier-1 code path may inject fixed step order (retired `RuntimePipeline` / `runtime_steps`). Tool loops (ReAct) run **inside** `on_next_step` via `run_bounded_tool_loop` + `ctx.invoke_tool`, not via Nexus graph scheduling (ADR-TOOL-002).
 
 ## 13.6 Authoring facades
 
 | Facade | Module | Use when |
 |--------|--------|----------|
 | `IntergraxAgent` | `intergrax/agents/authoring/base.py` | `@step` linear agents; inherits `run()` + default `on_next_step` |
-| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns/` | ReAct, decomposition, reflection — patterns implement `on_next_step` |
+| `CognitiveAgent` + patterns §26 | `intergrax/agents/authoring/patterns` | ReAct, decomposition, reflection — patterns implement `on_next_step` |
 | `HarnessReferenceAgent` | `harness_reference_agent.py` | Low-level UAEP ABC (framework/tests) |
 
 **Guide:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix AC · **Plan:** Phase **ACP** + **ACP-DX** + **ACP-STEP** rows.
@@ -350,7 +350,7 @@ Prompt artifacts are **governed platform assets**, not ad-hoc strings in agents.
 
 | Module | Role |
 |--------|------|
-| `intergrax/prompts/registry/` | YamlPromptRegistry, governance validation |
+| `intergrax/prompts/registry` | YamlPromptRegistry, governance validation |
 | `intergrax/runtime/architecture/prompt_registry_governance.py` | Ownership / risk tier gates |
 | `intergrax/runtime/architecture/prompt_composition.py` | Layer composition |
 | `intergrax/runtime/architecture/prompt_policy_overlay.py` | Policy overlays |
@@ -443,8 +443,8 @@ Runtime MUST reject or reroute retired/deprecated agents in production mode (V-R
 # 21. Agent Cognitive Architecture (ACP)
 
 **Status:** Canonical architecture — **platform delivered** (Phase ACP + ACP-CLOSE + ACP-FINISH **Done**); AUDIT-IDEAL §12–§20 **Done** (2026-06-13)  
-**ADR:** [ADR-AGENT-001](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md)  
-**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**  
+**ADR:** [ADR-AGENT-001](../technical/adr/entries/2026-06-11/ADR-AGENT-001.md)
+**Plan:** [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) — ACP · ACP-CLOSE · ACP-FINISH · AUDIT-IDEAL **Done**
 **Cross-domain:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (planes 1–3) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) (narrative) · [`TOOLS.md`](TOOLS.md) TOOL-ENG-6 (tool loop) · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#verification-safety-boundaries) (reflection / verification safety) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary) (ephemeral codegen — no agent-local craft loops)
 
 ## 21.1 Purpose
@@ -463,7 +463,7 @@ ACP does **not** replace Nexus, redefine tiers, or introduce a second execution 
 |----|-----------|
 | **ACP-INV-01** | Nexus remains Agent OS — global orchestration, policy, HITL, multi-agent graph |
 | **ACP-INV-02** | All agent runs use UAEP step loop (legacy UAEP authoring retired — ACP-CLOSE-LEG-5) |
-| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications/` or `intergrax.applications` |
+| **ACP-INV-03** | Cognitive patterns are **Tier-2 libraries** — no imports from `applications` or `intergrax.applications` |
 | **ACP-INV-04** | Side effects only through `RuntimeExecutionContext.tool_gateway` → `ToolRuntime` |
 | **ACP-INV-05** | Control flow via `AgentDecision` — never `sleep()` for HITL, never direct Slack/webhooks |
 | **ACP-INV-06** | Configuration: **contract + pattern in agent**; **governance profile in Tier-3** |
@@ -500,8 +500,8 @@ Tier-1 agent merge (`merge_environment`, `ACPSessionHostContext`, ACP run loop) 
 | `AgentBinding` (manifest roster) | `AgentRunBinding` (`intergrax/contracts/agent_run_binding.py`) | `agent_binding_to_run_binding()` |
 | `ExecutionMode`, org policy envelopes | `intergrax/contracts/execution_mode.py`, `intergrax/contracts/org_policy.py` | Re-exported from `intergrax/applications/contracts/*` for host authoring |
 
-Adapters: `intergrax/applications/_shared/runtime_boundary_adapters.py`. Runtime bridges previously under `intergrax/applications/_shared/*_runtime_bridge.py` that agents/runtime consumed now live under `intergrax/runtime/wiring/`.
+Adapters: `intergrax/applications/_shared/runtime_boundary_adapters.py`. Runtime bridges previously under `intergrax/applications/_shared/*_runtime_bridge.py` that agents/runtime consumed now live under `intergrax/runtime/wiring`.
 
-CI: `scripts/check_no_upward_application_imports.py` (canonical) plus maintenance guards in `scripts/maintenance/`.
+CI: `scripts/check_no_upward_application_imports.py` (canonical) plus maintenance guards in `scripts/maintenance`.
 
 ---

@@ -91,7 +91,7 @@ Rules:
 - Read only relevant sections of other high-level docs.
 - Use grep/path filters before opening large files.
 - Do not load full implementation plans unless needed for navigation context.
-- Do not load `docs/audit_results/`.
+- Do not load `docs/audit_results`.
 - Do not use subagents.
 - Make minimal, precise edits.
 - Preserve existing domain architecture/plan 1:1 rule.
@@ -130,10 +130,10 @@ Inspect these files and update them where the concept naturally belongs.
 
 ```text
 README.md
-EVALUATION_GUIDE.md
-FAQ.md
-USE_CASES.md
-ROADMAP.md
+docs/project/builders/EVALUATION_GUIDE.md
+docs/project/overview/FAQ.md
+docs/project/overview/USE_CASES.md
+docs/project/overview/ROADMAP.md
 ```
 
 Minimum required update:
@@ -200,7 +200,7 @@ Recommended locations:
 2. `Start here` table, with a row such as:
 
 ```markdown
-| Exploring multi-layer platform features | [Multi-layer feature docs](docs/project/capabilities/README.md) |
+| Exploring multi-layer platform features | [Multi-layer feature docs](../../capabilities/README.md) |
 ```
 
 3. Documentation index section if present.

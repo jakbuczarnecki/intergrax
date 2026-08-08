@@ -1,12 +1,12 @@
 # Elastic Capacity and Scaling
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §0.3, §3.8, §12
 **Audit layers:** 30 (Operational Excellence) · cross-ref 9 (orchestration backpressure), 21 (observability SLIs)  
-**Audit instruction:** [`audit/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/audit/ELASTIC_CAPACITY_AND_SCALING.md)  
-**ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md)  
+**Audit instruction:** [`audit/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/audit/ELASTIC_CAPACITY_AND_SCALING.md)
+**ADR:** [ADR-SCALE-001](../technical/adr/entries/2026-06-08/ADR-SCALE-001.md)
 **Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary; honest maturity **Done**
 
 ---
@@ -36,39 +36,39 @@ Load **only** the satellite matching your task or cited §.
 
 ## Table of contents
 
-1. [Purpose](#1-purpose)
-   - [Production Boundary](#production-boundary)
-   - [ECP responsibility boundary](#ecp-responsibility-boundary)
-   - [Allowed ECP actions](#allowed-ecp-actions)
-   - [Disallowed ECP actions](#disallowed-ecp-actions)
-   - [Production readiness statement](#production-readiness-statement)
-   - [Scaling action governance](#scaling-action-governance)
-   - [Cursor review checklist](#cursor-review-checklist)
-2. [Problem statement](#2-problem-statement)
-3. [Terminology](#3-terminology)
-4. [Design principles](#4-design-principles)
-5. [Harness Elastic Capacity Plane (ECP)](#5-harness-elastic-capacity-plane-ecp)
-6. [Two scaling dimensions](#6-two-scaling-dimensions)
-7. [Ideal architecture alignment](#7-ideal-architecture-alignment)
-8. [Tier placement and responsibility matrix](#8-tier-placement-and-responsibility-matrix)
-9. [Domain boundaries](#9-domain-boundaries)
-10. [Signal model](#10-signal-model)
-11. [ScalingPolicy and rules engine](#11-scalingpolicy-and-rules-engine)
-12. [Scaling actions and integration surface](#12-scaling-actions-and-integration-surface)
-13. [Relationship to orchestration backpressure](#13-relationship-to-orchestration-backpressure)
-14. [Relationship to queueing and workers](#14-relationship-to-queueing-and-workers)
-15. [Relationship to Adaptive Harness Intelligence](#15-relationship-to-adaptive-harness-intelligence)
-16. [ScalingProfile (Tier-3)](#16-scalingprofile-tier-3)
-17. [Governance, policy, and HITL](#17-governance-policy-and-hitl)
-18. [Observability and trace contracts](#18-observability-and-trace-contracts)
-19. [Failure taxonomy and anti-flapping](#19-failure-taxonomy-and-anti-flapping)
-20. [End-to-end capacity loop](#20-end-to-end-capacity-loop)
-21. [As-built vs target](#21-as-built-vs-target)
-22. [Maturity scorecard and gap register](#22-maturity-scorecard-and-gap-register)
-23. [Related documents](#23-related-documents)
-24. [Appendix A — Code map (as-built + target)](#appendix-a--code-map-as-built--target)
-25. [Appendix B — Integration catalog (scaling-relevant)](#appendix-b--integration-catalog-scaling-relevant)
-26. [Appendix C — Audit and ideal traceability](#appendix-c--audit-and-ideal-traceability)
+1. [Purpose](.#1-purpose)
+   - [Production Boundary](.#production-boundary)
+   - [ECP responsibility boundary](.#ecp-responsibility-boundary)
+   - [Allowed ECP actions](.#allowed-ecp-actions)
+   - [Disallowed ECP actions](.#disallowed-ecp-actions)
+   - [Production readiness statement](.#production-readiness-statement)
+   - [Scaling action governance](.#scaling-action-governance)
+   - [Cursor review checklist](.#cursor-review-checklist)
+2. [Problem statement](.#2-problem-statement)
+3. [Terminology](.#3-terminology)
+4. [Design principles](.#4-design-principles)
+5. [Harness Elastic Capacity Plane (ECP)](.#5-harness-elastic-capacity-plane-ecp)
+6. [Two scaling dimensions](.#6-two-scaling-dimensions)
+7. [Ideal architecture alignment](.#7-ideal-architecture-alignment)
+8. [Tier placement and responsibility matrix](.#8-tier-placement-and-responsibility-matrix)
+9. [Domain boundaries](.#9-domain-boundaries)
+10. [Signal model](.#10-signal-model)
+11. [ScalingPolicy and rules engine](.#11-scalingpolicy-and-rules-engine)
+12. [Scaling actions and integration surface](.#12-scaling-actions-and-integration-surface)
+13. [Relationship to orchestration backpressure](.#13-relationship-to-orchestration-backpressure)
+14. [Relationship to queueing and workers](.#14-relationship-to-queueing-and-workers)
+15. [Relationship to Adaptive Harness Intelligence](.#15-relationship-to-adaptive-harness-intelligence)
+16. [ScalingProfile (Tier-3)](.#16-scalingprofile-tier-3)
+17. [Governance, policy, and HITL](.#17-governance-policy-and-hitl)
+18. [Observability and trace contracts](.#18-observability-and-trace-contracts)
+19. [Failure taxonomy and anti-flapping](.#19-failure-taxonomy-and-anti-flapping)
+20. [End-to-end capacity loop](.#20-end-to-end-capacity-loop)
+21. [As-built vs target](.#21-as-built-vs-target)
+22. [Maturity scorecard and gap register](.#22-maturity-scorecard-and-gap-register)
+23. [Related documents](.#23-related-documents)
+24. [Appendix A — Code map (as-built + target)](.#appendix-a--code-map-as-built--target)
+25. [Appendix B — Integration catalog (scaling-relevant)](.#appendix-b--integration-catalog-scaling-relevant)
+26. [Appendix C — Audit and ideal traceability](.#appendix-c--audit-and-ideal-traceability)
 
 ---
 
@@ -106,10 +106,10 @@ ECP is the Harness **capacity architecture and governed scaling scaffold** — n
 | Phase | Delivers | Maturity |
 |-------|----------|----------|
 | **ECP-DOC** | Domain pair, ADR-SCALE-001, tier boundaries | **Done** |
-| **ECP-DEPTH** | Contracts, `runtime/capacity/` scaffold, gate tests, disabled-by-default wiring | **Done** (harness **L2** — architecture + scaffold) |
+| **ECP-DEPTH** | Contracts, `runtime/capacity` scaffold, gate tests, disabled-by-default wiring | **Done** (harness **L2** — architecture + scaffold) |
 | **ECP-PROD** | Live signal bridge, HITL queue, K8s REST/Celery adapters, E2E gate | **Done** (target **L3** with operator enablement) |
 
-Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until maturity and evidence statements justify otherwise ([Production readiness statement](#production-readiness-statement)).
+Do **not** market ECP-DEPTH as a finished production autoscaling system. Operators should continue to rely on **K8s HPA**, **Celery autoscale**, and manual runbooks until maturity and evidence statements justify otherwise ([Production readiness statement](.#production-readiness-statement)).
 
 ---
 
@@ -216,7 +216,7 @@ Intergrax today scales **within** fixed capacity and scales **data planes** — 
 | Gap | Impact |
 |-----|--------|
 | `max_inflight_nodes` / `GRAPH_BACKPRESSURE` throttle only | Saturation visible; no automatic capacity response |
-| `queueing/` + message_bus workers exist | Fixed worker count; no Harness policy to add workers |
+| `queueing` + message_bus workers exist | Fixed worker count; no Harness policy to add workers |
 | `kubernetes` integration (beta) | Health/deploy facade; no scale workload API in canon |
 | W-OPS SLO catalog (Done) | SLIs measured; not wired to provisioning actions |
 | AHI `ExecutionStrategyEngine` | Proposes profile deltas; does not provision replicas |
@@ -254,7 +254,7 @@ ECP-DOC closed the **canon** gap; ECP-DEPTH closed the **contract + scaffold** g
 | Principle | Meaning in Intergrax |
 |-----------|---------------------|
 | **Async control plane** | Capacity controller runs **outside** Nexus hot path (like AHI scheduler) |
-| **Integrations not SDKs** | K8s, Celery, nginx actions via `intergrax/integrations/` and tools |
+| **Integrations not SDKs** | K8s, Celery, nginx actions via `intergrax/integrations` and tools |
 | **Policy before provision** | `PolicyEngine` + optional HITL on scale-out/up in production |
 | **Idempotent actions** | Same signal burst → one effective scale step within cooldown window |
 | **Hysteresis** | Separate scale-up and scale-down thresholds |

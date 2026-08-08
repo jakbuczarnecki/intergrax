@@ -21,7 +21,7 @@ This document is the **single cross-layer maturity vocabulary**. It defines **fo
 
 | Situation | Action |
 |-----------|--------|
-| **New or updated architecture doc** | Add a [Maturity Statement](#required-maturity-block) (or update existing one) |
+| **New or updated architecture doc** | Add a [Maturity Statement](.#required-maturity-block) (or update existing one) |
 | **Layer closeout / audit** | Score all four axes explicitly; map legacy labels before sign-off |
 | **Code review / plan item** | Do not infer production readiness from architecture-only gates |
 | **External audit** | Require four-axis statement; treat undifferentiated *L4* / *production-ready* as incomplete evidence |
@@ -173,7 +173,7 @@ Historical Intergrax docs use shorthand that **does not map 1:1** to a single ax
 
 **Phase / gate codes (L4-O, L4-R, …):** lifecycle **mode names** for Adaptive Harness Intelligence — document under **Implementation** and **Evidence** axes for the mode in question, not as a global "L4" badge for the whole platform.
 
-**Migration policy:** domain pair owners add a [Maturity Statement](#required-maturity-block) when touching a file; bulk retrofits are optional follow-up work tracked in plan hubs.
+**Migration policy:** domain pair owners add a [Maturity Statement](.#required-maturity-block) when touching a file; bulk retrofits are optional follow-up work tracked in plan hubs.
 
 ---
 
@@ -237,8 +237,8 @@ Common **safe** combinations readers should understand:
 
 ## 7. Reading order
 
-1. This file — [Labeling rule](#3-labeling-rule-normative) + four axes  
+1. This file — [Labeling rule](.#3-labeling-rule-normative) + four axes
 2. [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — rules that apply regardless of maturity  
-3. Hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+3. Hub [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 4. One domain pair for your task  
 5. Layer closeout: [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)

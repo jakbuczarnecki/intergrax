@@ -18,7 +18,7 @@ Use, modification, or distribution without written permission is prohibited.
 | **Audit date** | 2026-08-02 |
 | **Branch** | `development` |
 | **Commit** | `0d01a6eb96ff29d1e6479fdd2d968d7505f82f94` |
-| **Scope** | `intergrax/`, `agents/`, `applications/`, `tests/`, `scripts/`, `pyproject.toml`, `uv.lock` (excludes `docker/runtime-context/` copies) |
+| **Scope** | `intergrax`, `agents`, `applications`, `tests`, `scripts`, `pyproject.toml`, `uv.lock` (excludes `docker/runtime-context` copies) |
 | **Patterns** | Top-level `from` / `import` of `langchain*`, `langgraph` in Python sources; `pyproject.toml` declarations |
 | **Classifications** | `CORE_CONTRACT_LEAK`, `CORE_IMPLEMENTATION_DEPENDENCY`, `PROVIDER_BOUND_DEPENDENCY`, `OPTIONAL_COMPATIBILITY`, `LEGACY_OPTIONAL`, `TOOLING_DEPENDENCY`, `TEST_ONLY`, `PACKAGING_DEPENDENCY`, `GENERATED_LOCK_ENTRY` |
 | **Tooling definition** | Executable repository tooling or generators import LangChain, but the dependency is not part of production runtime or a documentation-only textual mention. |
@@ -182,7 +182,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 
 ## G. LangGraph register
 
-Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated §C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context/` copies mirror the same two modules but are excluded from §C to avoid double-counting.
+Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import has a dedicated §C row (`LCI-8A`). Optional extra: `langgraph-legacy`. Docker `runtime-context` copies mirror the same two modules but are excluded from §C to avoid double-counting.
 
 | Path | Line | Symbol | Classification | Task |
 |------|-----:|--------|----------------|------|

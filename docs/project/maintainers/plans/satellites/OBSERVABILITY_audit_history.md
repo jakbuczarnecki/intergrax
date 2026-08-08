@@ -58,7 +58,7 @@
 | 7 | **OBS-BUS-6** | Code | **Done** | OTLP/journal dual-write | `test_journal_export.py`, `test_export_bridge.py` |
 | 8 | **OBS-BUS-7** | CI | **Done** | L4 §21 gates | `check_observability_gates.py` in CI; audit map §21 → L4 |
 
-**Suggested PR order:** See [Phase OBS-BUS — Execution order](#obs-bus--execution-order-recommended).
+**Suggested PR order:** See [Phase OBS-BUS — Execution order](.#obs-bus--execution-order-recommended).
 
 **Explicitly excluded:** Product dashboards (§6.3a); vendor-only APM as sole store.
 
@@ -68,7 +68,7 @@
 
 **Suggested PR order:** See [§6.2ab](plan/MEMORY.md#62ab-phase-mem-depth-execution-order-band-2am--closed).
 
-**Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1/K.2, Mem0 SaaS, Redis session default — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -87,9 +87,9 @@
 | OBS-DOC.1 | OBS0 | **Appendix Q** — observability control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | OBS-1 | OBS1 | **`observability_runtime_bridge`** + **`observability_wiring`** | **Done** | `observability_runtime_bridge.py`, `observability_wiring.py`, `runtime_config_bridge.py` | `test_harness_observability_wiring.py` |
 | OBS-2 | OBS2 | **`observability_assembly_resolver`** — profile ↔ stores conformance | **Done** | `observability_assembly_resolver.py`, `harness_host_runtime.py` | assembly validation tests |
-| OBS-3 | OBS3 | **Host observability CI** — `check_harness_observability_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| OBS-3 | OBS3 | **Host observability CI** — `check_harness_observability_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product-only observability dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product-only observability dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -114,7 +114,7 @@
 | ID | Area | Deliverable | Status | Modules / artifacts | Acceptance |
 |----|------|-------------|--------|---------------------|------------|
 | OBS-BUS-0 | OBS0 | **Architecture canon** — `architecture/OBSERVABILITY.md` + ADR-OBS-001 + canon/README links | **Done** | `docs/project/architecture/OBSERVABILITY.md`, `docs/project/technical/adr/entries/2026-06-08/ADR-OBS-001.md` | Doc review; links from §33 |
-| OBS-BUS-1 | OBS1 | **`RuntimeEventPayload` registry** — typed canonical payloads per `RuntimeEventType` (§42.23.1 families) | **Done** | `intergrax/runtime/events/payload_registry.py`, `payloads/`, `schema_guard.py`, `trace_bridge.py`, `context_skill_recording.py` | Gate: `test_runtime_event_payload_registry.py` |
+| OBS-BUS-1 | OBS1 | **`RuntimeEventPayload` registry** — typed canonical payloads per `RuntimeEventType` (§42.23.1 families) | **Done** | `intergrax/runtime/events/payload_registry.py`, `payloads`, `schema_guard.py`, `trace_bridge.py`, `context_skill_recording.py` | Gate: `test_runtime_event_payload_registry.py` |
 | OBS-BUS-2 | OBS2 | **`ObservabilityEmitter` + `TraceScope`** — single emit API; `parent_event_id` causal tree | **Done** | `intergrax/runtime/observability/emitter.py`, `trace_scope.py`, `runtime_state.py` | `RuntimeState.trace_event` delegates; `test_observability_emitter.py` |
 | OBS-BUS-3 | OBS3 | **Emission coverage** — `AGENT_SELECTED`, `STEP_FAILED`, graph typed payloads, critic `evaluator_loop` bridge | **Done** | `agent_router.py`, `graph_trace_callbacks.py`, `task_trace.py`, `trace_bridge.py`, `graph_node_diag.py` | `check_observability_emission_coverage.py` |
 | OBS-BUS-4 | OBS4 | **Extension SDK** — agent/app `DiagnosticPayload` scaffold, namespace rules, `PayloadSchemaRegistry` | **Done** | `extension_sdk.py`, `tracing_templates.py`, `new_agent.py`, `new_application.py` | `check_payload_schema_registry.py` |
@@ -156,13 +156,13 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 | D.0 | §42 P4.1 Event Bus wiring | **Done** | `RuntimeEventBus`, `trace_bridge`, NexusLoop |
 
-| D.1 | Debug CLI | **Done** | `python -m intergrax.debug tasks list\|show\|trace` |
+| D.1 | Debug CLI | **Done** | `python -m intergrax.debug tasks list/|show/|trace` |
 
 | D.2 | Minimal debug API | **Done** | FastAPI `GET /debug/tasks` on trace store |
 
 | D.3 | Experiment registry | **Done** | SQLite registry; CLI + `GET/POST /debug/experiments` |
 
-| D.4 | Experiment workflow API | **Done** | `intergrax/experiments/workflow.py`, `tests/unit/experiments/` |
+| D.4 | Experiment workflow API | **Done** | `intergrax/experiments/workflow.py`, `tests/unit/experiments` |
 
 | D.5 | Cost in trace | **Done** | `AgentExecutionResult.cost` from LLM usage / runtime stats |
 
@@ -170,15 +170,15 @@ OBS-BUS-0 (docs) → OBS-BUS-1 (typed payloads)
 
 ## Phase EBE — Execution Boundary Export (partner PoC)
 
-**Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §18 · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · **Reference host:** `applications/attestation_demo/`
+**Architecture:** [`architecture/OBSERVABILITY.md`](../architecture/OBSERVABILITY.md) §18 · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · **Reference host:** `applications/attestation_demo`
 
 | ID | Deliverable | Status | Modules / artifacts | Acceptance |
 |----|-------------|--------|---------------------|------------|
-| EBE-1 | `execution_boundary_event.v1` + invoker hook + memory buffer | **Done** | `intergrax/runtime/attestation/` | `tests/unit/runtime/attestation/` |
+| EBE-1 | `execution_boundary_event.v1` + invoker hook + memory buffer | **Done** | `intergrax/runtime/attestation` | `tests/unit/runtime/attestation` |
 | EBE-2 | `ExecutionBoundaryExportProfile` + wiring bridge | **Done** | `attestation_runtime_bridge.py`, `environment_profile.py` | host runtime wiring |
-| EBE-3 | `attestation_demo` host + `POST /poc/run` | **Done** | `applications/attestation_demo/` | `attestation_demo_tests` |
-| EBE-4 | `boundary_demo_agent` + `records.put` lab wiring | **Done** | `agents/boundary_demo/`, `host/tool_wiring.py` | PoC smoke |
-| EBE-5 | Partner handoff (README + sample JSON) | **Done** | `partner_handoff/` | committed request/response fixtures |
+| EBE-3 | `attestation_demo` host + `POST /poc/run` | **Done** | `applications/attestation_demo` | `attestation_demo_tests` |
+| EBE-4 | `boundary_demo_agent` + `records.put` lab wiring | **Done** | `agents/boundary_demo`, `host/tool_wiring.py` | PoC smoke |
+| EBE-5 | Partner handoff (README + sample JSON) | **Done** | `partner_handoff` | committed request/response fixtures |
 | EBE-6 | Domain doc + harness ADR (trust model) | **Done** | `architecture/OBSERVABILITY.md` §18, ADR-OBS-002 | doc pair + `check_harness_adr.py` |
 | EBE-7 | Webhook sink | Deferred | `sinks/webhook.py` | Phase 2 |
 | EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** (partner validated) | `harness_boundary_emitter.py`, `HarnessKernel._finish_step` | Live Docker @ `106aee77`; AgentReceipt 28/28 + live example |

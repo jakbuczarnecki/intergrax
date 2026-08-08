@@ -31,7 +31,7 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 
 **Responsibility matrix**
 
-| Concern | Agent (`agents/`) | Environment (`applications/` or `HarnessApplication`) |
+| Concern | Agent (`agents`) | Environment (`applications` or `HarnessApplication`) |
 |---------|-------------------|--------------------------------------------------------|
 | Business logic, UAEP steps | Yes | No |
 | Tool/skill allow-list on contract | Yes | Enables catalogs via profiles |
@@ -39,7 +39,7 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 | Nexus loop, retry, graph routing | No | `ApplicationEnvironmentProfile` (§22.6 nested bundles — same root) |
 | HTTP/MCP host, auth, tenant | No | Host factory / `HarnessApplication` |
 
-| Belongs in `applications/<app>/` | Belongs in `agents/<name>/` |
+| Belongs in `applications/<app>` | Belongs in `agents/<name>` |
 |----------------------------------|-----------------------------|
 | `ApplicationManifest`, `ApplicationEnvironmentProfile` | `Agent`, UAEP steps, domain prompts |
 | `wire_application_environment()`, host `factory.py` | `AgentContract`, skill manifests on contract |
@@ -87,13 +87,13 @@ Optional env: `INTERGRAX_DISCOVER_PLUGINS=true` enables entry-point discovery wh
 
 **Dual model (integrations):** shipped providers use `manifest.py` + `create_*` factory; third-party packages use `IntegrationPlugin`. See `SqliteIntegrationPlugin` in `sqlite/plugin.py` as a reference class (shipped `register.py` still uses manifest path).
 
-**Examples in repo:** `integrations/examples/custom_memory_kv/`, `tools/examples/custom_echo/`, `skills/examples/custom_pack/`.
+**Examples in repo:** `integrations/examples/custom_memory_kv`, `tools/examples/custom_echo`, `skills/examples/custom_pack`.
 
 ---
 
 ## 2. External integration plugin
 
-Reference: `intergrax/integrations/examples/custom_memory_kv/`
+Reference: `intergrax/integrations/examples/custom_memory_kv`
 
 1. **`manifest.py`** — `IntegrationManifest(slug=..., categories=..., ...)`
 2. **`plugin.py`** — `integration_manifest()` + `create_integration(**kwargs)`
@@ -113,7 +113,7 @@ cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
 
 ## 3. External tool plugin
 
-Reference: `intergrax/tools/examples/custom_echo/`
+Reference: `intergrax/tools/examples/custom_echo`
 
 Tools are **LLM-invokable** operations: `ToolContract` + handler class. They may compose integrations via `ToolWiringContext`.
 
@@ -152,7 +152,7 @@ Shipped bundles are defined in `intergrax/tools/registry/shipped_plugins.py` (fa
 
 ## 4. External skill plugin
 
-Reference: `intergrax/skills/examples/custom_pack/`
+Reference: `intergrax/skills/examples/custom_pack`
 
 Skills are **not** LLM tools. They declare `tool_ids`, prompt refs, and optional policy fragments.
 
@@ -273,7 +273,7 @@ Bootstrap: `intergrax.core.memory_bootstrap.bootstrap_memory_stores(discover_ent
 
 **Vector memory:** LTM and session episodic indexes reuse the host integration **vector store** — memory plugins swap index adapters, not vendor SDKs. See [`architecture/MEMORY.md`](architecture/MEMORY.md) §5.3, §11.5.
 
-Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin/`.
+Reference fixture: `tests/fixtures/plugin_packages/memory_store_plugin`.
 
 Swap backends in Tier-3 by registering an EP plugin — agents still use `UserProfileManager` / `SessionManager`; never import store implementations from Tier-2.
 
@@ -381,6 +381,6 @@ Bootstrap: `intergrax.core.security_bootstrap.bootstrap_security_providers(disco
 | Performance | Inspection runs under a wall-clock budget (default 100ms); slow plugins are blocked |
 | Observability | Blocks emit `platform.security.defense_blocked` on the runtime bus |
 
-**Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture/` — reference EP package for CI discovery tests.
+**Lab fixture:** `tests/fixtures/plugin_packages/intergrax_security_defense_fixture` — reference EP package for CI discovery tests.
 
 **Author map:** [Appendix H §H.3.1](guides/AGENT_CREATION_GUIDE.md#h31-security--trust-planes-operator-index) · canon [§42.45](architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance) · [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md).

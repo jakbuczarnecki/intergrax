@@ -55,7 +55,7 @@ Application development must not continue on generic platform infrastructure onc
 
 ## Documentation boundary
 
-Canonical **`docs/`** architecture and **`intergrax_runtime_architecture.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.
+Canonical **`docs`** architecture and **`intergrax_runtime_architecture.md`** describe the **Intergrax Harness AI / Agent OS platform** — the runtime and infrastructure for launching and governing agent environments.
 
 They are split into two paired documentation structures:
 
@@ -68,8 +68,8 @@ Domain pairs describe a single architecture layer and its implementation plan. F
 
 They **do not** describe:
 
-- the architecture or deployment plan of a **specific Tier-3 business environment** (product host under `applications/<name>/`), or
-- the architecture or roadmap of a **specific Tier-2 business agent** (domain capability under `agents/<name>/`).
+- the architecture or deployment plan of a **specific Tier-3 business environment** (product host under `applications/<name>`), or
+- the architecture or roadmap of a **specific Tier-2 business agent** (domain capability under `agents/<name>`).
 
 Each business environment and each business agent carries its own **`ARCHITECTURE.md`**, local **`IMPLEMENTATION_PLAN.md`** (where used), and product roadmap. Platform docs explain composition and wiring; product docs explain domain behavior and go-live.
 
@@ -109,7 +109,7 @@ ANALYSIS
   → CONCLUSIONS (+ implementation journal entry when a deliverable closed)
 ```
 
-**CONCLUSIONS:** For completed implementations, record an English episode in [`../implementation-journal/`](../../maintainers/implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
+**CONCLUSIONS:** For completed implementations, record an English episode in [`../../maintainers/implementation-journal`](../../maintainers/implementation-journal/README.md) (prepend to `INDEX.md`; operator intent, `plan_ref`, impact) — narrative layer only; plan rows remain the status source of truth.
 
 Think as a **Harness AI architect** first, then as an engineer.
 
@@ -138,7 +138,7 @@ Implementation is not the goal. Correct architecture is not the goal.
 | Change type | Update |
 |-------------|--------|
 | Strategic direction | **This file** |
-| Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture/` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
+| Tiers, Nexus, UAEP, Harness terms | `intergrax_runtime_architecture.md` (hub) + `architecture` (§5.3 Harness terms = `architecture/PLATFORM_FOUNDATION.md`) |
 | Domain layer architecture or implementation plan | `architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md` |
 | Cross-layer feature architecture or implementation program | `features/architecture/<FEATURE>.md` + `features/plan/<FEATURE>.md`, then affected domain pairs |
 | Phase status, deliverables, gates | owning domain plan; feature plan only for cross-layer coordination |

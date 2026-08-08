@@ -9,14 +9,14 @@
 
 ## Context
 
-Context assembly was historically documented under [`architecture/MEMORY.md`](../../architecture/MEMORY.md) as “Layer C — Context Compiler”. Implementation lives in `intergrax/runtime/nexus/context/` with partial closeout (Phase CTX, MEM-DEPTH, R-Context).
+Context assembly was historically documented under [`architecture/MEMORY.md`](../../architecture/MEMORY.md) as “Layer C — Context Compiler”. Implementation lives in `intergrax/runtime/nexus/context` with partial closeout (Phase CTX, MEM-DEPTH, R-Context).
 
 **Problem:** Context Engineering is not a memory store. It is a **cross-source orchestration engine** that consumes Memory, RAG, Tools, Orchestration priors, policies, and runtime state to produce a bounded LLM window per step. Authors need a **plugin catalog** (providers, rankers, formatters) comparable to Tools/Skills/Integrations — not only YAML profiles.
 
 Alternatives considered:
 
 1. **Keep CE inside MEMORY canon** — status quo; conflates persistence with compilation; blocks clear plugin roadmap.
-2. **Tier-0 `intergrax/context/` package only** — wrong tier; assembly is Nexus execution-critical (Tier-1).
+2. **Tier-0 `intergrax/context` package only** — wrong tier; assembly is Nexus execution-critical (Tier-1).
 3. **Separate domain pair `CONTEXT_ENGINEERING` + Tier-1 engine + optional Tier-0 shared contracts (chosen)** — aligns with IDEAL §16, audit layer 16, and operator requirement for Cursor-class extensibility.
 
 ## Decision

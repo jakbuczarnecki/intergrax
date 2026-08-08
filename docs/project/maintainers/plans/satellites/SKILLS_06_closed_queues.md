@@ -76,7 +76,7 @@ Priority for **platform users** (agent authors, Tier-3 hosts, extension authors)
 
 **Deferred to SK-EXP2 (now shipped):** `hitl.approval_gate`, `graph.entity_explorer`, `sandbox.code_exec` — see §6.1cj2 below.
 
-**ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/project/technical/adr/` entry if context merge semantics change Nexus contracts.
+**ADR:** no ADR for doc-only SK-DOC.1. New bundles follow existing Phase R pattern — **no ADR** unless a skill models a multi-step workflow as one tool (forbidden). SK-BRIDGE.* may need `docs/project/technical/adr` entry if context merge semantics change Nexus contracts.
 
 #### SK-EXP2 — Proposed skill register (18 packs)
 
@@ -322,7 +322,7 @@ All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_
 
 **Suggested PR order (complete):** TS-1 → TS-2 → TS-3 → TS-DOC.*.
 
-**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](#63a-business-backlog-register-consolidated).### 6.1aa Harness implementation queue — memory platform (closed)
+**Explicitly excluded:** K.1, K.2, new product tools/skills, business agent packs — [§6.3a](.#63a-business-backlog-register-consolidated).### 6.1aa Harness implementation queue — memory platform (closed)
 
 **Purpose:** Phase MEM execution queue — **closed 2026-06-02** (48/48 Done). Ongoing: **§6.1** maintenance only.
 
@@ -339,7 +339,7 @@ All 50 rows **Done** — full skill_id list in `scripts/maintenance/scaffold_sk_
 | 8 | **MEM-6.*–MEM-7.*** | Code | **Done** | Retention enforcement + memory hooks | P2 after P0/P1 |
 | 9 | **MEM-8.*–MEM-9.*** | RFC | **Done (RFC)** | Product memory layer + entity graph design | §6.3 gate for implementation |
 
-**Suggested PR order:** See [Phase MEM — Suggested PR order](#mem--paydown-log).
+**Suggested PR order:** See [Phase MEM — Suggested PR order](.#mem--paydown-log).
 
 **Explicitly excluded:** K.1, K.2, Mem0 SaaS product, entity graph ship (RFC only), business agent memory.
 

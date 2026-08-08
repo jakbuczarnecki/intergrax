@@ -38,7 +38,7 @@ Introduce a Tier-0 **`ModelCatalog`** with deterministic **`resolve_context_wind
 
 ## Token accounting (paired decision)
 
-When an `LLMAdapter` is in scope, preflight and history compression **must** use `adapter.count_messages_tokens(messages)` — not `chars // 4`. See M-LLM-X.3.
+When an `LLMAdapter` is in scope, preflight and history compression **must** use `adapter.count_messages_tokens(messages)` — not `chars / 4`. See M-LLM-X.3.
 
 ## Non-goals
 

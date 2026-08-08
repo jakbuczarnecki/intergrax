@@ -5,9 +5,9 @@
 # ADAPTIVE_HARNESS_INTELLIGENCE — ADAS / Agent Design Search Implementation Plan
 
 **Parent hub:** [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](../ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Architecture satellite:** [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
-**ADR:** [`ADR-ADAPT-002`](../../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)  
+**Architecture hub:** [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../../../architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md)
+**Architecture satellite:** [`ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](../../../architecture/satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)
+**ADR:** [`ADR-ADAPT-002`](../../../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md)
 **Status:** Planned — Phase **AHI-ADAS-00** complete; implementation begins at **AHI-ADAS-10**  
 **Last updated:** 2026-06-22
 
@@ -110,7 +110,7 @@ AHI-ADAS-90  Enterprise hardening                      Planned
 
 ## 3. Normative implementation principles
 
-1. **Extend AHI, do not fork it.** ADAS must live under `intergrax/runtime/adaptive/agent_design_search/` and reuse AHI patterns.
+1. **Extend AHI, do not fork it.** ADAS must live under `intergrax/runtime/adaptive/agent_design_search` and reuse AHI patterns.
 2. **No parallel governance stack.** Use existing policy/governance concepts; add adapters only where agent candidates differ from profile versions.
 3. **No parallel scaffold.** Candidate materialization must go through existing scaffold via `AgentScaffoldBridge`.
 4. **No direct production mutation.** Candidate source starts in sandbox/archive; production routing requires promotion.
@@ -195,7 +195,7 @@ Parallel tracing system
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| AHI-ADAS-10.1 | Package skeleton `intergrax/runtime/adaptive/agent_design_search/` | Planned | Critical | Importable package; no runtime side effects; copyright headers present |
+| AHI-ADAS-10.1 | Package skeleton `intergrax/runtime/adaptive/agent_design_search` | Planned | Critical | Importable package; no runtime side effects; copyright headers present |
 | AHI-ADAS-10.2 | `AdasOperationalEnvelope` | Planned | Critical | Schema version, audit IDs, approval IDs, trace/correlation, hashes, risk, retention fields |
 | AHI-ADAS-10.3 | `AgentDesignObjective` | Planned | Critical | Tenant-scoped objective with baseline, target capability, budgets, approval mode |
 | AHI-ADAS-10.4 | `AgentDesignSearchRun` | Planned | Critical | Search lifecycle record with generated candidates, costs, status, stop reason |
@@ -229,7 +229,7 @@ python -m compileall intergrax/runtime/adaptive/agent_design_search
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
 | AHI-ADAS-20.1 | `AgentScaffoldBridge` protocol/facade | Planned | Critical | Converts `AgentCandidateDraft` to existing scaffold invocation model |
-| AHI-ADAS-20.2 | Sandbox materialization path | Planned | Critical | Candidate output under `build/adaptive_harness/agent_design_search/candidates/<candidate_id>/` |
+| AHI-ADAS-20.2 | Sandbox materialization path | Planned | Critical | Candidate output under `build/adaptive_harness/agent_design_search/candidates/<candidate_id>` |
 | AHI-ADAS-20.3 | Scaffold pattern validation | Planned | High | Allows only known scaffold/cognitive patterns unless registry declares extension |
 | AHI-ADAS-20.4 | Scaffold output manifest | Planned | High | Captures files, hashes, contract ref, prompt refs, smoke test refs |
 | AHI-ADAS-20.5 | `AgentStaticGate` | Planned | Critical | Runs before evaluation; failed candidates archived with reason |
@@ -345,11 +345,11 @@ pytest tests/unit/runtime/adaptive/agent_design_search/test_events.py
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| AHI-ADAS-60.1 | Scaffold `agents/meta_agent_designer/` | Planned | High | Created through existing scaffold; Tier-2 only; no runtime writes |
+| AHI-ADAS-60.1 | Scaffold `agents/meta_agent_designer` | Planned | High | Created through existing scaffold; Tier-2 only; no runtime writes |
 | AHI-ADAS-60.2 | `meta_agent_designer` contract | Planned | High | Outputs `AgentCandidateDraft`-compatible proposal |
 | AHI-ADAS-60.3 | MAS prompt assets | Planned | Medium | Prompt instructs MAS to produce structured draft, rationale, measurable change, no direct writes |
-| AHI-ADAS-60.4 | Scaffold `agents/candidate_critic/` | Planned | Medium | Critiques candidate drafts and evaluation results; no promotion authority |
-| AHI-ADAS-60.5 | Scaffold `agents/benchmark_runner/` | Planned | Medium | Assists evaluation orchestration; does not bypass evaluator |
+| AHI-ADAS-60.4 | Scaffold `agents/candidate_critic` | Planned | Medium | Critiques candidate drafts and evaluation results; no promotion authority |
+| AHI-ADAS-60.5 | Scaffold `agents/benchmark_runner` | Planned | Medium | Assists evaluation orchestration; does not bypass evaluator |
 | AHI-ADAS-60.6 | MAS strategy adapter | Planned | High | Wraps MAS output as `AgentDesignStrategy` result |
 | AHI-ADAS-60.7 | Safety prompt/eval tests | Planned | High | MAS refuses direct runtime edits and self-approval requests |
 | AHI-ADAS-60.8 | Integration tests | Planned | Medium | MAS-generated draft flows through scaffold bridge and static gate |
@@ -403,7 +403,7 @@ pytest tests/integration/runtime/adaptive/agent_design_search/test_candidate_pro
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| AHI-ADAS-80.1 | Scaffold `applications/adas_lab/` | Planned | Medium | App wires ADAS services only; no duplicate archive/eval/governance logic |
+| AHI-ADAS-80.1 | Scaffold `applications/adas_lab` | Planned | Medium | App wires ADAS services only; no duplicate archive/eval/governance logic |
 | AHI-ADAS-80.2 | Objective creation API/screen | Planned | Medium | Creates `AgentDesignObjective` through Tier-1 service |
 | AHI-ADAS-80.3 | Candidate archive browser | Planned | Medium | Tenant-scoped archive browsing; lineage view |
 | AHI-ADAS-80.4 | Evidence bundle viewer | Planned | High | Displays sealed bundle: static/eval/cost/security/approval/promotion data |
@@ -438,7 +438,7 @@ pytest tests/integration/applications/adas_lab/
 | AHI-ADAS-90.7 | Static gate bypass tests | Planned | Critical | Malicious candidates cannot pass via hooks/strategy |
 | AHI-ADAS-90.8 | Evidence export | Planned | Medium | Tenant-scoped export of sealed bundles and lineage |
 | AHI-ADAS-90.9 | Security review checklist | Planned | High | Checklist covers policy bypass, tool access, secrets, network, tenant isolation |
-| AHI-ADAS-90.10 | Closeout report | Planned | High | ADAS enterprise readiness report under `build/adaptive_harness/agent_design_search/` |
+| AHI-ADAS-90.10 | Closeout report | Planned | High | ADAS enterprise readiness report under `build/adaptive_harness/agent_design_search` |
 
 **Gates:**
 

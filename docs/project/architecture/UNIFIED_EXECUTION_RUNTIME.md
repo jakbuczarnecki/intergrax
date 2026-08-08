@@ -1,11 +1,11 @@
 # Unified Execution Runtime
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 4–5, 8, 23–24  
-**Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md)  
+**Audit instruction:** [`audit/UNIFIED_EXECUTION_RUNTIME.md`](../maintainers/audit/UNIFIED_EXECUTION_RUNTIME.md)
 **Last updated:** 2026-06-19 — SEC-PLANES-EVOL follow-on register (enterprise hardening backlog)  
 ---
 

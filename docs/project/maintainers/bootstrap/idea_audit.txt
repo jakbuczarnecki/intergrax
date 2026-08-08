@@ -15,11 +15,11 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 
 ## Hard constraints (non-negotiable)
 
-- **Do not implement code** — no new modules, no edits to `intergrax/`, `agents/`, or `applications/` in Mode I.
-- **Do not** write idea-audit artifact files (no `ideas_results/`, no `IDEA_AUDIT.md`).
+- **Do not implement code** — no new modules, no edits to `intergrax`, `agents`, or `applications` in Mode I.
+- **Do not** write idea-audit artifact files (no `ideas_results`, no `IDEA_AUDIT.md`).
 - **Do not** declare the whole platform complete.
 - **Do not** start Phase K / §6.3 product work without explicit operator reprioritization.
-- **Do not** edit `docs/project/architecture/` or `docs/project/maintainers/plans/` until the operator explicitly approves after Step 6 STOP.
+- **Do not** edit `docs/project/architecture` or `docs/project/maintainers/plans` until the operator explicitly approves after Step 6 STOP.
 - **Do not** load `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, or full SYSTEM_INVARIANTS — use audit slice scope lines + grep.
 
 ## Where the idea comes from
@@ -32,7 +32,7 @@ Audit the operator's idea **before any implementation**. Compare the idea agains
 
 - The **Harness is the product**; agents are replaceable; the runtime is permanent.
 - Reuse Tier-0 mechanisms; no parallel universal subsystems.
-- Tier boundaries: AGENTS.md — `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.
+- Tier boundaries: AGENTS.md — `intergrax` ↛ `agents`/`applications`; agents ↛ applications.
 - Safety fuse: plan ↔ architecture ↔ ideal conflict → verdict `blocked`, STOP, report operator.
 - **After operator approval:** update the relevant domain-layer pair (`docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md`) or multi-layer feature pair (`docs/project/capabilities/architecture/<FEATURE>.md` + `docs/project/capabilities/plan/<FEATURE>.md`), then affected domain pairs — that is the durable record. Do not create `docs/project/maintainers/plans/<FEATURE>.md` for cross-layer features.
 

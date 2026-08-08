@@ -20,7 +20,7 @@ Architecture health MUST be measured, not inferred.
 
 | Surface | Role |
 |---------|------|
-| `intergrax/scaffold/` | `new-agent`, `new-application`, `new-skill` |
+| `intergrax/scaffold` | `new-agent`, `new-application`, `new-skill` |
 | `intergrax/cli/doctor.py` | Harness health checks |
 | `docs/project/maintainers/bootstrap/idea_audit.txt` | **Mode I** — idea intake procedure (natural language in chat; [`.cursor/rules/intergrax-idea-audit.mdc`](../../.cursor/rules/intergrax-idea-audit.mdc)) |
 | `scripts/ci/test.bat` / `pytest -m gate` | Mandatory merge gates |
@@ -30,7 +30,7 @@ Architecture health MUST be measured, not inferred.
 
 ## 43.3 Operational L3 evidence
 
-Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/release/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening/`.
+Release cycles, SLO snapshots, and ops sign-off are tracked via `scripts/release/phase_w_ops_evidence.py` and release cycle artifacts under `build/architecture_hardening`.
 
 ## 43.4 Evidence-backed Harness Onboarding Path
 

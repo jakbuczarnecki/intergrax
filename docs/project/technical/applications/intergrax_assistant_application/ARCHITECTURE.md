@@ -3,8 +3,8 @@
 **Status:** Architecture baseline v1 (2026-06-08) — lab profile scaffold + hub-and-spoke design  
 **Tier:** Tier-3 application (`intergrax_assistant_application`)  
 **Hub agent:** Tier-2 `intergrax_assistant` (`platform.assist`)  
-**ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](docs/project/technical/adr/ADR-INTERGRAX_ASSISTANT-001.md)  
-**Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+**ADR:** [`adr/ADR-INTERGRAX_ASSISTANT-001.md`](adr/ADR-INTERGRAX_ASSISTANT-001.md)
+**Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -124,7 +124,7 @@ INTERGRAX_LLM_MODEL=gpt-4o-mini
 OPENAI_API_KEY=sk-...
 ```
 
-See [`docs/project/architecture/LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) for the full provider matrix.
+See [`docs/project/architecture/LLM_ADAPTERS.md`](../../../architecture/LLM_ADAPTERS.md) for the full provider matrix.
 
 ---
 
@@ -133,8 +133,8 @@ See [`docs/project/architecture/LLM_ADAPTERS.md`](../../docs/project/architectur
 | Plane | IAA configuration | Module / doc |
 |-------|-------------------|--------------|
 | **Integrations** | `IntegrationProfile.lab_stack()` | `integrations/registry/profile.py` |
-| **Tools** | Curated harness tool allow-list from `lab_defaults()` | [`docs/project/architecture/TOOLS.md`](../../docs/project/architecture/TOOLS.md) |
-| **Skills** | Lab skill profile | [`docs/project/architecture/SKILLS.md`](../../docs/project/architecture/SKILLS.md) |
+| **Tools** | Curated harness tool allow-list from `lab_defaults()` | [`docs/project/architecture/TOOLS.md`](../../../architecture/TOOLS.md) |
+| **Skills** | Lab skill profile | [`docs/project/architecture/SKILLS.md`](../../../architecture/SKILLS.md) |
 | **Session STM** | `SessionManager` + sqlite bundle | AGENT_CREATION_GUIDE Appendix G |
 | **User LTM** | `UserProfileManager` | Appendix G |
 | **Task KV** | `TaskMemory` / `MemoryView` | Appendix G |
@@ -196,7 +196,7 @@ Environment profile id: `intergrax_assistant.harness_lab`.
 | **3** | `NexusIntakeRunner` | Creates/resumes task; attaches session id to memory scope |
 | **4** | `ClassifyingTaskClassifier` | Decides routing: hub-only vs pipeline requiring specialists |
 | **5** | `EngineBackedNexusPlanner` | When needed, LLM proposes plan with delegation edges to mounted specialists |
-| **6** | `GraphExecutor` | Runs hub `intergrax_assistant` node; child nodes get isolated `task_id/delegation/{node_id}/` memory |
+| **6** | `GraphExecutor` | Runs hub `intergrax_assistant` node; child nodes get isolated `task_id/delegation/{node_id}` memory |
 | **7** | `ContextManager` | Assembles turn context: session history, RAG hits, user facts, tool catalog slice |
 | **8** | `IntergraxAssistantAgent` | UAEP pipeline — LLM turn + optional `CatalogToolPlanner` tool loop |
 | **9** | `ToolRuntime` | Executes allowed tools (rag.retrieve, websearch.query, sandbox.exec, …) under policy |
@@ -274,7 +274,7 @@ uv run pytest applications/intergrax_assistant_application/tests -q
 - Core `Intergrax-ai` from repo root (`uv sync`)
 - Local LLM: Ollama running when `INTERGRAX_LLM_PROVIDER=ollama`
 - Optional cloud keys per provider — see `docs/project/architecture/LLM_ADAPTERS.md`
-- Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md`
+- Deploy triad: `docker`, `BUILD_AND_DEPLOY.md`
 
 ---
 
@@ -282,10 +282,10 @@ uv run pytest applications/intergrax_assistant_application/tests -q
 
 | Document | Role |
 |----------|------|
-| [`docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md`](../../docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md) | Hub agent (Tier-2) |
-| [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md) §7.4.11 | Platform canon entry |
-| [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
-| [`docs/project/architecture/LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) | Provider swap |
+| [`docs/project/technical/agents/intergrax_assistant/ARCHITECTURE.md`](../../agents/intergrax_assistant/ARCHITECTURE.md) | Hub agent (Tier-2) |
+| [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md) §7.4.11 | Platform canon entry |
+| [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../guides/AGENT_CREATION_GUIDE.md) Appendix F · I · G | Tier-3, orchestration, memory |
+| [`docs/project/architecture/LLM_ADAPTERS.md`](../../../architecture/LLM_ADAPTERS.md) | Provider swap |
 | [`applications/TIER3_READINESS.md`](../TIER3_READINESS.md) | Scaffold checklist |
 
 ---
@@ -294,4 +294,4 @@ uv run pytest applications/intergrax_assistant_application/tests -q
 
 | ADR | Title |
 |-----|-------|
-| [ADR-INTERGRAX_ASSISTANT-001](docs/project/technical/adr/ADR-INTERGRAX_ASSISTANT-001.md) | Hub-and-spoke harness chat environment |
+| [ADR-INTERGRAX_ASSISTANT-001](adr/ADR-INTERGRAX_ASSISTANT-001.md) | Hub-and-spoke harness chat environment |

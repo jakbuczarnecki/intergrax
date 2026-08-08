@@ -10,7 +10,7 @@ Intergrax is **source-available** and under **active R&D**. **LKW** is the **Pri
 
 This guide provides time-boxed, reader-facing evaluation paths for technical reviewers, design partners, and integration builders; it does not claim that external validation has occurred.
 
-Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](../../../LICENSE), [COLLABORATION.md](../community/COLLABORATION.md), and [PARTNERS.md](../community/PARTNERS.md).
+Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](../../../LICENSE), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), and [docs/project/community/PARTNERS.md](../community/PARTNERS.md).
 
 ---
 
@@ -30,9 +30,9 @@ Builder onboarding ≠ product trial ≠ broader platform evaluation.
 
 | Time | Start here | Goal |
 |------|------------|------|
-| 5 minutes | [README.md](../../../README.md) + [FAQ.md](../overview/FAQ.md) | Understand what Intergrax is and is not |
-| 15 minutes | [WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) + [USE_CASES.md](../overview/USE_CASES.md) + [ROADMAP.md](../overview/ROADMAP.md) | Understand problem, fit and direction |
-| 30 minutes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [PROOFS.md](../proofs/PROOFS.md) | Choose a bounded builder or technical evaluation path |
+| 5 minutes | [README.md](../../../README.md) + [docs/project/overview/FAQ.md](../overview/FAQ.md) | Understand what Intergrax is and is not |
+| 15 minutes | [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) + [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) + [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) | Understand problem, fit and direction |
+| 30 minutes | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Choose a bounded builder or technical evaluation path |
 | 45–60 minutes | Choose LKW Platform Proof, Token Optimization guide, architecture review or partner/pilot review | Deep evaluation of one surface |
 
 ---
@@ -49,7 +49,7 @@ Use this guide if you are:
 - considering design-partner or selected integration feedback;
 - deciding which evaluation path fits your available time.
 
-If you need a finished SaaS, production support, an open-source contribution model, or unrestricted commercial use, start with [FAQ.md](../overview/FAQ.md), [COLLABORATION.md](../community/COLLABORATION.md), and [LICENSE](../../../LICENSE).
+If you need a finished SaaS, production support, an open-source contribution model, or unrestricted commercial use, start with [docs/project/overview/FAQ.md](../overview/FAQ.md), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), and [LICENSE](../../../LICENSE).
 
 ---
 
@@ -60,7 +60,7 @@ Goal: decide whether Intergrax is relevant before reading deeply.
 Read:
 
 1. [README.md](../../../README.md) — repository overview, LKW product proof, and maturity boundaries.
-2. [FAQ.md](../overview/FAQ.md) — common questions about license, status, collaboration, and public use.
+2. [docs/project/overview/FAQ.md](../overview/FAQ.md) — common questions about license, status, collaboration, and public use.
 
 Check whether the following statement is clear:
 
@@ -80,9 +80,9 @@ Goal: understand what problem Intergrax addresses and whether it fits your conte
 
 Read:
 
-1. [WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) — problem, value, and audience.
-2. [USE_CASES.md](../overview/USE_CASES.md) — use-case fit and applicability.
-3. [ROADMAP.md](../overview/ROADMAP.md) — product-validation direction and outcome gates.
+1. [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) — problem, value, and audience.
+2. [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) — use-case fit and applicability.
+3. [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) — product-validation direction and outcome gates.
 
 Questions to answer:
 
@@ -98,13 +98,13 @@ Goal: test whether the local evaluation path is understandable and reproducible.
 
 Start from:
 
-- [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — route selection and prerequisites.
+- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — route selection and prerequisites.
 - [README.md](../../../README.md) — product overview and LKW workflow.
-- [PROOFS.md](../proofs/PROOFS.md) — current proof status and claim boundaries.
+- [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) — current proof status and claim boundaries.
 
 A simplified public LKW trial is available through the supported product quickstart: [docs/project/product/lkw/QUICKSTART.md](../product/lkw/QUICKSTART.md).
 
-This path is indexed-only LKW. First-run duration varies; timing is not yet externally validated. Deeper technical proof remains separate — see [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
+This path is indexed-only LKW. First-run duration varies; timing is not yet externally validated. Deeper technical proof remains separate — see [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
 
 Typical local flow:
 
@@ -137,9 +137,9 @@ Choose the path that matches your interest:
 |----------|------|
 | LKW product proof and workflow | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
 | Token Optimization capability | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-| High-level architecture | [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| Partner or pilot fit | [PARTNERS.md](../community/PARTNERS.md) |
-| Permission and collaboration boundaries | [COLLABORATION.md](../community/COLLABORATION.md) |
+| High-level architecture | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| Partner or pilot fit | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
+| Permission and collaboration boundaries | [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) |
 
 Useful review questions:
 
@@ -165,7 +165,7 @@ A useful feedback record must include:
 - evidence;
 - blocker or confusion.
 
-Route ordinary evaluation feedback through [COLLABORATION.md](../community/COLLABORATION.md).
+Route ordinary evaluation feedback through [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
 
 Good feedback also includes:
 
@@ -190,7 +190,7 @@ Do not infer that this repository offers:
 - acceptance of every proposed integration or partnership;
 - completed real-user or commercial validation.
 
-For commercial licensing, production use, partnership, or permission requests, contact the maintainer directly. See [PARTNERS.md](../community/PARTNERS.md) and [COLLABORATION.md](../community/COLLABORATION.md).
+For commercial licensing, production use, partnership, or permission requests, contact the maintainer directly. See [docs/project/community/PARTNERS.md](../community/PARTNERS.md) and [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
 
 ---
 
@@ -199,16 +199,16 @@ For commercial licensing, production use, partnership, or permission requests, c
 | Need | Next document |
 |------|---------------|
 | Repository overview | [README.md](../../../README.md) |
-| Common questions | [FAQ.md](../overview/FAQ.md) |
-| Problem and value | [WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) |
-| Use-case fit | [USE_CASES.md](../overview/USE_CASES.md) |
-| Product-validation direction | [ROADMAP.md](../overview/ROADMAP.md) |
-| Evaluation and building routes | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Proof status | [PROOFS.md](../proofs/PROOFS.md) |
-| Architecture overview | [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
+| Common questions | [docs/project/overview/FAQ.md](../overview/FAQ.md) |
+| Problem and value | [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) |
+| Use-case fit | [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) |
+| Product-validation direction | [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) |
+| Evaluation and building routes | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| Architecture overview | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
 | LKW product proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
 | Token Optimization | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-| Partner or pilot fit | [PARTNERS.md](../community/PARTNERS.md) |
-| License and collaboration boundaries | [COLLABORATION.md](../community/COLLABORATION.md), [LICENSE](../../../LICENSE) |
+| Partner or pilot fit | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
+| License and collaboration boundaries | [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), [LICENSE](../../../LICENSE) |
 | Public reader navigation | [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | Technical/developer navigation | [Documentation Map](../technical/DOCUMENTATION_MAP.md) |

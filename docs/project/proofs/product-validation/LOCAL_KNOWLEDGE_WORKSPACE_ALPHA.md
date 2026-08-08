@@ -6,7 +6,7 @@ Local Knowledge Workspace is an early **product-validation direction** for Inter
 
 The direction validates the harness through a real workload: document discovery, context gathering, RAG, memory, policy boundaries, trace/evidence, and Tier-3 application hosting.
 
-This document is an **alpha/product-validation narrative**. It is not a finished SaaS offering, a production guarantee, or a license grant. See [LICENSE](../../../../LICENSE) and [COLLABORATION.md](../../community/COLLABORATION.md).
+This document is an **alpha/product-validation narrative**. It is not a finished SaaS offering, a production guarantee, or a license grant. See [LICENSE](../../../../LICENSE) and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
 
 ---
 
@@ -109,7 +109,7 @@ Design partners and evaluators can help most with concrete answers to:
 - What trace or evidence would make you trust the system?
 - What would make the alpha worth testing in your environment?
 
-Share structured feedback via the collaboration tracks in [COLLABORATION.md](../../community/COLLABORATION.md) and [ROADMAP.md](../../overview/ROADMAP.md), or through curated public issues when available.
+Share structured feedback via the collaboration tracks in [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) and [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md), or through curated public issues when available.
 
 ---
 
@@ -119,8 +119,8 @@ Share structured feedback via the collaboration tracks in [COLLABORATION.md](../
 |----------|---------|
 | [Local Knowledge Workspace architecture](../../technical/applications/local_workspace_application/ARCHITECTURE.md) | Technical architecture baseline for the Tier-3 application |
 | [README.md](../../../../README.md) | Project overview, proof path, documentation index |
-| [ROADMAP.md](../../overview/ROADMAP.md) | Public adoption roadmap and collaboration tracks |
-| [COLLABORATION.md](../../community/COLLABORATION.md) | Collaboration model, permitted use, contact |
+| [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md) | Public adoption roadmap and collaboration tracks |
+| [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) | Collaboration model, permitted use, contact |
 | [LICENSE](../../../../LICENSE) | Proprietary terms |
 | [Intergrax Harness Narrative](../../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) | External harness narrative |
 | [Agent Creation Guide](../../technical/guides/AGENT_CREATION_GUIDE.md) | Authoring agents and applications on Intergrax |

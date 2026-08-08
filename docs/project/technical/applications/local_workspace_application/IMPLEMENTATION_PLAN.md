@@ -1,7 +1,7 @@
 # Local Workspace Application — Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-31)  
-**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)  
+**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)  
@@ -9,7 +9,7 @@
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)  
 **Hybrid knowledge access:** [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md)
 **Hybrid Ask architecture:** [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md)
-**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)  
+**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../proofs/LKW_PLATFORM_PROOF.md)
 **Historical full plan:** [`archive/IMPLEMENTATION_PLAN_2026-07-22.md`](archive/IMPLEMENTATION_PLAN_2026-07-22.md)
 
 ## AUTHORITATIVE CURRENT STATUS

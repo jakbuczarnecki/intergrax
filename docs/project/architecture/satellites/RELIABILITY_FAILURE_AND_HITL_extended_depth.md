@@ -42,10 +42,10 @@ Reliability is enforced at **graph**, **run**, and **integration** layers.
 | Module | Role |
 |--------|------|
 | `runtime/nexus/retry/retry_engine.py` | Graph-level retry |
-| `runtime/resilience/` | Circuit breaker helpers |
+| `runtime/resilience` | Circuit breaker helpers |
 | `applications/_shared/reliability_wiring.py` | Profile → runtime |
-| `runtime/sandbox/`, `runtime/shadow/` | Isolated risky execution |
-| `runtime/human/` | HITL approval flow (§32, UAEP §42.10) |
+| `runtime/sandbox`, `runtime/shadow` | Isolated risky execution |
+| `runtime/human` | HITL approval flow (§32, UAEP §42.10) |
 
 **Plan:** [`plan/RELIABILITY_FAILURE_AND_HITL.md`](../plan/RELIABILITY_FAILURE_AND_HITL.md) Phase REL.
 

@@ -2,7 +2,7 @@
 
 **Status:** Freeze audit (2026-06-11) — pre-architecture-freeze Tier-3 + ACP  
 **Scope:** Semantic overlap and responsibility boundaries — **not** gap analysis  
-**Canon pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md)  
+**Canon pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md)
 **Ideal reference:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](IDEAL_HARNESS_AI_ARCHITECTURE.md) §19.4 · §18.4  
 
 ---

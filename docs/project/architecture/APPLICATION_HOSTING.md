@@ -6,7 +6,7 @@
 **ADR:** [`ADR-HOST-001`](../technical/adr/entries/2026-07-13/ADR-HOST-001.md)
 **Extended detail:** [`satellites/APPLICATION_HOSTING_extended_depth.md`](satellites/APPLICATION_HOSTING_extended_depth.md)
 **Primary integration:** [`TIER3_APPLICATION_ENVIRONMENT.md`](TIER3_APPLICATION_ENVIRONMENT.md)
-**First adopter/proof:** `applications/local_workspace_application/`
+**First adopter/proof:** `applications/local_workspace_application`
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — Application Hosting is the canonical example of platform ownership, architecture before adoption, deployment transparency, and first-adopter proof through LKW (`PLATFORM-INV-001`, `PLATFORM-INV-002`, `PLATFORM-INV-004`, `PLATFORM-INV-006`, `PLATFORM-INV-007`).
 
 ---
@@ -479,7 +479,7 @@ LKW proof should demonstrate:
 - successful work after restart,
 - no OS-specific LKW code.
 
-Generic contracts and engine code MUST NOT live under `applications/local_workspace_application/`.
+Generic contracts and engine code MUST NOT live under `applications/local_workspace_application`.
 
 ---
 

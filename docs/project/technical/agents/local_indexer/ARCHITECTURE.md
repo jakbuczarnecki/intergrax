@@ -3,7 +3,7 @@
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 **Capability:** `local.workspace.index`  
-**Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
+**Host:** [`applications/local_workspace_application`](../../applications/local_workspace_application/)
 **Status:** Scaffold — domain steps pending Wave LKW.1
 
 ---
@@ -56,7 +56,7 @@ Ingest user-local documents into the Intergrax RAG vector index so downstream ag
   3. summarize_index_job   → structured StepOutput
 ```
 
-Implement domain logic only in `steps/` — no Tier-3 imports.
+Implement domain logic only in `steps` — no Tier-3 imports.
 
 ---
 
@@ -83,7 +83,7 @@ Do **not** read `uaep.py` or `boundary_demo` to discover tool invocation for thi
 | `vector_store` | `inmemory` / `chroma` | ingest pipeline embed + index |
 | `relational_store` | `sqlite` | task memory for job status |
 
-Agents do **not** import `integrations/providers/` — see [`docs/project/architecture/INTEGRATIONS.md`](../../docs/project/architecture/INTEGRATIONS.md).
+Agents do **not** import `integrations/providers` — see [`docs/project/architecture/INTEGRATIONS.md`](../../../architecture/INTEGRATIONS.md).
 
 ### Tools (`ToolProfile` on host)
 
@@ -104,7 +104,7 @@ Invoke via `ctx.invoke_tool(ToolRequest(...))` in UAEP steps.
 
 Until LKW.2: host `ToolProfile` enables tools; `contract.py` has `skills=[]`.
 
-See [`docs/project/architecture/SKILLS.md`](../../docs/project/architecture/SKILLS.md) · LKW stack: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md` §5](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
+See [`docs/project/architecture/SKILLS.md`](../../../architecture/SKILLS.md) · LKW stack: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md` §5](../../applications/local_workspace_application/ARCHITECTURE.md#5-integrations-tools-and-skills).
 
 ---
 
@@ -124,6 +124,6 @@ uv run pytest agents/local_indexer/tests -q
 
 ## References
 
-- LKW application architecture: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md)
-- RAG ingest tool: [`intergrax/tools/providers/rag/USAGE.md`](../../intergrax/tools/providers/rag/USAGE.md)
-- Agent creation: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- LKW application architecture: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)
+- RAG ingest tool: [`intergrax/tools/providers/rag/USAGE.md`](../../../../../intergrax/tools/providers/rag/USAGE.md)
+- Agent creation: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../guides/AGENT_CREATION_GUIDE.md)

@@ -10,6 +10,6 @@
 
 **Only `intergrax-token-budget.mdc` is always-on.** All other rules load on explicit `@` reference or operator request.
 
-Root **`AGENTS.md`** = Cursor auto-load stub (~350 tok). Full reference: [`docs/project/technical/guides/AGENT_INSTRUCTIONS.md`](../docs/project/technical/guides/AGENT_INSTRUCTIONS.md). **Do not delete** via Settings trash icon.
+Root **`AGENTS.md`** = Cursor auto-load stub (~350 tok). Full reference: [`docs/project/technical/guides/AGENT_INSTRUCTIONS.md`](../../docs/project/technical/guides/AGENT_INSTRUCTIONS.md). **Do not delete** via Settings trash icon.
 
-Setup: [`docs/project/technical/guides/CURSOR_TOKEN_SETUP.md`](../docs/project/technical/guides/CURSOR_TOKEN_SETUP.md)
+Setup: [`docs/project/technical/guides/CURSOR_TOKEN_SETUP.md`](../../docs/project/technical/guides/CURSOR_TOKEN_SETUP.md)

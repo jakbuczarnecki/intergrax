@@ -1,11 +1,11 @@
 # Orchestration, Nexus, and Execution Graph
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/ORCHESTRATION.md`](../maintainers/plans/ORCHESTRATION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 3, 9 · multi-agent patterns: audit layer 10 (cross-ref §50)  
-**Audit instruction:** [`audit/ORCHESTRATION.md`](../maintainers/audit/ORCHESTRATION.md)  
+**Audit instruction:** [`audit/ORCHESTRATION.md`](../maintainers/audit/ORCHESTRATION.md)
 **Reasoning / planning canon:** [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) (audit layer 7)  
 **Elastic capacity:** [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#production-boundary) (infra capacity signals and scaling — **not** graph scheduling, agent topology or orchestration brain)  
 ---
@@ -49,16 +49,16 @@ Load **only** the satellite matching your task or cited §.
 
 | § | Topic |
 |---|--------|
-| [§50](#50-orchestration-strategies-catalog) | Coordination pattern catalog |
-| [§51](#51-parallelism-merge-and-backpressure) | Parallelism, merge, backpressure |
-| [§52](#52-resilience-in-orchestration) | Retry, checkpoint, failover, partial |
-| [§53](#53-specialization-and-agent-collaboration) | Capability routing, delegation, handoff |
-| [§54](#54-maturity-and-gap-register) | Maturity scorecard |
-| [§55](#55-interaction-posture--orchestration-matrix) | Posture × pattern quick matrix |
-| [§56](#56-platform-interaction--multi-agent-configuration-canon) | **Master configuration canon** — all cases, matrices, plan input |
-| [§56.13](#5613-orchestration-capability-tokens) | Orchestration tokens vs agent capabilities |
-| [§57](#57-synchronous-and-asynchronous-execution-postures) | Sync vs async dispatch, queue workers, agent contract |
-| [§58](#58-platform-runtime-capabilities-index) | Cross-cutting index: resilience, autonomy, MVP evolution |
+| [§50](.#50-orchestration-strategies-catalog) | Coordination pattern catalog |
+| [§51](.#51-parallelism-merge-and-backpressure) | Parallelism, merge, backpressure |
+| [§52](.#52-resilience-in-orchestration) | Retry, checkpoint, failover, partial |
+| [§53](.#53-specialization-and-agent-collaboration) | Capability routing, delegation, handoff |
+| [§54](.#54-maturity-and-gap-register) | Maturity scorecard |
+| [§55](.#55-interaction-posture--orchestration-matrix) | Posture × pattern quick matrix |
+| [§56](.#56-platform-interaction--multi-agent-configuration-canon) | **Master configuration canon** — all cases, matrices, plan input |
+| [§56.13](.#5613-orchestration-capability-tokens) | Orchestration tokens vs agent capabilities |
+| [§57](.#57-synchronous-and-asynchronous-execution-postures) | Sync vs async dispatch, queue workers, agent contract |
+| [§58](.#58-platform-runtime-capabilities-index) | Cross-cutting index: resilience, autonomy, MVP evolution |
 
 **Authoring rule:** Tier-3 host design starts at **§56**; runtime step-by-step truth remains in **NEXUS_EXECUTION_FLOW**; posture/host wiring summary in **TIER3 §23**.
 

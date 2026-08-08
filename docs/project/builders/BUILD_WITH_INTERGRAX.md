@@ -41,7 +41,7 @@ This document is the deeper route-selection and planning guide. The [Builder Qui
 | Review bounded LKW technical evidence | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) | Review bounded application and platform evidence |
 | Run a broader evaluation | [Evaluation Guide](EVALUATION_GUIDE.md) | Follow a time-boxed evaluation across product and platform paths |
 | Explore Token Optimization | [Token Optimization guide](../capabilities/token_optimization/README.md) | Review deterministic mechanisms and bounded vLLM proof scope |
-| Inspect current evidence | [PROOFS.md](../proofs/PROOFS.md) | Review public proof status and claim boundaries |
+| Inspect current evidence | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Review public proof status and claim boundaries |
 | Build a specialized application | [Agent Creation Guide](../technical/guides/AGENT_CREATION_GUIDE.md) and [application usage docs](../../../applications/USAGE.md) | Compose a product workflow on shared foundations |
 | Perform deep technical review | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) | Navigate architecture, plans and implementation detail |
 
@@ -103,7 +103,7 @@ No universal or production-proven savings claim is made. Status remains **PARTIA
 | -------- | ---- |
 | [Agent Creation Guide](../technical/guides/AGENT_CREATION_GUIDE.md) | Domain agent and harness integration |
 | [applications/USAGE.md](../../../applications/USAGE.md) | Application-layer usage patterns |
-| [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Responsibility boundaries before you build |
+| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Responsibility boundaries before you build |
 
 **Build sequence:**
 
@@ -133,14 +133,14 @@ When you run a proof or evaluation path, record:
 - limitation;
 - failing or skipped step.
 
-Full public proof dashboard: [PROOFS.md](../proofs/PROOFS.md).
+Full public proof dashboard: [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
 
 ---
 
 ## Evaluation and permission boundaries
 
 - Local **non-production evaluation** is permitted subject to [LICENSE](../../../LICENSE).
-- Collaboration routes are in [COLLABORATION.md](../community/COLLABORATION.md).
+- Collaboration routes are in [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
 - **Production use**, **commercial use**, hosting, and redistribution require **explicit written permission**.
 - The license is authoritative; this section does not reproduce legal clauses.
 
@@ -150,10 +150,10 @@ Full public proof dashboard: [PROOFS.md](../proofs/PROOFS.md).
 
 | Document | Role |
 | -------- | ---- |
-| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Detailed bounded execution companion — timed evaluation passes |
+| [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Detailed bounded execution companion — timed evaluation passes |
 | [Try LKW](../../../README.md#try-lkw) | Primary product quick start from the repository landing |
 | [README](../../../README.md) | Repository overview and first-contact context |
-| [PROOFS.md](../proofs/PROOFS.md) | Proof status and verification paths |
+| [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Proof status and verification paths |
 | [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md) | Reader-intent routing across public docs |
 
-**BUILD_WITH_INTERGRAX.md** owns public route selection. **EVALUATION_GUIDE.md** remains the detailed bounded execution companion for step-by-step evaluation passes.
+**docs/project/builders/BUILD_WITH_INTERGRAX.md** owns public route selection. **docs/project/builders/EVALUATION_GUIDE.md** remains the detailed bounded execution companion for step-by-step evaluation passes.

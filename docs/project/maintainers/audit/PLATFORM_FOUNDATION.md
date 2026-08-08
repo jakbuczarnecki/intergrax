@@ -1,8 +1,8 @@
 # Platform Foundation — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) · [`plan/PLATFORM_FOUNDATION.md`](../plans/PLATFORM_FOUNDATION.md)  
-**Audit map layers:** 1–2, 32 · compact slice: [`audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md)  
+**Domain pair:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) · [`plan/PLATFORM_FOUNDATION.md`](../plans/PLATFORM_FOUNDATION.md)
+**Audit map layers:** 1–2, 32 · compact slice: [`audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ Phase K / §6.3 deferred product work · long-term §50 marketplace/visual build
 **Load first:** [`docs/project/technical/guides/audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md) — compact slice (layers **1–2, 32**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ Phase K / §6.3 deferred product work · long-term §50 marketplace/visual build
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/PLATFORM_FOUNDATION.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/PLATFORM_FOUNDATION.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/PLATFORM_FOUNDATION.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/PLATFORM_FOUNDATION.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
@@ -95,7 +95,7 @@ intergrax/applications/reference/harness_manifest_catalog.py
 Sample imports across intergrax/, agents/, applications/ for tier violations
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 
@@ -104,14 +104,14 @@ Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
 For **each** item: **Yes / Partial / No / Unknown** + **evidence** (`path:symbol` or `test_name`).
 
 1. Harness treated as durable product — not single-agent optimization (§1 strategic frame).
-2. Tier-0 (`intergrax/`) contains only universal mechanisms — no business agent logic.
+2. Tier-0 (`intergrax`) contains only universal mechanisms — no business agent logic.
 3. Tier-1 Nexus domain-agnostic — no agent-specific branches in NexusLoop.
 4. Tier-2 agents consume Tier-0 via policy/ToolRuntime — no vendor SDK imports.
 5. Tier-3 applications compose runtime+agents+profiles — no duplicated agent pipelines.
-6. Import boundaries enforced: `intergrax/` ↛ `agents/`/`applications/`; agents ↛ applications.
-7. Documentation model: hub-only `docs/` root; 22 architecture↔plan pairs 1:1; no monolithic plan.
+6. Import boundaries enforced: `intergrax` ↛ `agents`/`applications`; agents ↛ applications.
+7. Documentation model: hub-only `docs` root; 22 architecture↔plan pairs 1:1; no monolithic plan.
 8. New capabilities reuse Tier-0 (§5.2.2) — no parallel universal mechanisms.
-9. LLM calls via `llm_adapters/` — not Integration Library vendor wrappers.
+9. LLM calls via `llm_adapters` — not Integration Library vendor wrappers.
 10. Integrations register via manifest/`register_from_manifest` — not ad-hoc SDK in agents.
 11. Gate maintenance §6.1 rows match evidence (tests, CI scripts, doc updates).
 12. Scaffold (`new-agent`, `new-application`, `new-stack`) emits tier-correct artifacts + ADR folders.

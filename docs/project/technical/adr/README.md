@@ -1,9 +1,9 @@
 # Intergrax Harness — Architecture Decision Records
 
-**Domain:** Tier-0 platform + Tier-1 Nexus (`intergrax/`, `intergrax/runtime/`)
+**Domain:** Tier-0 platform + Tier-1 Nexus (`intergrax`, `intergrax/runtime`)
 
-Canonical architecture: [`../intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
-Implementation tracker: [`../intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
+Canonical architecture: [`../../architecture/intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
+Implementation tracker: [`../../architecture/intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 
 ---
 
@@ -45,7 +45,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 
 ## Process
 
-1. Create `entries/YYYY-MM-DD/` if needed (use today's date).
+1. Create `entries/YYYY-MM-DD` if needed (use today's date).
 2. Copy [`TEMPLATE.md`](TEMPLATE.md) to `entries/YYYY-MM-DD/ADR-{AREA}-{NNN}.md`.
 3. Fill **Context**, **Decision**, **Consequences**, and **Compliance**.
 4. Add a row to the **Index** below.

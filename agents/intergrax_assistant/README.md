@@ -1,6 +1,6 @@
 ﻿# intergrax_assistant agent
 
-UAEP-first scaffold. Full process: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
+UAEP-first scaffold. Full process: [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) (single canonical guide).
 
 ## Docs
 
@@ -39,4 +39,4 @@ See **Step 4** in guides/AGENT_CREATION_GUIDE.md for all registration contexts.
 - ``schemas/`` — I/O models
 - ``tests/`` — agent smoke tests
 - ``notebooks/`` — interactive experiments
-- ``docs/`` — architecture, plan, ADRs, journal
+- ``../../docs/project/technical/agents/intergrax_assistant`` — architecture, plan, ADRs, journal

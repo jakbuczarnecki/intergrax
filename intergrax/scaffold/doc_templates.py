@@ -165,7 +165,7 @@ def render_agent_implementation_plan(
         Status: Working draft ({_today()}) — **Scaffold baseline**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)  
+        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)
         Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
         Principle: **evolve, not rewrite** · **reuse Tier-0** · **no Tier-3 imports in agent code**
@@ -339,7 +339,7 @@ def render_application_implementation_plan(
         Status: Working draft ({_today()}) — **{profile_label} profile scaffold**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)  
+        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)
         Application engine: [`intergrax/applications/USAGE.md`](../applications/USAGE.md)
 
         Principle: **compose Tier-0** · **no business logic in Nexus** · **manifest-driven wiring**

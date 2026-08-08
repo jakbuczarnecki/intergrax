@@ -1,10 +1,10 @@
 # Observability — Implementation Plan
 
-**Architecture (1:1):** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 **Cross-plan — Agent layer (ACP):** Dual observability planes (architecture §31) — `AgentRunTrace` on `AgentRunResult` (Plane B) and `ApplicationRunSummary` on Task completion (Plane A). Delivered in [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 3** (`ACP-OBS-1`, `ACP-OBS-2`) and **Wave 7** redaction (`ACP-PROD-8`). Trace spine changes MUST keep step records compatible with `AgentStepRecord` tool/RAG/LLM fields.
 
@@ -22,13 +22,13 @@
 
 **Do not read this entire file in one session** (OBSERVABILITY plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](plan/satellites/OBSERVABILITY_eval_control_plane.md) (active OECP register), [`plan/satellites/OBSERVABILITY_audit_history.md`](plan/satellites/OBSERVABILITY_audit_history.md) (closed phases). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Token Optimization:** read feature pair + rows `TOKEN-OBS-1` / `TOKEN-OBS-2`; use HOS/domain-signal model, do not create private telemetry channel.
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/OBSERVABILITY.md`](../../technical/guides/audit_slices/OBSERVABILITY.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -58,8 +58,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase TOKEN-OBS — Token optimization telemetry and regression gates (Planned)
 
-**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)  
-**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)  
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
 **Priority:** P1 after TOKEN-UER-1; TOKEN-OBS-1 may ship before CE/MEM integrations, TOKEN-OBS-2 after first optimized source exists.  
 **Delivery rule:** one `TOKEN-OBS-*` row per PR; emit through HOS or approved domain-signal path only.
 
@@ -339,7 +339,7 @@ Raw content, prompts, chunks, tool args, secrets, and absolute paths must not be
 | Layer | Location | Owns | Must not contain |
 |-------|----------|------|------------------|
 | **Base / contract** | `intergrax/runtime/integrations/observability.py` | `ObservabilityVendorIntegrationContract`, `ObservabilityVendorPayload`, `ObservabilityVendorSignal`, `map_envelope()`, `export()`, shared envelope→vendor-neutral mapping, policy-safe boundary | Vendor SDK/API imports or vendor-specific network I/O |
-| **Vendor providers** | `intergrax/integrations/providers/observability_backend/<vendor>/` | `integration.py`, optional `transport.py`, config/factory, manifest/register/bundle per existing convention, vendor-specific `deliver_payload()`, vendor-specific payload mapping only when necessary, vendor-specific tests | Direct calls from LKW, agents, or runtime loops |
+| **Vendor providers** | `intergrax/integrations/providers/observability_backend/<vendor>` | `integration.py`, optional `transport.py`, config/factory, manifest/register/bundle per existing convention, vendor-specific `deliver_payload()`, vendor-specific payload mapping only when necessary, vendor-specific tests | Direct calls from LKW, agents, or runtime loops |
 | **Wiring / config** | `intergrax/runtime/observability/operator_wiring.py`, application host settings (e.g. LKW `host/settings.py`, `host/observability_wiring.py`) | Typed backend selection, integration factory, `ObservabilityExporter`-compatible plugin assembly | Vendor SDK calls; vendor-specific branching in LKW product code |
 
 Runtime and LKW always invoke:
@@ -360,7 +360,7 @@ Wiring selects the concrete integration; product code never branches on vendor S
 | **OBS-VENDOR-1** | Docs/Code | P1 | **Done** | Define canonical vendor integration execution model | Plan states platform/runtime/LKW call only contract-level `export()`; vendor SDK/API calls belong only in provider implementations; LKW remains vendor-agnostic; direct Langfuse/Elastic/Phoenix/Arize calls from LKW, agents, runtime loops, or application code are forbidden |
 | **OBS-VENDOR-2** | Code | P1 | **Done** | Open plugin-based observability backend selection in operator/runtime config | Plan defines where backend selection belongs; invalid backend_id format fails fast; valid but unregistered backend_id fails at builder registry lookup; selection produces `ObservabilityExporter`-compatible integration; existing OTLP behavior preserved. **Scope:** config/wiring shape only — do not implement all vendors at once. **Built-in today:** `otlp`. **Extension:** register additional backend builders by `backend_id`. **Expected env:** `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_ENABLED=true`, `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=otlp` |
 | **OBS-VENDOR-3** | Docs/Code | P1 | **Done** | Formalize safe extension metadata API | `ApplicationObservabilityAttributes` documented as official extension path; artifact refs (`artifact_ref`, `sha256`, `safe_relative_path`, `schema_id`) as reference-only path; raw artifact content not exported; forbidden fields remain blocked by export policy; arbitrary `RuntimeEvent.payload` fields not auto-exported; optional helper API (e.g. `emit_observability_event(..., application_attributes=..., artifact_ref=...)`) only if needed |
-| **OBS-VENDOR-4A** | Code | P1 | **Done** | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch/`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
+| **OBS-VENDOR-4A** | Code | P1 | **Done** | **First concrete vendor adapter: Elasticsearch/OpenSearch** | Contract subclass under `intergrax/integrations/providers/observability_backend/elasticsearch`; injectable transport for indexing policy-safe `ObservabilityVendorPayload`; no raw content export; no policy bypass; unit tests with fake transport prove policy-safe delivery, disabled config does not send, unsafe content not exported; no LKW direct dependency on Elasticsearch/OpenSearch SDK |
 | **OBS-VENDOR-5** | Code | P1 | **Done** | Wire selected vendor backend into runtime operator config | `LOCAL_WORKSPACE_OBSERVABILITY_EXPORT_BACKEND=elasticsearch` builds `ElasticsearchObservabilityIntegration.from_transport(...)`; `otlp` continues `OtlpObservabilityIntegration`; runtime plugin receives only contract/`ObservabilityExporter` object; LKW does not branch on vendor SDK; misconfigured credentials/endpoint fail fast at build time; exporter failures do not fail product runs |
 | **OBS-VENDOR-6** | Code | P2 | Planned | Vendor-specific operational hardening | Bounded transport timeout; retry/backoff; explicit batching or non-batching decision documented; failure isolation; rate-limit handling; dead-letter or failed-export diagnostics; structured error reason; health check capability; exporter failure never breaks LKW run; tests cover transport failure isolation |
 | **OBS-VENDOR-7** | Test/Docs | P1 | Planned | End-to-end vendor proof (Elasticsearch/OpenSearch first) | LKW run → envelope → policy → vendor integration → backend → query/readback by `run_id`/`event_id`; proof records exact commands, `run_id`, backend query result; `tool_requested`/`tool_completed` appear once; duplicate check = 0; no raw query/content/prompt/chunks/secrets indexed; documented in LKW runbook or implementation plan |
@@ -368,7 +368,7 @@ Wiring selects the concrete integration; product code never branches on vendor S
 
 **OBS-VENDOR-1 status:**
 
-Done — canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>/`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
+Done — canonical execution model closed. Runtime and applications call only **`ObservabilityVendorIntegrationContract.export()`**; vendor SDK/API calls are restricted to concrete provider implementations under **`observability_backend/<vendor>`**; LKW remains vendor-agnostic. Export policy runs before external export; exporter failure must never fail product runs.
 
 **OBS-VENDOR-2 status:**
 
@@ -432,9 +432,9 @@ Done — live local controlled-failure proof recorded. File-backed Elasticsearch
 |-------|-------|
 | Date | 2026-07-01 |
 | `failed_delivery_file_path` | `applications/local_workspace_application/.observability/elasticsearch/failed-deliveries.jsonl` |
-| Failure mode | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL=http://127.0.0.1:59200` (unreachable endpoint); `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` |
-| LKW run | `POST http://127.0.0.1:8099/v1/local_workspace/run` (`capability=local.workspace.search`); `run_id=run_f4870c18fced4b83b61c38c8359e6be9` |
-| Inspector command | `applications\local_workspace_application\scripts\inspect-elasticsearch-failed-deliveries.bat --check-safety` |
+| Failure mode | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_URL=http:/127.0.0.1:59200` (unreachable endpoint); `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS=1` |
+| LKW run | `POST http:/127.0.0.1:8099/v1/local_workspace/run` (`capability=local.workspace.search`); `run_id=run_f4870c18fced4b83b61c38c8359e6be9` |
+| Inspector command | `applications/local_workspace_application/scripts/inspect-elasticsearch-failed-deliveries.bat --check-safety` |
 | Inspector result | `Records: 36`; `Reason counts: connection_error: 36`; `Validation: all records contain exactly the safe failed-delivery fields`; exit code 0 |
 | Safety result | Passed — each JSONL line contains only `provider_id`, `operation`, `index`, `status_code`, `reason`, `retriable`, `attempts`, `exhausted`; no raw document, prompt, chunks, tool args, secrets, tokens, or absolute payload paths |
 
@@ -617,7 +617,7 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.9, §11 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Done** (2026-06-09) — AUDIT-IDEAL observability rows closed
 

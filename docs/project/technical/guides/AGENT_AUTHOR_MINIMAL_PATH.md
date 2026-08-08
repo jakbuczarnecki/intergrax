@@ -1,7 +1,7 @@
 # Agent Author Minimal Path
 
 **Status:** Normative authoring guide (Tier-2 agents)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Canon:** [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md)
 
 ---
@@ -10,7 +10,7 @@
 
 This guide defines the minimal safe path for implementing a Tier-2 agent in Intergrax.  
 It is intended for human developers, Cursor, Codex and other coding agents.  
-It does not replace [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).  
+It does not replace [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 It is the practical authoring shortcut derived from that architecture and from [`docs/project/technical/guides/SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md).
 
 For scaffold → register → run → evaluate workflows, see [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md). Use **this file first** when you need the smallest correct mental model.
@@ -52,14 +52,14 @@ A minimal Tier-2 agent in this repository typically includes:
 | Capability declaration | Tokens Nexus uses for routing |
 | Optional prompt references | Via Prompt Registry or approved prompt mechanism — not inline production strings |
 | Optional skill/tool declarations | On contract and/or skill resolver |
-| Tests or smoke scenario | When the agent family already has a test pattern in `agents/<name>/tests/` |
+| Tests or smoke scenario | When the agent family already has a test pattern in `agents/<name>/tests` |
 | Documentation entry | Only when the agent is part of a reusable family (e.g. `README.md`, `ARCHITECTURE.md`) |
 
 **Patterns (examples — do not copy wholesale):**
 
 - Contract + capabilities: `agents/local_indexer/contract.py`, `agents/local_indexer/capabilities.py`
 - Agent class: `agents/local_indexer/local_indexer_agent.py`
-- Authoring bases: `intergrax/agents/authoring/` (`IntergraxAgent`, `CognitiveAgent`, `StepOutcome`)
+- Authoring bases: `intergrax/agents/authoring` (`IntergraxAgent`, `CognitiveAgent`, `StepOutcome`)
 - Contract type: `intergrax/contracts/agent_contract_meta.py` (`AgentContract`)
 
 Do not invent file names beyond what the repository and [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §12–§16 already establish.

@@ -1,10 +1,10 @@
 # Unified Execution Runtime — Implementation Plan
 
-**Architecture (1:1):** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 **Cross-feature — Token Optimization:** feature architecture [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md) · feature plan [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md). UER owns runtime policy resolution, shared contract placement, output profile resolution, compression-level selection, and safety bypass enforcement.
 
@@ -20,7 +20,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -55,14 +55,14 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase TOKEN-UER — Token Optimization runtime policy foundation (Planned)
 
-**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)  
-**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)  
+**Feature:** [`features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
+**Architecture:** [`features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
 **Priority:** P1 after docs sync; first implementation slice for Token Optimization  
 **Delivery rule:** one `TOKEN-UER-*` row per PR; do not wire CE/TOOLS/MEMORY behavior before shared contracts land.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **TOKEN-UER-1** | Code | P1 | Planned | Shared package `intergrax/runtime/token_optimization/` with contracts, protected-region validator, compression receipts, and contract check script | Contracts import cleanly; no CE/TOOLS/MEMORY hot-path imports; protected regions preserve code/paths/URLs/API names/env vars/enums/hashes/dates/errors; receipts hash original/optimized content and record token savings; `uv run pytest tests/unit/runtime/token_optimization/ -q`; `uv run python scripts/check_token_optimization_contracts.py` |
+| **TOKEN-UER-1** | Code | P1 | Planned | Shared package `intergrax/runtime/token_optimization` with contracts, protected-region validator, compression receipts, and contract check script | Contracts import cleanly; no CE/TOOLS/MEMORY hot-path imports; protected regions preserve code/paths/URLs/API names/env vars/enums/hashes/dates/errors; receipts hash original/optimized content and record token savings; `uv run pytest tests/unit/runtime/token_optimization/ -q`; `uv run python scripts/check_token_optimization_contracts.py` |
 | **TOKEN-UER-2** | Code | P1 | Planned | `OutputPolicyResolver` and runtime output profiles (`minimal`, `terse`, `standard`, `full`, `audit`, `machine_receipt`, `debug_verbose`) | Output profile resolved by runtime policy, not prompt-only wording; structured outputs and high-risk contexts can force clarity/full mode; no model-specific prompt hacks; `uv run python scripts/check_output_policy_wiring.py` |
 
 **TOKEN-2 note:** `OutputPolicyResolver` in `intergrax/runtime/token_optimization/output_policy.py` is an internal policy-resolution helper only. It is not wired into model calls, prompt assembly, or runtime execution yet.
@@ -73,7 +73,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.2–3.3, §23–§24 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.2–3.3, §23–§24 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -94,14 +94,14 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.1av Harness implementation queue — UAEP audit maintenance
 
-**Source:** Interactive layer audit (2026-06-19) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md) · prior: [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)  
+**Source:** Interactive layer audit (2026-06-19) — `UNIFIED_EXECUTION_RUNTIME` layers 4, 5, 8, 23–24 · [`../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-19/UNIFIED_EXECUTION_RUNTIME.md) · prior: [`../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md`](../../../audit_results/2026-06-18/UNIFIED_EXECUTION_RUNTIME.md)
 **Priority ladder:** **Band 1** (§6.1) — incremental after gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **UAEP-AUDIT-01** | Code | P2 | **Done** | `tenant_id` on `RuntimeEvent` in `UAEPExecutor._emit`, `TraceEmittingMiddleware`, and any orphan emitters | §42.44.2; regression gate on event tenant propagation |
 | 2 | **UAEP-MAINT-02** | Code | P3 | **Done** | Dedup `STEP_COMPLETED` — canonical emitter in `HarnessKernel`; adjust `TraceEmittingMiddleware` to avoid duplicate journal entries | Single `STEP_COMPLETED` per step boundary in unified run journal |
-| 3 | **UAEP-MAINT-03** | Docs | P3 | **Done** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture/` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
+| 3 | **UAEP-MAINT-03** | Docs | P3 | **Done** | Security middleware layout diagram in `AGENT_CREATION_GUIDE.md` Appendix H (`runtime/architecture` + Tier-3 `*_wiring.py` map) | No new mechanisms; author onboarding clarity |
 | 4 | **UAEP-MAINT-04** | Test | P3 | **Done** | Regression gate: at most one `STEP_COMPLETED` per step boundary (`HarnessKernel` canonical; middleware must not duplicate) | `test_kernel_emits_single_step_completed_per_step` + `test_trace_middleware_does_not_emit_step_completed_on_after_step`; gate green |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-19).

@@ -16,7 +16,7 @@
 # Audit Result: Ephemeral Code Craft (ECC)
 
 **Audit date:** 2026-06-10  
-**Method:** Vision vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §3.6 · `AUDIT-IDEAL-11.1` · code `runtime/sandbox/` · `tools/providers/sandbox/` · skills `sandbox.*` · UAEP §42.12  
+**Method:** Vision vs `IDEAL_HARNESS_AI_ARCHITECTURE.md` §3.6 · `AUDIT-IDEAL-11.1` · code `runtime/sandbox` · `tools/providers/sandbox` · skills `sandbox.*` · UAEP §42.12
 **Verdict:** Execution **substrate Done** (~40% of target at audit open); **harness orchestration Done** (ECC-1…ECC-6, 2026-06-13) — domain **CODE_CRAFT** closed at L3.
 
 ---
@@ -63,7 +63,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | CUR-02 | Operations | `echo`, `write_file`, `read_file`, `list_files`, `run_python`, `run_script`, `browser_fetch` |
 | CUR-03 | `AGENT_BUILDER_SANDBOX_OPERATIONS` | `sandbox_runtime.py` |
 | CUR-04 | Catalog tools | `sandbox.exec`, `code.exec`, `script.run`, `browser.run`, `sandbox.list_operations` |
-| CUR-05 | Tool providers | `intergrax/tools/providers/sandbox/` |
+| CUR-05 | Tool providers | `intergrax/tools/providers/sandbox` |
 | CUR-06 | Cloud bridge | `HostedSandboxSession` + `sandbox_host` (e2b, modal, daytona) |
 | CUR-07 | Session manager | `SandboxSessionManager` per tenant/task |
 | CUR-08 | Task lifecycle cleanup | `cleanup_sandbox_for_task` in task finisher |
@@ -73,7 +73,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | CUR-12 | Tier-3 wiring | `wire_sandbox_sessions`, `tool_profile_with_sandbox` |
 | CUR-13 | AUDIT-IDEAL-11.1 | Sandboxed execution for side-effectful tools — **Done** in `AUDIT_IDEAL_2026.md` |
 | CUR-14 | Security scan tool | `security.scan` via `security_scanner` integration (M.6 P6) |
-| CUR-15 | Shadow workspace | Separate artifact isolation (`runtime/shadow/`) |
+| CUR-15 | Shadow workspace | Separate artifact isolation (`runtime/shadow`) |
 
 ### §3.2 Partial / depth (post ECC-0…ECC-6)
 
@@ -182,7 +182,7 @@ Out of scope: implementation code (ECC-1+), product-specific agents (§6.3).
 | RELIABILITY only | **Rejected** — sandbox is substrate |
 | **CODE_CRAFT domain** | **Accepted** — ADR-CODECRAFT-001 |
 
-Precedent: RAG (`intergrax/rag/` + `rag.*` tools), CVL (orchestrator + `eval.*` tools).
+Precedent: RAG (`intergrax/rag` + `rag.*` tools), CVL (orchestrator + `eval.*` tools).
 
 ---
 
@@ -221,9 +221,9 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 | ID | Deliverable | Module | Acceptance |
 |----|-------------|--------|------------|
-| ECC-1.1 | Package scaffold `intergrax/codecraft/` contracts | `contracts.py` | `CodeCraftRunInput`, `CraftResult`, `StaticGateResult` |
+| ECC-1.1 | Package scaffold `intergrax/codecraft` contracts | `contracts.py` | `CodeCraftRunInput`, `CraftResult`, `StaticGateResult` |
 | ECC-1.2 | `StaticCodeGate` | `static_gate.py` | Unit: blocks `import os`, oversize, forbidden patterns |
-| ECC-1.3 | Tool `codecraft.run` | `tools/providers/codecraft/` | Invokes gate + `code.exec` via ToolWiringContext |
+| ECC-1.3 | Tool `codecraft.run` | `tools/providers/codecraft` | Invokes gate + `code.exec` via ToolWiringContext |
 | ECC-1.4 | `CodeCraftTraceEmitter` stub | `runtime/codecraft/trace.py` | Emits `CODECRAFT_SESSION_OPENED`, `STATIC_GATE`, `EXEC`, `DISPOSED` |
 | ECC-1.5 | Policy deny tests | tests | No sandbox session → DENIED; `mode=disabled` → DENIED |
 | ECC-1.6 | Register tool in catalog bootstrap | `register_default_tools()` | `codecraft.run` in catalog |
@@ -246,9 +246,9 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 | ECC-2.2 | `CodeCraftOrchestrator` | `runtime/codecraft/orchestrator.py` | Multi-iteration loop with budget |
 | ECC-2.3 | `CodeGenerationAdapter` | `codecraft/codegen_adapter.py` | Separate LLM profile ref |
 | ECC-2.4 | `CraftTestRunner` | `codecraft/test_runner.py` | Run pytest template in sandbox |
-| ECC-2.5 | Tools start/iterate/get_state/dispose | `tools/providers/codecraft/` | E2E test with mock LLM + sandbox |
+| ECC-2.5 | Tools start/iterate/get_state/dispose | `tools/providers/codecraft` | E2E test with mock LLM + sandbox |
 | ECC-2.6 | CVL L0 hook after iteration | bridge to `CriticOrchestrator` | Failed test → revise verdict |
-| ECC-2.7 | Skill `codecraft.ephemeral_builder` | `skills/providers/codecraft/` | Bundles codecraft.* + workspace |
+| ECC-2.7 | Skill `codecraft.ephemeral_builder` | `skills/providers/codecraft` | Bundles codecraft.* + workspace |
 
 **Closes:** GAP-ECC-01, GAP-ECC-03, GAP-ECC-10 (partial), GAP-ECC-11.
 
@@ -262,7 +262,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 | ID | Deliverable | Module | Acceptance |
 |----|-------------|--------|------------|
-| ECC-3.1 | `CodeCraftProfile` model | `applications/contracts/` or `codecraft/profile.py` | Typed fields per architecture §6.2 |
+| ECC-3.1 | `CodeCraftProfile` model | `applications/contracts` or `codecraft/profile.py` | Typed fields per architecture §6.2 |
 | ECC-3.2 | `wire_application_codecraft()` | `applications/_shared/codecraft_wiring.py` | Lab + poc_template presets |
 | ECC-3.3 | Mode enforcement | orchestrator | `dry_run` never exec; `assist_only` returns code only |
 | ECC-3.4 | HITL before exec | PolicyEngine + HitlRunner | `supervised` pauses until resume |
@@ -370,7 +370,7 @@ ECC-0 (Done) → ECC-1 → ECC-2 → ECC-3 → ECC-4 → ECC-5 → ECC-6
 
 # Layer completion audit (2026-06-13)
 
-**Method:** Re-read domain pair + ADR + grep `intergrax/codecraft/`, `intergrax/runtime/codecraft/`, `intergrax/tools/providers/codecraft/` — **28 Python modules** shipped.
+**Method:** Re-read domain pair + ADR + grep `intergrax/codecraft`, `intergrax/runtime/codecraft`, `intergrax/tools/providers/codecraft` — **28 Python modules** shipped.
 
 **Verdict:** Documentation canon **Done** (ECC-0). Harness orchestration **Done** (ECC-1…ECC-6). Substrate reuse path **validated** — `SandboxSession`, `code.exec`, `security.scan`, CVL bridge, `sandbox_host` integrations wired.
 
@@ -433,7 +433,7 @@ Layer completion audit after ECC-0…ECC-6 — gaps blocking **production parity
 | **Scope** | `CodeCraftTraceEmitter` + orchestrator hooks for generation, test, verdict, HITL, promote |
 | **Goal** | Architecture §10.1 events emitted on real paths |
 | **DoD** | Unit tests assert new steps; closes GAP-ECC-16 |
-| **Files** | `intergrax/runtime/codecraft/trace.py`, `orchestrator.py`, `tests/unit/runtime/codecraft/` |
+| **Files** | `intergrax/runtime/codecraft/trace.py`, `orchestrator.py`, `tests/unit/runtime/codecraft` |
 
 ## Sprint S9 — Single-shot sandbox parity (ECC-8) (**Done**)
 
@@ -466,7 +466,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **Scope** | `codecraft.run`, `StaticCodeGate`, `CodeCraftTraceEmitter`, catalog registration |
 | **Goal** | Smallest governed path: accept code → L0 gate → sandbox exec → typed `CraftResult` |
 | **DoD** | Unit tests for gate + deny paths; tool in catalog; `CODECRAFT_*` trace steps; gate tests green |
-| **Files** | `intergrax/codecraft/{contracts,profile,static_gate}.py` · `intergrax/runtime/codecraft/trace.py` · `intergrax/tools/providers/codecraft/*` · `intergrax/tools/registry/shipped_plugins.py` · `intergrax/runtime/sandbox/sandbox_runtime.py` · `tests/unit/codecraft/` · `tests/unit/tools/providers/codecraft/` |
+| **Files** | `intergrax/codecraft/{contracts,profile,static_gate}.py` · `intergrax/runtime/codecraft/trace.py` · `intergrax/tools/providers/codecraft/*` · `intergrax/tools/registry/shipped_plugins.py` · `intergrax/runtime/sandbox/sandbox_runtime.py` · `tests/unit/codecraft` · `tests/unit/tools/providers/codecraft` |
 
 ## Sprint S2 — ECC-2 Session loop (**Done**)
 
@@ -475,7 +475,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **Scope** | `CodeCraftOrchestrator`, session manager, `start/iterate/get_state/dispose`, codegen adapter, test runner |
 | **Goal** | Multi-iteration generate→gate→exec→test loop with budgets |
 | **DoD** | E2E mock test; CVL L0 hook; skill `codecraft.ephemeral_builder` manifest |
-| **Files** | `intergrax/runtime/codecraft/{orchestrator,session_manager}.py` · `intergrax/codecraft/{codegen_adapter,test_runner}.py` · extended `tools/providers/codecraft/` · `intergrax/skills/providers/codecraft/` |
+| **Files** | `intergrax/runtime/codecraft/{orchestrator,session_manager}.py` · `intergrax/codecraft/{codegen_adapter,test_runner}.py` · extended `tools/providers/codecraft` · `intergrax/skills/providers/codecraft` |
 
 ## Sprint S3 — ECC-3 Modes + HITL + promotion (**Done**)
 
@@ -511,7 +511,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | **Scope** | AHI catalog-miss signal, budget-aware craft decision |
 | **Goal** | L4 suggests or invokes craft when policy allows |
 | **DoD** | Signal tests in adaptive domain integration |
-| **Files** | `intergrax/runtime/adaptive/` hooks · ADAPTIVE_HARNESS_INTELLIGENCE plan row |
+| **Files** | `intergrax/runtime/adaptive` hooks · ADAPTIVE_HARNESS_INTELLIGENCE plan row |
 
 **Minimum L3 closeout:** S1–S4 (ECC-1…ECC-4). S5–S6 are depth.
 
@@ -522,7 +522,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 - Phase K business agents using ECC (§6.3 product decision).
 - Container runtime implementation details before ECC-4 design spike.
 - Replacing or removing `code.exec` / `sandbox.exec` primitives.
-- Monolithic `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` or `plan/phases/` folders.
+- Monolithic `docs/INTERGRAX_IMPLEMENTATION_PLAN.md` or `plan/phases` folders.
 
 ---
 
@@ -566,7 +566,7 @@ Each sprint = one PR-sized slice → gate green → plan row update → commit.
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ECC-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av; sync GAP-ECC-20..23 register; fix architecture §6.3; regenerate audit prompt known gaps | Canon matches ECC-MAINT-01..04 |
-| 2 | **ECC-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `CODE_CRAFT.md` + `progress.json`; L3+ verdict layer 11b |
+| 2 | **ECC-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `CODE_CRAFT.md` + `progress.json`; L3+ verdict layer 11b |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 

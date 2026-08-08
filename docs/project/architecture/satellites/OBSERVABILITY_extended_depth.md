@@ -75,10 +75,10 @@ Developers **never** write to SQLite or invent parallel buses.
 
 | Owner | `schema_id` prefix | Location |
 |-------|-------------------|----------|
-| Harness platform | `intergrax.diag.*` | `intergrax/runtime/nexus/tracing/` |
-| Critic / adaptive | `intergrax.diag.critic.*`, `intergrax.diag.adaptive.*` | `intergrax/runtime/critic/`, `adaptive/` |
-| Tier-2 agent | `agents.<slug>.diag.*` | `agents/<slug>/tracing/` |
-| Tier-3 product | `applications.<slug>.diag.*` | `applications/<slug>/tracing/` |
+| Harness platform | `intergrax.diag.*` | `intergrax/runtime/nexus/tracing` |
+| Critic / adaptive | `intergrax.diag.critic.*`, `intergrax.diag.adaptive.*` | `intergrax/runtime/critic`, `adaptive` |
+| Tier-2 agent | `agents.<slug>.diag.*` | `agents/<slug>/tracing` |
+| Tier-3 product | `applications.<slug>.diag.*` | `applications/<slug>/tracing` |
 
 Tier-2/3 payloads MUST subclass `DiagnosticPayload` from `trace_models.py` — **no fork of the ABC**.
 
@@ -146,7 +146,7 @@ with TraceScope(emitter, run_id=..., task_id=..., tenant_id=...) as scope:
 
 **Escalation:** `fallback_default` → on-call + catalog YAML patch or profile override within SLA; `provider_default` spike → platform ops + catalog/gateway metadata review; `prefix_rule` bulk → catalog hygiene backlog.
 
-**Operator runbook:** [`intergrax/llm_adapters/USAGE.md`](../../intergrax/llm_adapters/USAGE.md) § Catalog miss operator runbook.
+**Operator runbook:** [`intergrax/llm_adapters/USAGE.md`](../../../../intergrax/llm_adapters/USAGE.md) § Catalog miss operator runbook.
 
 **CI gates:** `scripts/maintenance/check_llm_catalog_miss_observability.py` (**LLM-MAINT-05**) · registered in `check_observability_gates.py` and `check_audit_ideal_gates.py` (**LLM-MAINT-06**).
 
@@ -435,7 +435,7 @@ uv run python scripts/maintenance/check_observability_gates.py
 ## 18. Execution Boundary Export (EBE) — optional side channel
 
 **Status:** PoC v1 **Done** · PoC v2 (EBE-8) **Done** (partner validated) · **EBE-9 host signing Done** (partner validated).  
-**Reference host:** `applications/attestation_demo/` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
+**Reference host:** `applications/attestation_demo` · **ADR:** [ADR-OBS-002](../adr/entries/2026-06-13/ADR-OBS-002.md) · [ADR-OBS-004](../adr/entries/2026-06-19/ADR-OBS-004.md)
 
 EBE is an **optional** export path for **unsigned, vendor-neutral** tool-boundary facts. It complements — does not replace — the Harness Observability Spine (HOS).
 
@@ -496,7 +496,7 @@ Unsigned v2 remains available when signing is disabled. Golden vector: `applicat
 ## Observability & Evaluation Control Plane
 
 **Status:** Target architecture (canonical decision) · **2026-06-24**  
-**Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../maintainers/audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)  
+**Audit source:** [`audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md`](../../maintainers/audit/OBSERVABILITY_EVALUATION_CONTROL_PLANE_AUDIT.md)
 **Plan:** [`plan/satellites/OBSERVABILITY_eval_control_plane.md`](../../maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md)
 
 OECP sits **above** the Harness Observability Spine (HOS). It **consumes** `RuntimeEvent`, `TraceEvent`, unified journal, and evidence refs. It **must not** introduce a parallel trace system, private eval database, or vendor-owned semantics.

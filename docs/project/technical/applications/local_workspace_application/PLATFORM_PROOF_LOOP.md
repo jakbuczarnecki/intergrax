@@ -46,7 +46,7 @@ For every LKW wave, run this checklist:
 |------|----------|-----------------|
 | 1. LKW implementation | Did the product capability change? | Implement and test the LKW behavior. |
 | 2. Defect/pattern classification | Did the task reveal a bug, workaround, repeated pattern, missing diagnostic, scaffold gap, config mismatch, Docker/build issue, dependency issue, or CI/runbook gap? | Classify it as `LKW-specific`, `Platform-reusable`, or `Platform-reusable deferred`. |
-| 3. Shared platform extraction | Is the solution generic to agent applications? | Move or expose it through `intergrax/`, `intergrax/applications/_shared/`, runtime profiles, or approved shared contracts. |
+| 3. Shared platform extraction | Is the solution generic to agent applications? | Move or expose it through `intergrax`, `intergrax/applications/_shared`, runtime profiles, or approved shared contracts. |
 | 4. Scaffold propagation | Should future agents/apps inherit it? | Update scaffold generators, templates, generated docs, env templates, Docker templates, or tests. |
 | 5. Env/settings contract | Did configuration change? | Update `.env.example`, `host/settings.py`, validation behavior, and config docs. |
 | 6. Packaging contract | Did dependencies or entrypoints change? | Update `pyproject.toml`, optional dependency groups, entrypoints, Dockerfile, `.dockerignore`, or build docs. |
@@ -77,11 +77,11 @@ Use this list before closing any LKW implementation wave:
 
 | Area | Target examples |
 |------|-----------------|
-| Shared application runtime | `intergrax/applications/_shared/` |
-| Runtime/kernel/orchestration | `intergrax/runtime/` |
-| Agent scaffold | `intergrax/scaffold/` agent templates and tests |
+| Shared application runtime | `intergrax/applications/_shared` |
+| Runtime/kernel/orchestration | `intergrax/runtime` |
+| Agent scaffold | `intergrax/scaffold` agent templates and tests |
 | Application scaffold | `intergrax/scaffold/new_application.py`, product app templates, generated docs |
-| Docker/build templates | shared Docker template writers and app `docker/` folders |
+| Docker/build templates | shared Docker template writers and app `docker` folders |
 | Env/settings | `.env.example`, `host/settings.py`, config validation docs |
 | Packaging | `pyproject.toml`, optional dependencies, build docs |
 | CI/CD | GitHub Actions, smoke tests, Docker build/run checks |

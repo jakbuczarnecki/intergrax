@@ -37,11 +37,11 @@ The open curated issues are not a generic implementation backlog. They are a pub
 | Discuss trace/evidence export surfaces | [#192](https://github.com/jakbuczarnecki/intergrax/issues/192) |
 | Discuss Local Knowledge Workspace alpha fit | [#193](https://github.com/jakbuczarnecki/intergrax/issues/193) |
 | Discuss MCP as a controlled task/tool surface | [#194](https://github.com/jakbuczarnecki/intergrax/issues/194) |
-| Discuss the core Harness AI / Agent OS architecture | [Wave 3](#wave-3--architecture-discussion) |
-| Discuss product and application validation directions | [Wave 4](#wave-4--product--application-validation) |
-| Discuss deeper technical architecture topics | [Wave 5](#wave-5--deep-technical-discussion) |
+| Discuss the core Harness AI / Agent OS architecture | [Wave 3](.#wave-3--architecture-discussion) |
+| Discuss product and application validation directions | [Wave 4](.#wave-4--product--application-validation) |
+| Discuss deeper technical architecture topics | [Wave 5](.#wave-5--deep-technical-discussion) |
 
-For a time-boxed 5/15/30/60-minute review flow, start with [EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
+For a time-boxed 5/15/30/60-minute review flow, start with [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
 
 ## Wave 1 — First evaluator / proof-path feedback
 
@@ -140,6 +140,6 @@ For commercial licensing, production use, partnerships, or permission requests, 
 - [curated_public_issues.yml](curated_public_issues.yml) — single canonical source data for active and expanded public issue automation.
 - [create_curated_issues.py](../../../../scripts/public_adoption/create_curated_issues.py) — maintainer utility for dry-run, sync-check, and explicit issue creation.
 - [manage_curated_issues.bat](../../../../scripts/public_adoption/manage_curated_issues.bat) — Windows wrapper for processing all curated issue waves from the canonical YAML.
-- [ROADMAP.md](../../overview/ROADMAP.md) — public adoption roadmap and collaboration priorities.
-- [COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permission boundaries.
-- [EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md) — time-boxed evaluation guide for external reviewers.
+- [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md) — public adoption roadmap and collaboration priorities.
+- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md) — collaboration model and permission boundaries.
+- [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md) — time-boxed evaluation guide for external reviewers.

@@ -8,7 +8,7 @@
 
 ## Collaboration boundary
 
-Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. This handoff supports proof-path validation and integration feedback under [`COLLABORATION.md`](../../../community/COLLABORATION.md). It does **not** grant production, commercial, redistribution, or SLA rights.
+Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. This handoff supports proof-path validation and integration feedback under [`../../../community/COLLABORATION.md`](../../../community/COLLABORATION.md). It does **not** grant production, commercial, redistribution, or SLA rights.
 
 Do not treat GEC-0 scaffold endpoints as a partner contract. The durable partner contract is established in later GEC phases and recorded here.
 
@@ -66,7 +66,7 @@ Product host settings use the `GOVERNED_CONTRACTOR_` prefix (see `.env.example`)
 Partner-specific field maps, URLs, and credentials:
 
 - belong in **environment configuration** and this handoff document / sample fixtures,
-- must **not** be copied into `intergrax/` core modules,
+- must **not** be copied into `intergrax` core modules,
 - should reference the provider-neutral contracts from GEC-1 / GEC-2.
 
 ---
@@ -85,4 +85,4 @@ Partner-specific field maps, URLs, and credentials:
 
 ## Contact and feedback
 
-Use the repository collaboration channels described in [`PARTNERS.md`](../../../community/PARTNERS.md) and public adoption docs. Prefer structured proof-path feedback over unconstrained feature requests.
+Use the repository collaboration channels described in [`../../../community/PARTNERS.md`](../../../community/PARTNERS.md) and public adoption docs. Prefer structured proof-path feedback over unconstrained feature requests.

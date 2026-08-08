@@ -1,6 +1,6 @@
 # Documentation map
 
-**Purpose:** Single navigation hub for Intergrax docs — *what to read, when, and what each artifact is for*.  
+**Purpose:** Single navigation hub for Intergrax docs — *what to read, when, and what each artifact is for*.
 This file does **not** duplicate canon content; it routes to the authoritative source per topic.
 
 **Audiences:** new developers · Cursor operators · AI coding agents.
@@ -16,10 +16,10 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 | Project overview and quick start | [README.md](../../../README.md) |
 | **Public documentation map** (reader routes, proof paths) | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | **Public documentation architecture** (maintainer contract) | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) |
-| **Token Optimization main guide** | [features/token_optimization/README.md](../capabilities/token_optimization/README.md) |
+| **Token Optimization main guide** | [capabilities/token_optimization/README.md](../capabilities/token_optimization/README.md) |
 | **This map** (roles and workflows) | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | Architecture hub + 22 domain pairs | [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) |
-| Multi-layer feature docs (cross-layer capabilities) | [features/README.md](../capabilities/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
+| Multi-layer capability docs | [capabilities/README.md](../capabilities/README.md) — includes `TOKEN_OPTIMIZATION`, `LANGCHAIN_INDEPENDENCE` |
 | Domain architecture canon | `docs/project/architecture/<DOMAIN>.md` |
 | Implementation status / backlog | `docs/project/maintainers/plans/<DOMAIN>.md` |
 | Strategy, invariants, authoring guides | [guides/README.md](guides/README.md) |
@@ -47,7 +47,7 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 | [PUBLIC_DOCUMENTATION_MAP.md](../community/PUBLIC_DOCUMENTATION_MAP.md) | Public reader navigation — intent routes, proof paths, maturity boundary | Technical domain pairs, Cursor workflow |
 | [public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md](../maintainers/public-adoption/PUBLIC_DOCUMENTATION_ARCHITECTURE.md) | Maintainer-owned public information architecture | Implementation plans, detailed claims |
 | [DOCUMENTATION_MAP.md](DOCUMENTATION_MAP.md) | Navigation only — Szukasz → Czytaj | Canon, plan rows, audit prompts |
-| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Sole `docs/` root file; indexes 22 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
+| [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) | Architecture hub indexing 22 architecture ↔ plan pairs | Per-domain deep spec (use pair files) |
 | `docs/project/architecture/<DOMAIN>.md` | **What** the harness should do (contracts, design) | Implementation tracker |
 | `docs/project/maintainers/plans/<DOMAIN>.md` | **What is done / next** (phases, rows, gates) | Architecture spec |
 | `docs/project/capabilities/architecture/<FEATURE>.md` | **Cross-layer feature architecture** — coordinates domain pairs | Domain canon replacement |
@@ -66,7 +66,7 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 | `docs/project/maintainers/audit/*_ORCHESTRATOR.md` | Mode-specific procedure (A / B / C / I) | General onboarding |
 | [implementation-journal/](../maintainers/implementation-journal/README.md) | Milestone narrative (optional) | Plan source of truth or ADR store |
 
-**One source of truth per topic.** Platform canon in `docs/`; product/agent docs under `applications/<name>/` and `agents/<name>/`.
+**One source of truth per topic.** Canonical human-facing technical documentation lives under `docs/project/`, including product and agent documentation under `docs/project/technical/applications/` and `docs/project/technical/agents/`. Code-local README files, tooling documentation, and evidence may remain near `applications/<name>/` or `agents/<name>/` when their location is required by the code or workflow; those exceptions are not competing documentation roots.
 
 ---
 
@@ -74,12 +74,12 @@ Domain pair index (22 names): [audit/README.md § Domain index](../maintainers/a
 
 ### New developer (human)
 
-1. [README.md](../../../README.md) — overview, install, verify  
-2. [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) — pick a domain  
-3. Domain-layer pair: `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md`  
-4. Cross-layer features (when relevant): [features/README.md](../capabilities/README.md) — `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md`  
-5. [SYSTEM_INVARIANTS.md](guides/SYSTEM_INVARIANTS.md) before changing code  
-6. [CONTRIBUTING.md](../../../CONTRIBUTING.md) for PR workflow  
+1. [README.md](../../../README.md) — overview, install, verify
+2. [intergrax_runtime_architecture.md](../architecture/intergrax_runtime_architecture.md) — pick a domain
+3. Domain-layer pair: `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md`
+4. Cross-layer capabilities (when relevant): [capabilities/README.md](../capabilities/README.md) — `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md`
+5. [SYSTEM_INVARIANTS.md](guides/SYSTEM_INVARIANTS.md) before changing code
+6. [CONTRIBUTING.md](../../../CONTRIBUTING.md) for PR workflow
 
 Authoring: [AGENT_CREATION_GUIDE.md](guides/AGENT_CREATION_GUIDE.md) · Tier-3: [applications/USAGE.md](../../../applications/USAGE.md)
 
@@ -107,9 +107,9 @@ docs/project/maintainers/bootstrap/      docs/project/maintainers/audit/README.m
 AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-iteration.mdc
 ```
 
-- Load domain canon on demand — not bulk guides (respect `.cursorignore`)  
-- Audit context: [audit_slices/<DOMAIN>.md](guides/audit_slices) — not full audit prompts unless auditing  
-- Default scope: gate maintenance in [plan/PLATFORM_FOUNDATION.md](../maintainers/plans/PLATFORM_FOUNDATION.md) hub read-scope  
+- Load domain canon on demand — not bulk guides (respect `.cursorignore`)
+- Audit context: [audit_slices/<DOMAIN>.md](guides/audit_slices) — not full audit prompts unless auditing
+- Default scope: gate maintenance in [plan/PLATFORM_FOUNDATION.md](../maintainers/plans/PLATFORM_FOUNDATION.md) hub read-scope
 
 ---
 
@@ -138,7 +138,7 @@ AGENTS.md (stub)  →  AGENT_INSTRUCTIONS.md  →  .cursor/rules/intergrax-itera
          │                  │                  │
          └──────────►  architecture ↔ plan  ◄─┘
                     (22 domain pairs via hub)
-                    features/architecture ↔ features/plan
+                    capabilities/architecture ↔ capabilities/plan
                     (multi-layer feature pairs)
 ```
 

@@ -243,7 +243,7 @@ uv run pytest tests/unit/applications/test_tier3_scenario_matrix.py -m tier3_sce
 uv run pytest -m gate -q
 ```
 
-**Registry:** `intergrax/applications/_shared/tier3_scenario_matrix_wiring.py` maps each reference host package to minimum §44 scenarios and UC-A* evidence paths under `tests/unit/applications/`.
+**Registry:** `intergrax/applications/_shared/tier3_scenario_matrix_wiring.py` maps each reference host package to minimum §44 scenarios and UC-A* evidence paths under `tests/unit/applications`.
 
 ---
 
@@ -317,7 +317,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | HTTP/MCP routes → `UnifiedTaskRunner` | Direct `agent.run()` from routers |
 | Deploy triad | |
 
-**Files:** above + `serving/fastapi_router.py`, `docker/`, `BUILD_AND_DEPLOY.md`, product `ARCHITECTURE.md`
+**Files:** above + `serving/fastapi_router.py`, `docker`, `BUILD_AND_DEPLOY.md`, product `ARCHITECTURE.md`
 
 ## 47.3 Virtual organization
 
@@ -325,7 +325,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 |-----------|------------------|
 | `OrganizationalPolicyEnvelope` on profile | `if org ==` in agents |
 | `AgentBinding.org_role_id` per role | Duplicate compliance in Tier-2 |
-| Policy YAML under `host/policy/rules/` | |
+| Policy YAML under `host/policy/rules` | |
 | Eval golden scenarios (UC-A7) | |
 
 ## 47.4 Simulation / scenario host
@@ -347,7 +347,7 @@ A Tier-3 host MAY be labeled **production-ready** only when **all** mandatory ro
 | `mount_harness_task_routes` for HITL | |
 | Pass `check_application_production_gates.py` | |
 
-**Rule of thumb:** if it **thinks**, it belongs in **`agents/`**. If it **composes, constrains, or reacts**, it belongs in **`applications/`** profile/manifest/hooks.
+**Rule of thumb:** if it **thinks**, it belongs in **`agents`**. If it **composes, constrains, or reacts**, it belongs in **`applications`** profile/manifest/hooks.
 
 ---
 
@@ -927,7 +927,7 @@ ApplicationEscalationContact:
 
 | Surface | Field | Status |
 |---------|-------|--------|
-| `ApplicationManifest` | `ownership: ApplicationOperationalOwnership \| null` | **Done** APP-OPS-2 |
+| `ApplicationManifest` | `ownership: ApplicationOperationalOwnership /| null` | **Done** APP-OPS-2 |
 | Product `ARCHITECTURE.md` frontmatter | owner, maintainer, on-call | **Required today** (informal) |
 | `ApplicationEnvironmentProfile` | inherit from manifest | **Deferred P4** — manifest gate sufficient today |
 | APP-PROD gate | product hosts must declare ownership | **Done** `check_application_ownership.py` |

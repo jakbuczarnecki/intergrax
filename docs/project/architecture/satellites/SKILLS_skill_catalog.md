@@ -35,7 +35,7 @@
 
 **SK-EXP5 (2026-06-08):** +50 compositional packs — product verticals (legal ops, on-call SRE, research lab, data platform, sandbox dev) without new bundles.
 
-Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>/`.  
+Per-skill `USAGE.md` under `intergrax/skills/providers/<bundle>`.
 Verify: `register_default_skills()` → **149** · gate: `test_sk_exp5_skill_bundles.py`, `test_skill_usage_docs.py`.
 
 ---

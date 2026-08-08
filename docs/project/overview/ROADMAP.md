@@ -19,16 +19,16 @@ This roadmap explains how Intergrax progresses from bounded product proof to rea
 | Current public proof | Bounded LKW product/platform proof |
 | Current development objective | Make the core LKW workflow repeatable and durable |
 | Next validation gate | Complete end-to-end workflow and test it with real users |
-| How progress is verified | [PROOFS.md](../proofs/PROOFS.md) and named proof paths |
+| How progress is verified | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) and named proof paths |
 | Release dates | No public date commitment |
 
 ## How to read this roadmap
 
 This document describes **user and validation outcomes**, not internal implementation queues. Detailed technical sequencing belongs to owning implementation plans — for example, the [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) (technical detail, not the public roadmap).
 
-[PROOFS.md](../proofs/PROOFS.md) owns current proof status and claim boundaries. Moving to a later phase requires evidence — bounded verification, repeated use, or real-user feedback — not only completed code.
+[docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) owns current proof status and claim boundaries. Moving to a later phase requires evidence — bounded verification, repeated use, or real-user feedback — not only completed code.
 
-If you need to decide whether Intergrax fits your problem today, start with [USE_CASES.md](USE_CASES.md) and [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md).
+If you need to decide whether Intergrax fits your problem today, start with [docs/project/overview/USE_CASES.md](USE_CASES.md) and [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md).
 
 ```mermaid
 flowchart LR
@@ -55,7 +55,7 @@ Focus: user-visible outcomes that make LKW dependable enough for external evalua
 | Setup, restart and recovery | Evaluators should not need ad hoc developer reconstruction | Repeatable setup guide and recovery without manual repair |
 | Reproducible public proof path | External readers can verify claims | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) remains runnable in documented environment |
 
-Not every outcome above is complete today. See [PROOFS.md](../proofs/PROOFS.md) for current status.
+Not every outcome above is complete today. See [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) for current status.
 
 ## Next — Validate the complete knowledge workflow
 
@@ -96,7 +96,7 @@ Not every direction above will be pursued. Demand and evidence gate each decisio
 - **Application first** — product workflow drives platform work
 - **Evidence before promotion** — proof paths and claim gates before broader public wording
 - **Demand before integration breadth** — providers follow validated workflows
-- **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [COLLABORATION.md](../community/COLLABORATION.md)
+- **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md)
 - **No expansion without a concrete user workflow**
 - **No release-date promises without a validated delivery basis**
 
@@ -115,9 +115,9 @@ Not every direction above will be pursued. Demand and evidence gate each decisio
 
 | Need | Document |
 |------|----------|
-| Current proof status | [PROOFS.md](../proofs/PROOFS.md) |
+| Current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | LKW guided proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Use-case fit | [USE_CASES.md](USE_CASES.md) |
-| Build or evaluate | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
+| Use-case fit | [docs/project/overview/USE_CASES.md](USE_CASES.md) |
+| Build or evaluate | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
 | Public navigation | [Public documentation map](../community/PUBLIC_DOCUMENTATION_MAP.md) |
 | Technical implementation detail | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |

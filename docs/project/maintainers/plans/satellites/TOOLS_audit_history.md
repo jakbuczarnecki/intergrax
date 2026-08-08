@@ -32,7 +32,7 @@
 
 **Priority ladder:** **Band 2k** (§4.0) — closed; default queue = **§6.1** maintenance.
 
-**Execution order:** [§6.2bc](#62bc-phase-ts-execution-order-band-2k--closed) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+**Execution order:** [§6.2bc](.#62bc-phase-ts-execution-order-band-2k--closed) · queue: [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
 **Delivery rule:** One **TS-*** ID per PR → update master table + §6.1c + paydown log below → `pytest -m gate` + §6.1 scripts green.
 
@@ -125,16 +125,16 @@
 |---|-------------|--------|-------|-------|
 | O.0 | Architecture & catalog documented | **Done** | §7.1.6–§7.1.7, §22 | Runtime canon + `architecture/TOOLS.md` + this section (2026-05-30) |
 | O.1 | Extended `ToolContract` | **Done** | §22 | `ToolRiskLevel`, `ToolRetryPolicy`, metadata fields; invoker timeout/retry/trace (2026-05-30) |
-| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry/`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
-| O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag/`, `providers/websearch/` (2026-05-30) |
+| O.2 | `ToolCatalog` + `ToolProfile` + `ToolWiringContext` | **Done** | §7.1.6 | `intergrax/tools/registry`; `build_registry_from_profile`; RuntimeConfig wiring (2026-05-30) |
+| O.3 | Context tools: `rag.retrieve`, `websearch.query` | **Done** | §7.1.7, §22.1 | `providers/rag`, `providers/websearch` (2026-05-30) |
 | O.4 | Reference domain: `jira.*` tools | **Done** | §7.1.6 | `get_issue`, `add_comment`, `search_tasks` over `IssueTracker` (2026-05-30) |
 | O.4b | Catalog domain bundles: `confluence.*`, `notify.send`, observability, `sandbox.exec` | **Done** | §7.1.6 | All first-party catalog tools registered (2026-05-30) |
 | O.5 | **Unified tool model migration** | **Done** | §7.1.7, §22.2 | `tool_ids` on plans; RagStep/WebsearchStep → catalog shims (2026-05-30) |
-| O.6 | Schema exporters (OpenAI + MCP) | **Done** | §7.1.6 | `tools/exporters/`; MCP catalog mount on lab/poc_template (2026-05-30) |
+| O.6 | Schema exporters (OpenAI + MCP) | **Done** | §7.1.6 | `tools/exporters`; MCP catalog mount on lab/poc_template (2026-05-30) |
 | O.7 | Migrate legacy `ToolBase` → `ToolContract` | **Done** | §5.2.2 | `ChatAgent` → registry; `tools_base` deprecated (2026-05-30) |
 | O.8 | `ToolProfile` in Tier-3 scaffold | **Done** | §7.4.8 | `tool_wiring.py` template; lab + poc_template reference (2026-05-30) |
 | O.9 | Agent Creation Guide Appendix E update | **Done** | — | Unified model + ToolProfile examples (2026-05-30) |
-| O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers/` — all catalog bundles (2026-05-30) |
+| O.10 | Gate tests for catalog conformance | **Done** | — | `tests/unit/tools/providers` — all catalog bundles (2026-05-30) |
 | O.11 | Phase P wave 2 context tools: `websearch.read_url`, `confluence.search` | **Done** | §7.1.7, §22.1 | `providers/websearch/read_url_*`, confluence alias (2026-05-30) |
 | O.12 | Phase P wave 3 tools: `websearch.fetch_batch`, `rag.list_collections`, `observability.query_traces` | **Done** | §7.1.7, §22.1 | Extended `ObservabilityBackend.query_traces`, vector `list_collections` (2026-05-30) |
 
@@ -146,13 +146,13 @@ Execute **strictly in order** for foundation (O.1–O.4); O.5–O.10 may overlap
 |------|-----|--------|-----------|
 | 1 | O.1 | Extend `ToolContract` + update `RuntimeToolInvoker` for new fields | Unit tests pass; backward compatible defaults |
 | 2 | O.2 | Add `tools/registry/catalog.py`, `profile.py`, `ToolWiringContext` dataclass | `register_default_tools()` no-op registry; profile enables subset |
-| 3 | O.3 | Implement `providers/rag/` and `providers/websearch/` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
-| 4 | O.4 | Implement `providers/jira/` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
+| 3 | O.3 | Implement `providers/rag` and `providers/websearch` handlers | **Done** — `rag.retrieve`, `websearch.query` + tests |
+| 4 | O.4 | Implement `providers/jira` bundle (3 tools) | **Done** — conformance tests with mocked `IssueTracker` |
 | 4b | O.4b | Implement remaining catalog bundles (`confluence`, `notify`, `observability`, `sandbox`) | **Done** — all tool_ids in `register_default_tools()` |
 | 5 | O.5a | Add `tool_ids` to plan models; map legacy booleans → tool_ids | **Done** — `ToolInvocationPlan`, `LegalToolPlan` |
 | 6 | O.5b | `rag.retrieve` (catalog) / `websearch.query` (catalog) delegate to catalog tools | **Done** — `catalog_context.py` shim |
 | 7 | O.5c | Update `LegalToolPlan` / engine plans to tool list | **Done** — bridge passes `tool_ids` |
-| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters/` |
+| 8 | O.6 | MCP + OpenAI exporters from single catalog | **Done** — `tools/exporters` |
 | 9 | O.7 | Remove `ToolBase` usage from production paths | **Done** — `ChatAgent` uses registry `ToolRegistry` |
 | 10 | O.8–O.10 | Scaffold, docs, gate | **Done** |
 
@@ -297,9 +297,9 @@ Copy into every `tools/providers/<domain>/USAGE.md`:
 
 **Delivered:** **140** catalog `tool_id` values · **40** shipped bundles.
 
-**Verification:** `152 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**140** tools)
+**Verification:** `152 passed` (`tests/unit/tools/providers` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**140** tools)
 
-Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workflow,notify,collaboration,websearch,harness,interaction}`
 
 #### T-EXPAND T10 — LKW storage bridge + deferred scheduling (2026-06-07) — **Done**
 
@@ -321,7 +321,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 
 **Delivered:** **150** catalog `tool_id` values · **40** shipped bundles.
 
-**Verification:** `164 passed` (`tests/unit/tools/providers/` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**150** tools)
+**Verification:** `164 passed` (`tests/unit/tools/providers` + exporters) · `check_harness_no_getattr.py` OK · MCP full-catalog export smoke (**150** tools)
 
 **Closeout notes (accepted platform limits):**
 
@@ -331,7 +331,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 | `message_bus.purge_completed` | **Done** — KV task index on broker queues (`rabbitmq`, `kafka`); Celery unchanged | Residual: Celery result-backend purge |
 | `pagerduty.acknowledge_incident` | **Done** — `PagerDutyEventsClient.acknowledge_incident` + adapter + typed `PagerDutyIncidentChannel` | — |
 
-Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{workspace,notify,interaction,eval,storage,memory,pagerduty,message_bus,records}`
 
 #### T-EXPAND T11 — HITL write path + cloud/vector store ops (2026-06-07) — **Done**
 
@@ -350,7 +350,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergr
 
 **Verification:** provider unit tests + MCP full-catalog export smoke (**160** tools) · `check_harness_no_getattr.py` OK
 
-Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{hitl,notify,cloud_platform,vector_store,health}`
 
 #### T-EXPAND T12 — Integration slot health + notify dispatcher (2026-06-07) — **Done**
 
@@ -435,7 +435,7 @@ Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · [`architecture/CRITIC_V
 
 **Verification:** `test_t14_t17_builder_tools.py` · `test_catalog_expansion.py` (190) · MCP export smoke (**190** tools)
 
-Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{catalog,agent,skill_tool,ltm,context_tool,http}/`
+Canon: [architecture/TOOLS.md](architecture/TOOLS.md) · handlers under `intergrax/tools/providers/{catalog,agent,skill_tool,ltm,context_tool,http}`
 
 
 **Problem (Phase O):** Two parallel mechanisms — boolean plan flags dispatching pipeline steps vs `ToolRegistry` for function tools.
@@ -474,7 +474,7 @@ TARGET (remaining TOOL-ENG):
 
 **Out of scope (TOOL-ENG):**
 
-- Domain-specific tools inside `agents/` (Tier-2; register via `ToolProvider` if reusable)
+- Domain-specific tools inside `agents` (Tier-2; register via `ToolProvider` if reusable)
 - New integration categories (Phase M)
 - Product-only tool packs (§6.3 / Phase K)
 

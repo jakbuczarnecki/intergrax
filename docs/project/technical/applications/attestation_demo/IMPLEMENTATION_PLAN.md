@@ -25,12 +25,12 @@ Application ADRs: [`adr/README.md`](adr/README.md)
 
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
-| EBE-1 | `execution_boundary_event.v1` + invoker hook + memory buffer | **Done** | High | `intergrax/runtime/attestation/` |
+| EBE-1 | `execution_boundary_event.v1` + invoker hook + memory buffer | **Done** | High | `intergrax/runtime/attestation` |
 | EBE-2 | `ExecutionBoundaryExportProfile` + wiring bridge | **Done** | High | `attestation_runtime_bridge.py` |
 | EBE-3 | `attestation_demo` host + `POST /poc/run` | **Done** | High | Tier-3 scaffold layout |
 | EBE-4 | `boundary_demo_agent` + `records.put` lab wiring | **Done** | High | `host/tool_wiring.py` |
 | EBE-5 | README + sample JSON + trust model | **Done** | High | Partner handoff |
-| EBE-6 | Platform OBSERVABILITY pair + harness ADR + partner handoff | **Done** | High | ADR-OBS-002, `partner_handoff/` |
+| EBE-6 | Platform OBSERVABILITY pair + harness ADR + partner handoff | **Done** | High | ADR-OBS-002, `partner_handoff` |
 | EBE-7 | Webhook sink | Deferred | Low | Phase 2 |
 | EBE-8 | HarnessKernel step-level events (`harness_step`, `event_sequence`) | **Done** | High | `step_level_enabled`, partner v2 contract tests |
 | EBE-9 | Host-side event signing (EBE-9) | **Done** (partner validated) | High | BoundaryAttest `61be9918` 39/39; Intergrax live `96b7f997` |

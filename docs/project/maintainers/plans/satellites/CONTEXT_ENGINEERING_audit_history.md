@@ -193,7 +193,7 @@ Wave 5 (P2): CE-9 observability + CE-10 quality in hot path
 Wave 6 (P2): CE-11 Tier-3 presets + CE-12 DX / scaffold / gates
 ```
 
-See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sprint breakdown.
+See [Sprints (CE-EXT delivery)](.#sprints-ce-ext-delivery) for operator-facing sprint breakdown.
 
 ---
 
@@ -206,7 +206,7 @@ See [Sprints (CE-EXT delivery)](#sprints-ce-ext-delivery) for operator-facing sp
 | **CE-1.3** | Protocols: `ContextSourceProvider`, `ContextRanker`, `ContextBudgetAllocator`, `ContextFormatter`, `ContextValidator`, `ContextEngine` | P0 | **Done** | `typing.Protocol` + docstrings; gate import boundary test |
 | **CE-1.4** | `ContextPlugin` dataclass + `ContextPluginRegistry` | P0 | **Done** | Register/list/unregister providers |
 | **CE-1.5** | Move shared scoring types from `context_engineering.py` → `intergrax/context/quality.py` (re-export shim) | P1 | **Done** | Re-export shim in `context_engineering.py` |
-| **CE-1.6** | Architecture gate: `intergrax/context/` MUST NOT import `agents/` or `applications/` | P0 | **Done** | `scripts/maintenance/check_context_tier0_import_boundary.py` |
+| **CE-1.6** | Architecture gate: `intergrax/context` MUST NOT import `agents` or `applications` | P0 | **Done** | `scripts/maintenance/check_context_tier0_import_boundary.py` |
 | **CE-2.1** | `register_context_plugin()` + `intergrax.context` entry point group in `pyproject.toml` | P0 | **Done** | `pyproject.toml` EP + `register_context_plugin()` |
 | **CE-2.2** | `bootstrap_context_catalog()` in `intergrax/context/bootstrap.py` | P0 | **Done** | `wire_application_environment` calls bootstrap |
 | **CE-2.3** | Shipped `BuiltinContextPlugin` registering all §8.4 providers (catalog stubs + live workspace/session) | P0 | **Done** (collect live → **CE-PROV-WIRE**) | 13 builtin provider ids |
@@ -410,7 +410,7 @@ Operator-facing sprint plan. One sprint = one coherent PR batch (1–5 CE IDs). 
 |--------|------|--------|---------------|------------|
 | **S0** | Documentation + audit alignment | CE-DOC.7 | Architecture §2–§17 reflect post-ACP as-built; GAP-CTX-13/14 registered | — |
 | **S1** | Tier-0 contracts + profile fields | CE-2.6, CE-1.1–CE-1.4, CE-1.6 | `intergrax/context/contracts.py` exists; `ContextProfile` preset fields; gate import boundary | **Done** (2026-06-12) |
-| **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context/` green | **Done** (2026-06-12) |
+| **S2** | Plugin catalog bootstrap | CE-2.1–CE-2.5, CE-1.5 | `register_context_plugin()`, `BuiltinContextPlugin` ≥10 providers; `pytest tests/unit/context` green | **Done** (2026-06-12) |
 | **S3** | Engine skeleton + hot-path compiler | CE-3.1, CE-3.2, CE-3.9, CE-3.10 | `DefaultNexusContextEngine`; `ContextCompiler` on ACP/UAEP before LLM; acceptance never-overflow on prod path | **Done** (2026-06-12) |
 | **S4** | Path unification + events | CE-3.3, CE-3.4, CE-3.7, CE-3.11, CE-3.8 | Graph + ACP share `assemble()`; unified `CONTEXT_ASSEMBLED`; integration test green | **Done** (2026-06-12) |
 | **S5** | Step-aware assembly | CE-4.1–CE-4.6, CE-4.7, CE-5.1 | `step_kind` in payload v2; policy audit in `assemble()`; optional contract `context_hints` | **Done** (2026-06-12) |

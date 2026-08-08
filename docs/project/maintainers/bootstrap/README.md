@@ -1,7 +1,7 @@
 # Cursor session bootstrap (paste files)
 
-**Doc map:** [`../DOCUMENTATION_MAP.md`](../../technical/DOCUMENTATION_MAP.md) — bootstrap vs audit vs audit_results roles.  
-**F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` — see [`../guides/CURSOR_TOKEN_SETUP.md`](../../technical/guides/CURSOR_TOKEN_SETUP.md).  
+**Doc map:** [`../DOCUMENTATION_MAP.md`](../../technical/DOCUMENTATION_MAP.md) — bootstrap vs audit vs audit_results roles.
+**F3 session rule:** `ONE DOMAIN = ONE NEW CHAT` — see [`../../technical/guides/CURSOR_TOKEN_SETUP.md`](../../technical/guides/CURSOR_TOKEN_SETUP.md).
 **I1/O1:** always-on `.cursor/rules/intergrax-token-budget.mdc`. **F2 setup:** root `AGENTS.md` is a Cursor auto-load stub; full reference in `docs/project/technical/guides/AGENT_INSTRUCTIONS.md`. Do not delete stub via Settings trash icon.
 
 Copy **entire file** into a **new** Cursor agent chat as the first message.
@@ -21,7 +21,7 @@ Copy **entire file** into a **new** Cursor agent chat as the first message.
 
 **Mode MICRO:** Use [`micro_implement.txt`](micro_implement.txt) as the default bootstrap for ordinary small implementation tasks outside HEP/EVID and outside CI/test/checker hotfixes. Use a new Cursor chat, list exact files and line ranges, and reject any run that reads outside scope.
 
-**Mode I (idea audit):** Write the idea in natural language in a **new** chat (e.g. `Zrób audyt pomysłu: …`). Agent loads `.cursor/rules/intergrax-idea-audit.mdc` on trigger → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results/`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
+**Mode I (idea audit):** Write the idea in natural language in a **new** chat (e.g. `Zrób audyt pomysłu: …`). Agent loads `.cursor/rules/intergrax-idea-audit.mdc` on trigger → procedure [`idea_audit.txt`](idea_audit.txt). **No** file editing, **no** `init_architecture_audit_run.py`, **no** `audit_results`. See [`IDEA_AUDIT_ORCHESTRATOR.md`](../audit/IDEA_AUDIT_ORCHESTRATOR.md).
 
 **Context budget (all audit modes):** Each `docs/project/maintainers/audit/<DOMAIN>.md` includes **§0 Context budget** — scoped plan/architecture reads, one domain per chat recommended, listed gate scripts only. Never load full multi-thousand-line plan files.
 

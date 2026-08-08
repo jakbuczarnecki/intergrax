@@ -1,10 +1,10 @@
 ﻿# Dispute Simulation Workspace (DSW) — Implementation Plan
 
-**Derived from:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) §15 (do not diverge without updating architecture first)
+**Derived from:** [`ARCHITECTURE.md`](ARCHITECTURE.md) §15 (do not diverge without updating architecture first)
 
 Status: **DSW.0 Done** · **Active queue: DSW.1**
 
-Platform register: [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a DSW.*](../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
+Platform register: [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a DSW.*](../../../architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 
 Principle: **case-scoped RAG** · **shadow drafts** · **HITL on correspondence** · **simulation ≠ legal advice**
 
@@ -43,11 +43,11 @@ See architecture §3–§4.
 
 | ID | Task | Module | Owner |
 |----|------|--------|-------|
-| DSW.1.1 | Intake step: `case_id` + `source_paths` validation | `agents/dispute_intake/`on_next_step` / cognitive pattern hooks` | Tier-2 |
-| DSW.1.2 | Document type classifier stub (rule + LLM) | `agents/dispute_intake/steps/` | Tier-2 |
-| DSW.1.3 | Chronology builder → `case_timeline.json` shadow artifact | `agents/dispute_intake/steps/` | Tier-2 |
+| DSW.1.1 | Intake step: `case_id` + `source_paths` validation | `agents/dispute_intake`on_next_step` / cognitive pattern hooks` | Tier-2 |
+| DSW.1.2 | Document type classifier stub (rule + LLM) | `agents/dispute_intake/steps` | Tier-2 |
+| DSW.1.3 | Chronology builder → `case_timeline.json` shadow artifact | `agents/dispute_intake/steps` | Tier-2 |
 | DSW.1.4 | RAG ingest loop scoped by `case_id` collection | Tier-3 tool profile + intake agent | Tier-2/3 |
-| DSW.1.5 | Acceptance: fixture corpus → timeline + retrievable chunks | `tests/` | Tier-3 |
+| DSW.1.5 | Acceptance: fixture corpus → timeline + retrievable chunks | `tests` | Tier-3 |
 
 ### Acceptance criteria
 
@@ -63,10 +63,10 @@ See architecture §3–§4.
 
 | Agent | Plan file |
 |-------|-----------|
-| `dispute_intake` | [`docs/project/technical/agents/dispute_intake/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_intake/IMPLEMENTATION_PLAN.md) |
-| `dispute_analyst` | [`docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md) |
-| `dispute_strategist` | [`docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md) |
-| `dispute_scenario` | [`docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md) |
+| `dispute_intake` | [`docs/project/technical/agents/dispute_intake/IMPLEMENTATION_PLAN.md`](../../agents/dispute_intake/IMPLEMENTATION_PLAN.md) |
+| `dispute_analyst` | [`docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md`](../../agents/dispute_analyst/IMPLEMENTATION_PLAN.md) |
+| `dispute_strategist` | [`docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md`](../../agents/dispute_strategist/IMPLEMENTATION_PLAN.md) |
+| `dispute_scenario` | [`docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md`](../../agents/dispute_scenario/IMPLEMENTATION_PLAN.md) |
 
 ---
 

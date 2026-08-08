@@ -1,11 +1,11 @@
 # Adaptive Harness Intelligence
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** L4 AHI  
-**Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)  
+**Audit instruction:** [`audit/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/audit/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 **Last updated:** 2026-06-22 — **AHI-ADAS-00** ADAS canonical section + ADR-ADAPT-002; **P2-ARCH-10** AHI governance boundary; **Full Harness LC** (re-validates W-ADAPT); **70/70 Done**
 
 ### L4 Frozen cross-domain index (AHI-MAINT-04)
@@ -46,41 +46,41 @@ Load **only** the satellite matching your task or cited §.
 
 ## Table of contents
 
-1. [Executive summary](#1-executive-summary)
-2. [Strategic business case](#2-strategic-business-case)
-3. [Problem statement and market gap](#3-problem-statement-and-market-gap)
-4. [Terminology — Adaptive Harness Intelligence vs classical RL](#4-terminology--adaptive-harness-intelligence-vs-classical-rl)
-5. [Audit of current Intergrax state](#5-audit-of-current-intergrax-state)
-6. [Gap analysis](#6-gap-analysis)
-7. [Vision and design principles](#7-vision-and-design-principles)
-8. [Target architecture overview](#8-target-architecture-overview)
-9. [Adaptive Control Plane — component specification](#9-adaptive-control-plane--component-specification)
-10. [Signal model and utility function](#10-signal-model-and-utility-function)
-11. [Adaptation loops — four canonical kinds](#11-adaptation-loops--four-canonical-kinds)
-12. [Lifecycle modes — Observe through Verify](#12-lifecycle-modes--observe-through-verify)
-13. [Process pattern intelligence](#13-process-pattern-intelligence)
-14. [Integration with existing Intergrax subsystems](#14-integration-with-existing-intergrax-subsystems)
-15. [Tier placement and dependency rules](#15-tier-placement-and-dependency-rules)
-16. [Security, governance, and human-in-the-loop](#16-security-governance-and-human-in-the-loop) *(planned — see [Governance Boundary](#governance-boundary))*
-28. [Governance Boundary](#governance-boundary)
-29. [Allowed AHI actions](#allowed-ahi-actions)
-30. [Disallowed AHI actions](#disallowed-ahi-actions)
-31. [AHI change lifecycle](#ahi-change-lifecycle)
-32. [Change risk classes](#change-risk-classes)
-33. [Production auto-apply rule](#production-auto-apply-rule)
-34. [Cursor review checklist](#cursor-review-checklist)
-17. [Data contracts (Pydantic reference)](#17-data-contracts-pydantic-reference)
-18. [End-to-end flow diagrams](#18-end-to-end-flow-diagrams)
-19. [Phased implementation roadmap — Phase W-ADAPT](#19-phased-implementation-roadmap--phase-w-adapt)
-20. [KPIs, acceptance gates, and L4 evidence](#20-kpis-acceptance-gates-and-l4-evidence)
-21. [Operational model](#21-operational-model)
-22. [Risks, anti-patterns, and mitigations](#22-risks-anti-patterns-and-mitigations)
-23. [Competitive differentiation summary](#23-competitive-differentiation-summary)
-24. [Conclusions and recommendations](#24-conclusions-and-recommendations)
-25. [Appendix A — Mapping to existing code](#appendix-a--mapping-to-existing-code)
-26. [Appendix B — Proposed implementation plan task IDs](#appendix-b--proposed-implementation-plan-task-ids)
-27. [Appendix C — ADR decision record](#appendix-c--adr-decision-record)
-35. [ADAS — Agent Design Search (sub-capability)](#adas--agent-design-search-sub-capability)
+1. [Executive summary](.#1-executive-summary)
+2. [Strategic business case](.#2-strategic-business-case)
+3. [Problem statement and market gap](.#3-problem-statement-and-market-gap)
+4. [Terminology — Adaptive Harness Intelligence vs classical RL](.#4-terminology--adaptive-harness-intelligence-vs-classical-rl)
+5. [Audit of current Intergrax state](.#5-audit-of-current-intergrax-state)
+6. [Gap analysis](.#6-gap-analysis)
+7. [Vision and design principles](.#7-vision-and-design-principles)
+8. [Target architecture overview](.#8-target-architecture-overview)
+9. [Adaptive Control Plane — component specification](.#9-adaptive-control-plane--component-specification)
+10. [Signal model and utility function](.#10-signal-model-and-utility-function)
+11. [Adaptation loops — four canonical kinds](.#11-adaptation-loops--four-canonical-kinds)
+12. [Lifecycle modes — Observe through Verify](.#12-lifecycle-modes--observe-through-verify)
+13. [Process pattern intelligence](.#13-process-pattern-intelligence)
+14. [Integration with existing Intergrax subsystems](.#14-integration-with-existing-intergrax-subsystems)
+15. [Tier placement and dependency rules](.#15-tier-placement-and-dependency-rules)
+16. [Security, governance, and human-in-the-loop](.#16-security-governance-and-human-in-the-loop) *(planned — see [Governance Boundary](.#governance-boundary))*
+28. [Governance Boundary](.#governance-boundary)
+29. [Allowed AHI actions](.#allowed-ahi-actions)
+30. [Disallowed AHI actions](.#disallowed-ahi-actions)
+31. [AHI change lifecycle](.#ahi-change-lifecycle)
+32. [Change risk classes](.#change-risk-classes)
+33. [Production auto-apply rule](.#production-auto-apply-rule)
+34. [Cursor review checklist](.#cursor-review-checklist)
+17. [Data contracts (Pydantic reference)](.#17-data-contracts-pydantic-reference)
+18. [End-to-end flow diagrams](.#18-end-to-end-flow-diagrams)
+19. [Phased implementation roadmap — Phase W-ADAPT](.#19-phased-implementation-roadmap--phase-w-adapt)
+20. [KPIs, acceptance gates, and L4 evidence](.#20-kpis-acceptance-gates-and-l4-evidence)
+21. [Operational model](.#21-operational-model)
+22. [Risks, anti-patterns, and mitigations](.#22-risks-anti-patterns-and-mitigations)
+23. [Competitive differentiation summary](.#23-competitive-differentiation-summary)
+24. [Conclusions and recommendations](.#24-conclusions-and-recommendations)
+25. [Appendix A — Mapping to existing code](.#appendix-a--mapping-to-existing-code)
+26. [Appendix B — Proposed implementation plan task IDs](.#appendix-b--proposed-implementation-plan-task-ids)
+27. [Appendix C — ADR decision record](.#appendix-c--adr-decision-record)
+35. [ADAS — Agent Design Search (sub-capability)](.#adas--agent-design-search-sub-capability)
 
 ---
 
@@ -306,7 +306,7 @@ It does **not** confirm:
 
 ## 6. Gap analysis
 
-> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#543-implementation-state-phase-w-adapt--done).
+> **Historical audit (2026-06-05).** All gaps below were closed by Phase W-ADAPT (Wave 0–7). For current delivery status see [§19](.#19-phased-implementation-roadmap--phase-w-adapt) and canon [§54.3](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md#543-implementation-state-phase-w-adapt--done).
 
 ### 6.1 Missing components (must build) — **Done (W-ADAPT)**
 
@@ -376,7 +376,7 @@ It extends (does not replace) the profile adaptation loop: same **observe → pr
 | Strategy | MAS (Meta Agent Search) is one replaceable `AgentDesignStrategy`; it does not own the control plane |
 
 **Canonical detail:** [`satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md`](satellites/ADAPTIVE_HARNESS_INTELLIGENCE_agent_design_search.md)  
-**ADR:** [ADR-ADAPT-002](../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md) — ADAS inside AHI, not separate layer  
+**ADR:** [ADR-ADAPT-002](../technical/adr/entries/2026-06-22/ADR-ADAPT-002.md) — ADAS inside AHI, not separate layer
 **Plan:** Phase **AHI-ADAS** in [`plan/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md)
 
 ---

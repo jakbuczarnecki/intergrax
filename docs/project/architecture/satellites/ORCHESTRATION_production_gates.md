@@ -51,9 +51,9 @@ Surface adapter -> contract validation -> TaskEnvelope -> TaskClassifier -> Plan
 | Module | Role |
 |--------|------|
 | `applications/_shared/task_intake.py` | Shared intake helpers |
-| `fastapi_core/` | HTTP auth + request context |
-| `runtime/nexus/orchestration/` | Classifier, planner, graph |
-| `runtime/interactions/` | Slack/Teams interaction adapters |
+| `fastapi_core` | HTTP auth + request context |
+| `runtime/nexus/orchestration` | Classifier, planner, graph |
+| `runtime/interactions` | Slack/Teams interaction adapters |
 
 **Audit layer:** INTEGRAX_HARNESS_AUDIT_MAP §3 (Interface and Task Intake).
 
@@ -67,8 +67,8 @@ Long-running and asynchronous work uses the Tier-0 queueing plane — not ad-hoc
 
 | Module | Role |
 |--------|------|
-| `intergrax/queueing/` | Task index, registry, worker contracts |
-| `intergrax/distributed/` | Rate limiting, distributed locks |
+| `intergrax/queueing` | Task index, registry, worker contracts |
+| `intergrax/distributed` | Rate limiting, distributed locks |
 | Integration `message_bus` providers | Celery, RabbitMQ, Redis, Kafka |
 
 ## 49.2 Orchestration integration
@@ -374,7 +374,7 @@ Both dimensions apply to the **same** `NexusLoop.handle_task()` path.
 |--------------|-----------|------------------|
 | Tier-2 agent calls another agent import | Breaks tier boundaries | Nexus graph node or `HANDOFF` |
 | Expect `MULTI_AGENT` for docs→web→synthesis pipeline | Label means same-capability competition | `graph_spec` or `*.pipeline` |
-| Background thread in agent for scheduling | Bypasses queue/policy/trace | `queueing/` + host worker |
+| Background thread in agent for scheduling | Bypasses queue/policy/trace | `queueing` + host worker |
 | One host route without `capability` for production chat | Falls through to `SINGLE_AGENT_DEFAULT` | L1 explicit cap or L3 classifier (COG-3) |
 | Parallel nodes without merge strategy | User gets opaque multi-block text | Set `merge_strategy`; plan ORCH-5.4 semantic merge |
 
@@ -454,7 +454,7 @@ Authors combine **one value per dimension** (where applicable). Dimensions are o
 |------|------|--------------|--------------|----------------------|
 | `A1` | Reactive on-demand | Up on demand or idle daemon | Per user/API message | `POST …/run` or MCP tool |
 | `A2` | Always-on daemon | Continuous | Same as A1 + maintenance jobs | uvicorn/systemd + health |
-| `A3` | Scheduled / queued | Worker process | Cron, queue consumer, webhook enqueue | `queueing/` consumer + optional notify |
+| `A3` | Scheduled / queued | Worker process | Cron, queue consumer, webhook enqueue | `queueing` consumer + optional notify |
 | `A4` | Hybrid | Daemon + workers | Interactive + background `Task`s | A2 + A3 combined |
 
 ### Dimension B — Routing layer (who picks capability/agent)
@@ -947,7 +947,7 @@ CFG-01–13, 15–16, 18–19: **runtime Done** at harness + reference-host leve
 
 **Remaining harness-default queue:** §6.1 gate maintenance only.
 
-**Product-gated (§6.3):** FLOW-8 product host · CFG-14 LKW hybrid daemon · GOV-PROD.1 dashboard · new `applications/<product>/`.
+**Product-gated (§6.3):** FLOW-8 product host · CFG-14 LKW hybrid daemon · GOV-PROD.1 dashboard · new `applications/<product>`.
 
 **Not default queue:** Band 3 business agents (K.1/K.2) — [`plan/PLATFORM_FOUNDATION.md`](plan/PLATFORM_FOUNDATION.md) §6.3.
 

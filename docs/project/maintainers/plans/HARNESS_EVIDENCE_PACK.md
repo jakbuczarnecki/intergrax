@@ -3,7 +3,7 @@
 **Phase:** HEP (Harness Evidence Pack)  
 **Band:** 2ae  
 **Hub register:** [`plan/PLATFORM_FOUNDATION.md`](PLATFORM_FOUNDATION.md) §6.1aw  
-**Architecture (DX owns smoke/e2e evidence):** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Architecture (DX owns smoke/e2e evidence):** [`architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../../architecture/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
 > **Placement:** §6.1 harness infrastructure extension — **not** §6.3 product work.  
@@ -34,7 +34,7 @@
 | **Idea label** | `harness-evidence-pack-hep-0-1` |
 | **Verdict** | `partial_overlap` |
 | **Type** | `harness_capability` · `improvement` |
-| **Tier** | Tier-0 (`intergrax/cli/`, `intergrax/runtime/evidence/`) |
+| **Tier** | Tier-0 (`intergrax/cli`, `intergrax/runtime/evidence`) |
 | **Domains** | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` (primary) · `PLATFORM_FOUNDATION` (hub) |
 
 **Reason:** Mechanisms exist across IDEAL-* gates, doctor, trace, policy, eval, cost, W-OPS, and W-ADAPT — but no single **productized runtime certification path** (`intergrax certify core`). Value = packaging + executable proof + onboarding clarity.
@@ -51,7 +51,7 @@ Intergrax is **architecture-heavy** (32/32 L3 scorecard, extensive CI gates) but
 - W-ADAPT L4 evidence measures adaptive utility improvement — not core E2E certification.
 - Agent certification (`agent_certification.py`) is per-agent — not harness core.
 
-**Goal:** One operator path — `intergrax certify core` — with JSON/Markdown report under `build/evidence/core_certification/`.
+**Goal:** One operator path — `intergrax certify core` — with JSON/Markdown report under `build/evidence/core_certification`.
 
 ---
 
@@ -139,8 +139,8 @@ Condensed matrix from external infrastructure audit → existing evidence → ga
 |----|------|----------|--------|-------------|---------------------|
 | **EVID-CORE-01** | HEP-0 | P1 | **Done** | External audit → evidence matrix in plan | § External audit mapping (2026-06-21) |
 | **EVID-CORE-02** | HEP-0 | P1 | **Done** (doc) | Certification spec: CI gate vs certify-core vs W-ADAPT L4 | § Certification semantics + § CORE levels delivered in docs; **code enums** (`CoreCertificationLevel`, etc.) ship with EVID-CORE-03 in C1 — not a separate reopen of this row |
-| **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence/` — Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
-| **EVID-CORE-04** | HEP-1 | P0 | **Done** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1\|L2\|L3`; exit non-zero on failure |
+| **EVID-CORE-03** | HEP-0 | P1 | **Done** | Runtime scenario contracts (12 scenarios) | `intergrax/runtime/evidence` — Pydantic contracts; deterministic; no network; `validate_core_scenario_catalog()` |
+| **EVID-CORE-04** | HEP-1 | P0 | **Done** | `intergrax certify core` CLI | `intergrax/cli/certify.py`; `--level L1/|L2/|L3`; exit non-zero on failure |
 | **EVID-CORE-05** | HEP-1 | P1 | **Done** | JSON + Markdown certification report | `build/evidence/core_certification/report.json` + `report.md` |
 | **EVID-CORE-06** | HEP-1 | P2 | **Done** | README / HARNESS_ENVIRONMENT evidence path | Quick start + HARNESS_ENVIRONMENT § Core certification; mock vs live narrative |
 
@@ -189,7 +189,7 @@ tests/unit/runtime/evidence/
 
 **Follow-up (EVID-CORE-FU-01):** **Done** — selected live Tier-0 probes alongside deterministic CORE certification; see § EVID-CORE-FU-01 closeout. Does not replace CORE-L* certification.
 
-**Tier boundaries:** Tier-0 only — no `applications/` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
+**Tier boundaries:** Tier-0 only — no `applications` imports in evidence runner; use `reference_harness.py` / echo agent patterns.
 
 **Optional preflight:** `certify core --with-doctor` may run doctor checks before scenarios — does not add scenarios to doctor.
 
@@ -205,7 +205,7 @@ tests/unit/runtime/evidence/
 | Report JSON/Markdown | `intergrax/runtime/evidence/certification_report.py` |
 | CLI | `intergrax/cli/certify.py` · `intergrax certify core` |
 | Public exports | `intergrax/runtime/evidence/__init__.py` |
-| Unit tests | `tests/unit/runtime/evidence/` (incl. `test_certify_cli.py`) |
+| Unit tests | `tests/unit/runtime/evidence` (incl. `test_certify_cli.py`) |
 
 **Verify:** `uv run pytest tests/unit/runtime/evidence -q` · `uv run intergrax certify core --level L2`
 
@@ -291,7 +291,7 @@ HEP-2 may read `build/evidence/core_certification/report.json` as an input artif
 | **EVID-TRACE-01** | HEP-2 | P1 | **Done** | Trace timeline contract | Canonical timeline models for evidence runs; stable event kinds; artifact refs; no CLI yet |
 | **EVID-TRACE-02** | HEP-2 | P1 | **Done** | Policy/budget/HITL facets | Timeline can represent policy decisions, budget markers, HITL markers, scenario lifecycle |
 | **EVID-TRACE-03** | HEP-2 | P1 | **Done** | `intergrax trace show` CLI | Renders timeline from HEP-1 report/evidence artifacts; no UI |
-| **EVID-TRACE-04** | HEP-2 | P2 | **Done** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace/` |
+| **EVID-TRACE-04** | HEP-2 | P2 | **Done** | Trace export JSON/Markdown | Writes timeline JSON/Markdown under `build/evidence/trace` |
 
 ---
 
@@ -442,7 +442,7 @@ The posture surface should make Intergrax easier to evaluate without reading the
 | **EVID-POSTURE-01** | HEP-3 | P1 | **Done** | Evidence posture contract | Pydantic/read-model contract for posture summary; no CLI yet |
 | **EVID-POSTURE-02** | HEP-3 | P1 | **Done** | Evidence posture collector | Reads existing artifacts and optional command outputs; no new runtime proof |
 | **EVID-POSTURE-03** | HEP-3 | P1 | **Done** | `intergrax evidence posture` CLI | Renders current evidence posture to stdout |
-| **EVID-POSTURE-04** | HEP-3 | P2 | **Done** | Posture export JSON/Markdown | Writes posture artifacts under `build/evidence/posture/` |
+| **EVID-POSTURE-04** | HEP-3 | P2 | **Done** | Posture export JSON/Markdown | Writes posture artifacts under `build/evidence/posture` |
 
 ---
 
@@ -574,7 +574,7 @@ Expected posture summary should clearly state:
 | **Idea label** | `selected-live-tier0-probes` |
 | **Verdict** | `approved_for_small_follow_up` (Mode I approved — small follow-up only) |
 | **Type** | `harness_capability` · `improvement` · `evidence_packaging` |
-| **Tier** | Tier-0 (`intergrax/runtime/evidence/`, future live probe runner) |
+| **Tier** | Tier-0 (`intergrax/runtime/evidence`, future live probe runner) |
 | **Domains** | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` · `PLATFORM_FOUNDATION` |
 
 **Context (do not conflate):**
@@ -762,7 +762,7 @@ HEP-1/2/3 and EVID-CORE-FU-01 prove core certification, trace timeline, posture 
 
 ### Target outcome
 
-After EVID-EVAL, Intergrax should provide a small operator-facing eval evidence path that packages existing eval checks into deterministic JSON/Markdown artifacts under `build/evidence/eval/`.
+After EVID-EVAL, Intergrax should provide a small operator-facing eval evidence path that packages existing eval checks into deterministic JSON/Markdown artifacts under `build/evidence/eval`.
 
 ### Non-goals
 
@@ -883,7 +883,7 @@ The current evidence path proves core certification, trace evidence, posture agg
 
 ### Target outcome
 
-After EVID-COST, Intergrax should provide a small operator-facing cost evidence path that packages existing local budget/cost/trace information into deterministic JSON/Markdown artifacts under `build/evidence/cost/`.
+After EVID-COST, Intergrax should provide a small operator-facing cost evidence path that packages existing local budget/cost/trace information into deterministic JSON/Markdown artifacts under `build/evidence/cost`.
 
 ### Non-goals
 
@@ -1022,7 +1022,7 @@ Minimal ROI is **closed**. Cost evidence and the operator-facing evidence path c
 | 1 | EVID-COST Mode I / spec | 1 | **Done** | Approve the cost evidence wave and define scope/non-goals |
 | 2 | EVID-COST contracts | 1 | **Done** | Define report/result contracts for cost evidence |
 | 3 | EVID-COST runner / collector | 1 | **Done** | Package existing cost/budget information into evidence results |
-| 4 | EVID-COST CLI + JSON/Markdown export | 1 | **Done** | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost/` |
+| 4 | EVID-COST CLI + JSON/Markdown export | 1 | **Done** | Add `intergrax evidence cost` and write artifacts under `build/evidence/cost` |
 | 5 | EVID-COST posture integration + closeout | 1 | **Done** | Add optional posture signal and close EVID-COST docs |
 | 6 | Final evidence operator path closeout | 1 | **Done** | Document one canonical evidence onboarding flow |
 
@@ -1179,7 +1179,7 @@ Register future rows in this file when Mode I approves each wave.
 
 ## Definition of Done (HEP-1)
 
-1. **Contract** — Pydantic report + scenario contracts in `intergrax/runtime/evidence/`
+1. **Contract** — Pydantic report + scenario contracts in `intergrax/runtime/evidence`
 2. **Trace** — scenarios assert `RuntimeEvent` / trace persistence where applicable
 3. **Test** — integration tests deterministic, no network
 4. **Documentation** — this plan + EVID-CORE-06 onboarding path

@@ -54,7 +54,7 @@ Deferred: webhook sink, host-side event signing.
 
 ## Compliance
 
-- Tier boundaries preserved — EBE in `intergrax/runtime/attestation/`; no `agents/` imports in platform
+- Tier boundaries preserved — EBE in `intergrax/runtime/attestation`; no `agents` imports in platform
 - HOS unchanged — no receipt logic in unified journal
 - AgentReceipt remains external; no vendor SDK in Intergrax
 - Application ADR: `ADR-ATTESTATION_DEMO-001` records Tier-3 PoC decisions

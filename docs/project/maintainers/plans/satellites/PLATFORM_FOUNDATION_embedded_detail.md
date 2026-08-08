@@ -4,21 +4,21 @@
 
 ## Documentation model
 
-This file is the **implementation plan hub**. Detailed registers and appendices: [`plan/satellites/`](plan/satellites) — **load on demand**.
+This file is the **implementation plan hub**. Detailed registers and appendices: [`plan/satellites`](plan/satellites) — **load on demand**.
 
 ### Documentation boundary
 
 | Covers | Does **not** cover |
 |--------|---------------------|
-| Harness AI platform, Nexus Agent OS, Tier-0 catalogs, reference hosts, §6.1 maintenance, T-EXPAND tool waves | Architecture, roadmap, or deployment plan of a **specific business environment** (`applications/<product>/`) |
-| How Tier-2 agents and Tier-3 apps **plug into** the Harness | Architecture, roadmap, or deployment plan of a **specific business agent** (`agents/<name>/`) |
+| Harness AI platform, Nexus Agent OS, Tier-0 catalogs, reference hosts, §6.1 maintenance, T-EXPAND tool waves | Architecture, roadmap, or deployment plan of a **specific business environment** (`applications/<product>`) |
+| How Tier-2 agents and Tier-3 apps **plug into** the Harness | Architecture, roadmap, or deployment plan of a **specific business agent** (`agents/<name>`) |
 
-Each **business environment** and each **business agent** maintains its own `ARCHITECTURE.md`, local implementation plan, and product roadmap. See [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §1.1.
+Each **business environment** and each **business agent** maintains its own `ARCHITECTURE.md`, local implementation plan, and product roadmap. See [§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business) and [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §1.1.
 
 | Topic | Where |
 |-------|--------|
 | Strategic goal, decision hierarchy, work cycle | [`INTERGRAX_DEVELOPMENT_STRATEGY.md`](guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) |
-| Full architecture specification | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) (hub) · [`architecture/`](architecture) |
+| Full architecture specification | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) (hub) · [`architecture`](architecture) |
 | Phase status, gaps, priority | **This file** — **§4** ladder; **§4.0a** infrastructure vs business; **§6.3** / **§6.3a** = product work only |
 | Tier-0 integration catalog (what / where) | [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) + [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md) |
 | Tier-0 integration implementation (how) | **This file** Phase M |
@@ -49,13 +49,13 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | **Adaptive Harness Intelligence (AHI / L4 runtime)** | [Phase W-ADAPT](plan/CRITIC_VERIFICATION.md) · **§6.1t** · Band **2y** · [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) · **Appendix K** |
 | **LLM response envelope (typed completion contract)** | [Phase M-LLM-R](plan/LLM_ADAPTERS.md) · **§6.1v** · Band **2z** · [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) · **Appendix L** |
 | **LLM developer excellence (post-audit 2026-06-14)** | [Phase M-LLM-X](plan/LLM_ADAPTERS.md) · **§6.1ax** · Band **2ba** · ModelCatalog · routing · DX |
-| **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
-| **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · Band **2ab** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
-| **Integration harness expansion (audit 2026-06-02)** | [M.6 P6 register](#m6-p6--harness-integration-expansion-planned) · **§6.1y** · Band **2ac** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
+| **Integration catalog expansion (harness ROI slugs)** | [M.6 P4 register](.#m6-p4--harness-platform-expansion-done) · **§6.1w** · Band **2aa** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
+| **Integration harness depth (audit 2026-06-02)** | [M.6 P5 register](.#m6-p5--harness-integration-depth-done--3334) · **§6.1x** · Band **2ab** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
+| **Integration harness expansion (audit 2026-06-02)** | [M.6 P6 register](.#m6-p6--harness-integration-expansion-planned) · **§6.1y** · Band **2ac** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) |
 | **LLM guardrail integrations (M.12 / GR-INT)** | [Phase M.12](plan/INTEGRATIONS.md) · **§6.1an** · Band **2ay** · [architecture/INTEGRATIONS.md](architecture/INTEGRATIONS.md) §47 · [plan/UNIFIED_EXECUTION_RUNTIME.md](plan/UNIFIED_EXECUTION_RUNTIME.md) GR-DOC |
 | Tier-3 application environment (self-contained deploy) | [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](architecture/TIER3_APPLICATION_ENVIRONMENT.md) |
-| Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
-| Tier-3 application hosts (`applications/<app>/`) | [`applications/USAGE.md`](../applications/USAGE.md) |
+| Tier-3 composition engine (manifest, wiring API) | [`intergrax/applications/USAGE.md`](../../../../../applications/USAGE.md) |
+| Tier-3 application hosts (`applications/<app>`) | [`applications/USAGE.md`](../../../../../applications/USAGE.md) |
 | Application scaffold & deploy plan | **This file** Phase N |
 | Business-agent go/no-go checklist | **[Appendix A](plan/PLATFORM_FOUNDATION.md)** |
 | Technical debt backlog (analysis only) | **[Appendix B](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** |
@@ -81,7 +81,7 @@ Each **business environment** and each **business agent** maintains its own `ARC
 | **Full architecture audit closeout (32 layers, scope C)** | [Phase FAUDIT-32](plan/satellites/PLATFORM_FOUNDATION_phase_closeout.md) · **§6.1ah** · Band **2ad** · **[Appendix M](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** · source: audit 2026-06-06 (`scope: C`, `audit-and-fix`) |
 | **Ideal Harness L3 depth (32-layer uplift)** | [Phase IDEAL-L3](plan/IDEAL_HARNESS_L3.md) · **§6.1at** · Band **2ax** |
 | **Ideal architecture gap closeout (post-L3 audit 2026-06-09)** | [Phase AUDIT-IDEAL](plan/AUDIT_IDEAL_2026.md) · **§6.1au** · Band **2az** · [`ARCHITECTURE_DEBT_REGISTER.md`](guides/ARCHITECTURE_DEBT_REGISTER.md) |
-| Infrastructure vs business scope split | **§4.0a** · closed §6.1b–g queues → [`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) · [§6.3a](#63a-business-backlog-register-consolidated) |
+| Infrastructure vs business scope split | **§4.0a** · closed §6.1b–g queues → [`plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md`](plan/satellites/PLATFORM_FOUNDATION_06_closed_queues.md) · [§6.3a](.#63a-business-backlog-register-consolidated) |
 
 **Note on audit source documents:** Some historical audit narratives (e.g. `HARNESS_APPLICATION_LAYER_AUDIT.md`) may live outside the repo. **Task traceability in this plan is canonical** — H-APP (43 tasks), W-OPS, MEM, DX, AA registers below; do not re-derive scope from missing files.
 
@@ -113,7 +113,7 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Scope | Score | Notes |
 |-------|-------|-------|
 | Architecture §1–41 (tiers, Nexus, graph, repo split) | **~98%** | Phases A–O, N, Q+ complete |
-| §42 Unified Execution Runtime | **~99%** | UAEP Protocol, hook parity, planner split (`step_planner/`), harness getattr audit |
+| §42 Unified Execution Runtime | **~99%** | UAEP Protocol, hook parity, planner split (`step_planner`), harness getattr audit |
 | Laboratory workflow (inspect, decide) | **~99%** | D.1–D.5, metrics parity, debug API |
 | Harness quality (Phase Q) | **Done** | Appendix C — gate **417** at Phase Q close |
 | Harness hardening (Phase Q+) | **Done** | Appendix D — typing, monolith splits, zero grandfathered `getattr` |
@@ -126,16 +126,16 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 | Phase V runtime remediation (V-REM) | **Done** | 10/10 tasks — capability graph, lifecycle routing, prompt governance, V-SEC wiring, EvalRunner gate |
 | Model & modality plane (Phase W-ML) | **Done** (2026-06-02) | Vision/speech profiles, tools, remote adapters, `harness.vision_qa` — canon §7.1.9 |
 | **Harness completion backlog** | **Done** (2026-06-02) | §4.1 — U-Leg, typing/CI, platform skills, research UAEP parity |
-| **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](#p-ext6--production-closure-paydown) · Appendix I |
+| **Plugin catalogs (Phase P-Ext)** | **Done** (2026-06-02) | [Phase P-Ext](.#phase-p-ext--plugin-catalogs-integrations-tools-skills) · [P-Ext.6 paydown](.#p-ext6--production-closure-paydown) · Appendix I |
 | **Application environment (Phase H-APP)** | **Done** (2026-06-03) | [Phase H-APP](plan/TIER3_APPLICATION_ENVIRONMENT.md) · 43 tasks from application-layer audit |
-| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](plan/TIER3_APPLICATION_ENVIRONMENT.md) · **47/47 Done** — [§4.0a](#40a-implementation-scope-split-infrastructure-vs-business) |
-| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](plan/TIER3_APPLICATION_ENVIRONMENT.md) · platform **Done**; domain **Deferred** — [§6.3a](#63a-business-backlog-register-consolidated) |
+| **Developer authoring UX (Phase DX)** | **Done** (2026-06-02) | [Phase DX](plan/TIER3_APPLICATION_ENVIRONMENT.md) · **47/47 Done** — [§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business) |
+| **Agents & applications conformance (Phase AA)** | **Platform Done** (2026-06-02) | [Phase AA](plan/TIER3_APPLICATION_ENVIRONMENT.md) · platform **Done**; domain **Deferred** — [§6.3a](.#63a-business-backlog-register-consolidated) |
 | **Memory platform (Phase MEM)** | **Done** (2026-06-02) | [Phase MEM](plan/MEMORY.md) · **48/48** |
 | **Governance audit (GOV-AUDIT)** | **Done** (docs) | [Phase GOV-AUDIT](plan/UNIFIED_EXECUTION_RUNTIME.md) |
-| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](plan/ORCHESTRATION.md) · [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed) |
-| **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](plan/TOOLS.md) · [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed) |
-| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](plan/INTEGRATIONS.md) · [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed) |
-| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](plan/RAG.md) · [§6.1e](#61e-harness-implementation-queue--rag-closeout-closed) |
+| **Orchestration closeout (Phase ORCH)** | **Done** (2026-06-05) | [Phase ORCH](plan/ORCHESTRATION.md) · [§6.1b](.#61b-harness-implementation-queue--orchestration-closeout-closed) |
+| **Tools/skills closeout (Phase TS)** | **Done** (2026-06-02) | [Phase TS](plan/TOOLS.md) · [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed) |
+| **Integration closeout (Phase INT)** | **Done** (2026-06-02) | [Phase INT](plan/INTEGRATIONS.md) · [§6.1d](.#61d-harness-implementation-queue--integration-closeout-closed) |
+| **RAG closeout (Phase RAG)** | **Done** (2026-06-02) | [Phase RAG](plan/RAG.md) · [§6.1e](.#61e-harness-implementation-queue--rag-closeout-closed) |
 | Product agents (Phase K) | **Deferred** | K.1/K.2 — end of priority list |
 | Tier-3 product applications | **Deferred** | New apps / product routes — after harness backlog |
 
@@ -190,11 +190,11 @@ hypothesis → capability → contract → registration → Nexus → trace → 
 
 
 
-**Status:** **Done** (2026-06-06) — 32-layer audit (`scope: C`) + **23/23 FAUDIT remediation** implemented → [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed)  
+**Status:** **Done** (2026-06-06) — 32-layer audit (`scope: C`) + **23/23 FAUDIT remediation** implemented → [§6.1ah](.#61ah-harness-implementation-queue--faudit-32-remediation-closed)
 **Source:** [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §8  
 **Traceability:** **[Appendix M](plan/satellites/PLATFORM_FOUNDATION_appendices.md)** (layer scorecard + gap → FAUDIT ID matrix)
 
-**Audit verdict (2026-06-06, pre-remediation snapshot):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection at audit time showed **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** tier-boundary violation, **~20 High** residuals — all routed to **FAUDIT.\*** and **closed** via [§6.1ah](#61ah-harness-implementation-queue--faudit-32-remediation-closed) + [§6.1ai](#61ai-harness-implementation-queue--faudit-32-follow-up-closed).
+**Audit verdict (2026-06-06, pre-remediation snapshot):** Harness **control-plane wiring closeouts** (ORCH, TS, INT, RAG, CTX, PE, AS, REG, CG, OBS, REL, SEC, COST, EVAL, W-ADAPT, M-LLM-R) are **Done** as documented — but **closeout ≠ full layer maturity**. Per-layer inspection at audit time showed **12/32 layers at L3+**, **19/32 at L2**, **1 Critical** tier-boundary violation, **~20 High** residuals — all routed to **FAUDIT.\*** and **closed** via [§6.1ah](.#61ah-harness-implementation-queue--faudit-32-remediation-closed) + [§6.1ai](.#61ai-harness-implementation-queue--faudit-32-follow-up-closed).
 
 **Post-remediation (2026-06-06):** **0 Critical** open; tier CI gate green; **23/23 FAUDIT** + follow-up Done.
 

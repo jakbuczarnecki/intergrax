@@ -9,7 +9,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature plan (1:1):** [`../../plan/TOKEN_OPTIMIZATION.md`](../../plan/TOKEN_OPTIMIZATION.md)  
 **Plan satellite:** [`../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md`](../../plan/satellites/TOKEN_OPTIMIZATION_domain_plan_cross_references.md)  
-**Source audit:** [`../../../audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)  
+**Source audit:** [`../../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)
 **Purpose:** Ensure every architecture domain participating in the `TOKEN_OPTIMIZATION` multi-layer feature has a visible cross-reference and a precise ownership statement.
 
 ---

@@ -1,6 +1,6 @@
 # research_application — architecture
 
-Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop e
 
 ## Deploy triad
 
-- `docker/`, `BUILD_AND_DEPLOY.md` — verified by deploy triad gate
+- `docker`, `BUILD_AND_DEPLOY.md` — verified by deploy triad gate
 
 ## Dependencies
 
@@ -30,7 +30,7 @@ Multi-agent HTTP host for **ResearchAgent** + **SummaryAgent** with Nexus loop e
 
 ## Tests
 
-- `tests/` host smoke + `test_research_manifest_wiring`
+- `tests` host smoke + `test_research_manifest_wiring`
 
 ## Runtime recovery (APP-EVOL-5)
 

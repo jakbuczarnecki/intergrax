@@ -1,10 +1,10 @@
 # Integrations — Implementation Plan
 
-**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 **RAG engine (layer 14):** [`architecture/RAG.md`](../../architecture/RAG.md) ↔ [`plan/RAG.md`](RAG.md) — M-RAG, M-RAG-DEPTH, **M-RAG-GRAPH** (GraphRAG platform). This plan covers **integration catalog** slugs only; RAG adapters for `graph_store` are owned by M-RAG.38–M-RAG.51 in [`plan/RAG.md`](RAG.md).
 
@@ -62,7 +62,7 @@ Provider runtime matrix:
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/INTEGRATIONS.md`](../../technical/guides/audit_slices/INTEGRATIONS.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -77,7 +77,7 @@ Provider runtime matrix:
 | H-INT-GRAPH-2 | `orientdb` | graph_store | **P3** | **Done** | M-RAG.50 | OrientDB OpenCypher HTTP bridge |
 | H-INT-GRAPH-3 | `arangodb` | graph_store | **P3** | **Done** | M-RAG.51 | ArangoDB AQL HTTP bridge |
 
-**Per-slug checklist:** contract gate → `providers/graph_store/<slug>/` → health probe → bootstrap register → RAG `RagGraphStoreBackend` adapter (M-RAG.38 registry) → gate green.
+**Per-slug checklist:** contract gate → `providers/graph_store/<slug>` → health probe → bootstrap register → RAG `RagGraphStoreBackend` adapter (M-RAG.38 registry) → gate green.
 
 **Explicitly out of scope:** Microsoft GraphRAG library vendoring (harness-native indexer M-RAG.47); TigerGraph / JanusGraph unless product reprioritizes.
 
@@ -101,12 +101,12 @@ Load **only** the satellite matching your task or cited gap ID.
 ## Phase INTEGRATIONS-2A — provider category contracts (Done)
 
 **Purpose:** Category-specific base contracts aligned with `layout.py` `SLUG_CATEGORY` taxonomy before concrete provider migration.  
-**Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-category-contract-layer-integrations-2a)
 **Detail plan:** [`PROVIDER_CATEGORY_CONTRACTS.md`](PROVIDER_CATEGORY_CONTRACTS.md)
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
 |----|------|----------|--------|-------------|------------|
-| **INTEGRATIONS-2A** | Code | P1 | **Done** | `intergrax/runtime/integrations/categories/` + `PROVIDER_CATEGORY_CONTRACT_REGISTRY` | All 31 `SLUG_CATEGORY` folders covered; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; `PlatformIntegrationKind` extended; focused tests green |
+| **INTEGRATIONS-2A** | Code | P1 | **Done** | `intergrax/runtime/integrations/categories` + `PROVIDER_CATEGORY_CONTRACT_REGISTRY` | All 31 `SLUG_CATEGORY` folders covered; `observability_backend` aliases **`ObservabilityVendorIntegrationContract`**; `PlatformIntegrationKind` extended; focused tests green |
 
 **INTEGRATIONS-2A status (2026-06-28):**
 
@@ -120,7 +120,7 @@ Load **only** the satellite matching your task or cited gap ID.
 ## Phase INTEGRATIONS-2B — observability provider contract migration pilot (Done — pattern hardened)
 
 **Purpose:** Adapt existing `observability_backend` provider packages to category contracts without duplicating providers.  
-**Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)  
+**Architecture:** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md#provider-package-pattern-integrations-2b-follow-up)
 **Pattern:** existing provider package + new contract-based integration class; legacy query facade remains backward-compatible.
 
 | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -131,7 +131,7 @@ Load **only** the satellite matching your task or cited gap ID.
 **INTEGRATIONS-2B status (2026-06-28):**
 
 - **Langfuse** accepted as reference pilot **after** scaffold/pattern hardening (INTEGRATIONS-2B-FOLLOWUP)
-- **`LangfuseObservabilityIntegration`** under `intergrax/integrations/providers/observability_backend/langfuse/`
+- **`LangfuseObservabilityIntegration`** under `intergrax/integrations/providers/observability_backend/langfuse`
 - Legacy **`create_langfuse_observability_backend`** / **`register_langfuse_integration`** remain backward-compatible
 - Maintenance shell generators (`wire_p2` through `wire_p7`) preserve contract-aware packages when `integration.py` exists
 - Scaffold blockers for full provider migration **removed** (INTEGRATIONS-SCAFFOLD-P5-P7-CONTRACT-AWARE); full migration still **deferred** until a small multi-wave provider migration is validated
@@ -187,7 +187,7 @@ Load **only** the satellite matching your task or cited gap ID.
 - Legacy catalog factories unchanged; **`register.py`** remains legacy-compatible (no contract factory registration)
 - **`enabled=True`** without injectable client raises **`IntegrationConfigurationError`**; no vendor SDK imports in `integration.py`
 - **Registry v2 / contract registry wiring remains deferred**
-- **Deferred slugs (9):** `llm_guardrail` catalog slugs (`llm_guard`, `guardrails_ai`, `nemo_guardrails`, `openguardrails`, `presidio`, `llama_guard`, `lakera`, `azure_content_safety`, `bedrock_guardrails`) — shared `llm_guardrail/bundles/` layout without per-slug provider packages
+- **Deferred slugs (9):** `llm_guardrail` catalog slugs (`llm_guard`, `guardrails_ai`, `nemo_guardrails`, `openguardrails`, `presidio`, `llama_guard`, `lakera`, `azure_content_safety`, `bedrock_guardrails`) — shared `llm_guardrail/bundles` layout without per-slug provider packages
 - No LKW change; no global bootstrap registration
 
 **Migrated categories (30):** all `SLUG_CATEGORY` folders except deferred `llm_guardrail` slugs (category contract exists; per-slug packages deferred).
@@ -223,13 +223,13 @@ Load **only** the satellite matching your task or cited gap ID.
 
 **Cut-over registry:** `CUTOVER_SLUGS` in `tests/unit/integrations/providers/test_provider_runtime_cutover.py` — derived from `SLUG_CATEGORY` minus deferred `llm_guardrail` slugs (not a hand-maintained subset)
 
-**Deferred (9):** `azure_content_safety`, `bedrock_guardrails`, `guardrails_ai`, `lakera`, `llama_guard`, `llm_guard`, `nemo_guardrails`, `openguardrails`, `presidio` — shared `bundles/` layout; do not mark cut over until package normalization.
+**Deferred (9):** `azure_content_safety`, `bedrock_guardrails`, `guardrails_ai`, `lakera`, `llama_guard`, `llm_guard`, `nemo_guardrails`, `openguardrails`, `presidio` — shared `bundles` layout; do not mark cut over until package normalization.
 
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.6, §7.7 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -258,7 +258,7 @@ Load **only** the satellite matching your task or cited gap ID.
 ### 6.1x Harness implementation queue — Integration depth (M.6 P5 done)
 
 **Purpose:** Closeout record for **Phase M.6 P5** (Band 2ab). **Status:** **Done** (2026-06-02) — **33/34**.  
-**Register:** [M.6 P5 — Master register](#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](#62af-phase-m6-p5-execution-order-band-2ab--planned)  
+**Register:** [M.6 P5 — Master register](.#m6-p5--master-register-34-slugs) · **Execution order:** [§6.2af](.#62af-phase-m6-p5-execution-order-band-2ab--planned)
 **Policy:** One slug per PR (or one harden wave ≤4 slugs); runs **in parallel** with §6.1 maintenance — pull when W-OPS / W-ADAPT / EVAL / prod stack needs the slug.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -270,12 +270,12 @@ Load **only** the satellite matching your task or cited gap ID.
 | 4 | H-INT-9 | M-P5.29–M-P5.34 | P2 reserve: codecov, trivy, grafana_oncall, opentelemetry_collector, snowflake, supabase | **P2** | **Done** |
 | 5 | PRE | M-P5-PRE.1 | Tier-3 presets: `harness_metrics_stack`, `harness_eval_stack`, `harness_async_stack`, `harness_ci_stack` | **P0** | **Done** |
 
-**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](#m6-p5--harness-integration-depth-done--3334).
+**Explicitly excluded:** Band 3 product agents; see [M.6 P5 register](.#m6-p5--harness-integration-depth-done--3334).
 
 ### 6.1y Harness implementation queue — Integration expansion (M.6 P6 Done)
 
 **Purpose:** Ordered backlog for **Phase M.6 P6** (Band 2ac). **Status:** **Done** (2026-06-02) — **32/32**.  
-**Register:** [M.6 P6 — Master register](#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](#62ag-phase-m6-p6-execution-order-band-2ac--done)  
+**Register:** [M.6 P6 — Master register](.#m6-p6--master-register-32-slugs) · **Execution order:** [§6.2ag](.#62ag-phase-m6-p6-execution-order-band-2ac--done)
 **Policy:** One slug per PR (or one CAT wave before first slug in a new category); runs **in parallel** with §6.1 maintenance — pull when security/sandbox/identity/GitOps/speech harness gaps block ops.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -292,14 +292,14 @@ Load **only** the satellite matching your task or cited gap ID.
 | 9 | PRE | M-P6-PRE.1 | Tier-3 presets: `harness_security_stack`, `harness_sandbox_stack`, `harness_identity_stack`, `harness_gitops_stack` | **P0** | **Done** |
 | 10 | WIRE | M-P6-WIRE.1–7 | Tool surface + sandbox/speech/identity bridges + promote gate + infra `p6` | **P0** | **Done** |
 
-**Per-slug checklist:** see [M.6 P6 register](#m6-p6--harness-integration-expansion-planned).
+**Per-slug checklist:** see [M.6 P6 register](.#m6-p6--harness-integration-expansion-planned).
 
 **Closeout target:** catalog **167** slugs; optional `HARNESS_M6_P6_PROBE_SLUGS`; four Tier-3 presets; gate green.
 
 ### 6.1z Harness implementation queue — Agent-developer expansion (M.7 P7 done)
 
 **Purpose:** Ordered backlog for **Phase M.7 P7** (Band 2ad). **Status:** **Done** (2026-06-08) — **18/18**.  
-**Register:** [M.7 P7 — Master register](#m7-p7--agent-developer-integration-expansion-done--1818)  
+**Register:** [M.7 P7 — Master register](.#m7-p7--agent-developer-integration-expansion-done--1818)
 **Policy:** Reuse existing category contracts; `_shared/p8` thin factories; auto-wire `search_provider` / `document_parser` / `vector_store` catalog tools.
 
 | Order | Wave | IDs | Slugs (summary) | Priority | Status |
@@ -317,7 +317,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.2bd Phase INT execution order (Band 2l — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase INT](plan/INTEGRATIONS.md) · queue: [§6.1d](#61d-harness-implementation-queue--integration-closeout-closed)
+**Status:** **Done** · register: [Phase INT](plan/INTEGRATIONS.md) · queue: [§6.1d](.#61d-harness-implementation-queue--integration-closeout-closed)
 
 | Step | ID | Deliverable | Priority |
 |------|-----|-------------|----------|
@@ -329,7 +329,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ### 6.2bc Phase TS execution order (Band 2k — closed 2026-06-02)
 
-**Status:** **Done** · register: [Phase TS](plan/TOOLS.md) · queue: [§6.1c](#61c-harness-implementation-queue--toolsskills-closeout-closed)
+**Status:** **Done** · register: [Phase TS](plan/TOOLS.md) · queue: [§6.1c](.#61c-harness-implementation-queue--toolsskills-closeout-closed)
 
 Work **one TS ID per PR**; after each step update the TS master table + §6.1c + paydown log; keep §6.1 scripts green.
 
@@ -344,7 +344,7 @@ Work **one TS ID per PR**; after each step update the TS master table + §6.1c +
 
 ### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done)
+**Status:** **Done** (2026-06-02) · register: [M.6 P5](.#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P5-CAT.1 → M-P5-CAT.2 → M-P5-CAT.3
@@ -359,7 +359,7 @@ Wave PRE (presets):         M-P5-PRE.1  (after H-INT-6 P0 slugs wired)
 **Parallelism:** H-INT-6 unblocks W-OPS metrics + multi-CI; H-INT-7 unblocks EVAL/W-ADAPT; H-INT-8 is lab-only.  
 **Closeout target:** catalog **136** slugs; `HARNESS_M6_P5_PROBE_SLUGS` + four Tier-3 presets; gate green.### 6.2ae Phase M.6 P4 execution order (Band 2aa — Done)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P4](#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
+**Status:** **Done** (2026-06-02) · register: [M.6 P4](.#m6-p4--harness-platform-expansion-done) · queue: [§6.1w](.#61w-harness-implementation-queue--integration-expansion-m6-p4-closed)
 
 ```text
 Wave H-INT-0 (categories):  M-P4-CAT.1 → M-P4-CAT.2  (before first slug in new category)
@@ -394,7 +394,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 ### 6.1av Harness implementation queue — Integrations audit maintenance (planned)
 
-**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../../../audit_results/2026-06-18/INTEGRATIONS.md)  
+**Source:** Layer 11 audit (2026-06-18) — `INTEGRATIONS` layer 13 · [`../audit_results/2026-06-18/INTEGRATIONS.md`](../../../audit_results/2026-06-18/INTEGRATIONS.md)
 **Priority ladder:** **Band 1** (§6.1) — catalog honesty + provider depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -410,7 +410,7 @@ Wave H-INT-5 (enterprise):  M-P4.17 → M-P4.18 → M-P4.19 → M-P4.20 → M-P4
 
 ### Speech catalog alignment (MOD-SPEECH-ARCH cross-ref)
 
-**Source:** Idea audit 2026-06-19 · [ADR-MOD-001](../../technical/adr/entries/2026-06-19/ADR-MOD-001.md)  
+**Source:** Idea audit 2026-06-19 · [ADR-MOD-001](../../technical/adr/entries/2026-06-19/ADR-MOD-001.md)
 **Owner domain:** [`plan/MODALITY.md`](MODALITY.md) MOD-SPEECH-ARCH.*  
 **Policy:** Hard cutover — delete `SpeechProvider` enum legacy; no transitional compatibility layer.
 
@@ -434,8 +434,8 @@ Close **INT-SPEECH-ARCH.1** in the same PR wave as **MOD-SPEECH-ARCH.4** (wiring
 
 **Status:** **Planned** — architecture & implementation backlog only (no code in this phase doc update)  
 **Prerequisites:** Phase INTEGRATIONS-LC **Done** · catalog **194** shipped slugs (`layout.py`) · Full Harness LC unchanged  
-**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — §Phase INT-P8  
-**Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../../architecture/satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8  
+**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) — §Phase INT-P8
+**Catalog (planned slugs):** [`architecture/satellites/INTEGRATIONS_provider_catalog.md`](../../architecture/satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8
 **Band:** 2ae (post–Full Harness LC strategic depth)  
 **Policy:** One implementation ID per PR; **do not** register planned slugs in `layout.py` until the matching task PR; **do not** mark any INT-P8 task **Done** until code ships.
 

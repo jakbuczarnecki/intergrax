@@ -8,15 +8,15 @@
 **Prerequisites:** Phase W-OPS **Done** · Phase ORCH/FLOW backpressure **Done** · `kubernetes` integration beta  
 **Goal:** Establish **19th domain pair** as canonical source for Harness Elastic Capacity Plane (ECP) — consolidate scattered scaling docs without runtime controller  
 **Priority ladder:** **Band 2an** (§4.0 PLATFORM_FOUNDATION) — **closed** on doc merge  
-**Execution order:** [§6.2an](#62an-phase-ecp-doc-execution-order-band-2an--closed) · queue: [§6.1an](#61an-harness-implementation-queue--elastic-capacity-domain-pair-closed)
+**Execution order:** [§6.2an](.#62an-phase-ecp-doc-execution-order-band-2an--closed) · queue: [§6.1an](.#61an-harness-implementation-queue--elastic-capacity-domain-pair-closed)
 
 **Delivery rule:** ECP-DOC.* = docs + ADR only; runtime work routes to ECP-DEPTH.*
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
-| ECP-DOC.1 | **`architecture/ELASTIC_CAPACITY_AND_SCALING.md`** — full ECP canon | **Done** | **Critical** | `docs/project/architecture/` | Hub links; audit §30 extension |
-| ECP-DOC.2 | **`plan/ELASTIC_CAPACITY_AND_SCALING.md`** — this file; ECP-DEPTH register | **Done** | **Critical** | `docs/project/maintainers/plans/` | 1:1 pair check green |
-| ECP-DOC.3 | **`docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md`** — ECP vs K8s HPA; tier separation | **Done** | High | `docs/project/technical/adr/` | Linked from architecture + adr README |
+| ECP-DOC.1 | **`architecture/ELASTIC_CAPACITY_AND_SCALING.md`** — full ECP canon | **Done** | **Critical** | `docs/project/architecture` | Hub links; audit §30 extension |
+| ECP-DOC.2 | **`plan/ELASTIC_CAPACITY_AND_SCALING.md`** — this file; ECP-DEPTH register | **Done** | **Critical** | `docs/project/maintainers/plans` | 1:1 pair check green |
+| ECP-DOC.3 | **`docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md`** — ECP vs K8s HPA; tier separation | **Done** | High | `docs/project/technical/adr` | Linked from architecture + adr README |
 | ECP-DOC.4 | **Hub update** — 19 domain pairs; audit routing for capacity | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | ECP-DOC.5 | **Cross-ref sync** — ORCHESTRATION §49, OBS §9.3, INTEGRATIONS k8s, AGENTS.md, audit map §30 | **Done** | High | `docs/*` | No orphan scaling narrative |
 | ECP-DOC.6 | **Gate script** — `python scripts/audit/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 19 pairs reported |
@@ -26,12 +26,12 @@
 ## Phase ECP-DEPTH — Elastic capacity runtime scaffold (Band 2ao — closed)
 
 **Status:** **Done** (2026-06-09) — **28/28 scaffold Done** (ECP-6.2 **Cancelled**)  
-**Honest outcome:** Contracts, `runtime/capacity/`, gate tests, disabled-by-default host wiring — **not** production fleet autoscaling.  
+**Honest outcome:** Contracts, `runtime/capacity`, gate tests, disabled-by-default host wiring — **not** production fleet autoscaling.
 **Prerequisites:** Phase ECP-DOC **Done**  
 **Goal (achieved):** Harness **L2** — typed control plane scaffold + CI evidence  
 **Production elasticity:** Phase **ECP-PROD** (below)  
 **Priority ladder:** **Band 2ao** — **closed** on scaffold; active queue = **ECP-PROD**  
-**Traceability:** [Appendix A](#appendix-a--elastic-capacity-traceability-phase-ecp-depth)
+**Traceability:** [Appendix A](.#appendix-a--elastic-capacity-traceability-phase-ecp-depth)
 
 **Delivery rule:** One **ECP-* ID per PR** → update master table + architecture §22 → `pytest -m gate` green.
 

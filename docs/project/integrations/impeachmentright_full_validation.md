@@ -2,9 +2,9 @@
 
 **Date:** 2026-07-21  
 **Verdict:** `FULLY_DEMONSTRABLE` (attestation) · platform completion → [`impeachmentright_platform_completion.md`](impeachmentright_platform_completion.md) (`FULLY_PLATFORM_READY`)  
-**Upstream GEC canon:** [`docs/project/technical/platform/governed_external_execution.md`](../technical/platform/governed_external_execution.md)  
-**Capability canon:** [`docs/project/technical/platform/execution_evidence_and_host_attestation.md`](../technical/platform/execution_evidence_and_host_attestation.md)  
-**Host lifecycle:** [`docs/project/technical/platform/governed_external_work_host_lifecycle.md`](../technical/platform/governed_external_work_host_lifecycle.md)  
+**Upstream GEC canon:** [`docs/project/technical/platform/governed_external_execution.md`](../technical/platform/governed_external_execution.md)
+**Capability canon:** [`docs/project/technical/platform/execution_evidence_and_host_attestation.md`](../technical/platform/execution_evidence_and_host_attestation.md)
+**Host lifecycle:** [`docs/project/technical/platform/governed_external_work_host_lifecycle.md`](../technical/platform/governed_external_work_host_lifecycle.md)
 **Readiness (lifecycle through proof):** [`impeachmentright_validation_readiness.md`](impeachmentright_validation_readiness.md)
 
 ---

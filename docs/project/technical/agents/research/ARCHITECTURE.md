@@ -24,9 +24,9 @@ Two-agent **research pipeline** for `research_application`: primary research + s
 
 ## Tests
 
-- UAEP smoke under `agents/research/tests/`
-- Application wiring: `tests/`
+- UAEP smoke under `agents/research/tests`
+- Application wiring: `tests`
 
 ## Host
 
-- Composed only in `applications/research_application/` (manifest + `environment` profile)
+- Composed only in `applications/research_application` (manifest + `environment` profile)

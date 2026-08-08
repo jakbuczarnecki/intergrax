@@ -1,6 +1,6 @@
-﻿# Architecture satellites (`docs/project/architecture/satellites/`)
+﻿# Architecture satellites (`docs/project/architecture/satellites`)
 
-**Parent directory:** [`../`](..) — token-efficient **hubs** (one file per domain).
+**Parent directory:** [`..`](..) — token-efficient **hubs** (one file per domain).
 
 This folder holds **extended architecture canon** split out of hubs for Cursor context budget (F4). Nothing here is deleted from the platform — it is the **full-depth** reference for § blocks that are too large for default agent reads.
 

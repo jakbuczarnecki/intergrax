@@ -1,8 +1,8 @@
 # Critic and Verification (CVL) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) · [`plan/CRITIC_VERIFICATION.md`](../plans/CRITIC_VERIFICATION.md)  
-**Audit map layers:** 25 (depth) · compact slice: [`audit_slices/CRITIC_VERIFICATION.md`](../../technical/guides/audit_slices/CRITIC_VERIFICATION.md)  
+**Domain pair:** [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) · [`plan/CRITIC_VERIFICATION.md`](../plans/CRITIC_VERIFICATION.md)
+**Audit map layers:** 25 (depth) · compact slice: [`audit_slices/CRITIC_VERIFICATION.md`](../../technical/guides/audit_slices/CRITIC_VERIFICATION.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ CVL-LC Done · §6.1av CVL-MAINT Done · L4 thresholds Frozen → AHI · FLOW-8 
 **Load first:** [`docs/project/technical/guides/audit_slices/CRITIC_VERIFICATION.md`](../../technical/guides/audit_slices/CRITIC_VERIFICATION.md) — compact slice (layers **25 (depth)**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ CVL-LC Done · §6.1av CVL-MAINT Done · L4 thresholds Frozen → AHI · FLOW-8 
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/CRITIC_VERIFICATION.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/CRITIC_VERIFICATION.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/CRITIC_VERIFICATION.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/CRITIC_VERIFICATION.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
 ---
@@ -91,7 +91,7 @@ applications/_shared/critic_runtime_bridge.py · critic_assembly_resolver.py
 eval/nexus_eval_runner.py
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

@@ -236,7 +236,7 @@ BUILDER_QUICKSTART.md
 | Document | Responsibility | Status |
 |----------|----------------|--------|
 | `WHY_INTERGRAX.md` | Problem, value, audience, category fit and fair alternative positioning without tier jargon | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6; category positioning extended in PX-8 |
-| `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — root `PROOFS.md` |
+| `PROOFS.md` | Consolidated public proof status and claim boundaries | exists — `docs/project/proofs/PROOFS.md` |
 | `ARCHITECTURE_OVERVIEW.md` | High-level Harness AI architecture for external reviewers | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | Builder route selection and deeper planning | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `USE_CASES.md` | Public use-case fit and applicability | **implemented / refreshed** — PUBLIC-DOCS-COMMERCIALIZATION-7 |
@@ -269,10 +269,15 @@ docs/project/architecture/intergrax_runtime_architecture.md
 docs/project/architecture/
 docs/project/maintainers/plans/
 docs/project/capabilities/
-applications/*/docs/
+docs/project/technical/applications/
+docs/project/technical/agents/
 ```
 
 This layer serves developers, architects, reviewers, and implementation agents.
+Code-local README files, tooling documentation, and evidence may remain near
+`applications/*/` or `agents/*/` when their location is required by the code or
+workflow; these are narrow exceptions, not competing canonical documentation
+roots.
 
 ### Layer 5 — Maintainer controls
 
@@ -337,7 +342,7 @@ Freeze one primary route for each intent. Secondary links are allowed; every int
 | Start building with Intergrax | `BUILDER_QUICKSTART.md` |
 | Plan a deeper application build | `BUILD_WITH_INTERGRAX.md` |
 | Run a bounded evaluation (detailed companion) | `EVALUATION_GUIDE.md` |
-| Check current proof status | `PROOFS.md` — root proof dashboard |
+| Check current proof status | `docs/project/proofs/PROOFS.md` — canonical proof dashboard |
 | Contribute or provide technical feedback | `COLLABORATION.md` |
 | Understand practical permission boundaries | `COLLABORATION.md` |
 | Read legally authoritative rights and restrictions | `LICENSE` |
@@ -669,7 +674,7 @@ the performance gate.
 |------------------|--------------|-------------|--------------|------------------|
 | `README.md` | Layer 1 product-first landing | Layer 1 product-first landing | `README.md` | **implemented** — PX-2 ACCEPTED / CLOSED |
 | `LKW_PRODUCT_TOUR.md` | New product-first reader route | Layer 2 reader-intent document | `LKW_PRODUCT_TOUR.md` | **PX-5 — ACCEPTED / CLOSED** |
-| `PROOFS.md` | — | Layer 2 proof dashboard | root `PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
+| `PROOFS.md` | — | Layer 2 proof dashboard | `docs/project/proofs/PROOFS.md` | **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-4) |
 | `WHY_INTERGRAX.md` | — | Layer 2 value and fit guide | `WHY_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `ARCHITECTURE_OVERVIEW.md` | — | Layer 2 public architecture overview | `ARCHITECTURE_OVERVIEW.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
 | `BUILD_WITH_INTERGRAX.md` | — | Layer 2 evaluation and building router | `BUILD_WITH_INTERGRAX.md` | **implemented** — PUBLIC-DOCS-COMMERCIALIZATION-6 |
@@ -684,7 +689,7 @@ the performance gate.
 | `docs/project/technical/DOCUMENTATION_MAP.md` | Technical/developer navigation | Layer 4 technical map | `docs/project/technical/DOCUMENTATION_MAP.md` | stable |
 | `docs/project/maintainers/public-adoption/README.md` | Maintainer adoption controls | Layer 5 maintainer index | `docs/project/maintainers/public-adoption/` | stable (this task) |
 
-`PROOFS.md` is **implemented** (root proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` is **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-9A) as the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. `PARTNERS.md`, `COLLABORATION.md`, and `FAQ.md` are **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-8).
+`PROOFS.md` is **implemented** at `docs/project/proofs/PROOFS.md` (canonical proof dashboard). `WHY_INTERGRAX.md`, `ARCHITECTURE_OVERVIEW.md`, and `BUILD_WITH_INTERGRAX.md` are **implemented** (PUBLIC-DOCS-COMMERCIALIZATION-6). `EVALUATION_GUIDE.md` is **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-9A) as the detailed bounded execution companion; `BUILD_WITH_INTERGRAX.md` owns public route selection. `PARTNERS.md`, `COLLABORATION.md`, and `FAQ.md` are **refreshed** (PUBLIC-DOCS-COMMERCIALIZATION-8).
 
 ---
 
@@ -906,7 +911,7 @@ Real product screenshots remain deferred until reviewed source images exist.
 | Evaluation and building route selection | `BUILD_WITH_INTERGRAX.md` |
 | Public documentation architecture | this document |
 | Public proof and claims model | `PUBLIC_PROOF_AND_CLAIMS_MODEL.md` |
-| Public proof dashboard | `PROOFS.md` |
+| Public proof dashboard | `docs/project/proofs/PROOFS.md` |
 | Public reader navigation | `docs/project/community/PUBLIC_DOCUMENTATION_MAP.md` |
 | Technical/developer navigation | `docs/project/technical/DOCUMENTATION_MAP.md` |
 | Token Optimization technical guide | `docs/project/capabilities/token_optimization/README.md` |

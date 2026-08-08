@@ -22,7 +22,7 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 **Adopted:**
 
 1. **Nexus stays the Agent OS** — global task lifecycle, multi-agent graph, policy, HITL, retries, merge. No relocation of Nexus responsibilities into Tier-2 agent classes.
-2. **Introduce Agent Cognitive Architecture (ACP)** as a **Tier-2 authoring library** under `intergrax/agents/authoring/patterns/`, built on existing UAEP and `RuntimeExecutionContext`.
+2. **Introduce Agent Cognitive Architecture (ACP)** as a **Tier-2 authoring library** under `intergrax/agents/authoring/patterns`, built on existing UAEP and `RuntimeExecutionContext`.
 3. **Cognitive patterns** (`ReflexAgent`, `ReActAgent`, `PlanExecuteAgent`, `DecompositionAgent`, `ReflectionAgent`) implement domain hooks (`perceive`, `reason`, `act`, `evaluate`) **inside** `run_step` / `decide_after_step` — not a parallel execution engine.
 4. **Configuration split preserved:** governance and environment profiles remain Tier-3 `ApplicationEnvironmentProfile`; agents declare contract + cognitive pattern + domain logic; `build_context` consumes injected profile metadata from the host.
 5. **Legacy `AgentEngine` path** is deprecated for new agents; Phase **ACP-LEG** tracks migration to UAEP-only.
@@ -54,8 +54,8 @@ Production harness requirements (multi-agent graphs, HITL, policy, checkpoints, 
 
 ## Compliance
 
-- Tier boundaries preserved: patterns live in `intergrax/agents/` (framework), not `agents/<business>/`.
-- `intergrax/` MUST NOT import `agents/` or `applications/`.
+- Tier boundaries preserved: patterns live in `intergrax/agents` (framework), not `agents/<business>`.
+- `intergrax` MUST NOT import `agents` or `applications`.
 - Tool/RAG/memory access ONLY via `RuntimeExecutionContext` gateways (§42.12, §42.41).
 - Significant architecture canon updated in `AGENT_CONTRACTS_AND_ASSEMBLY.md` §21–§28 before implementation.
 

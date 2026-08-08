@@ -5,7 +5,7 @@
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **Architecture governance:** [`architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../../architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
 
@@ -18,23 +18,23 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/PLATFORM_FOUNDATION.md`](../../architecture/PLATFORM_FOUNDATION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/PLATFORM_FOUNDATION.md`](../../technical/guides/audit_slices/PLATFORM_FOUNDATION.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
 ## 6. What to implement next
 
-**Default answer (infrastructure):** **[§6.1](#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
+**Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.
 
 **Maintenance-only mode:** If CRIT-V paused by explicit decision, revert to §6.1 gate-only maintenance.
 
-**Out of scope:** product/application implementation work and business backlogs — **[§6.3](#63-end-of-platform-plan)** · **[§4.0a](#40a-implementation-scope-split-infrastructure-vs-business)**.
+**Out of scope:** product/application implementation work and business backlogs — **[§6.3](.#63-end-of-platform-plan)** · **[§4.0a](.#40a-implementation-scope-split-infrastructure-vs-business)**.
 
-**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](#61z-harness-implementation-queue-consolidated) / [§6.1aa](#61aa-harness-implementation-queue-memory-platform).
+**Audit basis:** Governance audit (2026-06-05) → GOV-AUDIT **Done**; orchestration audit (2026-06-05) → Phase ORCH + §6.1b; tools/skills audit (2026-06-02) → Phase TS + §6.1c; integration/RAG audit (2026-06-02) → Phase INT + RAG + §6.1d/§6.1e; context engineering audit (2026-06-02) → Phase CTX + §6.1f; prior V-REM/MEM/DX/AA closeouts in [§6.1z](.#61z-harness-implementation-queue-consolidated) / [§6.1aa](.#61aa-harness-implementation-queue-memory-platform).
 
 ### 6.1 Harness platform maintenance (default — Band 1)
 
-§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](#61aw-phase-hep--harness-evidence-pack-band-2ae)** — runtime evidence packaging.
+§4.1 backlog is **closed**. Ongoing work = keep the harness green; **Band 2y W-ADAPT**, **Band 2z M-LLM-R**, **Band 2aa M.6 P4**, and **Band 2ab M.6 P5** are **closed**. **Band 2ac M.6 P6** = **Done** (32/32) — see **[§6.1y](.#61y-harness-implementation-queue--integration-expansion-m6-p6-done)**. **Band 2ay M.12** = **Done** — see **[§6.1an](.#61an-harness-implementation-queue--llm-guardrail-integrations-closed)**. **Optional harness extension (after gate green):** **[Band 2ae Phase HEP](.#61aw-phase-hep--harness-evidence-pack-band-2ae)** — runtime evidence packaging.
 
 ```text
 Verify (every harness PR):
@@ -84,11 +84,11 @@ Verify (every harness PR):
 | 4 | **PF-MAINT-LEG-01** | Code | P3 | **Done** | Remove `use_rag`/`use_websearch` from LLM planner schema (`EnginePlan`) | `check_legacy_tool_plan_booleans.py` green; `tool_ids` only |
 | 5 | **PF-MAINT-DOC-03** | Docs | P3 | **Done** | Sync §0.5 regression gate counter with live `pytest -m gate` snapshot | Plan §0.5 shows **1498 passed** (2026-06-19) |
 | 6 | **PF-MAINT-LEG-02** | Code | P3 | **Done** | Remove legacy `use_rag`/`use_websearch` shims from `ToolInvocationPlan` (`tool_runtime.py`) | Zero DeprecationWarning in gate; `tool_ids` only at runtime bridge |
-| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
+| 7 | **PF-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `PLATFORM_FOUNDATION.md` + `progress.json` present |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-19).
 
-**Explicitly excluded:** §50 marketplace, new Tier-0 mechanisms beyond §6.1 — see [§6.3](#63-end-of-platform-plan).
+**Explicitly excluded:** §50 marketplace, new Tier-0 mechanisms beyond §6.1 — see [§6.3](.#63-end-of-platform-plan).
 
 ### 6.1aw Phase HEP — Harness Evidence Pack (Band 2ae)
 
@@ -117,7 +117,7 @@ Evidence smoke audit: **Done** — canonical local proof path verified (see `HAR
 
 | Order | ID | Deliverable | Priority |
 |-------|-----|-------------|----------|
-| 1 | P-Ext.0.5 | Fixture pip package (`tests/fixtures/plugin_packages/`) | P0 |
+| 1 | P-Ext.0.5 | Fixture pip package (`tests/fixtures/plugin_packages`) | P0 |
 | 2 | P-Ext.0.6 | EP discovery tests (all three groups) | P0 |
 | 3 | P-Ext.1.6 | Integration EP test via fixture | P0 |
 | 4 | P-Ext.1.10 | Tier-3 `integration_wiring` → `bootstrap_catalogs()` | P0 |
@@ -136,7 +136,7 @@ Full task register: [Appendix I](plan/satellites/PLATFORM_FOUNDATION_appendices.
 
 ### 6.2af Phase M.6 P5 execution order (Band 2ab — Planned)
 
-**Status:** **Done** (2026-06-02) · register: [M.6 P5](#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](#61x-harness-implementation-queue--integration-depth-m6-p5-done)
+**Status:** **Done** (2026-06-02) · register: [M.6 P5](.#m6-p5--harness-integration-depth-done--3334) · queue: [§6.1x](.#61x-harness-implementation-queue--integration-depth-m6-p5-done)
 
 ```text
 Wave H-INT-0 (categories):  M-P5-CAT.1 → M-P5-CAT.2 → M-P5-CAT.3

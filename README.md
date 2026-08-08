@@ -69,7 +69,7 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 
 **Review the bounded LKW proof** → [docs/project/proofs/LKW_PLATFORM_PROOF.md](docs/project/proofs/LKW_PLATFORM_PROOF.md)
 
-**Check current proof status** → [PROOFS.md](docs/project/proofs/PROOFS.md)
+**Check current proof status** → [docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md)
 
 ---
 
@@ -130,7 +130,7 @@ Building an impressive AI demo is relatively easy. Operating a controlled applic
 
 Teams repeatedly rebuild permissions, knowledge access, integrations, policy enforcement, and evidence collection for every new product. Intergrax centralizes those reusable foundations so product teams can focus on the concrete workflow.
 
-**Why Intergrax:** [WHY_INTERGRAX.md](docs/project/overview/WHY_INTERGRAX.md)
+**Why Intergrax:** [docs/project/overview/WHY_INTERGRAX.md](docs/project/overview/WHY_INTERGRAX.md)
 
 ---
 
@@ -193,7 +193,7 @@ flowchart LR
 | **Token Optimization** | PARTIAL |
 | **Shared platform foundations** | IMPLEMENTED — bounded supporting evidence |
 
-Full matrices, limitations, and claim boundaries: **[PROOFS.md](docs/project/proofs/PROOFS.md)**
+Full matrices, limitations, and claim boundaries: **[docs/project/proofs/PROOFS.md](docs/project/proofs/PROOFS.md)**
 
 ---
 
@@ -253,6 +253,6 @@ Intergrax is **not** currently positioned as:
 
 Intergrax is **source-available** under the Intergrax Evaluation and Collaboration License 1.0.
 
-You may clone, install, run, test, and modify the repository locally for **non-production evaluation**. Authorized collaboration and contribution paths are described in [COLLABORATION.md](docs/project/community/COLLABORATION.md).
+You may clone, install, run, test, and modify the repository locally for **non-production evaluation**. Authorized collaboration and contribution paths are described in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md).
 
 **Production use**, **commercial use**, hosting, and redistribution require **explicit written permission**. [LICENSE](LICENSE) is legally authoritative.

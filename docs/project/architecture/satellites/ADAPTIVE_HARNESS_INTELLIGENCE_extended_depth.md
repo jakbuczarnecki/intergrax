@@ -242,7 +242,7 @@ ProfileVersionRecord:
   status: draft | shadow | canary | active | retired
 ```
 
-**Storage v1:** SQLite under `build/adaptive_harness/` (gitignored) + export to ops artifacts.
+**Storage v1:** SQLite under `build/adaptive_harness` (gitignored) + export to ops artifacts.
 
 ---
 
@@ -445,7 +445,7 @@ Every AHI-driven or AHI-recommended change follows this lifecycle:
 2. **Detect** — identify recurring patterns, regressions, or optimization opportunities.
 3. **Propose** — emit bounded `AdaptiveLoopProposal` / profile version draft.
 4. **Evaluate** — offline simulation, shadow eval, or regression pre-check.
-5. **Classify risk** — assign low / medium / high / critical (see [Change risk classes](#change-risk-classes)).
+5. **Classify risk** — assign low / medium / high / critical (see [Change risk classes](.#change-risk-classes)).
 6. **Collect evidence** — link to `HarnessOutcomeSignal`, eval registry, capability graph impact.
 7. **Request governance approval** — human gate, ops workflow, or explicit product decision.
 8. **Shadow / canary if approved** — traffic shift within envelope limits only.
@@ -1056,7 +1056,7 @@ All must pass:
 ### 24.1 Conclusions
 
 1. **Adaptive Harness Intelligence is strategically aligned** with Intergrax's harness-first mission and L4 maturity vision.
-2. **Implementation is complete** — Phase W-ADAPT **70/70 Done** (Wave 0–7); runtime package `intergrax/runtime/adaptive/`.
+2. **Implementation is complete** — Phase W-ADAPT **70/70 Done** (Wave 0–7); runtime package `intergrax/runtime/adaptive`.
 3. **Classical RL is the wrong implementation model**; contextual bandits + governed proposals + verification loops are the right fit.
 4. **L4 runtime readiness is achieved in code** — governance L4 (Phase V) + runtime L4 (W-ADAPT-5 closeout gate); production utility evidence accumulates when lab observe mode is active.
 5. **Process pattern discovery belongs in Tier-1 mining + Tier-2 authoring**, keeping Nexus domain-agnostic.

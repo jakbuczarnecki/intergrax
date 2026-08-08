@@ -11,7 +11,7 @@
 | Signal collection | metrics backends | `CapacitySignalCollector` | — | webhook thresholds |
 | Provision execution | tool handlers | `ScalingProvisioner` | — | — |
 | In-process limits | — | may **raise ceiling** via profile patch | — | `OrchestrationProfile` caps |
-| Deploy manifests (Helm, HPA YAML) | — | — | — | **owns** `applications/*/docker/` |
+| Deploy manifests (Helm, HPA YAML) | — | — | — | **owns** `applications/*/docker` |
 | Domain load patterns | — | — | may inform signals | product SLOs |
 
 ### 8.1 What ECP MUST NOT do
@@ -154,7 +154,7 @@ Agents **MUST NOT** invoke high-risk scale tools by default — ECP control plan
 | Slug | `kubernetes` |
 | Category | `cloud_platform` |
 | Status | Beta |
-| Module | `integrations/providers/cloud_platform/kubernetes/` |
+| Module | `integrations/providers/cloud_platform/kubernetes` |
 | Today | `create_kubernetes_cloud_platform()` — **health-only default client**; `KubernetesCloudPlatform.scale_workload` / `get_replicas` delegate to **injected** client |
 | Target (ECP-PROD.3) | REST scale subresource on default factory when `INTERGRAX_KUBERNETES_*` configured |
 
@@ -205,10 +205,10 @@ Tier-0 async plane — [`ORCHESTRATION.md`](ORCHESTRATION.md) §49:
 
 | Module | Role |
 |--------|------|
-| `intergrax/queueing/` | Task index, worker registry, dispatcher |
-| `intergrax/queueing/providers/celery/` | Celery task queue |
-| `intergrax/queueing/providers/kafka/`, `rabbitmq/` | Broker workers |
-| `intergrax/distributed/` | Rate limiter, distributed locks |
+| `intergrax/queueing` | Task index, worker registry, dispatcher |
+| `intergrax/queueing/providers/celery` | Celery task queue |
+| `intergrax/queueing/providers/kafka`, `rabbitmq` | Broker workers |
+| `intergrax/distributed` | Rate limiter, distributed locks |
 
 Workers consume logical tasks via `register_dispatcher_task` — **fixed pool** unless operator or ECP scales Celery workers.
 
@@ -408,13 +408,13 @@ All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND
 | `runtime/nexus/execution/graph_executor.py` | 1 | **Done** | `GRAPH_BACKPRESSURE` emitter |
 | `applications/contracts/environment_profile.py` | 3 | **Done** | `OrchestrationProfile` ceilings |
 | `applications/_shared/orchestration_wiring.py` | 3 | **Done** | Resolve max_inflight |
-| `queueing/` | 0 | **Done** | Async task workers |
+| `queueing` | 0 | **Done** | Async task workers |
 | `queueing/task_index.py` | 0 | **Done** | Queue depth (signal source) |
-| `distributed/` | 0 | **Done** | Rate limit, locks |
-| `integrations/.../kubernetes/` | 0 | **Beta** | Health default; scale needs injected client or ECP-PROD.3 |
-| `integrations/providers/celery/` | 0 | **Done** | Worker app factory (not ECP-autoscaled) |
-| `runtime/adaptive/` | 1 | **Done** | AHI signals (optional input) |
-| `runtime/capacity/` | 1 | **Scaffold** | ECP package (ECP-DEPTH) |
+| `distributed` | 0 | **Done** | Rate limit, locks |
+| `integrations/.../kubernetes` | 0 | **Beta** | Health default; scale needs injected client or ECP-PROD.3 |
+| `integrations/providers/celery` | 0 | **Done** | Worker app factory (not ECP-autoscaled) |
+| `runtime/adaptive` | 1 | **Done** | AHI signals (optional input) |
+| `runtime/capacity` | 1 | **Scaffold** | ECP package (ECP-DEPTH) |
 | `runtime/capacity/contracts.py` | 1 | **Done** | Signals, policies, actions |
 | `runtime/capacity/collector.py` | 1 | **Scaffold** | Not wired to live events (ECP-PROD.1) |
 | `runtime/capacity/evaluator.py` | 1 | **Scaffold** | Gate tests |
@@ -423,7 +423,7 @@ All tasks: [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plan/ELASTIC_CAPACITY_AND
 | `runtime/capacity/production_adapters.py` | 1 | **Gate probe** | InMemory only — not production |
 | `applications/_shared/scaling_wiring.py` | 3 | **Done** | Disabled default; lab lifespan |
 | `applications/_shared/production_capacity_wiring.py` | 3 | **Gate probe** | InMemory adapters |
-| `tools/providers/capacity/` | 0 | **Not started** | Optional diagnostic tools |
+| `tools/providers/capacity` | 0 | **Not started** | Optional diagnostic tools |
 
 ---
 

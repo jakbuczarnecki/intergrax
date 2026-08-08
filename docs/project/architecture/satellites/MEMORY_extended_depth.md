@@ -262,17 +262,17 @@ See [`architecture/OBSERVABILITY.md`](architecture/OBSERVABILITY.md) §3.
 
 | Module | Tier | Role |
 |--------|------|------|
-| `intergrax/memory/` | 0 | ConversationalMemory, UserProfileManager, stores |
-| `intergrax/runtime/task_memory/` | 1 | TaskMemory, MemoryView, delegation, retention |
-| `intergrax/runtime/nexus/session/` | 1 | SessionManager, consolidation coordinator |
-| `intergrax/runtime/nexus/context/` | 1 | ContextManager, HistoryLayer, context_budget |
-| `intergrax/runtime/user_profile/` | 1 | Consolidation + instructions services |
+| `intergrax/memory` | 0 | ConversationalMemory, UserProfileManager, stores |
+| `intergrax/runtime/task_memory` | 1 | TaskMemory, MemoryView, delegation, retention |
+| `intergrax/runtime/nexus/session` | 1 | SessionManager, consolidation coordinator |
+| `intergrax/runtime/nexus/context` | 1 | ContextManager, HistoryLayer, context_budget |
+| `intergrax/runtime/user_profile` | 1 | Consolidation + instructions services |
 | `intergrax/applications/_shared/memory_wiring.py` | 3 | Platform wiring |
 | `intergrax/runtime/nexus/context/context_compiler.py` | 1 | Context Compiler + degradation ladder |
 | `intergrax/runtime/nexus/session/document_store_session_storage.py` | 1 | Mongo session persistence |
 | `intergrax/memory/entity_graph_memory.py` | 0 | User entity graph (≠ Graph RAG) |
-| `intergrax/tools/providers/memory/` | 0 | `memory.read/write/list_keys/delete_key` |
-| `intergrax/rag/` | 0 | Knowledge retrieval (not agent LTM) |
+| `intergrax/tools/providers/memory` | 0 | `memory.read/write/list_keys/delete_key` |
+| `intergrax/rag` | 0 | Knowledge retrieval (not agent LTM) |
 
 ---
 
@@ -341,7 +341,7 @@ Context quality controls (scoring, dedup, regression, lineage) are owned by **[`
 
 Graph-native knowledge evolves from optional enhancement to first-class capability:
 
-- graph RAG support (`intergrax/rag/graph/`),
+- graph RAG support (`intergrax/rag/graph`),
 - entity–relation semantic modeling,
 - hybrid retrieval: vector + keyword + graph traversal,
 - graph-backed explainability in reasoning traces.

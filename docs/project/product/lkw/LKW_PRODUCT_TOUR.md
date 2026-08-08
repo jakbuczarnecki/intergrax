@@ -116,6 +116,6 @@ It does not represent:
 | Route | Use it for |
 |-------|------------|
 | [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
-| [PROOFS.md](../../proofs/PROOFS.md) | Check current evidence status |
-| [USE_CASES.md](../../overview/USE_CASES.md) | Check whether the use case fits |
+| [docs/project/proofs/PROOFS.md](../../proofs/PROOFS.md) | Check current evidence status |
+| [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md) | Check whether the use case fits |
 | [README.md](../../../../README.md) | Return to the project overview |

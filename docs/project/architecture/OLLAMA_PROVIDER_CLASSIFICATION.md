@@ -79,7 +79,7 @@ No change to `ml_inference_host` was required.
 
 ## Migration impact
 
-- `ollama` → `intergrax/integrations/providers/model_serving_runtime/ollama/`
+- `ollama` → `intergrax/integrations/providers/model_serving_runtime/ollama`
 - Public class: `OllamaModelServingRuntimeIntegration`
 - `SLUG_CATEGORY["ollama"] = "model_serving_runtime"`
 - Inbound `OllamaInteractionAdapter` remains a private p5 helper for tests only;

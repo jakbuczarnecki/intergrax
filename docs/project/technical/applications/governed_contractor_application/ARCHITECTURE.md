@@ -1,7 +1,7 @@
 # Governed Contractor Application — architecture
 
 **Status:** GEC-0…GEC-6 (2026-07-20) — product-profile scaffold + Tier-2 mapping + Governed Continuation + side-effect policy + descriptive proof profile; HITL UX/product policy packs/ProofReceipt persistence/providers deferred  
-**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../platform/governed_external_execution.md) — ownership · lifecycle · invariants  
+**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../platform/governed_external_execution.md) — ownership · lifecycle · invariants
 **Vertical:** Governed External Contractor (GEC)  
 **Capability target:** governed external contractor agents (generic; not a one-off partner integration)  
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
@@ -9,7 +9,7 @@
 **Partner handoff (planned):** [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md)  
 **Tier-2 adapter:** [`docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md`](../../agents/external_contractor_adapter/ARCHITECTURE.md)
 
-**Collaboration boundary:** Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. Production, commercial, and redistribution use require explicit permission — see repository [`COLLABORATION.md`](../../../community/COLLABORATION.md) and [`LICENSE`](../../../../../LICENSE). This vertical is a **proof path**, not a production-readiness or certification claim.
+**Collaboration boundary:** Intergrax is **source-available** for evaluation and technical partner discovery. It is **not** open source. Production, commercial, and redistribution use require explicit permission — see repository [`../../../community/COLLABORATION.md`](../../../community/COLLABORATION.md) and [`LICENSE`](../../../../../LICENSE). This vertical is a **proof path**, not a production-readiness or certification claim.
 
 ---
 
@@ -33,14 +33,14 @@ What those products typically lack — and what Intergrax must supply without re
 
 ## 2. Design-partner context
 
-GEC may be validated with one or more design partners that already ship A2A-style contractor agents. Partner identities, base URLs, API keys, and product-specific field maps **must not** be hardcoded into Intergrax core (`intergrax/`).
+GEC may be validated with one or more design partners that already ship A2A-style contractor agents. Partner identities, base URLs, API keys, and product-specific field maps **must not** be hardcoded into Intergrax core (`intergrax`).
 
 | Layer | Partner-specific content allowed? |
 |-------|-----------------------------------|
-| `intergrax/` contracts / runtime / integrations | **No** — provider-neutral only |
+| `intergrax` contracts / runtime / integrations | **No** — provider-neutral only |
 | Tier-2 `external_contractor_adapter` | Neutral mapping to Intergrax contracts; partner config via host/env |
 | Tier-3 `governed_contractor_application` | Tenant/env wiring, policy bundles, proof docs, handoff samples |
-| `docs/` partner handoff / public adoption | Named partner materials as **external mapping**, not core identity |
+| `docs` partner handoff / public adoption | Named partner materials as **external mapping**, not core identity |
 
 The product capability remains:
 
@@ -64,10 +64,10 @@ Client
 
 | Tier | Owner package | Responsibility |
 |------|---------------|----------------|
-| **0** | `intergrax/` | Reusable contractor/quote contracts, integration surfaces, HITL, policy, Nexus, ProofReceipt, trace |
-| **1** | `intergrax/runtime/` | Orchestration, task lifecycle, policy enforcement, HITL gates, evidence spine |
-| **2** | `agents/external_contractor_adapter/` | Domain adapter: Agent Card discovery, external task/quote/status/deliverable mapping |
-| **3** | `applications/governed_contractor_application/` | Public API, tenant/env, policy bundles, quote UI/API presentation, HITL surfaces, workspace, receipts |
+| **0** | `intergrax` | Reusable contractor/quote contracts, integration surfaces, HITL, policy, Nexus, ProofReceipt, trace |
+| **1** | `intergrax/runtime` | Orchestration, task lifecycle, policy enforcement, HITL gates, evidence spine |
+| **2** | `agents/external_contractor_adapter` | Domain adapter: Agent Card discovery, external task/quote/status/deliverable mapping |
+| **3** | `applications/governed_contractor_application` | Public API, tenant/env, policy bundles, quote UI/API presentation, HITL surfaces, workspace, receipts |
 
 Hard boundaries (never violate):
 
@@ -312,7 +312,7 @@ GEC-3 proves the abstraction **without transport**. GEC-4 proves **Governed Cont
 
 - Local code-review (or other domain) agent that competes with the external contractor
 - Orchestration graph inside the Tier-2 adapter
-- Partner-specific URLs/identities in `intergrax/`
+- Partner-specific URLs/identities in `intergrax`
 - Duplicating HITL, Nexus, policy, trace, or ProofReceipt stacks
 - Placing reusable quote/contractor contracts inside this Tier-3 package
 - Production SLA, marketplace, or wallet product claims in GEC-0
@@ -355,6 +355,6 @@ See [`PARTNER_HANDOFF.md`](PARTNER_HANDOFF.md). Handoff materials will include:
 | Mounted agent | `ExternalContractorAdapterAgent` |
 | Default capability | `external_contractor.adapt` |
 | Factory | `host/factory.py` → harness host runtime |
-| Deploy triad | `docker/`, `BUILD_AND_DEPLOY.md`, gate tests |
+| Deploy triad | `docker`, `BUILD_AND_DEPLOY.md`, gate tests |
 
 GEC-0 delivers scaffold + architecture/plan docs only. Domain contracts and runtime lifecycle begin at **GEC-1**.

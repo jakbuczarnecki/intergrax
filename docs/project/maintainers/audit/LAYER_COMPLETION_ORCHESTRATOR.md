@@ -10,7 +10,7 @@
 
 Sequentially run **Layer Completion Mode** on all 22 domain pairs until each reaches **Architecturally Mature** or **Frozen** (no open P0/P1 in domain scope).
 
-This is the English canonical equivalent of the operator workflow previously kept under `docs/_external/`.
+This is the English canonical equivalent of the operator workflow previously kept under `docs/_external`.
 
 ---
 
@@ -45,7 +45,7 @@ For each `<DOMAIN>`, execute [`LAYER_COMPLETION_MODE.md`](../../technical/guides
 | Docs scope | Only `architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md` per iteration |
 | P0/P1 | Block next domain until closed or operator reprioritizes |
 | Mature/frozen | Short re-audit (Steps 1+6); skip full sprints if clean |
-| Journal | English entry under `implementation-journal/entries/YYYY-MM-DD/` |
+| Journal | English entry under `implementation-journal/entries/YYYY-MM-DD` |
 | Commits | Operator request only |
 
 ---

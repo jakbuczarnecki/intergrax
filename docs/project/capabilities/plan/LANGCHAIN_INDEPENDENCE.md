@@ -119,7 +119,7 @@ inventory (LCI-0A) → boundary guard (LCI-0B) → dependency hardening (LCI-0C)
 | **Dependencies** | LCI-1A |
 | **Exact scope** | Tier-0 type module; serializers/validators; unit tests for native type |
 | **Explicit out of scope** | Consumer migration; LangChain bridge |
-| **Acceptance criteria** | Native models (`KnowledgeDocument`, identity/scope/provenance sub-models); public import `from intergrax.knowledge.contracts import KnowledgeDocument`; shared validation reuse via `intergrax/knowledge/contracts/validation.py`; deterministic `dump_knowledge_document` / `load_knowledge_document`; LangChain-free `intergrax/knowledge/` module; targeted unit tests (`tests/unit/knowledge/contracts/test_document.py`); Vendor Knowledge regression tests |
+| **Acceptance criteria** | Native models (`KnowledgeDocument`, identity/scope/provenance sub-models); public import `from intergrax.knowledge.contracts import KnowledgeDocument`; shared validation reuse via `intergrax/knowledge/contracts/validation.py`; deterministic `dump_knowledge_document` / `load_knowledge_document`; LangChain-free `intergrax/knowledge` module; targeted unit tests (`tests/unit/knowledge/contracts/test_document.py`); Vendor Knowledge regression tests |
 | **User-visible outcome** | Native document type available for migrators |
 
 ---

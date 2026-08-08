@@ -90,8 +90,8 @@ The builder:
 4. runs Docker BuildKit against that context;
 5. removes the temporary context unless `--keep-context` / `--context-dir` is set.
 
-Compose uses `applications/<app>/docker/runtime-context/` prepared by the same builder.
-Do not build with repository-root context + `COPY applications/`.
+Compose uses `applications/<app>/docker/runtime-context` prepared by the same builder.
+Do not build with repository-root context + `COPY applications`.
 
 Per-image environment: `/app/.venv` inside the container filesystem.
 Local workspace execution may still use the shared root `.venv` unless
@@ -154,7 +154,7 @@ application-selected until the platform package itself is made optional/import-s
 | Declaration | application / agent `pyproject.toml` |
 | Dependency graph | `uv export --project … --frozen --no-dev --no-emit-workspace` |
 | Build context | materialized context + `.intergrax-runtime-graph.json` |
-| Image filesystem | no other `applications/<other>/` trees; no undeclared agents |
+| Image filesystem | no other `applications/<other>` trees; no undeclared agents |
 | Image imports | selected SDKs importable; unselected provider SDKs absent where packaging allows |
 | Tier boundaries | `tests/unit/architecture/test_tier_dependency_boundaries.py` |
 

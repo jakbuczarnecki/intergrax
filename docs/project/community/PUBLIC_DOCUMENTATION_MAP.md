@@ -26,7 +26,7 @@ flowchart TD
 
     T --> Q
     Q --> L[LKW Platform Proof]
-    A --> R[PROOFS.md]
+    A --> R[docs/project/proofs/PROOFS.md]
     U --> R
 ```
 
@@ -46,7 +46,7 @@ with Try LKW as the repository’s primary product action.
 | Assess fit as a CTO, product lead or technical buyer | [Use Cases](../overview/USE_CASES.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
-| Check current proof status | [PROOFS.md](../proofs/PROOFS.md) |
+| Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
 | Run an evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
 | Understand permission boundaries | [Collaboration](COLLABORATION.md) and [LICENSE](../../../LICENSE) |

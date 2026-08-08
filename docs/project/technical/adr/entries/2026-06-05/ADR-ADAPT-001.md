@@ -17,7 +17,7 @@ Alternatives include end-to-end reinforcement learning, per-agent self-modifying
 
 ## Decision
 
-Implement a **governed Adaptive Control Plane** in `intergrax/runtime/adaptive/` with:
+Implement a **governed Adaptive Control Plane** in `intergrax/runtime/adaptive` with:
 
 - Evidence-driven signals (`HarnessOutcomeSignal`, utility function U)
 - Rule-based and contextual-bandit sub-engines (Thompson sampling v1)
@@ -51,6 +51,6 @@ PolicyEngine and human gates remain mandatory for `POLICY_LEARNING` and high-ris
 
 ## Compliance
 
-- Tier-1 package: `intergrax/runtime/adaptive/`
+- Tier-1 package: `intergrax/runtime/adaptive`
 - Governance source of truth remains `intergrax/runtime/architecture/adaptive_governance.py`
 - Closeout gate target: `phase_w_adapt_closeout_gate.py --enforce-l4-runtime`

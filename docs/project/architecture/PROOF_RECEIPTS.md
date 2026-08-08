@@ -129,10 +129,10 @@ Default capabilities: `READ`, `WRITE`, `HEALTH_CHECK`. Integration identity: `{p
 
 ## H. Strict boundaries
 
-1. **No pymongo outside the MongoDB provider package** (`intergrax/integrations/providers/document_store/mongodb/`).
+1. **No pymongo outside the MongoDB provider package** (`intergrax/integrations/providers/document_store/mongodb`).
 2. **LKW must not import pymongo** or call MongoDB APIs directly.
 3. **No LKW-only MongoDB helper** — persistence goes through `ProofReceiptStore` → `DocumentStore`.
-4. **No markdown as source of truth** — `.proof_docs/` and reviewer guides are operational aids only.
+4. **No markdown as source of truth** — `.proof_docs` and reviewer guides are operational aids only.
 5. **No in-memory/fake store as live proof acceptance** — unit-test doubles may validate the store contract only.
 
 ---
@@ -237,5 +237,5 @@ Public Steps 9 / Steps 12–13 in `LKW_PLATFORM_PROOF.md` document Mongo Express
 | Store engine | `intergrax/proofs/receipts/store.py` |
 | DocumentStore contract | `intergrax/integrations/contracts/document_store.py` |
 | DocumentStore vendor contract | `intergrax/runtime/integrations/document_store.py` |
-| MongoDB provider | `intergrax/integrations/providers/document_store/mongodb/` |
+| MongoDB provider | `intergrax/integrations/providers/document_store/mongodb` |
 | LKW proof schedule | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` §LKW-PR |

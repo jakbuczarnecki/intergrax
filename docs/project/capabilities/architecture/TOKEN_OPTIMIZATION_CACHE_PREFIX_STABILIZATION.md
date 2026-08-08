@@ -320,7 +320,7 @@ See [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) §TOKEN-10 
 
 ## 12. Public claim guardrails
 
-See [`../../public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md`](../TOKEN_OPTIMIZATION_CLAIMS.md). README promotion deferred to **TOKEN-10H**.
+See [`../TOKEN_OPTIMIZATION_CLAIMS.md`](../TOKEN_OPTIMIZATION_CLAIMS.md). README promotion deferred to **TOKEN-10H**.
 
 ---
 

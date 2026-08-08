@@ -446,7 +446,7 @@ Recommended candidate materialization location:
 build/adaptive_harness/agent_design_search/candidates/<candidate_id>/
 ```
 
-Only after promotion should a candidate be eligible for controlled movement into a canonical `agents/` package or registry binding.
+Only after promotion should a candidate be eligible for controlled movement into a canonical `agents` package or registry binding.
 
 ---
 
@@ -1311,7 +1311,7 @@ Auto-promotion is allowed only for future low-risk lab profiles and only after e
 | **A** | Registry pointer | Active agent registry entry points to `candidate_id` / sandbox or canonical package ref | **Required** |
 | **B** | AgentContract version | New immutable `AgentContract` revision bound to candidate | Optional — when `contract_delta` non-empty |
 | **C** | Routing profile | `ApplicationEnvironmentProfile` weight / default agent slug for traffic allocation | Optional — canary / split traffic |
-| **D** | Materialization | Controlled move from sandbox to canonical `agents/` package | Optional — explicit product gate only |
+| **D** | Materialization | Controlled move from sandbox to canonical `agents` package | Optional — explicit product gate only |
 | **E** | Tenant / application binding | Binding record links `objective_id` → active agent for tenant/application scope | **Required** |
 
 **Default v1:** **A + E** (registry pointer + tenant/application binding). Modes **B–D** are explicit, gated promotion modes — never implied by "promoted" status alone.

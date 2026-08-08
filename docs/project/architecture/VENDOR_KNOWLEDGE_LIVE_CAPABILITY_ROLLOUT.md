@@ -105,7 +105,7 @@ The architecture reuses the current production foundation:
   document where the current fields are not yet sufficient for the rollout.
 
 The existing application orchestration remains the application boundary. The
-architecture does not move it into `intergrax/` and does not create a second
+architecture does not move it into `intergrax` and does not create a second
 executor, registry, or receipt system.
 
 ### 2.1 Review finding: production foundation versus frozen shared delta
@@ -991,7 +991,7 @@ The first production-handler review exposed an invalid dependency direction:
 the runtime handler contract previously required application-owned execution
 models from `local_workspace_application`. The canonical outcome enum,
 execution context, result item, execution result, receipt and async handler
-protocol now live under `intergrax/runtime/vendor_knowledge/live/`. The LKW
+protocol now live under `intergrax/runtime/vendor_knowledge/live`. The LKW
 executor remains the application-owned orchestrator and creates receipts after
 validating provider results; it consumes the exact runtime classes and passes
 the canonical validated call subtype without exposing application policy or

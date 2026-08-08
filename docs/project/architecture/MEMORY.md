@@ -1,15 +1,15 @@
 # Memory
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/MEMORY.md`](../maintainers/plans/MEMORY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layer:** 15 (Memory)  
-**Audit instruction:** [`audit/MEMORY.md`](../maintainers/audit/MEMORY.md)  
-**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)  
+**Audit instruction:** [`audit/MEMORY.md`](../maintainers/audit/MEMORY.md)
+**Context assembly (Layer C):** [`architecture/CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../maintainers/plans/CONTEXT_ENGINEERING.md)
 **Unified lifecycle:** [`architecture/UNIFIED_CONTEXT_LIFECYCLE.md`](UNIFIED_CONTEXT_LIFECYCLE.md) · [`plan/UNIFIED_CONTEXT_LIFECYCLE.md`](../maintainers/plans/UNIFIED_CONTEXT_LIFECYCLE.md) · [`ADR-UCL-001`](../technical/adr/entries/2026-08-01/ADR-UCL-001.md) — `ConversationLedger`, `SessionContextRevision`, `OptimizationArtifactRepository`, `InMemoryOptimizationArtifactRepository` (CTX-UCL-2 reference), single-flight `ArtifactCreationReservation`, CAS activation; separates retention from model-facing compaction; reuse-before-create
 **Related:** [`architecture/RAG.md`](RAG.md) — Tier-0 retrieval engine; this doc covers **memory stores, lifecycle**, and the **Knowledge vs LTM** boundary.  
-**ADR:** [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)  
+**ADR:** [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) (Context Compiler) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) (vector catalog)
 **Last updated:** 2026-06-17 — **Full Harness LC** (re-validates layer completion); MEM-VEC + MEM-DEPTH **Done**
 
 ## 2. Design principles
@@ -23,7 +23,7 @@
 | **Retrieval-first for scale** | Large corpora (documents, codebase, long history) enter context via retrieval, summarization, or delegation — not full dumps. |
 | **Policy-governed writes** | Sensitive LTM writes pass `BEFORE_MEMORY_WRITE` hooks and `MemoryWritePolicy`. |
 | **Provenance on read** | Memory reads consumed by CE MUST be attributable — see [`CONTEXT_ENGINEERING.md`](CONTEXT_ENGINEERING.md) §12. |
-| **Graph RAG ≠ agent memory** | Document knowledge graphs (`intergrax/rag/graph/`) are retrieval infrastructure — not user entity / episodic memory (Zep-style). |
+| **Graph RAG ≠ agent memory** | Document knowledge graphs (`intergrax/rag/graph`) are retrieval infrastructure — not user entity / episodic memory (Zep-style). |
 | **Vector index ≠ primary store** | Relational / document stores remain the source of truth for session turns and LTM entries. Vector backends are **retrieval indexes** — optional, scoped, and tombstoned on delete. |
 | **Harness-owned vector wiring** | Tier-3 hosts MUST wire the integration RAG stack into memory facades (`UserProfileManager`, session turn index) — agents never open vector DBs directly. |
 
@@ -131,14 +131,14 @@ Canon §27 type              Runtime implementation
 
 | Store | Scope key | Module | Agent access | Default persistence |
 |-------|-----------|--------|--------------|---------------------|
-| **Session (STM)** | `session_id` | `runtime/nexus/session/` | Via Nexus history steps only | SQLite bundle, in-memory fallback, or Mongo `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) |
-| **Task KV** | `tenant_id` + `task_id` + namespace | `runtime/task_memory/` | `memory.*` tools via `MemoryView` | SQLite (`INTERGRAX_TASK_MEMORY_DB`) |
-| **User LTM** | `tenant_id` + `user_id` | `intergrax/memory/` | Nexus `UserLongtermMemoryStep` | SQLite bundle / Mongo document_store |
-| **Org profile** | `org_id` | `runtime/organization/` | Nexus profile steps | SQLite bundle |
+| **Session (STM)** | `session_id` | `runtime/nexus/session` | Via Nexus history steps only | SQLite bundle, in-memory fallback, or Mongo `DocumentStoreSessionStorage` (MEM-DEPTH-2.1) |
+| **Task KV** | `tenant_id` + `task_id` + namespace | `runtime/task_memory` | `memory.*` tools via `MemoryView` | SQLite (`INTERGRAX_TASK_MEMORY_DB`) |
+| **User LTM** | `tenant_id` + `user_id` | `intergrax/memory` | Nexus `UserLongtermMemoryStep` | SQLite bundle / Mongo document_store |
+| **Org profile** | `org_id` | `runtime/organization` | Nexus profile steps | SQLite bundle |
 | **Shared handoff** | `task_id` | `SharedTaskContext` | `ContextManager` | Task metadata + KV bridge |
-| **Knowledge (RAG)** | collection + metadata filters | `intergrax/rag/` | `rag.retrieve` tool / `rag.retrieve` (catalog) | Vector store per integration profile |
-| **Session episodic index** | `tenant_id` + `session_id` (+ `user_id`) | `intergrax/memory/` (`SessionTurnIndexService`) | Nexus `run_session_semantic_recall_context` + CE `SessionSemanticRecallProvider` | Vector store — index over session turns, not a replacement for `SessionStorage` |
-| **Trace** | `run_id` | `runtime/nexus/tracing/` | Read-only debug APIs | SQLite |
+| **Knowledge (RAG)** | collection + metadata filters | `intergrax/rag` | `rag.retrieve` tool / `rag.retrieve` (catalog) | Vector store per integration profile |
+| **Session episodic index** | `tenant_id` + `session_id` (+ `user_id`) | `intergrax/memory` (`SessionTurnIndexService`) | Nexus `run_session_semantic_recall_context` + CE `SessionSemanticRecallProvider` | Vector store — index over session turns, not a replacement for `SessionStorage` |
+| **Trace** | `run_id` | `runtime/nexus/tracing` | Read-only debug APIs | SQLite |
 
 ### 5.2 Session vs checkpoint vs task KV
 

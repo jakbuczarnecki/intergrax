@@ -8,7 +8,7 @@ alwaysApply: false
 
 **Milestone log only** — not a transcript of every completed iteration or Cursor chat.
 
-**Canon:** [`docs/project/maintainers/implementation-journal/README.md`](docs/project/maintainers/implementation-journal/README.md)  
+**Canon:** [`docs/project/maintainers/implementation-journal/README.md`](docs/project/maintainers/implementation-journal/README.md)
 **Scaffold:** [`docs/project/maintainers/implementation-journal/entries/_TEMPLATE.md`](docs/project/maintainers/implementation-journal/entries/_TEMPLATE.md)
 
 ## When to write

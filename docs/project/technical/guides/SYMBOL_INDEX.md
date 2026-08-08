@@ -30,11 +30,11 @@ Use this **before** repo-wide semantic search. Grep the path directly.
 
 | Area | Path |
 |------|------|
-| Nexus core | `intergrax/runtime/nexus/` |
-| Orchestration | `intergrax/runtime/nexus/orchestration/` |
-| Tool runtime | `intergrax/tools/` |
-| Agent contracts | `intergrax/runtime/nexus/agent/` |
-| Tier-3 hosts | `applications/` |
-| Tier-2 agents | `agents/` |
+| Nexus core | `intergrax/runtime/nexus` |
+| Orchestration | `intergrax/runtime/nexus/orchestration` |
+| Tool runtime | `intergrax/tools` |
+| Agent contracts | `intergrax/runtime/nexus/agent` |
+| Tier-3 hosts | `applications` |
+| Tier-2 agents | `agents` |
 
 Regenerate: `uv run python scripts/docs/generate_symbol_index.py`

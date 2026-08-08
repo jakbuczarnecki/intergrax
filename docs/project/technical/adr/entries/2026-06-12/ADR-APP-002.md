@@ -35,7 +35,7 @@ Tier-3 architecture §49 requires immutable **EnvironmentSnapshot** materializat
 
 ## Compliance
 
-- Tier boundaries: wire keys in `intergrax/runtime/task/task_metadata_keys.py`; contracts in `intergrax/applications/contracts/`.
+- Tier boundaries: wire keys in `intergrax/runtime/task/task_metadata_keys.py`; contracts in `intergrax/applications/contracts`.
 - No Nexus fork; snapshot is metadata only.
 
 ## Implementation notes

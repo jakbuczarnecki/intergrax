@@ -43,7 +43,7 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 |-------|-----------------|-------------|------------|
 | **A — Generative** | Route via `ModalityProfile.allowed_planes` includes `generative`; monitor `llm_metrics` token/cost | Multimodal Q&A, captioning, unstructured media understanding | LLM adapter failover — [`LLM_ADAPTERS.md`](../plan/LLM_ADAPTERS.md) |
 | **B — Ingest** | Use RAG/parser pipeline; never bypass `ParserPipeline` for prod ingest | Document/audio ingest to retrieval index | RAG ops — [`RAG.md`](../plan/RAG.md) §6.1av |
-| **C — Deterministic CV/ML** | Set `require_deterministic_cv=true`; verify `opencv_runtime_available()` in runner; use harness registry artifacts | Regulated vision, golden-test CV, Celery modality jobs | MOD-MAINT OpenCV probe + `tests/unit/model_inference/` |
+| **C — Deterministic CV/ML** | Set `require_deterministic_cv=true`; verify `opencv_runtime_available()` in runner; use harness registry artifacts | Regulated vision, golden-test CV, Celery modality jobs | MOD-MAINT OpenCV probe + `tests/unit/model_inference` |
 
 **Boundary rule:** Plane C outputs are tool-attributed (`modality_metrics`); Plane A outputs are LLM-attributed — do not mix cost attribution on a single step without explicit `ModalityProfile` plane selection.
 
@@ -69,7 +69,7 @@ Agent = LLMProfile + ModalityProfile + Skill Set + Policy Bundle + Context Profi
 - Feature store as platform product
 - Replacing MLOps teams’ experiment tracking (use `wandb` integration for **eval linkage** only)
 - CV models as `ToolContract` blobs without schema (no “mega tools”)
-- Importing `torch` / `ultralytics` in Tier-2 `agents/`
+- Importing `torch` / `ultralytics` in Tier-2 `agents`
 
 ---
 

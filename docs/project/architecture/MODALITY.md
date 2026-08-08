@@ -1,11 +1,11 @@
 # Modality
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/MODALITY.md`](../maintainers/plans/MODALITY.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/MODALITY.md`](../maintainers/plans/MODALITY.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 29  
-**Audit instruction:** [`audit/MODALITY.md`](../maintainers/audit/MODALITY.md)  
+**Audit instruction:** [`audit/MODALITY.md`](../maintainers/audit/MODALITY.md)
 **Last updated:** 2026-06-20 — Modality Production Boundary (plane-specific maturity; cross-layer disambiguation)
 
 ---
@@ -111,7 +111,7 @@ Agents and Tier-3 applications consume modality through **approved planes only**
 
 **Implementation (as-built):**
 
-- **Module:** `intergrax/llm_adapters/` only.
+- **Module:** `intergrax/llm_adapters` only.
 - **Capabilities (target contract):** `supports_vision`, `supports_audio_input`, `supports_audio_output` on `LLMAdapter`.
 - **Messages:** `intergrax/llm/messages.py` — `AttachmentRef` (`image`, `audio`, `video`, …); adapters MUST map attachments to vendor content parts when capability flags are true.
 - **When to use:** interactive reasoning, captioning in chat, tool planning with visual context.
@@ -187,7 +187,7 @@ For **production CV** and **classical ML** where a multimodal LLM is the wrong t
 
 #### C.1 Vision inference engine (extensible)
 
-**Target module:** `intergrax/model_inference/` (Tier-0, planned Phase W-ML).
+**Target module:** `intergrax/model_inference` (Tier-0, planned Phase W-ML).
 
 **Contract:** `VisionInferenceAdapter` — uniform API over heterogeneous backends:
 
@@ -234,7 +234,7 @@ VisionModelProfile  →  VisionInferenceRegistry  →  VisionInferenceAdapter
 | Role | Layer | Example |
 |------|-------|---------|
 | Embeddings | `rag/embedding` | `HFEmbeddingProvider` |
-| Sparse / rerank | `rag/` or integrations | SPLADE, `jina_rerank` |
+| Sparse / rerank | `rag` or integrations | SPLADE, `jina_rerank` |
 | Hub artifacts | Governance | Pin revision, license scan, CVE policy (V-SEC) |
 | Hosted inference | Integration / remote adapter | HF Inference Endpoints, TGI |
 

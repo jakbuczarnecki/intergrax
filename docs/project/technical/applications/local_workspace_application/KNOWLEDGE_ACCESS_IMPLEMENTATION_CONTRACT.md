@@ -69,7 +69,7 @@ Hybrid Ask, Knowledge Query Orchestrator, live provider execution, Slack UI, new
 
 ### 1.4 Repository note
 
-`intergrax/applications/local_workspace/` does **not** exist. LKW product code lives under `applications/local_workspace_application/`. Tier-1 Vendor Knowledge lives under `intergrax/runtime/vendor_knowledge/`.
+`intergrax/applications/local_workspace` does **not** exist. LKW product code lives under `applications/local_workspace_application`. Tier-1 Vendor Knowledge lives under `intergrax/runtime/vendor_knowledge`.
 
 ---
 

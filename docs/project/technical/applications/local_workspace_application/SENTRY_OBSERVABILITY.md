@@ -63,7 +63,7 @@ chmod +x applications/local_workspace_application/scripts/run-local-docker-all.s
 applications/local_workspace_application/scripts/run-local-docker-all.sh
 ```
 
-These helpers auto-discover every top-level overlay matching `docker-compose.*.yml` in `applications/local_workspace_application/docker/`. Internal fragments such as `sentry.services.yml` are included by `docker-compose.sentry.yml` and are **not** discovered directly.
+These helpers auto-discover every top-level overlay matching `docker-compose.*.yml` in `applications/local_workspace_application/docker`. Internal fragments such as `sentry.services.yml` are included by `docker-compose.sentry.yml` and are **not** discovered directly.
 
 Pass through Docker Compose commands when needed, for example:
 
@@ -143,7 +143,7 @@ applications/local_workspace_application/docker/sentry-proof/generated.env
 
 That path is **local proof runtime state** — created or overwritten atomically by `sentry-bootstrap` (`generated.env.tmp` → `generated.env`). It is listed in `.gitignore` together with `.bootstrapped`; do not commit bootstrap output or external SaaS DSNs.
 
-Docker Compose resolves `env_file` when creating the container, before `depends_on` completes, so the Sentry overlay does **not** use `env_file` for `generated.env`. Instead, `local_workspace` mounts `./sentry-proof` read-only at `/proof` and `start-local-workspace-sentry-proof.sh` sources `/proof/generated.env` immediately before `uvicorn` starts. If the file is missing, the container exits with a clear local-proof error.
+Docker Compose resolves `env_file` when creating the container, before `depends_on` completes, so the Sentry overlay does **not** use `env_file` for `generated.env`. Instead, `local_workspace` mounts `sentry-proof` read-only at `/proof` and `start-local-workspace-sentry-proof.sh` sources `/proof/generated.env` immediately before `uvicorn` starts. If the file is missing, the container exits with a clear local-proof error.
 
 The committed template is:
 

@@ -24,7 +24,7 @@ _TASK_OWNED_PREFIXES: tuple[str, ...] = (
     "applications/local_workspace_application/tests/model_runtime/",
     "applications/local_workspace_application/tests/e2e/test_model_runtime_portability_live.py",
     "applications/local_workspace_application/scripts/run-lkw-model-runtime-proof.py",
-    "applications/local_workspace_application/docs/evidence/LKW_MODEL_RUNTIME_PORTABILITY.",
+    "docs/project/technical/applications/local_workspace_application/evidence/LKW_MODEL_RUNTIME_PORTABILITY.",
     "infra/docker/vllm/docker-compose.yml",
 )
 

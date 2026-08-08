@@ -2,7 +2,7 @@
 
 **Status:** GEC-3…GEC-6 baseline (2026-07-20) — mapping + governed continuation + side-effect policy + descriptive proof profile composition; no transport / partner SDK / receipt persistence  
 **Vertical:** Governed External Contractor (GEC)  
-**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../platform/governed_external_execution.md) — ownership · lifecycle · invariants  
+**Platform reference:** [`docs/project/technical/platform/governed_external_execution.md`](../../platform/governed_external_execution.md) — ownership · lifecycle · invariants
 **Implementation tracker:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)  
 **Agent ADRs:** [`adr/README.md`](adr/README.md)  
 **Host architecture:** [`docs/project/technical/applications/governed_contractor_application/ARCHITECTURE.md`](../../applications/governed_contractor_application/ARCHITECTURE.md)
@@ -176,7 +176,7 @@ Do **not** build an internal orchestration graph that duplicates Nexus.
 | Agent Card discovery, quote fetch, status sync, deliverable fetch | **This adapter** |
 | Wallet / payment approval | Tier-3 / runtime — **prohibited here** |
 | Workspace escape / external publication approval | Tier-3 / runtime — **prohibited here** |
-| Reusable contracts | `intergrax/` — **not** this package as long-term home |
+| Reusable contracts | `intergrax` — **not** this package as long-term home |
 
 ---
 
@@ -235,8 +235,8 @@ Surface correlation in adapter outputs so Tier-3 receipts and traces can join fa
 | `capabilities.py` | Capability ids |
 | `steps/domain_job.py` | Domain step entry |
 | `schemas/adapt_result.py` | Composed adapter result (platform contracts) |
-| `tests/` + `tests/fakes/` | Agent tests + deterministic fake |
-| `docs/project/technical/adr/` | Agent ADRs |
+| `tests` + `tests/fakes` | Agent tests + deterministic fake |
+| `docs/project/technical/adr` | Agent ADRs |
 
 ---
 

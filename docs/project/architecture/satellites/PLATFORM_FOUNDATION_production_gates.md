@@ -59,9 +59,9 @@ Do not build billing, marketplace, advanced UI or enterprise features before val
 
 ## 43.7 Agent-Application Conflation Anti-Pattern
 
-Do not implement agent capabilities inside `applications/`.
+Do not implement agent capabilities inside `applications`.
 
-Do not put FastAPI hosts, env settings, or HTTP serving inside `agents/`.
+Do not put FastAPI hosts, env settings, or HTTP serving inside `agents`.
 
 See §7.4 for the canonical repository split.
 
@@ -75,9 +75,9 @@ Do NOT introduce a second implementation of a universal platform concern when Ti
 
 Examples of forbidden redundancy:
 
-- new LLM adapter layer alongside `intergrax/llm_adapters/`
+- new LLM adapter layer alongside `intergrax/llm_adapters`
 - agent-local logging instead of `intergrax/logging.py`
-- custom vector store client instead of `intergrax/rag/`
+- custom vector store client instead of `intergrax/rag`
 - duplicate tool execution path instead of `ToolRuntime` → `ToolRegistry`
 - new trace store instead of extending `RunTraceWriter` / existing trace pipeline
 - direct SDK calls (OpenAI, Anthropic, Redis, boto3) in agents when Tier-0 adapter exists
@@ -159,11 +159,11 @@ This allows rapid creation, replacement and composition.
 
 Decision:
 
-Agent capability code lives under `agents/<name>/`.
+Agent capability code lives under `agents/<name>`.
 
-Execution environments (Tier-3: host, serving, env config) live under `applications/<name>/`.
+Execution environments (Tier-3: host, serving, env config) live under `applications/<name>`.
 
-The framework package `intergrax/` MUST remain free of product-specific agent implementations.
+The framework package `intergrax` MUST remain free of product-specific agent implementations.
 
 Reason:
 
@@ -219,19 +219,19 @@ Constraint:
 
 Decision:
 
-All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations/`** under category contracts (§7.1).
+All reusable **external infrastructure** adapters (databases, caches, queues, chat, search, issue trackers, observability backends, cloud infrastructure facades) MUST be registered in **`intergrax/integrations`** under category contracts (§7.1).
 
-**Excluded:** LLM providers remain in **`intergrax/llm_adapters/`** only — not in the Integration Library (§7.1.2).
+**Excluded:** LLM providers remain in **`intergrax/llm_adapters`** only — not in the Integration Library (§7.1.2).
 
 Reason:
 
-Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Slack HITL). A catalog with universal contracts lets one platform team maintain adapters while product teams compose them in Tier-3 applications — without copying SDK code into `agents/`.
+Multiple agent teams need the same building blocks (Redis cache, Jira tasks, Slack HITL). A catalog with universal contracts lets one platform team maintain adapters while product teams compose them in Tier-3 applications — without copying SDK code into `agents`.
 
 Constraint:
 
 - New **providers** follow Phase M checklist in the implementation plan.
 - New **categories** require §5.2.4 human approval.
-- Legacy modules (`queueing/`, `distributed/`, etc.) are wrapped, not duplicated.
+- Legacy modules (`queueing`, `distributed`, etc.) are wrapped, not duplicated.
 
 ---
 
@@ -374,6 +374,6 @@ Harness -> Runtime -> Agents -> Applications -> Products
 
 Business-agent work (K.1/K.2, product apps) remains deferred until explicit product reprioritization — see [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) §6.3.
 
-**Phase V implementation baseline** (code modules, not duplicated here): `intergrax/runtime/architecture/` — capability graph, lifecycle, eval, security, cost, context/prompt quality, graph RAG helpers. Traceability: [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) Phase V / FAUDIT-32.
+**Phase V implementation baseline** (code modules, not duplicated here): `intergrax/runtime/architecture` — capability graph, lifecycle, eval, security, cost, context/prompt quality, graph RAG helpers. Traceability: [`plan/PLATFORM_FOUNDATION.md`](../plan/PLATFORM_FOUNDATION.md) Phase V / FAUDIT-32.
 
 ---

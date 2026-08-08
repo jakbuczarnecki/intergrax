@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Canonical maintainer-facing contract for public proof status, evidence requirements, claim qualification, and proof promotion rules.
 
-**Public dashboard:** [`../../PROOFS.md`](../../proofs/PROOFS.md)
+**Public dashboard:** [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md)
 
 This document owns:
 
@@ -35,7 +35,7 @@ It does **not** replace:
 - next implementation task;
 - a mirror of any technical roadmap;
 - `LICENSE`;
-- `COLLABORATION.md`.
+- `../../community/COLLABORATION.md`.
 
 ---
 
@@ -199,14 +199,14 @@ When sources disagree, apply **claim audit rules** (§11): use the lower support
 | Public role | LKW is the Primary product proof |
 | Overall public classification | PARTIAL |
 | Product maturity | Backend Product Alpha / MVP |
-| Accepted proof owner | `LKW_PLATFORM_PROOF.md` and referenced evidence |
+| Accepted proof owner | `../../proofs/LKW_PLATFORM_PROOF.md` and referenced evidence |
 | Detailed implementation owner | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` |
-| Public claim snapshot | `PROOFS.md` |
+| Public claim snapshot | `../../proofs/PROOFS.md` |
 | Non-duplication rule | Current tasks, slices, dependencies and next steps remain only in the implementation plan |
 
-The implementation plan may advance without changing `PROOFS.md`.
+The implementation plan may advance without changing `../../proofs/PROOFS.md`.
 
-A `PROOFS.md` update is required only when accepted evidence
+A `../../proofs/PROOFS.md` update is required only when accepted evidence
 or the allowed public claim changes.
 
 ### LKW Hybrid Ask claim boundary
@@ -238,8 +238,8 @@ Do not promote from architecture status alone. Contributors must not interpret t
 | Overall public classification | PARTIAL |
 | Accepted proof owner | Token Optimization proof documents and owning guide |
 | Detailed implementation owner | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` |
-| Public claim snapshot | `PROOFS.md` |
-| Claim guardrails | `TOKEN_OPTIMIZATION_CLAIMS.md` |
+| Public claim snapshot | `../../proofs/PROOFS.md` |
+| Claim guardrails | `../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md` |
 | Non-duplication rule | Current phases, subphases, dependencies and review states remain only in the implementation plan |
 
 Stable public boundaries:
@@ -296,7 +296,7 @@ Bounded implementation claim
 ≠ production capability
 ```
 
-Detail: [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) § README discovery and promotion boundary.
+Detail: [`../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md) § README discovery and promotion boundary.
 
 ---
 
@@ -309,7 +309,7 @@ Detailed implementation change
 Accepted evidence change
 → update the owning proof
 → update PUBLIC_PROOF_AND_CLAIMS_MODEL.md when the allowed claim changes
-→ update PROOFS.md
+→ update docs/project/proofs/PROOFS.md
 → update affected overview documents only when their summary becomes inaccurate
 
 Roadmap or owner-link change
@@ -326,17 +326,17 @@ a repository-wide public-document status update.
 
 | Topic | Owner |
 |-------|-------|
-| Public proof dashboard | `PROOFS.md` |
+| Public proof dashboard | `../../proofs/PROOFS.md` |
 | Status vocabulary and promotion rules | this document |
 | Detailed LKW implementation progress | `docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md` |
 | Detailed Token Optimization implementation progress | `docs/project/capabilities/plan/TOKEN_OPTIMIZATION.md` |
-| Accepted LKW proof | `LKW_PLATFORM_PROOF.md` and referenced evidence |
+| Accepted LKW proof | `../../proofs/LKW_PLATFORM_PROOF.md` and referenced evidence |
 | Accepted Token Optimization proof | owning proof documents and guide |
 | Token Optimization guide | `docs/project/capabilities/token_optimization/README.md` |
-| Token Optimization claim guardrails | `TOKEN_OPTIMIZATION_CLAIMS.md` |
+| Token Optimization claim guardrails | `../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md` |
 | Public reader navigation | `docs/project/community/PUBLIC_DOCUMENTATION_MAP.md` |
 | Public documentation architecture | `PUBLIC_DOCUMENTATION_ARCHITECTURE.md` |
-| Public positioning | `INTERGRAX_PUBLIC_POSITIONING.md` |
+| Public positioning | `../../overview/INTERGRAX_PUBLIC_POSITIONING.md` |
 
 ---
 
@@ -362,5 +362,5 @@ Do not silently choose the more promotional interpretation.
 3. Never promote a claim from roadmap status alone.
 4. Use the lower supported public claim when sources disagree.
 5. Block public promotion until the owning sources are reconciled.
-6. Do not copy transient task conflicts into `PROOFS.md`.
+6. Do not copy transient task conflicts into `../../proofs/PROOFS.md`.
 7. Record only contradictions that affect an active public claim decision.

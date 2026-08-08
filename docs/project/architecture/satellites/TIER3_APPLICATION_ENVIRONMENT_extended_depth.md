@@ -27,7 +27,7 @@ An isolated temporary filesystem workspace for work **without mutating the main 
 
 | Concern | Mechanism |
 |---------|-----------|
-| Tenant boundary | Path: `{root}/{tenant_id}/{task_id}/{workspace_id}/` |
+| Tenant boundary | Path: `{root}/{tenant_id}/{task_id}/{workspace_id}` |
 | Tool access | Only via harness tools with shadow path policy — no raw host FS in agents |
 | Execution mode | STRICT hosts deny writes outside workspace root |
 | Provenance | `tenant_id`, `task_id`, `workspace_id` on every artifact |
@@ -174,11 +174,11 @@ Normalized intake MUST converge on the same Nexus lifecycle:
 
 | Surface | Typical entry |
 |---------|---------------|
-| HTTP API | `applications/*/host/` FastAPI routers |
+| HTTP API | `applications/*/host` FastAPI routers |
 | CLI | `intergrax` CLI / lab commands |
 | Slack / Teams | `POST /v1/interactions/intake` + adapters |
 | Webhook / worker | `applications/_shared/task_intake.py`, queue consumers |
-| Scheduler | `intergrax/queueing/` + long-running task API |
+| Scheduler | `intergrax/queueing` + long-running task API |
 
 See [`ORCHESTRATION.md`](ORCHESTRATION.md) §48 for `TaskEnvelope` normalization.
 
@@ -196,7 +196,7 @@ Every Tier-3 application MUST:
 
 | Document | Relationship |
 |----------|--------------|
-| [`applications/USAGE.md`](../../applications/USAGE.md) | Authoring Tier-3 hosts |
+| [`applications/USAGE.md`](../../../../applications/USAGE.md) | Authoring Tier-3 hosts |
 | [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | UAEP + policy runtime |
 | [`ORCHESTRATION.md`](ORCHESTRATION.md) | Nexus orchestration fields on profile |
 | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | `ScalingProfile`, deploy/Helm vs ECP provisioning |
@@ -205,7 +205,7 @@ Every Tier-3 application MUST:
 
 ## 22.6 Hierarchical profile bundles
 
-**Status:** Architecture **accepted** · **M1 Done** · **M2 Done** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile/`
+**Status:** Architecture **accepted** · **M1 Done** · **M2 Done** · **M3 Done** (`APP-EVOL-8.6`) · **ADR:** [`ADR-APP-003`](../adr/entries/2026-06-17/ADR-APP-003.md) · **Code:** `intergrax/applications/contracts/environment_profile`
 
 ### 22.6.1 Problem
 
@@ -303,7 +303,7 @@ Tier-3 hosts are **composition shells** around a long-lived Nexus runtime. The s
 |---------|---------------|--------------|------------------|
 | **Reactive on-demand** | Host daemon idle until work arrives | User/API message per `Task` | HTTP `POST …/run`, MCP, Slack/Teams intake (`execute=true`) |
 | **Always-on daemon** | Host process runs continuously | Same as reactive; plus health/index maintenance | Local HTTP/MCP, tray, Socket Mode Slack |
-| **Scheduled / queued background** | Worker consumes queue or cron | Scheduler, file watcher, webhook enqueue | `intergrax/queueing/`, long-running API, `message_bus` |
+| **Scheduled / queued background** | Worker consumes queue or cron | Scheduler, file watcher, webhook enqueue | `intergrax/queueing`, long-running API, `message_bus` |
 | **Hybrid** | Daemon + background workers | Mix of interactive and async tasks | LKW-style: index in background, Q&A on demand |
 
 **Invariant:** every posture normalizes work to **`Task` → `UnifiedTaskRunner` → `NexusLoop.handle_task()`**. Surfaces differ; Nexus lifecycle does not.
@@ -329,7 +329,7 @@ Agents are **not** separate OS processes. They are registry entries invoked **on
 | HTTP/MCP serving | Host `factory.py` | Optional | **Required** | Often required for ops |
 | Interaction intake | `wire_interaction_intake_service` | Optional | Recommended | Optional (notify only) |
 | Long-running + checkpoint | `OrchestrationProfile.long_running_enabled`, `ReliabilityProfile` | Off unless large jobs | On for reports / HITL | **On** for batch pipelines |
-| Queue consumer | `applications/_shared/task_intake.py`, `queueing/` | Rare | Optional | **Required** for async |
+| Queue consumer | `applications/_shared/task_intake.py`, `queueing` | Rare | Optional | **Required** for async |
 | Notification on complete | `NotificationAdapter`, integration webhooks | Optional | Recommended | **Required** for user alert |
 | Shadow / sandbox | `ShadowWorkspaceProfile`, `SandboxProfile` | Per task | Per task | Per task |
 | Execution mode | `ExecutionMode` STRICT / BALANCED / EXPLORATORY | Product choice | Product choice | Often BALANCED for batch |
@@ -536,8 +536,8 @@ AgentBinding:
 
 | Artifact | Tier | Contract | Lives in |
 |----------|------|----------|----------|
-| **Agent** | 2 | `AgentContract` | `agents/<slug>/` |
-| **Application environment** | 3 | `ApplicationManifest` + `ApplicationEnvironmentProfile` | `applications/<app>/` |
+| **Agent** | 2 | `AgentContract` | `agents/<slug>` |
+| **Application environment** | 3 | `ApplicationManifest` + `ApplicationEnvironmentProfile` | `applications/<app>` |
 | **Product** | — | Business offering | product `ARCHITECTURE.md` + Tier-3 host |
 
 **Rule:** business logic and cognitive steps live in Tier-2 agents. Tier-3 hosts **compose** harness capabilities — they do not implement domain `on_next_step` loops (ACP §38).
@@ -665,6 +665,6 @@ Tier-3 applications **do not** receive `on_next_orchestration_step()` or any ses
 | Import `agents.*` business rules into `factory.py` | **Forbidden** — roster + profile only |
 | `Application.on_next_orchestration_step()` as public API | **Rejected** — duplicates NexusLoop (APP-INV-03) |
 
-**Guide:** [`applications/USAGE.md`](../../applications/USAGE.md) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §0 · **Plan:** Phase **H-APP** + **H-APP-CON**.
+**Guide:** [`applications/USAGE.md`](../../../../applications/USAGE.md) · [`guides/EXTENSION_AUTHOR_GUIDE.md`](../guides/EXTENSION_AUTHOR_GUIDE.md) §0 · **Plan:** Phase **H-APP** + **H-APP-CON**.
 
 ---

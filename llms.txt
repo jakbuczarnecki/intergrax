@@ -2,9 +2,9 @@
 
 **Positioning:** Harness AI & Agent OS — agents decide domain steps (`on_next_step` → `StepOutcome`); HarnessKernel executes policy/trace/state; NexusLoop orchestrates multi-agent Tasks; Tier-3 applications supply identity, profiles, and production gates. The Harness is the product; agents are replaceable. Canon: docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §13–§40 · ADR-AGENT-001..003.
 
-**Hub (sole docs/ root file):** docs/project/architecture/intergrax_runtime_architecture.md  
-**Domain pairs (1:1):** docs/project/architecture/<DOMAIN>.md ↔ docs/project/maintainers/plans/<DOMAIN>.md  
-**Multi-layer feature pairs (1:1):** docs/project/capabilities/architecture/<FEATURE>.md ↔ docs/project/capabilities/plan/<FEATURE>.md — docs/project/capabilities/README.md  
+**Hub (sole docs/ root file):** docs/project/architecture/intergrax_runtime_architecture.md
+**Domain pairs (1:1):** docs/project/architecture/<DOMAIN>.md ↔ docs/project/maintainers/plans/<DOMAIN>.md
+**Multi-layer feature pairs (1:1):** docs/project/capabilities/architecture/<FEATURE>.md ↔ docs/project/capabilities/plan/<FEATURE>.md — docs/project/capabilities/README.md
 **Guides (strategy, ideal, audit):** docs/project/technical/guides/
 **System invariants (P2-ARCH-01):** docs/project/technical/guides/SYSTEM_INVARIANTS.md — cross-domain “never violate” index before domain pairs
 **Layer completion:** docs/project/technical/guides/LAYER_COMPLETION_MODE.md — full domain layer closeout (audit → maturity)

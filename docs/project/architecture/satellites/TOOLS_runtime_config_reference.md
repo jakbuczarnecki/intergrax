@@ -8,20 +8,20 @@ Tool-related fields on `RuntimeConfig` (`intergrax/runtime/nexus/config.py`). Ti
 
 | Field | Type | Default | Role |
 |-------|------|---------|------|
-| `tool_planner` | `ToolPlannerProtocol \| None` | `None` | `CatalogToolPlanner` / custom; **required** for `run_bounded_tool_loop` / `ctx.invoke_tool` |
-| `tool_invoker` | `RuntimeToolInvoker \| IdempotentToolInvoker \| None` | built in `RuntimeContext.build()` | Execution enforcement |
-| `tools_mode` | `"off" \| "auto" \| "required"` | `"auto"` | See [§tools_mode](#tools_mode) |
-| `tools_context_scope` | `ToolsContextScope` | `CURRENT_MESSAGE_ONLY` | Planner input assembly ([§tools_context_scope](#tools_context_scope); TOOL-ENG-11) |
-| `tool_profile` | `ToolProfile \| None` | `None` | Host catalog subset |
-| `tool_wiring_context` | `ToolWiringContext \| None` | enriched at build | Integration slots for handlers |
+| `tool_planner` | `ToolPlannerProtocol /| None` | `None` | `CatalogToolPlanner` / custom; **required** for `run_bounded_tool_loop` / `ctx.invoke_tool` |
+| `tool_invoker` | `RuntimeToolInvoker /| IdempotentToolInvoker /| None` | built in `RuntimeContext.build()` | Execution enforcement |
+| `tools_mode` | `"off" /| "auto" /| "required"` | `"auto"` | See [§tools_mode](.#tools_mode) |
+| `tools_context_scope` | `ToolsContextScope` | `CURRENT_MESSAGE_ONLY` | Planner input assembly ([§tools_context_scope](.#tools_context_scope); TOOL-ENG-11) |
+| `tool_profile` | `ToolProfile /| None` | `None` | Host catalog subset |
+| `tool_wiring_context` | `ToolWiringContext /| None` | enriched at build | Integration slots for handlers |
 | `tool_providers` | `Sequence[ToolProvider]` | `()` | Extra registration after profile |
-| `tool_scope_policy` | `ToolScopePolicy \| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (wired TOOL-ENG-3) |
+| `tool_scope_policy` | `ToolScopePolicy /| None` | from `RuntimePolicyBundle` | Per-invoke allow-list (wired TOOL-ENG-3) |
 | `tool_planner_prompt_id` | `str` | `tools_agent_planner` | From `ReasoningProfile` via catalog bridge (TOOL-ENG-0) |
-| `tool_selection_mode` | `ToolSelectionMode` | `static` | L6 schema narrowing — see [§Production strategies](#tool-selection-modes-production-strategies) and mapping table below |
+| `tool_selection_mode` | `ToolSelectionMode` | `static` | L6 schema narrowing — see [§Production strategies](.#tool-selection-modes-production-strategies) and mapping table below |
 | `tool_selection_top_k` | `int` | `20` | Top-k for `retrieval_top_k` (keyword overlap; not semantic embedding search) |
-| `idempotency_store` | `IdempotencyStore \| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
-| `policy_bundle` | `RuntimePolicyBundle \| None` | Tier-3 | `tool_access`, budget, plan-loop |
-| `modality_profile` | `ModalityProfile \| None` | env profile | Tool plane filter |
+| `idempotency_store` | `IdempotencyStore /| None` | `InMemoryIdempotencyStore` | Side-effect dedup |
+| `policy_bundle` | `RuntimePolicyBundle /| None` | Tier-3 | `tool_access`, budget, plan-loop |
+| `modality_profile` | `ModalityProfile /| None` | env profile | Tool plane filter |
 | `enable_rag` / `enable_websearch` | `bool` | host-specific | Gate `rag.retrieve` (catalog) / `websearch.query` (catalog) |
 | `run_budget` + `budget_policy` | `RunBudget`, `BudgetPolicy` | optional | `max_tool_calls` enforcement |
 
@@ -154,7 +154,7 @@ Modern agent systems support multiple **orchestration patterns** for executing t
 
 | Axis | Question | Mechanism |
 |------|----------|-----------|
-| **Selection (L6)** | Which tools appear in the LLM schema? | `ToolSelectionStrategy` — [§Production strategies](#tool-selection-modes-production-strategies) |
+| **Selection (L6)** | Which tools appear in the LLM schema? | `ToolSelectionStrategy` — [§Production strategies](.#tool-selection-modes-production-strategies) |
 | **Planning (L6b)** | Which calls does the LLM emit? | `ToolPlannerProtocol` / `ToolPlanningService` |
 | **Orchestration (2a)** | How is the call batch executed? | `ToolInvocationPattern` **Done** (TOOL-ENG-16) |
 | **Atomic invoke (2b)** | How is one call enforced? | `RuntimeToolInvoker` — unchanged |

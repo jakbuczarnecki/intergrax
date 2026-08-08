@@ -685,7 +685,7 @@ Must **not** contain transient live evidence bodies or `WorkspaceEvidenceV1.cont
 | Indexed run readability | V1 records unchanged; repository returns V1 shape for `run_id` without V2 marker |
 | Transient vs durable evidence | `WorkspaceEvidenceV1` transient during execution; `PersistedAskEvidenceV2` durable in run |
 | In-flight vs durable | `EvidencePlanV1` and execution receipts are separate types from persisted run evidence |
-| Citation versioning | `citation_schema_version: 1 \| 2` on run; V2 uses discriminated citations |
+| Citation versioning | `citation_schema_version: 1 /| 2` on run; V2 uses discriminated citations |
 | Live fields persisted | Provenance + citations + optional receipt only — never raw body by default |
 | Run metadata | `query_mode`, `configuration_revision`, `plan_id`, `indexed_retrieval_status`, `live_execution_status`, `truncation`, `partial_failure` |
 | GET Run V1 | `GET /v1/local_workspace/asks/{run_id}` — V1 indexed projection only; V2 run → `ask_run_version_mismatch` (409) |

@@ -1,8 +1,8 @@
 # Provider Category Contracts — Implementation Plan
 
-**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)  
+**Architecture (1:1):** [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md)
 **Taxonomy source:** `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)  
-**Code:** `intergrax/runtime/integrations/categories/`  
+**Code:** `intergrax/runtime/integrations/categories`
 **Current follow-up:** INTEGRATIONS-3A-CONTRACT-REGISTRY-V2
 
 **Last updated:** 2026-06-29 — INTEGRATIONS-3A contract registry v2 **In progress**; INTEGRATIONS-2E runtime cutover **Done** (185 slugs); 9 `llm_guardrail` slugs deferred.

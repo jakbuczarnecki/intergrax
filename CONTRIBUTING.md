@@ -10,9 +10,9 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
-Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [COLLABORATION.md](docs/project/community/COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
+Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
 
-Contributions are welcome under the evaluation and collaboration model. Read [COLLABORATION.md](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+Contributions are welcome under the evaluation and collaboration model. Read [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
 
 ---
 
@@ -231,7 +231,7 @@ Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) and pick
 
 For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open public issues.
 
-For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [COLLABORATION.md](docs/project/community/COLLABORATION.md)) — do not use public issues for those topics.
+For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md)) — do not use public issues for those topics.
 
 ---
 

@@ -2,12 +2,12 @@
 
 **Status:** Canonical architecture (domain pair 1:1)  
 **Last updated:** 2026-06-23 — **Full Harness LC** (re-validates 2026-06-08 closeout); SK-EXP through SK-EXP5 shipped; **150** skills · **42** bundles  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
-**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/SKILLS.md`](../maintainers/plans/SKILLS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
+**Author map:** [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) **Appendix J**
 **Audit layers:** 12  
-**Audit instruction:** [`audit/SKILLS.md`](../maintainers/audit/SKILLS.md)  
+**Audit instruction:** [`audit/SKILLS.md`](../maintainers/audit/SKILLS.md)
 
 ---
 

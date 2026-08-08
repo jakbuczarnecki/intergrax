@@ -118,7 +118,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.0.1 | **Plan register** — §6.1ax, §6.2af, AUDIT-IDEAL-6.3–6.7 rows | **Done** | Critical | This file + architecture audit register | Cross-linked |
-| M-LLM-X.0.2 | **`docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md`** — ModelCatalog, resolution order, override semantics | **Done** | Critical | `docs/project/technical/adr/` | Linked from architecture + hub |
+| M-LLM-X.0.2 | **`docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md`** — ModelCatalog, resolution order, override semantics | **Done** | Critical | `docs/project/technical/adr` | Linked from architecture + hub |
 | M-LLM-X.0.3 | **Master register sync** — `AUDIT_IDEAL_2026.md` rows 6.2–6.7 | **Done** | High | `plan/AUDIT_IDEAL_2026.md` | 6.2 + 6.7 Partial; 6.3–6.6 Planned |
 
 ---
@@ -141,7 +141,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Done** | High | `registry/gateway_metadata/` | **M-LLM-X.14.2** · LLM-AUDIT-23 |
+| M-LLM-X.2.1 | **`OpenRouterModelMetadataClient`** — optional `/models` fetch, TTL cache | **Done** | High | `registry/gateway_metadata` | **M-LLM-X.14.2** · LLM-AUDIT-23 |
 | M-LLM-X.2.2 | **Merge gateway metadata into catalog session cache** | **Done** | High | `registry/gateway_metadata/session.py` | Opt-in `fetch_gateway_metadata` |
 | M-LLM-X.2.3 | **`LLMProfile.options["fetch_gateway_metadata"]=True`** opt-in | **Done** | Medium | `gateway_metadata/session.py` | Default false (no network in unit gate) |
 | M-LLM-X.2.4 | **Diagnostic `ModelCatalogMissDiagV1`** when non-exact resolution used | **Done** | Medium | `catalog_miss_diag.py` | `resolution_tier` + once per model/run · **M-LLM-X.15.1** |
@@ -155,7 +155,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 | M-LLM-X.3.1 | **`verify_context_preflight`** uses `adapter.count_messages_tokens(messages)` | **Done** | Critical | `context_preflight.py` | Unit: adapter path exercised |
 | M-LLM-X.3.2 | **`count_message_tokens` helper** — delegate to adapter when provided | **Partial** | High | `context_preflight.py` | Adapter default when counter None |
 | M-LLM-X.3.3 | **`ContextBudgetPolicy.from_adapter(adapter)`** factory — derive `max_tokens_estimate` from `resolve_input_budget_tokens` | **Done** | High | `context_budget.py` | Unit test |
-| M-LLM-X.3.4 | **`scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Done** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-X.3.4 | **`scripts/maintenance/check_context_preflight_uses_adapter_tokens.py`** CI guard | **Done** | High | `scripts` | Added to §6.1 maintenance |
 | M-LLM-X.3.5 | **`engine_history_layer`** history token count via `adapter.count_messages_tokens` | **Done** | High | `engine_history_layer.py` | Already delegated; preflight aligned LC-2 |
 
 ---
@@ -212,7 +212,7 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.8.1 | **Architecture audit register** — all LLM-AUDIT-* → Done | **Done** | Critical | `architecture/LLM_ADAPTERS.md` | **LLM-AUDIT-21** |
 | M-LLM-X.8.2 | **AUDIT-IDEAL-6.2–6.7** → Done in master register | **Done** | High | `AUDIT_IDEAL_2026.md` | Gate scripts |
-| M-LLM-X.8.3 | **Implementation journal** + maturity re-score L4 enterprise | **Done** | Medium | `implementation-journal/` | `check_implementation_journal.py` |
+| M-LLM-X.8.3 | **Implementation journal** + maturity re-score L4 enterprise | **Done** | Medium | `implementation-journal` | `check_implementation_journal.py` |
 
 ---
 
@@ -228,12 +228,12 @@ Wave M-LLM-X-16 (catalog miss L5):    M-LLM-X.16.1 → 16.2 → 16.3 → 16.4 �
 | M-LLM-X.9.2 | **`RoutingContext`, `RoutingTarget`, `LLMRoutingProfile`** Pydantic models | **Done** | **Critical** | `routing/contracts.py` | Immutable context snapshot |
 | M-LLM-X.9.2b | **`LLMRoutingEvaluator`** — priority sort, first-match, allowlist guard | **Done** | **Critical** | `routing/evaluator.py` | Unit: priority + allowlist rejection |
 | M-LLM-X.9.3 | **Built-in rules package** — `BudgetBelowRule`, `TaskClassRule`, `TokenThresholdRule`, `BudgetExceededDegradeRule` | **Done** | High | `routing/builtin_rules.py` | Each implements same Protocol |
-| M-LLM-X.9.4 | **Tier-3 `LLMRoutingProfile` on `ApplicationEnvironmentProfile`** + `CapabilityBundle` wire | **Done** | **Critical** | `environment_profile/`, `llm_resolver.py` | `test_llm_routing_resolver.py` |
+| M-LLM-X.9.4 | **Tier-3 `LLMRoutingProfile` on `ApplicationEnvironmentProfile`** + `CapabilityBundle` wire | **Done** | **Critical** | `environment_profile`, `llm_resolver.py` | `test_llm_routing_resolver.py` |
 | M-LLM-X.9.5 | **Hot path wire** — `resolve_llm_adapter()` evaluates rules using budget meter + `task_class` | **Done** | **Critical** | `llm_resolver.py`, `llm_routing_wiring.py` | Integration test: rule triggers profile swap |
 | M-LLM-X.9.6 | **Unify `BudgetReactionProfile.degrade_model`** with `BudgetExceededDegradeRule` | **Done** | High | `budget_enforcing_llm_router.py`, `builtin_rules.py` | `cheapest_allowed_model_hint`; ACP-TOK-3 tests green |
 | M-LLM-X.9.7 | **`DynamicLLMRouter` wrapper** — per-step model swap within run (extends budget-enforcing pattern) | **Done** | Medium | `agents/authoring/dynamic_llm_router.py` | `test_dynamic_llm_router.py` |
 | M-LLM-X.9.8 | **USAGE.md cookbook** — built-in vs custom class, testing, allowlist, HF via vLLM | **Done** | High | `intergrax/llm_adapters/USAGE.md` | Linked from architecture §Routing rules |
-| M-LLM-X.9.9 | **`scripts/maintenance/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Done** | Medium | `scripts/` | `check_audit_ideal_gates.py` umbrella |
+| M-LLM-X.9.9 | **`scripts/maintenance/check_llm_routing_rules.py`** — reference hosts validate allowlist conformance | **Done** | Medium | `scripts` | `check_audit_ideal_gates.py` umbrella |
 
 **Suggested PR order (X-9):** 9.1 → 9.2 → 9.2b → 9.3 → 9.4 → 9.5 → 9.6 → 9.7 → 9.8 → 9.9.
 
@@ -276,12 +276,12 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.10.1 | **Predefined rule catalog** — 12+ parametric classes (table above); rename/alias X-9 rules where needed | **Done** | **Critical** | `routing/builtin_rules.py`, `routing/__init__.py` | Parametrized unit test per class |
 | M-LLM-X.10.2 | **`build_routing_context_from_runtime()`** — auto-fill `task_class`, `budget_remaining_ratio`, `tokens_used`, `step_index`, `budget_degrade_active`, `tenant_id`, `agent_id` from Nexus / kernel / budget meter | **Done** | **Critical** | `llm_resolver.py`, `runtime_config_bridge.py`, `nexus_factory.py` | No manual `routing_context=` required on default host path |
-| M-LLM-X.10.3 | **Routing observability** — emit `matched_rule_id`, `routing_reason`, selected `profile_id` on trace (`LLMRoutingAttemptDiagV1` extend or `LLMRoutingRuleDiagV1`) | **Done** | High | `llm_resolver.py`, `observability/` | Gate test maps schema |
-| M-LLM-X.10.4 | **Reference host** — `lab_application` (or product reference) manifest with `LLMRoutingProfile` using **predefined classes only** | **Done** | High | `applications/lab_application/` | `check_llm_routing_rules.py` scans host |
-| M-LLM-X.10.5 | **E2E acceptance** — Nexus run: `BudgetBelowRule` switches profile when budget crosses threshold | **Done** | High | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.10.3 | **Routing observability** — emit `matched_rule_id`, `routing_reason`, selected `profile_id` on trace (`LLMRoutingAttemptDiagV1` extend or `LLMRoutingRuleDiagV1`) | **Done** | High | `llm_resolver.py`, `observability` | Gate test maps schema |
+| M-LLM-X.10.4 | **Reference host** — `lab_application` (or product reference) manifest with `LLMRoutingProfile` using **predefined classes only** | **Done** | High | `applications/lab_application` | `check_llm_routing_rules.py` scans host |
+| M-LLM-X.10.5 | **E2E acceptance** — Nexus run: `BudgetBelowRule` switches profile when budget crosses threshold | **Done** | High | `tests/acceptance/llm_routing` | `-m gate` green |
 | M-LLM-X.10.6 | **Global `DynamicLLMRouter` wire** — ACP / `harness_host_runtime` auto-wrap when `llm_routing_profile` set | **Done** | Medium | `acp_run.py`, `harness_host_runtime.py` | Per-step swap in agent run test |
 | M-LLM-X.10.7 | **USAGE + architecture** — predefined rules matrix, enterprise readiness checklist, composition examples (`CompositeAllRule`) | **Done** | Medium | `USAGE.md`, architecture §Routing rules | Linked from AGENT_CREATION_GUIDE |
-| M-LLM-X.10.8 | **CI gate extend** — `check_llm_routing_rules.py` validates catalog exports + reference host allowlist | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+| M-LLM-X.10.8 | **CI gate extend** — `check_llm_routing_rules.py` validates catalog exports + reference host allowlist | **Done** | Medium | `scripts` | Registered in `check_audit_ideal_gates.py` |
 
 **Suggested PR order (X-10):** 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 → 10.7 → 10.8.
 
@@ -305,10 +305,10 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 | M-LLM-X.11.2 | **`refresh_llm_routing_context()`** — update `RuntimeConfig.llm_routing_context` from budget meter (`ResolvedBudgetLimits` / usage), `step_index`, `budget_degrade_active`, `task_class` during Nexus step loop | **Done** | **Critical** | `context_bridge.py`, `llm_routing_runtime_bridge.py`, `uaep.py` | Context fields change between synthetic steps in test |
 | M-LLM-X.11.3 | **Unify `resolve_llm_adapter()` call sites** — `nexus_factory`, `environment_wiring`, `critic_tool_wiring`, `harness_host_runtime` pass `build_routing_context_from_runtime()` (tenant, metadata, budget when available) | **Done** | **Critical** | `applications/_shared/*.py` | No bare `resolve_llm_adapter(env)` when `llm_routing_profile` set |
 | M-LLM-X.11.4 | **Observability loop** — emit `LLMRoutingRuleDiagV1` on **every** evaluation (evaluating adapter + `DynamicLLMRouter`); `trace_bridge` gate for `routing_rule` schema; `LLMRoutingAllowlistViolationDiagV1` on `AllowlistViolationError` | **Done** | High | `llm_routing_attempt.py`, `trace_bridge.py`, `runtime_state.py` | `test_trace_bridge_maps_llm_routing_rule_schema` green |
-| M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Done** | High | `tests/acceptance/llm_routing/` | `-m gate` green; evaluating adapter mid-run swap |
+| M-LLM-X.11.5 | **True E2E acceptance** — full ACP or Nexus run: seed budget → execute LLM step(s) → budget crosses `BudgetBelowRule` threshold → assert model/profile change in trace or adapter meter | **Done** | High | `tests/acceptance/llm_routing` | `-m gate` green; evaluating adapter mid-run swap |
 | M-LLM-X.11.6 | **Harness host parity** — when `llm_routing_profile` set, wire evaluating adapter or document ACP-only; minimum: `harness_host_runtime` uses evaluating wrapper on `llm_adapter` passed to `build_nexus_loop_from_environment` | **Done** | Medium | `harness_host_runtime.py`, `runtime_config_bridge.py` | Host integration test |
 | M-LLM-X.11.7 | **Docs maturity re-score** — architecture L4→L5 criteria; USAGE §mid-run routing; clarify X-10 vs X-11 scope; custom + builtin authoring paths | **Done** | Medium | `architecture/LLM_ADAPTERS.md`, `USAGE.md` | Linked from hub |
-| M-LLM-X.11.8 | **CI gate** — `scripts/maintenance/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Done** | Medium | `scripts/` | Registered in `check_audit_ideal_gates.py` |
+| M-LLM-X.11.8 | **CI gate** — `scripts/maintenance/check_llm_routing_context_wiring.py` (or extend `check_llm_routing_rules.py`) — static scan: no `resolve_llm_adapter(env)` without context bridge on Tier-3 wiring modules | **Done** | Medium | `scripts` | Registered in `check_audit_ideal_gates.py` |
 
 **Suggested PR order (X-11):** 11.1 → 11.2 → 11.3 → 11.4 → 11.5 → 11.6 → 11.7 → 11.8.
 
@@ -328,7 +328,7 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.12.1 | **Budget meter ↔ routing context** — `RoutingEvaluatingLLMAdapter` aggregates inner `usage` for tracker **or** re-registers inner on swap; `sync_llm_routing_snapshot` uses accurate `tokens_used` | **Done** | **P0 Critical** | `metering.py`, `runtime_sync.py`, `runtime_state.py` | Unit: after N inner calls, `budget_remaining_ratio` drops; `BudgetBelowRule` fires without mock |
-| M-LLM-X.12.2 | **Tier boundary refactor** — move evaluating wrapper + `create_adapter_for_routing_evaluation` to `applications/_shared/`; Tier-0 keeps Protocol + evaluator only; inject `AdapterFactory` callback | **Done** | **P1 Critical** | `routing_evaluating_adapter.py`, `llm_resolver.py` | `intergrax/llm_adapters/` has zero `applications/` imports |
+| M-LLM-X.12.2 | **Tier boundary refactor** — move evaluating wrapper + `create_adapter_for_routing_evaluation` to `applications/_shared`; Tier-0 keeps Protocol + evaluator only; inject `AdapterFactory` callback | **Done** | **P1 Critical** | `routing_evaluating_adapter.py`, `llm_resolver.py` | `intergrax/llm_adapters` has zero `applications` imports |
 | M-LLM-X.12.3 | **Nexus-wide context sync** — `sync_llm_routing_snapshot_for_state` (or equivalent) on graph step kernel / CE pre-LLM hooks, not only UAEP | **Done** | **P1 Critical** | `routing_snapshot_sync.py`, `graph_executor.py`, `engine_history_layer.py` | Integration: graph node run updates `step_index` in snapshot |
 | M-LLM-X.12.4 | **Per-call context refresh** — context provider or `_refresh_inner_adapter` triggers sync when `RuntimeState` available (multi-LLM-call steps) | **Done** | **P1 Critical** | `llm_routing_runtime_bridge.py`, `routing_evaluating_adapter.py` | Test: two LLM calls in one step see updated budget ratio |
 | M-LLM-X.12.5 | **AHI live context on swap** — pass current `RoutingContext` to `resolve_live_model_routing_wiring` in `create_adapter_for_routing_evaluation` | **Done** | **P1** | `llm_resolver.py` | AHI hint respects budget snapshot in unit test |
@@ -337,7 +337,7 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 | M-LLM-X.12.8 | **ACP trace parity** — wire `on_evaluated` → routing diag in `acp_run` for `DynamicLLMRouter` | **Done** | **P2** | `acp_run.py`, `step_kernel.py` | ACP step diagnostics include `llm_routing_evaluations` |
 | M-LLM-X.12.9 | **First-eval profile correction** — evaluating adapter swaps on first call when rule profile ≠ resolver materialized profile | **Done** | **P2** | `routing_evaluating_adapter.py` | Unit: mismatched start profile corrected on first `generate_messages` |
 | M-LLM-X.12.10 | **Production E2E acceptance** — UAEP or Nexus run with real usage meter: budget crosses threshold → model change + trace events (no factory mock) | **Done** | **P2** | `tests/acceptance/llm_routing/test_production_metering_routing_e2e.py` | `-m gate` green |
-| M-LLM-X.12.11 | **Docs + audit honesty** — architecture L5 label, strict L5 checklist; USAGE known limitations; close **LLM-AUDIT-19** | **Done** | **P2** | `architecture/`, `USAGE.md` | Hub + audit register synced |
+| M-LLM-X.12.11 | **Docs + audit honesty** — architecture L5 label, strict L5 checklist; USAGE known limitations; close **LLM-AUDIT-19** | **Done** | **P2** | `architecture`, `USAGE.md` | Hub + audit register synced |
 | M-LLM-X.12.12 | **Secondary LLM surfaces policy** — document or extend evaluating wrap to planner / critic / websearch LLM (explicit product decision) | **Done** | **P3** | `architecture/LLM_ADAPTERS.md` § secondary LLM policy | Policy row in architecture; no silent bypass |
 
 **Suggested PR order (X-12):** 12.1 → 12.2 → 12.3 → 12.4 → 12.5 → 12.6 → 12.7 → 12.8 → 12.9 → 12.10 → 12.11 → 12.12.
@@ -359,7 +359,7 @@ Export `BUILTIN_ROUTING_RULES: tuple[type[LLMRoutingRuleBase], ...]` + `builtin_
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-X.13.1 | **`runtime_state` tier bridge** — replace Tier-3 `isinstance(RoutingEvaluatingLLMAdapter)` with duck-typed Protocol or callback registry on `RuntimeConfig` | **Done** | P2 | `evaluating_hooks.py`, `runtime_state.py` | Tier-1 has zero `applications/_shared/routing_evaluating_adapter` import |
 | M-LLM-X.13.2 | **ACP Plane A trace parity** — map `on_evaluated` to `emit_llm_routing_rule_diag` (or Plane B → Plane A bridge), not only `step.diagnostics` | **Done** | P2 | `acp_routing_trace_bridge.py`, `acp_run.py` | ACP integration test asserts `llm_routing_rule` trace step |
-| M-LLM-X.13.3 | **Concurrent run isolation test** — two parallel Nexus/UAEP runs; routing traces and tracker entries do not cross-contaminate | **Done** | P2 | `tests/acceptance/llm_routing/` | `-m gate` green |
+| M-LLM-X.13.3 | **Concurrent run isolation test** — two parallel Nexus/UAEP runs; routing traces and tracker entries do not cross-contaminate | **Done** | P2 | `tests/acceptance/llm_routing` | `-m gate` green |
 | M-LLM-X.13.4 | **Tool planner LLM routing** — evaluating wrap or dedicated `LLMRoutingProfile` wiring for `tool_planning_service` | **Done** | P3 | `tool_planning_service.py`, `planner_bootstrap.py` | Snapshot sync before planner LLM calls |
 | M-LLM-X.13.5 | **Websearch secondary LLM routing** — map/reduce/rerank adapters participate in snapshot sync or static policy documented per host | **Done** | P3 | `websearch_config`, `websearch_context_generator.py` | Map/reduce refresh routing snapshot when wired |
 | M-LLM-X.13.6 | **Critic LLM routing policy** — explicit wiring for critic evaluator LLM (wrap or separate profile rules) | **Done** | P3 | `critic_runtime_bridge.py` | `critic_llm_routing_*` metadata on `RuntimeConfig` |
@@ -452,10 +452,10 @@ PR-17: M-LLM-X.14.* enterprise domain maturity (after X-8)
 
 **Suggested PR order:** See [Phase M-LLM-R — Suggested PR order](plan/LLM_ADAPTERS.md).
 
-**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](#63a-business-backlog-register-consolidated).### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
+**Explicitly excluded:** K.1, K.2, product HTTP API DTOs, provider SDK rewrites — [§6.3a](.#63a-business-backlog-register-consolidated).### 6.1w Harness implementation queue — Integration expansion (M.6 P4 closed)
 
 **Purpose:** Ordered backlog for **Phase M.6 P4** (Band 2aa). **Status:** **Done** (2026-06-02) — **28/28 Done** · catalog **127**.  
-**Register:** [M.6 P4 — Master register](#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](#62ae-phase-m6-p4-execution-order--done)  
+**Register:** [M.6 P4 — Master register](.#m6-p4--master-register-28-slugs) · **Execution order:** [§6.2ae](.#62ae-phase-m6-p4-execution-order--done)
 **Policy:** One slug per PR; runs **in parallel** with §6.1 maintenance — pull only when harness ops/adaptive/INT health needs the slug.
 
 | Order | Wave | IDs | Slugs | Priority | Status |
@@ -467,15 +467,15 @@ PR-17: M-LLM-X.14.* enterprise domain maturity (after X-8)
 | 4 | H-INT-4 | M-P4.12–M-P4.16 | `unleash`, `launchdarkly`, `github_actions`, `redpanda`, `cloudflare_r2` | P0/P1 | **Done** |
 | 5 | H-INT-5 | M-P4.17–M-P4.28 | `memgraph`, `falkordb`, `incident_io`, `kubernetes`, `servicenow`, `bitbucket`, `asana`, `sendgrid`, `mailgun`, `mlflow`, `huggingface_hub`, `ollama` | P1/P2 | **Done** |
 
-**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>/` → unit tests → `USAGE.md` → `layout.py` → `architecture/INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
+**Per-slug checklist (M.4):** contract → `providers/<category>/<slug>` → unit tests → `USAGE.md` → `layout.py` → `architecture/INTEGRATIONS.md` → canon §7.1.3 row → gate green → paydown log row.
 
-**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](#m6-p4--harness-platform-expansion-planned).
+**Explicitly excluded:** CRM, payments, blockchain, duplicate vector SaaS, LLM vendor APIs — see [M.6 P4 register](.#m6-p4--harness-platform-expansion-planned).
 
 ---
 
 ### 6.2ad Phase M-LLM-R execution order (Band 2z — closed 2026-06-06)
 
-**Status:** **Done** · register: [Phase M-LLM-R](plan/LLM_ADAPTERS.md) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
+**Status:** **Done** · register: [Phase M-LLM-R](plan/LLM_ADAPTERS.md) · queue: [§6.1v](.#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 
 ```text
 Wave M-LLM-R-0 (planning):     M-LLM-R.0.2 → 0.3  (0.1 **Done**)
@@ -493,9 +493,9 @@ Wave M-LLM-R-8 (closeout):     M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 
 **Parallelism:** May run alongside W-ADAPT-5+; coordinate M-LLM-R.7.5 with W-ADAPT signal work if both touch `signal_collector.py`.
 
-**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters/` gate green (M-LLM-R.8.3, M-LLM-R.6.4).### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
+**Closeout gate:** `scripts/maintenance/check_llm_adapter_typed_returns.py` + `scripts/maintenance/check_agents_llm_adapter_response.py` + full `tests/unit/llm_adapters` gate green (M-LLM-R.8.3, M-LLM-R.6.4).### 6.2ac Phase W-ADAPT execution order (Band 2y — closed)
 
-**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](plan/CRITIC_VERIFICATION.md) · queue: [§6.1t](#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
+**Status:** **Done** (2026-06-02) · register: [Phase W-ADAPT](plan/CRITIC_VERIFICATION.md) · queue: [§6.1t](.#61t-harness-implementation-queue--adaptive-harness-intelligence-closed)
 
 ```text
 Wave W-ADAPT-0 (planning):        W-ADAPT-0.2 → 0.3 → 0.4 → 0.5  (**Done**)
@@ -521,11 +521,11 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 | # | Deliverable | Status | Notes |
 |---|-------------|--------|-------|
-| M-LLM.1 | Shared `_shared/` (messages, tools, retry, conformance) | **Done** | 2026-05-30 |
+| M-LLM.1 | Shared `_shared` (messages, tools, retry, conformance) | **Done** | 2026-05-30 |
 | M-LLM.2 | Seven core providers hardened | **Done** | OpenAI, Claude, Azure, Gemini, Mistral, Bedrock, Ollama |
 | M-LLM.3 | Groq + vLLM (OpenAI-compatible) | **Done** | `openai_compat_providers.py` |
 | M-LLM.4 | Bedrock Converse + tools + stream | **Done** | `INTERGRAX_BEDROCK_USE_CONVERSE`, `converse_stream` |
-| M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters/` |
+| M-LLM.5 | Conformance tests in CI gate | **Done** | `tests/unit/llm_adapters` |
 | M-LLM.6 | `architecture/LLM_ADAPTERS.md` + README section | **Done** | 19 providers |
 | M-LLM.7 | OpenAI-compat expansion + Vertex + `LLMProfile` | **Done** | Together, Fireworks, OpenRouter, DeepSeek, xAI, llama.cpp, Cohere, Vertex |
 | M-LLM.8 | Optional network smoke workflow | **Done** | Weekly schedule + `workflow_dispatch` |
@@ -534,17 +534,17 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | M-LLM.11 | Production ops layer | **Done** | OTLP/Prometheus routes, tenant metrics, rate limit + circuit breaker, secrets map, PR guard, extended network smoke |
 | M-LLM.12 | Nexus + governance wiring | **Done** | `llm_tenant_scope`, runtime metrics plugin, `INTERGRAX_LLM_TENANT_MAX_TOKENS` quota |
 | M-LLM.13 | Observability + secrets + distributed limits | **Done** | Pushgateway, `architecture/LLM_ADAPTERS.md` § Observability, Vault loader, Redis rate limit, governance warn |
-| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · gate **776** |
+| M-LLM.14 | Typed completion envelope (`LLMAdapterResponse`) | **Done** | Phase M-LLM-R — [§6.1v](.#61v-harness-implementation-queue--llm-completion-response-envelope-closed) · gate **776** |
 
 ---
 
 ### Phase M-LLM-R — LLM Completion Response Envelope (audit 2026-06-06)
 
 **Source:** Tier-0 LLM adapter audit (2026-06-06) — `generate_messages` returns `str`; `generate_with_tools` returns untyped dict via `make_tool_result`; SDK metadata (`finish_reason`, `response_id`, cached/reasoning tokens, refusal) discarded; usage only via side-channel `LLMAdapterUsageLog`; replay `LLMCallInfo` not fed from adapter returns.  
-**Canon:** §5.2.2 · **Doc:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) · **Traceability:** [Appendix L](#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)  
+**Canon:** §5.2.2 · **Doc:** [architecture/LLM_ADAPTERS.md](architecture/LLM_ADAPTERS.md) · **Traceability:** [Appendix L](.#appendix-l--llm-completion-response-envelope-traceability-phase-m-llm-r)
 **Status:** **Done** (2026-06-06) — **39/39 Done**  
 **Priority ladder:** **Band 2z** (§4.0) — **parallel with W-ADAPT waves 5–7** (Tier-0; no Nexus primitive changes beyond consumer wiring)  
-**Execution order:** [§6.2ad](#62ad-phase-m-llm-r-execution-order-band-2z--closed-2026-06-06) · queue: [§6.1v](#61v-harness-implementation-queue--llm-completion-response-envelope-closed)  
+**Execution order:** [§6.2ad](.#62ad-phase-m-llm-r-execution-order-band-2z--closed-2026-06-06) · queue: [§6.1v](.#61v-harness-implementation-queue--llm-completion-response-envelope-closed)
 **Goal:** Replace plain `str` and `Dict[str, Any]` LLM adapter returns with a **single strongly typed envelope** — `LLMAdapterResponse` — carrying `content: str` plus production-standard metadata, extensible without dict soup.
 
 **Hard rules (non-negotiable):**
@@ -554,7 +554,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 - **No** untyped `tool_calls: list[dict]` — use frozen `LLMToolCall` (+ `LLMToolCallArgument` where needed).
 - Per-call `usage` **must** be present on every `LLMAdapterResponse` (sync with `LLMAdapterUsageLog.end_call`; prefer SDK counts over estimates when available).
 - `LLMAdapterUsageLog` remains for run-level aggregation; response envelope is the **per-call source of truth** for callers.
-- One **M-LLM-R.\*** ID per PR → update master table + Appendix L + paydown log → `pytest -m gate` + `tests/unit/llm_adapters/` green.
+- One **M-LLM-R.\*** ID per PR → update master table + Appendix L + paydown log → `pytest -m gate` + `tests/unit/llm_adapters` green.
 
 **Canonical type (target contract):**
 
@@ -592,7 +592,7 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-R.0.1 | **Plan register** — Phase M-LLM-R, §4.0 Band 2z, §6.1v, §6.2ad, Appendix L; M-LLM follow-up pointer | **Done** | **Critical** | This section | Cross-links from `architecture/LLM_ADAPTERS.md` |
-| M-LLM-R.0.2 | **`docs/project/technical/adr/entries/2026-06-06/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/project/technical/adr/` | ADR linked from plan + `architecture/LLM_ADAPTERS.md` |
+| M-LLM-R.0.2 | **`docs/project/technical/adr/entries/2026-06-06/ADR-LLM-001.md`** — typed completion envelope vs plain string; two-layer usage model preserved | **Done** | High | `docs/project/technical/adr` | ADR linked from plan + `architecture/LLM_ADAPTERS.md` |
 | M-LLM-R.0.3 | **Canon §5.2.2 addendum** — `LLMAdapterResponse` contract paragraph in `intergrax_runtime_architecture.md` | **Done** | Medium | Architecture canon | No duplicate full spec in README |
 
 #### Wave M-LLM-R-1 — Contract types (Tier-0)
@@ -635,20 +635,20 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-R.4.1 | **agent LLM step (`on_next_step`)** — adapter response in pattern/act; trace finish_reason + token snapshot | **Done** | **Critical** | `intergrax/agents/authoring/patterns/` | ACP agent tests |
+| M-LLM-R.4.1 | **agent LLM step (`on_next_step`)** — adapter response in pattern/act; trace finish_reason + token snapshot | **Done** | **Critical** | `intergrax/agents/authoring/patterns` | ACP agent tests |
 | M-LLM-R.4.2 | **`ToolPlanningService`** — native tools path uses `completion.tool_calls`; planner text path uses `completion.content` | **Done** | **Critical** | `tools/tool_planning_service.py` | Tool plan tests green |
 | M-LLM-R.4.3 | **`plan_sources` + `engine_history_layer`** — consume `.content` | **Done** | High | `planning/plan_sources.py`, `context/engine_history_layer.py` | Unit tests updated |
 | M-LLM-R.4.4 | **User/org profile services + session consolidation** — all `generate_messages` call sites | **Done** | High | `runtime/user_profile/*`, `runtime/organization/*` | Grep: zero `.generate_messages` → str assignment |
 | M-LLM-R.4.5 | **`supervisor.py`** — all LLM call sites | **Done** | Medium | `intergrax/supervisor/supervisor.py` | Supervisor unit tests |
-| M-LLM-R.4.6 | **Optional: store last adapter response on `RuntimeState`** — `last_llm_adapter_response: LLMAdapterResponse \| None` for trace/replay | **Done** | Medium | `engine/runtime_state.py` | Enables per-step cost attribution |
+| M-LLM-R.4.6 | **Optional: store last adapter response on `RuntimeState`** — `last_llm_adapter_response: LLMAdapterResponse /| None` for trace/replay | **Done** | Medium | `engine/runtime_state.py` | Enables per-step cost attribution |
 
 #### Wave M-LLM-R-5 — RAG, websearch, legacy (Tier-0 consumers)
 
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
-| M-LLM-R.5.1 | **RAG LLM paths** — `query_refiner`, `query_expander`, `chunk_enricher`, `llm_graph_indexer` | **Done** | **Critical** | `intergrax/rag/` | RAG unit tests use typed mocks |
-| M-LLM-R.5.2 | **Websearch** — `websearch_context_generator`, `websearch_answerer` | **Done** | High | `intergrax/websearch/` | Tests updated |
-| M-LLM-R.5.3 | **Legacy `rag_answers`** — migrate or mark deprecated path to `.content` | **Done** | Low | `legacy/rag_answers/` | No str assumption in active Nexus paths |
+| M-LLM-R.5.1 | **RAG LLM paths** — `query_refiner`, `query_expander`, `chunk_enricher`, `llm_graph_indexer` | **Done** | **Critical** | `intergrax/rag` | RAG unit tests use typed mocks |
+| M-LLM-R.5.2 | **Websearch** — `websearch_context_generator`, `websearch_answerer` | **Done** | High | `intergrax/websearch` | Tests updated |
+| M-LLM-R.5.3 | **Legacy `rag_answers`** — migrate or mark deprecated path to `.content` | **Done** | Low | `legacy/rag_answers` | No str assumption in active Nexus paths |
 
 #### Wave M-LLM-R-6 — Agents, scaffold, test support (Tier-2)
 
@@ -674,8 +674,8 @@ Wave W-ADAPT-7 (Tier-3 + docs):    W-ADAPT-7.1 → 7.2 → 7.3 → 7.4 → 7.5 �
 | # | Deliverable | Status | Priority | Location / notes | Acceptance |
 |---|-------------|--------|----------|------------------|------------|
 | M-LLM-R.8.1 | **`architecture/LLM_ADAPTERS.md` rewrite** — response envelope section; migration guide; two-layer usage clarified | **Done** | **Critical** | `docs/project/architecture/LLM_ADAPTERS.md` | Examples use `.content` |
-| M-LLM-R.8.2 | **Conformance suite** — `assert_generate_messages_returns_completion`; tools/stream/structured typed asserts | **Done** | **Critical** | `_shared/conformance.py`, `tests/unit/llm_adapters/` | Gate + `llm-adapters-guard.yml` |
-| M-LLM-R.8.3 | **`check_llm_adapter_typed_returns.py`** — CI guard: no `-> str` / `-> Dict[str, Any]` on adapter public methods | **Done** | High | `scripts/` | Added to §6.1 maintenance |
+| M-LLM-R.8.2 | **Conformance suite** — `assert_generate_messages_returns_completion`; tools/stream/structured typed asserts | **Done** | **Critical** | `_shared/conformance.py`, `tests/unit/llm_adapters` | Gate + `llm-adapters-guard.yml` |
+| M-LLM-R.8.3 | **`check_llm_adapter_typed_returns.py`** — CI guard: no `-> str` / `-> Dict[str, Any]` on adapter public methods | **Done** | High | `scripts` | Added to §6.1 maintenance |
 | M-LLM-R.8.4 | **Phase closeout** — Appendix L paydown complete; M-LLM table row M-LLM.14 **Done**; remove audit follow-up pointer | **Done** | Medium | This plan | All M-LLM-R.* Done |
 
 **Suggested PR order:**
@@ -738,7 +738,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; sync architecture audit register (AUDIT-IDEAL-6.7, LLM-AUDIT-8 → Done); fix LLM-LC deferred line | Canon matches LLM-MAINT-01..04 |
-| 2 | **LLM-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `LLM_ADAPTERS.md` + `progress.json`; L3+ verdict layer 6 |
+| 2 | **LLM-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `LLM_ADAPTERS.md` + `progress.json`; L3+ verdict layer 6 |
 
 **Suggested PR order:** none — §6.1ay queue closed (2026-06-19).
 
@@ -754,7 +754,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-vllm-1** | Docs + env | P2 | **Done** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_VLLM_BASE_URL` without doc/code mismatch |
-| 2 | **LLM-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm/docker-compose.yml`; integration profile **`vllm`**; host port **8100** | `./manage.sh start vllm` starts OpenAI API; no Chroma 8000 conflict |
+| 2 | **LLM-MAINT-vllm-2** | Infra | P2 | **Done** | `infra/docker/vllm/docker-compose.yml`; integration profile **`vllm`**; host port **8100** | `manage.sh start vllm` starts OpenAI API; no Chroma 8000 conflict |
 | 3 | **LLM-MAINT-vllm-3** | CI | P3 | **Done** | `test_vllm_live_one_shot` + `require_vllm_reachable`; workflow env vars | Skip when vLLM unreachable; live smoke via `-m network` |
 | 4 | **LLM-MAINT-vllm-4** | Catalog | P3 | **Done** | Expand `model_catalog.yaml` + adapter legacy windows for common vLLM ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
 
@@ -774,8 +774,8 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **LLM-MAINT-llama-cpp-1** | Docs + env | P2 | **Done** | Fix canon env vars; `.env.example` + architecture self-hosted table; cross-link `infra/PORTS.md` | Operator can wire `INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL` without doc/code mismatch |
-| 2 | **LLM-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp/docker-compose.yml`; integration profile **`llama-cpp`**; host port **8102** | `./manage.sh start llama-cpp` starts OpenAI API; no Weaviate 8080 conflict |
-| 3 | **LLM-MAINT-llama-cpp-3** | E2E verify | P3 | **Done** | `tests/e2e/llama_cpp/` + `infra/docker/llama-cpp/verify.{sh,ps1}`; **excluded from GitHub CI** | `INTERGRAX_LLAMA_CPP_VERIFY=1` hard-fails when stack down; not in `llm-network-smoke.yml` |
+| 2 | **LLM-MAINT-llama-cpp-2** | Infra | P2 | **Done** | `infra/docker/llama-cpp/docker-compose.yml`; integration profile **`llama-cpp`**; host port **8102** | `manage.sh start llama-cpp` starts OpenAI API; no Weaviate 8080 conflict |
+| 3 | **LLM-MAINT-llama-cpp-3** | E2E verify | P3 | **Done** | `tests/e2e/llama_cpp` + `infra/docker/llama-cpp/verify.{sh,ps1}`; **excluded from GitHub CI** | `INTERGRAX_LLAMA_CPP_VERIFY=1` hard-fails when stack down; not in `llm-network-smoke.yml` |
 | 4 | **LLM-MAINT-llama-cpp-4** | Catalog | P3 | **Done** | Expand `model_catalog.yaml` + adapter legacy windows for common llama.cpp ids | `check_model_catalog_coverage.py` green; parametrized catalog tests |
 
 **Explicitly deferred:** P5 `interaction_surface/llama_cpp` slug — adapter + Docker health sufficient until harness lab needs catalog probe.
@@ -792,7 +792,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § LLM routing rules  
 **ADR:** [ADR-LLM-003](../adr/entries/2026-06-19/ADR-LLM-003.md) **Accepted**  
 **Goal:** `LLMRoutingRule` Protocol on Tier-0; built-in + custom Tier-3 classes; AHI L4 overlay unchanged.  
-**Phase status:** **Done** (2026-06-19) — 10/10 Done · see [Wave M-LLM-X-9](#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes)
+**Phase status:** **Done** (2026-06-19) — 10/10 Done · see [Wave M-LLM-X-9](.#wave-m-llm-x-9--llm-routing-rules-protocol--custom-classes)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
@@ -827,7 +827,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 2 | **M-LLM-X.10.2** | Wire | P1 | **Done** | `build_routing_context_from_runtime()` on materialize path | `runtime_config_bridge` |
 | 3 | **M-LLM-X.10.3** | Obs | P1 | **Done** | Trace `rule_id` + `routing_reason` at tracker init | Schema unit test |
 | 4 | **M-LLM-X.10.4** | Tier-3 | P1 | **Done** | Lab reference host (predefined demo) | CI gate scan |
-| 5 | **M-LLM-X.10.5** | E2E | P1 | **Done** | Acceptance: budget rule switches model (resolver) | `tests/acceptance/llm_routing/` |
+| 5 | **M-LLM-X.10.5** | E2E | P1 | **Done** | Acceptance: budget rule switches model (resolver) | `tests/acceptance/llm_routing` |
 | 6 | **M-LLM-X.10.6** | Wire | P2 | **Done** | `DynamicLLMRouter` on ACP hosts | Agent router test |
 | 7 | **M-LLM-X.10.7** | Docs | P2 | **Done** | USAGE matrix + checklist | Architecture sync |
 | 8 | **M-LLM-X.10.8** | CI | P2 | **Done** | `check_llm_routing_rules.py` | Umbrella gate |
@@ -852,7 +852,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 2 | **M-LLM-X.11.2** | Wire | P1 | **Done** | `refresh_llm_routing_context()` in runtime loop | Step loop test |
 | 3 | **M-LLM-X.11.3** | Wire | P1 | **Done** | All `resolve_llm_adapter` call sites use context bridge | CI static gate |
 | 4 | **M-LLM-X.11.4** | Obs | P1 | **Done** | Per-eval trace + allowlist violation diag + trace_bridge gate | Schema tests |
-| 5 | **M-LLM-X.11.5** | E2E | P1 | **Done** | Full run budget threshold → model change | `tests/acceptance/llm_routing/` |
+| 5 | **M-LLM-X.11.5** | E2E | P1 | **Done** | Full run budget threshold → model change | `tests/acceptance/llm_routing` |
 | 6 | **M-LLM-X.11.6** | Wire | P2 | **Done** | Harness host evaluating adapter parity | Host test |
 | 7 | **M-LLM-X.11.7** | Docs | P2 | **Done** | USAGE mid-run section + architecture sync | Linked from hub |
 | 8 | **M-LLM-X.11.8** | CI | P2 | **Done** | `check_llm_routing_context_wiring.py` | Umbrella gate |
@@ -869,12 +869,12 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Routing strict enterprise closeout  
 **ADR:** ADR-LLM-003 or new ADR-LLM-004 if tier split changes public contract (decide in 12.2).  
 **Goal:** Close LLM-AUDIT-19 — production-trustworthy budget routing, tier-clean evaluating path, full observability loop.  
-**Phase status:** **Done** — 12/12 · see [Wave M-LLM-X-12](#wave-m-llm-x-12--routing-strict-enterprise-closeout)
+**Phase status:** **Done** — 12/12 · see [Wave M-LLM-X-12](.#wave-m-llm-x-12--routing-strict-enterprise-closeout)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **M-LLM-X.12.1** | Wire | P0 | **Done** | Budget meter ↔ routing context | Budget rule fires on real token usage |
-| 2 | **M-LLM-X.12.2** | Arch | P1 | **Done** | Tier boundary refactor (evaluating → Tier-3) | No Tier-0 → `applications/` import |
+| 2 | **M-LLM-X.12.2** | Arch | P1 | **Done** | Tier boundary refactor (evaluating → Tier-3) | No Tier-0 → `applications` import |
 | 3 | **M-LLM-X.12.3** | Wire | P1 | **Done** | Nexus graph / CE context sync | Graph step updates snapshot |
 | 4 | **M-LLM-X.12.4** | Wire | P1 | **Done** | Per-call context refresh | Multi-LLM step budget accuracy |
 | 5 | **M-LLM-X.12.5** | Wire | P1 | **Done** | AHI live context on adapter swap | AHI hint uses live snapshot |
@@ -882,7 +882,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 | 7 | **M-LLM-X.12.7** | Obs | P2 | **Done** | Per-run observers (no globals) | Concurrent run isolation |
 | 8 | **M-LLM-X.12.8** | Obs | P2 | **Done** | ACP `DynamicLLMRouter` trace | ACP step diagnostics |
 | 9 | **M-LLM-X.12.9** | Code | P2 | **Done** | First-eval profile correction | Mismatch fixed on first call |
-| 10 | **M-LLM-X.12.10** | E2E | P2 | **Done** | Production acceptance (no mocks) | `tests/acceptance/llm_routing/` |
+| 10 | **M-LLM-X.12.10** | E2E | P2 | **Done** | Production acceptance (no mocks) | `tests/acceptance/llm_routing` |
 | 11 | **M-LLM-X.12.11** | Docs | P2 | **Done** | L5 label + LLM-AUDIT-19 closeout | Architecture + plan synced |
 | 12 | **M-LLM-X.12.12** | Policy | P3 | **Done** | Secondary LLM surfaces policy | Architecture policy row |
 
@@ -897,7 +897,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Source:** Post X-12 enterprise audit — L5 on core paths; residual polish documented in journal and architecture.  
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Post-L5 follow-up register  
 **Goal:** Close **LLM-AUDIT-20** without blocking domain closeout.  
-**Phase status:** **Done** — 7/7 · see [Wave M-LLM-X-13](#wave-m-llm-x-13--post-l5-routing-polish-optional)
+**Phase status:** **Done** — 7/7 · see [Wave M-LLM-X-13](.#wave-m-llm-x-13--post-l5-routing-polish-optional)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
@@ -921,7 +921,7 @@ Wave 8:  M-LLM-R.8.1 → 8.2 → 8.3 → 8.4
 **Canon:** [`architecture/LLM_ADAPTERS.md`](../architecture/LLM_ADAPTERS.md) § Enterprise domain maturity register  
 **Prerequisites:** **M-LLM-X.8 Done** (register + journal hygiene)  
 **Goal:** Close **LLM-AUDIT-22…26** — honest **L4 enterprise** domain maturity (routing L5 maintained).  
-**Phase status:** **Done** — 8/8 · see [Wave M-LLM-X-14](#wave-m-llm-x-14--enterprise-domain-maturity-2026-06-19)
+**Phase status:** **Done** — 8/8 · see [Wave M-LLM-X-14](.#wave-m-llm-x-14--enterprise-domain-maturity-2026-06-19)
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|

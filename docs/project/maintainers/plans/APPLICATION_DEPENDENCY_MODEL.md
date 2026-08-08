@@ -1,7 +1,7 @@
 # Application Dependency Model — Plan
 
 **Status:** Active (packaging architecture)  
-**Architecture (1:1):** [`architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../architecture/APPLICATION_DEPENDENCY_MODEL.md)  
+**Architecture (1:1):** [`architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../architecture/APPLICATION_DEPENDENCY_MODEL.md)
 **Last updated:** 2026-07-23
 
 ---

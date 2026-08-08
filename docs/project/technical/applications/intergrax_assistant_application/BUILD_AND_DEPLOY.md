@@ -1,8 +1,8 @@
         # Build & deploy — Intergrax Assistant
 
-        Tier-3 application package: ``applications/intergrax_assistant_application/``. This document is the **operational runbook** for local development, verification, and container deployment.
+        Tier-3 application package: ``applications/intergrax_assistant_application``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](../../../../../applications/intergrax_assistant_application/README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../../../../../applications/intergrax_assistant_application/README.md) · Layout canon: [`applications/USAGE.md`](../../../../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../../../applications/USAGE.md)
 
         ---
 
@@ -12,10 +12,10 @@
         |------|---------|
         | [uv](https://docs.astral.sh/uv/) | Python deps from repo root ``pyproject.toml`` / ``uv.lock`` |
         | Repo clone | Monorepo; **build context is always repository root** |
-        | Docker (optional) | Image build via ``docker/`` |
+        | Docker (optional) | Image build via ``docker`` |
         | Docker Buildx (recommended) | Per-app ``.dockerignore`` via ``--ignorefile`` |
 
-        Tier-2 agents used by this host: **intergrax_assistant** (under ``agents/`` on ``PYTHONPATH``).
+        Tier-2 agents used by this host: **intergrax_assistant** (under ``agents`` on ``PYTHONPATH``).
 
         ---
 
@@ -96,7 +96,7 @@ MCP endpoint: ``http://127.0.0.1:8096/mcp`` (streamable HTTP transport).
 
         ### Build scripts (recommended)
 
-        Run from **repository root** or from ``applications/intergrax_assistant_application/docker/`` (scripts ``cd`` to repo root):
+        Run from **repository root** or from ``applications/intergrax_assistant_application/docker`` (scripts ``cd`` to repo root):
 
         ```bash
         # Linux / macOS / Git Bash
@@ -171,7 +171,7 @@ MCP endpoint: ``http://127.0.0.1:8096/mcp`` (streamable HTTP transport).
         | Issue | What to try |
         |-------|-------------|
         | ``unknown flag: --ignorefile`` | Use **Buildx** or copy ``docker/.dockerignore`` to repo root |
-        | Import errors for agents | Confirm ``agents/<slug>/`` is listed in ``docker/.dockerignore`` exceptions |
+        | Import errors for agents | Confirm ``agents/<slug>`` is listed in ``docker/.dockerignore`` exceptions |
         | Slow rebuild | Use BuildKit cache; avoid copying whole repo without per-app ``.dockerignore`` |
         | Wrong agents in registry | Check ``manifest.py`` flags / ``host/wiring.py`` and ``LAB_INCLUDE_*`` (lab) |
 

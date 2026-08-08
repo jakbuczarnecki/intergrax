@@ -119,7 +119,7 @@ uv run python scripts/proof/slack_conversation_channel_live_proof.py
 **Task:** MVP-3  
 **Classification:** docs-only product discovery  
 **Base commit:** `6c9e1eab634852e42d45e086faa78aca71a77016`  
-**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)  
+**Governing plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Ask contract:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)  
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md) · **Knowledge Intake:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)
 

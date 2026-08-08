@@ -16,7 +16,7 @@ Invocation-pattern audit 2026-06-12 identified four production patterns (single,
 ## Decision
 
 1. Introduce `ToolInvocationPattern` Protocol with `pattern_id` and `execute(...) -> ToolInvocationResult` in `intergrax/runtime/nexus/tools/tool_invocation_pattern.py`.
-2. Ship `SinglePassPattern` (TOOL-ENG-17) and `BoundedReactPattern` (TOOL-ENG-18) under `patterns/`; atomic invoke stays `RuntimeToolInvoker` (unchanged).
+2. Ship `SinglePassPattern` (TOOL-ENG-17) and `BoundedReactPattern` (TOOL-ENG-18) under `patterns`; atomic invoke stays `RuntimeToolInvoker` (unchanged).
 3. Add `ToolInvocationMode` enum and `pattern_for_mode()` factory (TOOL-ENG-21); `RuntimeConfig.tool_invocation_mode` optional — `None` infers bounded ReAct when `max_tool_iterations > 1` (ADR-TOOL-002 compat).
 4. `run_bounded_tool_loop` delegates to resolved pattern (TOOL-ENG-22); `plan_context_invocation` passes config mode.
 5. Bridge `ApplicationEnvironmentProfile.tool_invocation_mode` via `catalog_runtime_bridge.py` (TOOL-ENG-23).
@@ -45,6 +45,6 @@ Invocation-pattern audit 2026-06-12 identified four production patterns (single,
 ## Implementation notes
 
 - `intergrax/runtime/nexus/tools/tool_invocation_pattern.py`
-- `intergrax/runtime/nexus/tools/patterns/`
+- `intergrax/runtime/nexus/tools/patterns`
 - `intergrax/runtime/nexus/config_types.py` — `ToolInvocationMode`
 - `intergrax/applications/_shared/catalog_runtime_bridge.py`

@@ -11,7 +11,7 @@ Implementation status: [`intergrax_runtime_architecture.md`](intergrax_runtime_a
 
 **Audience:** human developers, GPT, Claude, Gemini, Cursor agents.
 
-**Success metric:** from idea to first Nexus run in **under one hour**, with **zero changes** to `intergrax/runtime/`.
+**Success metric:** from idea to first Nexus run in **under one hour**, with **zero changes** to `intergrax/runtime`.
 
 ---
 
@@ -28,45 +28,45 @@ Canon: [APPLICATION_RUNTIME_GRAPH_MODEL.md](../../architecture/APPLICATION_RUNTI
 
 ## Table of contents
 
-1. [Mental model](#1-mental-model)
-2. [End-to-end workflow](#2-end-to-end-workflow)
-3. [Prerequisites](#3-prerequisites)
-4. [Step 1 — Hypothesis and capability](#step-1--hypothesis-and-capability)
-5. [Step 2 — Scaffold the agent](#step-2--scaffold-the-agent)
-6. [Step 3 — Implement domain logic](#step-3--implement-domain-logic)
-7. [Step 4 — Register the agent](#step-4--register-the-agent)
-8. [Step 5 — Run the agent](#step-5--run-the-agent)
-9. [Step 6 — Inspect traces and runtime events](#step-6--inspect-traces-and-runtime-events)
-10. [Step 7 — Record experiment and decision](#step-7--record-experiment-and-decision)
-11. [Step 8 — Test and gate](#step-8--test-and-gate)
-12. [Step 9 — Sign-off before business agents](#step-9--sign-off-before-business-agents)
-13. [Appendix A — Human-in-the-loop](#appendix-a--human-in-the-loop)
-14. [Appendix B — Shadow workspace and sandbox](#appendix-b--shadow-workspace-and-sandbox)
-15. [Appendix C — Multi-agent graphs](#appendix-c--multi-agent-graphs)
-16. [Appendix D — Advanced execution paths](#appendix-d--advanced-execution-paths)
-17. [Appendix E — Integrations and Tier-0 wiring](#appendix-e--integrations-and-tier-0-wiring)
-18. [Appendix F — Tier-3 application environment](#appendix-f--tier-3-application-environment)
-19. [Appendix G — Memory & RAG naming](#appendix-g--memory--rag-naming-phase-q)
-20. [Appendix H — Governance, policy & observability](#appendix-h--governance-policy--observability-control-plane)
-21. [Appendix I — Orchestration control plane](#appendix-i--orchestration-control-plane)
-22. [Appendix J — Tools & skills control plane](#appendix-j--tools--skills-control-plane)
-23. [Appendix K — Integration & RAG control plane](#appendix-k--integration--rag-control-plane)
-24. [Appendix L — Context engineering control plane](#appendix-l--context-engineering-control-plane)
-25. [Appendix M — Prompt registry control plane](#appendix-m--prompt-registry-control-plane)
-26. [Appendix N — Agent assembly control plane](#appendix-n--agent-assembly-control-plane)
-27. [Appendix O — Registry architecture control plane](#appendix-o--registry-architecture-control-plane)
-28. [Appendix P — Capability graph control plane](#appendix-p--capability-graph-control-plane)
-29. [Appendix Q — Observability control plane closeout](#appendix-q--observability-control-plane-closeout)
-30. [Appendix R — Reliability control plane closeout](#appendix-r--reliability-control-plane-closeout)
-31. [Appendix S — Security control plane closeout](#appendix-s--security-control-plane-closeout)
-32. [Appendix T — Cost governance control plane closeout](#appendix-t--cost-governance-control-plane-closeout)
-33. [Appendix U — Evaluation control plane closeout](#appendix-u--evaluation-control-plane-closeout)
-34. [Appendix W — Critic & Verification control plane closeout](#appendix-w--critic--verification-control-plane-closeout)
-35. [Appendix V — Adaptive Harness control plane closeout](#appendix-v--adaptive-harness-control-plane-closeout)
-36. [Appendix X — MVP-to-product evolution playbook](#appendix-x--mvp-to-product-evolution-playbook)
-37. [Appendix AC — Agent `run()`, patterns, environment (ACP)](#appendix-ac--agent-run-cognitive-patterns-and-environment-acp)
-38. [Anti-patterns](#anti-patterns)
-37. [Instructions for LLM coding agents](#instructions-for-llm-coding-agents)
+1. [Mental model](.#1-mental-model)
+2. [End-to-end workflow](.#2-end-to-end-workflow)
+3. [Prerequisites](.#3-prerequisites)
+4. [Step 1 — Hypothesis and capability](.#step-1--hypothesis-and-capability)
+5. [Step 2 — Scaffold the agent](.#step-2--scaffold-the-agent)
+6. [Step 3 — Implement domain logic](.#step-3--implement-domain-logic)
+7. [Step 4 — Register the agent](.#step-4--register-the-agent)
+8. [Step 5 — Run the agent](.#step-5--run-the-agent)
+9. [Step 6 — Inspect traces and runtime events](.#step-6--inspect-traces-and-runtime-events)
+10. [Step 7 — Record experiment and decision](.#step-7--record-experiment-and-decision)
+11. [Step 8 — Test and gate](.#step-8--test-and-gate)
+12. [Step 9 — Sign-off before business agents](.#step-9--sign-off-before-business-agents)
+13. [Appendix A — Human-in-the-loop](.#appendix-a--human-in-the-loop)
+14. [Appendix B — Shadow workspace and sandbox](.#appendix-b--shadow-workspace-and-sandbox)
+15. [Appendix C — Multi-agent graphs](.#appendix-c--multi-agent-graphs)
+16. [Appendix D — Advanced execution paths](.#appendix-d--advanced-execution-paths)
+17. [Appendix E — Integrations and Tier-0 wiring](.#appendix-e--integrations-and-tier-0-wiring)
+18. [Appendix F — Tier-3 application environment](.#appendix-f--tier-3-application-environment)
+19. [Appendix G — Memory & RAG naming](.#appendix-g--memory--rag-naming-phase-q)
+20. [Appendix H — Governance, policy & observability](.#appendix-h--governance-policy--observability-control-plane)
+21. [Appendix I — Orchestration control plane](.#appendix-i--orchestration-control-plane)
+22. [Appendix J — Tools & skills control plane](.#appendix-j--tools--skills-control-plane)
+23. [Appendix K — Integration & RAG control plane](.#appendix-k--integration--rag-control-plane)
+24. [Appendix L — Context engineering control plane](.#appendix-l--context-engineering-control-plane)
+25. [Appendix M — Prompt registry control plane](.#appendix-m--prompt-registry-control-plane)
+26. [Appendix N — Agent assembly control plane](.#appendix-n--agent-assembly-control-plane)
+27. [Appendix O — Registry architecture control plane](.#appendix-o--registry-architecture-control-plane)
+28. [Appendix P — Capability graph control plane](.#appendix-p--capability-graph-control-plane)
+29. [Appendix Q — Observability control plane closeout](.#appendix-q--observability-control-plane-closeout)
+30. [Appendix R — Reliability control plane closeout](.#appendix-r--reliability-control-plane-closeout)
+31. [Appendix S — Security control plane closeout](.#appendix-s--security-control-plane-closeout)
+32. [Appendix T — Cost governance control plane closeout](.#appendix-t--cost-governance-control-plane-closeout)
+33. [Appendix U — Evaluation control plane closeout](.#appendix-u--evaluation-control-plane-closeout)
+34. [Appendix W — Critic & Verification control plane closeout](.#appendix-w--critic--verification-control-plane-closeout)
+35. [Appendix V — Adaptive Harness control plane closeout](.#appendix-v--adaptive-harness-control-plane-closeout)
+36. [Appendix X — MVP-to-product evolution playbook](.#appendix-x--mvp-to-product-evolution-playbook)
+37. [Appendix AC — Agent `run()`, patterns, environment (ACP)](.#appendix-ac--agent-run-cognitive-patterns-and-environment-acp)
+38. [Anti-patterns](.#anti-patterns)
+37. [Instructions for LLM coding agents](.#instructions-for-llm-coding-agents)
 
 ---
 
@@ -130,7 +130,7 @@ idea
 ## 3. Prerequisites
 
 - Repository root with `uv` / Python 3.12
-- `agents/` and `applications/` on import path (configured in `pyproject.toml` → `pythonpath`)
+- `agents` and `applications` on import path (configured in `pyproject.toml` → `pythonpath`)
 - No external network required for smoke tests and gate
 
 Verify platform health:
@@ -216,13 +216,13 @@ agents/document_automation/
 | `capabilities.py` | Public capability ids |
 | `contract.py` | `AgentContract` — id, description, tools, risk, max_steps |
 | `state.py` (target) | **Typed** `AcpSessionState` subclass — `extra=forbid` §32.0 |
-| `steps/` or `on_next_step` | Domain logic — **READ → UPDATE → DECIDE** per step (Appendix AC.3b) |
-| `prompts/` | System/user prompt templates |
-| `schemas/` | Request/response models |
+| `steps` or `on_next_step` | Domain logic — **READ → UPDATE → DECIDE** per step (Appendix AC.3b) |
+| `prompts` | System/user prompt templates |
+| `schemas` | Request/response models |
 
 **Canonical implementation path (ACP):** override **`on_next_step`** → return **`StepOutcome`** factories; use **`load_session_state`** and **`state_delta`** only — never mutate state in place. Full wave plan: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) §6.1aw.
 
-**Reuse Tier-0** (LLM adapters, tools, RAG helpers). Do not duplicate platform infrastructure inside the agent folder. For **which database, cache, or Slack backend** the host uses, see [Appendix E — Integrations](#appendix-e--integrations-and-tier-0-wiring) — agents declare **tools and capabilities**, applications wire **integration slugs**.
+**Reuse Tier-0** (LLM adapters, tools, RAG helpers). Do not duplicate platform infrastructure inside the agent folder. For **which database, cache, or Slack backend** the host uses, see [Appendix E — Integrations](.#appendix-e--integrations-and-tier-0-wiring) — agents declare **tools and capabilities**, applications wire **integration slugs**.
 
 **Tool access (gateways — immediate mode §32.8):**
 
@@ -266,11 +266,11 @@ registry.register(DocumentAutomationAgent(), contract=contract)
 
 | Context | When to use | Where to register |
 |---------|-------------|-------------------|
-| **A — Smoke test** | Fastest first run; CI for the agent | Already in `agents/<slug>/tests/` (generated) |
+| **A — Smoke test** | Fastest first run; CI for the agent | Already in `agents/<slug>/tests` (generated) |
 | **B — Script / notebook** | Interactive experiments | Your script: `registry.register(...)` |
 | **C — Lab application** | HTTP experimentation via `/v1/lab/run` | `applications/lab_application/manifest.py` + `host/wiring.py` |
 | **D — Product application** | Existing product host (Legal, Research, …) | `applications/<product>/manifest.py` + `host/wiring.py` |
-| **E — Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](#e--dedicated-application-scaffold) |
+| **E — Dedicated application (scaffold)** | New deployable host (env, Docker, HTTP API) | `python -m intergrax.scaffold new-application` → § [Step 4E](.#e--dedicated-application-scaffold) |
 
 ### Production lifecycle governance note (Phase V)
 
@@ -377,7 +377,7 @@ Use this path when extending an **existing** product host (Legal, Research, …)
 
 Manual / reference pattern:
 
-1. Keep agent logic in `agents/<slug>/`
+1. Keep agent logic in `agents/<slug>`
 2. Define roster in `applications/<product>/manifest.py` — `AgentBinding.mount(AgentClass, factory=...)`
 3. Implement factories in `host/agent_factories.py` or `host/agent_builders.py`
 4. In `host/wiring.py` — `build_application_registry(manifest, ctx, builders=...)`
@@ -385,14 +385,14 @@ Manual / reference pattern:
 
 **Usage guides (define / invoke / run):**
 
-- Composition engine API: [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
-- Application folder layout: [`applications/USAGE.md`](../applications/USAGE.md)
+- Composition engine API: [`intergrax/applications/USAGE.md`](../../../../applications/USAGE.md)
+- Application folder layout: [`applications/USAGE.md`](../../../../applications/USAGE.md)
 
 Example references:
 
 - `applications/legal_application/manifest.py` + `host/agent_factories.py`
 - `applications/lab_application/manifest.py` + `host/agent_builders.py`
-- `applications/research_application/` — product-style host
+- `applications/research_application` — product-style host
 
 Applications contain **wiring only** — never agent business logic.
 
@@ -400,9 +400,9 @@ Applications contain **wiring only** — never agent business logic.
 
 **When to use:** you need a **separate** Tier-3 host with its own `.env`, HTTP API, optional Docker image, and stable package name — not only the shared lab. Typical after agent smoke tests (Step 4A) pass.
 
-**Canon:** `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10  
+**Canon:** `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 **Phase N status:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) (Phase N table)  
-**Reference tree:** `applications/poc_template_application/` (committed scaffold example)
+**Reference tree:** `applications/poc_template_application` (committed scaffold example)
 
 #### E.0 — 15-minute minimal path (Phase DX-3.6)
 
@@ -429,11 +429,11 @@ curl -s -X POST http://127.0.0.1:8091/v1/my_feature/run \
 
 | Stage | Command / artifact | What you get |
 |-------|-------------------|--------------|
-| **Minimal** | `new-stack --minimal` | Lab host via `build_harness_host_runtime` + `create_lab_fastapi_from_runtime`; agent under `agents/<slug>/` |
+| **Minimal** | `new-stack --minimal` | Lab host via `build_harness_host_runtime` + `create_lab_fastapi_from_runtime`; agent under `agents/<slug>` |
 | **Standard** | `new-stack` (no `--minimal`) | Docker, MCP, `BUILD_AND_DEPLOY.md`, full factory + debug scheduler |
 | **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Adds standard files to an existing minimal lab application |
 
-See also [`applications/USAGE.md`](../applications/USAGE.md) § Progressive disclosure.
+See also [`applications/USAGE.md`](../../../../applications/USAGE.md) § Progressive disclosure.
 
 #### E.1 — Choose scaffold profile
 
@@ -450,7 +450,7 @@ python -m intergrax.scaffold new-stack my_feature \
   --capability my_feature.basic
 ```
 
-Creates `agents/my_feature/` and `applications/my_feature_application/` in one step.
+Creates `agents/my_feature` and `applications/my_feature_application` in one step.
 
 ```bash
 # From repository root — lab host for experimentation
@@ -467,13 +467,13 @@ python -m intergrax.scaffold new-application my_product \
   --port 8000
 ```
 
-`--agents` accepts built-in slugs (`echo`, `research`, `signoff_probe`) or your scaffolded agent slug under `agents/<slug>/`.
+`--agents` accepts built-in slugs (`echo`, `research`, `signoff_probe`) or your scaffolded agent slug under `agents/<slug>`.
 
 The CLI prints package name, uvicorn command, pytest path, MCP mount, and Docker script paths.
 
 #### E.2 — Generated layout
 
-Creates `applications/<name>_application/` (package suffix is automatic):
+Creates `applications/<name>_application` (package suffix is automatic):
 
 ```text
 applications/my_lab_application/
@@ -490,7 +490,7 @@ applications/my_lab_application/
   my_lab_application_tests/   # host smoke tests
 ```
 
-Import as `my_lab_application.host.main:app` (folder `applications/` is on `pythonpath`).
+Import as `my_lab_application.host.main:app` (folder `applications` is on `pythonpath`).
 
 #### E.3 — Register your agent in the new host
 
@@ -542,9 +542,9 @@ applications/my_lab_application/docker/build-docker.sh
 # Windows: applications\my_lab_application\docker\build-docker.bat
 ```
 
-Product profile: also `curl http://127.0.0.1:8000/health` before `POST <route_prefix>/run`.
+Product profile: also `curl http:/127.0.0.1:8000/health` before `POST <route_prefix>/run`.
 
-Operational detail: `applications/<pkg>/docs/BUILD_AND_DEPLOY.md`.
+Operational detail: `../applications/<pkg>/BUILD_AND_DEPLOY.md`.
 
 #### E.6 — HTTP verification
 
@@ -570,7 +570,7 @@ curl -s -X POST http://127.0.0.1:8000/v1/my_product/run \
 
 #### E.7 — Integrations and deploy
 
-- **Integrations:** edit `host/integration_wiring.py` — lab scaffold uses `IntegrationProfile.lab()`; product uses `wire_nexus_observability()`. Agents still declare tools only; see [Appendix E](#appendix-e--integrations-and-tier-0-wiring).
+- **Integrations:** edit `host/integration_wiring.py` — lab scaffold uses `IntegrationProfile.lab()`; product uses `wire_nexus_observability()`. Agents still declare tools only; see [Appendix E](.#appendix-e--integrations-and-tier-0-wiring).
 - **Docker:** scripts `cd` to monorepo root and build with `applications/<pkg>/docker/Dockerfile`. Override tag: `IMAGE_TAG=my-registry/my_lab:1.0.0` (sh) or `build-docker.bat my-registry/my_lab:1.0.0` (bat).
 - **Gate:** after application smoke tests, run `uv run pytest -m gate -q`.
 
@@ -578,9 +578,9 @@ curl -s -X POST http://127.0.0.1:8000/v1/my_product/run \
 
 | Topic | Document |
 |-------|----------|
-| Composition engine API | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
-| Application folder conventions | [`applications/USAGE.md`](../applications/USAGE.md) |
-| Tier-3 summary (manifest snippet) | [Appendix F](#appendix-f--tier-3-application-environment) |
+| Composition engine API | [`intergrax/applications/USAGE.md`](../../../../applications/USAGE.md) |
+| Application folder conventions | [`applications/USAGE.md`](../../../../applications/USAGE.md) |
+| Tier-3 summary (manifest snippet) | [Appendix F](.#appendix-f--tier-3-application-environment) |
 
 ---
 
@@ -703,11 +703,11 @@ uv run pytest tests/ -m gate -q
 - [ ] `AgentContract` complete (description, tools, risk, max_steps)
 - [ ] `on_next_step` (or pattern base) with typed `AcpSessionState` implemented
 - [ ] Registered in chosen context (test / lab / product wiring)
-- [ ] **Zero** changes to `intergrax/runtime/`
+- [ ] **Zero** changes to `intergrax/runtime`
 - [ ] Smoke test passes
 - [ ] Trace inspectable via debug API
 - [ ] No duplicated Tier-0 infrastructure
-- [ ] No integration slug imports under `agents/` (see Appendix E)
+- [ ] No integration slug imports under `agents` (see Appendix E)
 - [ ] Agent `README.md` present (generated by scaffold)
 
 ---
@@ -717,7 +717,7 @@ uv run pytest tests/ -m gate -q
 Before starting Problem Radar, Vendor Discovery, or other business agents, complete one **live exercise**:
 
 1. Scaffold a **new** agent (not Echo / not an existing mock)
-2. Implement minimal domain change in `steps/`
+2. Implement minimal domain change in `steps`
 3. Register and run (smoke test or lab app)
 4. Confirm **no runtime files** were modified
 5. Record result in implementation plan **Appendix A** sign-off template
@@ -779,7 +779,7 @@ Result metadata includes `shadow_workspace_id` or `sandbox_session_id`.
 
 ## Appendix C — Multi-agent graphs
 
-**Full orchestration map:** [Appendix I](#appendix-i--orchestration-control-plane) (control plane, contracts, hooks, customization).
+**Full orchestration map:** [Appendix I](.#appendix-i--orchestration-control-plane) (control plane, contracts, hooks, customization).
 
 Register multiple agents, then run through graph orchestration (Nexus planner or explicit graph):
 
@@ -822,7 +822,7 @@ See [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) for
 ## Appendix E — Integrations and Tier-0 wiring
 
 **Canon:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) §7.1  
-**Catalog:** `intergrax/integrations/` (Phase M)
+**Catalog:** `intergrax/integrations` (Phase M)
 
 ### Separation of concerns
 
@@ -862,7 +862,7 @@ AgentContract(
 | `allowed_tools` | Tool gateway allow-list — which `ToolRequest.tool_name` values are permitted |
 | `required_adapters` | Optional documentation hint for operators (not auto-wired today) |
 
-When the agent needs external data or side effects, call tools via **`step_ctx.invoke_tool`** (ToolRuntime policy) — do not open Redis, Postgres, or Slack clients inside `agents/`:
+When the agent needs external data or side effects, call tools via **`step_ctx.invoke_tool`** (ToolRuntime policy) — do not open Redis, Postgres, or Slack clients inside `agents`:
 
 ```python
 response = await ctx.invoke_tool(
@@ -996,7 +996,7 @@ Pattern: `INTERGRAX_INTEGRATION_<CATEGORY>` where `<CATEGORY>` is the uppercase 
 
 Use `build_profile_from_env(defaults=IntegrationProfile.lab())` to merge env overrides onto lab defaults.
 
-Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERGRAX_SQLITE_*`, `INTERGRAX_SLACK_*`) — see `intergrax/integrations/providers/<slug>/`.
+Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERGRAX_SQLITE_*`, `INTERGRAX_SLACK_*`) — see `intergrax/integrations/providers/<slug>`.
 
 ### P0 catalog (available today)
 
@@ -1043,37 +1043,37 @@ Provider-specific secrets and paths use each slug's own env prefix (e.g. `INTERG
 
 Full catalog (167 providers, each with English `USAGE.md`): [`architecture/INTEGRATIONS.md`](architecture/INTEGRATIONS.md). Per-slug examples: `intergrax/integrations/providers/<category>/<slug>/USAGE.md`.
 
-LLM adapters (`intergrax/llm_adapters/`) are **not** part of the Integration Library — configure them via **`LLMProfile`** and [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md). Architecture: [`docs/project/architecture/LLM_ADAPTERS.md`](../docs/project/architecture/LLM_ADAPTERS.md). Active uplift: **Phase M-LLM-X** (ModelCatalog, routing, DX).
+LLM adapters (`intergrax/llm_adapters`) are **not** part of the Integration Library — configure them via **`LLMProfile`** and [`intergrax/llm_adapters/USAGE.md`](../../../../intergrax/llm_adapters/USAGE.md). Architecture: [`docs/project/architecture/LLM_ADAPTERS.md`](../../architecture/LLM_ADAPTERS.md). Active uplift: **Phase M-LLM-X** (ModelCatalog, routing, DX).
 
 ### Decision checklist
 
 When building a new agent or application:
 
-1. **Agent author:** list capabilities and `allowed_tools` only; implement domain logic in `steps/`.
+1. **Agent author:** list capabilities and `allowed_tools` only; implement domain logic in `steps`.
 2. **Application author:** choose `IntegrationProfile`, call `register_default_integrations()`, resolve categories in `factory.py`.
-3. **Platform author:** add missing backends under `integrations/providers/<slug>/` — never inside `agents/`.
+3. **Platform author:** add missing backends under `integrations/providers/<slug>` — never inside `agents`.
 4. **Verify:** agent smoke tests use minimal wiring (in-memory / defaults); application acceptance tests exercise the chosen profile.
 
 Further detail: [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) Phase M, migration map M.5.
 
-Each provider under `intergrax/integrations/providers/<slug>/` includes an English **`USAGE.md`** with factory + `IntegrationProfile` wiring and a minimal contract API example.
+Each provider under `intergrax/integrations/providers/<slug>` includes an English **`USAGE.md`** with factory + `IntegrationProfile` wiring and a minimal contract API example.
 
 ---
 
 ## Appendix F — Tier-3 application environment
 
-When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>/`.
+When an agent needs a **dedicated host** (env, Docker, stable HTTP API) — not only the shared lab — use the Tier-3 stack under `applications/<app>`.
 
 **Canonical application guide:** [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md) — mental model (§47), author workflow (§31), new-application checklist (§45), ops CLI.
 
-**Primary workflow:** [Step 4E — Dedicated application (scaffold)](#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
+**Primary workflow:** [Step 4E — Dedicated application (scaffold)](.#e--dedicated-application-scaffold) (CLI, three-command quickstart, Docker scripts).
 
 | Topic | Document |
 |-------|----------|
-| **Scaffold CLI** — `new-application`, lab vs product profile | [Step 4E](#e--dedicated-application-scaffold) |
-| **Composition engine** — `ApplicationManifest`, `AgentBinding.mount()`, `build_application_registry()` | [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md) |
-| **Application layout** — manifest, host, serving, `.env.example`, docker | [`applications/USAGE.md`](../applications/USAGE.md) |
-| **Deploy runbook** — per-app `BUILD_AND_DEPLOY.md` | Generated by scaffold; see `applications/poc_template_application/` |
+| **Scaffold CLI** — `new-application`, lab vs product profile | [Step 4E](.#e--dedicated-application-scaffold) |
+| **Composition engine** — `ApplicationManifest`, `AgentBinding.mount()`, `build_application_registry()` | [`intergrax/applications/USAGE.md`](../../../../applications/USAGE.md) |
+| **Application layout** — manifest, host, serving, `.env.example`, docker | [`applications/USAGE.md`](../../../../applications/USAGE.md) |
+| **Deploy runbook** — per-app `BUILD_AND_DEPLOY.md` | Generated by scaffold; see `applications/poc_template_application` |
 | Architecture rules | `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10 |
 | Implementation plan | [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md) Phase N |
 
@@ -1104,11 +1104,11 @@ Canon §27 defines five memory **types**; runtime implements **four operational 
 
 | Canon type | Runtime store | Module |
 |------------|---------------|--------|
-| Task memory | Task KV (`TaskMemory` + `MemoryView`) | `runtime/task_memory/` |
+| Task memory | Task KV (`TaskMemory` + `MemoryView`) | `runtime/task_memory` |
 | Agent local memory | Same task KV namespaces (per-step session) | `PolicyScopedMemoryView` |
-| User / org memory | `UserProfileManager` + `OrganizationProfileManager` | `intergrax/memory/`, `runtime/organization/` |
-| Long-term knowledge | RAG vectorstore (not agent-mutable memory) | `rag/` |
-| Execution trace | `RunTraceWriter` / `RuntimeEvent` (immutable) | `runtime/nexus/tracing/` |
+| User / org memory | `UserProfileManager` + `OrganizationProfileManager` | `intergrax/memory`, `runtime/organization` |
+| Long-term knowledge | RAG vectorstore (not agent-mutable memory) | `rag` |
+| Execution trace | `RunTraceWriter` / `RuntimeEvent` (immutable) | `runtime/nexus/tracing` |
 
 Short-term session history uses `SessionManager` + `SessionStorage` (SQLite when `relational_store=sqlite` on `IntegrationProfile`).
 
@@ -1156,7 +1156,7 @@ Organization memory in Intergrax is **profile + instructions** (`OrganizationPro
 ### MemoryView namespaces + delegation
 
 - Default namespaces: agent-specific keys under `PolicyScopedMemoryView`
-- Delegation: `task_id/delegation/{node_id}/` (see `delegation_memory.py`)
+- Delegation: `task_id/delegation/{node_id}` (see `delegation_memory.py`)
 - Shared handoff: `shared_task_context` metadata bridge
 
 ### Recovery semantics
@@ -1185,7 +1185,7 @@ Enable SQLite task memory in Tier-3 via `wire_task_memory_from_profile` and `mem
 |------|----------|------|
 | Nexus `ContextBuilder` | `runtime/nexus/context/context_builder.py` | Assembles RAG/history/web for one runtime turn |
 | `ContextManager` | `runtime/nexus/context/context_manager.py` | Nexus task-level context orchestration |
-| `DefaultContextBuilder` | `rag/context/` (ingest/index) | Document chunking for index pipelines |
+| `DefaultContextBuilder` | `rag/context` (ingest/index) | Document chunking for index pipelines |
 
 Use `tool_ids` including `rag.retrieve` instead of legacy plan boolean `use_rag` (shim emits deprecation event).
 
@@ -1299,7 +1299,7 @@ flowchart TB
   POL --> MW
 ```
 
-Authors customize security through **Tier-3** `*_wiring.py` + `ApplicationEnvironmentProfile.security_profile` — not by forking `intergrax/runtime/middleware/`.
+Authors customize security through **Tier-3** `*_wiring.py` + `ApplicationEnvironmentProfile.security_profile` — not by forking `intergrax/runtime/middleware`.
 
 ### H.3 Security profile (per application)
 
@@ -1316,7 +1316,7 @@ Authors customize security through **Tier-3** `*_wiring.py` + `ApplicationEnviro
 | `encryption_enforcement_enabled` | `EncryptionEnforcementMiddleware` on memory/tool paths |
 | `require_secrets_store_for_encryption` | Strict assembly requires `integration_profile.secrets_store` |
 
-Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate tests under `tests/unit/runtime/architecture/` and integration paths.
+Wiring: `intergrax/applications/_shared/application_security_wiring.py`. Gate tests under `tests/unit/runtime/architecture` and integration paths.
 
 ### H.3.1 Security & Trust Planes (operator index)
 
@@ -1484,7 +1484,7 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](ar
 |----------|-------|-----------|
 | No planner (single agent) | `TaskClassification.SINGLE_AGENT_DEFAULT` | Default lab path |
 | Deterministic multi-step | `TaskPlanner._multi_agent_plan`, `_research_pipeline_plan` | Known capability pipelines |
-| LLM step planner | `step_planner/` + `RuntimeConfig.step_planner_cfg` | Agent-local tool loops |
+| LLM step planner | `step_planner` + `RuntimeConfig.step_planner_cfg` | Agent-local tool loops |
 | LLM engine planner | `EngineBackedNexusPlanner` + `nexus_llm_plan_builder.py` | Nexus-level plan from LLM JSON parse; falls back to `TaskPlanner` on parse failure |
 | Graph from plan | `plan_to_execution_graph()` | Every Nexus run after planning |
 
@@ -1494,13 +1494,13 @@ Canon reference flow (PM → UX → Legal → Validator → Human): [§42.43](ar
 
 | Plane | Profile field | Registry prompt id | Wiring helper |
 |-------|---------------|-------------------|---------------|
-| Nexus LLM planner | `ReasoningProfile.planner_prompt_id` | `prompts/nexus_task_planner/` | `EngineBackedNexusPlanner` via `orchestration_wiring.py` |
+| Nexus LLM planner | `ReasoningProfile.planner_prompt_id` | `prompts/nexus_task_planner` | `EngineBackedNexusPlanner` via `orchestration_wiring.py` |
 | Tool catalog planner | `ReasoningProfile.tool_planner_prompt_id` | `tools_agent_planner` (default) | `resolve_tool_planning_config()` in `reasoning_wiring.py` |
 | Engine step planner | `ReasoningProfile.engine_planner_prompt_id` | `planner_default`, `planner_replan_default`, … | `resolve_engine_planner_prompt_config()` |
 
 Authoring rules:
 
-1. Add or version prompts under `intergrax/prompts/` — never inline hot-path strings (`check_reasoning_gates.py` CI).
+1. Add or version prompts under `intergrax/prompts` — never inline hot-path strings (`check_reasoning_gates.py` CI).
 2. Set ids on `ApplicationEnvironmentProfile.reasoning_profile` in the host manifest or environment builder.
 3. `denied_planner_model_ids` blocks planning-phase LLM selection via policy (`COG-5.3`).
 4. `allow_dynamic_replan=True` enables engine-loop replan boundary only — committed `NexusPlan` on the task is not mutated mid-flight (`COG-1.4` / ADR-FLOW-003).
@@ -1525,7 +1525,7 @@ Authoring rules:
 | Harness subagent | Intergrax |
 |------------------|-----------|
 | Spawn child with own context | `ExecutionGraph` node + `DelegationSpec` |
-| Isolated memory | `task_id/delegation/{node_id}/` via `delegation_memory.py` |
+| Isolated memory | `task_id/delegation/{node_id}` via `delegation_memory.py` |
 | Parent tool policy | `inherit_tool_policy=True` → intersect with child `AgentContract.allowed_tools` |
 | Trace | `parent_run_id`, `parent_node_id` on delegation metadata; `ops:handoff` events |
 
@@ -1600,7 +1600,7 @@ Intergrax separates **Integration → Tool → Skill → Agent** (Tier-0 → Tie
 | Atomic tools | One `ToolContract` = one operation; no workflow-sized tools |
 | Policy-first invocation | Every call through `ToolRuntime` + `ToolScopePolicy` + security middleware |
 | Composable skills | `SkillManifest` merges tool allow-lists and prompt fragments — not agents |
-| Tier separation | Agents never import `integrations/providers/`; Tier-3 wires slugs via profiles |
+| Tier separation | Agents never import `integrations/providers`; Tier-3 wires slugs via profiles |
 | Typed wiring | `ToolProfile`, `SkillProfile`, `SkillResolverProtocol` — no `getattr`/`setattr` on harness paths |
 
 ### J.2 Tools & skills control plane map
@@ -1680,7 +1680,7 @@ Wired `ApplicationBuildContext` profiles **override** raw environment defaults (
 
 | Do not | Do instead |
 |--------|------------|
-| Import vendor SDKs in `agents/` | Declare `allowed_tools`; wire integration in Tier-3 |
+| Import vendor SDKs in `agents` | Declare `allowed_tools`; wire integration in Tier-3 |
 | Register tools inside agent package | Add `ToolPlugin` or catalog bundle; enable in `tool_profile` |
 | Model workflows as one giant tool | Create **Skill** pack + `on_next_step` workflow |
 | Copy prompt + tool lists per agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
@@ -1707,7 +1707,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix K — Integration & RAG control plane
 
 **Audience:** Tier-3 application authors, extension authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](architecture/PLATFORM_FOUNDATION.md#71-integration-library)–[§7.1.5](architecture/PLATFORM_FOUNDATION.md#715-integration-profile); memory/RAG naming: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §13 (Integration), §14 (RAG); canon [§7.1](architecture/PLATFORM_FOUNDATION.md#71-integration-library)–[§7.1.5](architecture/PLATFORM_FOUNDATION.md#715-integration-profile); memory/RAG naming: [Appendix G](.#appendix-g--memory--rag-naming-phase-q).
 
 Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retrieval layer** ([`architecture/RAG.md`](architecture/RAG.md) ↔ [`plan/RAG.md`](plan/RAG.md)) composed from integration vector stores + embedding/rerank managers — not agent-local vector queries. Agents stay vendor-agnostic; Tier-3 selects providers via `IntegrationProfile`.
 
@@ -1716,7 +1716,7 @@ Integrations are **backend/provider adapters** (Tier-0). RAG is a **full retriev
 | Principle | Meaning in Intergrax |
 |-----------|----------------------|
 | Category contracts | Every integration slot maps to `IntegrationCategory` + stable contract |
-| Vendor isolation | SDK imports only in `integrations/providers/` boundary modules |
+| Vendor isolation | SDK imports only in `integrations/providers` boundary modules |
 | Profile-first wiring | Tier-3 resolves providers via `IntegrationProfile.resolve(category)` |
 | Single retrieval path | `RetrievalService` + `rag.retrieve` tool — no agent `vectorstore.query` |
 | Health at bootstrap | `probe_integration_profile_health` on environment wire |
@@ -1747,7 +1747,7 @@ Agent execution (Tier-1)
   └── Catalog tool rag.retrieve              policy-checked retrieval
 ```
 
-**Rule:** declare integrations on `IntegrationProfile` in Tier-3 — **never** import `integrations/providers/` from `agents/`.
+**Rule:** declare integrations on `IntegrationProfile` in Tier-3 — **never** import `integrations/providers` from `agents`.
 
 ### K.3 Core contracts (typed, inspectable)
 
@@ -1815,7 +1815,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix L — Context engineering control plane
 
 **Audience:** Tier-3 application authors, platform engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../maintainers/plans/CONTEXT_ENGINEERING.md); memory stores: [Appendix G](#appendix-g--memory--rag-naming-phase-q).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §16; canon [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [`plan/CONTEXT_ENGINEERING.md`](../../maintainers/plans/CONTEXT_ENGINEERING.md); memory stores: [Appendix G](.#appendix-g--memory--rag-naming-phase-q).
 
 Context engineering is a **first-class Nexus concern** — budgeted assembly, provenance, trimming telemetry, and deterministic pipelines. Agents do not hand-build prompts; `ContextManager` + `ContextBuilder` assemble bounded context from task, memory, RAG, tools, and graph outputs.
 
@@ -1946,7 +1946,7 @@ Nexus prompt builders (Tier-1)
 
 | Surface | How to customize |
 |---------|------------------|
-| **Catalog path** | `ApplicationEnvironmentProfile.prompt_profile.catalog_path` (default: `prompts/`) |
+| **Catalog path** | `ApplicationEnvironmentProfile.prompt_profile.catalog_path` (default: `prompts`) |
 | **Eager load** | `PromptProfile.load_on_startup` — passed to `YamlPromptRegistry.create_default(load=…)` |
 | **Runtime fallback** | `RuntimeConfig.prompt_catalog_path` when `prompt_registry` not injected explicitly |
 | **Pin / version** | `PromptPinConfig` on `registry.resolve(prompt_id, pin=…)` |
@@ -2037,7 +2037,7 @@ Audit vocabulary maps to the canonical enum in `agent_lifecycle_state.py`:
 | Declare `capabilities` | `validate_contract_metadata` at register |
 | Use `skills` / `extra_tools` for tools | Do not set author-time `allowed_tools` |
 | `production_eligible=True` | Requires `owner_team`, `owner_contact`, `runbook_ref` |
-| Reuse across applications | Agent logic in `agents/`; wiring in Tier-3 `manifest.py` |
+| Reuse across applications | Agent logic in `agents`; wiring in Tier-3 `manifest.py` |
 | No private tool registry | Tools from catalog + `ToolProfile` on application host |
 
 ### N.6 Verification (audit evidence)
@@ -2201,7 +2201,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix Q — Observability control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, release/ops.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §21; Phase OBS **Done**; complements [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §21; Phase OBS **Done**; complements [Appendix H §H.5](.#h5-observability--what-is-mandatory-vs-optional) (mandatory vs optional signals).
 
 Tier-3 hosts must materialize Nexus trace stores, runtime event journals, and integration observability backends from typed `ObservabilityProfile` — not ad-hoc `wire_nexus_observability()` calls in host factories.
 
@@ -2256,7 +2256,7 @@ Release / CI
 | Profile → wiring bridge | `pytest tests/unit/applications/test_harness_observability_wiring.py -m gate` |
 | Host observability materialization | `python scripts/maintenance/check_harness_observability_wiring.py` |
 | Lab OTLP / debug APIs | [`guides/HARNESS_ENVIRONMENT.md`](guides/HARNESS_ENVIRONMENT.md#otlp--observability-s-ops2) |
-| Mandatory vs optional signals | [Appendix H §H.5](#h5-observability--what-is-mandatory-vs-optional) |
+| Mandatory vs optional signals | [Appendix H §H.5](.#h5-observability--what-is-mandatory-vs-optional) |
 | Full gate | `uv run pytest -m gate -q` |
 
 Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md) · layer §21: [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md).
@@ -2359,7 +2359,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix S — Security control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, security reviewers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §23; Phase SEC **Done**; complements [Appendix H §H.3](#h3-security-profile-per-application) (V-SEC toggles).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §23; Phase SEC **Done**; complements [Appendix H §H.3](.#h3-security-profile-per-application) (V-SEC toggles).
 
 Tier-3 hosts must materialize V-SEC middleware and `RuntimeConfig.security_profile` from typed `ApplicationSecurityProfile` — not ad-hoc middleware registration in host factories.
 
@@ -2425,7 +2425,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix T — Cost governance control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, FinOps.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize) (`RuntimePolicyBundle.budget`).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §24; V-COST **Done**; complements [Appendix H §H.2](.#h2-control-plane-map-where-to-customize) (`RuntimePolicyBundle.budget`).
 
 Tier-3 hosts must materialize `BudgetPolicy`, `RunBudget`, and quota domain fragments from typed `CostProfile` — not ad-hoc budget objects in host factories.
 
@@ -2491,7 +2491,7 @@ Full audit procedure: [`guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md`](guides/H
 ## Appendix U — Evaluation control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, quality engineers.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize) (shadow evaluation metadata on `RuntimeRequest`).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25; V-EVAL **Done**; complements [Appendix H §H.2](.#h2-control-plane-map-where-to-customize) (shadow evaluation metadata on `RuntimeRequest`).
 
 Tier-3 hosts must materialize online evaluation registry, governance bridge, and policy domain fragments from typed `EvaluationProfile` — not ad-hoc registry singletons in host factories.
 
@@ -2616,7 +2616,7 @@ Release / CI
 ## Appendix V — Adaptive Harness control plane closeout
 
 **Audience:** Tier-3 application authors, platform engineers, harness operators.  
-**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · Phase W-ADAPT **Done**; complements [Appendix H §H.2](#h2-control-plane-map-where-to-customize).
+**Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) · Phase W-ADAPT **Done**; complements [Appendix H §H.2](.#h2-control-plane-map-where-to-customize).
 
 Tier-3 hosts configure adaptive closed-loop behavior exclusively through typed `AdaptiveProfile` on `ApplicationEnvironmentProfile`.
 
@@ -2627,7 +2627,7 @@ Tier-3 hosts configure adaptive closed-loop behavior exclusively through typed `
 | Profile-driven | `AdaptiveProfile` on `ApplicationEnvironmentProfile` |
 | Default safe | Lab: `enabled=True`, `mode=observe` (`LAB_ADAPTIVE_OBSERVE`, default on). Product reference hosts: `enabled=False`, `mode=observe` |
 | Rollout gate | Modes beyond `observe` require `IntegrationProfile.feature_flag` + enabled `rollout_flag_key` (`adaptive_feature_flag_gate.py`); gated mode flows through `wire_adaptive_profile()` → `apply_adaptive_profiles_from_environment()` |
-| Store isolation | Signal/proposal/profile stores under `build/adaptive_harness/` (gitignored) |
+| Store isolation | Signal/proposal/profile stores under `build/adaptive_harness` (gitignored) |
 | Governance first | Recommend/shadow/apply gated by `AdaptiveLoopEnvelope` + HITL for policy learning |
 | Verify before trust | `VerificationLoop` + runtime L4 evidence before production auto-apply |
 
@@ -2677,7 +2677,7 @@ Ops / CI
 | Pattern report export | `python scripts/release/phase_w_adapt_report.py --patterns-output build/adaptive_harness/process_patterns.json` |
 | Full gate | `uv run pytest -m gate -q` |
 
-Runbooks: [`runbook/adaptive/`](../runbook/adaptive/) · architecture: [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md).
+Runbooks: [`runbook/adaptive`](../runbook/adaptive/) · architecture: [`architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md`](architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md).
 
 ---
 
@@ -2819,7 +2819,7 @@ Do **not** override `run()`, **`AgentRuntime.advance_step`**, or **`HarnessKerne
 | **Decomposition** | `--pattern decomposition` | sub-question queue in `acp.state.v1` |
 | **Reflection** | `--pattern reflection` | draft → CVL critic → revise |
 
-For custom agents without `--pattern`: inherit a base from `intergrax/agents/authoring/patterns/` or use `IntergraxAgent` + `@step` for linear pipelines.
+For custom agents without `--pattern`: inherit a base from `intergrax/agents/authoring/patterns` or use `IntergraxAgent` + `@step` for linear pipelines.
 
 ### AC.6 Author checklist
 
@@ -2942,18 +2942,18 @@ python scripts/maintenance/check_agents_vendor_imports.py
 | Multi-agent workflow entirely in `on_next_step` private graph | Nexus `graph_spec` + Appendix C |
 | Import `intergrax.chat_agent` / `ChatAgent` | Nexus `AgentEngine` / `on_next_step` |
 | Import `intergrax.rag.answers` from runtime | `RetrievalService` |
-| Put agent logic in `applications/` | Logic in `agents/`, wiring in application |
+| Put agent logic in `applications` | Logic in `agents`, wiring in application |
 | Modify `NexusLoop` for one agent | `registry.register()` + contract/metadata |
 | Expect lab app to auto-load new agents | Add `AgentBinding.mount(...)` in `lab_application/manifest.py` + builder |
 | Use string `import_path` / `factory_path` in Python manifests | `AgentBinding.mount(AgentClass, factory=callable)` — see `intergrax/applications/USAGE.md` |
 | Duplicate LLM/trace/queue stacks | Extend Tier-0 platform |
-| Import `integrations/providers/` from `agents/` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
+| Import `integrations/providers` from `agents` | Declare `allowed_tools`; wire slugs in Tier-3 `factory.py` |
 | Hardcode Slack/Postgres/Redis in agent steps | `ToolRequest` + application `IntegrationProfile` |
 | Model a business workflow as one giant `ToolContract` | **Skill** pack (tool_ids + prompts) + `on_next_step` on agent |
 | Copy prompt + tool lists into every new agent | Reuse `skill_ids` from [Skill Library](architecture/SKILLS.md) |
-| Tie agent to one product | Reusable capability in `agents/` |
+| Tie agent to one product | Reusable capability in `agents` |
 | Document this workflow in multiple files | Update **this guide only** |
-| Use `getattr` / `setattr` on harness paths (`runtime/nexus/`, `agents/`) | Explicit `Protocol` / typed fields; CI `scripts/maintenance/check_harness_no_getattr.py` |
+| Use `getattr` / `setattr` on harness paths (`runtime/nexus`, `agents`) | Explicit `Protocol` / typed fields; CI `scripts/maintenance/check_harness_no_getattr.py` |
 | Import legacy `tools_agent` or `chat_router` modules | `CatalogToolPlanner` + `ToolRuntime` + `allowed_tools` on contract |
 | Rely on flat `Task.metadata` keys for options | Typed `Task.options` / `Task.runtime`; opt-in hydrate via `metadata_needs_hydration` |
 | Raw `dict` session state in `on_next_step` (`state["key"]`) | Typed `AcpSessionState` subclass + `load_session_state` §32.0 |
@@ -2964,14 +2964,14 @@ python scripts/maintenance/check_agents_vendor_imports.py
 
 ### CI and import gates (§5.2 reuse)
 
-Run before opening a harness PR (see `scripts/`):
+Run before opening a harness PR (see `scripts`):
 
 | Script | Enforces |
 |--------|----------|
-| `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus/` and `agents/` |
+| `check_harness_no_getattr.py` | No new `getattr`/`setattr` under `runtime/nexus` and `agents` |
 | `check_legacy_modules_removed.py` | Removed modules (`tools_agent`, `chat_router`, `chains`) stay absent; no production imports |
 | `check_agent_skill_resolution.py` | Tier-2 agents do not pre-populate `allowed_tools`; skills resolve at register |
-| `check_agent_typed_state.py` (ACP-DX-6) | No raw dict state access in `agents/` — typed session only §32.0 |
+| `check_agent_typed_state.py` (ACP-DX-6) | No raw dict state access in `agents` — typed session only §32.0 |
 | `check_agent_step_security.py` (ACP-CON-7) | Gateway-only I/O; STRICT profile widen deny |
 | `check_agent_pattern_conformance.py` (ACP-13) | Contract `cognitive_pattern` matches class MRO |
 | `check_harness_registry_resolution.py` | Tier-3 hosts wire catalogs via `wire_application_environment` / `build_harness_host_runtime` |
@@ -2986,7 +2986,7 @@ Run before opening a harness PR (see `scripts/`):
 | `check_harness_cost_wiring.py` | Hosts wire budget policy from `CostProfile` |
 | `check_harness_evaluation_wiring.py` | Hosts wire evaluation registry from `EvaluationProfile` |
 | `check_harness_critic_wiring.py` | Hosts wire critic hooks from `CriticProfile` (CRIT-V-6.2) |
-| `check_agents_vendor_imports.py` | Agents do not import `integrations/providers/` |
+| `check_agents_vendor_imports.py` | Agents do not import `integrations/providers` |
 | `check_integration_vendor_imports.py` | Tier-0 does not import application/agent trees incorrectly |
 | `check_production_chat_agent_imports.py` | No `ChatAgent` on production paths |
 | `check_legacy_package_boundaries.py` | Supervisor not pulled into runtime/applications |
@@ -3000,25 +3000,25 @@ When asked to create a new Intergrax agent:
 0. Skim [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — cross-domain rules (`SYS-INV-*`) that apply to every agent.
 1. Read this guide end-to-end.
 2. Run `python -m intergrax.scaffold new-agent <slug> --capability <id>`.
-3. Edit only `agents/<slug>/` — primarily `steps/`, `prompts/`, `schemas/`, `contract.py`.
+3. Edit only `agents/<slug>` — primarily `steps`, `prompts`, `schemas`, `contract.py`.
 4. Register in the appropriate context (§ Step 4). New deployable host: Step **4E** (`new-application`). Shared lab: Step **4C** (`lab_application/manifest.py`).
 5. Verify: `uv run pytest agents/<slug>/tests -q` then `uv run pytest -m gate -q`; optionally `python scripts/maintenance/check_agents_vendor_imports.py`, `python scripts/maintenance/check_integration_vendor_imports.py`, and `python scripts/maintenance/check_production_chat_agent_imports.py` (no `ChatAgent` in production paths).
-6. Do **not** modify `intergrax/runtime/` unless a reusable Tier-0 gap is proven and approved.
+6. Do **not** modify `intergrax/runtime` unless a reusable Tier-0 gap is proven and approved.
 7. Do **not** import `intergrax.integrations.providers.*` from agent code — wire integrations in Tier-3 only (Appendix E).
-8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](#appendix-h--governance-policy--observability-control-plane).
-9. For multi-agent / graph / delegation behavior, read [Appendix I](#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents/`.
-10. For tool/skill catalogs and runtime bridge, read [Appendix J](#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
-11. For integration backends and RAG retrieval, read [Appendix K](#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
-12. For context budget and assembly, read [Appendix L](#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
-13. For YAML prompt catalogs and registry wiring, read [Appendix M](#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
-14. For agent contract assembly, skills, and lifecycle, read [Appendix N](#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
-15. For registry wiring and catalog resolution, read [Appendix O](#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
-16. For capability graph lineage and blast-radius, read [Appendix P](#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
-17. For observability wiring and assembly validation, read [Appendix Q](#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
-18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
-19. For security wiring and V-SEC middleware assembly, read [Appendix S](#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
-20. For cost governance wiring and budget assembly, read [Appendix T](#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
-21. For evaluation wiring and shadow/online registry assembly, read [Appendix U](#appendix-u--evaluation-control-plane-closeout) — configure `EvaluationProfile`, not ad-hoc `OnlineEvaluationRegistry` in hosts.
-22. For critic / PEV verify wiring, read [Appendix W](#appendix-w--critic--verification-control-plane-closeout) — configure `CriticProfile`, not ad-hoc `CriticOrchestrator` in hosts.
-23. For `agent.run()`, **`on_next_step`**, cognitive patterns, trace, and per-agent environment binding, read [Appendix AC](#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) — hooks only; Nexus stays for `Task` orchestration.
+8. For Tier-3 hosts, configure governance via `ApplicationEnvironmentProfile` + `RuntimePolicyBundle` — see [Appendix H](.#appendix-h--governance-policy--observability-control-plane).
+9. For multi-agent / graph / delegation behavior, read [Appendix I](.#appendix-i--orchestration-control-plane) — never wire cross-agent calls inside `agents`.
+10. For tool/skill catalogs and runtime bridge, read [Appendix J](.#appendix-j--tools--skills-control-plane) — enable profiles on environment, not in agent code.
+11. For integration backends and RAG retrieval, read [Appendix K](.#appendix-k--integration--rag-control-plane) — wire `IntegrationProfile` in Tier-3 only.
+12. For context budget and assembly, read [Appendix L](.#appendix-l--context-engineering-control-plane) — configure `ContextProfile`, not ad-hoc prompt stitching.
+13. For YAML prompt catalogs and registry wiring, read [Appendix M](.#appendix-m--prompt-registry-control-plane) — configure `PromptProfile`, not inline prompt strings.
+14. For agent contract assembly, skills, and lifecycle, read [Appendix N](.#appendix-n--agent-assembly-control-plane) — declare `skills` on `AgentContract`, not raw `allowed_tools`.
+15. For registry wiring and catalog resolution, read [Appendix O](.#appendix-o--registry-architecture-control-plane) — enable profiles on environment, not direct `ToolRegistry()` in hosts.
+16. For capability graph lineage and blast-radius, read [Appendix P](.#appendix-p--capability-graph-control-plane) — environment graph is built at wire time from catalog baseline.
+17. For observability wiring and assembly validation, read [Appendix Q](.#appendix-q--observability-control-plane-closeout) — configure `ObservabilityProfile`, not direct `wire_nexus_observability()` in hosts.
+18. For reliability wiring and idempotency/circuit breaker assembly, read [Appendix R](.#appendix-r--reliability-control-plane-closeout) — configure `ReliabilityProfile`, not ad-hoc `IdempotencyStore` in hosts.
+19. For security wiring and V-SEC middleware assembly, read [Appendix S](.#appendix-s--security-control-plane-closeout) — configure `ApplicationSecurityProfile`, not direct middleware in host factories.
+20. For cost governance wiring and budget assembly, read [Appendix T](.#appendix-t--cost-governance-control-plane-closeout) — configure `CostProfile`, not ad-hoc `BudgetPolicy` in hosts.
+21. For evaluation wiring and shadow/online registry assembly, read [Appendix U](.#appendix-u--evaluation-control-plane-closeout) — configure `EvaluationProfile`, not ad-hoc `OnlineEvaluationRegistry` in hosts.
+22. For critic / PEV verify wiring, read [Appendix W](.#appendix-w--critic--verification-control-plane-closeout) — configure `CriticProfile`, not ad-hoc `CriticOrchestrator` in hosts.
+23. For `agent.run()`, **`on_next_step`**, cognitive patterns, trace, and per-agent environment binding, read [Appendix AC](.#appendix-ac--agent-run-cognitive-patterns-and-environment-acp) — hooks only; Nexus stays for `Task` orchestration.
 24. Do **not** create duplicate workflow documentation — update this file if the process changes.

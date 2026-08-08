@@ -25,7 +25,7 @@ This is indexed-only LKW behavior. It is not Hybrid Ask, not a platform certific
 
 - Git
 - Docker Desktop or Docker Engine with Compose
-- `uv`
+- `../../technical/applications/local_workspace_application/uv`
 - Sufficient disk space for Docker images and the configured local model (Ollama pull on first run)
 
 First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
@@ -111,51 +111,51 @@ stack_left_running=true
 
 The runner reused existing production-shaped boundaries:
 
-- existing Docker bootstrap (`build-local-docker`)
+- existing Docker bootstrap (`../../technical/applications/local_workspace_application/build-local-docker`)
 - managed workspace HTTP API
 - managed-file Knowledge Intake (no arbitrary local folder read)
 - durable ingestion operation polling
 - indexed Ask V1
 - persisted Ask-run read
 
-You did not need to write API JSON, copy operation IDs manually, or configure `INTERGRAX_ALLOWED_READ_ROOTS`.
+You did not need to write API JSON, copy operation IDs manually, or configure `../../technical/applications/local_workspace_application/INTERGRAX_ALLOWED_READ_ROOTS`.
 
 ## First-run downloads
 
 - Docker images for the LKW stack may be downloaded on first run.
-- The configured generation model (`llama3.1:latest` by default) may be downloaded by the stack.
+- The configured generation model (`../../technical/applications/local_workspace_application/llama3.1:latest` by default) may be downloaded by the stack.
 - The quickstart resolves the embedding model configured in the running LKW container and pulls that exact model.
-- An existing `.env` is not modified; a missing `.env` is created once from `.env.example`.
+- An existing `../../technical/applications/local_workspace_application/.env` is not modified; a missing `../../technical/applications/local_workspace_application/.env` is created once from `../../technical/applications/local_workspace_application/.env.example`.
 - Operational failures return a safe stage and reason instead of raw Docker, HTTP or subprocess logs.
 - Duration varies by environment; timing is not claimed as validated until external sessions confirm it.
 
 ## Safety
 
-- The sample file is bundled and non-sensitive (`sample_docs/lkw_product_quickstart.txt`).
+- The sample file is bundled and non-sensitive (`../../technical/applications/local_workspace_application/sample_docs/lkw_product_quickstart.txt`).
 - Managed upload is used; no arbitrary local folder is read.
-- Only loopback HTTP (`127.0.0.1`, `localhost`, `::1`) is allowed.
+- Only loopback HTTP (`../../technical/applications/local_workspace_application/127.0.0.1`, `../../technical/applications/local_workspace_application/localhost`, `../../technical/applications/local_workspace_application/::1`) is allowed.
 - Your original local files are not modified.
-- If `.env` is missing, it is created from `.env.example` once; an existing `.env` is never overwritten.
+- If `../../technical/applications/local_workspace_application/.env` is missing, it is created from `../../technical/applications/local_workspace_application/.env.example` once; an existing `../../technical/applications/local_workspace_application/.env` is never overwritten.
 - The stack remains running after success for inspection.
 - Local Docker volumes may retain evaluation data.
 
 ### Stop the stack
 
-From `applications/local_workspace_application/`:
+From `../../technical/applications/local_workspace_application/applications/local_workspace_application`:
 
 ```sh
 docker compose -p intergrax_lkw -f docker/docker-compose.yml down
 ```
 
-On Windows, use the same command from a shell after `cd` to that directory.
+On Windows, use the same command from a shell after `../../technical/applications/local_workspace_application/cd` to that directory.
 
 ## Troubleshooting
 
-- Ensure Docker is running and `uv` is on `PATH`.
-- Inspect service status: `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`
-- Inspect logs: `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`
-- Health check: `http://127.0.0.1:8020/health` should return `status: ok`.
-- Re-run with an already-running stack: add `--skip-stack-start` to the Python runner (wrappers normally start the stack).
+- Ensure Docker is running and `../../technical/applications/local_workspace_application/uv` is on `../../technical/applications/local_workspace_application/PATH`.
+- Inspect service status: `../../technical/applications/local_workspace_application/docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`
+- Inspect logs: `../../technical/applications/local_workspace_application/docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`
+- Health check: `http://127.0.0.1:8020/health` should return `../../technical/applications/local_workspace_application/status: ok`.
+- Re-run with an already-running stack: add `../../technical/applications/local_workspace_application/--skip-stack-start` to the Python runner (wrappers normally start the stack).
 
 ## What this does not prove
 
@@ -173,6 +173,6 @@ On Windows, use the same command from a shell after `cd` to that directory.
 ## Other routes
 
 - Product orientation: [LKW Product Tour](LKW_PRODUCT_TOUR.md)
-- Proof status dashboard: [PROOFS.md](../../proofs/PROOFS.md)
+- Proof status dashboard: [docs/project/proofs/PROOFS.md](../../proofs/PROOFS.md)
 - Builder route: [Builder Quick Start](../../builders/BUILDER_QUICKSTART.md)
-- Deeper build planning: [BUILD_WITH_INTERGRAX.md](../../builders/BUILD_WITH_INTERGRAX.md)
+- Deeper build planning: [docs/project/builders/BUILD_WITH_INTERGRAX.md](../../builders/BUILD_WITH_INTERGRAX.md)

@@ -1,8 +1,8 @@
 # Tool Library and ToolRuntime — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/TOOLS.md`](../../architecture/TOOLS.md) · [`plan/TOOLS.md`](../plans/TOOLS.md)  
-**Audit map layers:** 11 · compact slice: [`audit_slices/TOOLS.md`](../../technical/guides/audit_slices/TOOLS.md)  
+**Domain pair:** [`architecture/TOOLS.md`](../../architecture/TOOLS.md) · [`plan/TOOLS.md`](../plans/TOOLS.md)
+**Audit map layers:** 11 · compact slice: [`audit_slices/TOOLS.md`](../../technical/guides/audit_slices/TOOLS.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic
 **Load first:** [`docs/project/technical/guides/audit_slices/TOOLS.md`](../../technical/guides/audit_slices/TOOLS.md) — compact slice (layers **11**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ Deferred: hierarchical LLM category pass (ADR-TOOL-005 v1) · optional L1 critic
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/TOOLS.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/TOOLS.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/TOOLS.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/TOOLS.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/TOOLS.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix J** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -95,7 +95,7 @@ scripts/maintenance/check_legacy_tool_plan_booleans.py · check_tool_mcp_schema_
 scripts/maintenance/check_tool_injection_defense.py · check_agent_registry_bypass.py
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

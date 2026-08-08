@@ -1,11 +1,11 @@
 # Experimentation Workflow and Developer Experience
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 25–27, 30  
-**Audit instruction:** [`audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)  
+**Audit instruction:** [`audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/audit/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md)
 **Last updated:** 2026-06-20 — **P2-ARCH-13** Experimentation/DX architecture vs implementation rules boundary
 
 ---
@@ -129,7 +129,7 @@ Sections **§39–§41** below predate this boundary split. They contain **Curso
 
 # 39. Implementation Rules For Cursor AI
 
-> **Legacy placement** — see [Architecture vs Implementation Rules Boundary](#architecture-vs-implementation-rules-boundary) and [Migration note (§39–§41 legacy placement)](#migration-note-3941-legacy-placement). Prefer [`AGENTS.md`](../../../AGENTS.md) and [`AGENT_INSTRUCTIONS.md`](../technical/guides/AGENT_INSTRUCTIONS.md) for repo-wide coding agent behavior.
+> **Legacy placement** — see [Architecture vs Implementation Rules Boundary](.#architecture-vs-implementation-rules-boundary) and [Migration note (§39–§41 legacy placement)](.#migration-note-3941-legacy-placement). Prefer [`AGENTS.md`](../../../AGENTS.md) and [`AGENT_INSTRUCTIONS.md`](../technical/guides/AGENT_INSTRUCTIONS.md) for repo-wide coding agent behavior.
 
 When Cursor AI or an LLM coding agent implements Intergrax, it MUST follow these rules.
 

@@ -1,13 +1,13 @@
 # RAG and Retrieval
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/RAG.md`](../maintainers/plans/RAG.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/RAG.md`](../maintainers/plans/RAG.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layer:** 14 (RAG and Retrieval)  
-**Audit instruction:** [`audit/RAG.md`](../maintainers/audit/RAG.md)  
-**Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5  
-**Implementation:** `intergrax/rag/`  
+**Audit instruction:** [`audit/RAG.md`](../maintainers/audit/RAG.md)
+**Related:** [`architecture/INTEGRATIONS.md`](INTEGRATIONS.md) (vector_store, document_parser, rerank_provider slugs) · [`architecture/MEMORY.md`](MEMORY.md) (Knowledge store vs LTM) · [`guides/AGENT_CREATION_GUIDE.md`](../technical/guides/AGENT_CREATION_GUIDE.md) Appendix K §K.5
+**Implementation:** `intergrax/rag`
 **Last architecture audit:** 2026-06-17 — **Full Harness LC** (re-validates M-RAG-ITERATION-III); **Architecturally Mature** · 2026-06-13 (iteration II Frozen) · 2026-06-12 (GraphRAG G1–G5)
 
 ---
@@ -33,13 +33,13 @@ Load **only** the satellite matching your task or cited §.
 | Satellite | Contents |
 |-----------|----------|
 | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
-| [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | **Native Knowledge Document Contract** (`KnowledgeDocument`) — LCI-1A source of truth |
+| [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | **Native Knowledge Document Contract** (`KnowledgeDocument`) — LCI-1A source of truth |
 
 ## Native Knowledge Document Contract
 
 RAG is the **functional owner** of the platform knowledge document ABI. The canonical type is **`KnowledgeDocument`**, implemented in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (LCI-1B), public import: `from intergrax.knowledge.contracts import KnowledgeDocument`.
 
-**Source of truth:** [`../features/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+**Source of truth:** [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
 
 **Policy:** No new local document models in RAG contracts, memory, modality, or integrations — all shared pipelines consume `KnowledgeDocument`. Replaces `langchain_core.documents.Document` in public contracts per LangChain Independence inventory.
 

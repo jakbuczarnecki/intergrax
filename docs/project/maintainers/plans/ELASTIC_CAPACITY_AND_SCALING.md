@@ -1,11 +1,11 @@
 # Elastic Capacity and Scaling — Implementation Plan
 
-**Architecture (1:1):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
-**Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)  
+**Architecture (1:1):** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
+**Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 **ADR:** [`adr/entries/2026-06-08/ADR-SCALE-001.md`](../../technical/adr/entries/2026-06-08/ADR-SCALE-001.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 **Last updated:** 2026-06-20 — **P2-ARCH-11** ECP production boundary.
 
@@ -20,7 +20,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../../technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -41,7 +41,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §24.7 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §24.7 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -62,7 +62,7 @@ Load **only** the satellite matching your task or cited gap ID.
 3. **Test** — unit + integration, deterministic; mock integrations (no live K8s in gate)
 4. **Documentation** — update this plan + architecture pair when contracts change
 5. **No regression** — `pytest -m gate` green
-6. **Reuse Tier-0** — extend `integrations/`, `queueing/`; no parallel cloud SDK stacks in Nexus
+6. **Reuse Tier-0** — extend `integrations`, `queueing`; no parallel cloud SDK stacks in Nexus
 7. **Async control plane** — ECP MUST NOT block `NexusLoop` hot path
 8. **Tier discipline** — provision via Integration Library; deploy YAML stays Tier-3
 9. **No product scope creep** — harness phases MUST NOT implicitly include K.1/K.2
@@ -75,7 +75,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | ID | Deliverable | Status | Priority | Acceptance |
 |----|-------------|--------|----------|------------|
-| ECP-0.1 | **`intergrax/runtime/capacity/`** package — `contracts.py`, `__init__.py` | **Done** | **Critical** | Importable; no side effects |
+| ECP-0.1 | **`intergrax/runtime/capacity`** package — `contracts.py`, `__init__.py` | **Done** | **Critical** | Importable; no side effects |
 | ECP-0.2 | **Gate import test** — `tests/unit/runtime/capacity/test_ecp_depth_gate.py` | **Done** | Medium | `-m gate` green |
 | ECP-0.3 | **Architecture ↔ plan sync** — paydown log row | **Done** | Low | §22 updated |
 | ECP-0.4 | **Extend `runtime/architecture/__init__.py`** re-exports if needed | **Done** | Low | `capacity` package import gate |

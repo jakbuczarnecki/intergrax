@@ -28,11 +28,11 @@ This validation does not imply that BoundaryAttest is bundled with Intergrax or 
 
 | Document | Purpose |
 |----------|---------|
-| [`docs/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) | Host design, EBE contract, trust model |
-| [`docs/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/attestation_demo/IMPLEMENTATION_PLAN.md) | Task queue and verification |
-| [`docs/BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/attestation_demo/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
-| [`docs/DOCKER_VERIFY_RUNBOOK.md`](../../docs/project/technical/applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
-| [`docs/project/technical/adr/README.md`](../../docs/project/technical/applications/attestation_demo/adr/README.md) | Application architecture decisions |
+| [`../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) | Host design, EBE contract, trust model |
+| [`../../docs/project/technical/applications/attestation_demo/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/attestation_demo/IMPLEMENTATION_PLAN.md) | Task queue and verification |
+| [`../../docs/project/technical/applications/attestation_demo/BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/attestation_demo/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
+| [`../../docs/project/technical/applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md`](../../docs/project/technical/applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
+| [`../../docs/project/technical/adr/README.md`](../../docs/project/technical/applications/attestation_demo/adr/README.md) | Application architecture decisions |
 | [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, EBE-9 golden vector |
 | [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) | Host signing verifier spec |
 
@@ -142,4 +142,4 @@ Intergrax does **not** ship the adapter or sign partner receipts.
 
 Do not label receipts as `server_attested` by Intergrax unless co-located deployment is explicitly documented.
 
-See [`docs/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) and [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) for full design.
+See [`../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) and [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) for full design.

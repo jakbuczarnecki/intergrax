@@ -8,8 +8,8 @@ Use, modification, or distribution without written permission is prohibited.
 
 **Status:** Audit source document for architecture and implementation-plan updates  
 **Domain:** `OBSERVABILITY` with cross-domain impact on `CRITIC_VERIFICATION`, `ADAPTIVE_HARNESS_INTELLIGENCE`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`, and `TIER3_APPLICATION_ENVIRONMENT`  
-**Target architecture docs:** `docs/project/architecture/OBSERVABILITY.md`, `docs/project/architecture/satellites/OBSERVABILITY_extended_depth.md`  
-**Target plan docs:** `docs/project/maintainers/plans/OBSERVABILITY.md`, proposed `docs/project/maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md`  
+**Target architecture docs:** `docs/project/architecture/OBSERVABILITY.md`, `docs/project/architecture/satellites/OBSERVABILITY_extended_depth.md`
+**Target plan docs:** `docs/project/maintainers/plans/OBSERVABILITY.md`, proposed `docs/project/maintainers/plans/satellites/OBSERVABILITY_eval_control_plane.md`
 **Date:** 2026-06-24  
 
 ---

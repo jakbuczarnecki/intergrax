@@ -28,7 +28,7 @@ They do not define an open-source contribution model, production-support channel
 | 8 | [Outreach Kit](OUTREACH_KIT.md) | Maintainer-facing recruitment templates and positioning guardrails |
 | 9 | [Curated Public Issue Drafts](CURATED_PUBLIC_ISSUES.md) · [curated_public_issues.yml](curated_public_issues.yml) | Strategy, draft rationale and canonical source data for curated public issue automation |
 
-**Intergrax Public Positioning** — [`INTERGRAX_PUBLIC_POSITIONING.md`](../../overview/INTERGRAX_PUBLIC_POSITIONING.md)
+**Intergrax Public Positioning** — [`../../overview/INTERGRAX_PUBLIC_POSITIONING.md`](../../overview/INTERGRAX_PUBLIC_POSITIONING.md)
 
 ```text
 Role: Exact first-contact message, product hierarchy, audience value and CTA language
@@ -36,7 +36,7 @@ Status: ACTIVE — applied to root README in PX-2 ACCEPTED / CLOSED
 Public-reader route: no
 ```
 
-**Builder Quick Start** — [`../../BUILDER_QUICKSTART.md`](../../builders/BUILDER_QUICKSTART.md)
+**Builder Quick Start** — [`../../builders/BUILDER_QUICKSTART.md`](../../builders/BUILDER_QUICKSTART.md)
 
 ```text
 Role: First bounded builder orientation and progressive-disclosure route
@@ -44,7 +44,7 @@ Status: PX-6 — ACCEPTED / CLOSED
 Public-reader route: yes, through the root public documentation
 ```
 
-**Public Product Experience Roadmap** — [`PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
+**Public Product Experience Roadmap** — [`../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md`](../../overview/PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md)
 
 ```text
 Role: Layer 5 roadmap and measurable product-experience contract
@@ -58,7 +58,7 @@ Normal readers should start with the public documentation map:
 
 [Intergrax Public Documentation Map](../../community/PUBLIC_DOCUMENTATION_MAP.md)
 
-**Public proof dashboard:** [`PROOFS.md`](../../proofs/PROOFS.md) — reader-facing proof status and verification paths.
+**Public proof dashboard:** [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md) — reader-facing proof status and verification paths.
 
 **Maintainer proof rules:** [`PUBLIC_PROOF_AND_CLAIMS_MODEL.md`](PUBLIC_PROOF_AND_CLAIMS_MODEL.md) — status vocabulary, evidence requirements, and allowed public wording.
 
@@ -79,7 +79,7 @@ Detailed Token Optimization implementation roadmap:
 ```
 
 The roadmap links own detailed implementation progress.
-`PROOFS.md` does not reproduce their current tasks,
+`../../proofs/PROOFS.md` does not reproduce their current tasks,
 dependencies or review states.
 
 This directory contains maintainer controls and operational public-adoption material — not the default first-contact path for external reviewers.
@@ -159,22 +159,22 @@ The [External Reader Validation Protocol](EXTERNAL_READER_VALIDATION_PROTOCOL.md
 
 | Route | Classification | Entry point |
 |-------|----------------|-------------|
-| Product Tour | Product orientation | `../../LKW_PRODUCT_TOUR.md` |
+| Product Tour | Product orientation | `../../product/lkw/LKW_PRODUCT_TOUR.md` |
 | Product Quick Start | Supported executable product evaluation | `../../docs/project/product/lkw/QUICKSTART.md` |
-| Builder Quick Start | First bounded builder orientation | `../../BUILDER_QUICKSTART.md` |
-| Deeper builder planning | Builder route selection and deeper planning | `../../BUILD_WITH_INTERGRAX.md` |
-| Broader evaluation | Bounded evaluation execution | `../../EVALUATION_GUIDE.md` |
-| Technical Platform Proof | Bounded technical reviewer evidence | `LKW_PLATFORM_PROOF.md` |
-| Token Optimization | Featured platform-capability proof | `../features/token_optimization/README.md` |
+| Builder Quick Start | First bounded builder orientation | `../../builders/BUILDER_QUICKSTART.md` |
+| Deeper builder planning | Builder route selection and deeper planning | `../../builders/BUILD_WITH_INTERGRAX.md` |
+| Broader evaluation | Bounded evaluation execution | `../../builders/EVALUATION_GUIDE.md` |
+| Technical Platform Proof | Bounded technical reviewer evidence | `../../proofs/LKW_PLATFORM_PROOF.md` |
+| Token Optimization | Featured platform-capability proof | `../../capabilities/token_optimization/README.md` |
 
-Secondary control for Token Optimization public wording: [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)
+Secondary control for Token Optimization public wording: [`../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)
 
 ## Operational model
 
 The public-adoption setup has one canonical issue source and one normal maintainer workflow:
 
 ```text
-README.md / ROADMAP.md / COLLABORATION.md
+README.md / docs/project/overview/ROADMAP.md / docs/project/community/COLLABORATION.md
   -> docs/project/maintainers/public-adoption/README.md
   -> PUBLIC_ISSUE_INDEX.md
   -> curated_public_issues.yml
@@ -304,13 +304,13 @@ For commercial licensing, production use, partnerships, redistribution, derivati
 
 ## Token optimization claim guardrails
 
-For token-optimization proof wording and claim boundaries, see [`TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
+For token-optimization proof wording and claim boundaries, see [`../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md`](../../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
 ## Related root documents
 
 - [INTERGRAX_PUBLIC_POSITIONING.md](../../overview/INTERGRAX_PUBLIC_POSITIONING.md)
 - [README.md](../../../../README.md)
-- [ROADMAP.md](../../overview/ROADMAP.md)
-- [COLLABORATION.md](../../community/COLLABORATION.md)
+- [docs/project/overview/ROADMAP.md](../../overview/ROADMAP.md)
+- [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md)
 - [LICENSE](../../../../LICENSE)
 - [SECURITY.md](../../../../SECURITY.md)

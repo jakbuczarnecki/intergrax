@@ -23,14 +23,14 @@
 ## Code entry (grep first — F5-B)
 
 - `intergrax/runtime/nexus/orchestration/nexus_loop.py` — NexusLoop
-- `intergrax/runtime/nexus/orchestration/intake/` — task intake
+- `intergrax/runtime/nexus/orchestration/intake` — task intake
 
 ## Do not load unless cited
 
 - Full multi-thousand-line plan or architecture files (use hub + **one** satellite)
-- `docs/audit_results/` (unless RESUME)
+- `docs/audit_results` (unless RESUME)
 - Unrelated domain pairs
-- Other domains' `audit_slices/`
+- Other domains' `audit_slices`
 
 ## Evidence rule (unchanged)
 

@@ -1,11 +1,11 @@
 # Integrations
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 13–14  
-**Audit instruction:** [`audit/INTEGRATIONS.md`](../maintainers/audit/INTEGRATIONS.md)  
+**Audit instruction:** [`audit/INTEGRATIONS.md`](../maintainers/audit/INTEGRATIONS.md)
 ---
 
 ## Cursor read scope (token budget)
@@ -35,7 +35,7 @@ Load **only** the satellite matching your task or cited §.
 
 **Code:** `intergrax/runtime/integrations/contracts.py` · **Task:** INTEGRATIONS-1A  
 **Observability vendor category:** `intergrax/runtime/integrations/observability.py` · **Task:** INTEGRATIONS-1B  
-**Provider category contracts:** `intergrax/runtime/integrations/categories/` · **Task:** INTEGRATIONS-2A
+**Provider category contracts:** `intergrax/runtime/integrations/categories` · **Task:** INTEGRATIONS-2A
 
 All future integration categories derive from or align with the generic **`PlatformIntegrationContract`**. Vendor adapters (Langfuse, Arize, Phoenix, Elasticsearch, OTLP backends, and future custom backends) are **integrations**, not isolated ad-hoc exporters or one-off SDK wrappers.
 
@@ -109,10 +109,10 @@ Explicit operator wiring (**`build_otlp_observability_integration`**, **`build_o
 
 ### Provider category contract layer (INTEGRATIONS-2A)
 
-**Code:** `intergrax/runtime/integrations/categories/` · **Registry:** `PROVIDER_CATEGORY_CONTRACT_REGISTRY`  
+**Code:** `intergrax/runtime/integrations/categories` · **Registry:** `PROVIDER_CATEGORY_CONTRACT_REGISTRY`
 **Taxonomy source:** `intergrax/integrations/providers/layout.py` (`SLUG_CATEGORY`)
 
-Each provider folder under `intergrax/integrations/providers/<category>/` maps to a **category-specific integration contract** in Tier-1 runtime. Contracts derive from **`PlatformIntegrationContract`** and declare category-appropriate default capabilities. Config remains **disabled by default**; **`public_view()`** must not expose secrets.
+Each provider folder under `intergrax/integrations/providers/<category>` maps to a **category-specific integration contract** in Tier-1 runtime. Contracts derive from **`PlatformIntegrationContract`** and declare category-appropriate default capabilities. Config remains **disabled by default**; **`public_view()`** must not expose secrets.
 
 | Module | Categories covered |
 |--------|-------------------|
@@ -137,7 +137,7 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 
 **`PlatformIntegrationKind`:** extended with all `SLUG_CATEGORY` folder names. Legacy shorthand values (`search`, `storage`, `notification`) remain for backward compatibility.
 
-**Removed category:** `interaction_surface` (INTERACTIONS-TAXONOMY-1). Non-vendor adapters (`lab_json`, `slash_command`) live under `intergrax/runtime/interactions/`. Mailgun is `notification_channel`. Ollama is `model_serving_runtime` — see [`OLLAMA_PROVIDER_CLASSIFICATION.md`](OLLAMA_PROVIDER_CLASSIFICATION.md). Near-real-time bidirectional chat vendors use `conversation_channel` — see [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md). Do not recreate a generic `interaction_surface`.
+**Removed category:** `interaction_surface` (INTERACTIONS-TAXONOMY-1). Non-vendor adapters (`lab_json`, `slash_command`) live under `intergrax/runtime/interactions`. Mailgun is `notification_channel`. Ollama is `model_serving_runtime` — see [`OLLAMA_PROVIDER_CLASSIFICATION.md`](OLLAMA_PROVIDER_CLASSIFICATION.md). Near-real-time bidirectional chat vendors use `conversation_channel` — see [`CONVERSATION_CHANNEL_CONTRACT.md`](CONVERSATION_CHANNEL_CONTRACT.md). Do not recreate a generic `interaction_surface`.
 
 **Scope boundary (INTEGRATIONS-2A):** category contracts only — no concrete provider migration, no vendor SDK imports, no registry/bootstrap wiring.
 
@@ -145,7 +145,7 @@ Each provider folder under `intergrax/integrations/providers/<category>/` maps t
 
 ### Provider package pattern (INTEGRATIONS-2B follow-up)
 
-Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
+Canonical layout under `intergrax/integrations/providers/<category>/<slug>`:
 
 | File | Responsibility |
 |------|----------------|
@@ -163,11 +163,11 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 - One integration class per category — no multi-category monster classes.
 - No duplicate provider adapters or parallel packages for the same slug.
 - `enabled=True` without required transport/client must fail at construction time (`IntegrationConfigurationError`), not during export.
-- Langfuse pilot (`observability_backend/langfuse/`) is the reference implementation.
+- Langfuse pilot (`observability_backend/langfuse`) is the reference implementation.
 
 **INTEGRATIONS-2C (batch migration — Done):** all existing `observability_backend` provider packages migrated using the Langfuse pattern — no duplicate provider adapters or parallel packages. `integration.py` holds contract-based provider logic; `register.py` remains legacy catalog hook until registry v2; `manifest.py` metadata-only. Legacy **`ObservabilityBackend`** factories and **`register_<slug>_integration`** hooks remain backward-compatible. Injectable transport only in contract path; no vendor SDK imports in `integration.py`; no production network transports in the migration task.
 
-**INTEGRATIONS-2D (remaining categories — Done):** all non-`observability_backend` slugs with per-slug provider packages now follow the same layout — existing provider package + contract-based integration class in `integration.py`; legacy catalog factory preserved in `bundle.py`; **`register.py`** remains legacy until registry v2. No duplicate provider adapters. Nine `llm_guardrail` slugs deferred (shared `bundles/` layout). Completeness tests derive expected slugs from `SLUG_CATEGORY`.
+**INTEGRATIONS-2D (remaining categories — Done):** all non-`observability_backend` slugs with per-slug provider packages now follow the same layout — existing provider package + contract-based integration class in `integration.py`; legacy catalog factory preserved in `bundle.py`; **`register.py`** remains legacy until registry v2. No duplicate provider adapters. Nine `llm_guardrail` slugs deferred (shared `bundles` layout). Completeness tests derive expected slugs from `SLUG_CATEGORY`.
 
 **INTEGRATIONS-2E (runtime cutover — Done):** each provider/category exposes exactly **one** public entrypoint: `<ProviderPascal><CategoryPascal>Integration` in `integration.py`. Legacy catalog factories in `bundle.py` remain as **compatibility shims** that delegate to the Integration class; they must not return parallel public adapter/facade types. Former public adapters (e.g. `adapter.py` classes sharing the Integration name) are **removed or privatized** (`_ProviderRuntime`, `_ProviderBridge`). Private SDK clients, bridges, and mappers are allowed as implementation details only. Cut-over completeness tracked in `test_provider_runtime_cutover.py` (`CUTOVER_SLUGS` — 185 slugs derived from `SLUG_CATEGORY`, excluding 9 deferred `llm_guardrail` slugs).
 
@@ -179,7 +179,7 @@ Canonical layout under `intergrax/integrations/providers/<category>/<slug>/`:
 - **`PlatformIntegrationSecurityPosture`** defaults: no secret exposure, no raw payload exposure, sanitized diagnostics.
 - **`public_view()`** on contract/config must remain safe for logs and operator UIs.
 - Integrations declare **`expects_failure_isolation=true`** — backend/export failures must not fail product/runtime runs (aligned with observability export policy).
-- Tier-0 catalog integrations (`intergrax/integrations/`) remain separate; runtime category contracts compose platform behavior without duplicating the slug catalog.
+- Tier-0 catalog integrations (`intergrax/integrations`) remain separate; runtime category contracts compose platform behavior without duplicating the slug catalog.
 
 ---
 
@@ -332,7 +332,7 @@ Adapters should be generic and reusable.
 ## Phase INT-P8 — Dynamic Integration Selection & Agent Workspace Gateways (Planned)
 
 **Status:** Architecture & plan only — **not shipped**  
-**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) — Phase INT-P8  
+**Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md) — Phase INT-P8
 **Catalog (planned slugs):** [`satellites/INTEGRATIONS_provider_catalog.md`](satellites/INTEGRATIONS_provider_catalog.md) — §INT-P8 planned categories
 
 **Purpose:** Extend the mature integration catalog (**194 shipped slugs** per `layout.py` · `SLUG_CATEGORY`, Full Harness LC **Done**) with **selection metadata**, **gateway-style connectors**, and **agent workspace backends** — without expanding the vendor catalog for its own sake.

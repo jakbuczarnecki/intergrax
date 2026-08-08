@@ -1,6 +1,6 @@
 # Plan hub satellites
 
-**Parent directory:** [`../`](..) — domain plan hubs (`<DOMAIN>.md`)
+**Parent directory:** [`..`](..) — domain plan hubs (`<DOMAIN>.md`)
 
 Load **one** satellite per session when a task or audit gap ID requires it.
 
@@ -15,8 +15,8 @@ Load **one** satellite per session when a task or audit gap ID requires it.
 
 **Regenerate splits:** `uv run python scripts/docs/split_domain_plan.py [DOMAIN ...]`
 
-**Architecture satellites:** [`../architecture/satellites/`](../architecture/satellites) — `uv run python scripts/docs/split_domain_architecture.py [DOMAIN ...]`
+**Architecture satellites:** [`../architecture/satellites`](../architecture/satellites) — `uv run python scripts/docs/split_domain_architecture.py [DOMAIN ...]`
 
 **CI gates:** `check_plan_hub_size.py` · `check_arch_hub_size.py` · `check_token_generator_freshness.py`
 
-**Audit compact context:** [`../guides/audit_slices/`](../guides/audit_slices)
+**Audit compact context:** [`../guides/audit_slices`](../guides/audit_slices)

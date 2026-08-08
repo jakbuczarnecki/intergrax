@@ -20,10 +20,10 @@ It does not create a new scaffold or a new execution contract. All setup and ver
 | Goal | Begin one small, bounded application change |
 | First decision | Extend an application, compose a new workflow, or evaluate a foundation |
 | Expected outcome | Know where the change belongs and what to verify |
-| Primary next action | Plan the first bounded build in [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Primary next action | Plan the first bounded build in [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
 | Product trial | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-| Deeper builder guide | [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Broader evaluation | [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
+| Deeper builder guide | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
+| Broader evaluation | [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
 | Technical depth | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) |
 
 ## Builder flow
@@ -48,7 +48,7 @@ Change or extend the existing specialized LKW application while preserving the s
 Primary deeper references:
 
 - [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md)
-- [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
 
 ### Build a specialized application
 
@@ -56,8 +56,8 @@ Start with a concrete workflow and compose existing Intergrax capabilities aroun
 
 Primary references:
 
-- [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
-- [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
+- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+- [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
 
 ### Evaluate a foundation before building
 
@@ -65,7 +65,7 @@ Run an existing bounded evaluation before deciding whether a platform capability
 
 Primary reference:
 
-- [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
+- [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
 
 This guide does not duplicate the evaluation catalog.
 
@@ -94,7 +94,7 @@ The application/platform boundary is a decision to make for each change; not eve
 
 The public documents do not define one universal builder setup command. They expose route-specific setup instead.
 
-For an existing bounded repository evaluation, [EVALUATION_GUIDE.md § 30-minute bounded technical evaluation](EVALUATION_GUIDE.md#30-minute-bounded-technical-evaluation) documents this exact setup and verification sequence:
+For an existing bounded repository evaluation, [docs/project/builders/EVALUATION_GUIDE.md § 30-minute bounded technical evaluation](EVALUATION_GUIDE.md#30-minute-bounded-technical-evaluation) documents this exact setup and verification sequence:
 
 ```text
 uv sync --extra dev
@@ -107,16 +107,16 @@ These commands are owned by the Evaluation Guide. They are a documented evaluati
 ## Progressive disclosure
 
 Start here:
-[BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md)
+[docs/project/builders/BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md)
 
 Choose and understand the builder route:
-[BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+[docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
 
 Run broader evaluations:
-[EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
+[docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
 
 Understand public architecture:
-[ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
+[docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
 
 Perform deep technical review:
 [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md)
@@ -135,15 +135,15 @@ Internal plans and maintainer controls are not normal first-step builder documen
 
 ## Primary next action
 
-**Plan the first bounded build:** [BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+**Plan the first bounded build:** [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
 
 ## Other routes
 
 | Route | Use it for |
 |-------|------------|
 | [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md) | Extending LKW |
-| [EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Running a broader evaluation |
-| [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding the platform shape |
+| [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Running a broader evaluation |
+| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding the platform shape |
 | [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) | Deep technical review |
 | [LKW Quick Start](../product/lkw/QUICKSTART.md) | Trying LKW instead |
 | [README.md](../../../README.md) | Returning to the project overview |

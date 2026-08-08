@@ -1,11 +1,11 @@
 # Platform Foundation
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/PLATFORM_FOUNDATION.md`](../maintainers/plans/PLATFORM_FOUNDATION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 1–2, 32  
-**Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../maintainers/audit/PLATFORM_FOUNDATION.md)  
+**Audit instruction:** [`audit/PLATFORM_FOUNDATION.md`](../maintainers/audit/PLATFORM_FOUNDATION.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md) — platform evolution rules; Platform Foundation owns implementation gates and spine verification, not capability-ownership policy.
 ---
 
@@ -41,7 +41,7 @@ Nexus uses Tier-0 components to create a **controlled execution environment** fo
 
 **Includes:**
 
-- Global Nexus loop (`NexusLoop`, task intake, classification, planning); implementation split under `runtime/nexus/orchestration/` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, `task_events`, `lifecycle_bridge`, …) — loop file orchestrates only
+- Global Nexus loop (`NexusLoop`, task intake, classification, planning); implementation split under `runtime/nexus/orchestration` (`intake_runner`, `planning_runner`, `graph_runner`, `hitl_runner`, `task_events`, `lifecycle_bridge`, …) — loop file orchestrates only
 - Agent registry and capability routing (`AgentRegistry`, `AgentRouter`)
 - Task lifecycle and state machine (`Task`, `TaskLifecycle`)
 - Execution graph and multi-agent coordination (`ExecutionGraph`, `GraphExecutor`)
@@ -60,7 +60,7 @@ Nexus uses Tier-0 components to create a **controlled execution environment** fo
 - Tier-1 MUST NOT implement concrete agent business workflows.
 - Tier-1 owns **global** orchestration; agents own **local** bounded execution.
 
-**Repository:** `intergrax/runtime/`, `intergrax/contracts/`, `intergrax/agents/` (framework ABC only — **not** concrete agents).
+**Repository:** `intergrax/runtime`, `intergrax/contracts`, `intergrax/agents` (framework ABC only — **not** concrete agents).
 
 ---
 
@@ -70,7 +70,7 @@ Nexus uses Tier-0 components to create a **controlled execution environment** fo
 
 Each agent is a bounded capability: researcher, UX designer, PM, tester, marketer, legal reviewer, vendor discovery, etc.
 
-**Includes per agent (`agents/<name>/`):**
+**Includes per agent (`agents/<name>`):**
 
 - Agent class implementing `Agent` + `AgentContract`
 - Declared capabilities (e.g. `research.web_search`, `legal.contract_review`)
@@ -87,7 +87,7 @@ Each agent is a bounded capability: researcher, UX designer, PM, tester, markete
 - Agents consume Tier-0 **through** Tier-1 policies (not uncontrolled direct access in production).
 - Agents MUST be runnable via Nexus without starting an HTTP server.
 
-**Repository:** `agents/` at repository root (`agents/legal/`, `agents/research/`, `agents/echo/`, …).
+**Repository:** `agents` at repository root (`agents/legal`, `agents/research`, `agents/echo`, …).
 
 ---
 
@@ -97,7 +97,7 @@ Each agent is a bounded capability: researcher, UX designer, PM, tester, markete
 
 An application is not an agent. It is the **product shell** — the “Cursor AI for X” pattern: a ready environment for a defined industry, company type, or use case.
 
-**Includes per application (`applications/<name>/`):**
+**Includes per application (`applications/<name>`):**
 
 - Host entrypoint (`main.py`, `factory.py`, `settings.py`, `wiring.py`)
 - HTTP/CLI serving layer (routes, auth, tenant config)
@@ -106,9 +106,9 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 - Agent registry wiring: which agents are registered, with which IDs and policies
 - `IntegrationProfile` composition — which Tier-0 backends this environment uses
 - Orchestration config: default capabilities, routing hints, multi-agent topologies
-- **Deployment package** — `docker/` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see §7.4.8)
+- **Deployment package** — `docker` (Dockerfile, optional `docker-compose.yml`) sufficient to build an image and push to production (see §7.4.8)
 
-**Self-sufficiency rule:** A Tier-3 application is a **runnable, deployable environment** on its own. A developer MUST be able to start the host and build a container using **only** files under `applications/<name>/` plus the monorepo Python dependencies (`pyproject.toml` / `uv` at repository root). Application-specific secrets and toggles MUST NOT live only in the repository-root `.env.example`.
+**Self-sufficiency rule:** A Tier-3 application is a **runnable, deployable environment** on its own. A developer MUST be able to start the host and build a container using **only** files under `applications/<name>` plus the monorepo Python dependencies (`pyproject.toml` / `uv` at repository root). Application-specific secrets and toggles MUST NOT live only in the repository-root `.env.example`.
 
 **Example environments:**
 
@@ -126,7 +126,7 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 - Multiple applications MAY reuse the same Tier-2 agent with different config.
 - Applications are the only layer that binds **product-specific** env vars and deployment.
 
-**Repository:** `applications/` at repository root.
+**Repository:** `applications` at repository root.
 
 ---
 
@@ -134,10 +134,10 @@ An application is not an agent. It is the **product shell** — the “Cursor AI
 
 | Tier | Name | Role | Analogy | Repository |
 |------|------|------|---------|------------|
-| **0** | Platform | Universal components & adapters | Drivers, network stack, libc | `intergrax/` (non-orchestration packages) |
-| **1** | Nexus Runtime | Agent OS — orchestration & policy | Operating system | `intergrax/runtime/`, `intergrax/contracts/`, `intergrax/agents/` (ABC) |
-| **2** | Agents | Specialized capability modules | Applications / programs | `agents/<name>/` |
-| **3** | Applications | Configured environments | IDE product, industry workspace | `applications/<name>/` |
+| **0** | Platform | Universal components & adapters | Drivers, network stack, libc | `intergrax` (non-orchestration packages) |
+| **1** | Nexus Runtime | Agent OS — orchestration & policy | Operating system | `intergrax/runtime`, `intergrax/contracts`, `intergrax/agents` (ABC) |
+| **2** | Agents | Specialized capability modules | Applications / programs | `agents/<name>` |
+| **3** | Applications | Configured environments | IDE product, industry workspace | `applications/<name>` |
 
 ## Dependency Direction (Strict)
 
@@ -152,7 +152,7 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 
 **Cross-layer invariants (canonical):** [`guides/SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md#cross-layer-system-invariants) (P2-ARCH-01) — MUST/MUST NOT rules across all tiers; `SYS-INV-*` index links to this §5 and domain pairs.
 
-**Enforcement (FAUDIT-TIER, 2026-06-06 · extended 2026-06-27):** Lower layers (`intergrax/agents/`, `intergrax/runtime/`, `intergrax/contracts/`, `agents/`, …) MUST NOT import `intergrax.applications` or `applications`. Tier-3 manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py`; runtime uses neutral `ApplicationCapabilityCatalogEntry` (`intergrax/contracts/capability_graph_catalog.py`) via `intergrax/runtime/architecture/harness_capability_catalog.py`. Application hosts map Tier-3 profiles/bindings to neutral contracts in `intergrax/applications/_shared/runtime_boundary_adapters.py`.
+**Enforcement (FAUDIT-TIER, 2026-06-06 · extended 2026-06-27):** Lower layers (`intergrax/agents`, `intergrax/runtime`, `intergrax/contracts`, `agents`, …) MUST NOT import `intergrax.applications` or `applications`. Tier-3 manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py`; runtime uses neutral `ApplicationCapabilityCatalogEntry` (`intergrax/contracts/capability_graph_catalog.py`) via `intergrax/runtime/architecture/harness_capability_catalog.py`. Application hosts map Tier-3 profiles/bindings to neutral contracts in `intergrax/applications/_shared/runtime_boundary_adapters.py`.
 
 CI guards (no grandfather exceptions):
 
@@ -196,8 +196,8 @@ Intergrax is a **Harness AI environment** (Agent OS). Industry harness literatur
 |------|------|------|
 | **Platform / Tier-0** | 0 | Catalogs: integrations, tools, skills, LLM adapters, modality inference |
 | **Nexus / Runtime** | 1 | Orchestration loop, policy engine, trace, context, graph execution |
-| **Agent** | 2 | Autonomous business logic: UAEP steps, `AgentContract`, prompts (`agents/`) |
-| **Application** | 3 | Deployable **environment**: manifest, `ApplicationEnvironmentProfile`, host wiring (`applications/`) |
+| **Agent** | 2 | Autonomous business logic: UAEP steps, `AgentContract`, prompts (`agents`) |
+| **Application** | 3 | Deployable **environment**: manifest, `ApplicationEnvironmentProfile`, host wiring (`applications`) |
 | **Harness (practical)** | 1+3+0 | Nexus + application wiring + platform catalogs — not a single Python package |
 | **Product** | — | Business offering composed of Tier-3 app + selected Tier-2 agents |
 
@@ -209,8 +209,8 @@ IDEAL chain: `Harness → Runtime → Agents → Applications → Products`. Int
 |-----------------|---------------------------|
 | **Scaffold** | `python -m intergrax.scaffold` (`new-agent`, `new-application`, `new-stack`, `new-skill`) |
 | **Harness** | Tier-1 **Nexus** + Tier-0 platform + Tier-3 **Application** wiring (policy, tools, integrations, trace) |
-| **LLM** | Tier-0 `intergrax/llm_adapters/` — invoked per step/plan; not embedded inside Tier-2 agent class |
-| **Agent** | Tier-2 module (`agents/<name>/`) implementing `Agent` + `AgentContract` + UAEP |
+| **LLM** | Tier-0 `intergrax/llm_adapters` — invoked per step/plan; not embedded inside Tier-2 agent class |
+| **Agent** | Tier-2 module (`agents/<name>`) implementing `Agent` + `AgentContract` + UAEP |
 | **Runnable agent instance** | Harness + selected agent + `LLMProfile` + resolved `skill_ids` / `allowed_tools` + `RuntimePolicyBundle` for one run |
 | **Tool** | Tier-0 atomic `ToolContract` — LLM/MCP/FastAPI invocable (§7.1.6) |
 | **Skill** | Tier-0 composable **`SkillManifest`** — tools + prompts + policy fragment (§7.1.8) |

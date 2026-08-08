@@ -1,8 +1,8 @@
 # Build & deploy — Local Workspace
 
-Tier-3 application package: `applications/local_workspace_application/`. This document is the operational runbook for local development, verification, and container deployment.
+Tier-3 application package: `applications/local_workspace_application`. This document is the operational runbook for local development, verification, and container deployment.
 
-> Quick overview: [`README.md`](../../../../../applications/local_workspace_application/README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+> Quick overview: [`README.md`](../../../../../applications/local_workspace_application/README.md) · Layout canon: [`applications/USAGE.md`](../../../../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../../../../applications/USAGE.md)
 
 ---
 
@@ -15,7 +15,7 @@ Tier-3 application package: `applications/local_workspace_application/`. This do
 | Docker | Local stack and image build |
 | Docker Compose | LKW backend + Qdrant + Ollama + optional observability backends |
 
-Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents/` on `PYTHONPATH`.
+Tier-2 agents used by this host: **local_indexer, local_search, local_synthesizer** under `agents` on `PYTHONPATH`.
 
 ---
 
@@ -64,7 +64,7 @@ Slack and LKW product HTTP APIs remain unchanged across runtime profiles. Deploy
 
 ## 2. Recommended local Docker bootstrap
 
-From `applications/local_workspace_application/`:
+From `applications/local_workspace_application`:
 
 Windows:
 
@@ -126,7 +126,7 @@ Smoke check:
 curl -s http://127.0.0.1:8020/health
 ```
 
-Routes are mounted under `/v1/local_workspace`. See `serving/` and application README for contract details.
+Routes are mounted under `/v1/local_workspace`. See `serving` and application README for contract details.
 
 ---
 
@@ -201,7 +201,7 @@ Ensure `applications/local_workspace_application/.env` exists. The bootstrap scr
 
 ### Windows convenience: all Compose overlays
 
-This helper starts the base stack plus every optional top-level overlay in `applications/local_workspace_application/docker/` without listing each `-f` file:
+This helper starts the base stack plus every optional top-level overlay in `applications/local_workspace_application/docker` without listing each `-f` file:
 
 Windows:
 
@@ -356,7 +356,7 @@ elasticsearch  → Elasticsearch/OpenSearch-compatible HTTP index API
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_ATTEMPTS` | `3` | Total delivery attempts including the first one (`1` = no retry) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_INITIAL_BACKOFF_SECONDS` | `0.25` | Initial sleep before the second attempt |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_RETRY_MAX_BACKOFF_SECONDS` | `2.0` | Maximum sleep between attempts |
-| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability/`) |
+| `LOCAL_WORKSPACE_OBSERVABILITY_ELASTICSEARCH_FAILED_DELIVERY_FILE_PATH` | — | Optional JSONL file for safe Elasticsearch failed-delivery diagnostics; leave empty to disable. Point to a controlled runtime/app data directory (for example under `applications/local_workspace_application/.observability`) |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_NAME` | `intergrax-lkw` | OTLP resource `service.name` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_SERVICE_VERSION` | — | OTLP resource `service.version` |
 | `LOCAL_WORKSPACE_OBSERVABILITY_ENVIRONMENT` | — | OTLP resource `deployment.environment` |
@@ -411,7 +411,7 @@ applications\local_workspace_application\scripts\inspect-elasticsearch-observabi
 applications\local_workspace_application\scripts\inspect-elasticsearch-observability.bat --run-id run_... --check-duplicates --check-safety
 ```
 
-Defaults: `--url http://127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
+Defaults: `--url http:/127.0.0.1:9200`, `--index intergrax-lkw-observability`. The inspector queries `/<index>/_search` read-only; it does not create indexes or modify documents. `--check-safety` validates document keys against canonical `FORBIDDEN_EXPORT_CONTENT_FIELDS` from the runtime export boundary; it is a readback guardrail and does not replace upstream export policy.
 
 Use the proof helper for the repeatable live-proof workflow:
 

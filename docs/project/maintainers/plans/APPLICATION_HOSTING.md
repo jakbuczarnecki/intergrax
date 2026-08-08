@@ -1,10 +1,10 @@
 # Application Hosting — Implementation Plan
 
-**Architecture (1:1):** [`architecture/APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md)  
-**Architecture detail:** [`architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)  
+**Architecture (1:1):** [`architecture/APPLICATION_HOSTING.md`](../../architecture/APPLICATION_HOSTING.md)
+**Architecture detail:** [`architecture/satellites/APPLICATION_HOSTING_extended_depth.md`](../../architecture/satellites/APPLICATION_HOSTING_extended_depth.md)
 **Plan detail:** [`satellites/APPLICATION_HOSTING_implementation_detail.md`](satellites/APPLICATION_HOSTING_implementation_detail.md)  
-**ADR:** [`ADR-HOST-001`](../../technical/adr/entries/2026-07-13/ADR-HOST-001.md)  
-**First adopter/proof:** `applications/local_workspace_application/`
+**ADR:** [`ADR-HOST-001`](../../technical/adr/entries/2026-07-13/ADR-HOST-001.md)
+**First adopter/proof:** `applications/local_workspace_application`
 
 **Status:** Public hosting foundation and single-instance engine foundation complete. Process control, real instance ownership and supervision not started. APP-HOST-W2 closed (2026-07-14).
 
@@ -371,7 +371,7 @@ LKW reviewer proof updates
 | Hub §9 events | APP-HOST-3 | `intergrax/hosting/events*` | schema/order/redaction tests | **Contracts Done (W1); event spine bridge pending** |
 | Hub §10 interactions | APP-HOST-6 | hosting/Tier-3 bridge | surface composition tests | Planned |
 | Hub §11 instance/control/supervisor | APP-HOST-4,5 | instance/control/supervisor | process/restart tests | Planned |
-| Hub §12 OS boundary | APP-HOST-7 | `intergrax/hosting/os/` | adapter contract tests | Planned |
+| Hub §12 OS boundary | APP-HOST-7 | `intergrax/hosting/os` | adapter contract tests | Planned |
 | Hub §13 LKW adoption | APP-HOST-8 | LKW hosted profile/proof | live proof + receipt | Blocked |
 | Satellite §20–23 model/context | APP-HOST-1 | contracts/context | validation/public-view tests | **Done (W1)** |
 | Satellite §24 lifecycle | APP-HOST-2 | state machine/engine | transition matrix | Planned |
@@ -410,7 +410,7 @@ APP-HOST-8A through APP-HOST-8E complete
 
 **APP-HOST-8B — Migrate LKW.6A lifecycle/readiness to platform engine integration — Done** (2026-07-16). Hosted LKW work acceptance projects `HostedApplicationReadinessService` via `_HostedLocalWorkspaceReadiness`; hosted `runtime.ready()` is limited to Uvicorn/FastAPI startup (no platform READY cycle); direct Uvicorn `LocalWorkspaceHostLifecycle` remains compatible.
 
-**APP-HOST-8A — Define LKW hosted profile using platform contracts only — Done** (2026-07-16). LKW-owned `build_local_workspace_hosted_profile()` in `applications/local_workspace_application/hosting/`; private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; settings/bind snapshot captured once; existing `LocalWorkspaceHostLifecycle` and `uvicorn … host.main:app` entrypoint retained.
+**APP-HOST-8A — Define LKW hosted profile using platform contracts only — Done** (2026-07-16). LKW-owned `build_local_workspace_hosted_profile()` in `applications/local_workspace_application/hosting`; private FastAPI/Uvicorn `HostedApplicationRuntime` adapter; settings/bind snapshot captured once; existing `LocalWorkspaceHostLifecycle` and `uvicorn … host.main:app` entrypoint retained.
 
 **APP-HOST-9A — `run_hosted_application(profile)` author facade — Done** (2026-07-14). Public synchronous foreground runner: `run_hosted_application(profile) -> HostedApplicationSupervisorResult` in `intergrax/hosting/runner.py`; resolves profile once before side effects; assembles reference paths, clocks, logger, process identity, event publisher, control coordinator, signal adapter, instance guard, engine factory, and supervisor internally.
 

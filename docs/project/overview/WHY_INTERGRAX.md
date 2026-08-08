@@ -136,7 +136,7 @@ Other frameworks and tools may suit different needs. This guide does not dismiss
 
 Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
-**Primary next action after apparent fit:** [Check your concrete workflow in USE_CASES.md](USE_CASES.md).
+**Primary next action after apparent fit:** [Check your concrete workflow in docs/project/overview/USE_CASES.md](USE_CASES.md).
 
 ---
 
@@ -147,7 +147,7 @@ Intergrax may coexist with model providers, retrieval systems, integration tools
 | **LKW** | **Primary product proof** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded application and platform proof. |
 | **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented mechanisms plus **bounded vLLM** proof. |
 
-**Evidence and detail:** [PROOFS.md](../proofs/PROOFS.md) · [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md)
+**Evidence and detail:** [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) · [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md)
 
 ---
 
@@ -162,20 +162,20 @@ Intergrax does **not** currently claim:
 - completed Hybrid Ask;
 - universal token savings or production-proven savings.
 
-Detailed proof matrices and claim boundaries remain in [PROOFS.md](../proofs/PROOFS.md).
+Detailed proof matrices and claim boundaries remain in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
 
 ---
 
 ## Primary next action
 
-**Check concrete workflow fit:** [USE_CASES.md](USE_CASES.md)
+**Check concrete workflow fit:** [docs/project/overview/USE_CASES.md](USE_CASES.md)
 
 ## Other routes
 
 | Route | Use it for |
 |-------|------------|
-| [PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
-| [ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
-| [BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |
-| [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning a deeper build or evaluation route |
-| [PARTNERS.md](../community/PARTNERS.md) | Discussing a bounded pilot |
+| [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Reviewing current evidence |
+| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding technical boundaries |
+| [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) | Beginning a bounded build |
+| [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) | Planning a deeper build or evaluation route |
+| [docs/project/community/PARTNERS.md](../community/PARTNERS.md) | Discussing a bounded pilot |

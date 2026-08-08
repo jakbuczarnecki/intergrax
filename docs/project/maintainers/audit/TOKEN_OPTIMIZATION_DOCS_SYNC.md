@@ -7,9 +7,9 @@ Use, modification, or distribution without written permission is prohibited.
 # Token Optimization — Feature and Domain Docs Sync Instruction
 
 **Status:** Docs-sync control prompt (copy-paste for Cursor / LLM agent)  
-**Input document:** [`docs/project/maintainers/audit/TOKEN_OPTIMIZATION.md`](TOKEN_OPTIMIZATION.md)  
-**Feature architecture target:** [`../features/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)  
-**Feature plan target:** [`../features/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)  
+**Input document:** [`docs/project/maintainers/audit/TOKEN_OPTIMIZATION.md`](TOKEN_OPTIMIZATION.md)
+**Feature architecture target:** [`../../capabilities/architecture/TOKEN_OPTIMIZATION.md`](../../capabilities/architecture/TOKEN_OPTIMIZATION.md)
+**Feature plan target:** [`../../capabilities/plan/TOKEN_OPTIMIZATION.md`](../../capabilities/plan/TOKEN_OPTIMIZATION.md)
 **Target branch:** `development`  
 **Mode:** documentation update only — feature docs + affected domain docs  
 **Runtime implementation:** forbidden in this task
@@ -99,7 +99,7 @@ Follow Intergrax token budget rules:
 - Use grep/path filters before opening large files.
 - Do not load full architecture hubs unless necessary.
 - Do not load full plan hubs unless necessary.
-- Do not load `docs/audit_results/`.
+- Do not load `docs/audit_results`.
 - Do not use subagents.
 - Keep changes minimal but sufficient.
 - Preserve existing layer ownership and tier boundaries.
@@ -342,7 +342,7 @@ After each TOKEN-10 subtask closeout, verify:
 | LLM_ADAPTERS architecture + plan | TOKEN-LLM-2/3 row status |
 | TOKEN_OPTIMIZATION_CLAIMS.md | allowed vs proof-gated wording |
 | LKW ARCHITECTURE, IMPLEMENTATION_PLAN, PLATFORM_PROOF_LOOP | LKW-PF6 ordering only when product proof scope changes |
-| ROADMAP.md, features/README.md | concise status pointer |
+| docs/project/overview/ROADMAP.md, capabilities/README.md | concise status pointer |
 | Satellites (architecture + plan cross-refs) | TOKEN-10 phase → owning plan mapping |
 
 Stale wording to reject: runtime/provider integration deferred indefinitely; TOKEN-9 as final phase; LKW as first proof owner; in-cache compaction as undefined future only.

@@ -5,7 +5,7 @@
 Status: **Frozen** — Band 3 (K.1) until explicit product reprioritization
 
 Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md) · K.1 · §6.3
+Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md) · K.1 · §6.3
 
 ---
 
@@ -24,7 +24,7 @@ Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](.
 | ID | Task | Status | Priority | Notes |
 |----|------|--------|----------|-------|
 | PR-1 | UAEP scaffold + tier hygiene | **Done** | High | Phase AA-PR |
-| PR-2 | Pydantic I/O schemas | **Done** | Medium | `schemas/` |
+| PR-2 | Pydantic I/O schemas | **Done** | Medium | `schemas` |
 | PR-3 | ARCHITECTURE + notebook documented | **Done** | Medium | AA-PR.3 |
 | PR-4 | K.1 product implementation | **Deferred** | — | End of plan — do not start silently |
 | PR-5 | Tier-3 product host | **Deferred** | — | After K.1 decision |

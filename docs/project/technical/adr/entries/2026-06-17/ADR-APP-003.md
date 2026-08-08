@@ -53,7 +53,7 @@ Rejected: peer composition roots; bundle-local wiring logic; folding org envelop
 
 ## Compliance
 
-- Tier boundaries: contracts remain in `intergrax/applications/contracts/`; wiring in `applications/_shared/`.
+- Tier boundaries: contracts remain in `intergrax/applications/contracts`; wiring in `applications/_shared`.
 - `APP-INV-06` preserved — bundles are grouping only.
 - No Nexus runtime changes in M1–M2.
 - Linked architecture §22.6 and plan `APP-EVOL-8` updated.

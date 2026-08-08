@@ -326,7 +326,7 @@ ToolResponse:
 
 ### 42.12.2 Enforcement Rules
 
-1. **No direct adapter imports** in `agents/` (§42.41).
+1. **No direct adapter imports** in `agents` (§42.41).
 2. `ToolAccessPolicy` MUST filter against `AgentContract.allowed_tools`.
 3. Every invoke MUST emit `TOOL_REQUESTED` and terminal `TOOL_*` event.
 4. Denied tools return `ToolResponse(status=DENIED)` — agents MUST handle gracefully via `AgentDecision`.
@@ -431,7 +431,7 @@ Harness literature describes **subagents** as autonomous units with their own ru
 | Harness subagent | Intergrax delegation |
 |------------------|----------------------|
 | Spawn child with own context | `ExecutionGraph` node with `DelegationSpec` |
-| Isolated memory | `MemoryView` namespace `task_id/delegation/{node_id}/` |
+| Isolated memory | `MemoryView` namespace `task_id/delegation/{node_id}` |
 | Bounded parent context | `TaskContextAssemblyOptions` override on child node |
 | Traceability | `parent_run_id`, `parent_node_id` on child metadata |
 
@@ -1162,7 +1162,7 @@ before_human_approval(request, ctx)
 after_human_approval(response, ctx)
 ```
 
-Implementations: `intergrax/runtime/middleware/` (target module layout).
+Implementations: `intergrax/runtime/middleware` (target module layout).
 
 All middleware MUST register with priority and emit diagnostic events on BLOCK/DENY.
 
@@ -1266,11 +1266,11 @@ Every execution MUST carry identity, scope, and data boundaries (AUDIT_MAP §4).
 
 | Module | Role |
 |--------|------|
-| `fastapi_core/auth/` | API key extraction, request context |
+| `fastapi_core/auth` | API key extraction, request context |
 | `applications/_shared/identity_wiring.py` | Profile → host auth |
 | `runtime/architecture/tenant_security.py` | Tenant isolation verification |
 | `integrations/providers/.../identity_*` | Auth0, Keycloak, WorkOS hosts |
-| `tools/providers/identity/` | `identity.*` tools |
+| `tools/providers/identity` | `identity.*` tools |
 
 Tier-3 declares posture in `IdentityProfile`; Tier-1 enforces on execution path. **Plan:** [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plan/UNIFIED_EXECUTION_RUNTIME.md) V-REM-SEC, SEC.
 

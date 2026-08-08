@@ -1,7 +1,7 @@
 # Tier-3 Product Hypothesis Contract
 
 **Status:** Normative authoring guide (Tier-3 applications)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Canon:** [`TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) · [`MATURITY_TAXONOMY.md`](MATURITY_TAXONOMY.md)
 
 ---
@@ -37,7 +37,7 @@ Skip only for throwaway local spikes that will not merge — and still answer qu
 
 ## Required contract
 
-Copy the template below into the application tree (see [Artifact location](#artifact-location)). Every field **MUST** be filled with concrete, testable content — not placeholders.
+Copy the template below into the application tree (see [Artifact location](.#artifact-location)). Every field **MUST** be filled with concrete, testable content — not placeholders.
 
 ```markdown
 ## Product Hypothesis Contract
@@ -69,7 +69,7 @@ Copy the template below into the application tree (see [Artifact location](#arti
 
 | Field | What to write |
 |-------|----------------|
-| **Application id** | Stable slug matching `applications/<app_id>/` and manifest `app_id`. |
+| **Application id** | Stable slug matching `applications/<app_id>` and manifest `app_id`. |
 | **Application name** | Human-readable product name. |
 | **Target user** | Primary persona — role, seniority, domain. |
 | **User context** | When/where the workflow happens; constraints (time, compliance, devices). |

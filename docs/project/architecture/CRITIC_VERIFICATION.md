@@ -1,11 +1,11 @@
 # Critic Verification
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 25 (verify depth)  
-**Audit instruction:** [`audit/CRITIC_VERIFICATION.md`](../maintainers/audit/CRITIC_VERIFICATION.md)  
+**Audit instruction:** [`audit/CRITIC_VERIFICATION.md`](../maintainers/audit/CRITIC_VERIFICATION.md)
 **Last updated:** 2026-06-20 — **P2-ARCH-08** Verification Safety Boundaries; **CRIT-V-0…7 + CVL-LC-1…4 Done (L3+)**
 ---
 
@@ -91,7 +91,7 @@ CVL closed these gaps **without** violating tier boundaries or creating a second
 | **Evaluator-loop** | Multi-iteration critique→revise pattern until pass or budget exhausted |
 | **CVL** | Critic & Verification Layer — platform subsystem (this document) |
 
-**Not CVL:** Adaptive profile promotion (`VerificationLoop` in `runtime/adaptive/`) — complementary; consumes CVL/registry signals but serves L4 adaptation, not per-run correctness.
+**Not CVL:** Adaptive profile promotion (`VerificationLoop` in `runtime/adaptive`) — complementary; consumes CVL/registry signals but serves L4 adaptation, not per-run correctness.
 
 ---
 

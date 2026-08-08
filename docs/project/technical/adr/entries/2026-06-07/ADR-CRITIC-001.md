@@ -53,7 +53,7 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 
 ### Negative
 
-- Additional Tier-1 module surface (`runtime/critic/`).
+- Additional Tier-1 module surface (`runtime/critic`).
 - Authors must configure `CriticProfile` for semantic verification — not zero-config.
 - Judge calibration against human baseline remains operational work (documented, not automated in v1).
 
@@ -67,4 +67,4 @@ Adopt the **Critic & Verification Layer (CVL)** with a **three-layer stack (L0/L
 
 - Architecture: [`architecture/CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md)
 - Plan: Phase CRIT-V (Band 2ak) — waves CRIT-V-0 through CRIT-V-7
-- Verification: `uv run pytest -m gate -q` after each wave; critic-specific tests under `tests/unit/runtime/critic/`
+- Verification: `uv run pytest -m gate -q` after each wave; critic-specific tests under `tests/unit/runtime/critic`

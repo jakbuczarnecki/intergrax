@@ -10,7 +10,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 |--------|-------|----------|--------|-------------------|
 | §20 | Shadow workspace lifecycle | H-APP.3.4 · APP-CON-8 · APP-PROD-8 | **Done** | `shadow_wiring.py` · `workspace_cleanup_wiring.py` · `check_workspace_cleanup.py` |
 | §21 | Sandbox lifecycle | H-APP.3.5 · APP-CON-8 · APP-PROD-8 | **Done** | `sandbox_wiring.py` · `workspace_cleanup_wiring.py` · `test_workspace_cleanup_wiring.py` |
-| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Done** — flat §22.1 + bundles §22.6 M1–M3 | `environment_profile/` · `test_environment_profile_bundles.py` · ADR-APP-003 |
+| §22 | `ApplicationEnvironmentProfile` | H-APP.1.* · **APP-EVOL-8** | **Done** — flat §22.1 + bundles §22.6 M1–M3 | `environment_profile` · `test_environment_profile_bundles.py` · ADR-APP-003 |
 | §23 | Interaction postures | H-APP-DOC.* · H-APP-WIRING.* | **Done** | §23.7 matrix closed on reference hosts |
 | §24 | `ApplicationManifest` / `AgentBinding` | N.1 · H-APP.1.2 | **Done** | `manifest.py` · `test_manifest_conformance.py` |
 | §25 | `run_task` / `HarnessApplication` / `ApplicationHost` | APP-CON-1 · N.* | **Done** | `harness/app.py` · `test_application_host_wiring.py` |
@@ -30,7 +30,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 | §40 | APP-PROD gates | APP-PROD-1..9 | **Done** | `check_application_production_gates.py` · APP-PROD-6 `check_environment_state_usage.py` |
 | §41 | Composition primitive separation | H-APP-CON-DOC.* | **Done** | *doc-only* |
 | §42 | `ApplicationEnvironmentState` v2 | APP-CON-2 · APP-CON-3 | **Done** | `environment_state.py` · lifecycle middleware |
-| §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](#cross-plan--43-budget--token-governance) |
+| §43 | Budget / token governance | ACP-TOK-* · APP-CON-3 · APP-PROD-7 | **Done** | see [Cross-plan §43](.#cross-plan--43-budget--token-governance) |
 | §44 | Scenario test matrix | APP-CON-7 | **Done** | `check_tier3_scenario_matrix.py` · `-m tier3_scenario` |
 | §45 | New application checklist | APP-CON-DX.1 · N.* | **Done** | `APPLICATION_CREATION_GUIDE.md` §3 |
 | §46 | Production readiness criteria | APP-PROD-* · ACP-PROD-* · ACP-TOK-* | **Done** | APP-PROD-* **Done** · ACP-TOK-1..3 · ACP-TOK-CI **Done** |
@@ -44,7 +44,7 @@ Maps each architecture section to **plan phase**, **implementation status**, **c
 
 ## Master implementation backlog (APP-* unified)
 
-Single register for all open architecture rows. **Execution order:** [§6.2y](#62y-phase-app-backlog-execution-order-post-freeze).
+Single register for all open architecture rows. **Execution order:** [§6.2y](.#62y-phase-app-backlog-execution-order-post-freeze).
 
 ### APP-CON — host contracts (architecture §25–§32 · §42 · §48)
 
@@ -178,6 +178,6 @@ python scripts/maintenance/check_implementation_journal.py
 uv run pytest -m gate -q
 ```
 
-**Architecture-complete Tier-3 DoD (target):** all rows in [Master backlog](#master-implementation-backlog-app-unified) **Done** · fidelity matrix all **Done** · `GOVERNANCE_CONSISTENCY_AUDIT.md` glossary respected · no §51 naming violations.
+**Architecture-complete Tier-3 DoD (target):** all rows in [Master backlog](.#master-implementation-backlog-app-unified) **Done** · fidelity matrix all **Done** · `GOVERNANCE_CONSISTENCY_AUDIT.md` glossary respected · no §51 naming violations.
 
 ---

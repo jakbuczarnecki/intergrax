@@ -1,10 +1,10 @@
 # Orchestration — Implementation Plan
 
-**Architecture (1:1):** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
 
@@ -17,13 +17,13 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/ORCHESTRATION.md`](../../technical/guides/audit_slices/ORCHESTRATION.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.4 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.4 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -53,7 +53,7 @@
 
 **Suggested PR order (complete):** ORCH-1 → ORCH-2 → ORCH-3 → ORCH-4.
 
-**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** K.1, K.2, new graph node types, nested harness per child — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.1c Harness implementation queue — orchestration strategies (closed)
 
@@ -64,7 +64,7 @@
 | 1 | **ORCH-STRAT.1–5** | Docs | **Done** | Architecture §50–§54 | Strategy catalog + gap register |
 | 2 | **ORCH-STRAT.6** | Docs | **Done** | Cross-ref sync | FLOW §27, AUDIT_MAP §9–§10 |
 
-**Runtime backlog:** [Phase ORCH-5](#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--closed) — **Done** (2026-06-09).
+**Runtime backlog:** [Phase ORCH-5](.#phase-orch-5--orchestration-strategy-runtime-gaps-band-2aq--closed) — **Done** (2026-06-09).
 
 ### 6.1d Harness implementation queue — orchestration authoring docs (closed)
 
@@ -89,7 +89,7 @@
 
 ### 6.2bb Phase ORCH execution order (Band 2j — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase ORCH](plan/ORCHESTRATION.md) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-closed)
+**Status:** **Done** · register: [Phase ORCH](plan/ORCHESTRATION.md) · queue: [§6.1b](.#61b-harness-implementation-queue--orchestration-closeout-closed)
 
 Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.1b + paydown log; keep §6.1 scripts green.
 
@@ -100,7 +100,7 @@ Work **one ORCH ID per PR**; after each step update the ORCH master table + §6.
 | 3 | ORCH-3 | `max_parallel_nodes` on `OrchestrationProfile` + `GraphExecutor` | Medium | — (parallel OK after ORCH-1) |
 | 4 | ORCH-4 | Docs closeout — Appendix I + plan §0.5 | Low | ORCH-1–3 |### 6.2v Phase V-REM execution order (Band 2i — closed 2026-06-05)
 
-**Status:** **Done** · register: [Phase V-REM](plan/ORCHESTRATION.md) · queue: [§6.1z](#61z-harness-implementation-queue-consolidated) (closed)
+**Status:** **Done** · register: [Phase V-REM](plan/ORCHESTRATION.md) · queue: [§6.1z](.#61z-harness-implementation-queue-consolidated) (closed)
 
 Work **one V-REM ID per PR**; after each step update the V-REM master table + Appendix J + paydown log; keep §6.1 scripts green.
 
@@ -137,7 +137,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 **Prerequisites:** R-Delegate **Done**, Q+-N.* runners **Done**, H-APP.3.1–3.2 **Done**, V-MA.* **Done**  
 **Goal:** Close orchestration audit residuals (AUDIT_MAP §7–§10) — wire declared Tier-3 profile fields to runtime; bridge declarative graph spec to execution plan; cap graph batch concurrency.  
 **Priority ladder:** **Band 2j** (§4.0) — **default implementation queue** after §6.1 gate on each PR.  
-**Execution order:** [§6.2bb](#62bb-phase-orch-execution-order-band-2j--active) · queue: [§6.1b](#61b-harness-implementation-queue--orchestration-closeout-active)  
+**Execution order:** [§6.2bb](.#62bb-phase-orch-execution-order-band-2j--active) · queue: [§6.1b](.#61b-harness-implementation-queue--orchestration-closeout-active)
 **Author map:** [`guides/AGENT_CREATION_GUIDE.md` Appendix I](guides/AGENT_CREATION_GUIDE.md#appendix-i--orchestration-control-plane)
 
 **Delivery rule:** One **ORCH-*** ID per PR → update master table + §6.1b + paydown log below → `pytest -m gate` + §6.1 scripts green.
@@ -177,7 +177,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 |------|----------------|
 | `null` / `default` | `ClassifyingTaskClassifier(registry)` |
 
-**Explicitly out of scope:** Nested full harness per child (use R-Delegate); new graph node types (Tier-1 canon change); product-specific orchestration in `agents/`.
+**Explicitly out of scope:** Nested full harness per child (use R-Delegate); new graph node types (Tier-1 canon change); product-specific orchestration in `agents`.
 
 ### ORCH — Paydown log
 
@@ -196,7 +196,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 **Status:** **Done** (2026-06-08) — strategy sections added to orchestration architecture pair  
 **Prerequisites:** Phase ORCH **Done** · Phase V-MA **Done** · Phase FLOW **Done**  
-**Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §50–§54 — close audit gap “strategies only in FLOW”  
+**Goal:** Consolidate coordination patterns, parallelism, resilience, and specialization in [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §50–§54 — close audit gap “strategies only in FLOW”
 **Priority ladder:** **Band 2ap** — **closed** on doc merge  
 **ADR:** **No ADR needed** — documentation consolidation; runtime contracts unchanged
 
@@ -213,7 +213,7 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ## Phase ORCH-CONFIG — Platform interaction & multi-agent configuration (Band 2ar — closed)
 
-**Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §56–§59; reference host CFG presets + harness simulation)  
+**Status:** **Done** (2026-06-09) — **11/11 Done** (architecture **Done** incl. §59 audit — [`architecture/ORCHESTRATION.md`](../../architecture/ORCHESTRATION.md) §56–§59; reference host CFG presets + harness simulation)
 **Prerequisites:** Phase ORCH-STRAT **Done** · Phase H-APP-DOC.1 **Done** · default queue = §6.1 maintenance  
 **Goal:** Close every gap in §56.11 so **all CFG-* cases** marked ⚠️/❌ become ✅ without runtime forks  
 **Canonical input:** §56.7 case register + §56.11 plan table — do not duplicate elsewhere
@@ -313,14 +313,14 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ### 6.1av Harness implementation queue — Orchestration audit maintenance (closed)
 
-**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-18/ORCHESTRATION.md`](../../../audit_results/2026-06-18/ORCHESTRATION.md)  
+**Source:** Layer 3 audit (2026-06-18) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-18/ORCHESTRATION.md`](../../../audit_results/2026-06-18/ORCHESTRATION.md)
 **Priority ladder:** **Band 1** (§6.1) — P3 harness depth + author DX; runs **in parallel** with gate maintenance; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ORCH-MAINT-01** | Code/Docs | P3 | **Done** | Scaffold `lab_stack` preset: `INCLUDE_QUEUE_WORKER=true` by default | `new-application` lab preset wires `QueuedNexusExecutionAdapter` path; gate green |
 | 2 | **ORCH-MAINT-02** | Docs | P3 | **Done** | LKW hybrid daemon enablement runbook (CFG-14) in `local_workspace_application/ARCHITECTURE.md` | Operator can enable scheduler + interactions without reading source |
-| 3 | **ORCH-MAINT-03** | Code | P3 | **Done** | `TaskPriority` in `intergrax/queueing/` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
+| 3 | **ORCH-MAINT-03** | Code | P3 | **Done** | `TaskPriority` in `intergrax/queueing` + broker adapter hook | Priority field on enqueue; unit test; no Nexus fork |
 | 4 | **ORCH-MAINT-04** | Code | P3 | **Done** | Durable `AsyncTaskIndex` via integration profile (Redis/SQLite slug) | `async_task_index_resolver.py` selects profile-backed index; lab may keep in-memory fallback |
 
 **Suggested PR order:** none — §6.1av queue closed (2026-06-18).
@@ -329,13 +329,13 @@ Work **one V-REM ID per PR**; after each step update the V-REM master table + Ap
 
 ### 6.1aw Harness implementation queue — Orchestration audit maintenance (2026-06-19)
 
-**Source:** Interactive layer audit (2026-06-19) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-19/ORCHESTRATION.md`](../../../audit_results/2026-06-19/ORCHESTRATION.md) · prior: [`../audit_results/2026-06-18/ORCHESTRATION.md`](../../../audit_results/2026-06-18/ORCHESTRATION.md)  
+**Source:** Interactive layer audit (2026-06-19) — `ORCHESTRATION` layers 3, 9 · [`../audit_results/2026-06-19/ORCHESTRATION.md`](../../../audit_results/2026-06-19/ORCHESTRATION.md) · prior: [`../audit_results/2026-06-18/ORCHESTRATION.md`](../../../audit_results/2026-06-18/ORCHESTRATION.md)
 **Priority ladder:** **Band 1** (§6.1) — doc sync + audit artifact; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **ORCH-MAINT-DOC-01** | Docs | P3 | **Done** | Sync architecture `ORCHESTRATION.md` §59.2 async-queue note + §59.4 `run_async` row with ORCH-MAINT-01/04 truth (lab scaffold `INCLUDE_QUEUE_WORKER=true`; `async_task_index_resolver` profile-backed index) | No stale “not scaffold-default” / lab-only in-memory wording; product hosts remain opt-in |
-| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
+| 2 | **ORCH-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `ORCHESTRATION.md` + `progress.json` updated; L3 verdict layers 3, 9 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 

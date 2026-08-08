@@ -148,7 +148,7 @@ Accepted.
 - Architecture detail: `docs/project/architecture/satellites/APPLICATION_HOSTING_extended_depth.md`
 - Plan hub: `docs/project/maintainers/plans/APPLICATION_HOSTING.md`
 - Plan detail: `docs/project/maintainers/plans/satellites/APPLICATION_HOSTING_implementation_detail.md`
-- Expected code root: `intergrax/hosting/`
-- Tier-3 integration remains under `intergrax/applications/` and `intergrax/harness/`.
-- First adopter/proof: `applications/local_workspace_application/`.
+- Expected code root: `intergrax/hosting`
+- Tier-3 integration remains under `intergrax/applications` and `intergrax/harness`.
+- First adopter/proof: `applications/local_workspace_application`.
 - No production implementation is authorized by this ADR alone; implementation proceeds through accepted `APP-HOST-*` plan rows.

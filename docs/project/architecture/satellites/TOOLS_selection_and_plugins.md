@@ -8,8 +8,8 @@ Two orthogonal concepts — do not conflate them:
 
 | Concept | Question | Mechanism |
 |---------|----------|-----------|
-| **Selection layers (L0–L7)** | Which tools *may* this run use? | Policy, profile, skills, modality, plan filter, invoker scope — [§Selection detail](#selection-detail-layers) |
-| **Selection modes (production strategies)** | How is the planner schema *narrowed* before the LLM chooses? | `ToolSelectionStrategy` + `ToolSelectionMode` — [§Production strategies](#tool-selection-modes-production-strategies) |
+| **Selection layers (L0–L7)** | Which tools *may* this run use? | Policy, profile, skills, modality, plan filter, invoker scope — [§Selection detail](.#selection-detail-layers) |
+| **Selection modes (production strategies)** | How is the planner schema *narrowed* before the LLM chooses? | `ToolSelectionStrategy` + `ToolSelectionMode` — [§Production strategies](.#tool-selection-modes-production-strategies) |
 
 Layers run **before and around** modes: e.g. `ToolProfile` may leave 80 tools in the registry; `tool_selection_mode=retrieval_top_k` may pass only 20 to the LLM.
 
@@ -139,7 +139,7 @@ Reuse Tier-0 `embedding_manager` — distinct from `rag.retrieve` document index
 **Audit basis:** Tool-selection plugin audit 2026-06-12.  
 **Plan register:** TOOL-ENG-13,14,15,26,31 · **ADR:** ADR-TOOL-004 *(required before TOOL-ENG-26 merge)*.
 
-Layer **L6** narrows which `tool_id` values reach the LLM planner **before** `ToolPlanningService` exports OpenAI function schemas. This is distinct from **L6b** (LLM picks `tool_calls`) and **2a** ([invocation patterns](#tool-invocation-patterns-production-orchestration)).
+Layer **L6** narrows which `tool_id` values reach the LLM planner **before** `ToolPlanningService` exports OpenAI function schemas. This is distinct from **L6b** (LLM picks `tool_calls`) and **2a** ([invocation patterns](.#tool-invocation-patterns-production-orchestration)).
 
 ### Design intent
 
@@ -516,7 +516,7 @@ Tracked in [`plan/TOOLS.md`](../plan/TOOLS.md) Phase **TOOL-ENG**. Summary (upda
 | Stable bundles | **47** |
 | Beta bundles | **1** (`openai_vector_store`) |
 
-**Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](#full-tool-index) below.
+**Bundle index (selected):** `interaction` (3) · `workflow` (5) · `harness` (6) · `websearch` (4) · `notify` (6) · `health` (11) · `eval` (7) · `collaboration` (7) · `hitl` (5) · `platform` (8) · `rag` (11) — full list in [Full tool index](.#full-tool-index) below.
 
 Source: `intergrax/tools/registry/shipped_plugins.py`.
 
@@ -547,7 +547,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 
 **Catalog providers:** Phase O complete — all first-party tools registered; applications wire via `host/tool_wiring.py`.
 
-**Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` — see [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md).
+**Ready-to-use hosts:** `lab_application`, `legal_application`, `research_application`, `poc_template_application` — see [`intergrax/tools/USAGE.md`](../../../../intergrax/tools/USAGE.md).
 
 **Product env flags:** `LEGAL_ENABLE_RAG` / `LEGAL_ENABLE_RAG_INGEST`, `RESEARCH_ENABLE_RAG` / `RESEARCH_ENABLE_RAG_INGEST` — wire vectorstore + embedding managers in `host/tool_wiring.py`.
 
@@ -640,7 +640,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `vision.detect` | **Done** | Object detection (YOLO/ONNX backends) | `intergrax/model_inference/` + `ModalityInferenceExecutor` |
+| `vision.detect` | **Done** | Object detection (YOLO/ONNX backends) | `intergrax/model_inference` + `ModalityInferenceExecutor` |
 | `vision.segment` | **Done** | Image segmentation | `model_inference` registry |
 | `vision.ocr_regions` | **Done** | OCR text regions from media | `model_inference` registry |
 
@@ -648,7 +648,7 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 
 | tool_id | Status | Description | Composes |
 |---------|--------|-------------|----------|
-| `ml.predict` | **Done** | Single prediction | `intergrax/model_inference/` |
+| `ml.predict` | **Done** | Single prediction | `intergrax/model_inference` |
 | `ml.explain` | **Done** | Model explainability | `model_inference` |
 | `ml.batch_predict` | **Done** | Batch inference | `model_inference` |
 
@@ -660,11 +660,11 @@ Status legend: **Done** = registered handler in catalog. **Beta** = bundle statu
 | `openai.vector_store.upload` | **Beta** | Upload folder files to OpenAI vector store | OpenAI Files API |
 | `openai.vector_store.clear` | **Beta** | Clear all files from OpenAI vector store (destructive) | OpenAI vector store API |
 
-See [openai_vector_store USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md).
+See [openai_vector_store USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md).
 
 ### Composite observability (Phase M.10)
 
-Harness lab uses **one primary** `observability_backend` (Sentry) plus **additional slugs** in `IntegrationProfile.options` (LangSmith). `ToolWiringContext.from_integration_profile()` builds `observability_backends`; each tool picks a backend by role (`errors`, `traces`, `logs`, `eval`) via `resolve_observability_backend()`. See [observability USAGE](../intergrax/tools/providers/observability/USAGE.md).
+Harness lab uses **one primary** `observability_backend` (Sentry) plus **additional slugs** in `IntegrationProfile.options` (LangSmith). `ToolWiringContext.from_integration_profile()` builds `observability_backends`; each tool picks a backend by role (`errors`, `traces`, `logs`, `eval`) via `resolve_observability_backend()`. See [observability USAGE](../../../../intergrax/tools/providers/observability/USAGE.md).
 
 ### Runtime-bound workspace & memory (T-EXPAND T1)
 
@@ -763,7 +763,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 
 | tool_id | Bundle | Category | Status | Composes / module |
 |---------|--------|----------|--------|-------------------|
-| `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` — [USAGE](../intergrax/tools/providers/braintrust/USAGE.md) |
+| `braintrust.log_eval` | braintrust | observability | **Done** | `braintrust` — [USAGE](../../../../intergrax/tools/providers/braintrust/USAGE.md) |
 | `browser.fetch_page` | browser | browser | **Done** | `BrowserAutomation` |
 | `cache.get` | cache | cache | **Done** | `KeyValueCache` |
 | `cache.set` | cache | cache | **Done** | `KeyValueCache` |
@@ -789,7 +789,7 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `database.describe_schema` | database | database | **Done** | `RelationalStore` (sqlite introspection) |
 | `database.execute` | database | database | **Done** | `RelationalStore` |
 | `database.query` | database | database | **Done** | `RelationalStore` |
-| `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.get_page` | confluence | wiki | **Done** | `confluence` — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
 | `document.parse` | document | document | **Done** | `DocumentParser` |
 | `document.parse_preview` | document | document | **Done** | `DocumentParser` (bounded preview) |
 | `filesystem.glob` | filesystem | filesystem | **Done** | allowlisted read roots |
@@ -804,10 +804,10 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `eval.export_observations` | eval | eval | **Done** (T10) | `OnlineEvaluationRegistry` (V-EVAL) |
 | `eval.judge` | eval | eval | **Done** (T13 / CRIT-V) | LLM-as-judge semantic scoring — `CriticProfile` |
 | `eval.trajectory` | eval | eval | **Done** (T13 / CRIT-V) | Trajectory/process scoring from run trace |
-| `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
-| `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../intergrax/tools/providers/confluence/USAGE.md) |
-| `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` — [USAGE](../intergrax/tools/providers/gitlab/USAGE.md) |
+| `confluence.search` | confluence | wiki | **Done** | `confluence` (alias) — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
+| `confluence.search_pages` | confluence | wiki | **Done** | `confluence` — [USAGE](../../../../intergrax/tools/providers/confluence/USAGE.md) |
+| `errors.capture` | observability | observability | **Done** | `sentry` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `gitlab.create_issue` | gitlab | issue_tracker | **Done** | `gitlab` — [USAGE](../../../../intergrax/tools/providers/gitlab/USAGE.md) |
 | `graph.get_node` | graph | graph | **Done** | `GraphStore` |
 | `graph.run_query` | graph | graph | **Done** | `GraphStore` |
 | `harness.get_run` | harness | harness | **Done** | `RunTraceReader` / `trace_reader` ctx slot |
@@ -844,9 +844,9 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `identity.verify_token` | identity | identity | **Done** | `IdentityProviderBackend` |
 | `knowledge.get_page` | knowledge | knowledge | **Done** | `WikiKnowledge` |
 | `knowledge.search` | knowledge | knowledge | **Done** | `WikiKnowledge` |
-| `jira.add_comment` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.get_issue` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
-| `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` — [USAGE](../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.add_comment` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.get_issue` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
+| `jira.search_tasks` | jira | issue_tracker | **Done** | `jira` — [USAGE](../../../../intergrax/tools/providers/jira/USAGE.md) |
 | `memory.list_keys` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.read` | memory | memory | **Done** | `TaskMemoryViewBinding` |
 | `memory.write` | memory | memory | **Done** | `TaskMemoryViewBinding` |
@@ -857,19 +857,19 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `message_bus.get_status` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.list_tasks` | message_bus | message_bus | **Done** | `MessageBus` |
 | `message_bus.purge_completed` | message_bus | message_bus | **Done** (T10) | `MessageBus` (`TaskQueue.purge_completed`) |
-| `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `metrics.query_instant` | observability | observability | **Done** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `metrics.query_range` | observability | observability | **Done** | `prometheus` — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference/` |
+| `logs.search` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `logs.tail` | observability | observability | **Done** | `elasticsearch` / `opensearch` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_instant` | observability | observability | **Done** | `prometheus` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `metrics.query_range` | observability | observability | **Done** | `prometheus` — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `ml.batch_predict` | ml | ml | **Done** | `intergrax/model_inference` |
 | `ml.explain` | ml | ml | **Done** | `model_inference` |
 | `ml.predict` | ml | ml | **Done** | `model_inference` |
-| `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
-| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher — [USAGE](../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.send_batch` | notify | notification | **Done** | `notification_channel` slug — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.schedule` | notify | notification | **Done** (T10) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.list_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.cancel_scheduled` | notify | notification | **Done** (T11) | `ScheduledNotificationBinding` — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
+| `notify.dispatch_due` | notify | notification | **Done** (T12) | Tier-0 scheduled notification dispatcher — [USAGE](../../../../intergrax/tools/providers/notify/USAGE.md) |
 | `platform.evaluate_feature_flag` | platform | platform | **Done** | `FeatureFlagBackend` |
 | `platform.get_secret` | platform | platform | **Done** | `SecretsStore` |
 | `platform.put_secret` | platform | platform | **Done** | `SecretsStore` (CRITICAL risk) |
@@ -877,29 +877,29 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `platform.get_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
 | `platform.cancel_workflow_run` | platform | platform | **Done** | `CiCdBackend` |
 | `platform.list_workflow_runs` | platform | platform | **Done** | `CiCdBackend` |
-| `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../intergrax/tools/providers/observability/USAGE.md) |
-| `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../intergrax/tools/providers/openai_vector_store/USAGE.md) |
-| `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
-| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter — [USAGE](../intergrax/tools/providers/pagerduty/USAGE.md) |
-| `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
-| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `observability.query_traces` | observability | observability | **Done** | `langfuse` / observability slug — [USAGE](../../../../intergrax/tools/providers/observability/USAGE.md) |
+| `openai.file_search.query` | openai_vector_store | retrieval | **Beta** | OpenAI `file_search` — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.clear` | openai_vector_store | retrieval | **Beta** | OpenAI vector store API — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `openai.vector_store.upload` | openai_vector_store | retrieval | **Beta** | OpenAI Files API — [USAGE](../../../../intergrax/tools/providers/openai_vector_store/USAGE.md) |
+| `pagerduty.trigger_incident` | pagerduty | notification | **Done** | `pagerduty` — [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `pagerduty.acknowledge_incident` | pagerduty | notification | **Done** (T10) | `pagerduty` adapter — [USAGE](../../../../intergrax/tools/providers/pagerduty/USAGE.md) |
+| `rag.check_index_status` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.delete_documents` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.describe_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.get_document` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.ingest_document` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.list_collections` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.purge_collection` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.search_by_metadata` | rag | retrieval | **Done** | `vectorstore_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
 | `records.describe_collection` | records | records | **Done** | `DocumentStore` |
 | `records.delete` | records | records | **Done** | `DocumentStore` |
 | `records.get` | records | records | **Done** | `DocumentStore` |
 | `records.put` | records | records | **Done** | `DocumentStore` |
 | `records.query` | records | records | **Done** | `DocumentStore` |
 | `records.count` | records | records | **Done** (T10) | `DocumentStore` |
-| `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../intergrax/tools/providers/rag/USAGE.md) |
+| `rag.retrieve` | rag | retrieval | **Done** | `vectorstore_manager`, `embedding_manager` — [USAGE](../../../../intergrax/tools/providers/rag/USAGE.md) |
 | `rag.rerank` | rag | retrieval | **Done** | `reranker_manager` / `RerankProvider` |
-| `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../intergrax/tools/providers/sandbox/USAGE.md) |
+| `sandbox.exec` | sandbox | sandbox | **Done** | `sandbox_session` / `sandbox_host` — [USAGE](../../../../intergrax/tools/providers/sandbox/USAGE.md) |
 | `storage.delete` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.get` | storage | storage | **Done** | `ObjectStorage` |
 | `storage.presigned_url` | storage | storage | **Done** | `ObjectStorage` |
@@ -916,10 +916,10 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 | `vector_store.delete` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `vector_store.health` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
 | `vector_store.list_collections` | vector_store | vector_store | **Done** (T11) | `vectorstore_manager` |
-| `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
-| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` — [USAGE](../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.fetch_batch` | websearch | retrieval | **Done** | page fetch pipeline — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.query` | websearch | retrieval | **Done** | `websearch_executor`, `search_provider` — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.read_url` | websearch | retrieval | **Done** | page fetch — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
+| `websearch.invalidate_cache` | websearch | retrieval | **Done** | `WebSearchCacheBinding` — [USAGE](../../../../intergrax/tools/providers/websearch/USAGE.md) |
 | `workflow.cancel_run` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.fetch_logs` | workflow | workflow | **Done** | `workflow_orchestrator` |
 | `workflow.poll` | workflow | workflow | **Done** | `workflow_orchestrator` |
@@ -963,10 +963,10 @@ Alphabetical reference — all **150** first-party catalog tools (Phase O + M.6 
 
 ## Adding a new tool
 
-1. Add handler under `intergrax/tools/providers/<domain>/` — subclass `ServiceToolHandler` (or `WiringContextToolHandler` for custom logic); put business logic in `service.py`.
+1. Add handler under `intergrax/tools/providers/<domain>` — subclass `ServiceToolHandler` (or `WiringContextToolHandler` for custom logic); put business logic in `service.py`.
 2. Compose existing integration contracts — add integration provider first if missing.
 3. Register in `register_default_tools()` (Phase O.2).
-4. Add unit tests under `tests/unit/tools/providers/<domain>/`.
+4. Add unit tests under `tests/unit/tools/providers/<domain>`.
 5. Add `providers/<domain>/USAGE.md` (English).
 6. Update this catalog and Phase O tracker in the implementation plan.
 7. Wire in one Tier-3 application via `ToolProfile` + `ToolWiringContext`.

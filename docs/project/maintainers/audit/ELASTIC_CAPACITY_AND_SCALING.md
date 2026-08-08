@@ -1,8 +1,8 @@
 # Elastic Capacity and Platform Scaling (ECP) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plans/ELASTIC_CAPACITY_AND_SCALING.md)  
-**Audit map layers:** 30 · compact slice: [`audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../../technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md)  
+**Domain pair:** [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md) · [`plan/ELASTIC_CAPACITY_AND_SCALING.md`](../plans/ELASTIC_CAPACITY_AND_SCALING.md)
+**Audit map layers:** 30 · compact slice: [`audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../../technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ ECP-LC Done · §6.1av ECP-MAINT Done · live K8s soak manual runbook · ingress
 **Load first:** [`docs/project/technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`](../../technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md) — compact slice (layers **30**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ ECP-LC Done · §6.1av ECP-MAINT Done · live K8s soak manual runbook · ingress
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/ELASTIC_CAPACITY_AND_SCALING.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/ELASTIC_CAPACITY_AND_SCALING.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **N/A — cross-ref OBSERVABILITY (SLIs) and ORCHESTRATION (backpressure)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -93,7 +93,7 @@ target: intergrax/runtime/capacity/ (ECP-DEPTH ECP-1..8)
 docs/project/technical/adr/entries/2026-06-08/ADR-SCALE-001.md · ADR-SCALE-002.md
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

@@ -9,11 +9,11 @@
 **Architecture:** [§42.45.2–§42.45.9](../architecture/UNIFIED_EXECUTION_RUNTIME.md#4245-security-and-data-governance)  
 **Prerequisites:** Phase SEC **Done** · M.12 **Done** · GOV-DOC.3 **Done**  
 **Priority ladder:** **Band 2bb** (§4.0) — **closed**  
-**Queue:** [§6.1aw](#61aw-harness-implementation-queue--security--trust-planes-sec-planes--closed)  
-**Execution order:** [§6.2bo](#62bo-phase-sec-planes-execution-order-band-2bb--closed)  
+**Queue:** [§6.1aw](.#61aw-harness-implementation-queue--security--trust-planes-sec-planes--closed)
+**Execution order:** [§6.2bo](.#62bo-phase-sec-planes-execution-order-band-2bb--closed)
 **ADR:** [ADR-SEC-001](../adr/entries/2026-06-19/ADR-SEC-001.md)
 
-**Follow-on:** [Phase SEC-PLANES-EVOL](#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**, queue [§6.1bc](#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)).
+**Follow-on:** [Phase SEC-PLANES-EVOL](.#phase-sec-planes-evol--enterprise-hardening-active) (Band **2bc**, queue [§6.1bc](.#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)).
 
 **Goal:** Deliver a **fully modular, provider-backed security surface** inside UAEP — Security & Trust Planes (S1/S2/S3), `SecurityEnvelope` composition, shipped presets, `intergrax.security_defenses` EP, and encryption enforcement bridge — **without** a standalone Security tier or engine.
 
@@ -30,14 +30,14 @@
 | SEC-EXT-2 | EXT | `intergrax.security_defenses` EP + loader | P1 | **Done** | `runtime/security/defense_plugin_loader.py` | EP discovery; lab fixture |
 | SEC-EXT-3 | EXT | Wire defense plugins in `security_runtime_bridge` | P1 | **Done** | `security_runtime_bridge.py`, `application_security_wiring.py` | After native V-SEC; before ToolRuntime |
 | SEC-EXT-4 | EXT | `defense_plugin_ids` on profile + assembly resolver | P2 | **Done** | `environment_profile.py`, `security_assembly_resolver.py` | Wire-time fail on unknown id (strict) |
-| SEC-EXT-5 | EXT | Lab reference plugin + gate tests | P2 | **Done** | `tests/unit/runtime/security/` | BEFORE_TOOL_CALL block + trace |
-| SEC-EXT-6 | CI | `check_harness_security_defense_plugins.py` | P3 | **Done** | `scripts/`, CI workflow | Smoke on strict lab profile |
+| SEC-EXT-5 | EXT | Lab reference plugin + gate tests | P2 | **Done** | `tests/unit/runtime/security` | BEFORE_TOOL_CALL block + trace |
+| SEC-EXT-6 | CI | `check_harness_security_defense_plugins.py` | P3 | **Done** | `scripts`, CI workflow | Smoke on strict lab profile |
 | SEC-BUNDLE-1 | BUNDLE | Shipped defense bundle manifest | P2 | **Done** | `intergrax/runtime/security/defense_registry.py` | `harness.strict_injection` bundle registered |
 | SEC-BUNDLE-2 | BUNDLE | `harness_defense_stack()` + `SecurityEnvelope.production()` | P2 | **Done** | `integrations/registry/presets.py`, `bundles.py` | Composes S1+S2+S3; doc example |
 | SEC-BUNDLE-3 | BUNDLE | `bootstrap_security_providers()` | P3 | **Done** | `intergrax/core/security_bootstrap.py` | Shipped bundles + optional EP; **SEC-EVOL-1** wires `catalog_bootstrap` |
 | ENC-1 | ENC | `EncryptionEnforcementPolicy` + secrets_store gate | P1 | **Done** | `runtime/security/encryption_policy.py` | RESTRICTED requires backend on strict |
 | ENC-2 | ENC | Hook enforcement memory write + tool output | P2 | **Done** | `runtime/security/encryption_middleware.py` | RESTRICTED deny when no secrets backend |
-| ENC-3 | ENC | Gate tests + `check_harness_encryption_policy.py` | P2 | **Done** | `scripts/`, tests | Assembly fails without secrets backend |
+| ENC-3 | ENC | Gate tests + `check_harness_encryption_policy.py` | P2 | **Done** | `scripts`, tests | Assembly fails without secrets backend |
 | ENC-DOC.1 | DOC | Encryption posture matrix in §42.45 | P3 | **Done** | architecture canon §42.45.9 | Transit vs at-rest; no Tier-0 KMS SDK |
 | SEC-PLANES-DOC.3 | DOC | `EXTENSION_AUTHOR_GUIDE.md` §12 | P2 | **Done** | `guides/EXTENSION_AUTHOR_GUIDE.md` | Depends SEC-EXT-2 |
 
@@ -52,7 +52,7 @@
 
 **Phase complete when:** 17/17 **Done**; §42.45.8 has no **Planned** rows for SEC-PLANES scope.
 
-**Explicitly excluded:** standalone Security tier; harness blockchain; Tier-3 receipt/attestation products; duplicate PolicyEngine — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** standalone Security tier; harness blockchain; Tier-3 receipt/attestation products; duplicate PolicyEngine — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.2bo Phase SEC-PLANES execution order (Band 2bb — **Closed**)
 
@@ -75,8 +75,8 @@
 **Architecture:** [§42.45.10](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424510-enterprise-hardening--maturity-model-and-backlog)  
 **Prerequisites:** Phase SEC-PLANES **Done** (17/17) · OBS spine domain signals (ADR-OBS-003)  
 **Priority ladder:** **Band 2bc** (§4.0) — incremental after SEC-PLANES; **one ID per PR**  
-**Queue:** [§6.1bc](#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)  
-**Execution order:** [§6.2bp](#62bp-phase-sec-planes-evol-execution-order-band-2bc--active)
+**Queue:** [§6.1bc](.#61bc-harness-implementation-queue--sec-planes-evol-enterprise-hardening--active)
+**Execution order:** [§6.2bp](.#62bp-phase-sec-planes-evol-execution-order-band-2bc--active)
 
 **Goal:** Close enterprise-grade gaps without a new Security tier — catalog bootstrap wiring, author EP fixture, observability spine, encrypt-via-adapter, and defense inspection resilience.
 
@@ -105,7 +105,7 @@
 
 **Phase complete when:** 7/7 **Done**; §42.45.8 follow-on table has no **Planned** rows.
 
-**Explicitly excluded:** harness blockchain; Tier-0 KMS; certification artifacts — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** harness blockchain; Tier-0 KMS; certification artifacts — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ### 6.2bp Phase SEC-PLANES-EVOL execution order (Band 2bc — **Closed**)
 
@@ -141,7 +141,7 @@
 
 **Phase complete when:** 6/6 **Done**; §42.45.11 maturity rows **Done**; gate green.
 
-**Explicitly excluded:** SOC2/ISO certification; harness-native KMS SDK; Tier-3 product SIEM dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** SOC2/ISO certification; harness-native KMS SDK; Tier-3 product SIEM dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -149,8 +149,8 @@
 
 **Status:** **Done** (2026-06-19) — **6/6 Done** (SEC-ENT)  
 **Architecture:** [§42.45.11](../architecture/UNIFIED_EXECUTION_RUNTIME.md#424511-enterprise-production-readiness)  
-**Queue:** [§6.1bd](#61bd-harness-implementation-queue--sec-ent-enterprise-production--closed)  
-**Execution order:** [§6.2bq](#62bq-phase-sec-ent-execution-order-band-2bd--closed)
+**Queue:** [§6.1bd](.#61bd-harness-implementation-queue--sec-ent-enterprise-production--closed)
+**Execution order:** [§6.2bq](.#62bq-phase-sec-ent-execution-order-band-2bd--closed)
 
 **Goal:** Close remaining harness-scope enterprise gaps — live secrets-store encryptor wiring, typed spine payloads, tenant-scope defense guard, ops counters, CI spine audit.
 
@@ -160,7 +160,7 @@
 |----|------|-------------|----------|--------|----------------|------------|
 | SEC-ENT-1 | ENC | Live `SecretsStore` encryptor at host wiring | P1 | **Done** | `security_runtime_bridge.py`, `application_security_wiring.py` | Production hosts use adapter when resolvable |
 | SEC-ENT-2 | OBS | Typed security spine payloads | P2 | **Done** | `runtime/security/payloads.py`, `security_bootstrap.py` | event_kind registry bound to schema_id |
-| SEC-ENT-3 | CI | `check_harness_security_spine_signals.py` | P2 | **Done** | `scripts/`, CI workflow | Platform catalog + registry green |
+| SEC-ENT-3 | CI | `check_harness_security_spine_signals.py` | P2 | **Done** | `scripts`, CI workflow | Platform catalog + registry green |
 | SEC-ENT-4 | DEF | Tenant-scope guard on defense plugins | P1 | **Done** | `defense_plugin.py` | Cross-tenant block + spine signal |
 | SEC-ENT-5 | OBS | Security spine ops counters | P2 | **Done** | `security_observability.py` | Subscriber on `platform.security.*` |
 | SEC-ENT-DOC-1 | DOC | §42.45.11 + Appendix H SIEM index | P2 | **Done** | architecture + guides | Ops subscribe path documented |
@@ -191,9 +191,9 @@
 | COST-DOC.1 | COST0 | **Appendix T** — cost governance control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | COST-1 | COST1 | **`CostProfile`** + **`cost_runtime_bridge`** + **`cost_wiring`** | **Done** | `environment_profile.py`, `cost_runtime_bridge.py`, `cost_wiring.py`, `policy_wiring.py` | `test_harness_cost_wiring.py` |
 | COST-2 | COST2 | **`cost_assembly_resolver`** — profile ↔ budget conformance | **Done** | `cost_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py` | assembly validation tests |
-| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -212,9 +212,9 @@
 | EVAL-DOC.1 | EVAL0 | **Appendix U** — evaluation control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | EVAL-1 | EVAL1 | **`EvaluationProfile`** + **`evaluation_runtime_bridge`** + **`evaluation_wiring`** | **Done** | `environment_profile.py`, `evaluation_runtime_bridge.py`, `evaluation_wiring.py`, `policy_wiring.py` | `test_harness_evaluation_wiring.py` |
 | EVAL-2 | EVAL2 | **`evaluation_assembly_resolver`** — profile ↔ registry conformance | **Done** | `evaluation_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py`, `runtime.py` | assembly validation tests |
-| EVAL-3 | EVAL3 | **Host evaluation CI** — `check_harness_evaluation_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| EVAL-3 | EVAL3 | **Host evaluation CI** — `check_harness_evaluation_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product quality dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product quality dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -226,7 +226,7 @@
 **Priority ladder:** **Band 2ak** (§4.0) — **Done** (2026-06-08). Default queue reverts to §6.1 gate maintenance.  
 **Architecture:** [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · canon [`architecture/CRITIC_VERIFICATION.md`](architecture/CRITIC_VERIFICATION.md) · [ADR-CRITIC-001](adr/entries/2026-06-07/ADR-CRITIC-001.md)  
 **Audit alignment:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §25 (Evaluation), §7 (Reasoning), §10 (Multi-agent); closes **FAUDIT-EVAL.1** residual  
-**Execution order:** [§6.2ak](#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](#61ak-harness-implementation-queue--critic-verification-layer-closed)
+**Execution order:** [§6.2ak](.#62ak-phase-crit-v-execution-order-band-2ak--closed) · queue: [§6.1ak](.#61ak-harness-implementation-queue--critic-verification-layer-closed)
 
 **Delivery rule:** One **CRIT-V-*** ID per PR → update master table + §6.1ak + gate green.
 
@@ -268,7 +268,7 @@
 | CRIT-V-F.5 | F | **`CriticPolicyBridge`** + policy engine | **Done** | `policy_bridge.py`, `runtime_policy_engine.py` | `test_critic_closeout.py` |
 | CRIT-V-F.6 | F | **Assembly gate** — require L1 client when semantic/trajectory enabled | **Done** | `critic_assembly_resolver.py` | `test_critic_assembly_resolver.py` |
 
-**Explicitly excluded:** FLOW-8 §42.43 product reference app ([§6.3](#63-end-of-plan--deferred-product-work-only)); domain rubric packs in Tier-0; mandatory universal LLM-judge on all runs.
+**Explicitly excluded:** FLOW-8 §42.43 product reference app ([§6.3](.#63-end-of-plan--deferred-product-work-only)); domain rubric packs in Tier-0; mandatory universal LLM-judge on all runs.
 
 **Phase CRIT-V complete when:** CRIT-V-1 through CRIT-V-7 **Done**; Evaluation audit layer ≥ **L3**; gate green; FAUDIT-EVAL.1 closed.
 
@@ -282,18 +282,18 @@
 
 **Audit basis:** Phase U-Leg residual; `scripts/maintenance/check_legacy_modules_removed.py`; prior `check_tools_agent_*` audits merged.
 
-**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](#phase-as--agent-assembly-control-plane-closeout).
+**Priority ladder:** closeout between Band 2p and 2q; default queue = **Band 2q** [Phase AS](.#phase-as--agent-assembly-control-plane-closeout).
 
 ### CLEAN — Master register
 
 | ID | Area | Deliverable | Status | Modules | Acceptance |
 |----|------|-------------|--------|---------|------------|
-| CLEAN-1 | CLEAN1 | **Remove `legacy/chat_router.py`** — YAML assets tested without runtime module | **Done** | `tests/unit/chat_agent/` | prompt YAML tests green |
+| CLEAN-1 | CLEAN1 | **Remove `legacy/chat_router.py`** — YAML assets tested without runtime module | **Done** | `tests/unit/chat_agent` | prompt YAML tests green |
 | CLEAN-2 | CLEAN2 | **Remove `tools/tools_agent.py`** — `CatalogToolPlanner` + `ToolPlanningService` canonical | **Done** | `catalog_tool_planner.py`, `tool_planning_service.py` | `test_catalog_tool_planner.py` |
-| CLEAN-3 | CLEAN3 | **Unified CI audit** — `check_legacy_modules_removed.py` replaces `check_tools_agent_*` | **Done** | `scripts/`, `.github/workflows/unit-tests.yml` | audit script green in CI |
+| CLEAN-3 | CLEAN3 | **Unified CI audit** — `check_legacy_modules_removed.py` replaces `check_tools_agent_*` | **Done** | `scripts`, `.github/workflows/unit-tests.yml` | audit script green in CI |
 | CLEAN-4 | CLEAN4 | **Docs sync** — plan, HARNESS_ENVIRONMENT, AGENT_CREATION_GUIDE, README, TOOLS | **Done** | `docs/*` | no stale `ToolsAgent` production paths |
 
-**Retained (not CLEAN scope):** `ToolInvocationPlan.from_legacy()` + deprecation tests; `EnginePlan.use_rag`/`use_websearch` on LLM schema; `intergrax/legacy/rag_answers/` archive with import guard; diagnostic type names (`CoreLLMUsedToolsAgentAnswerDiagV1`).
+**Retained (not CLEAN scope):** `ToolInvocationPlan.from_legacy()` + deprecation tests; `EnginePlan.use_rag`/`use_websearch` on LLM schema; `intergrax/legacy/rag_answers` archive with import guard; diagnostic type names (`CoreLLMUsedToolsAgentAnswerDiagV1`).
 
 ---
 
@@ -336,9 +336,9 @@
 | SEC-DOC.1 | SEC0 | **Appendix S** — security control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | SEC-1 | SEC1 | **`security_runtime_bridge`** + **`security_wiring`** | **Done** | `security_runtime_bridge.py`, `security_wiring.py`, `runtime_config_bridge.py` | `test_harness_security_wiring.py` |
 | SEC-2 | SEC2 | **`security_assembly_resolver`** — profile ↔ middleware conformance | **Done** | `security_assembly_resolver.py`, `harness_host_runtime.py`, `nexus_factory.py` | assembly validation tests |
-| SEC-3 | SEC3 | **Host security CI** — `check_harness_security_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| SEC-3 | SEC3 | **Host security CI** — `check_harness_security_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product-only security dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product-only security dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -359,9 +359,9 @@
 | COST-DOC.1 | COST0 | **Appendix T** — cost governance control plane closeout | **Done** | `guides/AGENT_CREATION_GUIDE.md` | TOC + verification table |
 | COST-1 | COST1 | **`CostProfile`** + **`cost_runtime_bridge`** + **`cost_wiring`** | **Done** | `environment_profile.py`, `cost_runtime_bridge.py`, `cost_wiring.py`, `policy_wiring.py` | `test_harness_cost_wiring.py` |
 | COST-2 | COST2 | **`cost_assembly_resolver`** — profile ↔ budget conformance | **Done** | `cost_assembly_resolver.py`, `harness_host_runtime.py`, `runtime_config_bridge.py` | assembly validation tests |
-| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts/`, CI workflow | audit script in CI |
+| COST-3 | COST3 | **Host cost CI** — `check_harness_cost_wiring.py` | **Done** | `scripts`, CI workflow | audit script in CI |
 
-**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](#63a-business-backlog-register-consolidated).
+**Explicitly excluded:** new business agents (K.1/K.2), product FinOps dashboards — [§6.3a](.#63a-business-backlog-register-consolidated).
 
 ---
 
@@ -395,7 +395,7 @@
 
 
 
-**P4.3 delivered (2026-05-27):** `runtime/interrupts/`, `runtime/human/`, policy in UAEP + NexusLoop.
+**P4.3 delivered (2026-05-27):** `runtime/interrupts`, `runtime/human`, policy in UAEP + NexusLoop.
 
 
 
@@ -459,7 +459,7 @@
 
 **Audit basis:** [`INTEGRAX_HARNESS_AUDIT_MAP.md`](../guides/INTEGRAX_HARNESS_AUDIT_MAP.md) §5 (Policy), §23 (Security); IDEAL §3.3 guardrails vector.
 
-**ADR:** **No ADR needed** for documentation-only catalog. First shipped `llm_guardrail` slug (M.12) requires harness ADR (`docs/project/technical/adr/`) for contract + middleware bridge.
+**ADR:** **No ADR needed** for documentation-only catalog. First shipped `llm_guardrail` slug (M.12) requires harness ADR (`docs/project/technical/adr`) for contract + middleware bridge.
 
 ### GR-DOC — Master register
 

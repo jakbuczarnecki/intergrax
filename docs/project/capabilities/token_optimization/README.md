@@ -8,7 +8,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Central guide for the Token Optimization platform capability: deterministic optimization layers, policy-governed routing, protected-region safety, receipts, cache-stable prompt assembly, and reproducible proofs.
 
-**Public proof dashboard:** [`PROOFS.md`](../../proofs/PROOFS.md)
+**Public proof dashboard:** [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md)
 
 ---
 
@@ -23,7 +23,7 @@ Central guide for the Token Optimization platform capability: deterministic opti
 | **Bounded durable mechanism** | Durable repository, validation and CAS activation are implemented; live provider-wide proof, rollback execution and production rollout are not established |
 | **Public limitations** | No provider-independent, universal or production-proven savings claim |
 | **Detailed implementation roadmap** | [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) |
-| **Public proof dashboard** | [`../../../PROOFS.md`](../../proofs/PROOFS.md) |
+| **Public proof dashboard** | [`../../proofs/PROOFS.md`](../../proofs/PROOFS.md) |
 
 Detailed phase, dependency and review status is maintained only
 in the Token Optimization implementation plan and is not repeated here.
@@ -401,7 +401,7 @@ Approved router configurations (`llm_router_catalog.py`):
 
 ### E. Integration boundary
 
-Applications should call public contracts under `intergrax/runtime/token_optimization` and approved adapter paths. Do not reimplement protected-region parsing, pipeline sequencing, or receipt hashing locally. Do not import Token Optimization from `applications/` into `intergrax/`.
+Applications should call public contracts under `intergrax/runtime/token_optimization` and approved adapter paths. Do not reimplement protected-region parsing, pipeline sequencing, or receipt hashing locally. Do not import Token Optimization from `applications` into `intergrax`.
 
 ---
 
@@ -546,7 +546,7 @@ uv run python -m intergrax.runtime.token_optimization.proofs.vllm_prefix_cache_l
   --minimum-prefix-chars 4096
 ```
 
-Expected: terminal summary with `final status: PASS` and reports under `build/proofs/token_optimization/vllm_prefix_cache/<timestamp>/`.
+Expected: terminal summary with `final status: PASS` and reports under `build/proofs/token_optimization/vllm_prefix_cache/<timestamp>`.
 
 ---
 
@@ -611,13 +611,13 @@ Detailed implementation phases, dependencies and review state:
 | Contracts | [`contracts.py`](../../../../intergrax/runtime/token_optimization/contracts.py) |
 | Registry / catalog | [`registry.py`](../../../../intergrax/runtime/token_optimization/registry.py), [`builtin_catalog.py`](../../../../intergrax/runtime/token_optimization/builtin_catalog.py) |
 | Pipeline | [`pipeline.py`](../../../../intergrax/runtime/token_optimization/pipeline.py) |
-| Layers | [`layers/`](../../../intergrax/runtime/token_optimization/layers/) |
+| Layers | [`layers`](../../../../intergrax/runtime/token_optimization/layers) |
 | Plugin proof | [`test_third_party_plugin_adapter_contract.py`](../../../../tests/unit/runtime/token_optimization/test_third_party_plugin_adapter_contract.py) |
 | Router | [`llm_router.py`](../../../../intergrax/runtime/token_optimization/llm_router.py), [`llm_router_catalog.py`](../../../../intergrax/runtime/token_optimization/llm_router_catalog.py) |
 | Prompt assembly | [`prompt_assembly.py`](../../../../intergrax/runtime/token_optimization/prompt_assembly.py), [`prompt_cache.py`](../../../../intergrax/runtime/token_optimization/prompt_cache.py) |
 | vLLM integration | [`vllm_prefix_cache_proof.py`](../../../../intergrax/runtime/token_optimization/vllm_prefix_cache_proof.py), [`proofs/vllm_prefix_cache_live.py`](../../../../intergrax/runtime/token_optimization/proofs/vllm_prefix_cache_live.py) |
-| Unit tests | [`tests/unit/runtime/token_optimization/`](../../../tests/unit/runtime/token_optimization/) |
-| E2E tests | [`tests/e2e/token_optimization/`](../../../tests/e2e/token_optimization/) |
+| Unit tests | [`tests/unit/runtime/token_optimization`](../../../tests/unit/runtime/token_optimization/) |
+| E2E tests | [`tests/e2e/token_optimization`](../../../tests/e2e/token_optimization/) |
 | Architecture | [TOKEN_OPTIMIZATION.md](../architecture/TOKEN_OPTIMIZATION.md) |
 | Plan | [TOKEN_OPTIMIZATION.md](../plan/TOKEN_OPTIMIZATION.md) |
 | Claims | [TOKEN_OPTIMIZATION_CLAIMS.md](../TOKEN_OPTIMIZATION_CLAIMS.md) |

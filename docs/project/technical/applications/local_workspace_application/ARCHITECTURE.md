@@ -3,9 +3,9 @@
 **Status:** Architecture baseline v2 (2026-06-07) — implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
 **Agents:** Tier-2 `local_indexer`, `local_search`, `local_synthesizer`  
-**Canonical plan row:** [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a LKW.*](../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)  
+**Canonical plan row:** [`docs/project/architecture/intergrax_runtime_architecture.md` §6.3a LKW.*](../../../architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated)
 **Derived plan:** [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) — generated from this document; do not fork scope elsewhere  
-**Public product-validation narrative:** [`docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md`](../../docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
+**Public product-validation narrative:** [`docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md`](../../../proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md)
 
 ---
 
@@ -16,9 +16,9 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Need | Read section |
 |------|----------------|
 | Product philosophy, boundaries | §3 · §4 |
-| Deployment, storage, tenancy (canonical) | [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model) |
-| Platform capability audit / architecture stop gate | [Mandatory platform capability audit and architecture stop gate](#mandatory-platform-capability-audit-and-architecture-stop-gate) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate) |
-| Knowledge Intake / async ingestion (canonical) | [Channel-neutral Knowledge Intake and asynchronous ingestion](#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) |
+| Deployment, storage, tenancy (canonical) | [Deployment, storage and tenancy model](.#deployment-storage-and-tenancy-model) |
+| Platform capability audit / architecture stop gate | [Mandatory platform capability audit and architecture stop gate](.#mandatory-platform-capability-audit-and-architecture-stop-gate) · [`PRODUCT_FIRST_MVP.md`](../../../maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate) |
+| Knowledge Intake / async ingestion (canonical) | [Channel-neutral Knowledge Intake and asynchronous ingestion](.#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) |
 | Hybrid knowledge access (indexed + live) | [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md) |
 | Hybrid Ask (unified evidence + live execution) | [`HYBRID_ASK_ARCHITECTURE.md`](HYBRID_ASK_ARCHITECTURE.md) |
 | What is frontend vs backend | §4 |
@@ -31,7 +31,7 @@ This file is the **single product architecture** for LKW. From it you derive:
 | Implementation waves + acceptance | §15 |
 | Env vars and paths on disk | §7.3 · §12 |
 
-**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
+**Rule:** change architecture first, then update [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) and platform [`§6.3a`](../../../architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated). One coherent diff per wave.
 
 ---
 
@@ -42,11 +42,11 @@ This file is the **single product architecture** for LKW. From it you derive:
 1. **Product:** Give a user a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace** — indexed RAG knowledge, controlled live access to external systems, natural-language frontends, unified evidence provenance, and structured outputs (reports, emails, estimates). Binding detail: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](KNOWLEDGE_ACCESS_ARCHITECTURE.md).
 2. **Harness validation:** Exercise the Agent OS on a real, observable workload without external market APIs (unlike deferred K.1 Problem Radar / K.2 Vendor Discovery).
 
-**What “Local” means in the product name:** the user controls deployment and configuration; full self-hosted / fully local topology remains first-class; LKW does not force a central SaaS. It does **not** mean that all data must always reside on a single user device, nor that remote storage, private enterprise hosting, hybrid topologies, or future controlled sharing are out of scope. Canonical detail: [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model).
+**What “Local” means in the product name:** the user controls deployment and configuration; full self-hosted / fully local topology remains first-class; LKW does not force a central SaaS. It does **not** mean that all data must always reside on a single user device, nor that remote storage, private enterprise hosting, hybrid topologies, or future controlled sharing are out of scope. Canonical detail: [Deployment, storage and tenancy model](.#deployment-storage-and-tenancy-model).
 
 LKW validates: indexed RAG ingest/retrieve/index lifecycle, governed live knowledge access, document parsing, shadow workspace, multi-agent orchestration, memory, policy, trace, MCP/HTTP serving, provider-neutral model runtime wiring, and Tier-3 composition — while surfacing platform gaps early.
 
-**Strategic frame:** [`docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
+**Strategic frame:** [`docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) — explicit product reprioritization after Appendix A sign-off.
 
 ---
 
@@ -341,7 +341,7 @@ local folder; uploaded file; uploaded folder snapshot; object storage; Google Dr
 
 **Source locator is provider-specific** and must not leak into remote chat frontends. Do not freeze a universal filesystem `path` as the only source representation. Conceptually, connector-backed sources operate on `source_type` + provider-specific locator + options behind the LKW boundary (e.g. local-folder → filesystem path on the connector host; object-storage → bucket/key or URI; remote-drive → provider resource id; upload → managed blob id).
 
-The existing **LOCAL_FOLDER** model is the first vertical slice. Later source-lifecycle work must not entrench “every source is a local path.” Slack and other remote chat adapters must not perform direct filesystem operations and must not accept raw local paths as product commands. Binding intake contract: [Channel-neutral Knowledge Intake and asynchronous ingestion](#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md).
+The existing **LOCAL_FOLDER** model is the first vertical slice. Later source-lifecycle work must not entrench “every source is a local path.” Slack and other remote chat adapters must not perform direct filesystem operations and must not accept raw local paths as product commands. Binding intake contract: [Channel-neutral Knowledge Intake and asynchronous ingestion](.#channel-neutral-knowledge-intake-and-asynchronous-ingestion) · [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md).
 
 ### Original file storage
 
@@ -538,7 +538,7 @@ connected local folder
 → remote chat sees only safe candidate identity and label
 ```
 
-**Raw local paths in remote chat interfaces are prohibited** (e.g. `source add C:\...` or POSIX equivalents). Reasons include path disclosure, ambiguous host, no filesystem guarantee, deployment-neutrality violation, and unsafe FS surface. Only trusted local-capable surfaces may choose a local path and convert it behind the LKW boundary into a safe Source Candidate.
+**Raw local paths in remote chat interfaces are prohibited** (e.g. `source add C:/...` or POSIX equivalents). Reasons include path disclosure, ambiguous host, no filesystem guarantee, deployment-neutrality violation, and unsafe FS surface. Only trusted local-capable surfaces may choose a local path and convert it behind the LKW boundary into a safe Source Candidate.
 
 **Always operation-based:** every ingestion exposes the asynchronous operation contract. Do not split “small file = sync” vs “large file = async.” Upload/transfer and ingestion acceptance are separate phases for managed bytes.
 
@@ -801,7 +801,7 @@ AgentContract (Tier-2)
   └── skill_ids[] + capabilities[] → UAEP steps invoke tools via ToolRuntime
 ```
 
-**Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/project/architecture/SKILLS.md`](../../docs/project/architecture/SKILLS.md) · [`docs/project/architecture/TOOLS.md`](../../docs/project/architecture/TOOLS.md) · [`docs/project/architecture/INTEGRATIONS.md`](../../docs/project/architecture/INTEGRATIONS.md).
+**Rule:** Tier-3 **wires** integrations and tools; Tier-2 agents **declare** `skill_ids` on `AgentContract`; skills **compose** tool packs + prompts + policy fragments. See [`docs/project/architecture/SKILLS.md`](../../../architecture/SKILLS.md) · [`docs/project/architecture/TOOLS.md`](../../../architecture/TOOLS.md) · [`docs/project/architecture/INTEGRATIONS.md`](../../../architecture/INTEGRATIONS.md).
 
 ### 5.2 Trust zones (filesystem safety)
 
@@ -819,17 +819,17 @@ AgentContract (Tier-2)
 
 | Agent | Module | Capability | Responsibility |
 |-------|--------|------------|----------------|
-| **LocalIndexerAgent** | `agents/local_indexer/` | `local.workspace.index` | Discover paths (Wave 1: explicit), parse, chunk, embed, index via `rag.ingest_document` |
-| **LocalSearchAgent** | `agents/local_search/` | `local.workspace.search` | Semantic + metadata-filtered retrieval via `rag.retrieve`; rank and package evidence |
-| **LocalSynthesizerAgent** | `agents/local_synthesizer/` | `local.workspace.synthesize` | LLM synthesis from retrieved context; write artifacts to shadow workspace |
+| **LocalIndexerAgent** | `agents/local_indexer` | `local.workspace.index` | Discover paths (Wave 1: explicit), parse, chunk, embed, index via `rag.ingest_document` |
+| **LocalSearchAgent** | `agents/local_search` | `local.workspace.search` | Semantic + metadata-filtered retrieval via `rag.retrieve`; rank and package evidence |
+| **LocalSynthesizerAgent** | `agents/local_synthesizer` | `local.workspace.synthesize` | LLM synthesis from retrieved context; write artifacts to shadow workspace |
 
 **Pipeline capability (graph-level):** `local.workspace.pipeline` — multi-step intent routing index → search → synthesize (Wave 2). Documented here; wired via Nexus `AgentGraph` / delegation like `research.pipeline`.
 
 Agent architecture docs:
 
-- [`docs/project/technical/agents/local_indexer/ARCHITECTURE.md`](../../docs/project/technical/agents/local_indexer/ARCHITECTURE.md)
-- [`docs/project/technical/agents/local_search/ARCHITECTURE.md`](../../docs/project/technical/agents/local_search/ARCHITECTURE.md)
-- [`docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md`](../../docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md)
+- [`docs/project/technical/agents/local_indexer/ARCHITECTURE.md`](../../agents/local_indexer/ARCHITECTURE.md)
+- [`docs/project/technical/agents/local_search/ARCHITECTURE.md`](../../agents/local_search/ARCHITECTURE.md)
+- [`docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md`](../../agents/local_synthesizer/ARCHITECTURE.md)
 
 ---
 
@@ -844,7 +844,7 @@ LKW installs as a **user-level background service** plus optional tray frontend.
 | Persona | Install path |
 |---------|--------------|
 | Developer | `uv sync` + `uvicorn` from repo (today) |
-| End user (future) | Installer → `%LOCALAPPDATA%\Intergrax\LKW` or `~/.local/share/intergrax/lkw` |
+| End user (future) | Installer → `%LOCALAPPDATA%/Intergrax/LKW` or `~/.local/share/intergrax/lkw` |
 
 ### 7.2 Prerequisites
 
@@ -863,7 +863,7 @@ Default root: **`$LKW_DATA_HOME`** (env) with fallbacks:
 |----|-------------------------|
 | Linux | `~/.local/share/intergrax/lkw` |
 | macOS | `~/Library/Application Support/Intergrax/LKW` |
-| Windows | `%LOCALAPPDATA%\Intergrax\LKW` |
+| Windows | `%LOCALAPPDATA%/Intergrax/LKW` |
 
 ```text
 $LKW_DATA_HOME/
@@ -884,7 +884,7 @@ $LKW_DATA_HOME/
     └── lkw-host.pid
 ```
 
-**Engineering default (repo dev):** `build/` under repository — override via env for product parity testing.
+**Engineering default (repo dev):** `build` under repository — override via env for product parity testing.
 
 ### 7.4 Install steps by OS (APP-HOST-7 — later operator/packaging targets)
 
@@ -945,7 +945,7 @@ Grant **Full Disk Access** if indexing outside home directory.
 
 | Action | Behaviour |
 |--------|-----------|
-| **Upgrade** | Stop service → replace `bin/` + Python env → migrate sqlite/chroma if schema version bumps → start |
+| **Upgrade** | Stop service → replace `bin` + Python env → migrate sqlite/chroma if schema version bumps → start |
 | **Uninstall** | Stop service → remove unit/plist → delete `$LKW_DATA_HOME` (user prompt: keep index?) |
 | **Config only reset** | Delete `config/.env`; keep `data/chroma` |
 
@@ -953,7 +953,7 @@ Grant **Full Disk Access** if indexing outside home directory.
 
 | Check | Endpoint / command |
 |-------|-------------------|
-| Process up | `GET http://127.0.0.1:8020/health` |
+| Process up | `GET http:/127.0.0.1:8020/health` |
 | Agents registered | `GET /v1/local_workspace/agents` |
 | Index ready | `rag.check_index_status` via MCP or debug task |
 | Integration health | host bootstrap probes at startup (log on failure) |
@@ -980,7 +980,7 @@ Grant **Full Disk Access** if indexing outside home directory.
 
 **Explicitly excluded in baseline:** `search_provider` (web), `collaboration` (mail APIs) — LKW is local-first.
 
-Authoring: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/project/architecture/INTEGRATIONS.md`](../../docs/project/architecture/INTEGRATIONS.md).
+Authoring: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) · catalog: [`docs/project/architecture/INTEGRATIONS.md`](../../../architecture/INTEGRATIONS.md).
 
 ### 8.2 Tools (`ToolProfile` + `host/tool_wiring.py`)
 
@@ -1013,7 +1013,7 @@ Tier-3 enables tools; agents invoke them through `BoundToolGateway` / `ctx.invok
 
 **Explicitly disabled:** `websearch.*`, `openai.file_search.*` — external retrieval out of scope for LKW baseline.
 
-Catalog reference: [`docs/project/architecture/TOOLS.md`](../../docs/project/architecture/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
+Catalog reference: [`docs/project/architecture/TOOLS.md`](../../../architecture/TOOLS.md) · wiring: [`host/tool_wiring.py`](host/tool_wiring.py).
 
 ### 8.3 Skills (`SkillProfile` + `AgentContract.skill_ids`)
 
@@ -1027,7 +1027,7 @@ Skills are **composable packs** (tools + prompt instruction ids + optional polic
 
 Environment: [`manifest.py`](manifest.py) · [`host/environment_profile.py`](host/environment_profile.py).
 
-#### Planned domain bundle (LKW.2) — `intergrax/skills/providers/local/`
+#### Planned domain bundle (LKW.2) — `intergrax/skills/providers/local`
 
 | `skill_id` | Agent | `tool_ids` | `prompt_instruction_ids` |
 |------------|-------|------------|----------------------------|
@@ -1038,7 +1038,7 @@ Environment: [`manifest.py`](manifest.py) · [`host/environment_profile.py`](hos
 
 **Agent wiring (LKW.2):** each `AgentContract` gains `skill_ids=[...]`; register via `registry.register(agent, skill_registry=..., tool_registry=...)`. Until then, agents use scaffold `skills=[]` and rely on host `ToolProfile` only.
 
-Skill authoring: [`docs/project/architecture/SKILLS.md`](../../docs/project/architecture/SKILLS.md) · Appendix J in [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
+Skill authoring: [`docs/project/architecture/SKILLS.md`](../../../architecture/SKILLS.md) · Appendix J in [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane).
 
 ### 8.4 Per-agent Integration / Tool / Skill matrix
 
@@ -1174,13 +1174,13 @@ LKW.4 starts with **one real local message bus provider** in the proof stack (fo
 
 When a `message_bus` integration is configured on the host integration profile, `message_bus.*` tools **may** be exposed to the relevant host/tool profile. When `message_bus` is **not** configured, `message_bus.*` tools remain **disabled** for LKW. Shared application wiring (`apply_resolved_integration_tool_guardrails` in `intergrax/applications/_shared/integration_tool_profile.py`) enforces the resolved `ToolWiringContext.message_bus` guardrail; LKW host (`host/tool_wiring.py`) consumes that helper — **LKW.4B closed** · **LKW.4B-PROP-1 closed**.
 
-Code references: [`background_ingest/contracts.py`](../../../../../applications/local_workspace_application/background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../../../../../applications/local_workspace_application/background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../../../../../applications/local_workspace_application/background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`BACKGROUND_TASKS.md`](../../../architecture/BACKGROUND_TASKS.md) · [`INTEGRATIONS.md`](../../docs/project/architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
+Code references: [`background_ingest/contracts.py`](../../../../../applications/local_workspace_application/background_ingest/contracts.py) · [`background_ingest/enqueue.py`](../../../../../applications/local_workspace_application/background_ingest/enqueue.py) (LKW.4C enqueue helper) · [`background_ingest/handler.py`](../../../../../applications/local_workspace_application/background_ingest/handler.py) (LKW.4D worker handler contract) · platform [`BACKGROUND_TASKS.md`](../../../architecture/BACKGROUND_TASKS.md) · [`INTEGRATIONS.md`](../../../architecture/INTEGRATIONS.md) · [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) §6.
 
 ---
 
 ## 9. Local OS runtime and interaction model
 
-This section describes the **common self-hosted / workstation reference topology** (Tier-3 host + Nexus), often run in the background on a user-controlled machine (Windows, Linux, macOS). It is **not** a claim that LKW is local-only; storage and host location remain configuration — see [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces / clients** — not the runtime — they deliver commands and receive summaries.
+This section describes the **common self-hosted / workstation reference topology** (Tier-3 host + Nexus), often run in the background on a user-controlled machine (Windows, Linux, macOS). It is **not** a claim that LKW is local-only; storage and host location remain configuration — see [Deployment, storage and tenancy model](.#deployment-storage-and-tenancy-model). The user can submit work **at any time**; agents are spawned by Nexus on demand. Chat apps (Slack, Teams) are **interaction surfaces / clients** — not the runtime — they deliver commands and receive summaries.
 
 ### 9.1 Design principle: deployment-neutral product, multi-channel control
 
@@ -1245,7 +1245,7 @@ Host entrypoint (today): `uvicorn local_workspace_application.host.main:app`. **
 2. **Maintain** local RAG index (platform message-bus background ingest — LKW.4; filesystem triggers — LKW.7).
 3. **Run** Nexus graph on demand (search now, synthesize on request).
 4. **Notify** on completion / HITL (`notification_channel=slack` on long-running tasks).
-5. **Persist** checkpoints for pause/resume ([`docs/project/architecture/intergrax_runtime_architecture.md` Appendix F.4](../../docs/project/architecture/intergrax_runtime_architecture.md)).
+5. **Persist** checkpoints for pause/resume ([`docs/project/architecture/intergrax_runtime_architecture.md` Appendix F.4](../../../architecture/intergrax_runtime_architecture.md)).
 
 ### 9.3 Interaction surfaces (how the user talks to LKW)
 
@@ -1418,7 +1418,7 @@ Reply to Slack (response_url / chat.postMessage) — citations + short summary o
 | Primitive | Module / doc | LKW use |
 |-----------|--------------|---------|
 | `InteractionIntakeService` | `runtime/interactions/intake_service.py` | Inbound Slack → `Task` |
-| `SlackInteractionAdapter` | `integrations/providers/notification_channel/slack/` | Channel id `slack` |
+| `SlackInteractionAdapter` | `integrations/providers/notification_channel/slack` | Channel id `slack` |
 | `wire_interaction_intake_service` | `applications/_shared/interaction_wiring.py` | Enable on `local_workspace_application` factory |
 | `TaskLongRunningOptions.notify_channel="slack"` | plan Appendix F.4 | HITL + long ingest jobs |
 | Organization worker runbook | plan §H.6 | Prior art for slash → Nexus → resume |
@@ -1447,10 +1447,10 @@ LKW.6A wires interaction intake through the shared executor (see §9.3a). Enable
 |--------------------------|----------------------------|-------|
 | `index <path>` | `local.workspace.index` | `local_indexer` |
 | `search <query>` | `local.workspace.search` | `local_search` |
-| `draft email\|report\|estimate …` | `local.workspace.synthesize` | `local_synthesizer` |
+| `draft email/|report/|estimate …` | `local.workspace.synthesize` | `local_synthesizer` |
 | free text (default) | `local.workspace.pipeline` | graph (LKW.2) |
 
-Mapped `tenant_id` (and principal / user identifiers) from Slack identity feed Intergrax task scope for memory and index partitions. **Tenant is not permanently equal to user** — see [Deployment, storage and tenancy model](#deployment-storage-and-tenancy-model).
+Mapped `tenant_id` (and principal / user identifiers) from Slack identity feed Intergrax task scope for memory and index partitions. **Tenant is not permanently equal to user** — see [Deployment, storage and tenancy model](.#deployment-storage-and-tenancy-model).
 
 #### What must NOT go through Slack
 
@@ -1535,9 +1535,9 @@ Task(capability=local.workspace.pipeline, intent=local_workspace_full)
 | [`serving/fastapi_router.py`](serving/fastapi_router.py) | `/run`, `/agents` |
 | [`mcp/server.py`](mcp/server.py) | FastMCP mount |
 
-**No agent logic in Tier-3** — only wiring. Domain steps live in `agents/*/steps/`.
+**No agent logic in Tier-3** — only wiring. Domain steps live in `agents/*/steps`.
 
-Authoring guide: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Tier-3: [`applications/USAGE.md`](../USAGE.md).
+Authoring guide: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../guides/AGENT_CREATION_GUIDE.md) · Tier-3: [`applications/USAGE.md`](../USAGE.md).
 
 ---
 
@@ -1576,7 +1576,7 @@ Task(
 
 - **Read-only user FS** in Waves 1–2 (ingest reads; no writes)
 - **Shadow workspace** mandatory for synthesizer outputs
-- **HITL** optional for sensitive exports (`REQUEST_HUMAN`) — [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix A](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-a--human-in-the-loop)
+- **HITL** optional for sensitive exports (`REQUEST_HUMAN`) — [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix A](../../guides/AGENT_CREATION_GUIDE.md#appendix-a--human-in-the-loop)
 - **Cost governance:** `CostProfile` on environment; embedding batch limits per ingest job
 - **Trace:** all tool calls via Nexus trace DB — debug with `intergrax.debug` CLI
 
@@ -1595,7 +1595,7 @@ uv run pytest agents/local_indexer/tests agents/local_search/tests agents/local_
 uv run uvicorn local_workspace_application.host.main:app --host 127.0.0.1 --port 8020
 ```
 
-Deploy triad: `docker/`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy_triad.py`.
+Deploy triad: `docker`, `BUILD_AND_DEPLOY.md` — gate `test_application_deploy_triad.py`.
 
 ---
 
@@ -1661,9 +1661,9 @@ Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `ma
 
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
-| LKW.1.1 | `agents/local_indexer/steps/` | Ingest pipeline: validate paths → `rag.ingest_document` loop |
-| LKW.1.2 | `agents/local_search/steps/` | Search pipeline: `rag.retrieve` → evidence package |
-| LKW.1.3 | `agents/local_synthesizer/steps/` | Stub synthesize → `workspace.write_file` in shadow |
+| LKW.1.1 | `agents/local_indexer/steps` | Ingest pipeline: validate paths → `rag.ingest_document` loop |
+| LKW.1.2 | `agents/local_search/steps` | Search pipeline: `rag.retrieve` → evidence package |
+| LKW.1.3 | `agents/local_synthesizer/steps` | Stub synthesize → `workspace.write_file` in shadow |
 | LKW.1.4 | tests | Acceptance: ingest fixture PDF → search returns citation |
 
 **Acceptance:** `POST /run` with `source_paths` + `local.workspace.search` returns grounded answer; shadow artifact on synthesize; pytest green.
@@ -1676,7 +1676,7 @@ Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `ma
 
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
-| LKW.2.1 | `intergrax/skills/providers/local/` | Skill manifests `local.workspace.*` |
+| LKW.2.1 | `intergrax/skills/providers/local` | Skill manifests `local.workspace.*` |
 | LKW.2.2 | `agents/*/contract.py` | `skill_ids` on each agent |
 | LKW.2.3 | `host/environment_profile.py` | `skill_bundles=["harness","local"]` |
 | LKW.2.4 | `manifest` / graph_spec | `local.workspace.pipeline` graph |
@@ -1690,7 +1690,7 @@ Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `ma
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
 | LKW.5.1 | `host/settings.py` | `LKW_DATA_HOME` resolution (§7.3) |
-| LKW.5.2 | env / profile | Chroma under `data/chroma/` |
+| LKW.5.2 | env / profile | Chroma under `data/chroma` |
 | LKW.5.3 | `BUILD_AND_DEPLOY.md` | Document paths per OS |
 
 **Acceptance:** Restart host → prior index still retrievable.
@@ -1704,7 +1704,7 @@ Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `ma
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
 | LKW.6.1 | `scripts/lkw-host.*` | Start/stop wrapper for uvicorn (dev/operator convenience — not generic hosting engine) |
-| LKW.6.2 | `hosting/` (LKW profile) + platform adoption | LKW-specific `HostedApplicationProfile` / hooks; platform OS adapter integration via APP-HOST-7 (§7.4 targets) |
+| LKW.6.2 | `hosting` (LKW profile) + platform adoption | LKW-specific `HostedApplicationProfile` / hooks; platform OS adapter integration via APP-HOST-7 (§7.4 targets) |
 | LKW.6.3 | `host/factory.py` | `wire_interaction_intake_service` + router |
 | LKW.6.4 | `host/settings.py` | `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS` |
 
@@ -1714,13 +1714,13 @@ Live runner: `scripts/run-lkw-managed-workspace-live-proof.py` · proof kind `ma
 
 **ORCH-MAINT-02 — CFG-14 hybrid daemon enablement (operator runbook):**
 
-1. Copy `.env.example` → `.env` in `applications/local_workspace_application/`.
+1. Copy `.env.example` → `.env` in `applications/local_workspace_application`.
 2. Set `LOCAL_WORKSPACE_INCLUDE_SCHEDULER=true`, `LOCAL_WORKSPACE_INCLUDE_INTERACTIONS=true`, `LOCAL_WORKSPACE_INCLUDE_TASK_CONTROL=true`.
 3. Optional background-jobs path: `LOCAL_WORKSPACE_INCLUDE_QUEUE_WORKER=true` when a message_bus provider is configured (see ORCH-MAINT-01 lab scaffold default).
 4. Start host: `uv run uvicorn local_workspace_application.host.main:app --port 8090`.
 5. Verify: `GET /health` → 200; `POST /v1/local_workspace/run` with `echo.basic` completes; scheduler poll logs when `INTERGRAX_SCHEDULER_POLL_SECONDS` set.
 
-**Platform audit (2026-06-09):** CFG-14 hybrid daemon E2E remains **deferred** (Band 3 / §6.3). Harness reference for task control + scheduler: `poc_template_application`, `legal_application`, `research_application` with `INCLUDE_TASK_CONTROL` — see [`docs/project/architecture/ORCHESTRATION.md`](../../docs/project/architecture/ORCHESTRATION.md) §59.2 · Phase **H-APP-WIRING.4**.
+**Platform audit (2026-06-09):** CFG-14 hybrid daemon E2E remains **deferred** (Band 3 / §6.3). Harness reference for task control + scheduler: `poc_template_application`, `legal_application`, `research_application` with `INCLUDE_TASK_CONTROL` — see [`docs/project/architecture/ORCHESTRATION.md`](../../../architecture/ORCHESTRATION.md) §59.2 · Phase **H-APP-WIRING.4**.
 
 ---
 
@@ -1876,7 +1876,7 @@ LKW.7C2 records the live workload evidence through platform `ProofReceiptStore` 
 
 | Task | Owner module | Deliverable |
 |------|--------------|-------------|
-| LKW.8.1 | `clients/lkw-tray/` (new repo folder or app) | Status icon + search box |
+| LKW.8.1 | `clients/lkw-tray` (new repo folder or app) | Status icon + search box |
 | LKW.8.2 | | Folder picker → `allowed_read_roots.json` |
 | LKW.8.3 | | Calls only `localhost:8020` API |
 
@@ -1913,16 +1913,16 @@ These gaps are **expected** — LKW exists to discover and close them without Ne
 
 | Topic | Document |
 |-------|----------|
-| Agent workflow | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) |
-| Integration catalog | [`docs/project/architecture/INTEGRATIONS.md`](../../docs/project/architecture/INTEGRATIONS.md) |
-| Tools catalog | [`docs/project/architecture/TOOLS.md`](../../docs/project/architecture/TOOLS.md) |
-| Skill Library | [`docs/project/architecture/SKILLS.md`](../../docs/project/architecture/SKILLS.md) |
-| Tools & skills control plane | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix J](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
-| RAG control plane | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
-| Shadow workspace | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
-| Multi-agent graphs | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix C](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
-| Nexus execution flow | [`docs/project/architecture/NEXUS_EXECUTION_FLOW.md`](../../docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
-| Implementation plan | [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md) |
+| Agent workflow | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../guides/AGENT_CREATION_GUIDE.md) |
+| Integration catalog | [`docs/project/architecture/INTEGRATIONS.md`](../../../architecture/INTEGRATIONS.md) |
+| Tools catalog | [`docs/project/architecture/TOOLS.md`](../../../architecture/TOOLS.md) |
+| Skill Library | [`docs/project/architecture/SKILLS.md`](../../../architecture/SKILLS.md) |
+| Tools & skills control plane | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix J](../../guides/AGENT_CREATION_GUIDE.md#appendix-j--tools--skills-control-plane) |
+| RAG control plane | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix K](../../guides/AGENT_CREATION_GUIDE.md#appendix-k--integration--rag-control-plane) |
+| Shadow workspace | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox) |
+| Multi-agent graphs | [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix C](../../guides/AGENT_CREATION_GUIDE.md#appendix-c--multi-agent-graphs) |
+| Nexus execution flow | [`docs/project/architecture/NEXUS_EXECUTION_FLOW.md`](../../../architecture/NEXUS_EXECUTION_FLOW.md) |
+| Implementation plan | [`docs/project/architecture/intergrax_runtime_architecture.md`](../../../architecture/intergrax_runtime_architecture.md) |
 | Quickstart | [`README.md`](../../../../../applications/local_workspace_application/README.md) · [`BUILD_AND_DEPLOY.md`](BUILD_AND_DEPLOY.md) |
 
 ---

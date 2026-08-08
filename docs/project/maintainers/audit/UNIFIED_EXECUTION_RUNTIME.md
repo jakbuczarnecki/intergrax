@@ -1,8 +1,8 @@
 # Unified Execution Runtime (UAEP) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) · [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plans/UNIFIED_EXECUTION_RUNTIME.md)  
-**Audit map layers:** 4–5, 8, 23–24 · compact slice: [`audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md)  
+**Domain pair:** [`architecture/UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) · [`plan/UNIFIED_EXECUTION_RUNTIME.md`](../plans/UNIFIED_EXECUTION_RUNTIME.md)
+**Audit map layers:** 4–5, 8, 23–24 · compact slice: [`audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ HTTP mid-run autonomy mostly lab-only · supervisor EscalationRouter future · m
 **Load first:** [`docs/project/technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`](../../technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md) — compact slice (layers **4–5, 8, 23–24**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ HTTP mid-run autonomy mostly lab-only · supervisor EscalationRouter future · m
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/UNIFIED_EXECUTION_RUNTIME.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix H (governance control plane)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -94,7 +94,7 @@ intergrax/runtime/schema/registry.py
 applications/_shared/runtime_config_bridge.py · identity_wiring.py · guardrail_wiring.py
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

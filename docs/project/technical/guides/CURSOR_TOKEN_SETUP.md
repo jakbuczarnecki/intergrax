@@ -51,7 +51,7 @@ HEP implement steps: [`docs/project/maintainers/bootstrap/hep_step.txt`](../../m
 |-----------|------|
 | I1 + mandatory preflight in `intergrax-token-budget.mdc` | ~180 |
 
-**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/project/maintainers/audit/`, or domain guides unless explicitly requested.
+**Mandatory preflight** (before any implementation step): state read scope, edit scope, tests. If scope exceeds operator-listed files → **STOP** and ask. Do not load `AGENT_INSTRUCTIONS.md`, `intergrax-iteration.mdc`, full hubs, `docs/project/maintainers/audit`, or domain guides unless explicitly requested.
 
 **Default:** `offset`/`limit` or `grep` before full file; max 2 plan files on docs-only steps; no parallel full hub reads; no subagents unless operator asks.
 
@@ -86,7 +86,7 @@ Operator instruction + listed files = source of truth. No repo search, no full d
 
 ---
 
-## F4 — Architecture hub + `docs/project/architecture/satellites/` satellites
+## F4 — Architecture hub + `docs/project/architecture/satellites` satellites
 
 Split domains: all 22 architecture hubs (F4-C wave 2 complete).
 
@@ -105,7 +105,7 @@ uv run python scripts/audit/generate_architecture_read_scopes.py
 
 Split domains: all token-heavy plan hubs (G1-D wave 2 complete).
 
-Satellites (`docs/project/maintainers/plans/satellites/`) are in `.cursorignore` — same explicit-load rule as F4.
+Satellites (`docs/project/maintainers/plans/satellites`) are in `.cursorignore` — same explicit-load rule as F4.
 
 ```bash
 uv run python scripts/docs/split_domain_plan.py [DOMAIN ...]
@@ -123,14 +123,14 @@ Explicit `@` / `Read` only (reduces accidental index/search noise):
 
 **Audit control prompts:**
 
-- `docs/project/maintainers/audit/` — generated domain/feature audit prompts; load with explicit `@docs/project/maintainers/audit/<DOMAIN>.md` or `@docs/project/maintainers/audit/<FEATURE>.md` only, never as background implementation context
+- `docs/project/maintainers/audit` — generated domain/feature audit prompts; load with explicit `@docs/project/maintainers/audit/<DOMAIN>.md` or `@docs/project/maintainers/audit/<FEATURE>.md` only, never as background implementation context
 
 **Satellite directories (F4 / G1 / multi-layer features):**
 
-- `docs/project/architecture/satellites/`
-- `docs/project/maintainers/plans/satellites/`
-- `docs/project/capabilities/architecture/satellites/`
-- `docs/project/capabilities/plan/satellites/`
+- `docs/project/architecture/satellites`
+- `docs/project/maintainers/plans/satellites`
+- `docs/project/capabilities/architecture/satellites`
+- `docs/project/capabilities/plan/satellites`
 
 **Bulky guides:**
 
@@ -172,7 +172,7 @@ uv run python scripts/audit/generate_architecture_read_scopes.py
 uv run python scripts/audit/generate_plan_read_scopes.py
 ```
 
-Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/satellites/` satellite per session.
+Plan hub read-scope blocks mirror architecture E2 — §6 / open P0/P1 queues only; at most one `plan/satellites` satellite per session.
 
 ---
 

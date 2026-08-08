@@ -9,7 +9,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Parent hub:** [`TOKEN_OPTIMIZATION.md`](../TOKEN_OPTIMIZATION.md)  
 **Feature architecture (1:1):** [`../../architecture/TOKEN_OPTIMIZATION.md`](../../architecture/TOKEN_OPTIMIZATION.md)  
 **Architecture satellite:** [`../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](../../architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md)  
-**Source audit:** [`../../../audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)  
+**Source audit:** [`../../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../../maintainers/audit/TOKEN_OPTIMIZATION.md)
 **Purpose:** Ensure every domain plan participating in `TOKEN_OPTIMIZATION` has visible cross-references, required TOKEN phase rows, and alignment with the feature coordination map.
 
 ---

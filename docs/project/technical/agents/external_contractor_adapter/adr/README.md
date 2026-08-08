@@ -1,6 +1,6 @@
 # external_contractor_adapter agent — Architecture Decision Records
 
-**Domain:** Tier-2 adapter agent (`agents/external_contractor_adapter/`)
+**Domain:** Tier-2 adapter agent (`agents/external_contractor_adapter`)
 
 Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
 Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
@@ -17,7 +17,7 @@ Create an ADR for agent-level decisions that affect **domain behavior, contracts
 - External integration consumption choices
 - Idempotency / correlation rules specific to this adapter
 
-**Not required:** harness platform changes (use `docs/project/technical/adr/`), Tier-3 host wiring (use application ADRs),
+**Not required:** harness platform changes (use `docs/project/technical/adr`), Tier-3 host wiring (use application ADRs),
 or trivial refactors with no behavioral impact.
 
 ## Naming

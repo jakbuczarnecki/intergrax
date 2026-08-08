@@ -73,7 +73,7 @@ build/evidence/trace/timeline.md
 | `--output-dir` | `build/evidence/core_certification` | Report directory |
 | `--root` | cwd | Used when resolving default output path |
 
-**Tests:** `tests/unit/runtime/evidence/` (includes `test_certify_cli.py`).
+**Tests:** `tests/unit/runtime/evidence` (includes `test_certify_cli.py`).
 
 ---
 
@@ -182,7 +182,7 @@ Harness mode (`wire_lab_tools(..., harness=True)`) additionally enables runtime-
 
 **V-SEC STABLE promote gate:** `scripts/gates/check_harness_security_promote_gate.py` validates `harness_security_stack()` wiring (`trivy` + `semgrep` in options). Set `INTERGRAX_SECURITY_PROMOTE_RUN_SCAN=true` to execute scans. Release tags (`harness-release.yml`) use `INTERGRAX_SECURITY_PROMOTE_SCAN_BACKEND=cli` with Trivy + Semgrep CLIs.
 
-**P6 infra E2E (optional):** start `./manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/maintenance/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
+**P6 infra E2E (optional):** start `manage.sh start p6` (includes `core` for PostgreSQL/Airflow), then `INTERGRAX_P6_INFRA_E2E=true uv run python scripts/maintenance/check_p6_infra_health.py` or `pytest tests/integration/infra/test_p6_stack_health.py`.
 
 With `LAB_HARNESS=true`, also: `errors.capture`, `observability.query_traces`, `pagerduty.trigger_incident`, etc.
 
@@ -375,7 +375,7 @@ Execution references in the implementation plan:
 
 ## Legacy RAG stack (U-Leg.2)
 
-`intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers/` (no supported consumers; removal candidate).
+`intergrax.rag.answers` was **removed**. Use `intergrax.rag.retrieval.RetrievalService`. Archived code: `intergrax/legacy/rag_answers` (no supported consumers; removal candidate).
 
 ## Verification commands
 

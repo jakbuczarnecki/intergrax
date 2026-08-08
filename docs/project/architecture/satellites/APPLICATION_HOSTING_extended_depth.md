@@ -1,7 +1,7 @@
 # APPLICATION_HOSTING — extended depth
 
 **Parent hub:** [`APPLICATION_HOSTING.md`](../APPLICATION_HOSTING.md)  
-**Plan:** [`../../plan/APPLICATION_HOSTING.md`](../../maintainers/plans/APPLICATION_HOSTING.md)  
+**Plan:** [`../../maintainers/plans/APPLICATION_HOSTING.md`](../../maintainers/plans/APPLICATION_HOSTING.md)
 **ADR:** [`ADR-HOST-001`](../../technical/adr/entries/2026-07-13/ADR-HOST-001.md)
 
 > Load this satellite only for `APP-HOST-*` contract, engine, event, component, policy, supervisor, OS-adapter, author-DX, or LKW-adoption work.

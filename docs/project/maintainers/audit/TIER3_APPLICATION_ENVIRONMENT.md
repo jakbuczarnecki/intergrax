@@ -1,8 +1,8 @@
 # Tier-3 Application Environment — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plans/TIER3_APPLICATION_ENVIRONMENT.md)  
-**Audit map layers:** 3, 28 · compact slice: [`audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../../technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md)  
+**Domain pair:** [`architecture/TIER3_APPLICATION_ENVIRONMENT.md`](../../architecture/TIER3_APPLICATION_ENVIRONMENT.md) · [`plan/TIER3_APPLICATION_ENVIRONMENT.md`](../plans/TIER3_APPLICATION_ENVIRONMENT.md)
+**Audit map layers:** 3, 28 · compact slice: [`audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../../technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketpla
 **Load first:** [`docs/project/technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`](../../technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md) — compact slice (layers **3, 28**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ T3-LC Done · §6.1av T3-MAINT Done · CFG-14 LKW → ORCH-MAINT-02 · marketpla
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/TIER3_APPLICATION_ENVIRONMENT.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md` — on demand only (`.cursorignore`)
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -94,7 +94,7 @@ intergrax/cli/apps.py · envs.py · doctor_health_app.py · doctor_diff_app.py
 docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

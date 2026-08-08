@@ -2,7 +2,7 @@
 
 Produces reports, emails, and estimates from retrieved evidence — writes only to shadow workspace.
 
-**Architecture:** [ARCHITECTURE.md](../../docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/agents/local_synthesizer/IMPLEMENTATION_PLAN.md)  
+**Architecture:** [ARCHITECTURE.md](../../docs/project/technical/agents/local_synthesizer/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/agents/local_synthesizer/IMPLEMENTATION_PLAN.md)
 **Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
 **Capability:** `local.workspace.synthesize`
 
@@ -38,4 +38,4 @@ uv run pytest agents/local_synthesizer/tests -q
 
 ## Authoring
 
-See [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Appendix B (shadow workspace).
+See [`../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Appendix B (shadow workspace).

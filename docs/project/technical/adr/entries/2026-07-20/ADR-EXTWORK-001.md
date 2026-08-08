@@ -13,7 +13,7 @@ Governed external contractor flows need shared types for contractor identity, ta
 
 ## Decision
 
-1. Place reusable primitives under `intergrax/contracts/` as flat modules (`money.py`, `external_work.py`) — not under Tier-3/Tier-2 GEC packages, and not a new `contracts/contractor/` subtree.
+1. Place reusable primitives under `intergrax/contracts` as flat modules (`money.py`, `external_work.py`) — not under Tier-3/Tier-2 GEC packages, and not a new `contracts/contractor` subtree.
 2. Introduce `MoneyAmount` (`Decimal` + ISO 4217 alphabetic code). Reject reuse of `AgentRunCost` / token cost floats for commercial money.
 3. Introduce `ExternalWorkStatus` for provider-neutral external-work progress. Do **not** extend Nexus `TaskState` with quote/commercial stages.
 4. Compose (do not duplicate): Intergrax `task_id`/`run_id`/`correlation_id` strings, integration `provider_id`, `ActorIdentity`, optional HITL `decision_id` / `interrupt_id` string refs, `sha256:` digest convention, `ValidationResult` for pure quote/acceptance matching.
@@ -21,7 +21,7 @@ Governed external contractor flows need shared types for contractor identity, ta
 
 Rejected:
 
-- Owning contracts in `applications/governed_contractor_application/` or `agents/external_contractor_adapter/`
+- Owning contracts in `applications/governed_contractor_application` or `agents/external_contractor_adapter`
 - Extending Nexus `TaskState` with `quote_pending` / `waiting_for_acceptance`
 - Reusing `AgentRunCost.total_usd: float` as commercial money
 - Embedding `HumanDecisionRecord` / `PolicyDecision` objects inside acceptance evidence (refs only)
@@ -41,7 +41,7 @@ Rejected:
 
 ## Compliance
 
-- Tier boundaries preserved (`intergrax/` has no `agents/` / `applications/` imports)
+- Tier boundaries preserved (`intergrax` has no `agents` / `applications` imports)
 - Authorization remains outside contracts
 - Transport deferred to GEC-2
 

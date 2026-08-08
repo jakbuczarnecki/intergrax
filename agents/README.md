@@ -2,10 +2,10 @@
 
 **Role:** Reusable domain capabilities — contracts, typed step loop (`on_next_step`), prompts.  
 **Hosts:** Tier-3 applications under `applications/` mount agents via `AgentBinding.mount(...)`.  
-**Workflow:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Appendix AC  
-**Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary  
-**Architecture:** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability  
-**Implementation plan:** [`docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw  
+**Workflow:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) · Appendix AC
+**Terminology (canonical):** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md` §29](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md#29-author-facing-run-facade) — session/run/step vocabulary
+**Architecture:** [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · **§32.0** readability
+**Implementation plan:** [`docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) Phase **ACP** — waves §6.1aw
 
 **Migration (2026):** full fleet program — plan **Wave 8** (`ACP-MIG-*`). Bridge compat in Wave 4; **body migration** per-agent via tiered batches (T0→T4). Tracker: [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../docs/project/maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md) fleet migration tracker. New agents: **READ → UPDATE → DECIDE** + scoreboard (`ACP-PROD-12`).
 
@@ -80,7 +80,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 | `dispute_strategist` | `dispute.strategy` | Attack/defense lines, emphasis map |
 | `dispute_scenario` | `dispute.scenario` | Court variants, correspondence review |
 
-**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../applications/dispute_sim_application/ARCHITECTURE.md)
+**Host:** [`applications/dispute_sim_application/`](../applications/dispute_sim_application/) · **Architecture:** [ARCHITECTURE.md](../docs/project/technical/applications/dispute_sim_application/ARCHITECTURE.md)
 
 ### Legal review (single-agent SKU)
 
@@ -107,7 +107,7 @@ Fleet closure (ACP-LEG-2): `uv run python scripts/gates/check_agent_production_r
 
 Optional specialists (Legal, Research, …) are mounted in the same Tier-3 host via env flags; Nexus delegates — hub does not call them directly.
 
-**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../applications/intergrax_assistant_application/ARCHITECTURE.md)
+**Host:** [`applications/intergrax_assistant_application/`](../applications/intergrax_assistant_application/) · **Architecture:** [ARCHITECTURE.md](../docs/project/technical/applications/intergrax_assistant_application/ARCHITECTURE.md)
 
 ---
 

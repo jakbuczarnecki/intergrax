@@ -8,7 +8,7 @@
 **Prerequisites:** Phase FLOW **Done** (FLOW-1, FLOW-11, FLOW-12 cognition closeouts) · FAUDIT-32 §7 baseline L2  
 **Goal:** Establish **18th domain pair** as canonical source of truth for Reasoning and Cognition Layer (RCL) — consolidate scattered §7 audit content without runtime refactor  
 **Priority ladder:** **Band 2al** (§4.0 PLATFORM_FOUNDATION) — **closed** on doc merge  
-**Execution order:** [§6.2al](#62al-phase-cog-doc-execution-order-band-2al--closed) · queue: [§6.1al](#61al-harness-implementation-queue--reasoning-and-cognition-domain-pair-closed)
+**Execution order:** [§6.2al](.#62al-phase-cog-doc-execution-order-band-2al--closed) · queue: [§6.1al](.#61al-harness-implementation-queue--reasoning-and-cognition-domain-pair-closed)
 
 **Delivery rule:** COG-DOC.* = docs-only PRs; no code unless doc audit finds contract drift → route to COG-DEPTH.*
 
@@ -16,8 +16,8 @@
 
 | ID | Deliverable | Status | Priority | Module / doc | Acceptance |
 |----|-------------|--------|----------|--------------|------------|
-| COG-DOC.1 | **`architecture/REASONING_AND_COGNITION.md`** — full RCL canon (planes, contracts, code map, gaps) | **Done** | **Critical** | `docs/project/architecture/` | Hub links; audit §7 points here |
-| COG-DOC.2 | **`plan/REASONING_AND_COGNITION.md`** — this file; Phase COG-DEPTH register | **Done** | **Critical** | `docs/project/maintainers/plans/` | 1:1 pair check green |
+| COG-DOC.1 | **`architecture/REASONING_AND_COGNITION.md`** — full RCL canon (planes, contracts, code map, gaps) | **Done** | **Critical** | `docs/project/architecture` | Hub links; audit §7 points here |
+| COG-DOC.2 | **`plan/REASONING_AND_COGNITION.md`** — this file; Phase COG-DEPTH register | **Done** | **Critical** | `docs/project/maintainers/plans` | 1:1 pair check green |
 | COG-DOC.3 | **Hub update** — 18 domain pairs; audit routing §7 → RCL pair | **Done** | High | `intergrax_runtime_architecture.md` | `check_docs_domain_pairs.py` OK |
 | COG-DOC.4 | **Cross-ref sync** — `ORCHESTRATION`, `NEXUS_EXECUTION_FLOW` §7–§8, §24; `AGENTS.md`; `INTEGRAX_HARNESS_AUDIT_MAP` §7 | **Done** | High | `docs/*` | No orphan §7 content |
 | COG-DOC.5 | **Gate script** — `python scripts/audit/check_docs_domain_pairs.py` | **Done** | Medium | CI scripts | 18 pairs reported |
@@ -27,11 +27,11 @@
 
 ## Phase COG-DEPTH — Reasoning layer maturity uplift (Band 2as — closed)
 
-**Status:** **Done** (2026-06-09) — **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks)  
+**Status:** **Done** (2026-06-09) — **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](.#cog-depth--master-deliverables-register-all-22-tasks)
 **Prerequisites:** Phase COG-DOC **Done** · Phase FLOW **Done**  
 **Goal:** Raise FAUDIT-32 §7 from **L2 → L3+** — unified planner stack, Prompt Registry on planners, Nexus `DecisionRecord`, reasoning failure taxonomy, optional `ReasoningProfile`  
 **Priority ladder:** **Band 2as** (§4.0) — **closed**; default queue = §6.1 maintenance  
-**Traceability:** [Appendix A](#appendix-a--reasoning-and-cognition-traceability-phase-cog-depth)
+**Traceability:** [Appendix A](.#appendix-a--reasoning-and-cognition-traceability-phase-cog-depth)
 
 **Delivery rule:** One **COG-* ID per PR** → update master table + architecture gap register §21 → `pytest -m gate` green.
 
@@ -88,7 +88,7 @@ Total COG-DEPTH: 22 (excluding COG-DOC)
 
 ### 6.2as Phase COG-DEPTH execution order (Band 2as — closed)
 
-**Status:** **Done** (2026-06-09) · **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](#cog-depth--master-deliverables-register-all-22-tasks).
+**Status:** **Done** (2026-06-09) · **22/22 Done** · canonical register: [COG-DEPTH — Master deliverables register](.#cog-depth--master-deliverables-register-all-22-tasks).
 
 Work **one COG ID per PR** — phase **closed**; historical order below.
 
@@ -121,7 +121,7 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
-| COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | **Done** | **Critical** | `prompts/nexus_task_planner/`, `nexus_planner_prompts.py` | `check_reasoning_gates.py` |
+| COG-2.1 | **`nexus.task_planner.v1` prompt id** — replace inline string in `nexus_llm_plan_builder.py` | **Done** | **Critical** | `prompts/nexus_task_planner`, `nexus_planner_prompts.py` | `check_reasoning_gates.py` |
 | COG-2.2 | **Tool planner prompt ids** — ensure `ToolPlanningConfig` uses registry in all reference hosts | **Done** | High | `reasoning_wiring.py`, `tool_planning_config.py` | `test_catalog_runtime_bridge.py` |
 | COG-2.3 | **Engine planner `PlannerPromptConfig` registry binding** | **Done** | High | `reasoning_wiring.py` | `resolve_engine_planner_prompt_config()` |
 | COG-2.4 | **Author guide Appendix** — planner prompt authoring for Tier-3 | **Done** | Medium | `guides/AGENT_CREATION_GUIDE.md` | Appendix COG-2.4 |
@@ -179,8 +179,8 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 | COG-LC-S2 | **Engine prompt wire (Plane 2)** — `RuntimeConfig.engine_planner_prompt_id` + task/request metadata | **Done** | **Critical** | `catalog_runtime_bridge.py`, `reasoning_wiring.py`, `graph_executor.py` | `test_catalog_runtime_bridge.py`, `test_reasoning_wiring.py` |
 | COG-LC-S3 | **Planning latency metrics** — `record_planner_latency` in `planning_runner` | **Done** | High | `planning_runner.py`, `planning_metrics.py` | `test_planning_metrics.py` |
 | COG-LC-S4 | **Classifier failure emission** — `CLASSIFIER_*` in runtime trace metadata | **Done** | High | `llm_task_classifier.py`, `planning_runner.py` | `test_llm_task_classifier.py` |
-| COG-LC-S5 | **CI bundle** — `check_reasoning_gates.py` in AGENTS.md + `check_audit_ideal_gates.py` | **Done** | Medium | `scripts/` | gate script green |
-| COG-LC-S6 | **LLM classifier registry prompt** — `nexus_task_classifier` prompt asset | **Done** | Medium | `prompts/nexus_task_classifier/`, `nexus_classifier_prompts.py` | `check_reasoning_gates.py` |
+| COG-LC-S5 | **CI bundle** — `check_reasoning_gates.py` in AGENTS.md + `check_audit_ideal_gates.py` | **Done** | Medium | `scripts` | gate script green |
+| COG-LC-S6 | **LLM classifier registry prompt** — `nexus_task_classifier` prompt asset | **Done** | Medium | `prompts/nexus_task_classifier`, `nexus_classifier_prompts.py` | `check_reasoning_gates.py` |
 
 ### 6.1av Harness implementation queue — Reasoning audit maintenance (closed)
 
@@ -205,7 +205,7 @@ Work **one COG ID per PR** — phase **closed**; historical order below.
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
 |-------|-----|------|----------|--------|-------------|------------|
 | 1 | **COG-MAINT-DOC-01** | Docs | P3 | **Done** | Close §6.1av header; confirm architecture §17 mapping table current (COG-MAINT-01) | Plan §6.1av/§6.1aw consistent with Done maintenance rows |
-| 2 | **COG-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19/` | `REASONING_AND_COGNITION.md` + `progress.json`; L3 verdict layer 7 |
+| 2 | **COG-MAINT-AUDIT-01** | Docs | P3 | **Done** | Persist Mode A2 audit result under `docs/audit_results/2026-06-19` | `REASONING_AND_COGNITION.md` + `progress.json`; L3 verdict layer 7 |
 
 **Suggested PR order:** none — §6.1aw queue closed (2026-06-19).
 

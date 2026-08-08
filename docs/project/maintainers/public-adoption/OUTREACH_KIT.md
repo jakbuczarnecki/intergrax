@@ -24,10 +24,10 @@ Canonical public positioning is defined in [INTERGRAX_PUBLIC_POSITIONING.md](../
 - Say **real-user validation incomplete** and **commercial validation incomplete**.
 - Say **design-partner discovery**, not **guaranteed partnership**.
 - Say **proof-path feedback**, not **production support**.
-- Route time-boxed technical reviewers to [EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
-- Route use-case fit questions to [USE_CASES.md](../../overview/USE_CASES.md).
-- Route pilot or partner-fit discussions to [PARTNERS.md](../../community/PARTNERS.md).
-- For commercial or production use, point to maintainer contact and [COLLABORATION.md](../../community/COLLABORATION.md).
+- Route time-boxed technical reviewers to [docs/project/builders/EVALUATION_GUIDE.md](../../builders/EVALUATION_GUIDE.md).
+- Route use-case fit questions to [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md).
+- Route pilot or partner-fit discussions to [docs/project/community/PARTNERS.md](../../community/PARTNERS.md).
+- For commercial or production use, point to maintainer contact and [docs/project/community/COLLABORATION.md](../../community/COLLABORATION.md).
 
 ---
 
@@ -227,13 +227,13 @@ After task completion, ask:
 | commercially validated | commercial validation incomplete |
 | finished LKW product | LKW Backend Product Alpha / MVP — PARTIAL |
 | validated by users | real-user validation incomplete |
-| guaranteed partnership | design-partner discovery under [PARTNERS.md](../../community/PARTNERS.md) |
+| guaranteed partnership | design-partner discovery under [docs/project/community/PARTNERS.md](../../community/PARTNERS.md) |
 | certification / certified | technical integration validation — not certification |
 | compliance-ready | governance-oriented surfaces for review — not compliance approval |
 | universal usability | qualitative documentation comprehension review |
 | universal Token Optimization savings | Featured platform-capability proof — PARTIAL; no universal savings claim |
 | free to use commercially | evaluation permitted under [LICENSE](../../../../LICENSE); commercial use requires permission |
-| we support all use cases | [USE_CASES.md](../../overview/USE_CASES.md) maps current validation areas |
+| we support all use cases | [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md) maps current validation areas |
 
 ---
 

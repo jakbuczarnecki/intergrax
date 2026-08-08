@@ -1,6 +1,6 @@
 # poc_template_application — architecture
 
-Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Implementation tracker: [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
 
 | Piece | Location |
 |-------|----------|
-| Docker | `docker/` |
+| Docker | `docker` |
 | Deploy | `BUILD_AND_DEPLOY.md` |
 
 ## Dependencies (pyproject.toml)

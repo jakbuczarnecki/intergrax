@@ -8,7 +8,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 **Status:** Implemented foundation and execution engine; **TOKEN-10E ACCEPTED / CLOSED**; **TOKEN-10F ACCEPTED / CLOSED**; **TOKEN-10F-EVIDENCE-EXTENSION ACCEPTED / CLOSED**; **TOKEN-10G READY_FOR_REVIEW**; **TOKEN-10H PLANNED / NOT STARTED**.
 **Feature plan (1:1):** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md)
-**Source audit instruction:** [`../../audit/TOKEN_OPTIMIZATION.md`](../../maintainers/audit/TOKEN_OPTIMIZATION.md)
+**Source audit instruction:** [`../../maintainers/audit/TOKEN_OPTIMIZATION.md`](../../maintainers/audit/TOKEN_OPTIMIZATION.md)
 **Primary anchor domain:** `CONTEXT_ENGINEERING`
 **Related domains:** `LLM_ADAPTERS`, `TOOLS`, `MEMORY`, `RAG`, `OBSERVABILITY`, `UNIFIED_EXECUTION_RUNTIME`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `ADAPTIVE_HARNESS_INTELLIGENCE`
 
@@ -22,7 +22,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 - **Implement / audit default:** §1–§8 engine lifecycle, mechanisms, and extensibility. **On demand (one max):** [`architecture/satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md`](satellites/TOKEN_OPTIMIZATION_domain_architecture_cross_references.md).
 - **Plan hub:** [`../plan/TOKEN_OPTIMIZATION.md`](../plan/TOKEN_OPTIMIZATION.md) read-scope block only.
-- **Satellites:** at most **one** `architecture/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `architecture/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -681,7 +681,7 @@ Router owns configuration selection; the gate owns execution timing; the pipelin
 
 Do not claim mixed character/token estimates as measured savings.
 
-Contracts and helper live under `intergrax/runtime/token_optimization/` (`CacheAwareCompaction*` types and `decide_cache_aware_compaction_timing`). Decisions must not include raw prompt/thread content.
+Contracts and helper live under `intergrax/runtime/token_optimization` (`CacheAwareCompaction*` types and `decide_cache_aware_compaction_timing`). Decisions must not include raw prompt/thread content.
 
 ##### Advisory recommendation layer (`TOKEN-7A`)
 
@@ -699,7 +699,7 @@ must not compute token savings
 runtime/adaptive integration remains deferred
 ```
 
-Contracts and helper live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisory*` types and `recommend_token_optimization_action`). Every recommendation keeps `auto_apply_allowed=False` and `raw_content_included=False`.
+Contracts and helper live under `intergrax/runtime/token_optimization` (`TokenOptimizationAdvisory*` types and `recommend_token_optimization_action`). Every recommendation keeps `auto_apply_allowed=False` and `raw_content_included=False`.
 
 ##### Advisory evaluation and reporting (`TOKEN-7B`)
 
@@ -717,7 +717,7 @@ must not include saved_tokens / optimized_tokens / baseline_tokens / compressed_
 runtime/adaptive integration remains deferred
 ```
 
-Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryEvaluation*` types, `evaluate_advisory_recommendation_case`, `evaluate_advisory_recommendation_cases`, `token_optimization_advisory_report_to_dict`, `format_token_optimization_advisory_report`).
+Contracts and helpers live under `intergrax/runtime/token_optimization` (`TokenOptimizationAdvisoryEvaluation*` types, `evaluate_advisory_recommendation_case`, `evaluate_advisory_recommendation_cases`, `token_optimization_advisory_report_to_dict`, `format_token_optimization_advisory_report`).
 
 ##### Advisory policy-gated integration surface (`TOKEN-7C`)
 
@@ -742,7 +742,7 @@ no adaptive runtime integration
 no observability/HOS emission
 ```
 
-Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryIntegration*` types, `evaluate_policy_gated_advisory_request`, `token_optimization_advisory_integration_result_to_dict`, `format_token_optimization_advisory_integration_result`).
+Contracts and helpers live under `intergrax/runtime/token_optimization` (`TokenOptimizationAdvisoryIntegration*` types, `evaluate_policy_gated_advisory_request`, `token_optimization_advisory_integration_result_to_dict`, `format_token_optimization_advisory_integration_result`).
 
 ##### Advisory policy presets and resolver (`TOKEN-7D`)
 
@@ -765,7 +765,7 @@ no adaptive runtime integration
 no observability/HOS emission
 ```
 
-Contracts and helpers live under `intergrax/runtime/token_optimization/` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
+Contracts and helpers live under `intergrax/runtime/token_optimization` (`TokenOptimizationAdvisoryPolicyPreset`, `TokenOptimizationAdvisoryPolicyOverrides`, `TokenOptimizationAdvisoryPolicyResolution`, `resolve_token_optimization_advisory_policy`, `token_optimization_advisory_policy_resolution_to_dict`, `format_token_optimization_advisory_policy_resolution`).
 
 #### In-cache compaction (**TOKEN-10E** — implementation complete / READY_FOR_REVIEW)
 
@@ -779,7 +779,7 @@ active pointers, and transactional CAS activation are implemented and restart-te
 Rollback execution, human-review UX, public production enablement, and automatic prior-artifact
 invalidation remain out of scope.
 
-Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](#810-policy-governed-in-cache-compaction-token-10e).
+Canonical architecture: [§8.10 Policy-governed in-cache compaction (TOKEN-10E)](.#810-policy-governed-in-cache-compaction-token-10e).
 
 **Historical scope note:** `TOKEN-OPT-5A` intentionally excluded in-cache compaction. That boundary is superseded by **TOKEN-10E** planning — implementation remains future work.
 

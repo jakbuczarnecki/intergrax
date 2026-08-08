@@ -3,7 +3,7 @@
 Implementation tracker: [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)
 
 **Capability:** `local.workspace.synthesize`  
-**Host:** [`applications/local_workspace_application/`](../../applications/local_workspace_application/)  
+**Host:** [`applications/local_workspace_application`](../../applications/local_workspace_application/)
 **Status:** Scaffold — domain steps pending Wave LKW.1
 
 ---
@@ -124,5 +124,5 @@ uv run pytest agents/local_synthesizer/tests -q
 
 ## References
 
-- Shadow workspace: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
-- LKW architecture: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md)
+- Shadow workspace: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md` Appendix B](../../guides/AGENT_CREATION_GUIDE.md#appendix-b--shadow-workspace-and-sandbox)
+- LKW architecture: [`docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md`](../../applications/local_workspace_application/ARCHITECTURE.md)

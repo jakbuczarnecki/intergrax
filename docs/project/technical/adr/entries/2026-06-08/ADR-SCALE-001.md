@@ -12,7 +12,7 @@
 Intergrax must operate at organizational scale: more concurrent Nexus tasks, async workers, and agent host replicas as load grows. An architecture review (2026-06-08) found:
 
 - **In-process** scaling controls exist (`max_inflight_nodes`, `GRAPH_BACKPRESSURE`, graph batch caps).
-- **Async** queue workers exist (`intergrax/queueing/`, Celery/Kafka/RabbitMQ) but with **fixed** worker counts unless operators intervene manually.
+- **Async** queue workers exist (`intergrax/queueing`, Celery/Kafka/RabbitMQ) but with **fixed** worker counts unless operators intervene manually.
 - **Observability** SLO catalog exists (Phase W-OPS Done) without closed-loop capacity provisioning.
 - **`kubernetes` integration** (beta) provides health/deploy facade — not Harness-native scale rules.
 - **Adaptive Harness Intelligence** proposes profile tuning (`max_parallel_nodes`) but does not provision replicas.
@@ -67,7 +67,7 @@ Adopt the **Harness Elastic Capacity Plane (ECP)** as a **Tier-1 async control p
 
 ### Negative
 
-- New Tier-1 module surface (`runtime/capacity/`) — Phase ECP-DEPTH required for runtime value.
+- New Tier-1 module surface (`runtime/capacity`) — Phase ECP-DEPTH required for runtime value.
 - Operators must configure **both** K8s HPA (optional) and Harness `ScalingProfile` — documentation must explain division.
 - nginx integration not yet in catalog — ECP-6 backlog.
 - Risk of flapping if signals and cooldowns misconfigured — mitigated by ECP-7 anti-flap guards.
@@ -82,4 +82,4 @@ Adopt the **Harness Elastic Capacity Plane (ECP)** as a **Tier-1 async control p
 
 - Architecture: [`architecture/ELASTIC_CAPACITY_AND_SCALING.md`](../../architecture/ELASTIC_CAPACITY_AND_SCALING.md)
 - Plan: Phase ECP-DOC (Done) · Phase ECP-DEPTH (Band 2ao, planned)
-- Verification (when runtime lands): `tests/unit/runtime/capacity/`; mock K8s in gate; no live cluster in CI
+- Verification (when runtime lands): `tests/unit/runtime/capacity`; mock K8s in gate; no live cluster in CI

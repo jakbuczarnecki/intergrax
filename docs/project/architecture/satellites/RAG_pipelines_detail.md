@@ -26,7 +26,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 
 ---
 
-## Module map (`intergrax/rag/`)
+## Module map (`intergrax/rag`)
 
 | Layer | Module | Role |
 |-------|--------|------|
@@ -35,20 +35,20 @@ RETRIEVE (rag.retrieve / RetrievalService)
 | Ingest | `ingest/ingest_pipeline.py` | Load → chunk → embed → index (+ optional graph) |
 | Retrieval | `retrieval/retrieval_service.py` | **Single retrieve entry** — route → retrieve → rerank → filter |
 | Routing | `routing/query_router.py` | `fast` / `standard` / `deep` tiers (adaptive cost) |
-| Retrievers | `retrievers/` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query, graph_rag |
-| Resilience | `retrievers/resilience/`, `retrieval/retrieval_errors.py` | Fallback chain, `RetrievalError`, optional vector circuit breaker |
+| Retrievers | `retrievers` | Registry: vector, hybrid, fusion (RRF), MMR, parent–child, hierarchical, multi-query, graph_rag |
+| Resilience | `retrievers/resilience`, `retrieval/retrieval_errors.py` | Fallback chain, `RetrievalError`, optional vector circuit breaker |
 | Governance | `governance/embedding_version_policy.py` | Embedding version warn/filter + reindex queue hooks |
-| Rerankers | `rerankers/` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
-| Chunking | `document_splitters/` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
-| Loaders | `document_loaders/` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
-| Embeddings | `embedding/` | Provider registry (`hf`, `openai`, `ollama`, `vllm`, `llama_cpp`), batched pipeline, retry |
-| Vector store | `vectorstore/` | Manager + hybrid/sparse; backends via Integration bridges |
-| GraphRAG | `graph/` | RAG `GraphStore` ABC; bootstrap backends; indexers; adapters to Integration `graph_store` |
+| Rerankers | `rerankers` | Registry + integration slugs (`cohere_rerank`, `jina_rerank`) |
+| Chunking | `document_splitters` | `recursive`, `langchain_recursive`, `semantic`, `parent_child`, `docling` |
+| Loaders | `document_loaders` | Handler registry + `ParserPipeline`; parsers via Integration catalog |
+| Embeddings | `embedding` | Provider registry (`hf`, `openai`, `ollama`, `vllm`, `llama_cpp`), batched pipeline, retry |
+| Vector store | `vectorstore` | Manager + hybrid/sparse; backends via Integration bridges |
+| GraphRAG | `graph` | RAG `GraphStore` ABC; bootstrap backends; indexers; adapters to Integration `graph_store` |
 | Agentic | `retrieval/agentic_loop.py`, `query_refiner.py` | Budgeted deep-tier loop |
 | Evaluation | `evaluation/metrics.py`, `golden_harness.py` | `recall@k`, MRR; golden CI scenarios |
 | Observability | `tracking/metrics.py`, `observability_bridge.py` | Opt-in metrics + runtime plugin |
-| Indexing | `indexing/` | `SingleIndexStrategy`, `DualIndexStrategy` (TOC + chunks) |
-| Governance | `vectorstore/governance/`, `profiles/rag_profile_validator.py` | Collection ACL (M-RAG.65); profile bootstrap validation (M-RAG.63) |
+| Indexing | `indexing` | `SingleIndexStrategy`, `DualIndexStrategy` (TOC + chunks) |
+| Governance | `vectorstore/governance`, `profiles/rag_profile_validator.py` | Collection ACL (M-RAG.65); profile bootstrap validation (M-RAG.63) |
 | Reference workflows | `applications/_shared/reference_workflows/rag_async_ingest.py` | Tier-3 async ingest shard planner (M-RAG.67) |
 
 ---
@@ -59,7 +59,7 @@ RETRIEVE (rag.retrieve / RetrievalService)
 |----------|--------|------|
 | `RagProfile` | `profiles/rag_profile.py` | Platform defaults for retrieval, rerank, ingest, routing |
 | `RetrievalService` | `retrieval/retrieval_service.py` | Canonical retrieval orchestration |
-| `RetrievalRequest` / `RetrievalResult` | `retrieval/` | I/O + `RetrievalTrace` + `Citation` list |
+| `RetrievalRequest` / `RetrievalResult` | `retrieval` | I/O + `RetrievalTrace` + `Citation` list |
 | `Citation` | `retrieval/citation.py` | Structured provenance from chunk metadata |
 | `IngestPipeline` | `ingest/ingest_pipeline.py` | Configurable ingest |
 | `RagStack` | `bootstrap/rag_stack_bootstrap.py` | Composed managers + `RetrievalService` |
@@ -223,13 +223,13 @@ RAG **consumes** Integration Library categories; it does not duplicate vendor ad
 
 | Integration category | RAG usage |
 |---------------------|-----------|
-| `vector_store` | Embedding indexes — implementations in `rag/vectorstore/`, catalog bridges in `integrations/providers/vector_store/` |
+| `vector_store` | Embedding indexes — implementations in `rag/vectorstore`, catalog bridges in `integrations/providers/vector_store` |
 | `document_parser` | Ingest parsing — `CatalogDocumentParser` + `INTERGRAX_RAG_DOCUMENT_PARSER_SLUG` |
-| `rerank_provider` | Vendor rerank APIs — `rerankers/` resolves via profile |
+| `rerank_provider` | Vendor rerank APIs — `rerankers` resolves via profile |
 | `graph_store` | Integration backends — adapted to RAG `GraphStore` via `create_rag_graph_store` backend registry (M-RAG.38+) |
 | `workflow_orchestrator` | Large-corpus reindex / async ingest via `rag.schedule_ingest_job` (M-RAG.26) |
 
-Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap/` resolves via integration catalog when `vector_store` is configured on `IntegrationProfile`.
+Bootstrap: `create_vectorstore_manager()` in `vectorstore/bootstrap` resolves via integration catalog when `vector_store` is configured on `IntegrationProfile`.
 
 ---
 
@@ -322,7 +322,7 @@ uv run pytest tests/integration/rag/ -q
 uv run pytest tests/unit/applications/test_rag_runtime_bridge.py -m gate -q
 ```
 
-Golden gate: `.github/workflows/rag-guard.yml` · fixtures: `tests/fixtures/rag_golden/`.
+Golden gate: `.github/workflows/rag-guard.yml` · fixtures: `tests/fixtures/rag_golden`.
 
 Implementation plan and step-by-step rollout: [`plan/RAG.md`](../plan/RAG.md).
 

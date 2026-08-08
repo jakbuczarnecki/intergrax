@@ -48,8 +48,8 @@ Primary audience: Architect or platform engineer evaluating responsibility bound
 | Step | Question | Primary source |
 | ---- | -------- | -------------- |
 | 1 | Are application, orchestration, agent and governed-execution responsibilities separated clearly? | This Architecture Overview |
-| 2 | Which mechanisms and product paths have current bounded evidence? | [PROOFS.md](../proofs/PROOFS.md) |
-| 3 | Does a bounded evaluation justify deeper review? | [EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
+| 2 | Which mechanisms and product paths have current bounded evidence? | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| 3 | Does a bounded evaluation justify deeper review? | [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
 | 4 | Is deeper implementation-level due diligence required? | [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) |
 
 The primary architect next action after understanding the boundaries is to [review the current proof status](../proofs/PROOFS.md).
@@ -143,10 +143,10 @@ It operates inside the harness execution path alongside policy, protected-region
 | ----- | -------- |
 | Foundation architecture narrative | [INTERGRAX_HARNESS_NARRATIVE.md](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) |
 | Technical documentation map | [DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) |
-| Public proof dashboard | [PROOFS.md](../proofs/PROOFS.md) |
+| Public proof dashboard | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | LKW product proof | [LKW_PLATFORM_PROOF.md](../proofs/LKW_PLATFORM_PROOF.md) |
 | Token Optimization | [Token Optimization guide](../capabilities/token_optimization/README.md) |
 
-Primary next action: review current evidence in [PROOFS.md](../proofs/PROOFS.md).
+Primary next action: review current evidence in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
 
-Then choose a bounded evaluation through [EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md), or deep technical review through [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md). For a builder-specific route, use [BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) as a secondary path.
+Then choose a bounded evaluation through [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md), or deep technical review through [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md). For a builder-specific route, use [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) as a secondary path.

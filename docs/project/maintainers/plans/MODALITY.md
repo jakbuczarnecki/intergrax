@@ -1,7 +1,7 @@
 # Modality — Implementation Plan
 
-**Architecture (1:1):** [`architecture/MODALITY.md`](../../architecture/MODALITY.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/MODALITY.md`](../../architecture/MODALITY.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
 > When implementing this layer, read **only** the architecture doc and this plan doc for the domain.
@@ -21,7 +21,7 @@
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MODALITY.md`](../../architecture/MODALITY.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/MODALITY.md`](../../technical/guides/audit_slices/MODALITY.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -35,7 +35,7 @@
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5.1 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Planned** — incremental after IDEAL-L3 W2 closeout
 
@@ -69,7 +69,7 @@
 
 - Online training / AutoML / feature stores as platform products.
 - LLM slugs in Integration Catalog (§44.10).
-- CV or ML SDK imports in Tier-2 `agents/`.
+- CV or ML SDK imports in Tier-2 `agents`.
 - Monolithic “vision skills” without atomic tools.
 
 **Dependency:** Documentation may land during Phase V; code waves SHOULD not block V closeout but SHOULD follow V-COST/V-SEC patterns.
@@ -79,9 +79,9 @@
 | # | Deliverable | Status | Priority | Acceptance |
 |---|-------------|--------|----------|------------|
 | W-ML.0 | Canon §7.1.9 + §53.13 + `architecture/MODALITY.md` + IDEAL/LLM_ADAPTERS sync | **Done** | **Critical** | Docs merged; three planes documented |
-| W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | **Done** | High | Conformance tests in `tests/unit/llm_adapters/`; OpenAI + Gemini vision flags |
+| W-ML.1 | Multimodal LLM contract — `supports_vision` / audio flags; `AttachmentRef` → vendor parts | **Done** | High | Conformance tests in `tests/unit/llm_adapters`; OpenAI + Gemini vision flags |
 | W-ML.2 | `speech_provider` category + `elevenlabs` (or stub) + tools `speech.synthesize` / `speech.transcribe` | **Done** | Medium | `ElevenLabsSpeechBackend` when `ELEVENLABS_API_KEY` set; stub otherwise |
-| W-ML.3 | `intergrax/model_inference/` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | **Done** | High | OpenCV contour adapter (default); optional Ultralytics; golden PNG fixture |
+| W-ML.3 | `intergrax/model_inference` scaffold — `VisionInferenceAdapter`, registry, `yolo_ultralytics` + `onnxruntime` slugs | **Done** | High | OpenCV contour adapter (default); optional Ultralytics; golden PNG fixture |
 | W-ML.4 | Remote serving integrations — `vision_serving` / `huggingface_inference` (Triton HTTP + HF Inference API) | **Done** | Medium | `triton_vision.py`, `huggingface_inference_vision.py`; env `INTERGRAX_TRITON_URL`, `HUGGINGFACE_API_KEY` |
 | W-ML.5 | `ModelInferenceAdapter` + `ml.predict` + `ModelArtifact` metadata contract | **Done** | Medium | `ml.predict` tool + stub sklearn classifier artifact |
 | W-ML.6 | `ModalityProfile` + Tier-3 wiring + policy intersection with `ToolAccessPolicy` | **Done** | High | `runtime/modality/modality_profile.py` + `ToolAccessPolicy.apply_modality_profile` |
@@ -106,11 +106,11 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 | Asset | Plane | Location |
 |-------|-------|----------|
-| Whisper / yt_dlp ingest | B | `integrations/providers/document_parser/` |
-| Image/audio smart loaders | B | `intergrax/multimedia/`, `rag/document_loaders/` |
+| Whisper / yt_dlp ingest | B | `integrations/providers/document_parser` |
+| Image/audio smart loaders | B | `intergrax/multimedia`, `rag/document_loaders` |
 | HF embeddings | B | `rag/embedding/providers/hf_embedding_provider.py` |
 | SPLADE sparse (optional) | B | `rag/vectorstore/sparse/splade_sparse_encoder.py` |
-| LLM adapters (19 slugs) | A | `intergrax/llm_adapters/` |
+| LLM adapters (19 slugs) | A | `intergrax/llm_adapters` |
 
 #### W-ML — Paydown log
 
@@ -143,11 +143,11 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 **Deferred P2–P4:** OpenCV golden tests require `opencv-python-headless` in runner env · online training out of scope · Plane A/C boundary ops docs
 
-**Audit note (2026-06-18):** `pytest tests/unit/model_inference/` reports **2 failing tests** locally — treat as **harness defects to fix**, not environment-only waivers (see §6.1av MOD-MAINT-01/02).
+**Audit note (2026-06-18):** `pytest tests/unit/model_inference` reports **2 failing tests** locally — treat as **harness defects to fix**, not environment-only waivers (see §6.1av MOD-MAINT-01/02).
 
 ### 6.1av Harness implementation queue — Modality audit maintenance (planned)
 
-**Source:** Layer 15 audit (2026-06-18) — `MODALITY` layer 29 · [`../audit_results/2026-06-18/MODALITY.md`](../../../audit_results/2026-06-18/MODALITY.md)  
+**Source:** Layer 15 audit (2026-06-18) — `MODALITY` layer 29 · [`../audit_results/2026-06-18/MODALITY.md`](../../../audit_results/2026-06-18/MODALITY.md)
 **Priority ladder:** **Band 1** (§6.1) — **test repair first**, then docs/depth; **one ID per PR**
 
 | Order | ID | Type | Priority | Status | Deliverable | Acceptance |
@@ -166,8 +166,8 @@ Wave W6 (governance): W-ML.6 + W-ML.7 + W-ML.8 — profiles, metrics, capability
 
 ## Phase MOD-SPEECH-ARCH — Speech provider slug alignment (Integration Library)
 
-**Status:** **Done** (2026-06-19) — operator-approved hard cutover · [ADR-MOD-001](../../technical/adr/entries/2026-06-19/ADR-MOD-001.md)  
-**Canon:** [`architecture/MODALITY.md`](../../architecture/MODALITY.md) §Plane C — Speech · [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §Open catalog  
+**Status:** **Done** (2026-06-19) — operator-approved hard cutover · [ADR-MOD-001](../../technical/adr/entries/2026-06-19/ADR-MOD-001.md)
+**Canon:** [`architecture/MODALITY.md`](../../architecture/MODALITY.md) §Plane C — Speech · [`architecture/INTEGRATIONS.md`](../../architecture/INTEGRATIONS.md) §Open catalog
 **Cross-domain:** [`plan/INTEGRATIONS.md`](INTEGRATIONS.md) INT-SPEECH-ARCH.1
 
 **Problem:** `speech_adapters.SpeechProvider` enum duplicates and contradicts the Integration Library open-catalog model (`speech_provider` category). `deepgram` and future slugs cannot extend from outside the platform; `speech_provider_for_slug()` maps unknown slugs to `STUB`.

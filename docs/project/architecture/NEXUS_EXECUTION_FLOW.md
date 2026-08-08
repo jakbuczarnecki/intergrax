@@ -1,11 +1,11 @@
 # Nexus Execution Flow
 
 **Status:** Canonical architecture (domain pair 1:1)  
-**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
-**Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)  
-**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)  
+**Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
+**Plan (1:1):** [`plan/NEXUS_EXECUTION_FLOW.md`](../maintainers/plans/NEXUS_EXECUTION_FLOW.md)
+**Target:** [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md)
 **Audit layers:** 8, 9, 10 (flow narrative) · cognition depth: [`REASONING_AND_COGNITION.md`](REASONING_AND_COGNITION.md) §7–§10  
-**Audit instruction:** [`audit/NEXUS_EXECUTION_FLOW.md`](../maintainers/audit/NEXUS_EXECUTION_FLOW.md)  
+**Audit instruction:** [`audit/NEXUS_EXECUTION_FLOW.md`](../maintainers/audit/NEXUS_EXECUTION_FLOW.md)
 ---
 
 ## Cursor read scope (token budget)
@@ -150,7 +150,7 @@ flowchart TB
     ENV --> UTR
 ```
 
-**Dependency rule:** `intergrax/` must not import `agents/` or `applications/`. Applications wire agents into `AgentRegistry` at bootstrap.
+**Dependency rule:** `intergrax` must not import `agents` or `applications`. Applications wire agents into `AgentRegistry` at bootstrap.
 
 ---
 
@@ -307,7 +307,7 @@ sequenceDiagram
 | 5 | `NexusGraphRunner.run()` | `executions` or `early_result?` |
 | 6 | `_finish_task()` + `FinalResponseComposer` | `TaskResult` |
 
-### 5.1 Orchestration package (`intergrax/runtime/nexus/orchestration/`)
+### 5.1 Orchestration package (`intergrax/runtime/nexus/orchestration`)
 
 | Module | Responsibility |
 |--------|----------------|

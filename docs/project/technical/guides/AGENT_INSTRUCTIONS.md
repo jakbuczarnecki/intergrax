@@ -2,7 +2,7 @@
 
 > **Audience:** Cursor, Claude Code, Codex, Gemini, and other LLM agents working in this repository.
 > **Cursor auto-load:** root [`AGENTS.md`](../../../../AGENTS.md) is a **stub** (~400 tokens). Load **this file** with `@docs/project/technical/guides/AGENT_INSTRUCTIONS.md` when you need routing, verification, ADR workflow, or anti-patterns.
-> **Canonical docs:** `docs/` — always prefer linking over duplicating.
+> **Canonical docs:** `docs/project/` — always prefer linking over duplicating.
 
 ---
 
@@ -18,10 +18,10 @@ Tier-2  agents/              Specialized agent capabilities
 Tier-3  applications/        Deployable product environments
 ```
 
-**Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.  
+**Strategic goal:** production-grade Harness AI aligned with modern Agent Engineering practice.
 **Source:** [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` (sole file in `docs/` root) indexes **22 domain-layer pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`features/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
+**Documentation boundary:** `docs/project/architecture/intergrax_runtime_architecture.md` is the architecture hub indexing **22 domain-layer pairs**: `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (1:1 filenames). **Multi-layer feature pairs** live under `docs/project/capabilities/architecture/<FEATURE>.md` ↔ `docs/project/capabilities/plan/<FEATURE>.md` — see [`capabilities/README.md`](../../capabilities/README.md). Feature docs coordinate cross-layer capabilities; domain docs remain authoritative for domain-owned architecture and plan rows. Strategy, ideal model, and audit live in `docs/project/technical/guides/`. Each **business environment** (`applications/<product>/`) and **business agent** (`agents/<name>/`) has its own architecture and implementation plan — do not treat platform canon as the product deployment plan.
 
 **Per-iteration reading rule:** when implementing a harness layer, read **only** the matching architecture + plan pair (e.g. `MEMORY.md` in both folders) plus `docs/project/technical/guides/` as needed — do not load unrelated domain docs.
 
@@ -57,18 +57,18 @@ Include **only**:
 
 ### Full iteration summary (on request or milestone only)
 
-1. Completed implementation item  
-2. Domain pair (`architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md`) and Harness layer  
-3. Changed files  
-4. Tests added or updated  
-5. Tests executed (commands + result)  
-6. Documentation updated (domain pair files)  
-7. Architectural impact  
-8. Remaining risks  
-9. Out-of-scope findings  
-10. Suggested next step (one line)  
-11. One-line commit message (English) — no commit unless operator asks  
-12. Journal — entry path **only if written**; else **"no journal needed"** + one-line rationale  
+1. Completed implementation item
+2. Domain pair (`architecture/<DOMAIN>.md` + `plan/<DOMAIN>.md`) and Harness layer
+3. Changed files
+4. Tests added or updated
+5. Tests executed (commands + result)
+6. Documentation updated (domain pair files)
+7. Architectural impact
+8. Remaining risks
+9. Out-of-scope findings
+10. Suggested next step (one line)
+11. One-line commit message (English) — no commit unless operator asks
+12. Journal — entry path **only if written**; else **"no journal needed"** + one-line rationale
 
 ---
 
@@ -112,7 +112,7 @@ applications/    MAY import from agents/ and intergrax/
 
 ### Documentation
 
-- **One source of truth per topic** — `docs/` root = hub only; no parallel guides
+- **One source of truth per topic** — `docs/project/` is the canonical human documentation root; no parallel guides
 - Strategy / ideal / audit / invariants → `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`, `IDEAL_HARNESS_AI_ARCHITECTURE.md`, `INTEGRAX_HARNESS_AUDIT_MAP.md`, `SYSTEM_INVARIANTS.md`
 - Architecture hub → `docs/project/architecture/intergrax_runtime_architecture.md`
 - Domain-layer pairs → `docs/project/architecture/<DOMAIN>.md` ↔ `docs/project/maintainers/plans/<DOMAIN>.md` (**1:1**, same filename)
@@ -136,7 +136,7 @@ applications/    MAY import from agents/ and intergrax/
 | Task | Read first (architecture + plan pair) |
 |------|---------------------------------------|
 | Audit a new idea before build | Say `Zrób audyt pomysłu: …` in a new chat — rule `.cursor/rules/intergrax-idea-audit.mdc` → [`idea_audit.txt`](../../maintainers/bootstrap/idea_audit.txt) · [`IDEA_AUDIT_ORCHESTRATOR.md`](../../maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md) |
-| Cross-layer platform feature | [`features/README.md`](../../capabilities/README.md) → matching feature architecture + feature plan, then affected domain pairs |
+| Cross-layer platform feature | [`capabilities/README.md`](../../capabilities/README.md) → matching feature architecture + feature plan, then affected domain pairs |
 | Create a new agent | [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](AGENT_CREATION_GUIDE.md) |
 | Wire integrations | [INTEGRATIONS.md](../../architecture/INTEGRATIONS.md) · [plan/INTEGRATIONS.md](../../maintainers/plans/INTEGRATIONS.md) |
 | RAG / retrieval engine | [RAG.md](../../architecture/RAG.md) · [plan/RAG.md](../../maintainers/plans/RAG.md) |
@@ -243,7 +243,7 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 
 | Path | Contents |
 |------|----------|
-| `docs/project/architecture/intergrax_runtime_architecture.md` | Sole `docs/` root file — hub indexing 22 domain pairs + feature doc index |
+| `docs/project/architecture/intergrax_runtime_architecture.md` | Architecture hub indexing 22 domain pairs + feature doc index |
 | `docs/project/architecture/` | Domain architecture canon (22 files) |
 | `docs/project/maintainers/plans/` | Domain implementation plans (22 files, 1:1 with architecture) |
 | `docs/project/capabilities/` | Multi-layer feature architecture + plan pairs (1:1 under `architecture/` and `plan/`) |
@@ -258,7 +258,7 @@ Full local suite: `scripts\ci\test.bat unit` (Windows) or equivalent `uv run pyt
 | `../../intergrax/scaffold/` | Scaffolding CLI |
 | `agents/` | Tier-2 agents — roster: [agents/README.md](../../../../agents/README.md) |
 | `applications/` | Tier-3 application hosts — index: [applications/README.md](../../../../applications/README.md) (LKW, DSW, legal, research, lab) |
-| `docs/` | Canonical documentation |
+| `docs/project/` | Canonical human documentation |
 | `tests/` | Unit, integration, acceptance tests |
 | `scripts/` | Harness CI scripts |
 

@@ -113,4 +113,4 @@ Intergrax implements security as a **control plane** within the Harness AI platf
 
 ## License & confidentiality
 
-Intergrax is proprietary software. See [LICENSE](LICENSE) and the collaboration model in [COLLABORATION.md](docs/project/community/COLLABORATION.md). Security reports are handled confidentially.
+Intergrax is proprietary software. See [LICENSE](LICENSE) and the collaboration model in [docs/project/community/COLLABORATION.md](docs/project/community/COLLABORATION.md). Security reports are handled confidentially.

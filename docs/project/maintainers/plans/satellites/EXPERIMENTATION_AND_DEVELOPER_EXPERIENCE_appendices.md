@@ -95,13 +95,13 @@ Decision:       L1 certified — GO Phase S (harness environment), then Phase K 
 
 ## Appendix I — Plugin catalog traceability (Phase P-Ext)
 
-**Purpose:** Task-level tracker for plugin-native Integration, Tool, and Skill catalogs. **Canonical phase narrative:** [Phase P-Ext](#phase-p-ext--plugin-catalogs-integrations-tools-skills) · paydown: [P-Ext.6](#p-ext6--production-closure-paydown).
+**Purpose:** Task-level tracker for plugin-native Integration, Tool, and Skill catalogs. **Canonical phase narrative:** [Phase P-Ext](.#phase-p-ext--plugin-catalogs-integrations-tools-skills) · paydown: [P-Ext.6](.#p-ext6--production-closure-paydown).
 
 **Status:** **Done** (2026-06-02) · **MVP effort:** ~21–32 person-days · **paydown estimate:** ~8–14 person-days.
 
 ### I.1 Delivery rule
 
-Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix → `pytest -m gate` green. Paydown cadence: [§6.1p](#61p-phase-p-ext-paydown-band-2c--optional-parallel-with-61).
+Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix → `pytest -m gate` green. Paydown cadence: [§6.1p](.#61p-phase-p-ext-paydown-band-2c--optional-parallel-with-61).
 
 ### I.2 Task register
 
@@ -135,7 +135,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | P-Ext.2.6 | Tools | MCP tool export | **Done** | P1 |
 | P-Ext.2.7 | Tools | `ToolContract.version` | **Done** | P2 |
 | P-Ext.2.8 | Tools | All 13 shipped bundles → `ToolPlugin` | **Done** | P1 |
-| P-Ext.2.9 | Tools | `tools/examples/` reference package | **Done** | P0 |
+| P-Ext.2.9 | Tools | `tools/examples` reference package | **Done** | P0 |
 | P-Ext.2.10 | Tools | `test_external_tool_plugin.py` | **Done** | P0 |
 | P-Ext.2.11 | Tools | EP tool test via fixture | **Done** | P0 |
 | P-Ext.2.12 | Tools | `tool_wiring` lazy `tool_bundle_ids` | **Done** | P2 |
@@ -144,7 +144,7 @@ Same as §6.1: one **P-Ext.\*** ID → PR → update status in this appendix →
 | P-Ext.3.3 | Skills | Entry points `intergrax.skills` | **Done** | P1 |
 | P-Ext.3.4 | Skills | harness + research + legal plugin migration | **Done** | P1 |
 | P-Ext.3.5 | Skills | `requires_skills` (optional) | **Done** | P3 |
-| P-Ext.3.6 | Skills | `skills/examples/` reference package | **Done** | P0 |
+| P-Ext.3.6 | Skills | `skills/examples` reference package | **Done** | P0 |
 | P-Ext.3.7 | Skills | `test_external_skill_plugin.py` | **Done** | P0 |
 | P-Ext.3.8 | Skills | EP skill test via fixture | **Done** | P0 |
 | P-Ext.3.9 | Skills | `skill_wiring` lazy `skill_bundle_ids` | **Done** | P2 |

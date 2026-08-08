@@ -3,7 +3,7 @@
 **Status:** Canonical orchestrator for **Mode A** — audit + plan sync, **no implementation**  
 **Bootstrap (paste):** [`bootstrap/01_audit_all_domains.txt`](../bootstrap/01_audit_all_domains.txt)  
 **Single domain:** [`bootstrap/02_audit_one_domain.txt`](../bootstrap/02_audit_one_domain.txt)  
-**Related:** [`ORCHESTRATOR.md`](ORCHESTRATOR.md) (this file) · [`LAYER_COMPLETION_MODE.md`](../../technical/guides/LAYER_COMPLETION_MODE.md) · [`implementation-journal/`](../implementation-journal/README.md)
+**Related:** [`ORCHESTRATOR.md`](ORCHESTRATOR.md) (this file) · [`LAYER_COMPLETION_MODE.md`](../../technical/guides/LAYER_COMPLETION_MODE.md) · [`implementation-journal`](../implementation-journal/README.md)
 
 ---
 
@@ -67,7 +67,7 @@ Audit map (32 layers) → domain: [`intergrax_runtime_architecture.md`](../../ar
 uv run python scripts/audit/init_architecture_audit_run.py --date YYYY-MM-DD --mode audit_only
 ```
 
-Or let the agent create `docs/audit_results/YYYY-MM-DD/` on first run.
+Or let the agent create `docs/audit_results/YYYY-MM-DD` on first run.
 
 **Skim once per session:** [`SYSTEM_INVARIANTS.md`](../../technical/guides/SYSTEM_INVARIANTS.md).
 

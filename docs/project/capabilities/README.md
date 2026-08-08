@@ -25,7 +25,7 @@ docs/project/architecture/<DOMAIN>.md
 docs/project/maintainers/plans/<DOMAIN>.md
 ```
 
-Multi-layer features use a parallel 1:1 structure under `docs/project/capabilities/`:
+Multi-layer features use a parallel 1:1 structure under `docs/project/capabilities`:
 
 ```text
 docs/project/capabilities/architecture/<FEATURE>.md
@@ -34,22 +34,22 @@ docs/project/capabilities/plan/<FEATURE>.md
 docs/project/capabilities/plan/satellites/
 ```
 
-Feature **hubs** (`architecture/<FEATURE>.md`, `plan/<FEATURE>.md`) are Cursor entry points for analysis and implementation. **Satellites** hold bulky cross-domain sync registers and extended detail — same explicit-load rule as domain-layer `docs/project/architecture/satellites/` and `docs/project/maintainers/plans/satellites/` (listed in `.cursorignore`).
+Feature **hubs** (`architecture/<FEATURE>.md`, `plan/<FEATURE>.md`) are Cursor entry points for analysis and implementation. **Satellites** hold bulky cross-domain sync registers and extended detail — same explicit-load rule as domain-layer `docs/project/architecture/satellites` and `docs/project/maintainers/plans/satellites` (listed in `.cursorignore`).
 
-Do **not** create `docs/project/capabilities/satellites/` at the features root. Satellites belong under each hub tier, not beside `architecture/` and `plan/`.
+Do **not** create `docs/project/capabilities/satellites` at the features root. Satellites belong under each hub tier, not beside `architecture` and `plan`.
 
 ---
 
 ## Rules
 
 1. Do not create `docs/project/maintainers/plans/<FEATURE>.md` for a multi-layer feature unless `<FEATURE>` is promoted into a full architecture domain with a matching `docs/project/architecture/<FEATURE>.md`.
-2. Every file in `docs/project/capabilities/plan/` must have a matching file in `docs/project/capabilities/architecture/`.
-3. Every file in `docs/project/capabilities/architecture/` must have a matching file in `docs/project/capabilities/plan/`.
+2. Every file in `docs/project/capabilities/plan` must have a matching file in `docs/project/capabilities/architecture`.
+3. Every file in `docs/project/capabilities/architecture` must have a matching file in `docs/project/capabilities/plan`.
 4. Feature architecture documents describe cross-layer capability boundaries, ownership, integration points, invariants, and safety rules.
 5. Feature plan documents coordinate phases across domains, but domain-specific implementation rows still belong in the owning `docs/project/maintainers/plans/<DOMAIN>.md` files when implementation begins.
 6. Feature plans must identify the domain plan rows they depend on or intend to add.
 7. Feature docs must not override domain-layer architecture. They coordinate it.
-8. Feature satellites follow the same hub + satellite split as domain docs: `architecture/satellites/` for architecture-side registers, `plan/satellites/` for plan-side registers. Load at most one satellite per session unless RESUME cites more.
+8. Feature satellites follow the same hub + satellite split as domain docs: `architecture/satellites` for architecture-side registers, `plan/satellites` for plan-side registers. Load at most one satellite per session unless RESUME cites more.
 
 ---
 

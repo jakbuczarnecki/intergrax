@@ -1,8 +1,8 @@
 # Observability Spine (HOS) — Domain Layer Audit Instruction
 
 **Status:** Audit control prompt (copy-paste for LLM agents)  
-**Domain pair:** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`plan/OBSERVABILITY.md`](../plans/OBSERVABILITY.md)  
-**Audit map layers:** 21, 30 · compact slice: [`audit_slices/OBSERVABILITY.md`](../../technical/guides/audit_slices/OBSERVABILITY.md)  
+**Domain pair:** [`architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`plan/OBSERVABILITY.md`](../plans/OBSERVABILITY.md)
+**Audit map layers:** 21, 30 · compact slice: [`audit_slices/OBSERVABILITY.md`](../../technical/guides/audit_slices/OBSERVABILITY.md)
 **Shared checklist:** [audit/README.md](README.md#shared-production-harness-checklist)
 
 ---
@@ -63,8 +63,8 @@ OBS-LC Done · OBS-EVOL-9 M0–M3 Done · runtime_event.v2 preview registered ·
 **Load first:** [`docs/project/technical/guides/audit_slices/OBSERVABILITY.md`](../../technical/guides/audit_slices/OBSERVABILITY.md) — compact slice (layers **21, 30**); replaces bulk IDEAL + AUDIT_MAP + full plan/arch reads.
 
 - One domain per chat · grep with path filters · respect `.cursorignore`
-- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites/` or `architecture/satellites/`)
-- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results/` unless RESUME
+- Plan/arch: hub read-scope + **at most one** satellite (`plan/satellites` or `architecture/satellites`)
+- Run **only** §10 scripts · no full-suite pytest unless listed · no `docs/audit_results` unless RESUME
 
 ---
 
@@ -72,8 +72,8 @@ OBS-LC Done · OBS-EVOL-9 M0–M3 Done · runtime_event.v2 preview registered ·
 ## 1. Canonical reads (order)
 
 1. **`docs/project/technical/guides/audit_slices/OBSERVABILITY.md`** — mandatory; follow slice plan/arch/IDEAL scope lines
-2. `docs/project/architecture/OBSERVABILITY.md` — hub read-scope + one `architecture/satellites/` satellite max
-3. `docs/project/maintainers/plans/OBSERVABILITY.md` — hub + one `plan/satellites/` satellite max
+2. `docs/project/architecture/OBSERVABILITY.md` — hub read-scope + one `architecture/satellites` satellite max
+3. `docs/project/maintainers/plans/OBSERVABILITY.md` — hub + one `plan/satellites` satellite max
 4. `docs/project/maintainers/audit/README.md` — shared production Harness checklist
 5. `@docs/project/technical/guides/AGENT_CREATION_GUIDE.md` **Appendix H (observability mandatory vs optional)** — on demand
 **Do not** load full `IDEAL_HARNESS_AI_ARCHITECTURE.md` or `INTEGRAX_HARNESS_AUDIT_MAP.md` unless slice says so.
@@ -90,7 +90,7 @@ intergrax/runtime/events/payload_registry.py · persistence_conformance.py
 scripts/maintenance/check_observability_gates.py · check_event_catalog.py
 ```
 
-Grep `tests/unit/`, `tests/integration/`, `tests/acceptance/` for this domain.
+Grep `tests/unit`, `tests/integration`, `tests/acceptance` for this domain.
 
 ---
 

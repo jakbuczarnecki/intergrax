@@ -6,8 +6,8 @@ Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral 
 
 **“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
 
-**Architecture (canonical):** [ARCHITECTURE.md](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)  
-**Live verification:** [LKW_1_LIVE_VERIFICATION.md](../../docs/project/technical/applications/local_workspace_application/LKW_1_LIVE_VERIFICATION.md)  
+**Architecture (canonical):** [ARCHITECTURE.md](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md) · **Plan:** [IMPLEMENTATION_PLAN.md](../../docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md)
+**Live verification:** [LKW_1_LIVE_VERIFICATION.md](../../docs/project/technical/applications/local_workspace_application/LKW_1_LIVE_VERIFICATION.md)
 **User journey:** [USER_JOURNEY.md](../../docs/project/product/lkw/USER_JOURNEY.md) · **Product quickstart:** [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) · **Platform proof loop:** [PLATFORM_PROOF_LOOP.md](../../docs/project/technical/applications/local_workspace_application/PLATFORM_PROOF_LOOP.md)
 **Build & deploy:** [BUILD_AND_DEPLOY.md](../../docs/project/technical/applications/local_workspace_application/BUILD_AND_DEPLOY.md)
 
@@ -27,7 +27,7 @@ One command uploads a bundled sample through managed-file intake, waits for inde
 
 ## What LKW proves
 
-For deeper bounded technical review, see the public LKW Platform Proof: [`docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../docs/project/proofs/LKW_PLATFORM_PROOF.md). The product quickstart above is the normal first evaluation path; the platform proof is separate.
+For deeper bounded technical review, see the public LKW Platform Proof: [`../../docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../docs/project/proofs/LKW_PLATFORM_PROOF.md). The product quickstart above is the normal first evaluation path; the platform proof is separate.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 

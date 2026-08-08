@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-20  
 **Scope:** Partner-facing readiness after GEC-0…GEC-6.1 architecture closure  
-**Platform canon:** [`docs/project/technical/platform/governed_external_execution.md`](../technical/platform/governed_external_execution.md)  
+**Platform canon:** [`docs/project/technical/platform/governed_external_execution.md`](../technical/platform/governed_external_execution.md)
 **Related:** [`execution_evidence_and_host_attestation.md`](../technical/platform/execution_evidence_and_host_attestation.md) · [`impeachmentright_full_validation.md`](impeachmentright_full_validation.md)
 
 This document answers whether Intergrax can honestly demonstrate the maintainer’s five observable compatibility areas using repository-backed evidence. It does **not** restate platform ownership matrices; those live in the platform reference above.

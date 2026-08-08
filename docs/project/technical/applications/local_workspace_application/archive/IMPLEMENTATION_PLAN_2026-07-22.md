@@ -1,12 +1,12 @@
 # Local Workspace Application — Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-22)  
-**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)  
+**Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../../maintainers/plans/PRODUCT_FIRST_MVP.md)
 **Architecture:** [`ARCHITECTURE.md`](ARCHITECTURE.md)  
 **Ask Workspace discovery:** [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md)
 **Slack MVP discovery:** [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md)
 **Knowledge Intake discovery:** [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md)
-**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md)
+**External verification:** [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md)
 
 ```text
 Current product level: Backend Product Alpha
@@ -36,14 +36,14 @@ Deliver an installable, daily-usable, auditable and operationally safe LKW 1.0.
 
 | Document | Role |
 |----------|------|
-| [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md) | Governing product-development rule for every Intergrax application and agent |
+| [`PRODUCT_FIRST_MVP.md`](../../../../maintainers/plans/PRODUCT_FIRST_MVP.md) | Governing product-development rule for every Intergrax application and agent |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | How LKW is built — ownership, boundaries and runtime shape |
 | **This file (`IMPLEMENTATION_PLAN.md`)** | LKW product brief, MVP execution order, post-MVP direction and current task |
 | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) | Frozen Ask Workspace contract and exact MVP-2 implementation scope |
 | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) | Frozen Slack Socket Mode conversational adapter contract and exact MVP-4 implementation scope |
 | [`KNOWLEDGE_INTAKE_DISCOVERY.md`](KNOWLEDGE_INTAKE_DISCOVERY.md) | Frozen channel-neutral Knowledge Intake and asynchronous ingestion contract (`LKW-WORKSPACE-CONTENTS-1B-0`) |
-| [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) | How working capabilities are externally verified |
-| [`journal/`](journal/) | Historical implementation notes |
+| [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) | How working capabilities are externally verified |
+| [`journal`](journal) | Historical implementation notes |
 
 This file is the only source of truth for:
 
@@ -76,7 +76,7 @@ until its existence, maturity and ownership have been reviewed
 by the architecture/review workflow.
 ```
 
-Governing global gate: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate). Binding LKW intake detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Platform capability audit gate for implementation slices](KNOWLEDGE_INTAKE_DISCOVERY.md#platform-capability-audit-gate-for-implementation-slices).
+Governing global gate: [`PRODUCT_FIRST_MVP.md` — Mandatory platform capability audit and architecture decision gate](../../../../maintainers/plans/PRODUCT_FIRST_MVP.md#mandatory-platform-capability-audit-and-architecture-decision-gate). Binding LKW intake detail: [`KNOWLEDGE_INTAKE_DISCOVERY.md` — Platform capability audit gate for implementation slices](KNOWLEDGE_INTAKE_DISCOVERY.md#platform-capability-audit-gate-for-implementation-slices).
 
 For LKW this means:
 
@@ -598,7 +598,7 @@ Result:
 Canonical references:
 
 - this document,
-- [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md).
+- [`PRODUCT_FIRST_MVP.md`](../../../../maintainers/plans/PRODUCT_FIRST_MVP.md).
 
 ### MVP-1 — Trusted Ask Workspace discovery
 
@@ -1353,16 +1353,16 @@ Sharing and organization work must **not** be scheduled ahead of source lifecycl
 |-----------|--------|--------|----------|
 | **LKW.0** | Application host baseline and architecture scaffold | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | **LKW.1** | Index/search/synthesize baseline with live proof | Closed in scope | [`LKW_1_LIVE_VERIFICATION.md`](LKW_1_LIVE_VERIFICATION.md) |
-| **LKW.2** | Multi-step `local.workspace.*` pipeline baseline | Closed | [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) |
+| **LKW.2** | Multi-step `local.workspace.*` pipeline baseline | Closed | [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) |
 | **LKW.3** | Serving and filesystem-policy application composition | Done | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
 | **LKW.5** | Persistent vectors and restart proof | Closed | [`LKW_5_PERSISTENCE_VERIFICATION.md`](LKW_5_PERSISTENCE_VERIFICATION.md) |
-| **LKW.6** | Interaction intake baseline for future surface adapters | Closed | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`journal/`](journal/) |
+| **LKW.6** | Interaction intake baseline for future surface adapters | Closed | [`ARCHITECTURE.md`](ARCHITECTURE.md) · [`journal`](journal) |
 | **LKW.7** | File watcher and incremental indexing baseline | Closed | [`LKW_7_FILE_WATCHER_VERIFICATION.md`](LKW_7_FILE_WATCHER_VERIFICATION.md) |
-| **LKW-PRODUCT-1** | Managed workspaces and folder sources | Done | [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) |
-| **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence | Done | [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) |
-| **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md) |
+| **LKW-PRODUCT-1** | Managed workspaces and folder sources | Done | [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) |
+| **LKW-PRODUCT-1-HARDENING** | Durable sync and structured search evidence | Done | [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) |
+| **LKW-MVP-BRIEF** | Product purpose, first user, MVP workflow, value and gate defined | Done | This document · [`PRODUCT_FIRST_MVP.md`](../../../../maintainers/plans/PRODUCT_FIRST_MVP.md) |
 | **MVP-1** | Trusted Ask Workspace discovery — frozen contract | Done | [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) |
-| **MVP-2** | Trusted Ask Workspace HTTP implementation | Done | This document · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) |
+| **MVP-2** | Trusted Ask Workspace HTTP implementation | Done | This document · [`ASK_WORKSPACE_DISCOVERY.md`](ASK_WORKSPACE_DISCOVERY.md) · [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) |
 | **MVP-3** | Slack conversational MVP discovery — frozen contract | Done | [`SLACK_MVP_DISCOVERY.md`](SLACK_MVP_DISCOVERY.md) |
 
 Slack conversational MVP implementation, design-partner packaging, user validation, Microsoft Teams, full document lifecycle, outputs/history, companion and LKW 1.0 are not completed.
@@ -1441,8 +1441,8 @@ Current status:
 ### PROOF-PORTABILITY-1D-MATRIX — Certification matrix
 
 Canonical matrix:
-- [`LKW_PLATFORM_CERTIFICATION_MATRIX.md`](../../../docs/project/maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md)
-- `LKW_PLATFORM_CERTIFICATION_MATRIX.json` (`docs/project/maintainers/public-adoption/evidence/`)
+- [`LKW_PLATFORM_CERTIFICATION_MATRIX.md`](../../../../maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md)
+- `LKW_PLATFORM_CERTIFICATION_MATRIX.json` (`docs/project/maintainers/public-adoption/evidence`)
 
 ---
 
@@ -1452,9 +1452,9 @@ Detailed history is available in:
 
 | Location | Contents |
 |----------|----------|
-| [`journal/`](journal/) | Dated implementation notes |
+| [`journal`](journal) | Dated implementation notes |
 | Application `*VERIFICATION*.md` files | Live verification write-ups |
-| [`LKW_PLATFORM_PROOF.md`](../../../docs/project/proofs/LKW_PLATFORM_PROOF.md) | Public technical proof paths and receipts |
+| [`LKW_PLATFORM_PROOF.md`](../../../../proofs/LKW_PLATFORM_PROOF.md) | Public technical proof paths and receipts |
 | Git history | Exact code and documentation evolution |
 
 Former proof-first queues, standalone Token Optimization sequences, vendor observability packs, PostgreSQL/vector portability obligations and scaffold propagation programs are historical platform backlog, not the active LKW product order.

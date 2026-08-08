@@ -71,7 +71,7 @@ flowchart TD
 
 | `OrchestrationProfile.merge_strategy` | Behavior |
 |---------------------------------------|----------|
-| `concat` (default) | `"[agent_id] summary"` blocks joined by `\n\n` |
+| `concat` (default) | `"[agent_id] summary"` blocks joined by `n/n` |
 | `last_wins` | Last non-empty agent summary |
 | `structured_json` | JSON payload with per-agent status and summary |
 
@@ -236,7 +236,7 @@ resume restores plan/graph/UAEP cursor from SQLite
 |----|-----------|------------------|-------------------|---------------|
 | UC-1 Single agent | **Yes** | Partial (needs strict profile proof) | `test_acceptance_01_single_agent_execution` | `TASK_CREATED`, `PLAN_CREATED`, `TASK_COMPLETED` |
 | UC-2 Explicit agent | **Yes** | Partial | `test_acceptance_01_*` + router unit tests | + `agent_id` in trace metadata |
-| UC-3 Capability routed | **Yes** | Partial | `tests/unit/runtime/nexus/` classifier tests | + `classification=capability_routed` |
+| UC-3 Capability routed | **Yes** | Partial | `tests/unit/runtime/nexus` classifier tests | + `classification=capability_routed` |
 | UC-4 Auto multi-agent | **Yes** | Partial (ordering fragile) | `test_acceptance_02_sequential_multi_agent` | + per-node `on_node_complete` |
 | UC-5 Declarative graph | **Yes** | Partial | `test_graph_spec_to_plan.py`, `test_lab_graph_spec.py` | + `plan_id`, `graph_id` |
 | UC-6 Research pipeline | **Yes** (stub agents) | No (stub descriptions) | planner unit tests | `PLAN_CREATED` step_count=2 |

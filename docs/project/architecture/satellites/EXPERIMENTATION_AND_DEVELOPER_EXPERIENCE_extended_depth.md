@@ -24,7 +24,7 @@ Evaluation is a **first-class runtime subsystem**, not a post-hoc script.
 | `evaluation_registry_trends.py` | Score history / trends |
 | `online_evaluation_registry.py` | Live eval registry |
 | `evaluation_assets.py` | Golden asset catalog |
-| `runtime/eval/` | NexusEvalRunner integration |
+| `runtime/eval` | NexusEvalRunner integration |
 
 Evaluators: rule-based, schema, LLM-judge (see [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md)).
 

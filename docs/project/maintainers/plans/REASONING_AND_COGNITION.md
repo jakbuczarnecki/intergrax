@@ -1,10 +1,10 @@
 # Reasoning and Cognition — Implementation Plan
 
-**Architecture (1:1):** [`architecture/REASONING_AND_COGNITION.md`](../../architecture/REASONING_AND_COGNITION.md)  
-**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)  
+**Architecture (1:1):** [`architecture/REASONING_AND_COGNITION.md`](../../architecture/REASONING_AND_COGNITION.md)
+**Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites/` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
 
 ---
 
@@ -12,12 +12,12 @@
 
 **Do not read this entire file in one session** (REASONING_AND_COGNITION plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites/`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/REASONING_AND_COGNITION_appendices.md`](plan/satellites/REASONING_AND_COGNITION_appendices.md) · [`plan/satellites/REASONING_AND_COGNITION_audit_history.md`](plan/satellites/REASONING_AND_COGNITION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/REASONING_AND_COGNITION_appendices.md`](plan/satellites/REASONING_AND_COGNITION_appendices.md) · [`plan/satellites/REASONING_AND_COGNITION_audit_history.md`](plan/satellites/REASONING_AND_COGNITION_audit_history.md). Phase AUDIT-IDEAL — **Planned** / open rows only. §6.1 maintenance queues — open P0/P1 only
 - **Use** `Read` with offset/limit — open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/REASONING_AND_COGNITION.md`](../../architecture/REASONING_AND_COGNITION.md) read-scope block only.
 - **Audit slice:** [`guides/audit_slices/REASONING_AND_COGNITION.md`](../../technical/guides/audit_slices/REASONING_AND_COGNITION.md).
-- **Satellites:** at most **one** `plan/satellites/` file per session unless RESUME cites more.
+- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -38,7 +38,7 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ## Phase AUDIT-IDEAL — Ideal architecture gap register (2026-06-09)
 
-**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5, §16 · baseline **32/32 L3**  
+**Source:** Post-L3 audit vs [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) §3.5, §16 · baseline **32/32 L3**
 **Master register:** [`plan/AUDIT_IDEAL_2026.md`](AUDIT_IDEAL_2026.md) · Band **2ay** · queue **§6.1au**  
 **Status:** **Done** (2026-06-09) — incremental after IDEAL-L3 W2 closeout; closed COG-LC (2026-06-17)
 
@@ -77,7 +77,7 @@ Load **only** the satellite matching your task or cited gap ID.
 | ID | Deliverable | Status | Priority | Module | Acceptance |
 |----|-------------|--------|----------|--------|------------|
 | COG-PROD.1 | **`resolve_planner_llm_adapter()`** — producer/planner separation (mirror critic) | **Done** | **Critical** | `reasoning_wiring.py`, `orchestration_wiring.py`, `nexus_factory.py` | Separate adapter when `planner_llm_profile` set |
-| COG-PROD.2 | **`planner_parse_retries` wire** + `nexus_task_planner` `user_template` | **Done** | High | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner/` | Retries exercised in unit test |
+| COG-PROD.2 | **`planner_parse_retries` wire** + `nexus_task_planner` `user_template` | **Done** | High | `nexus_plan_bridge.py`, `nexus_planner_prompts.py`, `prompts/nexus_task_planner` | Retries exercised in unit test |
 | COG-PROD.3 | **Planning `DecisionRecord` enrichment** + `resolve_engine_planner_prompt_config()` | **Done** | High | `planning_runner.py`, `reasoning_wiring.py` | Gate test asserts classification + policy fields |
 | COG-PROD.4 | **Doc reconciliation** — architecture stale gaps removed | **Done** | High | `architecture/REASONING_AND_COGNITION.md` | No §2/§14 contradictions vs §21 |
 | COG-PROD.5 | **`check_reasoning_gates.py` uplift** — registry-only planner prompts | **Done** | Medium | `scripts/maintenance/check_reasoning_gates.py` | CI script green |
