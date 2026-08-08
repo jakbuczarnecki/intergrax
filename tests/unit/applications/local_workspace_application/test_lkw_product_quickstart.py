@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import importlib.util
 import io
-import sys
 import subprocess
+import sys
 import urllib.error
 from contextlib import redirect_stdout
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, Self
 
 import pytest
 
@@ -388,6 +388,198 @@ def test_operation_timeout(quick: ModuleType, monkeypatch: pytest.MonkeyPatch) -
     assert exc.value.reason == "operation_timeout"
 
 
+def test_progress_reporter_emits_stage_start_heartbeat_and_completion(
+    quick: ModuleType,
+) -> None:
+    now = 0.0
+    output: list[str] = []
+
+    def _clock() -> float:
+        return now
+
+    progress = quick.ProgressReporter(
+        total_stages=1,
+        output=output.append,
+        clock=_clock,
+        heartbeat_interval=10,
+    )
+    progress.start(1, "Indexing sample knowledge")
+    now = 11.0
+    progress.heartbeat()
+    now = 12.0
+    progress.complete("Sample knowledge is indexed")
+
+    assert output == [
+        "[1/1] Indexing sample knowledge...",
+        "Still indexing sample knowledge... 11s",
+        "Sample knowledge is indexed (12s).",
+    ]
+
+
+def test_run_command_emits_heartbeat_without_exposing_captured_output(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = 0.0
+    output: list[str] = []
+
+    def _clock() -> float:
+        return now
+
+    class _Process:
+        returncode = 0
+
+        def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+            nonlocal now
+            if timeout is not None and now == 0.0:
+                now = 11.0
+                raise subprocess.TimeoutExpired("long-command", timeout)
+            return "captured secret stdout", "captured secret stderr"
+
+        def kill(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.subprocess, "Popen", lambda *_a, **_k: _Process())
+    progress = quick.ProgressReporter(
+        total_stages=1,
+        output=output.append,
+        clock=_clock,
+        heartbeat_interval=10,
+    )
+    progress.start(1, "Preparing embedding model")
+    completed = quick.run_command(
+        ["safe-command"],
+        timeout=30,
+        progress=progress,
+    )
+
+    assert completed.stdout == "captured secret stdout"
+    assert completed.stderr == "captured secret stderr"
+    assert output == [
+        "[1/1] Preparing embedding model...",
+        "Still preparing embedding model... 11s",
+    ]
+    assert "captured secret" not in "\n".join(output)
+
+
+def test_run_command_fast_completion_does_not_flood_heartbeats(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output: list[str] = []
+
+    class _Process:
+        returncode = 0
+
+        def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+            return "", ""
+
+    monkeypatch.setattr(quick.subprocess, "Popen", lambda *_a, **_k: _Process())
+    progress = quick.ProgressReporter(total_stages=1, output=output.append)
+    progress.start(1, "Starting local LKW stack")
+    quick.run_command(["safe-command"], progress=progress)
+
+    assert output == ["[1/1] Starting local LKW stack..."]
+
+
+def test_health_waiting_emits_bounded_heartbeat(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = 0.0
+    output: list[str] = []
+
+    def _clock() -> float:
+        return now
+
+    def _sleep(seconds: float) -> None:
+        nonlocal now
+        now += seconds
+
+    monkeypatch.setattr(quick.time, "monotonic", _clock)
+    monkeypatch.setattr(quick.time, "sleep", _sleep)
+    monkeypatch.setattr(quick, "http_get_json", lambda *_a, **_k: {"status": "starting"})
+    progress = quick.ProgressReporter(
+        total_stages=1,
+        output=output.append,
+        clock=_clock,
+        heartbeat_interval=4,
+    )
+    progress.start(1, "Waiting for LKW services")
+
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.wait_for_health(
+            "http://127.0.0.1:8020",
+            timeout_seconds=10,
+            progress=progress,
+        )
+
+    assert exc.value.reason == "health_timeout"
+    assert output.count("Still waiting for LKW services... 4s") == 1
+
+
+def test_indexing_waiting_emits_bounded_heartbeat(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    now = 0.0
+    output: list[str] = []
+
+    def _clock() -> float:
+        return now
+
+    def _sleep(seconds: float) -> None:
+        nonlocal now
+        now += seconds
+
+    monkeypatch.setattr(quick.time, "monotonic", _clock)
+    monkeypatch.setattr(quick.time, "sleep", _sleep)
+    monkeypatch.setattr(
+        quick,
+        "http_get_json",
+        lambda *_a, **_k: {"status": "processing"},
+    )
+    progress = quick.ProgressReporter(
+        total_stages=1,
+        output=output.append,
+        clock=_clock,
+        heartbeat_interval=4,
+    )
+    progress.start(1, "Indexing sample knowledge")
+
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.wait_for_operation(
+            "http://127.0.0.1:8020",
+            "op-1",
+            {},
+            timeout_seconds=10,
+            progress=progress,
+        )
+
+    assert exc.value.reason == "operation_timeout"
+    assert output.count("Still indexing sample knowledge... 4s") == 1
+
+
+def test_ask_passes_progress_to_blocking_request_helper(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, Any] = {}
+    progress = quick.ProgressReporter(total_stages=1, output=lambda _text: None)
+
+    def _post_json(*_args: Any, **kwargs: Any) -> tuple[int, dict[str, Any]]:
+        captured["progress"] = kwargs["progress"]
+        return (
+            200,
+            {
+                "status": "completed",
+                "answer": "AURORA-17",
+                "citations": [{"file_name": quick._CITATION_FILE}],
+                "run_id": "run-1",
+            },
+        )
+
+    monkeypatch.setattr(quick, "http_post_json", _post_json)
+    quick.ask_workspace("http://127.0.0.1:8020", "ws-1", progress=progress)
+
+    assert captured["progress"] is progress
+
+
 def test_ask_completed_with_marker_and_citation(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -599,10 +791,10 @@ def test_malformed_http_payload_has_invalid_json_reason(
     class _Response:
         status = 200
 
-        def __enter__(self) -> "_Response":
+        def __enter__(self) -> Self:
             return self
 
-        def __exit__(self, *_args: Any) -> None:
+        def __exit__(self, *_args: object) -> None:
             return None
 
         def read(self) -> bytes:
@@ -652,16 +844,36 @@ def test_bootstrap_timeout_has_command_timeout_contract(
     sample.write_text("AURORA-17", encoding="utf-8")
     monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+
+    class _TimeoutProcess:
+        returncode = -9
+
+        def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+            nonlocal now
+            if timeout is None:
+                return "", ""
+            now = 2.0
+            raise subprocess.TimeoutExpired("bootstrap", timeout)
+
+        def kill(self) -> None:
+            return None
+
+    now = 0.0
+
+    def _clock() -> float:
+        return now
+
+    monkeypatch.setattr(quick.time, "monotonic", _clock)
     monkeypatch.setattr(
         quick.subprocess,
-        "run",
-        lambda *_a, **_k: (_ for _ in ()).throw(
-            subprocess.TimeoutExpired("bootstrap", 1)
-        ),
+        "Popen",
+        lambda *_a, **_k: _TimeoutProcess(),
     )
     buffer = io.StringIO()
     with redirect_stdout(buffer):
-        code = quick.run_quickstart(_config(quick, skip_stack_start=False))
+        code = quick.run_quickstart(
+            _config(quick, skip_stack_start=False, timeout_seconds=1)
+        )
     assert code == 1
     assert "failure_reason=command_timeout" in buffer.getvalue()
 
@@ -671,7 +883,7 @@ def test_subprocess_launch_failure_has_safe_contract(
 ) -> None:
     monkeypatch.setattr(
         quick.subprocess,
-        "run",
+        "Popen",
         lambda *_a, **_k: (_ for _ in ()).throw(OSError("secret command path")),
     )
     with pytest.raises(quick.QuickstartError) as exc:

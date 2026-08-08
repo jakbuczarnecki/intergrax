@@ -10,21 +10,23 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import platform
+import queue
 import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _APP_DIR = _SCRIPT_DIR.parent
@@ -108,6 +110,49 @@ class QuickstartConfig:
     skip_stack_start: bool
 
 
+class ProgressReporter:
+    def __init__(
+        self,
+        *,
+        total_stages: int,
+        output: Callable[[str], None] | None = None,
+        clock: Callable[[], float] | None = None,
+        heartbeat_interval: float = 15.0,
+    ) -> None:
+        self._total_stages = total_stages
+        self._output = output or (lambda message: print(message, flush=True))
+        self._clock = clock or time.monotonic
+        self.heartbeat_interval = max(0.1, heartbeat_interval)
+        self._description = ""
+        self._started_at: float | None = None
+        self._next_heartbeat_at: float | None = None
+
+    def start(self, stage_number: int, description: str) -> None:
+        self._description = description
+        self._started_at = self._clock()
+        self._next_heartbeat_at = self._started_at + self.heartbeat_interval
+        self._output(f"[{stage_number}/{self._total_stages}] {description}...")
+
+    def heartbeat(self) -> None:
+        if self._started_at is None or self._next_heartbeat_at is None:
+            return
+        now = self._clock()
+        if now < self._next_heartbeat_at:
+            return
+        elapsed = max(0, int(now - self._started_at))
+        operation = self._description[:1].lower() + self._description[1:]
+        self._output(f"Still {operation}... {elapsed}s")
+        self._next_heartbeat_at = now + self.heartbeat_interval
+
+    def complete(self, description: str) -> None:
+        started_at = self._started_at
+        elapsed = 0 if started_at is None else max(0, int(self._clock() - started_at))
+        self._output(f"{description} ({elapsed}s).")
+        self._description = ""
+        self._started_at = None
+        self._next_heartbeat_at = None
+
+
 def detect_os_family(system_name: str | None = None) -> OsFamily:
     name = system_name if system_name is not None else platform.system()
     mapping = {
@@ -168,23 +213,97 @@ def run_command(
     cwd: Path | None = None,
     timeout: int | None = None,
     stage: str = "stack_start",
+    progress: ProgressReporter | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    process: subprocess.Popen[str] | None = None
     try:
-        return subprocess.run(
+        process = subprocess.Popen(
             list(args),
             cwd=str(cwd) if cwd is not None else None,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=timeout,
             shell=False,
-            check=False,
         )
+        started_at = time.monotonic()
+        deadline = None if timeout is None else started_at + timeout
+        while True:
+            remaining = None if deadline is None else deadline - time.monotonic()
+            if remaining is not None and remaining <= 0:
+                raise subprocess.TimeoutExpired(list(args), timeout)
+            wait_timeout = remaining
+            if progress is not None:
+                heartbeat_wait = progress.heartbeat_interval
+                wait_timeout = (
+                    heartbeat_wait
+                    if wait_timeout is None
+                    else min(wait_timeout, heartbeat_wait)
+                )
+            try:
+                stdout, stderr = process.communicate(timeout=wait_timeout)
+                return subprocess.CompletedProcess(
+                    list(args),
+                    process.returncode,
+                    stdout,
+                    stderr,
+                )
+            except subprocess.TimeoutExpired:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise
+                if progress is not None:
+                    progress.heartbeat()
     except subprocess.TimeoutExpired:
+        if process is not None:
+            try:
+                process.kill()
+            except OSError:
+                pass
+            try:
+                process.communicate()
+            except OSError:
+                pass
         raise QuickstartError("command_timeout", stage=stage) from None
     except OSError:
         raise QuickstartError("command_start_failed", stage=stage) from None
+
+
+def _call_with_progress(
+    operation: Callable[[], Any],
+    *,
+    timeout: float,
+    progress: ProgressReporter | None,
+    stage: str,
+) -> Any:
+    if progress is None:
+        return operation()
+
+    result_queue: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=1)
+
+    def _worker() -> None:
+        try:
+            result_queue.put((True, operation()))
+        except Exception as exc:  # noqa: BLE001 - return safe failure to caller
+            result_queue.put((False, exc))
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + timeout
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise QuickstartError("http_timeout", stage=stage)
+        try:
+            succeeded, value = result_queue.get(
+                timeout=min(remaining, progress.heartbeat_interval)
+            )
+        except queue.Empty:
+            progress.heartbeat()
+            continue
+        if succeeded:
+            return value
+        raise value
 
 
 def ensure_env_file() -> bool:
@@ -248,7 +367,11 @@ def _validate_resolved_embedding_model(output: str) -> str:
     return model_name
 
 
-def resolve_ollama_embedding_model(*, timeout_seconds: int) -> str:
+def resolve_ollama_embedding_model(
+    *,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+) -> str:
     completed = run_command(
         compose_exec_args(
             "exec",
@@ -261,6 +384,7 @@ def resolve_ollama_embedding_model(*, timeout_seconds: int) -> str:
         cwd=_APP_DIR,
         timeout=timeout_seconds,
         stage="stack_start",
+        progress=progress,
     )
     if completed.returncode != 0:
         raise QuickstartError(
@@ -274,6 +398,7 @@ def ensure_ollama_embedding_model(
     model_name: str,
     *,
     timeout_seconds: int,
+    progress: ProgressReporter | None = None,
 ) -> None:
     completed = run_command(
         compose_exec_args(
@@ -287,6 +412,7 @@ def ensure_ollama_embedding_model(
         cwd=_APP_DIR,
         timeout=timeout_seconds,
         stage="stack_start",
+        progress=progress,
     )
     if completed.returncode != 0:
         raise QuickstartError("embedding_model_pull_failed", stage="stack_start")
@@ -347,23 +473,37 @@ def http_post_json(
     *,
     timeout: float = 60.0,
     stage: str,
+    progress: ProgressReporter | None = None,
 ) -> tuple[int, dict[str, Any]]:
-    data = json.dumps(dict(body)).encode("utf-8")
-    merged = dict(headers)
-    merged["Content-Type"] = "application/json"
-    request = urllib.request.Request(url, data=data, headers=merged, method="POST")
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            raw = response.read()
-            status = response.status
-    except urllib.error.HTTPError as exc:
-        status = exc.code
-        raw = b""
-    except (urllib.error.URLError, TimeoutError, OSError):
-        raise QuickstartError("http_transport_failed", stage=stage) from None
-    if status < 200 or status >= 300:
-        return status, {}
-    return status, _decode_json_object(raw, stage=stage)
+    def _request() -> tuple[int, dict[str, Any]]:
+        data = json.dumps(dict(body)).encode("utf-8")
+        merged = dict(headers)
+        merged["Content-Type"] = "application/json"
+        request = urllib.request.Request(
+            url,
+            data=data,
+            headers=merged,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw = response.read()
+                status = response.status
+        except urllib.error.HTTPError as exc:
+            status = exc.code
+            raw = b""
+        except (urllib.error.URLError, TimeoutError, OSError):
+            raise QuickstartError("http_transport_failed", stage=stage) from None
+        if status < 200 or status >= 300:
+            return status, {}
+        return status, _decode_json_object(raw, stage=stage)
+
+    return _call_with_progress(
+        _request,
+        timeout=timeout,
+        progress=progress,
+        stage=stage,
+    )
 
 
 def encode_multipart_file(
@@ -416,7 +556,12 @@ def http_post_bytes(
     return status, payload
 
 
-def wait_for_health(base_url: str, *, timeout_seconds: int) -> None:
+def wait_for_health(
+    base_url: str,
+    *,
+    timeout_seconds: int,
+    progress: ProgressReporter | None = None,
+) -> None:
     health_url = f"{base_url}/health"
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
@@ -427,6 +572,8 @@ def wait_for_health(base_url: str, *, timeout_seconds: int) -> None:
         except QuickstartError as exc:
             if exc.reason != "http_transport_failed":
                 raise
+        if progress is not None:
+            progress.heartbeat()
         time.sleep(2)
     raise QuickstartError("health_timeout", stage="health")
 
@@ -437,6 +584,7 @@ def wait_for_operation(
     headers: Mapping[str, str],
     *,
     timeout_seconds: int,
+    progress: ProgressReporter | None = None,
 ) -> dict[str, Any]:
     url = f"{base_url}{_API_PREFIX}/operations/{operation_id}"
     deadline = time.monotonic() + timeout_seconds
@@ -463,6 +611,8 @@ def wait_for_operation(
             return payload
         if status == "failed":
             raise QuickstartError("operation_failed", stage="ingestion")
+        if progress is not None:
+            progress.heartbeat()
         time.sleep(2)
     raise QuickstartError("operation_timeout", stage="ingestion")
 
@@ -491,7 +641,10 @@ def create_workspace(base_url: str) -> str:
     return workspace_id
 
 
-def upload_sample_file(base_url: str, workspace_id: str) -> str:
+def upload_sample_file(
+    base_url: str,
+    workspace_id: str,
+) -> str:
     if not _SAMPLE_FILE.is_file():
         raise QuickstartError("sample_file_missing", stage="upload")
     content = _SAMPLE_FILE.read_bytes()
@@ -534,13 +687,19 @@ def upload_sample_file(base_url: str, workspace_id: str) -> str:
     return operation_id
 
 
-def ask_workspace(base_url: str, workspace_id: str) -> dict[str, Any]:
+def ask_workspace(
+    base_url: str,
+    workspace_id: str,
+    *,
+    progress: ProgressReporter | None = None,
+) -> dict[str, Any]:
     status, payload = http_post_json(
         f"{base_url}{_API_PREFIX}/workspaces/{workspace_id}/ask",
         {"question": _QUESTION, "limit": 5},
         _tenant_headers(),
         timeout=180.0,
         stage="ask",
+        progress=progress,
     )
     if status != 200:
         raise QuickstartError("ask_http_failed", stage="ask")
@@ -622,7 +781,9 @@ def emit_success(answer: str, workspace_id: str, run_id: str) -> None:
 
 def run_quickstart(config: QuickstartConfig) -> int:
     current_stage = "preflight"
+    progress = ProgressReporter(total_stages=10)
     try:
+        progress.start(1, "Checking prerequisites")
         validate_os_wrapper_pair(config.os_family, config.wrapper_id)
         base_url = validate_loopback_base_url(config.base_url)
         if not _SAMPLE_FILE.is_file():
@@ -634,8 +795,10 @@ def run_quickstart(config: QuickstartConfig) -> int:
                 "for local evaluation.",
                 flush=True,
             )
+        progress.complete("Prerequisites ready")
         if not config.skip_stack_start:
             current_stage = "stack_start"
+            progress.start(2, "Starting local LKW stack")
             if not _BOOTSTRAP_BAT.is_file() or not _BOOTSTRAP_SH.is_file():
                 raise QuickstartError("bootstrap_script_missing", stage="preflight")
             completed = run_command(
@@ -643,43 +806,74 @@ def run_quickstart(config: QuickstartConfig) -> int:
                 cwd=_REPO_ROOT,
                 timeout=config.timeout_seconds,
                 stage="stack_start",
+                progress=progress,
             )
             if completed.returncode != 0:
                 raise QuickstartError("stack_start_failed", stage="stack_start")
+            progress.complete("Local LKW stack started")
+        else:
+            progress.start(2, "Reusing local LKW stack")
+            progress.complete("Using existing local LKW stack")
+        progress.start(3, "Waiting for LKW services")
         current_stage = "health"
-        wait_for_health(base_url, timeout_seconds=config.timeout_seconds)
+        wait_for_health(
+            base_url,
+            timeout_seconds=config.timeout_seconds,
+            progress=progress,
+        )
+        progress.complete("LKW services are ready")
+        progress.start(4, "Preparing embedding model")
         current_stage = "stack_start"
         model_name = resolve_ollama_embedding_model(
             timeout_seconds=config.timeout_seconds,
+            progress=progress,
         )
         ensure_ollama_embedding_model(
             model_name,
             timeout_seconds=config.timeout_seconds,
+            progress=progress,
         )
+        progress.complete("Embedding model is ready")
+        progress.start(5, "Creating evaluation workspace")
         current_stage = "workspace"
         workspace_id = create_workspace(base_url)
+        progress.complete("Evaluation workspace is ready")
+        progress.start(6, "Uploading sample knowledge")
         current_stage = "upload"
-        operation_id = upload_sample_file(base_url, workspace_id)
+        operation_id = upload_sample_file(
+            base_url,
+            workspace_id,
+        )
+        progress.complete("Sample knowledge upload accepted")
+        progress.start(7, "Indexing sample knowledge")
         current_stage = "ingestion"
         wait_for_operation(
             base_url,
             operation_id,
             _tenant_headers(),
             timeout_seconds=config.timeout_seconds,
+            progress=progress,
         )
+        progress.complete("Sample knowledge is indexed")
+        progress.start(8, "Asking a grounded question")
         current_stage = "ask"
-        ask_payload = ask_workspace(base_url, workspace_id)
+        ask_payload = ask_workspace(base_url, workspace_id, progress=progress)
+        progress.complete("Grounded answer is ready")
+        progress.start(9, "Verifying saved Ask result")
         run_id = str(ask_payload.get("run_id", "")).strip()
         answer = str(ask_payload.get("answer", "")).strip()
         current_stage = "persisted_read"
         verify_persisted_ask(base_url, run_id, workspace_id)
+        progress.complete("Saved Ask result is verified")
+        progress.start(10, "Finalizing Quick Start")
         _assert_safe_user_text(answer)
+        progress.complete("Quick Start completed successfully")
         emit_success(answer, workspace_id, run_id)
         return 0
     except QuickstartError as exc:
         _emit_failure(exc.stage, exc.reason)
         return 1
-    except Exception:
+    except Exception:  # noqa: BLE001 - preserve safe failure contract
         _emit_failure(current_stage, "unexpected_internal_error")
         return 1
 
