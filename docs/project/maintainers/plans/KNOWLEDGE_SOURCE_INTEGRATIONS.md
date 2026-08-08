@@ -69,10 +69,10 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-PROVIDER-COVERAGE-1` — `ACCEPTED / CLOSED`
+`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1`
+`VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`
 
 ### VK-4 indexed bridge acceptance proof
 
@@ -382,6 +382,26 @@ consumer selects capability/source
 Classify vendor-specific branching in consumer/application layers. Legitimate
 provider-specific code in adapter and registration layers remains valid.
 
+`VENDOR-KNOWLEDGE-FRONTEND-NEUTRALITY-PROOF-1` is **ACCEPTED / CLOSED**.
+The VK-7 proof audited the generic LKW inspection/operations, plugin
+configuration, Indexed/Live route, and Hybrid Ask boundaries. Generic Ask now
+accepts an optional provider strategy through a neutral contract; it does not
+import or branch on Slack, Microsoft Graph, or another concrete provider.
+Provider-owned Ask expansion remains an optional strategy extension.
+
+The normalized inventory continues to source lifecycle state, revision/CAS
+requirements, available actions, and safe error codes from backend lifecycle
+contracts. The generic plugin configuration boundary supplies connection,
+resource, and capability metadata. A test-only provider fixture discovers a
+resource and capability through those same contracts without changing generic
+route, inspection, operation, or query code. Static checks guard the bounded
+generic application surfaces against concrete provider imports and provider
+switch literals.
+
+The existing Slack connected-source flow remains an explicit provider-owned
+strategy/composition path; this closeout does not claim visually identical UX
+or complete cross-provider product E2E. The latter is owned by VK-8.
+
 #### VK-8 — Cross-provider three-mode E2E
 
 `VENDOR-KNOWLEDGE-CROSS-PROVIDER-E2E-1`
@@ -521,7 +541,7 @@ evidence.
 | Durable | `ACCEPTED / CLOSED` | Provider-neutral durable coordinator, `KnowledgeSyncSink` and `DocumentStoreDurableKnowledgeSyncSink` are accepted, with representative Slack + Microsoft Graph Teams Chat proof; broader provider coverage remains VK-6/VK-8. |
 | Indexed / RAG | `ACCEPTED / CLOSED` | Provider-neutral generic Indexed bridge is accepted, with representative Slack + Microsoft Graph Teams Chat proof through canonical `KnowledgeDocument`; full provider coverage remains VK-6 and complete cross-provider product E2E remains VK-8. |
 | Live / Realtime | `ACCEPTED / CLOSED` | Provider-neutral registration/bootstrap now feeds the existing validated executor and tenant catalog; capability coverage remains selective by design. |
-| Frontend neutrality | `PARTIAL` | Generic LKW Live composition is provider-neutral; Slack-specific Ask orchestration and materialization paths remain application-owned. |
+| Frontend neutrality | `ACCEPTED / CLOSED` | Generic LKW inspection/operations, plugin configuration, route boundaries and Hybrid Ask routing are provider-neutral; optional provider-owned strategies remain behind explicit composition boundaries. |
 | Identity / ownership | `PARTIAL` | Canonical provider/category/source-kind identity is accepted and reused across modes; remaining partial status reflects broader provider/application ownership proof, not missing Live source identity. |
 | Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
 
