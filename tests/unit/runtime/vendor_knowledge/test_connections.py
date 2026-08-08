@@ -12,6 +12,9 @@ from intergrax.runtime.vendor_knowledge.connections import (
     ConnectionAwareVendorResolver,
     KnowledgeConnectionRegistry,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
+    TenantConnectionIntegrationFactoryRegistry,
+)
 from intergrax.runtime.vendor_knowledge.contracts import VendorIntegrationResolver
 from intergrax.runtime.vendor_knowledge.errors import (
     VendorKnowledgeError,
@@ -445,3 +448,52 @@ def test_error_messages_never_include_connection_ref() -> None:
         if isinstance(err, VendorKnowledgeError):
             assert marker not in err.safe_message
             assert marker not in repr(err)
+
+
+@pytest.mark.unit
+def test_factory_registry_routes_by_provider_and_category() -> None:
+    class _Factory:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def create_integration(self, **kwargs: object) -> object:
+            self.calls.append(kwargs)
+            return "integration"
+
+    factory = _Factory()
+    registry = TenantConnectionIntegrationFactoryRegistry()
+    registry.register(
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        factory=factory,  # type: ignore[arg-type]
+    )
+
+    resolved = registry.create_integration(
+        tenant_id="tenant-1",
+        connection_ref="connection-1",
+        provider_id="provider-a",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        credential_ref="credentials/connection-1",
+        credential="runtime-secret",
+        secret_free_config={},
+    )
+
+    assert resolved == "integration"
+    assert factory.calls[0]["credential"] == "runtime-secret"
+    assert factory.calls[0]["credential_ref"] == "credentials/connection-1"
+
+
+@pytest.mark.unit
+def test_factory_registry_fails_closed_for_unknown_factory() -> None:
+    registry = TenantConnectionIntegrationFactoryRegistry()
+
+    with pytest.raises(ValueError, match="factory is unavailable"):
+        registry.create_integration(
+            tenant_id="tenant-1",
+            connection_ref="connection-1",
+            provider_id="unknown",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            credential_ref="credentials/connection-1",
+            credential="runtime-secret",
+            secret_free_config={},
+        )

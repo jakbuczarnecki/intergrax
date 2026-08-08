@@ -249,6 +249,9 @@ from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     TenantConnectionPort,
     TenantLiveCapabilityCatalogPort,
 )
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
+)
 from intergrax.tools.providers.filesystem.allowlist import read_allowlist_roots_from_env
 
 logger = logging.getLogger(__name__)
@@ -422,6 +425,9 @@ def mount_managed_workspace_routes(
     indexing_service: WorkspaceDocumentIndexingService | None = None,
     connected_source_wiring: ConnectedSourceWiring | None = None,
     shared_slack_integration: Any | None = None,
+    tenant_connection_secrets_store: Any | None = None,
+    tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
+    msgraph_mailbox_user_id: str | None = None,
     tenant_connection_port: TenantConnectionPort | None = None,
     tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
     live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
@@ -534,10 +540,24 @@ def mount_managed_workspace_routes(
         indexing_service=indexing_service,
         slack_integration=shared_slack_integration,
         sync_runtime=sync_runtime,
+        tenant_connection_secrets_store=tenant_connection_secrets_store,
+        tenant_connection_factory_registry=tenant_connection_factory_registry,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
     )
     app.state.lkw_connected_source_readiness = host_bundle.readiness
     if connected_wiring is None:
         connected_wiring = host_bundle.wiring
+    app.state.lkw_tenant_connection_port = host_bundle.tenant_connection_port
+    app.state.lkw_tenant_live_capability_catalog = (
+        host_bundle.tenant_live_capability_catalog
+    )
+    app.state.lkw_tenant_source_catalog = host_bundle.tenant_source_catalog
+    connection_port_for_routes = (
+        tenant_connection_port or host_bundle.tenant_connection_port
+    )
+    ask_capability_catalog = (
+        tenant_live_capability_catalog or host_bundle.tenant_live_capability_catalog
+    )
     hybrid_ask_connection_registry = (
         connected_wiring.connection_registry
         if connected_wiring is not None
@@ -586,9 +606,9 @@ def mount_managed_workspace_routes(
         )
 
     connection_attachment_service: WorkspaceConnectionAttachmentService | None = None
-    if tenant_connection_port is not None:
+    if connection_port_for_routes is not None:
         connection_attachment_service = WorkspaceConnectionAttachmentService(
-            connection_port=tenant_connection_port,
+            connection_port=connection_port_for_routes,
             configuration_service=configuration_service,
             mutation_engine=mutation_engine,
         )
@@ -827,7 +847,7 @@ def mount_managed_workspace_routes(
             ask_repository=ask_repository,
             configuration_service=configuration_service,
             capability_catalog=(
-                tenant_live_capability_catalog
+                ask_capability_catalog
                 or UnavailableTenantLiveCapabilityCatalog()
             ),
             request_envelope_validator=SafeCapabilityRequestEnvelopeValidator(

@@ -30,40 +30,18 @@ from local_workspace_application.serving import workspace_routes
 from local_workspace_application.serving.workspace_routes import (
     mount_managed_workspace_routes,
 )
-from local_workspace_application.workspaces.connected_source_wiring import (
-    build_connected_source_wiring,
-    register_slack_connection_integration,
-)
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
-)
-from local_workspace_application.workspaces.knowledge_configuration_handlers import (
-    CreateIndexedSourceMutationHandler,
-    DisableIndexedSourceMutationHandler,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceConnectionAttachment,
     WorkspaceConnectionAttachmentStatusV1,
-    WorkspaceKnowledgeMutationOperationV1,
-)
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationEngine,
-)
-from local_workspace_application.workspaces.knowledge_configuration_service import (
-    WorkspaceKnowledgeConfigurationService,
 )
 from local_workspace_application.workspaces.models import (
     Workspace,
     WorkspaceStatus,
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
-from local_workspace_application.workspaces.service import ManagedWorkspaceService
-from local_workspace_application.workspaces.sync_runtime import (
-    build_managed_workspace_sync_runtime,
-)
-from local_workspace_application.workspaces.sync_service import (
-    ManagedWorkspaceSyncService,
-)
 
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
@@ -74,9 +52,6 @@ from intergrax.integrations._shared.in_memory_document_store import (
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.backend import (
     SlackConversationChannelBackend,
-)
-from intergrax.integrations.providers.conversation_channel.slack.config import (
-    SlackConversationChannelIntegrationConfig,
 )
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -93,6 +68,17 @@ from intergrax.integrations.providers.conversation_channel.slack.knowledge_read 
 )
 from intergrax.integrations.providers.conversation_channel.slack.mapping import (
     parse_slack_ts,
+)
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_vendor_knowledge_connection_factory_registry,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+    TenantConnectionService,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -153,6 +139,22 @@ class _RecordingFakeLLM(LLMAdapter):
         _ = temperature, max_tokens, run_id
         self.messages.append(tuple((message.role, message.content) for message in messages))
         return build_adapter_response(content=self._fixed_text)
+
+
+class _RecordingSecretsStore:
+    def __init__(self, secret: str) -> None:
+        self.secret = secret
+        self.calls: list[str] = []
+
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
+        self.calls.append(path)
+        return self.secret
+
+    def put_secret(self, path: str, value: str) -> None:
+        return None
+
+    def delete_secret(self, path: str) -> None:
+        return None
 
 
 def _assert_slack_rag_citation(
@@ -397,62 +399,42 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             updated_at=_NOW,
         )
     )
-    service = ManagedWorkspaceService(repo)
-    config = WorkspaceKnowledgeConfigurationService(repo, service)
-    mutation_engine = WorkspaceKnowledgeConfigurationMutationEngine(
-        repo,
-        service,
-        config,
-        {
-            WorkspaceKnowledgeMutationOperationV1.CREATE_INDEXED_SOURCE: CreateIndexedSourceMutationHandler(),
-            WorkspaceKnowledgeMutationOperationV1.DISABLE_INDEXED_SOURCE: DisableIndexedSourceMutationHandler(),
-        },
-    )
-    indexing = WorkspaceDocumentIndexingService(repo, task_executor)
-    wiring = build_connected_source_wiring(
-        repository=repo,
-        workspace_service=service,
-        configuration_service=config,
-        mutation_engine=mutation_engine,
-        indexing_service=indexing,
-        settings=settings,
-        msgraph_mailbox_user_id=_GRAPH_MAILBOX,
-    )
     backend = _SlackFakeBackend()
-    integration = SlackConversationChannelIntegration.from_backend(
-        backend,  # type: ignore[arg-type]
-        enabled=True,
-        config=SlackConversationChannelIntegrationConfig(
+    connection_repository = DocumentStoreTenantConnectionRepository(store)
+    TenantConnectionService(
+        tenant_id=_TENANT,
+        repository=connection_repository,
+    ).create(
+        TenantConnection(
+            connection_ref=_CONNECTION,
+            tenant_id=_TENANT,
+            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            safe_display_name="Slack",
+            administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+            credential_ref="secrets/tenant-a/slack",
+            validated_secret_free_config={},
+            configuration_version=1,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+    )
+    secrets = _RecordingSecretsStore(
+        json.dumps(
+            {
+                "app_token": "xapp-test",
+                "bot_token": "xoxb-test",
+            }
+        )
+    )
+    factory_registry = build_default_vendor_knowledge_connection_factory_registry(
+        slack_runtime_builder=lambda config: SlackConversationChannelIntegration.from_backend(
+            backend,  # type: ignore[arg-type]
             enabled=True,
-            app_token="xapp-test",
-            bot_token="xoxb-test",
+            config=config,
         ),
     )
-    register_slack_connection_integration(
-        wiring=wiring,
-        tenant_id=_TENANT,
-        connection_ref=_CONNECTION,
-        integration=integration,
-    )
-    sync = ManagedWorkspaceSyncService(
-        repo,
-        task_executor,
-        indexing_service=indexing,
-        connected_source_sync=wiring.connected_source_sync_service,
-    )
-    runtime = build_managed_workspace_sync_runtime(
-        document_store=store,
-        sync_service=sync,
-        repository=repo,
-        connected_source_recovery_tenant_ids=(_TENANT,),
-    )
-    wiring.connected_source_sync_service.attach_continuation(
-        __import__(
-            "local_workspace_application.workspaces.connected_source_wiring",
-            fromlist=["_SyncRuntimeContinuation"],
-        )._SyncRuntimeContinuation(runtime)
-    )
-    wiring.connected_source_sync_service.attach_sync_enqueue_context(runtime.wiring_context)
+    indexing = WorkspaceDocumentIndexingService(repo, task_executor)
     llm = _RecordingFakeLLM(
         fixed_text=json.dumps(
             {
@@ -468,20 +450,32 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         task_executor=task_executor,
         settings=settings,
         repository=repo,
-        sync_runtime=runtime,
-        connected_source_wiring=wiring,
         indexing_service=indexing,
+        tenant_connection_secrets_store=secrets,
+        tenant_connection_factory_registry=factory_registry,
+        msgraph_mailbox_user_id=_GRAPH_MAILBOX,
         llm_adapter=llm,
         vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
     )
     with TestClient(app) as client:
+        wiring = app.state.lkw_connected_source_wiring
+        runtime = app.state.lkw_managed_workspace_sync_runtime
+        integration = wiring.connection_registry.resolve(
+            tenant_id=_TENANT,
+            connection_ref=_CONNECTION,
+            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+        )
         yield {
             "client": client,
+            "app": app,
             "backend": backend,
             "wiring": wiring,
             "repo": repo,
             "integration": integration,
             "runtime": runtime,
+            "source_catalog": app.state.lkw_tenant_source_catalog,
+            "live_catalog": app.state.lkw_tenant_live_capability_catalog,
             "harness_runtime": harness_runtime,
             "settings": settings,
             "llm": llm,
@@ -510,8 +504,31 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
     repo: ManagedWorkspaceRepository = rag_e2e_env["repo"]
     integration = rag_e2e_env["integration"]
     runtime = rag_e2e_env["runtime"]
+    app: FastAPI = rag_e2e_env["app"]
+    source_catalog = rag_e2e_env["source_catalog"]
+    live_catalog = rag_e2e_env["live_catalog"]
     harness_runtime = rag_e2e_env["harness_runtime"]
     llm: _RecordingFakeLLM = rag_e2e_env["llm"]
+
+    source_capabilities = source_catalog.list_source_kind_capabilities(
+        tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
+    )
+    assert len(source_capabilities) == 1
+    assert source_capabilities[0].identity.source_kind == "slack_conversation"
+    assert {mode.value for mode in source_capabilities[0].modes} == {
+        "DURABLE",
+        "INDEXED",
+        "LIVE",
+    }
+    live_capabilities = live_catalog.list_capabilities(
+        tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
+        remote_resource_id=None,
+    )
+    assert len(live_capabilities) == 3
+    assert hasattr(app.state, "lkw_knowledge_inspection_service")
+    assert hasattr(app.state, "lkw_knowledge_operations_service")
 
     discovery = client.get(
         f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/connections/{_CONNECTION}/remote-resources",
@@ -669,3 +686,19 @@ def test_slack_connected_source_http_to_search_and_ask(rag_e2e_env) -> None:
         hit["document_id"] for hit in repeated_search.json()["results"]
     )
     assert repeated_ids == sorted(hit["document_id"] for hit in atlas_results)
+
+    head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert head is not None
+    disabled = client.delete(
+        f"{_PREFIX}/workspaces/{_WORKSPACE}/knowledge/indexed-sources/"
+        f"{created.json()['indexed_source_binding_id']}",
+        headers={
+            "X-Tenant-Id": _TENANT,
+            "If-Match": f"WKC/{head.committed_revision}",
+            "Idempotency-Key": "e2e-disable",
+        },
+    )
+    assert disabled.status_code == 200, disabled.text

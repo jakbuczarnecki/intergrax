@@ -17,6 +17,11 @@ from intergrax.runtime.vendor_knowledge.remote_resource_discovery import (
     RemoteResourceDiscoveryPageV1,
     TenantRemoteResourceDiscoveryService,
 )
+from intergrax.runtime.vendor_knowledge.plugin import VendorKnowledgeMode
+from intergrax.runtime.vendor_knowledge.source_catalog import (
+    TenantSourceKindCapabilitiesV1,
+    TenantVendorKnowledgeSourceCatalog,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     CapabilityEffectV1,
     LiveCapabilityDescriptorV1,
@@ -71,12 +76,23 @@ class KnowledgePluginConfigurationError(RuntimeError):
         super().__init__(code)
 
 
+class KnowledgeSourceKindCapabilitySummaryV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    source_kind: str = Field(min_length=1, max_length=128)
+    modes: tuple[VendorKnowledgeMode, ...] = ()
+
+
 class KnowledgeWorkspaceAuthorizationPort(Protocol):
     def get_workspace(self, *, tenant_id: str, workspace_id: str) -> object | None: ...
 
 
 class KnowledgeConnectionServiceFactory(Protocol):
     def __call__(self, tenant_id: str) -> TenantConnectionCapabilityReadService: ...
+
+
+class KnowledgeSourceCatalogFactory(Protocol):
+    def __call__(self, tenant_id: str) -> TenantVendorKnowledgeSourceCatalog: ...
 
 
 class KnowledgeCapabilityCatalogFactory(Protocol):
@@ -97,6 +113,9 @@ class KnowledgeConnectionSummaryV1(BaseModel):
     administrative_status: TenantConnectionAdministrativeStatus
     available_configuration_modes: tuple[KnowledgeConfigurationModeV1, ...] = ()
     available_source_kinds: tuple[str, ...] = ()
+    available_source_kind_capabilities: tuple[
+        KnowledgeSourceKindCapabilitySummaryV1, ...
+    ] = ()
 
     @field_validator("safe_display_label")
     @classmethod
@@ -211,11 +230,13 @@ class KnowledgePluginConfigurationService:
         capability_catalog_factory: KnowledgeCapabilityCatalogFactory,
         resource_discovery_service_factory: KnowledgeResourceDiscoveryServiceFactory,
         workspace_authorization: KnowledgeWorkspaceAuthorizationPort,
+        source_catalog_factory: KnowledgeSourceCatalogFactory | None = None,
     ) -> None:
         self._connection_service_factory = connection_service_factory
         self._capability_catalog_factory = capability_catalog_factory
         self._resource_discovery_service_factory = resource_discovery_service_factory
         self._workspace_authorization = workspace_authorization
+        self._source_catalog_factory = source_catalog_factory
 
     def list_connections(
         self,
@@ -445,15 +466,44 @@ class KnowledgePluginConfigurationService:
         if not isinstance(connection, SafeTenantConnectionV1) or connection.tenant_id != tenant_id:
             raise KnowledgePluginConfigurationError("knowledge_plugin_configuration_unavailable")
         source_kinds: tuple[str, ...] = ()
+        source_kind_capabilities: tuple[KnowledgeSourceKindCapabilitySummaryV1, ...] = ()
         modes: set[KnowledgeConfigurationModeV1] = set()
         if connection.administrative_status is TenantConnectionAdministrativeStatus.ACTIVE:
-            discovery = self._resource_discovery_service_factory(tenant_id)
-            try:
-                source_kinds = discovery.list_source_kinds(
-                    connection_ref=connection.connection_ref
-                )
-            except Exception:
-                source_kinds = ()
+            if self._source_catalog_factory is not None:
+                try:
+                    capabilities = self._source_catalog_factory(
+                        tenant_id
+                    ).list_source_kind_capabilities(
+                        tenant_id=tenant_id,
+                        connection_ref=connection.connection_ref,
+                    )
+                    source_kind_capabilities = tuple(
+                        self._source_kind_capability_summary(item)
+                        for item in capabilities
+                    )
+                    source_kinds = tuple(
+                        item.source_kind for item in source_kind_capabilities
+                    )
+                    declared_modes = {
+                        mode
+                        for item in capabilities
+                        for mode in item.modes
+                    }
+                    if VendorKnowledgeMode.INDEXED in declared_modes:
+                        modes.add(KnowledgeConfigurationModeV1.INDEXED_SOURCE_ELIGIBLE)
+                    if VendorKnowledgeMode.LIVE in declared_modes:
+                        modes.add(KnowledgeConfigurationModeV1.LIVE_ACCESS_ELIGIBLE)
+                except Exception:
+                    source_kinds = ()
+                    source_kind_capabilities = ()
+            else:
+                discovery = self._resource_discovery_service_factory(tenant_id)
+                try:
+                    source_kinds = discovery.list_source_kinds(
+                        connection_ref=connection.connection_ref
+                    )
+                except Exception:
+                    source_kinds = ()
             try:
                 descriptors = self._capability_catalog_factory(tenant_id).list_capabilities(
                     tenant_id=tenant_id,
@@ -475,6 +525,21 @@ class KnowledgePluginConfigurationService:
             administrative_status=connection.administrative_status,
             available_configuration_modes=_sorted_modes(modes),
             available_source_kinds=tuple(sorted(set(source_kinds))),
+            available_source_kind_capabilities=tuple(
+                sorted(
+                    source_kind_capabilities,
+                    key=lambda item: item.source_kind,
+                )
+            ),
+        )
+
+    @staticmethod
+    def _source_kind_capability_summary(
+        item: TenantSourceKindCapabilitiesV1,
+    ) -> KnowledgeSourceKindCapabilitySummaryV1:
+        return KnowledgeSourceKindCapabilitySummaryV1(
+            source_kind=item.identity.source_kind,
+            modes=item.modes,
         )
 
     def _project_resource_page(

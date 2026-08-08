@@ -243,6 +243,9 @@ def create_local_workspace_backend_app(
         vectorstore_manager=runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
         object_storage=runtime.env_wiring.tool_wiring.wiring_context.object_storage,
         shared_slack_integration=shared_slack_integration,
+        tenant_connection_secrets_store=(
+            runtime.env_wiring.tool_wiring.wiring_context.secrets_store
+        ),
         ask_service_v2=hybrid_ask_service,
     )
     repository = app.state.lkw_managed_workspace_repository

@@ -5,14 +5,37 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
-from intergrax.integrations.providers.conversation_channel.slack.config import (
-    SlackConversationChannelIntegrationConfig,
-)
-from intergrax.integrations.providers.conversation_channel.slack.integration import (
-    SlackConversationChannelIntegration,
-)
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+    build_vendor_knowledge_live_registration_registry,
+)
+from intergrax.runtime.vendor_knowledge.plugin_composition import (
+    build_default_vendor_knowledge_source_plugin_registry,
+)
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_slack_integration_from_env,
+    build_default_vendor_knowledge_connection_factory_registry,
+)
+from intergrax.runtime.vendor_knowledge.source_catalog import (
+    TenantVendorKnowledgeSourceCatalog,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
+    RepositoryTenantConnectionPort,
+    TenantConnectionPort,
+    TenantLiveCapabilityCatalog,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionIntegrationFactory,
+    TenantConnectionRehydrator,
+    TenantConnectionRehydrationStatus,
+)
+from intergrax.integrations.contracts.secrets_store import SecretsStore
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceReadinessState,
@@ -20,7 +43,6 @@ from local_workspace_application.workspaces.connected_source_models import (
 from local_workspace_application.workspaces.connected_source_wiring import (
     ConnectedSourceWiring,
     build_connected_source_wiring,
-    register_slack_connection_integration,
 )
 from local_workspace_application.workspaces.document_indexing import WorkspaceDocumentIndexingService
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
@@ -48,9 +70,12 @@ class ConnectedSourceHostReadiness:
 @dataclass(slots=True)
 class ConnectedSourceHostBundle:
     wiring: ConnectedSourceWiring | None
-    slack_integration: SlackConversationChannelIntegration | None
+    slack_integration: Any | None
     readiness: ConnectedSourceHostReadiness
     hybrid_ask_connection_registry: KnowledgeConnectionRegistry
+    tenant_connection_port: TenantConnectionPort | None = None
+    tenant_live_capability_catalog: TenantLiveCapabilityCatalog | None = None
+    tenant_source_catalog: TenantVendorKnowledgeSourceCatalog | None = None
 
 
 def connected_source_considered_for_host(settings: LocalWorkspaceBackendSettings) -> bool:
@@ -70,11 +95,9 @@ def resolve_connected_source_host_mapping(
     return tenant_id, connection_ref
 
 
-def build_shared_slack_integration_for_host() -> SlackConversationChannelIntegration | None:
+def build_shared_slack_integration_for_host() -> Any | None:
     try:
-        platform_config = SlackConversationChannelIntegrationConfig.from_env(enabled=True)
-        platform_config.validate_for_runtime()
-        return SlackConversationChannelIntegration.from_config(platform_config)
+        return build_default_slack_integration_from_env()
     except Exception:
         return None
 
@@ -87,10 +110,29 @@ def build_connected_source_host_bundle(
     configuration_service: WorkspaceKnowledgeConfigurationService,
     mutation_engine: WorkspaceKnowledgeConfigurationMutationEngine,
     indexing_service: WorkspaceDocumentIndexingService,
-    slack_integration: SlackConversationChannelIntegration | None = None,
+    slack_integration: Any | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
+    tenant_connection_secrets_store: SecretsStore | None = None,
+    tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
+    msgraph_mailbox_user_id: str | None = None,
 ) -> ConnectedSourceHostBundle:
     registry = KnowledgeConnectionRegistry()
+    connection_repository = DocumentStoreTenantConnectionRepository(repository.document_store)
+    connection_port = RepositoryTenantConnectionPort(connection_repository)
+    live_capability_catalog = TenantLiveCapabilityCatalog(
+        connection_port=connection_port,
+    )
+    build_vendor_knowledge_live_registration_registry().publish_to_tenant_catalog(
+        live_capability_catalog,
+    )
+    source_catalog = TenantVendorKnowledgeSourceCatalog(
+        connection_port=connection_port,
+        plugin_registry=build_default_vendor_knowledge_source_plugin_registry(),
+    )
+    factory_registry = (
+        tenant_connection_factory_registry
+        or build_default_vendor_knowledge_connection_factory_registry()
+    )
     if not connected_source_considered_for_host(settings):
         return ConnectedSourceHostBundle(
             wiring=None,
@@ -125,7 +167,37 @@ def build_connected_source_host_bundle(
         )
 
     tenant_id, connection_ref = resolve_connected_source_host_mapping(settings)
-    integration = slack_integration or build_shared_slack_integration_for_host()
+    integration = slack_integration
+    rehydrated = False
+    if tenant_id and connection_ref:
+        persisted_connection = connection_repository.get(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+        )
+        if persisted_connection is not None:
+            integration = None
+            if tenant_connection_secrets_store is not None:
+                rehydration = TenantConnectionRehydrator(
+                    repository=connection_repository,
+                    secrets_store=tenant_connection_secrets_store,
+                    integration_factory=factory_registry,
+                    connection_registry=registry,
+                ).rehydrate_tenant(tenant_id=tenant_id)
+                if (
+                    len(rehydration) == 1
+                    and rehydration[0].status is TenantConnectionRehydrationStatus.REGISTERED
+                ):
+                    integration = registry.resolve(
+                        tenant_id=tenant_id,
+                        connection_ref=connection_ref,
+                        provider_id=persisted_connection.provider_id,
+                        integration_kind=persisted_connection.integration_kind,
+                    )
+                    rehydrated = True
+        else:
+            integration = integration or build_shared_slack_integration_for_host()
+    else:
+        integration = integration or build_shared_slack_integration_for_host()
     if integration is None:
         return ConnectedSourceHostBundle(
             wiring=None,
@@ -168,13 +240,16 @@ def build_connected_source_host_bundle(
         settings=settings,
         connection_registry=registry,
         sync_runtime=sync_runtime,
+        msgraph_mailbox_user_id=msgraph_mailbox_user_id,
     )
-    register_slack_connection_integration(
-        wiring=wiring,
-        tenant_id=tenant_id,
-        connection_ref=connection_ref,
-        integration=integration,
-    )
+    if not rehydrated:
+        registry.register(
+            tenant_id=tenant_id,
+            connection_ref=connection_ref,
+            provider_id="slack",
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            integration=integration,
+        )
     return ConnectedSourceHostBundle(
         wiring=wiring,
         slack_integration=integration,
@@ -187,4 +262,7 @@ def build_connected_source_host_bundle(
             connection_ref=connection_ref,
         ),
         hybrid_ask_connection_registry=registry,
+        tenant_connection_port=connection_port,
+        tenant_live_capability_catalog=live_capability_catalog,
+        tenant_source_catalog=source_catalog,
     )
