@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-GUIDE = REPO_ROOT / "docs" / "guides" / "AGENT_CREATION_GUIDE.md"
+GUIDE = REPO_ROOT / "docs" / "project" / "technical" / "guides" / "AGENT_CREATION_GUIDE.md"
 
 # Author-facing phrases that imply UAEP as the primary implementation path.
 FORBIDDEN_SUBSTRINGS: tuple[str, ...] = (

@@ -2,9 +2,9 @@
 
 Typed **reflex** Tier-2 external-work adapter (GEC-3) — maps via injected ``ExternalWorkIntegration``.
 
-**Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
+**Architecture:** [`docs/ARCHITECTURE.md`](../../docs/project/technical/agents/external_contractor_adapter/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/external_contractor_adapter/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/project/technical/adr/README.md`](../../docs/project/technical/agents/external_contractor_adapter/adr/README.md)
 
-Full process: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+Full process: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
 ## Standalone verification
 
@@ -31,7 +31,7 @@ registry.register(
 )
 ```
 
-See **Step 4** in ``docs/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
+See **Step 4** in ``docs/project/technical/guides/AGENT_CREATION_GUIDE.md`` for host wiring. Host may inject via ``settings.external_work_integration`` and ``settings.meaningful_side_effect_policy``.
 
 ## Capabilities
 

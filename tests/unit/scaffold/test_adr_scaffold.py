@@ -76,7 +76,7 @@ def test_application_adr_scaffold_present(app_pkg: str) -> None:
 
 
 def test_harness_adr_scaffold_present() -> None:
-    _assert_adr_scaffold(REPO / "docs" / "adr", label="docs/adr")
+    _assert_adr_scaffold(REPO / "docs" / "adr", label="docs/project/technical/adr")
     readme = (REPO / "docs" / "adr" / ADR_README).read_text(encoding="utf-8")
     assert "ADR-FLOW-001" in readme
     assert "entries/" in readme

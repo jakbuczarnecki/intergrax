@@ -13,11 +13,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
-ROADMAP_PATH = REPO_ROOT / "ROADMAP.md"
-USE_CASES_PATH = REPO_ROOT / "USE_CASES.md"
-PROOFS_PATH = REPO_ROOT / "PROOFS.md"
-PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
+USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
+PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
+PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
+PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -105,23 +105,23 @@ _LINK_CHECK_PATHS = (
 
 _REQUIRED_LINKS_ROADMAP = (
     "PROOFS.md",
-    "docs/public-adoption/LKW_PLATFORM_PROOF.md",
+    "../proofs/LKW_PLATFORM_PROOF.md",
     "USE_CASES.md",
     "BUILD_WITH_INTERGRAX.md",
-    "docs/PUBLIC_DOCUMENTATION_MAP.md",
+    "../community/PUBLIC_DOCUMENTATION_MAP.md",
 )
 
 _REQUIRED_LINKS_USE_CASES = (
     "PROOFS.md",
-    "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-    "docs/features/token_optimization/README.md",
+    "../proofs/LKW_PLATFORM_PROOF.md",
+    "../capabilities/token_optimization/README.md",
     "BUILD_WITH_INTERGRAX.md",
     "EVALUATION_GUIDE.md",
     "PARTNERS.md",
     "COLLABORATION.md",
     "LICENSE",
     "ROADMAP.md",
-    "docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md",
+    "case-studies/BOUNDARYATTEST_ATTESTATION_POC.md",
 )
 
 _README_PRESERVED_LINKS = (

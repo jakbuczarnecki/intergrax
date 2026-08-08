@@ -44,7 +44,7 @@ def test_scaffolded_application_docs_layout() -> None:
         assert "docs/ARCHITECTURE.md" in readme
         assert "docs/IMPLEMENTATION_PLAN.md" in readme
         assert "docs/BUILD_AND_DEPLOY.md" in readme
-        assert "docs/adr/README.md" in readme
+        assert "docs/project/technical/adr/README.md" in readme
         assert "`ARCHITECTURE.md`](ARCHITECTURE.md)" not in readme
 
         assert (target / "scripts" / "build-local-docker.sh").is_file()

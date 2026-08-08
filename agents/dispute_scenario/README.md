@@ -6,7 +6,7 @@ Process simulation and correspondence safety for **DSW** — court path variants
 
 ## Docs
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](docs/adr/README.md)
+- [`ARCHITECTURE.md`](../../docs/project/technical/agents/dispute_scenario/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_scenario/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](../../docs/project/technical/agents/dispute_scenario/adr/README.md)
 
 ## Quick start
 

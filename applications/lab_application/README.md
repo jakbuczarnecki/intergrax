@@ -2,7 +2,7 @@
 
 Universal experimentation environment for the Agent Operating System (Phase L.3).
 
-**Build & deploy:** [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/lab_application/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](../../docs/project/technical/applications/lab_application/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/lab_application/IMPLEMENTATION_PLAN.md)
 
 ## Purpose
 
@@ -101,7 +101,7 @@ applications/lab_application/docker/build-docker.sh
 # Windows: applications\lab_application\docker\build-docker.bat
 ```
 
-See [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md).
+See [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/lab_application/BUILD_AND_DEPLOY.md).
 
 ## Tests
 
@@ -115,6 +115,6 @@ uv run pytest applications/lab_application/tests -q
 - **Tier-3 lab application** composes registry + Nexus + debug surface
 - Agent logic never belongs in this application — only wiring and routes
 
-See [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) — single canonical guide (Step 4C for lab registration).
+See [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) — single canonical guide (Step 4C for lab registration).
 
 **Tier-3 wiring:** [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md) (engine) · [`applications/USAGE.md`](../USAGE.md) (application layout).

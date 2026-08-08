@@ -5,8 +5,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-INVENTORY = Path("docs/features/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md")
-PLAN = Path("docs/features/plan/LANGCHAIN_INDEPENDENCE.md")
+INVENTORY = Path("docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md")
+PLAN = Path("docs/project/capabilities/plan/LANGCHAIN_INDEPENDENCE.md")
 
 VALID_TASKS = {f"LCI-{c}{n}" for c in "012345678" for n in "ABCDEFGH"}
 VALID_TASKS.update({f"LCI-{n}{letter}" for n in range(10) for letter in "ABCD"})

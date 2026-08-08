@@ -1,16 +1,16 @@
 # Intergrax — Agent OS / Harness AI
 
-**Positioning:** Harness AI & Agent OS — agents decide domain steps (`on_next_step` → `StepOutcome`); HarnessKernel executes policy/trace/state; NexusLoop orchestrates multi-agent Tasks; Tier-3 applications supply identity, profiles, and production gates. The Harness is the product; agents are replaceable. Canon: docs/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §13–§40 · ADR-AGENT-001..003.
+**Positioning:** Harness AI & Agent OS — agents decide domain steps (`on_next_step` → `StepOutcome`); HarnessKernel executes policy/trace/state; NexusLoop orchestrates multi-agent Tasks; Tier-3 applications supply identity, profiles, and production gates. The Harness is the product; agents are replaceable. Canon: docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md §13–§40 · ADR-AGENT-001..003.
 
-**Hub (sole docs/ root file):** docs/intergrax_runtime_architecture.md  
-**Domain pairs (1:1):** docs/architecture/<DOMAIN>.md ↔ docs/plan/<DOMAIN>.md  
-**Multi-layer feature pairs (1:1):** docs/features/architecture/<FEATURE>.md ↔ docs/features/plan/<FEATURE>.md — docs/features/README.md  
-**Guides (strategy, ideal, audit):** docs/guides/
-**System invariants (P2-ARCH-01):** docs/guides/SYSTEM_INVARIANTS.md — cross-domain “never violate” index before domain pairs
-**Layer completion:** docs/guides/LAYER_COMPLETION_MODE.md — full domain layer closeout (audit → maturity)
+**Hub (sole docs/ root file):** docs/project/architecture/intergrax_runtime_architecture.md  
+**Domain pairs (1:1):** docs/project/architecture/<DOMAIN>.md ↔ docs/project/maintainers/plans/<DOMAIN>.md  
+**Multi-layer feature pairs (1:1):** docs/project/capabilities/architecture/<FEATURE>.md ↔ docs/project/capabilities/plan/<FEATURE>.md — docs/project/capabilities/README.md  
+**Guides (strategy, ideal, audit):** docs/project/technical/guides/
+**System invariants (P2-ARCH-01):** docs/project/technical/guides/SYSTEM_INVARIANTS.md — cross-domain “never violate” index before domain pairs
+**Layer completion:** docs/project/technical/guides/LAYER_COMPLETION_MODE.md — full domain layer closeout (audit → maturity)
 
 Domains: PLATFORM_FOUNDATION · UNIFIED_EXECUTION_RUNTIME · ORCHESTRATION · NEXUS_EXECUTION_FLOW · AGENT_CONTRACTS_AND_ASSEMBLY · INTEGRATIONS · RAG · TOOLS · CODE_CRAFT · SKILLS · LLM_ADAPTERS · MEMORY · MODALITY · OBSERVABILITY · RELIABILITY_FAILURE_AND_HITL · TIER3_APPLICATION_ENVIRONMENT · EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE · ADAPTIVE_HARNESS_INTELLIGENCE · CRITIC_VERIFICATION · REASONING_AND_COGNITION · ELASTIC_CAPACITY_AND_SCALING
 
-**LLM developer guide:** intergrax/llm_adapters/USAGE.md · **Active uplift:** docs/plan/LLM_ADAPTERS.md Phase M-LLM-X
+**LLM developer guide:** intergrax/llm_adapters/USAGE.md · **Active uplift:** docs/project/maintainers/plans/LLM_ADAPTERS.md Phase M-LLM-X
 
-**Agents (stub):** AGENTS.md · **Full instructions:** docs/guides/AGENT_INSTRUCTIONS.md · **Symbol index:** docs/guides/SYMBOL_INDEX.md
+**Agents (stub):** AGENTS.md · **Full instructions:** docs/project/technical/guides/AGENT_INSTRUCTIONS.md · **Symbol index:** docs/project/technical/guides/SYMBOL_INDEX.md

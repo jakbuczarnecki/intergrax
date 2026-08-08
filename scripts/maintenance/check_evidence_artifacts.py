@@ -47,8 +47,8 @@ _BOUNDARY_PHRASES: tuple[str, ...] = (
     "product-specific acceptance",
 )
 
-_ARCH_LINK = "docs/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md"
-_HEP_LINK = "docs/plan/HARNESS_EVIDENCE_PACK.md"
+_ARCH_LINK = "docs/project/architecture/satellites/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE_production_gates.md"
+_HEP_LINK = "docs/project/maintainers/plans/HARNESS_EVIDENCE_PACK.md"
 
 
 def _repo_root(explicit: Path | None) -> Path:

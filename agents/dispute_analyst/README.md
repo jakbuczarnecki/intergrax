@@ -6,7 +6,7 @@ Argument analysis for **Dispute Simulation Workspace (DSW)** — strength/weakne
 
 ## Docs
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](docs/adr/README.md)
+- [`ARCHITECTURE.md`](../../docs/project/technical/agents/dispute_analyst/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_analyst/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](../../docs/project/technical/agents/dispute_analyst/adr/README.md)
 
 ## Quick start
 

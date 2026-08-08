@@ -12,25 +12,25 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-EVALUATION_GUIDE_PATH = REPO_ROOT / "EVALUATION_GUIDE.md"
-PROTOCOL_PATH = REPO_ROOT / "docs" / "public-adoption" / "EXTERNAL_READER_VALIDATION_PROTOCOL.md"
-LAUNCH_CHECKLIST_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_LAUNCH_CHECKLIST.md"
-PX_ROADMAP_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md"
-OUTREACH_KIT_PATH = REPO_ROOT / "docs" / "public-adoption" / "OUTREACH_KIT.md"
-PUBLIC_ADOPTION_INDEX_PATH = REPO_ROOT / "docs" / "public-adoption" / "README.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+EVALUATION_GUIDE_PATH = REPO_ROOT / "docs" / "project" / "builders" / "EVALUATION_GUIDE.md"
+PROTOCOL_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "EXTERNAL_READER_VALIDATION_PROTOCOL.md"
+LAUNCH_CHECKLIST_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_LAUNCH_CHECKLIST.md"
+PX_ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "PUBLIC_PRODUCT_EXPERIENCE_ROADMAP.md"
+OUTREACH_KIT_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "OUTREACH_KIT.md"
+PUBLIC_ADOPTION_INDEX_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "README.md"
+PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 README_PATH = REPO_ROOT / "README.md"
-FAQ_PATH = REPO_ROOT / "FAQ.md"
-WHY_PATH = REPO_ROOT / "WHY_INTERGRAX.md"
-USE_CASES_PATH = REPO_ROOT / "USE_CASES.md"
-ROADMAP_PATH = REPO_ROOT / "ROADMAP.md"
-BUILD_PATH = REPO_ROOT / "BUILD_WITH_INTERGRAX.md"
-PROOFS_PATH = REPO_ROOT / "PROOFS.md"
-PARTNERS_PATH = REPO_ROOT / "PARTNERS.md"
-COLLABORATION_PATH = REPO_ROOT / "COLLABORATION.md"
+FAQ_PATH = REPO_ROOT / "docs" / "project" / "overview" / "FAQ.md"
+WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
+USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
+ROADMAP_PATH = REPO_ROOT / "docs" / "project" / "overview" / "ROADMAP.md"
+BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
+PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
+PARTNERS_PATH = REPO_ROOT / "docs" / "project" / "community" / "PARTNERS.md"
+COLLABORATION_PATH = REPO_ROOT / "docs" / "project" / "community" / "COLLABORATION.md"
 LICENSE_PATH = REPO_ROOT / "LICENSE"
-LKW_PROOF_PATH = REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
-TOKEN_GUIDE_PATH = REPO_ROOT / "docs" / "features" / "token_optimization" / "README.md"
+LKW_PROOF_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+TOKEN_GUIDE_PATH = REPO_ROOT / "docs" / "project" / "capabilities" / "token_optimization" / "README.md"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -155,7 +155,7 @@ _STALE_PHRASES = (
     "README.md#start-here",
     "README.md#proof-of-platform",
     "LOCAL_KNOWLEDGE_WORKSPACE_ALPHA",
-    "docs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md",
+    "docs/project/proofs/product-validation/LOCAL_KNOWLEDGE_WORKSPACE_ALPHA.md",
 )
 
 _ISSUE_URL_PATTERN = re.compile(
@@ -239,20 +239,20 @@ _INVITATION_SECTIONS = (
 
 _EVAL_GUIDE_LINKS = (
     "README.md",
-    "FAQ.md",
-    "WHY_INTERGRAX.md",
-    "USE_CASES.md",
-    "ROADMAP.md",
+    "../overview/FAQ.md",
+    "../overview/WHY_INTERGRAX.md",
+    "../overview/USE_CASES.md",
+    "../overview/ROADMAP.md",
     "BUILD_WITH_INTERGRAX.md",
-    "PROOFS.md",
-    "ARCHITECTURE_OVERVIEW.md",
-    "PARTNERS.md",
-    "COLLABORATION.md",
-    "LICENSE",
-    "docs/PUBLIC_DOCUMENTATION_MAP.md",
-    "docs/DOCUMENTATION_MAP.md",
-    "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-    "docs/features/token_optimization/README.md",
+    "../proofs/PROOFS.md",
+    "../architecture/ARCHITECTURE_OVERVIEW.md",
+    "../community/PARTNERS.md",
+    "../community/COLLABORATION.md",
+    "../../../LICENSE",
+    "../community/PUBLIC_DOCUMENTATION_MAP.md",
+    "../technical/DOCUMENTATION_MAP.md",
+    "../proofs/LKW_PLATFORM_PROOF.md",
+    "../capabilities/token_optimization/README.md",
 )
 
 _TRACK_A_TASKS = (
@@ -724,9 +724,9 @@ def test_architecture_layer_aware_routing() -> None:
     text = _read(PUBLIC_ARCHITECTURE_PATH)
     assert "reader-facing Layer 1" in text
     assert "Layer 5 maintainer control" in text
-    assert "docs/public-adoption/README.md" in text
+    assert "docs/project/maintainers/public-adoption/README.md" in text
     assert "must not become a normal public-reader route" in text
-    public_map = _read(REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md")
+    public_map = _read(REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md")
     assert "EXTERNAL_READER_VALIDATION_PROTOCOL" not in public_map
 
 

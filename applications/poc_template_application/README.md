@@ -2,7 +2,7 @@
 
 Living reference for Phase N — generated from `intergrax.scaffold new-application` (lab profile + echo agent).
 
-**Build & deploy:** [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/poc_template_application/BUILD_AND_DEPLOY.md) · **Architecture:** [`ARCHITECTURE.md`](../../docs/project/technical/applications/poc_template_application/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/poc_template_application/IMPLEMENTATION_PLAN.md)
 
 ## Three-command quickstart
 

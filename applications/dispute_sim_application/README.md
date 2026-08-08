@@ -2,9 +2,9 @@
 
 **DSW** — multi-agent product host for dispute material intake, argument analysis, strategy, and court-process simulation.
 
-**Architecture:** [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **Agents:** [`agents/README.md`](../../agents/README.md)
+**Architecture:** [`ARCHITECTURE.md`](../../docs/project/technical/applications/dispute_sim_application/ARCHITECTURE.md) · **Plan:** [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/dispute_sim_application/IMPLEMENTATION_PLAN.md) · **Agents:** [`agents/README.md`](../../agents/README.md)
 
-**Build & deploy:** [`BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md)
+**Build & deploy:** [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/dispute_sim_application/BUILD_AND_DEPLOY.md)
 
 ## Agents
 

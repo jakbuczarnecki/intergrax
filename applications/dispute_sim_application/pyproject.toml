@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Tier-3 application dependency project (workspace member).
 # Application source remains importable via PYTHONPATH=applications/.
-# Canonical platform doc: docs/architecture/APPLICATION_DEPENDENCY_MODEL.md
+# Canonical platform doc: docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md
 
 [project]
 name = "intergrax-dispute-sim-application"

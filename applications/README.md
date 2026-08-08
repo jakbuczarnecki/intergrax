@@ -26,8 +26,8 @@
 
 | Product | Plan rows | Status |
 |---------|-----------|--------|
-| **Local Knowledge Workspace (LKW)** | `LKW.*` in [§6.3a](../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated) | LKW.0 Done · active LKW.1 |
-| **Dispute Simulation Workspace (DSW)** | `DSW.*` in [§6.3a](../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated) | DSW.0 Done · active DSW.1 |
+| **Local Knowledge Workspace (LKW)** | `LKW.*` in [§6.3a](../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated) | LKW.0 Done · active LKW.1 |
+| **Dispute Simulation Workspace (DSW)** | `DSW.*` in [§6.3a](../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated) | DSW.0 Done · active DSW.1 |
 | **Intergrax Assistant (IAA)** | Local plan in [ARCHITECTURE.md](intergrax_assistant_application/ARCHITECTURE.md) | IAA.0 Done · lab host runnable |
 
 Platform docs in `docs/` describe **how to host** applications — product scope lives in each app's `ARCHITECTURE.md` + `IMPLEMENTATION_PLAN.md`.
@@ -56,4 +56,4 @@ python -m intergrax.scaffold new-stack my_feature --profile lab
 python -m intergrax.scaffold new-application my_product --profile product --agents my_agent --port 8030
 ```
 
-Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md) · Author guide: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Appendix F
+Readiness checklist: [`TIER3_READINESS.md`](TIER3_READINESS.md) · Author guide: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Appendix F

@@ -37,7 +37,7 @@ def _alias_profile() -> CapabilityGovernanceProfile:
                 canonical="research.orchestrate",
                 effective_from=_WINDOW_START,
                 sunset_at=_WINDOW_END,
-                notice_ref="docs/plan/TIER3_APPLICATION_ENVIRONMENT.md",
+                notice_ref="docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md",
             ),
         ],
     )

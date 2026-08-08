@@ -9,7 +9,7 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_PROOF.md"
+_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs/project/proofs/LKW_PLATFORM_PROOF.md"
 _SCRIPTS = _REPO_ROOT / "applications/local_workspace_application/scripts"
 _DOCKER = _REPO_ROOT / "applications/local_workspace_application/docker"
 
@@ -25,7 +25,7 @@ def test_lkw_platform_proof_step_4_is_self_contained() -> None:
     )
     assert (
         "Use the local proof credentials from "
-        "`applications/local_workspace_application/docs/SENTRY_OBSERVABILITY.md`"
+        "`docs/project/technical/applications/local_workspace_application/SENTRY_OBSERVABILITY.md`"
         not in text
     )
 
@@ -169,17 +169,17 @@ def test_sentry_events_consumer_waits_for_kafka_topics() -> None:
 
 
 _IMPL_PLAN = (
-    _REPO_ROOT / "applications/local_workspace_application/docs/IMPLEMENTATION_PLAN.md"
+    _REPO_ROOT / "docs/project/technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md"
 )
 _IMPL_PLAN_HISTORICAL = (
     _REPO_ROOT
-    / "applications/local_workspace_application/docs/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
+    / "docs/project/technical/applications/local_workspace_application/archive/IMPLEMENTATION_PLAN_2026-07-22.md"
 )
 _LKW_ARCHITECTURE = (
-    _REPO_ROOT / "applications/local_workspace_application/docs/ARCHITECTURE.md"
+    _REPO_ROOT / "docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md"
 )
-_PROOF_RECEIPTS = _REPO_ROOT / "docs/architecture/PROOF_RECEIPTS.md"
-_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/intergrax_runtime_architecture.md"
+_PROOF_RECEIPTS = _REPO_ROOT / "docs/project/architecture/PROOF_RECEIPTS.md"
+_RUNTIME_ARCHITECTURE = _REPO_ROOT / "docs/project/architecture/intergrax_runtime_architecture.md"
 _FILE_WATCHER_SYNC_DOCS = (
     _IMPL_PLAN,
     _LKW_ARCHITECTURE,
@@ -356,7 +356,7 @@ def test_lkw_platform_proof_certification_matrix() -> None:
         _SCRIPTS / "generate-lkw-platform-certification-matrix.py"
     ).is_file()
     matrix_md = (
-        _REPO_ROOT / "docs/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
+        _REPO_ROOT / "docs/project/maintainers/public-adoption/LKW_PLATFORM_CERTIFICATION_MATRIX.md"
     )
     assert matrix_md.is_file()
     matrix_text = matrix_md.read_text(encoding="utf-8")

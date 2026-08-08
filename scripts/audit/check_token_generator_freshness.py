@@ -11,10 +11,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 GENERATORS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("scripts/audit/generate_audit_read_slices.py", ("docs/guides/audit_slices",)),
-    ("scripts/audit/generate_architecture_read_scopes.py", ("docs/architecture",)),
-    ("scripts/audit/generate_plan_read_scopes.py", ("docs/plan",)),
-    ("scripts/audit/generate_domain_audit_prompts.py", ("docs/audit",)),
+    ("scripts/audit/generate_audit_read_slices.py", ("docs/project/technical/guides/audit_slices",)),
+    ("scripts/audit/generate_architecture_read_scopes.py", ("docs/project/architecture",)),
+    ("scripts/audit/generate_plan_read_scopes.py", ("docs/project/maintainers/plans",)),
+    ("scripts/audit/generate_domain_audit_prompts.py", ("docs/project/maintainers/audit",)),
 )
 
 

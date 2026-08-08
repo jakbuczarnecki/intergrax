@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Tier-2 agent dependency project (workspace member).
 # Import path preserved: dispute_intake
-# Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+# Canonical: docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
 
 [project]
 name = "intergrax-dispute-intake-agent"

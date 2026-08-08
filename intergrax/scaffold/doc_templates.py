@@ -47,7 +47,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
+            "| `docs/project/technical/adr/` | Architecture decision records — [`docs/project/technical/adr/README.md`](adr/README.md) |"
         )
     elif reference:
         runtime_line = (
@@ -62,7 +62,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
+            "| `docs/project/technical/adr/` | Architecture decision records — [`docs/project/technical/adr/README.md`](adr/README.md) |"
         )
     else:
         runtime_line = (
@@ -81,7 +81,7 @@ def render_agent_architecture_doc(
             "| `prompts/system.md` | Prompt assets |\n"
             "| `schemas/` | I/O models |\n"
             "| `tests/` | Agent smoke tests |\n"
-            "| `docs/adr/` | Architecture decision records — [`docs/adr/README.md`](adr/README.md) |"
+            "| `docs/project/technical/adr/` | Architecture decision records — [`docs/project/technical/adr/README.md`](adr/README.md) |"
         )
     return dedent(
         f"""\
@@ -113,7 +113,7 @@ def render_agent_architecture_doc(
 
         ## Pattern anchor (Cursor)
 
-        - Tool invocation pattern: [`intergrax/agents/authoring/runtime_tool_helpers.py`](../../intergrax/agents/authoring/runtime_tool_helpers.py)
+        - Tool invocation pattern: [`intergrax/agents/authoring/runtime_tool_helpers.py`](../agents/authoring/runtime_tool_helpers.py)
         - **Implementation point:** `steps/domain_job.py` — implement `run_domain_job(step_ctx)`; wire from `act()`.
         - Do **not** grep runtime/Nexus for `invoke_tool` when this section is in read scope.
 
@@ -126,7 +126,7 @@ def render_agent_architecture_doc(
 
         - Programmatic: `AgentRegistry.register({class_name}())`
         - Tier-3 host: `AgentBinding.mount({class_name}, ...)` in application `manifest.py`
-        - Workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md) Step 4
+        - Workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Step 4
         """
     )
 
@@ -165,8 +165,8 @@ def render_agent_implementation_plan(
         Status: Working draft ({_today()}) — **Scaffold baseline**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)  
-        Agent workflow: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
+        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)  
+        Agent workflow: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
 
         Principle: **evolve, not rewrite** · **reuse Tier-0** · **no Tier-3 imports in agent code**
 
@@ -180,9 +180,9 @@ def render_agent_implementation_plan(
         |-------|--------|
         | Purpose, contracts, I/O, runtime layout | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
-        | Significant agent architecture decisions | **`docs/adr/`** — [`adr/README.md`](adr/README.md) |
-        | Platform harness work | `docs/intergrax_runtime_architecture.md` §6.1 |
-        | UAEP / Nexus workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
+        | Significant agent architecture decisions | **`docs/project/technical/adr/`** — [`adr/README.md`](adr/README.md) |
+        | Platform harness work | `docs/project/architecture/intergrax_runtime_architecture.md` §6.1 |
+        | UAEP / Nexus workflow | `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` |
 
         ---
 
@@ -204,7 +204,7 @@ def render_agent_implementation_plan(
         |----|------|--------|----------|-------|
         {domain_task}
         | {prefix}-2 | Extend `prompts/system.md` for domain | Planned | Medium | Keep prompts versioned here |
-        | {prefix}-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/architecture/SKILLS.md` |
+        | {prefix}-3 | Register skills/tools on `contract.py` | Planned | Medium | See `docs/project/architecture/SKILLS.md` |
         | {prefix}-4 | Agent smoke test green | Done | High | `tests/test_{slug}_agent.py` |
         | {prefix}-5 | Mount in Tier-3 host (optional) | Planned | Medium | `AgentBinding.mount({class_name}, ...)` |
 
@@ -228,7 +228,7 @@ def render_agent_implementation_plan(
         ## 3. Platform alignment
 
         Business agents and product-only work remain **end of plan** unless explicitly reprioritized —
-        see platform [`§6.3`](../../docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only).
+        see platform [`§6.3`](../../docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only).
         """
     )
 
@@ -291,12 +291,12 @@ def render_application_architecture_doc(
         - Application project: ``applications/{names.pkg}/pyproject.toml`` depends on workspace ``Intergrax-ai``
           (+ profile-selected platform extras).
         - Shared workspace lock: repository-root ``uv.lock``.
-        - Canon: ``docs/architecture/APPLICATION_DEPENDENCY_MODEL.md``
+        - Canon: ``docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md``
         - LLM provider env vars per `.env.example` / `BUILD_AND_DEPLOY.md`
 
         ## Application dependency project
 
-        Canonical packaging: [docs/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+        Canonical packaging: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
         ```bash
         uv sync --project applications/{names.pkg}
@@ -339,8 +339,8 @@ def render_application_implementation_plan(
         Status: Working draft ({_today()}) — **{profile_label} profile scaffold**
 
         Architecture: [`ARCHITECTURE.md`](ARCHITECTURE.md)  
-        Platform plan: [`docs/intergrax_runtime_architecture.md`](../../docs/intergrax_runtime_architecture.md)  
-        Application engine: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        Platform plan: [`docs/project/architecture/intergrax_runtime_architecture.md`](../../docs/project/architecture/intergrax_runtime_architecture.md)  
+        Application engine: [`intergrax/applications/USAGE.md`](../applications/USAGE.md)
 
         Principle: **compose Tier-0** · **no business logic in Nexus** · **manifest-driven wiring**
 
@@ -355,7 +355,7 @@ def render_application_implementation_plan(
         | Host purpose, manifest, factory, dependencies | **ARCHITECTURE.md** (this directory) |
         | Task status, phases, next steps | **This file** |
         | Significant application architecture decisions | **`adr/`** — [`adr/README.md`](adr/README.md) |
-        | Platform harness work | `docs/intergrax_runtime_architecture.md` §6.1 |
+        | Platform harness work | `docs/project/architecture/intergrax_runtime_architecture.md` §6.1 |
         | Scaffold / deploy recipes | `applications/TIER3_READINESS.md` |
 
         ---
@@ -403,7 +403,7 @@ def render_application_implementation_plan(
         ## 3. Platform alignment
 
         Tier-3 product environments follow explicit reprioritization — see platform
-        [`§6.3`](../../docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only)
-        and [`§6.3a`](../../docs/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
+        [`§6.3`](../../docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only)
+        and [`§6.3a`](../../docs/project/architecture/intergrax_runtime_architecture.md#63a-business-backlog-register-consolidated).
         """
     )

@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ARCH_DIR = ROOT / "docs" / "architecture"
+ARCH_DIR = ROOT / "docs" / "project" / "architecture"
 SAT_DIR = ARCH_DIR / "satellites"
 
 H1_SECTION = re.compile(r"^# (\d+)\.\s+(.+)$", re.MULTILINE)

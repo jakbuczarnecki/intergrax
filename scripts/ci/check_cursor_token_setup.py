@@ -7,33 +7,33 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-BOOTSTRAP = ROOT / "docs" / "bootstrap"
-CURSOR_SETUP = ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md"
+BOOTSTRAP = ROOT / "docs" / "project" / "maintainers" / "bootstrap"
+CURSOR_SETUP = ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md"
 CURSORIGNORE = ROOT / ".cursorignore"
 H2_IGNORE_DIRS = (
-    "docs/audit/",
-    "docs/architecture/satellites/",
-    "docs/plan/satellites/",
+    "docs/project/maintainers/audit/",
+    "docs/project/architecture/satellites/",
+    "docs/project/maintainers/plans/satellites/",
 )
 H2_IGNORE_PATHS = (
-    "docs/guides/AGENT_CREATION_GUIDE.md",
-    "docs/guides/APPLICATION_CREATION_GUIDE.md",
-    "docs/guides/INTEGRAX_HARNESS_AUDIT_MAP.md",
-    "docs/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md",
-    "docs/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md",
-    "docs/guides/SYSTEM_INVARIANTS.md",
-    "docs/guides/MATURITY_TAXONOMY.md",
-    "docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
-    "docs/intergrax_runtime_architecture.md",
-    "docs/plan/AUDIT_IDEAL_2026.md",
+    "docs/project/technical/guides/AGENT_CREATION_GUIDE.md",
+    "docs/project/technical/guides/APPLICATION_CREATION_GUIDE.md",
+    "docs/project/technical/guides/INTEGRAX_HARNESS_AUDIT_MAP.md",
+    "docs/project/technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md",
+    "docs/project/technical/guides/HARNESS_IMPLEMENTATION_AUDIT_PROMPT.md",
+    "docs/project/technical/guides/SYSTEM_INVARIANTS.md",
+    "docs/project/technical/guides/MATURITY_TAXONOMY.md",
+    "docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md",
+    "docs/project/architecture/intergrax_runtime_architecture.md",
+    "docs/project/maintainers/plans/AUDIT_IDEAL_2026.md",
 )
-AGENT_INSTRUCTIONS = ROOT / "docs" / "guides" / "AGENT_INSTRUCTIONS.md"
-SYMBOL_INDEX = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
+AGENT_INSTRUCTIONS = ROOT / "docs" / "project" / "technical" / "guides" / "AGENT_INSTRUCTIONS.md"
+SYMBOL_INDEX = ROOT / "docs" / "project" / "technical" / "guides" / "SYMBOL_INDEX.md"
 AGENTS_STUB = ROOT / "AGENTS.md"
 ITERATION_RULE = ROOT / ".cursor" / "rules" / "intergrax-iteration.mdc"
 TOKEN_BUDGET_RULE = ROOT / ".cursor" / "rules" / "intergrax-token-budget.mdc"
 PLAN_READ_SCOPE_MARKER = "## Cursor read scope (token budget)"
-PLAN_DIR = ROOT / "docs" / "plan"
+PLAN_DIR = ROOT / "docs" / "project" / "maintainers" / "plans"
 SKIP_PLAN_HUBS = frozenset({"AUDIT_IDEAL_2026.md", "IDEAL_HARNESS_L3.md"})
 
 SESSION_MARKER = "ONE_DOMAIN_ONE_CHAT"
@@ -59,10 +59,10 @@ FORBIDDEN_BROAD_ACCESS_PHRASES = (
 )
 BROAD_ACCESS_GUARD_PATHS = (
     ROOT / "scripts" / "audit",
-    ROOT / "docs" / "audit",
+    ROOT / "docs" / "project" / "maintainers" / "audit",
     ROOT / ".cursor",
-    ROOT / "docs" / "bootstrap",
-    ROOT / "docs" / "guides" / "CURSOR_TOKEN_SETUP.md",
+    ROOT / "docs" / "project" / "maintainers" / "bootstrap",
+    ROOT / "docs" / "project" / "technical" / "guides" / "CURSOR_TOKEN_SETUP.md",
 )
 BROAD_ACCESS_GUARD_SUFFIXES = (".md", ".mdc", ".txt", ".py")
 
@@ -93,7 +93,7 @@ def main() -> int:
     errors: list[str] = []
 
     if not CURSOR_SETUP.is_file():
-        errors.append("missing docs/guides/CURSOR_TOKEN_SETUP.md")
+        errors.append("missing docs/project/technical/guides/CURSOR_TOKEN_SETUP.md")
     elif "O1" not in CURSOR_SETUP.read_text(encoding="utf-8"):
         errors.append("CURSOR_TOKEN_SETUP.md must document O1 terse output policy")
     elif I1_MARKER not in CURSOR_SETUP.read_text(encoding="utf-8"):
@@ -111,10 +111,10 @@ def main() -> int:
                 errors.append(f".cursorignore must exclude bulky guide {path} (H2)")
 
     if not SYMBOL_INDEX.is_file():
-        errors.append("missing docs/guides/SYMBOL_INDEX.md")
+        errors.append("missing docs/project/technical/guides/SYMBOL_INDEX.md")
 
     if not AGENT_INSTRUCTIONS.is_file():
-        errors.append("missing docs/guides/AGENT_INSTRUCTIONS.md")
+        errors.append("missing docs/project/technical/guides/AGENT_INSTRUCTIONS.md")
     elif len(AGENT_INSTRUCTIONS.read_text(encoding="utf-8").splitlines()) < FULL_MIN_LINES:
         errors.append(f"AGENT_INSTRUCTIONS.md must be full reference (>={FULL_MIN_LINES} lines)")
     elif "Operator communication (O1" not in AGENT_INSTRUCTIONS.read_text(encoding="utf-8"):
@@ -166,7 +166,7 @@ def main() -> int:
     if "intergrax-token-budget" not in iteration:
         errors.append("intergrax-iteration.mdc must reference intergrax-token-budget.mdc (I1/O1)")
 
-    plan_gen = ROOT / "scripts" / "generate_plan_read_scopes.py"
+    plan_gen = ROOT / "scripts" / "audit" / "generate_plan_read_scopes.py"
     if not plan_gen.is_file():
         errors.append("missing scripts/audit/generate_plan_read_scopes.py (G1-E2)")
     else:

@@ -2,7 +2,7 @@
 
 UAEP demo agent for **Execution Boundary Export** — single step calling `records.put` (`attestation.demo` capability).
 
-**Architecture:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/adr/README.md`](docs/adr/README.md)
+**Architecture:** [`docs/ARCHITECTURE.md`](../../docs/project/technical/agents/boundary_demo/ARCHITECTURE.md) · **Plan:** [`docs/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/boundary_demo/IMPLEMENTATION_PLAN.md) · **ADRs:** [`docs/project/technical/adr/README.md`](../../docs/project/technical/agents/boundary_demo/adr/README.md)
 
 **Host:** [`applications/attestation_demo/`](../../applications/attestation_demo/)
 

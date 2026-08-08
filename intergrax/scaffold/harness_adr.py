@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Harness platform ADR path helpers (`docs/adr/entries/YYYY-MM-DD/`)."""
+"""Harness platform ADR path helpers (`docs/project/technical/adr/entries/YYYY-MM-DD/`)."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def harness_adr_entry_path(
 
 
 def harness_adr_entry_relpath(adr_filename: str, *, day: date | None = None) -> str:
-    """Repo-relative path under ``docs/adr/`` (e.g. ``entries/2026-06-12/ADR-FLOW-001.md``)."""
+    """Repo-relative path under ``docs/project/technical/adr/`` (e.g. ``entries/2026-06-12/ADR-FLOW-001.md``)."""
     d = day or date.today()
     return f"{ENTRIES_DIRNAME}/{d.isoformat()}/{adr_filename}"
 
@@ -91,7 +91,7 @@ def rewrite_harness_adr_cross_links(text: str, *, from_day: str, index: dict[str
 
 
 def deepen_docs_relative_links(text: str) -> str:
-    """Adjust ``../`` doc links when an ADR moves from ``docs/adr/`` to ``docs/adr/entries/<day>/``."""
+    """Adjust ``../`` doc links when an ADR moves from ``docs/project/technical/adr/`` to ``docs/project/technical/adr/entries/<day>/``."""
     replacements = (
         ("](../architecture/", "](../../architecture/"),
         ("](../plan/", "](../../plan/"),

@@ -16,8 +16,8 @@ REQUIRED = (
     "tests/test_signoff_probe_agent.py",
     "docs/ARCHITECTURE.md",
     "docs/IMPLEMENTATION_PLAN.md",
-    "docs/adr/README.md",
-    "docs/adr/TEMPLATE.md",
+    "docs/project/technical/adr/README.md",
+    "docs/project/technical/adr/TEMPLATE.md",
 )
 
 

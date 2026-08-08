@@ -17,7 +17,7 @@ from intergrax.runtime.architecture.release_cycle_tracker import (  # noqa: E402
 
 
 def main() -> int:
-    slo_doc = REPO_ROOT / "docs" / "guides" / "HARNESS_ENVIRONMENT.md"
+    slo_doc = REPO_ROOT / "docs" / "project" / "technical" / "guides" / "HARNESS_ENVIRONMENT.md"
     if not slo_doc.is_file() or "Harness SLO catalog" not in slo_doc.read_text(encoding="utf-8"):
         print("missing Harness SLO catalog in guides/HARNESS_ENVIRONMENT.md", file=sys.stderr)
         return 1

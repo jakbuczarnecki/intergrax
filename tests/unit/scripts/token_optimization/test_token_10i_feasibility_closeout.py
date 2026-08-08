@@ -6,7 +6,7 @@ _ROOT = Path(__file__).resolve().parents[4]
 _PROOF_DIR = _ROOT / "docs" / "proofs" / "token_optimization"
 _FEASIBILITY_FILE = _PROOF_DIR / "token-10i-qwen3-14b-awq-feasibility.md"
 _README_FILE = _PROOF_DIR / "README.md"
-_ROADMAP_FILE = _ROOT / "docs" / "features" / "plan" / "TOKEN_OPTIMIZATION.md"
+_ROADMAP_FILE = _ROOT / "docs" / "project" / "capabilities" / "plan" / "TOKEN_OPTIMIZATION.md"
 
 _FORBIDDEN_MARKERS = (
     "TOP_SECRET",

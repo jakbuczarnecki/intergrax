@@ -13,7 +13,7 @@ class DeploymentTier(IntEnum):
     """
     Platform tier label—for logs, metrics, and product configuration.
 
-    Aligned with ``docs/intergrax_runtime_architecture.md`` §5.1:
+    Aligned with ``docs/project/architecture/intergrax_runtime_architecture.md`` §5.1:
 
     - ``PLATFORM`` (0): Tier-0 — universal components (LLM, memory, adapters, …).
     - ``FRAMEWORK`` (1): Tier-1 — Nexus Agent OS (orchestration, registry, …).

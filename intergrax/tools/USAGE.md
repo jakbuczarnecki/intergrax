@@ -85,4 +85,4 @@ mount_catalog_tools_on_mcp(mcp, tool_wiring.registry)
 
 ## Full catalog
 
-See [docs/architecture/TOOLS.md](../../docs/architecture/TOOLS.md).
+See [docs/project/architecture/TOOLS.md](../../docs/project/architecture/TOOLS.md).

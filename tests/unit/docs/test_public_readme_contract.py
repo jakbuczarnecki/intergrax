@@ -14,11 +14,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
-HERO_LIGHT_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-light.svg"
-HERO_DARK_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-dark.svg"
-LKW_LIGHT_PATH = REPO_ROOT / "docs" / "assets" / "public" / "lkw-grounded-result-light.svg"
-LKW_DARK_PATH = REPO_ROOT / "docs" / "assets" / "public" / "lkw-grounded-result-dark.svg"
+PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
+HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
+LKW_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "lkw-grounded-result-light.svg"
+LKW_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "lkw-grounded-result-dark.svg"
 
 _SECTION_HEADINGS_ORDER = (
     "## Local Knowledge Workspace (LKW)",
@@ -33,11 +33,11 @@ _SECTION_HEADINGS_ORDER = (
 )
 
 _REQUIRED_PUBLIC_LINKS = (
-    "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-    "docs/features/token_optimization/README.md",
+    "docs/project/proofs/LKW_PLATFORM_PROOF.md",
+    "docs/project/capabilities/token_optimization/README.md",
     "PROOFS.md",
-    "docs/PUBLIC_DOCUMENTATION_MAP.md",
-    "docs/DOCUMENTATION_MAP.md",
+    "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
+    "docs/project/technical/DOCUMENTATION_MAP.md",
     "EVALUATION_GUIDE.md",
     "PARTNERS.md",
     "COLLABORATION.md",
@@ -95,10 +95,10 @@ def test_required_public_links(readme_text: str) -> None:
 
 
 def test_hero_contract(readme_text: str) -> None:
-    assert "docs/assets/public/intergrax-hero-light.svg" in readme_text
-    assert "docs/assets/public/intergrax-hero-dark.svg" in readme_text
-    assert "docs/assets/public/lkw-grounded-result-light.svg" in readme_text
-    assert "docs/assets/public/lkw-grounded-result-dark.svg" in readme_text
+    assert "docs/project/assets/public/intergrax-hero-light.svg" in readme_text
+    assert "docs/project/assets/public/intergrax-hero-dark.svg" in readme_text
+    assert "docs/project/assets/public/lkw-grounded-result-light.svg" in readme_text
+    assert "docs/project/assets/public/lkw-grounded-result-dark.svg" in readme_text
     assert readme_text.count("<picture>") >= 2
     assert 'alt="Intergrax connects specialized applications' in readme_text
     assert 'alt="LKW quickstart flow' in readme_text
@@ -218,7 +218,7 @@ def test_lkw_proof_boundary(readme_text: str) -> None:
 def test_proof_dashboard_route(readme_text: str) -> None:
     """Proof-path CLI details live outside the product-first README; dashboard must remain linked."""
     assert "PROOFS.md" in readme_text
-    assert "docs/public-adoption/LKW_PLATFORM_PROOF.md" in readme_text
+    assert "docs/project/proofs/LKW_PLATFORM_PROOF.md" in readme_text
 
 
 def test_relative_links(readme_text: str) -> None:

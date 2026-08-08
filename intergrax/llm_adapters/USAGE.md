@@ -1,6 +1,6 @@
 # LLM Adapters — Developer Guide
 
-**Canon:** [`docs/architecture/LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) · **Plan:** [`docs/plan/LLM_ADAPTERS.md`](../../docs/plan/LLM_ADAPTERS.md) · **ADR:** [`docs/adr/entries/2026-06-14/ADR-LLM-002.md`](../../docs/adr/entries/2026-06-14/ADR-LLM-002.md)
+**Canon:** [`docs/project/architecture/LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) · **Plan:** [`docs/project/maintainers/plans/LLM_ADAPTERS.md`](../../docs/project/maintainers/plans/LLM_ADAPTERS.md) · **ADR:** [`docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md`](../../docs/project/technical/adr/entries/2026-06-14/ADR-LLM-002.md)
 
 Tier-0 module for multi-vendor LLM access. Agents and applications use **`LLMProfile`** + **`LLMAdapter`** — never vendor SDKs directly.
 
@@ -183,7 +183,7 @@ groups:
           summary: "Many prefix-heuristic context windows — consider exact catalog entries"
 ```
 
-Cross-ref: [`OBSERVABILITY.md` §7.1.1](../../docs/architecture/OBSERVABILITY.md#711-llm-catalog-miss-slo-m-llm-x-16) for SLO guidance.
+Cross-ref: [`OBSERVABILITY.md` §7.1.1](../../docs/project/architecture/OBSERVABILITY.md#711-llm-catalog-miss-slo-m-llm-x-16) for SLO guidance.
 
 ---
 
@@ -292,7 +292,7 @@ limiter = create_redis_rate_limiter(env.integration_profile.resolve_key_value_ca
 set_llm_distributed_rate_limiter(limiter)
 ```
 
-Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/plan/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/plan/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/plan/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/plan/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
+Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) (platform scaling) · [`docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md`](../../docs/project/maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) (host wiring).
 
 **Failover profiles (LLM-MAINT-03):** set `LLMProfile.fallback_profiles` on `ApplicationEnvironmentProfile.capabilities.llm` — `resolve_llm_adapter(env)` builds `FailoverLLMAdapter` automatically when fallbacks or routing hints are present.
 
@@ -300,7 +300,7 @@ Requires `integration_profile.key_value_cache` slug `redis`. Cross-ref: [`docs/p
 
 ## LLM routing rules (M-LLM-X.9 · M-LLM-X.10)
 
-**ADR:** [`ADR-LLM-003`](../../docs/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/architecture/LLM_ADAPTERS.md) § LLM routing rules
+**ADR:** [`ADR-LLM-003`](../../docs/project/technical/adr/entries/2026-06-19/ADR-LLM-003.md) · **Canon:** [`LLM_ADAPTERS.md`](../../docs/project/architecture/LLM_ADAPTERS.md) § LLM routing rules
 
 Tier-3 hosts configure dynamic model selection with **`LLMRoutingProfile`** on `ApplicationEnvironmentProfile`. Each rule implements **`LLMRoutingRule`** (`matches` + `resolve`).
 
@@ -538,5 +538,5 @@ Budgeting uses `tiktoken` with `model_name_for_token_estimation` when available.
 ## Related
 
 - Tier-3 wiring: [`applications/USAGE.md`](../../applications/USAGE.md)
-- Agent authoring: [`docs/guides/AGENT_CREATION_GUIDE.md`](../../docs/guides/AGENT_CREATION_GUIDE.md)
-- Context preflight: [`docs/architecture/CONTEXT_ENGINEERING.md`](../../docs/architecture/CONTEXT_ENGINEERING.md)
+- Agent authoring: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- Context preflight: [`docs/project/architecture/CONTEXT_ENGINEERING.md`](../../docs/project/architecture/CONTEXT_ENGINEERING.md)

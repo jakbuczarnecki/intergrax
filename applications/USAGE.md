@@ -2,16 +2,16 @@
 
 **Repository path:** `applications/<app_name>/`  
 **Composition engine:** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)  
-**Architecture:** `docs/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
+**Architecture:** `docs/project/architecture/intergrax_runtime_architecture.md` §7.4.8–§7.4.10
 
 > **Documentation boundary:** Platform docs in `docs/` (architecture canon, `intergrax_runtime_architecture.md`) describe the **Harness** and how to host applications. Each product under `applications/<name>/` maintains its own **`docs/ARCHITECTURE.md`**, **`docs/IMPLEMENTATION_PLAN.md`**, and deployment notes — those are **not** duplicated in the platform plan.
 
-> **Authoring rule:** Application authors define product behavior and compose platform capabilities. They do not implement generic platform infrastructure. For ownership decisions see [`docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../docs/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
+> **Authoring rule:** Application authors define product behavior and compose platform capabilities. They do not implement generic platform infrastructure. For ownership decisions see [`docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](../docs/project/architecture/INTERGRAX_ARCHITECTURE_PRINCIPLES.md).
 
 Each folder under `applications/` is a **self-contained execution environment**: host, env, agent roster, integrations, **dependency project** (`pyproject.toml`), and (when scaffolded) Docker.  
 Tier-2 agent logic lives in `agents/` — not here.
 
-**Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax extras + selected Tier-2 agent packages + app-only deps). Sync with `uv sync --project applications/<app>`. Canon: [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md) · runtime graphs / images: [`docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
+**Dependencies:** each real application owns `applications/<app>/pyproject.toml` (Intergrax extras + selected Tier-2 agent packages + app-only deps). Sync with `uv sync --project applications/<app>`. Canon: [`docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md) · runtime graphs / images: [`docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md`](../docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md).
 
 Isolation (current monorepo): **declaration** and **dependency-graph** isolation per application project are supported; the default physical environment remains the workspace root `.venv` (not one `.venv` per app unless `UV_PROJECT_ENVIRONMENT` is set). Each Docker image has its own `/app/.venv` and contains only the declared runtime graph (no sibling Tier-3 sources, no undeclared agents).
 
@@ -32,7 +32,7 @@ When adding or changing Tier-3 application hosts, include harness hardening hook
 - context/prompt/eval regression compatibility in host pipelines (`V-CE.*`, `V-PE.*`, `V-EVAL.*`),
 - security and cost policy enforcement in runtime wiring (`V-SEC.*`, `V-COST.*`).
 
-Primary tracker: `docs/intergrax_runtime_architecture.md` Phase V.
+Primary tracker: `docs/project/architecture/intergrax_runtime_architecture.md` Phase V.
 
 ---
 
@@ -78,7 +78,7 @@ Every Tier-3 host under `applications/<app>/` must ship:
 |-------|------|--------|
 | **Docker** | `docker/Dockerfile`, `docker-compose.yml`, `build-docker.sh` / `.bat` | Image build from repo root context |
 | **Deploy doc** | `docs/BUILD_AND_DEPLOY.md` | From scaffold `render_build_deploy_doc` or kept in sync manually |
-| **Dependencies** | `applications/<app>/pyproject.toml` + `docs/ARCHITECTURE.md` § Dependencies | Application selects Intergrax extras; see `docs/architecture/APPLICATION_DEPENDENCY_MODEL.md` |
+| **Dependencies** | `applications/<app>/pyproject.toml` + `docs/ARCHITECTURE.md` § Dependencies | Application selects Intergrax extras; see `docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md` |
 | **Implementation plan** | `docs/IMPLEMENTATION_PLAN.md` | Local task queue — scaffold emits on create; links to `docs/ARCHITECTURE.md` |
 
 Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `tests/unit/applications/test_agent_app_doc_pair.py`.
@@ -93,7 +93,7 @@ Gate: `tests/unit/applications/test_application_deploy_triad.py` · doc pair: `t
 | **Standard** | `new-stack` or `new-application` without `--minimal` | Full lab/product scaffold (Docker, MCP, deploy doc) |
 | **Promote** | `python -m intergrax.scaffold expand <app_slug>` | Upgrade minimal lab tree to standard layout |
 
-Author path: [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
+Author path: [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md) Step 4E § E.0.
 
 ---
 
@@ -182,7 +182,7 @@ def wire_my_lab_tools(*, integration_profile=None):
     )
 ```
 
-Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog: [`docs/architecture/TOOLS.md`](../docs/architecture/TOOLS.md)
+Full guide: [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md) · catalog: [`docs/project/architecture/TOOLS.md`](../docs/project/architecture/TOOLS.md)
 
 ### 4. Host — HTTP + Nexus
 
@@ -312,7 +312,7 @@ python -m intergrax.scaffold new-application my_product --profile product --agen
 | `lab_application` | Universal lab + `/debug/*` | `uv run uvicorn lab_application.host.main:app --port 8090` |
 | `legal_application` | Product API + Legal agent | `uv run uvicorn legal_application.host.main:app --port 8000` |
 | `research_application` | Research pipeline host | See `research_application/README.md` |
-| `local_workspace_application` | **Local Knowledge Workspace (LKW)** — local index, search, synthesis | See [`local_workspace_application/docs/ARCHITECTURE.md`](local_workspace_application/docs/ARCHITECTURE.md) |
+| `local_workspace_application` | **Local Knowledge Workspace (LKW)** — local index, search, synthesis | See [`local_workspace_application/docs/ARCHITECTURE.md`](../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md) |
 
 Per-app details: each application's `README.md` and `docs/ARCHITECTURE.md` where present.
 
@@ -353,7 +353,7 @@ llm = llm_profile_from_env(prefix="INTERGRAX_LLM").create_adapter()
 
 Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INTERGRAX_LLM_METRICS_ENABLED=true`; optional `register_llm_metrics_routes(app)`. Nexus hosts using `bootstrap_nexus_platform()` get automatic tenant-scoped LLM metrics on task completion — no manual `set_llm_tenant_id` required. Optional quota: `INTERGRAX_LLM_TENANT_MAX_TOKENS`.
 
-**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) (env matrix, Cohere slugs, failover, catalog override). **Architecture:** [architecture/LLM_ADAPTERS.md](../docs/architecture/LLM_ADAPTERS.md). **Active plan:** [M-LLM-X](../docs/plan/LLM_ADAPTERS.md) (ModelCatalog, routing).
+**Developer guide:** [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) (env matrix, Cohere slugs, failover, catalog override). **Architecture:** [architecture/LLM_ADAPTERS.md](../docs/project/architecture/LLM_ADAPTERS.md). **Active plan:** [M-LLM-X](../docs/project/maintainers/plans/LLM_ADAPTERS.md) (ModelCatalog, routing).
 
 | Task | Where |
 |------|--------|
@@ -369,7 +369,7 @@ Set API keys via env or `secrets=` on `LLMProfile.create_adapter()`. Enable `INT
 ## Related docs
 
 - **Engine API (define / invoke registry):** [`intergrax/applications/USAGE.md`](../intergrax/applications/USAGE.md)
-- **LLM adapters (providers, env, deployment):** [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) · [`docs/architecture/LLM_ADAPTERS.md`](../docs/architecture/LLM_ADAPTERS.md)
+- **LLM adapters (providers, env, deployment):** [`intergrax/llm_adapters/USAGE.md`](../intergrax/llm_adapters/USAGE.md) · [`docs/project/architecture/LLM_ADAPTERS.md`](../docs/project/architecture/LLM_ADAPTERS.md)
 - **Tool catalog wiring:** [`intergrax/tools/USAGE.md`](../intergrax/tools/USAGE.md)
-- **Agent creation:** [`docs/guides/AGENT_CREATION_GUIDE.md`](../docs/guides/AGENT_CREATION_GUIDE.md)
-- **Phase N plan:** [`docs/intergrax_runtime_architecture.md`](../docs/intergrax_runtime_architecture.md)
+- **Agent creation:** [`docs/project/technical/guides/AGENT_CREATION_GUIDE.md`](../docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- **Phase N plan:** [`docs/project/architecture/intergrax_runtime_architecture.md`](../docs/project/architecture/intergrax_runtime_architecture.md)

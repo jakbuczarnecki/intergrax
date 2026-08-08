@@ -12,7 +12,7 @@ _RUN_FILES = (
 _EVALUATION_FILE = _PROOF_DIR / "token-10h-evaluation.safe.json"
 _REPORT_FILE = _PROOF_DIR / "token-10h-live-report.md"
 _README_FILE = _PROOF_DIR / "README.md"
-_ROADMAP_FILE = _ROOT / "docs" / "features" / "plan" / "TOKEN_OPTIMIZATION.md"
+_ROADMAP_FILE = _ROOT / "docs" / "project" / "capabilities" / "plan" / "TOKEN_OPTIMIZATION.md"
 
 _RUN_KEYS = {
     "schema_version",

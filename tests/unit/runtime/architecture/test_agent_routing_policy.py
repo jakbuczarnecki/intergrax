@@ -55,7 +55,7 @@ def test_production_mode_requires_owner_for_production_eligible_agent() -> None:
             production_eligible=True,
             owner_team="platform",
             owner_contact="owner@intergrax",
-            runbook_ref="docs/intergrax_runtime_architecture.md",
+            runbook_ref="docs/project/architecture/intergrax_runtime_architecture.md",
         ),
         production_mode=True,
     )

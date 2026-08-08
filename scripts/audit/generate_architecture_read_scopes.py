@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-ARCH = ROOT / "docs" / "architecture"
+ARCH = ROOT / "docs" / "project" / "architecture"
 MARKER = "## Cursor read scope (token budget)"
 MIN_LINES = 200
 

@@ -43,7 +43,7 @@ def render_adr_template(*, prefix: str, title_hint: str, related_hint: str) -> s
         | **Deciders** | Team / role |
         | **Related** | {related_hint} |
 
-        > **Path:** place accepted harness ADRs under `docs/adr/entries/YYYY-MM-DD/` (see [`README.md`](../README.md)).
+        > **Path:** place accepted harness ADRs under `docs/project/technical/adr/entries/YYYY-MM-DD/` (see [`README.md`](../README.md)).
 
         ## Context
 
@@ -114,7 +114,7 @@ def render_harness_adr_readme() -> str:
         ## Layout
 
         ```text
-        docs/adr/entries/YYYY-MM-DD/ADR-{{AREA}}-{{NNN}}.md
+        docs/project/technical/adr/entries/YYYY-MM-DD/ADR-{{AREA}}-{{NNN}}.md
         ```
 
         Day folders group ADRs by creation date (same convention as the implementation journal).
@@ -156,7 +156,7 @@ def render_agent_adr_readme(*, slug: str) -> str:
 
         Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
         Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-        Platform ADRs: [`../../../../docs/adr/README.md`](../../../../docs/adr/README.md)
+        Platform ADRs: [`../../../../docs/project/technical/adr/README.md`](../../../../docs/project/technical/adr/README.md)
 
         ---
 
@@ -169,7 +169,7 @@ def render_agent_adr_readme(*, slug: str) -> str:
         - Prompt strategy, evaluation hooks, or risk classification changes
         - External data sources or vendor choices consumed through Harness tools
 
-        **Not required:** harness platform changes (use `docs/adr/`), Tier-3 host wiring (use application ADRs),
+        **Not required:** harness platform changes (use `docs/project/technical/adr/`), Tier-3 host wiring (use application ADRs),
         or trivial refactors with no behavioral impact.
 
         ## Naming
@@ -207,7 +207,7 @@ def render_application_adr_readme(*, pkg: str, short: str, display: str) -> str:
 
         Architecture: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)  
         Implementation tracker: [`../IMPLEMENTATION_PLAN.md`](../IMPLEMENTATION_PLAN.md)  
-        Platform ADRs: [`../../docs/adr/README.md`](../../docs/adr/README.md)
+        Platform ADRs: [`../../docs/project/technical/adr/README.md`](../../docs/project/technical/adr/README.md)
 
         ---
 
@@ -220,7 +220,7 @@ def render_application_adr_readme(*, pkg: str, short: str, display: str) -> str:
         - Serving API shape, auth model, deployment topology, or MCP exposure
         - Cross-agent orchestration declared in this application (not Nexus core semantics)
 
-        **Not required:** Nexus platform contract changes (use `docs/adr/`), single-agent domain logic (use agent ADRs),
+        **Not required:** Nexus platform contract changes (use `docs/project/technical/adr/`), single-agent domain logic (use agent ADRs),
         or configuration-only tweaks with no architectural impact.
 
         ## Naming

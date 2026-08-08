@@ -23,12 +23,42 @@ _SCRIPTS_DIR = _LKW_ROOT / "scripts"
 _PROOF_SCRIPT = _SCRIPTS_DIR / "run-lkw-file-watcher-e2e-proof.py"
 _PROOF_BAT = _SCRIPTS_DIR / "run-lkw-file-watcher-e2e-proof.bat"
 _PUBLIC_PLATFORM_PROOF = (
-    _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+    _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
 )
-_VERIFICATION_DOC = _LKW_ROOT / "docs" / "LKW_7_FILE_WATCHER_VERIFICATION.md"
-_ARCHITECTURE = _LKW_ROOT / "docs" / "ARCHITECTURE.md"
-_IMPLEMENTATION_PLAN = _LKW_ROOT / "docs" / "IMPLEMENTATION_PLAN.md"
-_RUNTIME_ARCH = _PROJECT_ROOT / "docs" / "intergrax_runtime_architecture.md"
+_VERIFICATION_DOC = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "LKW_7_FILE_WATCHER_VERIFICATION.md"
+)
+_ARCHITECTURE = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "ARCHITECTURE.md"
+)
+_IMPLEMENTATION_PLAN = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "applications"
+    / "local_workspace_application"
+    / "IMPLEMENTATION_PLAN.md"
+)
+_RUNTIME_ARCH = (
+    _PROJECT_ROOT
+    / "docs"
+    / "project"
+    / "architecture"
+    / "intergrax_runtime_architecture.md"
+)
 
 
 def _read(path: Path) -> str:
@@ -197,10 +227,10 @@ def test_build_file_watcher_e2e_proof_receipt_maps_live_evidence() -> None:
     assert metadata["receipt_task"] == "LKW.7C2"
     assert metadata["mongo_express_url"] == "http://127.0.0.1:8086"
     assert metadata["recorded_from_live_run"] is True
-    assert metadata["reviewer_guide"] == "docs/public-adoption/LKW_PLATFORM_PROOF.md"
+    assert metadata["reviewer_guide"] == "docs/project/proofs/LKW_PLATFORM_PROOF.md"
     assert (
         metadata["verification_document"]
-        == "applications/local_workspace_application/docs/"
+            == "docs/project/technical/applications/local_workspace_application/"
         "LKW_7_FILE_WATCHER_VERIFICATION.md"
     )
 

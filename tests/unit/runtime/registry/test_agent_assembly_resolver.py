@@ -117,7 +117,7 @@ def test_validate_lifecycle_metadata_accepts_production_eligible_with_owner() ->
             production_eligible=True,
             owner_team="platform",
             owner_contact="owner@intergrax",
-            runbook_ref="docs/intergrax_runtime_architecture.md",
+            runbook_ref="docs/project/architecture/intergrax_runtime_architecture.md",
         ),
     )
     assert result.valid

@@ -7,11 +7,11 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-BOOTSTRAP = ROOT / "docs" / "bootstrap" / "idea_audit.txt"
-ORCHESTRATOR = ROOT / "docs" / "audit" / "IDEA_AUDIT_ORCHESTRATOR.md"
-HUB = ROOT / "docs" / "intergrax_runtime_architecture.md"
-AUDIT_MAP = ROOT / "docs" / "guides" / "INTEGRAX_HARNESS_AUDIT_MAP.md"
-BOOTSTRAP_README = ROOT / "docs" / "bootstrap" / "README.md"
+BOOTSTRAP = ROOT / "docs" / "project" / "maintainers" / "bootstrap" / "idea_audit.txt"
+ORCHESTRATOR = ROOT / "docs" / "project" / "maintainers" / "audit" / "IDEA_AUDIT_ORCHESTRATOR.md"
+HUB = ROOT / "docs" / "project" / "architecture" / "intergrax_runtime_architecture.md
+AUDIT_MAP = ROOT / "docs" / "project" / "technical" / "guides" / "INTEGRAX_HARNESS_AUDIT_MAP.md"
+BOOTSTRAP_README = ROOT / "docs" / "project" / "maintainers" / "bootstrap" / "README.md"
 
 REQUIRED_BOOTSTRAP_MARKERS = (
     "Where the idea comes from",
@@ -77,8 +77,8 @@ def main() -> int:
         if step not in orchestrator_text:
             errors.append(f"orchestrator missing work-cycle heading: {step}")
 
-    if "docs/audit/IDEA_AUDIT_ORCHESTRATOR.md" not in bootstrap_text:
-        errors.append("bootstrap must reference docs/audit/IDEA_AUDIT_ORCHESTRATOR.md")
+    if "docs/project/maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md" not in bootstrap_text:
+        errors.append("bootstrap must reference docs/project/maintainers/audit/IDEA_AUDIT_ORCHESTRATOR.md")
 
     if "../bootstrap/idea_audit.txt" not in orchestrator_text:
         errors.append("orchestrator must link to bootstrap/idea_audit.txt")

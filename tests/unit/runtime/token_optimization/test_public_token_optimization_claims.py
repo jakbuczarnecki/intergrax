@@ -41,21 +41,51 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_CLAIMS_DOC = _REPO_ROOT / "docs" / "public-adoption" / "TOKEN_OPTIMIZATION_CLAIMS.md"
-_PROOFS_DOC = _REPO_ROOT / "PROOFS.md"
-_PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "public-adoption" / "README.md"
+_CLAIMS_DOC = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "capabilities"
+    / "TOKEN_OPTIMIZATION_CLAIMS.md"
+)
+_PROOFS_DOC = _REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
+_PUBLIC_ADOPTION_README = _REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "README.md"
 _PUBLIC_PROOF_MODEL = (
     _REPO_ROOT
     / "docs"
+    / "project"
+    / "maintainers"
     / "public-adoption"
     / "PUBLIC_PROOF_AND_CLAIMS_MODEL.md"
 )
-_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
-_TOKEN_OPT_README = _REPO_ROOT / "docs" / "features" / "token_optimization" / "README.md"
-_TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "features" / "architecture" / "TOKEN_OPTIMIZATION.md"
-_UCL_ARCH = _REPO_ROOT / "docs" / "architecture" / "UNIFIED_CONTEXT_LIFECYCLE.md"
-_UCL_PLAN = _REPO_ROOT / "docs" / "plan" / "UNIFIED_CONTEXT_LIFECYCLE.md"
-_UCL_ADR = _REPO_ROOT / "docs" / "adr" / "entries" / "2026-08-01" / "ADR-UCL-001.md"
+_LKW_PLATFORM_PROOF = _REPO_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
+_TOKEN_OPT_README = _REPO_ROOT / "docs" / "project" / "capabilities" / "token_optimization" / "README.md"
+_TOKEN_OPT_ARCH = _REPO_ROOT / "docs" / "project" / "capabilities" / "architecture" / "TOKEN_OPTIMIZATION.md"
+_UCL_ARCH = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "architecture"
+    / "UNIFIED_CONTEXT_LIFECYCLE.md"
+)
+_UCL_PLAN = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "maintainers"
+    / "plans"
+    / "UNIFIED_CONTEXT_LIFECYCLE.md"
+)
+_UCL_ADR = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "technical"
+    / "adr"
+    / "entries"
+    / "2026-08-01"
+    / "ADR-UCL-001.md"
+)
 
 _CANONICAL_STATUS_LABELS = (
     "IMPLEMENTED",
@@ -181,7 +211,7 @@ _TOKEN_10E_PUBLIC_CONTRACTS = {
 
 _TOKEN_10E_CANONICAL_SURFACES = (
     _TOKEN_OPT_ARCH,
-    _REPO_ROOT / "docs" / "features" / "plan" / "TOKEN_OPTIMIZATION.md",
+    _REPO_ROOT / "docs" / "project" / "capabilities" / "plan" / "TOKEN_OPTIMIZATION.md",
 )
 _UCL_CANONICAL_STATUS_SURFACES = (
     _UCL_PLAN,
@@ -385,7 +415,7 @@ def test_claims_distinguish_bounded_implementation_from_complete_behavior() -> N
         r"blocked\s+until",
         r"pending\s+independent\s+acceptance",
     )
-    assert "../features/plan/TOKEN_OPTIMIZATION.md" in raw_content
+    assert "plan/TOKEN_OPTIMIZATION.md" in raw_content
     for pattern in current_status_patterns:
         assert not re.search(pattern, claims_boundary), (
             f"Claims document mirrors transient plan status: {pattern!r}"
@@ -442,7 +472,7 @@ def test_proofs_doc_links_to_lkw_platform_proof() -> None:
 
 def test_proofs_doc_links_to_token_optimization_readme() -> None:
     content = _read_public_doc(_PROOFS_DOC)
-    assert "features/token_optimization/README.md" in content
+    assert "../capabilities/token_optimization/README.md" in content
 
 
 def test_proofs_doc_links_to_token_optimization_claims() -> None:

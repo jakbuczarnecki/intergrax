@@ -2,7 +2,7 @@
 
 **Host:** [`applications/research_application/`](../../applications/research_application/) · **Roster:** [`agents/README.md`](../README.md)
 
-Architecture: [ARCHITECTURE.md](docs/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](docs/IMPLEMENTATION_PLAN.md). Multi-agent research pipeline (Phase C).
+Architecture: [ARCHITECTURE.md](../../docs/project/technical/agents/research/ARCHITECTURE.md) · Plan: [IMPLEMENTATION_PLAN.md](../../docs/project/technical/agents/research/IMPLEMENTATION_PLAN.md). Multi-agent research pipeline (Phase C).
 
 Agents:
 - `ResearchAgent` — `research.web_search` (stub findings)

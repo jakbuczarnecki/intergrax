@@ -34,6 +34,6 @@ def test_scaffolded_agent_docs_layout() -> None:
         readme = (target / "README.md").read_text(encoding="utf-8")
         assert "docs/ARCHITECTURE.md" in readme
         assert "docs/IMPLEMENTATION_PLAN.md" in readme
-        assert "docs/adr/README.md" in readme
+        assert "docs/project/technical/adr/README.md" in readme
         assert "`ARCHITECTURE.md`](ARCHITECTURE.md)" not in readme
         assert "uv run pytest agents/layout_probe/tests -q" in readme

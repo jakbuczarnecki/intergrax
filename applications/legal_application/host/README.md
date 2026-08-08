@@ -23,4 +23,4 @@ uv run uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
 
 ## Next steps (roadmap)
 
-See [`agents/legal/ROADMAP.md`](../../../agents/legal/ROADMAP.md) and [`agents/legal/docs/IMPLEMENTATION_PLAN.md`](../../../agents/legal/docs/IMPLEMENTATION_PLAN.md).
+See [`agents/legal/ROADMAP.md`](../../../agents/legal/ROADMAP.md) and [`docs/project/technical/agents/legal/IMPLEMENTATION_PLAN.md`](../../../docs/project/technical/agents/legal/IMPLEMENTATION_PLAN.md).

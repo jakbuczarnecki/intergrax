@@ -13,13 +13,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
-WHY_PATH = REPO_ROOT / "WHY_INTERGRAX.md"
-ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "ARCHITECTURE_OVERVIEW.md"
-BUILD_PATH = REPO_ROOT / "BUILD_WITH_INTERGRAX.md"
-PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
-HERO_LIGHT_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-light.svg"
-HERO_DARK_PATH = REPO_ROOT / "docs" / "assets" / "public" / "intergrax-hero-dark.svg"
+WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
+ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "ARCHITECTURE_OVERVIEW.md"
+BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
+PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
+PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
+HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -117,34 +117,34 @@ _BOUNDARY_PHRASES_BUILD = (
 
 _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
     WHY_PATH: (
-        "PROOFS.md",
-        "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-        "docs/features/token_optimization/README.md",
-        "ARCHITECTURE_OVERVIEW.md",
-        "BUILD_WITH_INTERGRAX.md",
+        "../proofs/PROOFS.md",
+        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../capabilities/token_optimization/README.md",
+        "../architecture/ARCHITECTURE_OVERVIEW.md",
+        "../builders/BUILD_WITH_INTERGRAX.md",
     ),
     ARCHITECTURE_OVERVIEW_PATH: (
-        "PROOFS.md",
-        "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-        "docs/features/token_optimization/README.md",
-        "docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md",
-        "docs/DOCUMENTATION_MAP.md",
-        "docs/guides/INTERGRAX_HARNESS_NARRATIVE.md",
+        "../proofs/PROOFS.md",
+        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../capabilities/token_optimization/README.md",
+        "../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md",
+        "../technical/DOCUMENTATION_MAP.md",
+        "../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md",
     ),
     BUILD_PATH: (
-        "PROOFS.md",
-        "docs/public-adoption/LKW_PLATFORM_PROOF.md",
-        "docs/features/token_optimization/README.md",
-        "docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md",
-        "docs/PUBLIC_DOCUMENTATION_MAP.md",
+        "../proofs/PROOFS.md",
+        "../proofs/LKW_PLATFORM_PROOF.md",
+        "../capabilities/token_optimization/README.md",
+        "../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md",
+        "../community/PUBLIC_DOCUMENTATION_MAP.md",
         "EVALUATION_GUIDE.md",
-        "COLLABORATION.md",
-        "LICENSE",
+        "../community/COLLABORATION.md",
+        "../../../LICENSE",
         "README.md#try-lkw",
-        "docs/guides/AGENT_CREATION_GUIDE.md",
+        "../technical/guides/AGENT_CREATION_GUIDE.md",
         "applications/USAGE.md",
-        "ARCHITECTURE_OVERVIEW.md",
-        "docs/DOCUMENTATION_MAP.md",
+        "../architecture/ARCHITECTURE_OVERVIEW.md",
+        "../technical/DOCUMENTATION_MAP.md",
     ),
 }
 
@@ -230,8 +230,8 @@ def test_mermaid_diagrams(why_text: str, arch_text: str, build_text: str) -> Non
 
 
 def test_hero_reuse(arch_text: str) -> None:
-    assert "docs/assets/public/intergrax-hero-light.svg" in arch_text
-    assert "docs/assets/public/intergrax-hero-dark.svg" in arch_text
+    assert "../assets/public/intergrax-hero-light.svg" in arch_text
+    assert "../assets/public/intergrax-hero-dark.svg" in arch_text
     assert "<picture>" in arch_text
     assert 'alt="Intergrax connects specialized agent applications' in arch_text
     assert HERO_LIGHT_PATH.is_file()
@@ -320,7 +320,7 @@ def test_readme_routing(readme_text: str) -> None:
         "ARCHITECTURE_OVERVIEW.md",
         "BUILD_WITH_INTERGRAX.md",
         "LKW_PRODUCT_TOUR.md",
-        "docs/PUBLIC_DOCUMENTATION_MAP.md",
+        "docs/project/community/PUBLIC_DOCUMENTATION_MAP.md",
     ):
         assert link in readme_text, f"README missing link: {link}"
     assert "Local Knowledge Workspace" in readme_text

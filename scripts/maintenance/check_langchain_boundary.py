@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GRANDFATHER_PATH = Path(__file__).with_name("langchain_boundary_grandfather.json")
 DEFAULT_INVENTORY_PATH = (
     REPO_ROOT
-    / "docs/features/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md"
+    / "docs/project/capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md"
 )
 
 SCAN_ROOTS = ("intergrax", "agents", "applications")

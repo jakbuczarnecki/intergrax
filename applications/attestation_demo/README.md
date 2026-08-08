@@ -6,7 +6,7 @@ This Tier-3 host demonstrates **Execution Boundary Export (EBE)**: Intergrax emi
 
 ## External validation: BoundaryAttest
 
-Public case study: [BoundaryAttest Attestation PoC](../../docs/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
+Public case study: [BoundaryAttest Attestation PoC](../../docs/project/overview/case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) — condensed external-facing summary of this integration validation.
 
 Acknowledgement: this validation involved external integration work with the [BoundaryAttest](https://github.com/cullenmeyers/BoundaryAttest) project.
 
@@ -28,11 +28,11 @@ This validation does not imply that BoundaryAttest is bundled with Intergrax or 
 
 | Document | Purpose |
 |----------|---------|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Host design, EBE contract, trust model |
-| [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) | Task queue and verification |
-| [`docs/BUILD_AND_DEPLOY.md`](docs/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
-| [`docs/DOCKER_VERIFY_RUNBOOK.md`](docs/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
-| [`docs/adr/README.md`](docs/adr/README.md) | Application architecture decisions |
+| [`docs/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) | Host design, EBE contract, trust model |
+| [`docs/IMPLEMENTATION_PLAN.md`](../../docs/project/technical/applications/attestation_demo/IMPLEMENTATION_PLAN.md) | Task queue and verification |
+| [`docs/BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/attestation_demo/BUILD_AND_DEPLOY.md) | Local run, Docker, deploy runbook |
+| [`docs/DOCKER_VERIFY_RUNBOOK.md`](../../docs/project/technical/applications/attestation_demo/DOCKER_VERIFY_RUNBOOK.md) | **Step-by-step** — build image, run, verify PoC assumptions |
+| [`docs/project/technical/adr/README.md`](../../docs/project/technical/applications/attestation_demo/adr/README.md) | Application architecture decisions |
 | [`partner_handoff/README.md`](partner_handoff/README.md) | **Partner integration** — auth, mapping, EBE-9 golden vector |
 | [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) | Host signing verifier spec |
 
@@ -142,4 +142,4 @@ Intergrax does **not** ship the adapter or sign partner receipts.
 
 Do not label receipts as `server_attested` by Intergrax unless co-located deployment is explicitly documented.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) for full design.
+See [`docs/ARCHITECTURE.md`](../../docs/project/technical/applications/attestation_demo/ARCHITECTURE.md) and [`partner_handoff/EBE-9_HOST_SIGNING.md`](partner_handoff/EBE-9_HOST_SIGNING.md) for full design.

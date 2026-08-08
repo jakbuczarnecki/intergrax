@@ -1,6 +1,6 @@
 ---
-description: Milestone-only implementation journal — docs/implementation-journal/ (not every Cursor session)
-globs: docs/implementation-journal/**
+description: Milestone-only implementation journal — docs/project/maintainers/implementation-journal/ (not every Cursor session)
+globs: docs/project/maintainers/implementation-journal/**
 alwaysApply: false
 ---
 
@@ -8,8 +8,8 @@ alwaysApply: false
 
 **Milestone log only** — not a transcript of every completed iteration or Cursor chat.
 
-**Canon:** [`docs/implementation-journal/README.md`](docs/implementation-journal/README.md)  
-**Scaffold:** [`docs/implementation-journal/entries/_TEMPLATE.md`](docs/implementation-journal/entries/_TEMPLATE.md)
+**Canon:** [`docs/project/maintainers/implementation-journal/README.md`](docs/project/maintainers/implementation-journal/README.md)  
+**Scaffold:** [`docs/project/maintainers/implementation-journal/entries/_TEMPLATE.md`](docs/project/maintainers/implementation-journal/entries/_TEMPLATE.md)
 
 ## When to write
 
@@ -34,7 +34,7 @@ When skipping: state **"no journal needed"** + one-line rationale in a **terse**
 
 ## Path layout (mandatory when writing)
 
-Full path: `docs/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md`
+Full path: `docs/project/maintainers/implementation-journal/entries/YYYY-MM-DD/<scope>-<slug>.md`
 
 - **Date belongs in the folder**, not in the filename.
 - The only file allowed directly under `entries/` is `_TEMPLATE.md`.
@@ -53,7 +53,7 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 2. **English only** in the journal file.
 3. Frontmatter: `id`, `date`, `tiers`, `scope`, `plan_ref`, `status: completed`, `commit`, `adr`.
 4. Fill all sections; Operator request = **paraphrase**, not verbatim transcript.
-5. **Prepend** row to [`INDEX.md`](docs/implementation-journal/INDEX.md) (newest first).
+5. **Prepend** row to [`INDEX.md`](docs/project/maintainers/implementation-journal/INDEX.md) (newest first).
 6. Chat summary: **Journal entry:** `entries/YYYY-MM-DD/<scope>-<slug>.md`.
 7. After operator commits: set `commit:` to short hash (replace `pending`).
 
@@ -65,13 +65,13 @@ Do **not** mirror harness ADR filenames (`ADR-AREA-NNN.md` under a date folder) 
 
 | Path prefix | `tiers` | Link |
 |-------------|---------|------|
-| `intergrax/` (not `runtime/`) | `tier-0` | `docs/architecture/<DOMAIN>.md` + `docs/plan/<DOMAIN>.md` |
+| `intergrax/` (not `runtime/`) | `tier-0` | `docs/project/architecture/<DOMAIN>.md` + `docs/project/maintainers/plans/<DOMAIN>.md` |
 | `intergrax/runtime/` | `tier-1` | Same domain pair |
 | `agents/<slug>/` | `tier-2` | `agents/<slug>/ARCHITECTURE.md`; `agents/<slug>/adr/` if ADR |
-| `applications/<pkg>/` | `tier-3` | `applications/<pkg>/docs/ARCHITECTURE.md`; `applications/<pkg>/docs/adr/` if ADR |
+| `applications/<pkg>/` | `tier-3` | `docs/project/technical/applications/<pkg>/ARCHITECTURE.md`; `docs/project/technical/applications/<pkg>/adr/` if ADR |
 | `intergrax/applications/_shared/` | `tier-3` | Link shared module + consuming host(s) |
 
-**Tier-3 doc layout:** Application root contains `README.md` only. All other Markdown documentation belongs under `applications/<pkg>/docs/`.
+**Tier-3 doc layout:** Application root contains `README.md` only. Human-facing application documentation belongs under `docs/project/technical/applications/<pkg>/`.
 
 ## Content rules
 

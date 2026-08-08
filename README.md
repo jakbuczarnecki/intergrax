@@ -9,9 +9,9 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Source-available](https://img.shields.io/badge/source--available-evaluation-6c5ce7.svg)](LICENSE)
 [![Active R&D](https://img.shields.io/badge/active-R%26D-0969da.svg)](#license-and-collaboration)
-[![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](PROOFS.md)
+[![Documented proof paths](https://img.shields.io/badge/documented-proof%20paths-2ea44f.svg)](docs/project/proofs/PROOFS.md)
 
-**[Try LKW](#try-lkw)** · [See the LKW workflow](LKW_PRODUCT_TOUR.md) · [Choose your path](#choose-your-path)
+**[Try LKW](#try-lkw)** · [See the LKW workflow](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) · [Choose your path](#choose-your-path)
 
 > Intergrax is **source-available** and under **active R&D**. LKW is a **Backend Product Alpha / MVP**. **Real-user validation** and **commercial validation** are incomplete.
 
@@ -29,15 +29,15 @@ Local Knowledge Workspace (LKW) is the primary product path: a private-by-defaul
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="docs/assets/public/lkw-grounded-result-dark.svg"
+    srcset="docs/project/assets/public/lkw-grounded-result-dark.svg"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="docs/assets/public/lkw-grounded-result-light.svg"
+    srcset="docs/project/assets/public/lkw-grounded-result-light.svg"
   >
   <img
     alt="LKW quickstart flow showing the approved sample file lkw_product_quickstart.txt, the question “What is the project codename?”, the grounded answer “AURORA-17”, its source reference, and persisted Ask-run verification."
-    src="docs/assets/public/lkw-grounded-result-light.svg"
+    src="docs/project/assets/public/lkw-grounded-result-light.svg"
   >
 </picture>
 
@@ -45,7 +45,7 @@ This neutral visual represents the documented Quick Start, not a finished UI scr
 
 **Primary action:** [Run the supported LKW Quick Start](#try-lkw)
 
-Prefer to understand the experience first? [See the LKW Product Tour](LKW_PRODUCT_TOUR.md).
+Prefer to understand the experience first? [See the LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md).
 
 ### What is boundedly proven today
 
@@ -67,9 +67,9 @@ LKW is a Backend Product Alpha / MVP under active development. The current bound
 - real-user validation;
 - commercial validation.
 
-**Review the bounded LKW proof** → [docs/public-adoption/LKW_PLATFORM_PROOF.md](docs/public-adoption/LKW_PLATFORM_PROOF.md)
+**Review the bounded LKW proof** → [docs/project/proofs/LKW_PLATFORM_PROOF.md](docs/project/proofs/LKW_PLATFORM_PROOF.md)
 
-**Check current proof status** → [PROOFS.md](PROOFS.md)
+**Check current proof status** → [PROOFS.md](docs/project/proofs/PROOFS.md)
 
 ---
 
@@ -97,7 +97,7 @@ applications\local_workspace_application\scripts\run-lkw-product-quickstart-wind
 
 **Expected answer marker:** `AURORA-17` · **Expected source file:** `lkw_product_quickstart.txt`
 
-**Detailed guide:** [applications/local_workspace_application/docs/QUICKSTART.md](applications/local_workspace_application/docs/QUICKSTART.md)
+**Detailed guide:** [docs/project/product/lkw/QUICKSTART.md](docs/project/product/lkw/QUICKSTART.md)
 
 First run may download Docker images and the configured local model; duration depends on your environment and is not yet externally validated as a fixed time target.
 
@@ -130,7 +130,7 @@ Building an impressive AI demo is relatively easy. Operating a controlled applic
 
 Teams repeatedly rebuild permissions, knowledge access, integrations, policy enforcement, and evidence collection for every new product. Intergrax centralizes those reusable foundations so product teams can focus on the concrete workflow.
 
-**Why Intergrax:** [WHY_INTERGRAX.md](WHY_INTERGRAX.md)
+**Why Intergrax:** [WHY_INTERGRAX.md](docs/project/overview/WHY_INTERGRAX.md)
 
 ---
 
@@ -148,15 +148,15 @@ Intergrax is a reusable foundation for governed AI applications.
 <picture>
   <source
     media="(prefers-color-scheme: dark)"
-    srcset="docs/assets/public/intergrax-hero-dark.svg"
+    srcset="docs/project/assets/public/intergrax-hero-dark.svg"
   >
   <source
     media="(prefers-color-scheme: light)"
-    srcset="docs/assets/public/intergrax-hero-light.svg"
+    srcset="docs/project/assets/public/intergrax-hero-light.svg"
   >
   <img
     alt="Intergrax connects specialized applications with reusable policy, knowledge, evidence, integration and execution foundations."
-    src="docs/assets/public/intergrax-hero-light.svg"
+    src="docs/project/assets/public/intergrax-hero-light.svg"
   >
 </picture>
 
@@ -178,7 +178,7 @@ flowchart LR
     E --> APP
 ```
 
-**Deep dive:** [Architecture overview](ARCHITECTURE_OVERVIEW.md) · [Foundation architecture narrative](docs/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/DOCUMENTATION_MAP.md)
+**Deep dive:** [Architecture overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) · [Foundation architecture narrative](docs/project/technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) · [Technical documentation map](docs/project/technical/DOCUMENTATION_MAP.md)
 
 ---
 
@@ -193,7 +193,7 @@ flowchart LR
 | **Token Optimization** | PARTIAL |
 | **Shared platform foundations** | IMPLEMENTED — bounded supporting evidence |
 
-Full matrices, limitations, and claim boundaries: **[PROOFS.md](PROOFS.md)**
+Full matrices, limitations, and claim boundaries: **[PROOFS.md](docs/project/proofs/PROOFS.md)**
 
 ---
 
@@ -207,9 +207,9 @@ Token Optimization is a reusable platform mechanism for deterministic prompt and
 
 **Bounded mechanism:** the durable in-cache compaction repository, validation, and CAS activation are implemented. **Not established:** live provider-wide proof, rollback execution, production rollout, final cross-provider proof, universal savings, or production-proven savings.
 
-**Secondary capability route:** [Explore Token Optimization](docs/features/token_optimization/README.md)
+**Secondary capability route:** [Explore Token Optimization](docs/project/capabilities/token_optimization/README.md)
 
-Claim boundaries: [Token Optimization guardrails](docs/public-adoption/TOKEN_OPTIMIZATION_CLAIMS.md)
+Claim boundaries: [Token Optimization guardrails](docs/project/capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)
 
 ---
 
@@ -217,15 +217,15 @@ Claim boundaries: [Token Optimization guardrails](docs/public-adoption/TOKEN_OPT
 
 | You are or want to… | Primary action | Then |
 | ------------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
-| Try the primary product | [Try LKW](#try-lkw) | Inspect the [LKW Platform Proof](docs/public-adoption/LKW_PLATFORM_PROOF.md) when deeper evidence is needed |
-| Understand LKW before running it | [See the LKW Product Tour](LKW_PRODUCT_TOUR.md) | Run the [LKW Quick Start](applications/local_workspace_application/docs/QUICKSTART.md) |
-| Build with Intergrax | Open the [Builder Quick Start](BUILDER_QUICKSTART.md) | Continue to [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) |
-| Review as an architect | Open [Architecture Overview](ARCHITECTURE_OVERVIEW.md) | Review [PROOFS](PROOFS.md) |
-| Assess fit as a buyer | Open [Use Cases](USE_CASES.md) | Review [PROOFS](PROOFS.md) before evaluation or pilot |
-| Prepare a partner or pilot discussion | Open [Partners](PARTNERS.md) | Prepare the [pilot brief](PARTNERS.md#pilot-brief) |
-| Perform deep technical review | Open the [Technical Documentation Map](docs/DOCUMENTATION_MAP.md) | Follow the owning technical documents |
+| Try the primary product | [Try LKW](#try-lkw) | Inspect the [LKW Platform Proof](docs/project/proofs/LKW_PLATFORM_PROOF.md) when deeper evidence is needed |
+| Understand LKW before running it | [See the LKW Product Tour](docs/project/product/lkw/LKW_PRODUCT_TOUR.md) | Run the [LKW Quick Start](docs/project/product/lkw/QUICKSTART.md) |
+| Build with Intergrax | Open the [Builder Quick Start](docs/project/builders/BUILDER_QUICKSTART.md) | Continue to [BUILD_WITH_INTERGRAX](docs/project/builders/BUILD_WITH_INTERGRAX.md) |
+| Review as an architect | Open [Architecture Overview](docs/project/architecture/ARCHITECTURE_OVERVIEW.md) | Review [PROOFS](docs/project/proofs/PROOFS.md) |
+| Assess fit as a buyer | Open [Use Cases](docs/project/overview/USE_CASES.md) | Review [PROOFS](docs/project/proofs/PROOFS.md) before evaluation or pilot |
+| Prepare a partner or pilot discussion | Open [Partners](docs/project/community/PARTNERS.md) | Prepare the [pilot brief](docs/project/community/PARTNERS.md#pilot-brief) |
+| Perform deep technical review | Open the [Technical Documentation Map](docs/project/technical/DOCUMENTATION_MAP.md) | Follow the owning technical documents |
 
-Other routes: [public documentation map](docs/PUBLIC_DOCUMENTATION_MAP.md) · [category comparison](WHY_INTERGRAX.md#where-intergrax-fits) · [public roadmap](ROADMAP.md) · [current proof dashboard](PROOFS.md) · [Evaluation Guide](EVALUATION_GUIDE.md) · [collaboration and legal terms](COLLABORATION.md) and [LICENSE](LICENSE).
+Other routes: [public documentation map](docs/project/community/PUBLIC_DOCUMENTATION_MAP.md) · [category comparison](docs/project/overview/WHY_INTERGRAX.md#where-intergrax-fits) · [public roadmap](docs/project/overview/ROADMAP.md) · [current proof dashboard](docs/project/proofs/PROOFS.md) · [Evaluation Guide](docs/project/builders/EVALUATION_GUIDE.md) · [collaboration and legal terms](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE).
 
 <!-- Compatibility anchors for inbound documentation links -->
 <a id="quick-start"></a>
@@ -253,6 +253,6 @@ Intergrax is **not** currently positioned as:
 
 Intergrax is **source-available** under the Intergrax Evaluation and Collaboration License 1.0.
 
-You may clone, install, run, test, and modify the repository locally for **non-production evaluation**. Authorized collaboration and contribution paths are described in [COLLABORATION.md](COLLABORATION.md).
+You may clone, install, run, test, and modify the repository locally for **non-production evaluation**. Authorized collaboration and contribution paths are described in [COLLABORATION.md](docs/project/community/COLLABORATION.md).
 
 **Production use**, **commercial use**, hosting, and redistribution require **explicit written permission**. [LICENSE](LICENSE) is legally authoritative.

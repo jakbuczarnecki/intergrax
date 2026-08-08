@@ -15,7 +15,7 @@ _LKW_ROOT = _PROJECT_ROOT / "applications" / "local_workspace_application"
 _SCRIPTS_DIR = _LKW_ROOT / "scripts"
 _PROOF_SCRIPT = _SCRIPTS_DIR / "run-lkw-background-task-proof.py"
 _PROOF_BAT = _SCRIPTS_DIR / "run-lkw-background-task-proof.bat"
-_PUBLIC_PLATFORM_PROOF = _PROJECT_ROOT / "docs" / "public-adoption" / "LKW_PLATFORM_PROOF.md"
+_PUBLIC_PLATFORM_PROOF = _PROJECT_ROOT / "docs" / "project" / "proofs" / "LKW_PLATFORM_PROOF.md"
 
 
 def _read(path: Path) -> str:

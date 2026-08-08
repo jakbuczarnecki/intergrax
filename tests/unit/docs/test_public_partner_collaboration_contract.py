@@ -12,13 +12,13 @@ import pytest
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PARTNERS_PATH = REPO_ROOT / "PARTNERS.md"
-COLLABORATION_PATH = REPO_ROOT / "COLLABORATION.md"
-FAQ_PATH = REPO_ROOT / "FAQ.md"
+PARTNERS_PATH = REPO_ROOT / "docs" / "project" / "community" / "PARTNERS.md"
+COLLABORATION_PATH = REPO_ROOT / "docs" / "project" / "community" / "COLLABORATION.md"
+FAQ_PATH = REPO_ROOT / "docs" / "project" / "overview" / "FAQ.md"
 LICENSE_PATH = REPO_ROOT / "LICENSE"
 README_PATH = REPO_ROOT / "README.md"
-PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "PUBLIC_DOCUMENTATION_MAP.md"
-PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
+PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
+PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 CONTRIBUTING_PATH = REPO_ROOT / "CONTRIBUTING.md"
 SECURITY_PATH = REPO_ROOT / "SECURITY.md"
 
@@ -268,7 +268,7 @@ def test_faq_ownership(faq_text: str) -> None:
         "CONTRIBUTING.md",
         "SECURITY.md",
         "ARCHITECTURE_OVERVIEW.md",
-        "docs/DOCUMENTATION_MAP.md",
+        "docs/project/technical/DOCUMENTATION_MAP.md",
     ):
         assert target in faq_text, f"FAQ missing link: {target}"
 

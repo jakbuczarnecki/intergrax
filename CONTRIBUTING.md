@@ -8,11 +8,11 @@ Thank you for your interest in Intergrax. This document explains how to contribu
 
 ## Project status
 
-Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
+Intergrax is under **active private R&D**. The **harness platform is complete** — the default implementation queue is [§6.1 maintenance](docs/project/architecture/intergrax_runtime_architecture.md#61-harness-platform-maintenance-default--band-1) only. Business agents (Phase K) are [end of plan](docs/project/architecture/intergrax_runtime_architecture.md#63-end-of-plan--deferred-product-work-only) until explicit product prioritization.
 
-Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [COLLABORATION.md](COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
+Intergrax is **public and source-available proprietary** under the [Intergrax Evaluation and Collaboration License 1.0](LICENSE). You may clone, install locally, make evaluation modifications, create forks, submit patches, and open pull requests as described in [COLLABORATION.md](docs/project/community/COLLABORATION.md). This is **not** an open-source license grant. Production use and commercial use require **explicit written permission**.
 
-Contributions are welcome under the evaluation and collaboration model. Read [COLLABORATION.md](COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
+Contributions are welcome under the evaluation and collaboration model. Read [COLLABORATION.md](docs/project/community/COLLABORATION.md) and [LICENSE](LICENSE) before starting work. Large or architectural contributions require **prior discussion** with the maintainer.
 
 ---
 
@@ -24,12 +24,12 @@ You may clone the Official Repository, install dependencies, run evaluation path
 
 | Document | When |
 |----------|------|
-| [docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
-| [docs/guides/SYSTEM_INVARIANTS.md](docs/guides/SYSTEM_INVARIANTS.md) | Always — cross-domain rules you must not break |
-| [docs/guides/LAYER_COMPLETION_MODE.md](docs/guides/LAYER_COMPLETION_MODE.md) | Full harness layer closeout sessions |
-| [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Architecture changes |
-| [docs/intergrax_runtime_architecture.md](docs/intergrax_runtime_architecture.md) | Status, phases, gates |
-| [docs/guides/AGENT_CREATION_GUIDE.md](docs/guides/AGENT_CREATION_GUIDE.md) | Agent or application work |
+| [docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md](docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md) | Always — strategic goal and work cycle |
+| [docs/project/technical/guides/SYSTEM_INVARIANTS.md](docs/project/technical/guides/SYSTEM_INVARIANTS.md) | Always — cross-domain rules you must not break |
+| [docs/project/technical/guides/LAYER_COMPLETION_MODE.md](docs/project/technical/guides/LAYER_COMPLETION_MODE.md) | Full harness layer closeout sessions |
+| [docs/project/architecture/intergrax_runtime_architecture.md](docs/project/architecture/intergrax_runtime_architecture.md) | Architecture changes |
+| [docs/project/architecture/intergrax_runtime_architecture.md](docs/project/architecture/intergrax_runtime_architecture.md) | Status, phases, gates |
+| [docs/project/technical/guides/AGENT_CREATION_GUIDE.md](docs/project/technical/guides/AGENT_CREATION_GUIDE.md) | Agent or application work |
 | [AGENTS.md](AGENTS.md) | AI coding agents working in this repo |
 
 ### Work cycle (mandatory for significant changes)
@@ -79,7 +79,7 @@ uv run intergrax doctor
 cd infra && ./manage.sh up redis qdrant postgresql
 ```
 
-See [infra/README.md](infra/README.md) and [docs/guides/HARNESS_ENVIRONMENT.md](docs/guides/HARNESS_ENVIRONMENT.md).
+See [infra/README.md](infra/README.md) and [docs/project/technical/guides/HARNESS_ENVIRONMENT.md](docs/project/technical/guides/HARNESS_ENVIRONMENT.md).
 
 ---
 
@@ -89,8 +89,8 @@ See [infra/README.md](infra/README.md) and [docs/guides/HARNESS_ENVIRONMENT.md](
 
 - **Harness maintenance** — bug fixes, regression tests, CI improvements (§6.1)
 - **Documentation** — corrections and clarifications in `docs/` (one source of truth per topic)
-- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/guides/AGENT_CREATION_GUIDE.md)
-- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/guides/EXTENSION_AUTHOR_GUIDE.md)
+- **Tier-2 agents** — new specialized agents following [AGENT_CREATION_GUIDE](docs/project/technical/guides/AGENT_CREATION_GUIDE.md)
+- **Tier-0 plugins** — integrations, tools, skills via [EXTENSION_AUTHOR_GUIDE](docs/project/technical/guides/EXTENSION_AUTHOR_GUIDE.md)
 - **Tier-3 applications** — deployable environments following `applications/USAGE.md`
 - **Test coverage** — meaningful tests for real behavior (not trivial assertions)
 
@@ -118,7 +118,7 @@ applications/    MAY import from agents/ and intergrax/
 
 ### Reuse rule
 
-Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
+Tier-1/2/3 work is **composition and wiring** of existing Tier-0 modules — not parallel universal mechanisms. See [architecture §5.2](docs/project/architecture/PLATFORM_FOUNDATION.md#52-platform-reuse-and-no-redundancy-principle).
 
 ### Agent creation
 
@@ -148,13 +148,13 @@ git checkout -b feature/short-description
 
 | Change type | Update |
 |-------------|--------|
-| Strategy / goal | `docs/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
-| Architecture | `docs/intergrax_runtime_architecture.md` + sync plan §0 |
-| Phase status | `docs/intergrax_runtime_architecture.md` |
-| Agent workflow | `docs/guides/AGENT_CREATION_GUIDE.md` |
-| Integration catalog | `docs/architecture/INTEGRATIONS.md` |
-| Tool catalog | `docs/architecture/TOOLS.md` |
-| Skill catalog | `docs/architecture/SKILLS.md` |
+| Strategy / goal | `docs/project/technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md` |
+| Architecture | `docs/project/architecture/intergrax_runtime_architecture.md` + sync plan §0 |
+| Phase status | `docs/project/architecture/intergrax_runtime_architecture.md` |
+| Agent workflow | `docs/project/technical/guides/AGENT_CREATION_GUIDE.md` |
+| Integration catalog | `docs/project/architecture/INTEGRATIONS.md` |
+| Tool catalog | `docs/project/architecture/TOOLS.md` |
+| Skill catalog | `docs/project/architecture/SKILLS.md` |
 
 ### 4. Verify
 
@@ -231,7 +231,7 @@ Use [GitHub Issues](https://github.com/jakbuczarnecki/intergrax/issues) and pick
 
 For security vulnerabilities, see [SECURITY.md](SECURITY.md) — **do not** open public issues.
 
-For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [COLLABORATION.md](COLLABORATION.md)) — do not use public issues for those topics.
+For commercial licensing, production use, or partnership requests, contact the maintainer directly (see [COLLABORATION.md](docs/project/community/COLLABORATION.md)) — do not use public issues for those topics.
 
 ---
 

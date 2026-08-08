@@ -54,7 +54,7 @@ def render_application_pyproject(
         # © Artur Czarnecki. All rights reserved.
         # Tier-3 application dependency project (workspace member).
         # Application source remains importable via PYTHONPATH=applications/.
-        # Canonical: docs/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
+        # Canonical: docs/project/architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md
 
         [project]
         name = "{dist}"

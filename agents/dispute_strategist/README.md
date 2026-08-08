@@ -6,7 +6,7 @@ Litigation strategy for **DSW** — attack/defense lines, emphasis map, negotiat
 
 ## Docs
 
-- [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](docs/adr/README.md)
+- [`ARCHITECTURE.md`](../../docs/project/technical/agents/dispute_strategist/ARCHITECTURE.md) · [`IMPLEMENTATION_PLAN.md`](../../docs/project/technical/agents/dispute_strategist/IMPLEMENTATION_PLAN.md) · [`adr/README.md`](../../docs/project/technical/agents/dispute_strategist/adr/README.md)
 
 ## Quick start
 

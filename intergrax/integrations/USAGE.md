@@ -29,7 +29,7 @@ Per-provider notes live beside each bundle under
 
 The **nginx / ingress controller** integration slug is owned by
 **Elastic Capacity & Scaling (ECP)**, not the Integrations catalog. See
-[`docs/plan/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/plan/ELASTIC_CAPACITY_AND_SCALING.md)
+[`docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../../docs/project/maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md)
 and ADR-SCALE-002 for the defer decision and Kubernetes-first deployment path.
 
 Integrations documents the bridge only; capacity ingress wiring remains in ECP.

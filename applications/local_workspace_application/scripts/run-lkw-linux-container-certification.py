@@ -36,7 +36,7 @@ _INSIDE_SCRIPT = (
     "run-lkw-linux-container-certification-inside.py"
 )
 _EVIDENCE_PATH = (
-    _REPO_ROOT / "docs/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
+    _REPO_ROOT / "docs/project/maintainers/public-adoption/evidence/LKW_LINUX_DOCKER_CERTIFICATION.json"
 )
 _EXPECTED_PARENT = "40a73fbb455def6d5106180d74a7e65388457465"
 _CERT_PROFILE = "linux_docker_runtime"

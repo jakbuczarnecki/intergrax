@@ -105,7 +105,7 @@ def _shadow_trend_export_ok() -> bool:
 def collect_operational_checks() -> OperationalMaturityEvidence:
     release_cycles = _resolve_release_cycles()
 
-    slo_doc = REPO_ROOT / "docs" / "guides/HARNESS_ENVIRONMENT.md"
+    slo_doc = REPO_ROOT / "docs" / "project" / "technical" / "guides/HARNESS_ENVIRONMENT.md"
     checks = [
         OperationalHarnessCheck(
             check_id="idempotency_gate",

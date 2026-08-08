@@ -24,9 +24,9 @@ Not implemented: production Google OAuth, Google API client construction, Drive 
 
 ## Knowledge architecture (frozen — `GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1`)
 
-Canonical architecture: [`docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8.
+Canonical architecture: [`docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) §13.8.
 
-Implementation plan: [`docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/plan/KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 10.
+Implementation plan: [`docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../../../docs/project/maintainers/plans/KNOWLEDGE_SOURCE_INTEGRATIONS.md) Phase 10.
 
 One integration, seven planned source kinds (independent scope/cursor semantics each):
 

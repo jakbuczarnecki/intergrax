@@ -35,8 +35,8 @@ def render_application_dependency_section(
         "## Application dependency project\n"
         "\n"
         "Canonical packaging: "
-        "[docs/architecture/APPLICATION_DEPENDENCY_MODEL.md]"
-        "(../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).\n"
+        "[docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md]"
+        "(../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).\n"
         "\n"
         f"{_MD_FENCE}bash\n"
         f"uv sync --project applications/{pkg}\n"
@@ -107,7 +107,7 @@ def render_build_deploy_doc(
 
         Tier-3 application package: ``applications/{pkg}/``. This document is the **operational runbook** for local development, verification, and container deployment.
 
-        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../../applications/USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
+        > Quick overview: [`README.md`](../README.md) · Layout canon: [`applications/USAGE.md`](../USAGE.md) · Engine API: [`intergrax/applications/USAGE.md`](../../intergrax/applications/USAGE.md)
 
         ---
 
@@ -124,7 +124,7 @@ def render_build_deploy_doc(
 
         **Dependency contract:** this application's ``pyproject.toml`` depends on the Intergrax
         workspace package and selects required platform extras. See
-        [`docs/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../../docs/architecture/APPLICATION_DEPENDENCY_MODEL.md).
+        [`docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md`](../../../docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
         Sync / run from repository root:
 

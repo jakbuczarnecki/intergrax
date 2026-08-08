@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
-"""Generate docs/guides/SYMBOL_INDEX.md — symbol to path map (F5)."""
+"""Generate docs/project/technical/guides/SYMBOL_INDEX.md — symbol to path map (F5)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / "docs" / "guides" / "SYMBOL_INDEX.md"
+OUT = ROOT / "docs" / "project" / "technical" / "guides" / "SYMBOL_INDEX.md"
 
 # High-value harness symbols — prefer grep hit in intergrax/ and agents/
 SYMBOLS: tuple[str, ...] = (

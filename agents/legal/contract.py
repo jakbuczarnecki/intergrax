@@ -8,7 +8,7 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.skills.providers.legal.manifests import LEGAL_CONTRACT_REVIEW
 from legal.capabilities import CAPABILITIES
 
-# Skill packs: docs/architecture/SKILLS.md
+# Skill packs: docs/project/architecture/SKILLS.md
 
 
 def build_agent_contract() -> AgentContract:
