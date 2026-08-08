@@ -75,6 +75,9 @@ class KnowledgeInventoryItemV1(BaseModel):
     connection_ref: str | None = None
 
     display_label: str | None = None
+    provider_id: str | None = None
+    source_kind: str | None = None
+    capability_ids: tuple[str, ...] = ()
 
     lifecycle_state: str
     enabled: bool
@@ -214,8 +217,8 @@ class KnowledgeInspectionService:
         self,
         *,
         configuration_service: WorkspaceKnowledgeConfigurationService,
-        indexed_source_lifecycle_service: IndexedSourceLifecycleService,
-        live_access_lifecycle_service: LiveAccessLifecycleService,
+        indexed_source_lifecycle_service: IndexedSourceLifecycleService | None,
+        live_access_lifecycle_service: LiveAccessLifecycleService | None,
     ) -> None:
         self._configuration_service = configuration_service
         self._indexed_lifecycle = indexed_source_lifecycle_service
@@ -226,6 +229,8 @@ class KnowledgeInspectionService:
         items: list[KnowledgeInventoryItemV1] = []
         try:
             for binding in configuration.indexed_sources:
+                if self._indexed_lifecycle is None:
+                    raise KnowledgeInventoryError("indexed_source_unavailable")
                 view = self._indexed_lifecycle.get(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
@@ -238,6 +243,8 @@ class KnowledgeInspectionService:
                     )
                 )
             for binding in configuration.live_access_bindings:
+                if self._live_lifecycle is None:
+                    raise KnowledgeInventoryError("live_access_unavailable")
                 view = self._live_lifecycle.get(
                     GetLiveAccessCommand(
                         tenant_id=tenant_id,
@@ -249,10 +256,17 @@ class KnowledgeInspectionService:
                     self._live_item(
                         view,
                         display_label=binding.derived_safe_display_label,
+                        provider_id=getattr(binding, "derived_provider_id", None),
+                        source_kind=getattr(binding, "derived_resource_type", None),
+                        capability_ids=tuple(
+                            getattr(binding, "allowed_capability_ids", ())
+                        ),
                     )
                 )
         except (WorkspaceIndexedSourceLifecycleError, WorkspaceLiveAccessBindingError) as exc:
             raise KnowledgeInventoryError(self._map_error(exc.error_code)) from exc
+        except KnowledgeInventoryError:
+            raise
         except Exception as exc:
             raise KnowledgeInventoryError("knowledge_inventory_unavailable") from exc
         ordered = tuple(
@@ -290,6 +304,8 @@ class KnowledgeInspectionService:
         configuration = self._configuration(tenant_id=tenant_id, workspace_id=workspace_id)
         try:
             if mode is KnowledgeAccessModeV1.INDEXED:
+                if self._indexed_lifecycle is None:
+                    raise KnowledgeInventoryError("indexed_source_unavailable")
                 binding = next(
                     item
                     for item in configuration.indexed_sources
@@ -304,6 +320,8 @@ class KnowledgeInspectionService:
                     view,
                     display_label=binding.cached_safe_display_label,
                 )
+            if self._live_lifecycle is None:
+                raise KnowledgeInventoryError("live_access_unavailable")
             binding = next(
                 item
                 for item in configuration.live_access_bindings
@@ -319,11 +337,16 @@ class KnowledgeInspectionService:
             return self._live_item(
                 view,
                 display_label=binding.derived_safe_display_label,
+                provider_id=getattr(binding, "derived_provider_id", None),
+                source_kind=getattr(binding, "derived_resource_type", None),
+                capability_ids=tuple(getattr(binding, "allowed_capability_ids", ())),
             )
         except StopIteration:
             raise KnowledgeInventoryError("knowledge_item_not_found") from None
         except (WorkspaceIndexedSourceLifecycleError, WorkspaceLiveAccessBindingError) as exc:
             raise KnowledgeInventoryError(self._map_error(exc.error_code)) from exc
+        except KnowledgeInventoryError:
+            raise
         except Exception as exc:
             raise KnowledgeInventoryError("knowledge_inventory_unavailable") from exc
 
@@ -376,6 +399,9 @@ class KnowledgeInspectionService:
         view: LiveAccessLifecycleViewV1,
         *,
         display_label: str | None,
+        provider_id: str | None,
+        source_kind: str | None,
+        capability_ids: tuple[str, ...],
     ) -> KnowledgeInventoryItemV1:
         return KnowledgeInventoryItemV1(
             tenant_id=view.tenant_id,
@@ -385,6 +411,9 @@ class KnowledgeInspectionService:
             live_access_binding_id=view.live_access_binding_id,
             connection_ref=view.connection_ref,
             display_label=display_label,
+            provider_id=provider_id,
+            source_kind=source_kind,
+            capability_ids=capability_ids,
             lifecycle_state=_value(view.lifecycle_state),
             enabled=view.enabled,
             detached=view.detached,
@@ -436,8 +465,8 @@ class KnowledgeOperationsService:
         self,
         *,
         inspection_service: KnowledgeInspectionService,
-        indexed_source_lifecycle_service: IndexedSourceLifecycleService,
-        live_access_lifecycle_service: LiveAccessLifecycleService,
+        indexed_source_lifecycle_service: IndexedSourceLifecycleService | None,
+        live_access_lifecycle_service: LiveAccessLifecycleService | None,
     ) -> None:
         self._inspection = inspection_service
         self._indexed_lifecycle = indexed_source_lifecycle_service
@@ -511,6 +540,8 @@ class KnowledgeOperationsService:
         command: KnowledgeOperationCommandV1,
         binding_id: str,
     ):
+        if self._indexed_lifecycle is None:
+            raise KnowledgeOperationError("indexed_source_unavailable")
         common = {
             "tenant_id": command.tenant_id,
             "workspace_id": command.workspace_id,

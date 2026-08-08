@@ -13,9 +13,6 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     LiveResultRetentionV1,
     QueryPolicyModeV2,
 )
-from local_workspace_application.workspaces.slack_ask_orchestration import (
-    SlackAskCoverageV1,
-)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.runtime.vendor_knowledge.live.contracts import (
@@ -287,7 +284,11 @@ class WorkspaceAskRunV2(BaseModel):
     configuration_revision: int = Field(..., ge=0)
     plan_id: str = Field(..., min_length=1)
     live_result_retention: LiveResultRetentionV1 = LiveResultRetentionV1.EPHEMERAL
-    slack_coverage: SlackAskCoverageV1 | None = None
+    # Optional provider-strategy extension.  The generic Ask contract does not
+    # interpret provider-specific coverage payloads.
+    provider_coverage: Any | None = None
+    # Backward-compatible persisted alias from the former Slack strategy.
+    slack_coverage: Any | None = None
     answer: str | None = None
     citations: list[WorkspaceCitationV1] = Field(default_factory=list)
     persisted_evidence: list[PersistedAskEvidenceV2] = Field(default_factory=list)
@@ -329,9 +330,11 @@ class WorkspaceAskRunV2(BaseModel):
                     raise ValueError("live_call_identity_mismatch")
                 call_identity_by_call_id[item.call_id] = identity
 
-        if self.live_result_retention is LiveResultRetentionV1.EPHEMERAL:
-            if self.execution_receipts:
-                raise ValueError("ephemeral_retention_forbids_receipts")
+        if (
+            self.live_result_retention is LiveResultRetentionV1.EPHEMERAL
+            and self.execution_receipts
+        ):
+            raise ValueError("ephemeral_retention_forbids_receipts")
 
         receipt_by_id: dict[str, LiveExecutionReceiptV1] = {}
         receipt_count_by_call_id: dict[str, int] = {}

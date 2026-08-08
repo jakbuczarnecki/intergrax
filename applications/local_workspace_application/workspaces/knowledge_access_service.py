@@ -7,27 +7,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding
-from local_workspace_application.workspaces.connected_source_candidate import (
-    decode_slack_conversation_candidate_ref,
-    validate_candidate_scope,
-)
-from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
-    RemoteResourceOpaqueRefCodec,
-)
-from local_workspace_application.workspaces.connected_source_ids import connected_source_id
 from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
 )
-from local_workspace_application.workspaces.connected_source_models import (
-    ConnectedSourceBindingError,
-    RemoteResourceDiscoveryPageV1,
-    RemoteResourceTypeV1,
+from local_workspace_application.workspaces.connected_source_ids import (
+    connected_source_id,
 )
-from local_workspace_application.workspaces.connected_source_tenant_binding import (
-    SlackConversationTenantBindingRequest,
-    WorkspaceConnectedSourceTenantBindingService,
-    slack_conversation_tenant_binding_id,
+from local_workspace_application.workspaces.connected_source_models import (
+    RemoteResourceDiscoveryPageV1,
 )
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     IndexedSourceAudienceEligibilityV1,
@@ -44,14 +31,47 @@ from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_s
 from local_workspace_application.workspaces.models import WorkspaceOperation
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
 
+from intergrax.runtime.vendor_knowledge.bindings import KnowledgeSourceBinding
+
 
 class TenantKnowledgeSourceBindingPort(Protocol):
+    def create_or_get_equivalent(
+        self,
+        binding: KnowledgeSourceBinding,
+    ) -> KnowledgeSourceBinding:
+        ...
+
     def get_binding(
         self,
         *,
         tenant_id: str,
         binding_id: str,
     ) -> KnowledgeSourceBinding | None:
+        ...
+
+
+class ConnectedSourceCandidateAdapter(Protocol):
+    def build_binding(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        opaque_candidate_ref: str,
+        root_oldest: str,
+        root_latest: str,
+        safe_display_name: str | None = None,
+    ) -> KnowledgeSourceBinding:
+        ...
+
+    async def revalidate_candidate_label(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        opaque_candidate_ref: str,
+    ) -> str:
         ...
 
 
@@ -97,25 +117,26 @@ class WorkspaceKnowledgeAccessService:
         self,
         *,
         discovery_service: WorkspaceRemoteResourceDiscoveryService,
-        tenant_binding_service: WorkspaceConnectedSourceTenantBindingService,
+        tenant_binding_service: TenantKnowledgeSourceBindingPort,
         indexed_source_lifecycle_service: WorkspaceIndexedSourceLifecycleService,
         workspace_service: ManagedWorkspaceService,
         tenant_binding_port: TenantKnowledgeSourceBindingPort,
-        opaque_ref_codec: RemoteResourceOpaqueRefCodec,
+        candidate_adapter: ConnectedSourceCandidateAdapter,
     ) -> None:
         self._discovery = discovery_service
         self._tenant_bindings = tenant_binding_service
         self._lifecycle = indexed_source_lifecycle_service
         self._workspace_service = workspace_service
         self._tenant_binding_port = tenant_binding_port
-        self._codec = opaque_ref_codec
+        self._candidate_adapter = candidate_adapter
 
-    async def list_slack_conversations(
+    async def list_remote_resources(
         self,
         *,
         tenant_id: str,
         workspace_id: str,
         connection_ref: str,
+        resource_type: object,
         cursor: str | None = None,
         limit: int = 50,
     ) -> RemoteResourceDiscoveryPageV1:
@@ -123,7 +144,7 @@ class WorkspaceKnowledgeAccessService:
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
-            resource_type=RemoteResourceTypeV1.SLACK_CONVERSATION,
+            resource_type=resource_type,
             cursor=cursor,
             limit=limit,
         )
@@ -132,26 +153,15 @@ class WorkspaceKnowledgeAccessService:
         self,
         request: CreateConnectedIndexedSourceRequest,
     ) -> CreateConnectedIndexedSourceResult:
-        payload = decode_slack_conversation_candidate_ref(
-            self._codec,
-            request.opaque_candidate_ref,
-        )
-        validate_candidate_scope(
-            payload,
+        binding = self._candidate_adapter.build_binding(
             tenant_id=request.tenant_id,
             workspace_id=request.workspace_id,
             connection_ref=request.connection_ref,
-        )
-        binding_request = SlackConversationTenantBindingRequest(
-            tenant_id=request.tenant_id,
-            connection_ref=request.connection_ref,
-            conversation_id=payload.conversation_id,
-            conversation_kind=payload.conversation_kind,
-            safe_display_name="",
+            opaque_candidate_ref=request.opaque_candidate_ref,
             root_oldest=request.root_oldest,
             root_latest=request.root_latest,
         )
-        expected_binding_id = slack_conversation_tenant_binding_id(binding_request)
+        expected_binding_id = binding.binding_id
 
         sync_mode = IndexedSourceSyncModeV1.FULL
         audience_eligibility = IndexedSourceAudienceEligibilityV1.PERSONAL_ONLY
@@ -182,28 +192,27 @@ class WorkspaceKnowledgeAccessService:
                 created_new_source=False,
             )
 
-        safe_label = await self._discovery.revalidate_candidate_label(
+        safe_label = await self._candidate_adapter.revalidate_candidate_label(
             tenant_id=request.tenant_id,
             workspace_id=request.workspace_id,
             connection_ref=request.connection_ref,
-            conversation_id=payload.conversation_id,
-            conversation_kind=payload.conversation_kind,
+            opaque_candidate_ref=request.opaque_candidate_ref,
         )
-        binding_request = SlackConversationTenantBindingRequest(
+        binding = self._candidate_adapter.build_binding(
             tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
             connection_ref=request.connection_ref,
-            conversation_id=payload.conversation_id,
-            conversation_kind=payload.conversation_kind,
-            safe_display_name=safe_label,
+            opaque_candidate_ref=request.opaque_candidate_ref,
             root_oldest=request.root_oldest,
             root_latest=request.root_latest,
+            safe_display_name=safe_label,
         )
         try:
-            tenant_binding = self._tenant_bindings.create_or_get_equivalent_for_slack_conversation(
-                binding_request
-            )
-        except ConnectedSourceBindingError as exc:
-            raise WorkspaceIndexedSourceLifecycleError(exc.error_code) from exc
+            tenant_binding = self._tenant_bindings.create_or_get_equivalent(binding)
+        except Exception as exc:
+            raise WorkspaceIndexedSourceLifecycleError(
+                "knowledge_source_binding_unavailable"
+            ) from exc
         if tenant_binding.binding_id != expected_binding_id:
             raise WorkspaceIndexedSourceLifecycleError("knowledge_source_binding_invalid")
 

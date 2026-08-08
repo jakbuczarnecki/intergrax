@@ -240,6 +240,19 @@ def test_empty_workspace_returns_empty_inventory() -> None:
     assert inventory.summary.total == 0
 
 
+def test_missing_live_lifecycle_fails_closed_for_persisted_live_binding() -> None:
+    configuration = _configuration()
+    configuration.indexed_sources = ()
+    inspection = KnowledgeInspectionService(
+        configuration_service=_ConfigurationService(configuration),
+        indexed_source_lifecycle_service=None,
+        live_access_lifecycle_service=None,
+    )
+
+    with pytest.raises(KnowledgeInventoryError, match="live_access_unavailable"):
+        inspection.list_items(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
 def test_list_items_maps_indexed_lifecycle_failure_to_inventory_error() -> None:
     inspection, _, indexed, _ = _services()
 

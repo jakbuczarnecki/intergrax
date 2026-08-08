@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Protocol
 from uuid import uuid4
 
 from local_workspace_application.workspaces.ask_models import (
@@ -54,11 +54,6 @@ from local_workspace_application.workspaces.knowledge_configuration_service impo
 )
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.workspaces.service import ManagedWorkspaceService
-from local_workspace_application.workspaces.slack_ask_orchestration import (
-    SlackAskPlannerV1,
-    SlackAskRequestV1,
-    SlackAskStagedExecutionV1,
-)
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -83,6 +78,36 @@ class WorkspaceAskV2LookupError(WorkspaceAskV2Error):
 
 class WorkspaceAskV2PersistenceError(RuntimeError):
     """A V2 run could not be durably persisted."""
+
+
+class WorkspaceAskProviderStrategy(Protocol):
+    """Optional provider-owned planning/expansion strategy for generic Ask."""
+
+    def build_plan(
+        self,
+        *,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        request: Any,
+    ) -> Any:
+        ...
+
+    def build_expansion(
+        self,
+        *,
+        command: WorkspaceAskCommandV2,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        effective_policy: Any,
+        validated_plan: ValidatedEvidencePlanV1,
+    ) -> Any | None:
+        ...
+
+    def coverage(
+        self,
+        *,
+        configuration: WorkspaceKnowledgeConfigurationV1,
+        request: Any,
+    ) -> Any:
+        ...
 
 
 class UnavailableTenantLiveCapabilityCatalog:
@@ -156,7 +181,7 @@ class WorkspaceAskCommandV2(BaseModel):
     audience_context: AudienceContextV1
     indexed_max_results: int | None = Field(default=None, ge=1, le=500)
     ordered_live_call_proposals: tuple[LiveCallProposalV1, ...] = ()
-    slack_request: SlackAskRequestV1 | None = None
+    provider_request: Any | None = None
     request_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1)
     run_id: str | None = Field(default=None, min_length=1)
 
@@ -164,16 +189,13 @@ class WorkspaceAskCommandV2(BaseModel):
     def _question_not_blank(self) -> WorkspaceAskCommandV2:
         if not self.question.strip():
             raise ValueError("question_must_not_be_blank")
+        if self.provider_request is not None and self.ordered_live_call_proposals:
+            raise ValueError("provider_request_proposals_conflict")
         if (
-            self.slack_request is not None
-            and self.ordered_live_call_proposals
-        ):
-            raise ValueError("slack_request_proposals_conflict")
-        if (
-            self.slack_request is not None
+            self.provider_request is not None
             and self.requested_mode is QueryPolicyModeV2.INDEXED_ONLY
         ):
-            raise ValueError("slack_request_requires_live_mode")
+            raise ValueError("provider_request_requires_live_mode")
         return self
 
 
@@ -197,7 +219,7 @@ class WorkspaceAskServiceV2:
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         run_id_factory: Callable[[], str] = lambda: str(uuid4()),
         plan_id_factory: Callable[[], str] = lambda: str(uuid4()),
-        slack_planner: SlackAskPlannerV1 | None = None,
+        provider_strategy: WorkspaceAskProviderStrategy | None = None,
     ) -> None:
         self._workspaces = workspace_service
         self._workspace_repository = workspace_repository
@@ -213,7 +235,7 @@ class WorkspaceAskServiceV2:
         self._clock = clock
         self._run_id_factory = run_id_factory
         self._plan_id_factory = plan_id_factory
-        self._slack_planner = slack_planner or SlackAskPlannerV1()
+        self._provider_strategy = provider_strategy
 
     @property
     def llm_adapter(self) -> LLMAdapter:
@@ -258,14 +280,19 @@ class WorkspaceAskServiceV2:
             resource_scope_validator=self._resource_scope_validator,
             schema_registry=self._schema_registry,
         )
-        slack_expansion = self._build_slack_expansion(
+        provider_expansion = self._build_provider_expansion(
             command=command,
             configuration=configuration,
             effective_policy=effective_policy,
             validated_plan=validated_plan,
         )
-        slack_coverage = (
-            slack_expansion.coverage if slack_expansion is not None else None
+        provider_coverage = (
+            self._provider_strategy.coverage(
+                configuration=configuration,
+                request=command.provider_request,
+            )
+            if command.provider_request is not None and self._provider_strategy is not None
+            else None
         )
         run_id = command.run_id or self._run_id_factory()
         initial = self._initial_run(run_id, command, configuration, validated_plan)
@@ -277,18 +304,14 @@ class WorkspaceAskServiceV2:
                 question=command.question,
                 validated_plan=validated_plan,
                 retention=effective_policy.live_result_retention,
-                live_expansion=slack_expansion,
+                live_expansion=provider_expansion,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return self._finalize_failure(
                 initial,
                 code="live_execution_failed",
                 execution=None,
-                slack_coverage=(
-                    slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage
-                ),
+                provider_coverage=provider_coverage,
             )
 
         if execution.error_code is not None:
@@ -296,16 +319,14 @@ class WorkspaceAskServiceV2:
                 initial,
                 code=execution.error_code,
                 execution=execution,
-                slack_coverage=(
-                    slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage
-                ),
+                provider_coverage=provider_coverage,
             )
 
         evidence = tuple(execution.indexed_evidence) + tuple(execution.live_evidence)
-        if slack_expansion is not None:
-            evidence = slack_expansion.include_evidence(evidence)
+        if provider_expansion is not None:
+            include_evidence = getattr(provider_expansion, "include_evidence", None)
+            if callable(include_evidence):
+                evidence = include_evidence(evidence)
         try:
             assembler = HybridAskAnswerAssemblerV2(self.llm_adapter)
             assembly = assembler.assemble(question=command.question, evidence=evidence)
@@ -317,9 +338,7 @@ class WorkspaceAskServiceV2:
                     answer=None,
                     citations=[],
                     status=AskRunStatus.INSUFFICIENT_EVIDENCE,
-                    slack_coverage=slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage,
+                    provider_coverage=provider_coverage,
                 )
             citations = self._project_citations(
                 assembly.used_evidence_ids,
@@ -340,42 +359,28 @@ class WorkspaceAskServiceV2:
                 answer=assembly.answer,
                 citations=citations,
                 status=AskRunStatus.COMPLETED,
-                slack_coverage=slack_expansion.coverage
-                if slack_expansion is not None
-                else slack_coverage,
+                provider_coverage=provider_coverage,
             )
         except WorkspaceAskV2Error as exc:
             return self._finalize_failure(
                 initial,
                 code=exc.error_code,
                 execution=execution,
-                slack_coverage=(
-                    slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage
-                ),
+                provider_coverage=provider_coverage,
             )
         except AskAnswerAssemblyError as exc:
             return self._finalize_failure(
                 initial,
                 code=exc.code,
                 execution=execution,
-                slack_coverage=(
-                    slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage
-                ),
+                provider_coverage=provider_coverage,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return self._finalize_failure(
                 initial,
                 code="assembly_failed",
                 execution=execution,
-                slack_coverage=(
-                    slack_expansion.coverage
-                    if slack_expansion is not None
-                    else slack_coverage
-                ),
+                provider_coverage=provider_coverage,
             )
 
     def get_run(self, *, tenant_id: str, run_id: str) -> WorkspaceAskRunV2:
@@ -399,12 +404,16 @@ class WorkspaceAskServiceV2:
         ):
             indexed_directive = self._indexed_directive(min(requested, maximum))
         ordered_live_call_proposals = tuple(command.ordered_live_call_proposals)
-        if command.slack_request is not None:
-            slack_plan = self._slack_planner.build_plan(
+        if command.provider_request is not None:
+            if self._provider_strategy is None:
+                raise HybridAskPolicyError("provider_strategy_unavailable")
+            provider_plan = self._provider_strategy.build_plan(
                 configuration=configuration,
-                request=command.slack_request,
+                request=command.provider_request,
             )
-            ordered_live_call_proposals = slack_plan.ordered_live_call_proposals
+            ordered_live_call_proposals = tuple(
+                provider_plan.ordered_live_call_proposals
+            )
         plan = EvidencePlanV1(
             plan_id=self._plan_id_factory(),
             tenant_id=command.tenant_id,
@@ -423,53 +432,23 @@ class WorkspaceAskServiceV2:
         )
         return plan
 
-    def _build_slack_expansion(
+    def _build_provider_expansion(
         self,
         *,
         command: WorkspaceAskCommandV2,
         configuration: WorkspaceKnowledgeConfigurationV1,
         effective_policy: Any,
         validated_plan: ValidatedEvidencePlanV1,
-    ) -> SlackAskStagedExecutionV1 | None:
-        request = command.slack_request
-        if request is None:
+    ) -> Any | None:
+        if command.provider_request is None:
             return None
-        slack_plan = self._slack_planner.build_plan(
+        if self._provider_strategy is None:
+            raise HybridAskPolicyError("provider_strategy_unavailable")
+        return self._provider_strategy.build_expansion(
+            command=command,
             configuration=configuration,
-            request=request,
-        )
-        resolved_bindings = tuple(
-            binding
-            for binding in configuration.live_access_bindings
-            if binding.live_access_binding_id in slack_plan.coverage.resolved_bindings
-        )
-
-        def validate_expansion(
-            proposals: tuple[LiveCallProposalV1, ...],
-        ) -> tuple[Any, ...]:
-            expansion_plan = validated_plan.plan.model_copy(
-                update={
-                    "plan_id": self._plan_id_factory(),
-                    "ordered_live_call_proposals": proposals,
-                }
-            )
-            expansion = validate_evidence_plan(
-                plan=expansion_plan,
-                configuration=configuration,
-                effective_policy=effective_policy,
-                capability_catalog=self._capability_catalog,
-                request_envelope_validator=self._request_envelope_validator,
-                resource_scope_validator=self._resource_scope_validator,
-                schema_registry=self._schema_registry,
-            )
-            return expansion.executable_live_calls
-
-        return SlackAskStagedExecutionV1(
-            planner=self._slack_planner,
-            request=request,
-            initial_coverage=slack_plan.coverage,
-            resolved_bindings=resolved_bindings,
-            proposal_validator=validate_expansion,
+            effective_policy=effective_policy,
+            validated_plan=validated_plan,
         )
 
     @staticmethod
@@ -504,12 +483,13 @@ class WorkspaceAskServiceV2:
             configuration_revision=configuration.configuration_revision,
             plan_id=validated_plan.plan.plan_id,
             live_result_retention=self._live_retention(configuration),
-            slack_coverage=(
-                self._slack_planner.build_plan(
+            provider_coverage=(
+                self._provider_strategy.coverage(
                     configuration=configuration,
-                    request=command.slack_request,
-                ).coverage
-                if command.slack_request is not None
+                    request=command.provider_request,
+                )
+                if command.provider_request is not None
+                and self._provider_strategy is not None
                 else None
             ),
             created_at=self._clock(),
@@ -542,7 +522,7 @@ class WorkspaceAskServiceV2:
         answer: str | None,
         citations: list[Any],
         status: AskRunStatus,
-        slack_coverage: Any = None,
+        provider_coverage: Any = None,
     ) -> WorkspaceAskRunV2:
         return self._finalize_run_model(
             initial,
@@ -556,7 +536,7 @@ class WorkspaceAskServiceV2:
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
-                "slack_coverage": slack_coverage,
+                "provider_coverage": provider_coverage,
                 "completed_at": self._clock(),
                 "error": None,
             },
@@ -568,7 +548,7 @@ class WorkspaceAskServiceV2:
         *,
         code: str,
         execution: KnowledgeQueryExecutionResultV1 | None,
-        slack_coverage: Any = None,
+        provider_coverage: Any = None,
     ) -> WorkspaceAskRunV2:
         if execution is None:
             update: dict[str, Any] = {
@@ -577,7 +557,7 @@ class WorkspaceAskServiceV2:
                 "citations": [],
                 "error": AskError(code=code, message=self._safe_message(code)),
                 "completed_at": self._clock(),
-                "slack_coverage": slack_coverage,
+                "provider_coverage": provider_coverage,
             }
         else:
             update = {
@@ -590,7 +570,7 @@ class WorkspaceAskServiceV2:
                 "live_execution_status": execution.live_execution_status,
                 "truncation_state": execution.truncation_state,
                 "partial_failure": execution.partial_failure,
-                "slack_coverage": slack_coverage,
+                "provider_coverage": provider_coverage,
                 "error": AskError(code=code, message=self._safe_message(code)),
                 "completed_at": self._clock(),
             }
@@ -800,6 +780,7 @@ __all__ = [
     "SafeCapabilityRequestEnvelopeValidator",
     "UnavailableTenantLiveCapabilityCatalog",
     "WorkspaceAskCommandV2",
+    "WorkspaceAskProviderStrategy",
     "WorkspaceAskServiceV2",
     "WorkspaceAskV2Error",
     "WorkspaceAskV2LookupError",

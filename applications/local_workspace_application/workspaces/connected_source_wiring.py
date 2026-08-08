@@ -22,6 +22,7 @@ from local_workspace_application.workspaces.connected_source_sync_service import
     ManagedWorkspaceConnectedSourceSyncService,
 )
 from local_workspace_application.workspaces.connected_source_tenant_binding import (
+    SlackConnectedSourceCandidateAdapter,
     WorkspaceConnectedSourceTenantBindingService,
 )
 from local_workspace_application.workspaces.document_indexing import (
@@ -129,6 +130,10 @@ def build_connected_source_wiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
     )
+    candidate_adapter = SlackConnectedSourceCandidateAdapter(
+        codec=codec,
+        discovery_service=discovery,
+    )
     adapter_registry = build_default_vendor_knowledge_adapter_registry()
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
     resolver = _ConnectionAwareResolver(registry)
@@ -183,7 +188,7 @@ def build_connected_source_wiring(
         indexed_source_lifecycle_service=indexed_source_lifecycle,
         workspace_service=workspace_service,
         tenant_binding_port=tenant_binding_port,
-        opaque_ref_codec=codec,
+        candidate_adapter=candidate_adapter,
     )
     return ConnectedSourceWiring(
         connection_registry=registry,

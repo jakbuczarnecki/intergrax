@@ -4,8 +4,16 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, Query, Request, Response, status
-
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from local_workspace_application.serving.knowledge_configuration_http import (
     hash_knowledge_configuration_idempotency_key,
     map_knowledge_configuration_mutation_error,
@@ -13,7 +21,6 @@ from local_workspace_application.serving.knowledge_configuration_http import (
     require_knowledge_configuration_idempotency_key,
     resolve_knowledge_configuration_tenant_id,
 )
-
 from local_workspace_application.serving.knowledge_connected_source_schemas import (
     ConnectedIndexedSourceSyncAcceptedV1,
     CreateConnectedIndexedSourceRequestV1,
@@ -25,33 +32,43 @@ from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceBindingError,
     ConnectedSourceDiscoveryError,
 )
-from local_workspace_application.workspaces.connected_source_wiring import ConnectedSourceWiring
-from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
-    WorkspaceKnowledgeConfigurationMutationError,
-    WorkspaceKnowledgeMutationExecutionDispositionV1,
+from local_workspace_application.workspaces.connected_source_wiring import (
+    ConnectedSourceWiring,
 )
 from local_workspace_application.workspaces.knowledge_access_service import (
     CreateConnectedIndexedSourceRequest,
 )
-from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
-    DisableWorkspaceIndexedSourceCommand,
-    WorkspaceIndexedSourceLifecycleError,
-)
 from local_workspace_application.workspaces.knowledge_configuration_models import (
     WorkspaceIndexedSourceBindingStatusV1,
 )
+from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
+    WorkspaceKnowledgeConfigurationMutationError,
+    WorkspaceKnowledgeMutationExecutionDispositionV1,
+)
 from local_workspace_application.workspaces.knowledge_configuration_service import (
     is_workspace_source_product_visible,
+)
+from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_service import (
+    DisableWorkspaceIndexedSourceCommand,
+    WorkspaceIndexedSourceLifecycleError,
 )
 from local_workspace_application.workspaces.models import (
     WorkspaceOperationStatus,
     WorkspaceSourceStatus,
     WorkspaceSourceType,
 )
-from local_workspace_application.workspaces.service import ConcurrentSyncError, ManagedWorkspaceService
-from local_workspace_application.workspaces.sync_enqueue import enqueue_managed_workspace_sync
+from local_workspace_application.workspaces.service import (
+    ConcurrentSyncError,
+    ManagedWorkspaceService,
+)
+from local_workspace_application.workspaces.sync_enqueue import (
+    enqueue_managed_workspace_sync,
+)
 from local_workspace_application.workspaces.sync_jobs import ManagedWorkspaceSyncJob
-from local_workspace_application.workspaces.sync_runtime import ManagedWorkspaceSyncRuntime
+from local_workspace_application.workspaces.sync_runtime import (
+    ManagedWorkspaceSyncRuntime,
+)
+
 
 def _map_discovery_error(exc: ConnectedSourceDiscoveryError) -> HTTPException:
     code = exc.error_code
@@ -136,9 +153,11 @@ def _resolve_historical_indexed_binding(
     ):
         if version.indexed_source_binding_id != indexed_source_binding_id:
             continue
-        if version.effective_revision <= configuration_revision:
-            if binding is None or version.effective_revision > binding.effective_revision:
-                binding = version
+        if (
+            version.effective_revision <= configuration_revision
+            and (binding is None or version.effective_revision > binding.effective_revision)
+        ):
+            binding = version
     if binding is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -186,13 +205,15 @@ def mount_connected_source_knowledge_routes(
         request: Request,
         workspace_id: str,
         connection_ref: str,
-        resource_type: str = Query(default="slack_conversation"),
+        resource_type: str = Query(..., min_length=1, max_length=64),
         cursor: str | None = Query(default=None),
         limit: int = Query(default=50, ge=1, le=100),
         x_tenant_id: str | None = Header(default=None, alias="X-Tenant-Id"),
     ) -> RemoteResourceDiscoveryResponseV1:
         tenant_id = resolve_knowledge_configuration_tenant_id(request, header_tenant_id=x_tenant_id)
-        from local_workspace_application.workspaces.connected_source_models import RemoteResourceTypeV1
+        from local_workspace_application.workspaces.connected_source_models import (
+            RemoteResourceTypeV1,
+        )
 
         try:
             resource_enum = RemoteResourceTypeV1(resource_type)
@@ -424,7 +445,7 @@ def mount_connected_source_knowledge_routes(
         )
         try:
             enqueue_managed_workspace_sync(sync_runtime.wiring_context, job)
-        except Exception:
+        except Exception:  # noqa: BLE001
             workspace_service.repository.put_operation(
                 operation.model_copy(
                     update={
