@@ -529,7 +529,7 @@ def test_empty_templates_only(protocol_text: str) -> None:
 
 
 def test_evaluation_guide_positioning(evaluation_text: str) -> None:
-    opening = evaluation_text[: evaluation_text.find("## Who this guide is for")]
+    opening = evaluation_text[: evaluation_text.find("## What does a bounded evaluation mean?")]
     norm = _normalize(opening)
     for phrase in (
         "source-available",
@@ -543,6 +543,57 @@ def test_evaluation_guide_positioning(evaluation_text: str) -> None:
     ):
         assert phrase in norm, f"EVALUATION_GUIDE missing positioning: {phrase}"
     assert "## At a glance" in evaluation_text
+
+
+def test_evaluation_guide_bounded_evaluation_contract(evaluation_text: str) -> None:
+    norm = _normalize(evaluation_text)
+    for phrase in (
+        "bounded evaluation is a reproducible attempt",
+        "one stated claim or workflow",
+        "choose one evaluation target",
+        "pinned repository revision",
+        "claim being tested",
+        "what the path does not prove",
+        "canonical owner",
+        "inspect evidence",
+        "evaluation target:",
+        "expected result:",
+        "observed result:",
+        "skipped/unavailable:",
+        "known limitation:",
+        "proceed",
+        "defer",
+        "stop",
+        "self-service evaluation does not constitute external reader validation",
+        "builder quick start",
+        "buildwithintergrax",
+        "proofs",
+        "quick start pass alone is not full technical validation",
+        "no validated evaluation duration is promised",
+    ):
+        assert phrase in norm, f"EVALUATION_GUIDE missing contract invariant: {phrase}"
+
+    for target in (
+        "lkw product trial",
+        "lkw deep product/platform proof",
+        "token optimization capability",
+        "architecture / builder fit",
+    ):
+        assert target in norm, f"EVALUATION_GUIDE missing target: {target}"
+
+    assert "repository baseline / broader confidence check" in norm
+    assert "not proof of the selected product or capability claim" in norm
+    assert "external reader validation protocol" in norm
+    assert "what is currently demonstrated" in norm
+    assert "how to test one claim fairly" in norm
+    for stale_heading in (
+        "## 5-minute orientation",
+        "## 15-minute problem, fit and direction",
+        "## 30-minute bounded technical evaluation",
+        "## 45–60 minute deep evaluation",
+    ):
+        assert stale_heading not in evaluation_text
+    assert "time-boxed" not in norm
 
 
 def test_evaluation_routes(evaluation_text: str) -> None:

@@ -6,107 +6,80 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Evaluation Guide
 
-Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary product proof** — classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** are incomplete. The [LICENSE](../../../LICENSE) is legally authoritative for permitted use.
+Intergrax is **source-available** and under **active R&D**. **LKW** is the **Primary Product Proof**, classified as **Backend Product Alpha / MVP** and **PARTIAL**. **Real-user validation** and **commercial validation** remain incomplete. The [LICENSE](../../../LICENSE) is authoritative.
 
-This guide provides time-boxed, reader-facing evaluation paths for technical reviewers, design partners, and integration builders; it does not claim that external validation has occurred.
+This is a self-service method for one bounded technical/product evaluation. It is not a Builder Quick Start, application composition plan, proof status dashboard, external-reader validation protocol, generic test runner, or production certification procedure.
 
-Production use, commercial use, hosted services, redistribution, and commercial derivative works require explicit written permission. See [LICENSE](../../../LICENSE), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), and [docs/project/community/PARTNERS.md](../community/PARTNERS.md).
+Passing a bounded evaluation ≠ production readiness ≠ commercial permission ≠ external validation ≠ certification.
 
----
+## What does a bounded evaluation mean?
 
-## Choose the route
-
-| Goal | Start here |
-|------|------------|
-| Begin building or extending an application | [Builder Quick Start](BUILDER_QUICKSTART.md) |
-| Run a bounded evaluation | This Evaluation Guide |
-| Try the LKW product | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-
-Builder onboarding ≠ product trial ≠ broader platform evaluation.
-
----
+A bounded evaluation is a reproducible attempt to test **one stated claim or workflow** against its canonical documented path at a pinned repository revision. It produces an evidence-backed reader decision; it does not turn a passing proof into a broader status.
 
 ## At a glance
 
-| Time | Start here | Goal |
-|------|------------|------|
-| 5 minutes | [README.md](../../../README.md) + [docs/project/overview/FAQ.md](../overview/FAQ.md) | Understand what Intergrax is and is not |
-| 15 minutes | [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) + [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) + [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) | Understand problem, fit and direction |
-| 30 minutes | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) + [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Choose a bounded builder or technical evaluation path |
-| 45–60 minutes | Choose LKW Platform Proof, Token Optimization guide, architecture review or partner/pilot review | Deep evaluation of one surface |
+```mermaid
+flowchart LR
+    A[Choose target] --> B[Pin revision]
+    B --> C[Read claim and limits]
+    C --> D[Run canonical path]
+    D --> E[Inspect evidence]
+    E --> F[Record result]
+    F --> G[PROCEED / DEFER / STOP]
+```
 
----
+The stable flow is: **ORIENT → CHOOSE TARGET → PIN REVISION → READ CLAIM + LIMITS → RUN CANONICAL PATH → INSPECT EVIDENCE → RECORD RESULT + FRICTION → DECIDE → ROUTE NEXT**.
 
-## Who this guide is for
+## 1. ORIENT
 
-Use this guide if you are:
+Orientation is optional when the problem and architecture are already understood. Otherwise use:
 
-- evaluating whether Intergrax addresses a governed-agent or knowledge-workflow problem;
-- reviewing the public architecture and responsibility boundaries;
-- checking whether a documented proof path is understandable;
-- assessing trace, evidence, policy, human approval, retrieval and grounding,
-  memory, tools, or orchestration;
-- considering design-partner or selected integration feedback;
-- deciding which evaluation path fits your available time.
+- [WHY_INTERGRAX](../overview/WHY_INTERGRAX.md) for problem and value;
+- [USE_CASES](../overview/USE_CASES.md) for applicability;
+- [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md) for responsibilities and boundaries.
 
-If you need a finished SaaS, production support, an open-source contribution model, or unrestricted commercial use, start with [docs/project/overview/FAQ.md](../overview/FAQ.md), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), and [LICENSE](../../../LICENSE).
+For current evidence status, consult [PROOFS](../proofs/PROOFS.md). It owns what is currently demonstrated; this guide owns how to test one claim fairly.
 
----
+## 2. CHOOSE ONE EVALUATION TARGET
 
-## 5-minute orientation
+Do not evaluate “Intergrax” as one undifferentiated product. Select one target:
 
-Goal: decide whether Intergrax is relevant before reading deeply.
+| Target | Question | Canonical owner |
+|---|---|---|
+| LKW product trial | Can I run the supported bounded indexed LKW workflow? | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
+| LKW deep product/platform proof | Does the bounded LKW proof support the stated product/platform claim? | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
+| Token Optimization capability | Does its bounded evidence support the claim being evaluated? | [Token Optimization guide](../capabilities/token_optimization/README.md) and its owning proof |
+| Architecture / builder fit | Does the responsibility model fit the application I intend to build? | [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md), [USE_CASES](../overview/USE_CASES.md), [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) |
 
-Read:
+These targets do not have equal maturity. Architecture fit is primarily document evaluation, not runtime proof. [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) is relevant for composition planning, not a prerequisite for normal LKW or capability proof execution.
 
-1. [README.md](../../../README.md) — repository overview, LKW product proof, and maturity boundaries.
-2. [docs/project/overview/FAQ.md](../overview/FAQ.md) — common questions about license, status, collaboration, and public use.
+## 3. PIN THE REVISION
 
-Check whether the following statement is clear:
+Before running anything, record:
 
-> Intergrax is source-available for evaluation and collaboration, not open source, not a finished SaaS, and not a production-readiness claim.
+- exact commit SHA or immutable tag;
+- operating system and environment;
+- relevant runtime, model, and provider, if used;
+- selected target and canonical owner/path.
 
-Useful feedback after this pass:
+Do not record a result against a moving branch state. Normal self-service evaluation does not require the machinery in the [External Reader Validation Protocol](../maintainers/public-adoption/EXTERNAL_READER_VALIDATION_PROTOCOL.md).
 
-- Is the repository positioning clear?
-- Is the license/collaboration boundary clear?
-- Do you understand where to start?
+## 4. READ THE CLAIM AND LIMITS
 
----
+Write the **CLAIM BEING TESTED** before executing commands. Also write **WHAT THE PATH DOES NOT PROVE**.
 
-## 15-minute problem, fit and direction
+For example, an indexed LKW path may support a bounded indexed Ask result. It does not automatically prove mixed indexed + authorized live Hybrid Ask, complete live-provider access, production readiness, real-user validation, or commercial validation. Use [PROOFS](../proofs/PROOFS.md) for current boundaries; do not reproduce its status matrix here.
 
-Goal: understand what problem Intergrax addresses and whether it fits your context.
+## 5. RUN THE CANONICAL PATH
 
-Read:
+Commands and path-specific prerequisites belong to the canonical owner:
 
-1. [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) — problem, value, and audience.
-2. [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) — use-case fit and applicability.
-3. [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) — product-validation direction and outcome gates.
+- LKW product trial → [LKW Quick Start](../product/lkw/QUICKSTART.md);
+- deeper LKW proof → [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md);
+- Token Optimization → its owning capability/proof documentation;
+- architecture fit → the architecture and builder documents above.
 
-Questions to answer:
-
-- Does the problem statement resonate with your work?
-- Which use case is most relevant?
-- What would you need to see next to justify deeper evaluation?
-
----
-
-## 30-minute bounded technical evaluation
-
-Goal: test whether the local evaluation path is understandable and reproducible.
-
-Start from:
-
-- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) — route selection and prerequisites.
-- [README.md](../../../README.md) — product overview and LKW workflow.
-- [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) — current proof status and claim boundaries.
-
-A simplified public LKW trial is available through the supported product quickstart: [docs/project/product/lkw/QUICKSTART.md](../product/lkw/QUICKSTART.md).
-
-This path is indexed-only LKW. First-run duration varies; timing is not yet externally validated. Deeper technical proof remains separate — see [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md).
-
-Typical local flow:
+The repository baseline may be used as a broader confidence check:
 
 ```bash
 uv sync --extra dev
@@ -114,101 +87,64 @@ uv run intergrax doctor
 uv run pytest -m gate -q
 ```
 
-Evaluate:
+This is a **repository baseline / broader confidence check**, not proof of the selected product or capability claim. Passing `pytest -m gate` does not prove all Intergrax functionality.
 
-- Are prerequisites clear?
-- Does install work as written?
-- Does `intergrax doctor` provide useful feedback?
-- Are gate tests discoverable and understandable?
-- Is the proof status visible enough?
-- Are trace/evidence outputs understandable when inspected?
+## 6. INSPECT EVIDENCE
 
-Do not assume that passing local checks grants production permission, commercial use, support, certification, or compliance status.
+Do not stop at “the command exited 0”. Ask:
 
----
+- What observable output supports the claim?
+- Are citations, provenance, receipts, or persisted state present when expected?
+- Were steps skipped, or was fallback/mock behavior involved?
+- Did the documented environment match the evaluated environment?
+- Is the outcome reproducible?
 
-## 45–60 minute deep evaluation
+Follow the owning proof document for path-specific evidence requirements. A passing bounded evaluation is evidence for its selected boundary only.
 
-Goal: evaluate whether Intergrax is worth deeper technical feedback, integration discussion, or pilot discovery.
+## 7. RECORD THE RESULT
 
-Choose the path that matches your interest:
+Use this compact record:
 
-| Interest | Read |
-|----------|------|
-| LKW product proof and workflow | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Token Optimization capability | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-| High-level architecture | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| Partner or pilot fit | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
-| Permission and collaboration boundaries | [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) |
+```text
+Evaluation target:
+Pinned revision:
+Environment:
+Canonical path:
+Claim tested:
+Expected result:
+Observed result:
+Evidence:
+Skipped/unavailable:
+Friction/blocker:
+Known limitation:
+Decision:
+```
 
-Useful review questions:
+High-value feedback includes the exact revision, target/path, environment, expected and observed results, evidence, skipped or unavailable prerequisites, friction/blocker, and limitation. Avoid “it doesn't work” or “looks good” without evidence. Ordinary feedback can go through [COLLABORATION](../community/COLLABORATION.md).
 
-- Which current problem does Intergrax address clearly?
-- Which product or execution boundary is most valuable?
-- What is missing for a serious technical evaluation?
-- Which proof path should be easier?
-- Which claims are unclear or too strong?
+Classify friction precisely:
 
----
+- **DOCUMENTATION FRICTION** — unclear instructions, navigation, or setup;
+- **ENVIRONMENT BLOCK** — a prerequisite, hardware, or service is unavailable;
+- **PRODUCT/PROOF FAILURE** — the documented expected result fails under supported conditions;
+- **CLAIM GAP** — implementation may exist, but evidence does not establish the public claim.
 
-## What to report
+## 8. DECIDE
 
-High-value feedback is concrete and scoped.
+These are evaluation decisions, not public module statuses:
 
-A useful feedback record must include:
+- **PROCEED** — selected bounded evidence supports deeper evaluation, build, or pilot discussion;
+- **DEFER** — the workflow may fit, but required evidence/capability is incomplete or the environment cannot fairly evaluate it;
+- **STOP** — the responsibility/use-case class is wrong, evidence contradicts the need, or another approach is more appropriate.
 
-- exact commit;
-- environment;
-- path followed;
-- expected result;
-- observed result;
-- evidence;
-- blocker or confusion.
+Do not use `ACCEPTED`, `READY_FOR_REVIEW`, or `DONE` as reader decisions; lifecycle and production labels are not evaluation decisions.
 
-Route ordinary evaluation feedback through [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
+## 9. ROUTE NEXT
 
-Good feedback also includes:
+- Successful LKW trial → inspect [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md); a Quick Start pass alone is not full technical validation.
+- PROCEED to building → [Builder Quick Start](BUILDER_QUICKSTART.md), then [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md) for composition planning.
+- Architecture-fit evaluation → [ARCHITECTURE_OVERVIEW](../architecture/ARCHITECTURE_OVERVIEW.md), [USE_CASES](../overview/USE_CASES.md), and [BUILD_WITH_INTERGRAX](BUILD_WITH_INTERGRAX.md).
+- Partner or pilot discussion → [PARTNERS](../community/PARTNERS.md) and [COLLABORATION](../community/COLLABORATION.md). Evaluation does not grant production permission, hosting, redistribution, or commercial permission; [LICENSE](../../../LICENSE) controls those boundaries.
+- Formal external-reader methodology → [EXTERNAL_READER_VALIDATION_PROTOCOL](../maintainers/public-adoption/EXTERNAL_READER_VALIDATION_PROTOCOL.md). A self-service evaluation does not constitute external reader validation, and feedback does not complete real-user validation.
 
-- the exact document, section, or command you evaluated;
-- which use case or evaluation track you were following;
-- whether you are reporting documentation clarity, evaluation-path friction, integration feedback, or design-partner interest.
-
-Avoid broad feature requests unless they are tied to a specific use case and current evaluation track.
-
----
-
-## What not to assume
-
-Do not infer that this repository offers:
-
-- hosted SaaS;
-- open-source license rights;
-- production support or SLA;
-- certification, compliance, legal attestation, or security approval;
-- free commercial use;
-- permission to redistribute, derive from, incorporate, or productize Intergrax;
-- acceptance of every proposed integration or partnership;
-- completed real-user or commercial validation.
-
-For commercial licensing, production use, partnership, or permission requests, contact the maintainer directly. See [docs/project/community/PARTNERS.md](../community/PARTNERS.md) and [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md).
-
----
-
-## Where to go next
-
-| Need | Next document |
-|------|---------------|
-| Repository overview | [README.md](../../../README.md) |
-| Common questions | [docs/project/overview/FAQ.md](../overview/FAQ.md) |
-| Problem and value | [docs/project/overview/WHY_INTERGRAX.md](../overview/WHY_INTERGRAX.md) |
-| Use-case fit | [docs/project/overview/USE_CASES.md](../overview/USE_CASES.md) |
-| Product-validation direction | [docs/project/overview/ROADMAP.md](../overview/ROADMAP.md) |
-| Evaluation and building routes | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| Architecture overview | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| LKW product proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Token Optimization | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-| Partner or pilot fit | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
-| License and collaboration boundaries | [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md), [LICENSE](../../../LICENSE) |
-| Public reader navigation | [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md) |
-| Technical/developer navigation | [Documentation Map](../technical/DOCUMENTATION_MAP.md) |
+For broader orientation use [README](../../../README.md), [FAQ](../overview/FAQ.md), or [ROADMAP](../overview/ROADMAP.md). Public navigation is in [PUBLIC_DOCUMENTATION_MAP](../community/PUBLIC_DOCUMENTATION_MAP.md) and [DOCUMENTATION_MAP](../technical/DOCUMENTATION_MAP.md). Time estimates are optional orientation hints only; no validated evaluation duration is promised.
