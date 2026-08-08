@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import (
@@ -34,6 +36,7 @@ def _state(
     remote_id: str = "item-1",
     status: KnowledgeRemoteItemStatus = KnowledgeRemoteItemStatus.ACTIVE,
     delivery_id: str = "a" * 64,
+    version: str = "1",
 ) -> KnowledgeRemoteItemState:
     return KnowledgeRemoteItemState(
         tenant_id="tenant-1",
@@ -43,21 +46,30 @@ def _state(
         source_kind="issues",
         remote_id=remote_id,
         status=status,
-        revision=KnowledgeItemRevision(version="1"),
+        revision=KnowledgeItemRevision(version=version),
         last_delivery_id=delivery_id,
     )
 
 
-def _legacy_state_row(remote_id: str) -> DocumentRecord:
+def _sha(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _legacy_state_row(
+    remote_id: str,
+    *,
+    state: KnowledgeRemoteItemState | None = None,
+) -> DocumentRecord:
+    stored_state = state or _state(remote_id=remote_id)
     return DocumentRecord(
         partition_key=_ITEM_PARTITION,
-        row_key=f"item:{remote_id}",
+        row_key=f"item:{_sha(remote_id)}",
         data={
             "schema_version": "vendor_knowledge.remote_item_state.v1",
             "tenant_id": "tenant-1",
             "binding_id": "binding-1",
             "record_version": "1",
-            "state": _state(remote_id=remote_id).model_dump(mode="json"),
+            "state": stored_state.model_dump(mode="json"),
         },
     )
 
@@ -82,6 +94,123 @@ def test_legacy_states_plus_new_active_write_remain_incomplete() -> None:
             binding_configuration_version=1,
             limit=10,
         )
+
+
+@pytest.mark.unit
+def test_partial_legacy_replay_is_incomplete() -> None:
+    store = InMemoryDocumentStore()
+    delivery = "b" * 64
+    expected = tuple(
+        _state(remote_id=remote_id, delivery_id=delivery)
+        for remote_id in ("item-a", "item-b", "item-c")
+    )
+    for state in expected[:2]:
+        store.put(_legacy_state_row(state.remote_id, state=state))
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    with pytest.raises(KnowledgeCandidateInventoryIncomplete):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=expected,
+        )
+
+
+@pytest.mark.unit
+def test_extra_legacy_replay_row_is_incomplete() -> None:
+    store = InMemoryDocumentStore()
+    delivery = "c" * 64
+    durable = tuple(
+        _state(remote_id=remote_id, delivery_id=delivery)
+        for remote_id in ("item-a", "item-b", "item-c")
+    )
+    for state in durable:
+        store.put(_legacy_state_row(state.remote_id, state=state))
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    with pytest.raises(KnowledgeCandidateInventoryIncomplete):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=durable[:2],
+        )
+
+
+@pytest.mark.unit
+def test_wrong_content_legacy_replay_is_incomplete() -> None:
+    store = InMemoryDocumentStore()
+    delivery = "d" * 64
+    expected = _state(remote_id="item-a", delivery_id=delivery, version="expected")
+    durable = _state(remote_id="item-a", delivery_id=delivery, version="durable")
+    store.put(_legacy_state_row(durable.remote_id, state=durable))
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    with pytest.raises(KnowledgeCandidateInventoryIncomplete):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=(expected,),
+        )
+
+
+@pytest.mark.unit
+def test_wrong_row_identity_legacy_replay_is_incomplete() -> None:
+    store = InMemoryDocumentStore()
+    delivery = "e" * 64
+    expected = tuple(
+        _state(remote_id=remote_id, delivery_id=delivery)
+        for remote_id in ("item-a", "item-b")
+    )
+    durable = tuple(
+        _state(remote_id=remote_id, delivery_id=delivery)
+        for remote_id in ("item-a", "item-c")
+    )
+    for state in durable:
+        store.put(_legacy_state_row(state.remote_id, state=state))
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    with pytest.raises(KnowledgeCandidateInventoryIncomplete):
+        repo.apply_batch(
+            tenant_id="tenant-1",
+            binding_id="binding-1",
+            delivery_id=delivery,
+            states=expected,
+        )
+
+
+@pytest.mark.unit
+def test_exact_legacy_replay_recovers_clean_inventory_without_manifest() -> None:
+    store = InMemoryDocumentStore()
+    delivery = "f" * 64
+    states = tuple(
+        _state(remote_id=remote_id, delivery_id=delivery)
+        for remote_id in ("item-a", "item-b", "item-c")
+    )
+    for state in states:
+        store.put(_legacy_state_row(state.remote_id, state=state))
+    assert store.get(_INDEX_PARTITION, "manifest") is None
+
+    repo = DocumentStoreKnowledgeRemoteItemStateRepository(store)
+    repo.apply_batch(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        delivery_id=delivery,
+        states=states,
+    )
+
+    manifest = store.get(_INDEX_PARTITION, "manifest")
+    assert manifest is not None
+    assert manifest.data["completeness_state"] == "CLEAN"
+    inventory = DocumentStoreKnowledgeReconciliationCandidateInventoryRepository(store)
+    assert inventory.list_active_remote_ids(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        binding_configuration_version=1,
+        limit=10,
+    ) == ("item-a", "item-b", "item-c")
 
 
 @pytest.mark.unit

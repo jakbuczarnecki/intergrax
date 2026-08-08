@@ -1738,10 +1738,14 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             limit=len(states) + 1,
             row_key_prefix="item:",
         ).documents
-        if len(documents) > len(states):
+        if len(documents) != len(states):
             return False
         expected_by_row = {_item_row_key(state.remote_id): state for state in states}
+        observed_row_keys: set[str] = set()
         for document in documents:
+            if document.row_key in observed_row_keys:
+                return False
+            observed_row_keys.add(document.row_key)
             expected = expected_by_row.get(document.row_key)
             if expected is None:
                 return False
@@ -1752,7 +1756,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             )
             if expected != state:
                 return False
-        return True
+        return observed_row_keys == set(expected_by_row)
 
     def _legacy_item_rows_exist(
         self,

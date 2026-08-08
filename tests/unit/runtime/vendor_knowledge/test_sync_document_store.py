@@ -659,20 +659,21 @@ def test_remote_item_replay_partial_and_marker_after_states() -> None:
     first = _state(remote_id="a", delivery_id=delivery, version="1")
     second = _state(remote_id="b", delivery_id=delivery, version="1")
     partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
-    # Crash after first state write — no delivery marker yet.
-    store.put(
-        DocumentRecord(
-            partition_key=partition,
-            row_key=f"item:{_sha('a')}",
-            data={
-                "schema_version": "vendor_knowledge.remote_item_state.v1",
-                "tenant_id": "tenant-1",
-                "binding_id": "binding-1",
-                "record_version": "rv-partial",
-                "state": first.model_dump(mode="json"),
-            },
+    # Crash after all state writes but before the delivery marker.
+    for state in (first, second):
+        store.put(
+            DocumentRecord(
+                partition_key=partition,
+                row_key=f"item:{_sha(state.remote_id)}",
+                data={
+                    "schema_version": "vendor_knowledge.remote_item_state.v1",
+                    "tenant_id": "tenant-1",
+                    "binding_id": "binding-1",
+                    "record_version": "rv-partial",
+                    "state": state.model_dump(mode="json"),
+                },
+            )
         )
-    )
     assert store.get(partition, f"delivery:{delivery}") is None
     repo.apply_batch(
         tenant_id="tenant-1",
