@@ -30,10 +30,12 @@ _LEGAL_HEADER = (
 _ROADMAP_H1 = "# Intergrax Public Roadmap"
 _USE_CASES_H1 = "# Intergrax Use Cases"
 
-_ROADMAP_PHASE_HEADINGS = (
-    "## Now — Make LKW repeatable",
-    "## Next — Validate the complete knowledge workflow",
-    "## Later — Expand from evidence",
+_ROADMAP_STAGE_MARKERS = (
+    ("## now", "make the primary workflow repeatable"),
+    ("## next", "prove the complete intended knowledge outcome"),
+    ("## validate", "establish real-user value and repeat use"),
+    ("## expand", "evidence-driven expansion"),
+    ("## harden / package", "improve operations after validated use"),
 )
 
 _READER_DOCS = (ROADMAP_PATH, USE_CASES_PATH)
@@ -63,6 +65,12 @@ _FORBIDDEN_STATUS_TERMS = (
     "ACCEPTED",
     "DONE",
     "IN_PROGRESS",
+)
+
+_FORBIDDEN_ROADMAP_PROVIDER_SEQUENCE_PHRASES = (
+    "durable slack dm interaction",
+    "complete connected slack knowledge workflow",
+    "first governed google workspace lkw proof",
 )
 
 _FORBIDDEN_CLAIM_PHRASES = (
@@ -180,14 +188,14 @@ _FORBIDDEN_READER_MAINTAINER_PHRASES = (
 )
 
 _ROADMAP_NEGATIVE_BULLETS = (
-    "No finished hosted SaaS",
-    "No claim that Hybrid Ask is complete",
-    "No claim of a complete provider catalog",
-    "No completed real-user validation",
-    "No completed commercial validation",
-    "No claim of universal production readiness",
-    "No universal token-savings claim",
-    "No fixed release-date commitment",
+    "No finished hosted SaaS.",
+    "No claim that mixed indexed + authorized live Hybrid Ask is complete.",
+    "No claim of complete live-provider access or a complete provider catalog.",
+    "No completed real-user validation.",
+    "No completed commercial validation.",
+    "No claim of universal production readiness.",
+    "No universal token-savings claim.",
+    "No fixed release-date commitment.",
 )
 
 _USE_CASES_NEGATIVE_BULLETS = (
@@ -248,8 +256,14 @@ def test_first_screen_contract(roadmap_text: str, use_cases_text: str) -> None:
         "not a release-date commitment",
         "real-user validation incomplete",
         "commercial validation incomplete",
+        "primary product focus",
+        "local knowledge workspace (lkw)",
+        "backend product alpha / mvp",
+        "partial",
     ):
         assert phrase in roadmap_early, f"ROADMAP missing boundary phrase: {phrase}"
+    for provider in ("slack", "google", "microsoft", "jira"):
+        assert provider not in roadmap_early, f"ROADMAP first screen names provider: {provider}"
 
     use_cases_early = _normalize(_through_at_a_glance(use_cases_text))
     assert "primary product proof" in use_cases_early
@@ -272,15 +286,21 @@ def test_mermaid_blocks(roadmap_text: str, use_cases_text: str) -> None:
 
 
 def test_roadmap_phase_headings(roadmap_text: str) -> None:
-    for heading in _ROADMAP_PHASE_HEADINGS:
-        assert heading in roadmap_text, f"ROADMAP missing phase heading: {heading}"
+    headings = [line.strip().lower() for line in roadmap_text.splitlines() if line.startswith("## ")]
+    for heading_prefix, marker in _ROADMAP_STAGE_MARKERS:
+        assert any(heading.startswith(heading_prefix) for heading in headings), (
+            f"ROADMAP missing semantic phase heading: {heading_prefix}"
+        )
+        assert marker in _normalize(roadmap_text), (
+            f"ROADMAP missing semantic phase marker: {marker}"
+        )
 
 
 def test_outcome_gated_roadmap(roadmap_text: str) -> None:
     roadmap_norm = _normalize(roadmap_text)
     for phrase in (
-        "user result",
-        "proof required",
+        "user / product outcome",
+        "evidence required",
         "real-user validation",
         "evidence-driven expansion",
     ):
@@ -288,6 +308,14 @@ def test_outcome_gated_roadmap(roadmap_text: str) -> None:
 
     for term in _FORBIDDEN_STATUS_TERMS:
         assert term not in roadmap_text, f"ROADMAP leaks internal status: {term}"
+
+
+def test_roadmap_does_not_track_provider_rollouts(roadmap_text: str) -> None:
+    normalized = _normalize(roadmap_text)
+    for phrase in _FORBIDDEN_ROADMAP_PROVIDER_SEQUENCE_PHRASES:
+        assert phrase not in normalized, (
+            f"ROADMAP contains provider rollout milestone: {phrase}"
+        )
 
 
 def test_no_internal_task_ids(roadmap_text: str, use_cases_text: str) -> None:
@@ -360,7 +388,8 @@ def test_explicit_negative_lists(roadmap_text: str, use_cases_text: str) -> None
 def test_claim_boundaries(roadmap_text: str, use_cases_text: str) -> None:
     combined = roadmap_text + use_cases_text
     combined_norm = _normalize(combined)
-    assert "hybrid ask" in combined_norm and "not complete" in combined_norm
+    assert "hybrid ask" in combined_norm
+    assert "not complete" in combined_norm or "remains incomplete" in combined_norm
     assert "real-user validation incomplete" in combined_norm
     assert "commercial validation incomplete" in combined_norm
     assert "universal savings not claimed" in combined_norm or "universal savings are not claimed" in combined_norm
@@ -474,10 +503,12 @@ def test_indexed_hybrid_ask_claim_boundary_across_public_docs(
     assert "not complete" in combined_norm
 
     # 3. ROADMAP still treats combined indexed + live evidence as a future target.
-    next_section = _h2_section(
-        roadmap_text, "## Next — Validate the complete knowledge workflow"
+    next_section = _normalize(
+        _h2_section(roadmap_text, "## NEXT — Prove the complete intended knowledge outcome")
     )
-    assert "Hybrid Ask combining indexed and live evidence" in next_section
+    assert "bounded indexed ask path exists" in next_section
+    assert "mixed indexed + authorized live hybrid ask remains incomplete" in next_section
+    assert "complete live-provider access remains incomplete" in next_section
 
     # 4. No public document positively claims complete Hybrid Ask.
     # Negated forms such as "No claim that Hybrid Ask is complete" are allowed.

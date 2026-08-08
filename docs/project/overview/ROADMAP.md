@@ -6,118 +6,154 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Public Roadmap
 
-This roadmap explains how Intergrax progresses from bounded product proof to real-user validation and evidence-driven expansion — without implementation task IDs or release-date promises.
+This is the canonical public product roadmap for Intergrax. It describes what user and product outcomes must become true next, how those outcomes are evidenced, and when broader claims or expansion are justified.
 
 > [!WARNING]
-> Intergrax is **source-available** and under active R&D. LKW is **Backend Product Alpha / MVP** and remains **PARTIAL**. This roadmap is **outcome-gated**, not a release-date commitment. **Real-user validation incomplete**. **Commercial validation incomplete**.
+> Intergrax is **source-available** and under active R&D. LKW is the **Primary product proof**, **Backend Product Alpha / MVP**, and remains **PARTIAL**. This roadmap is **outcome-gated**, not a release-date commitment. **Real-user validation incomplete**. **Commercial validation incomplete**.
 
 ## At a glance
 
 | Question | Answer |
 |----------|--------|
 | Primary product focus | Local Knowledge Workspace (LKW) |
-| Current public proof | Bounded LKW product/platform proof |
-| Current development objective | Make the core LKW workflow repeatable and durable |
-| Next validation gate | Complete end-to-end workflow and test it with real users |
-| How progress is verified | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) and named proof paths |
+| Current maturity | Backend Product Alpha / MVP — PARTIAL |
+| What is being established now | A repeatable supported LKW workflow |
+| Roadmap model | Outcome gates, not an implementation queue |
+| Current validation boundary | Real-user validation incomplete; commercial validation incomplete |
 | Release dates | No public date commitment |
 
 ## How to read this roadmap
 
-This document describes **user and validation outcomes**, not internal implementation queues. Detailed technical sequencing belongs to owning implementation plans — for example, the [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) (technical detail, not the public roadmap).
+This document describes **user and validation outcomes**, not internal implementation queues. Detailed technical and module sequencing belongs to the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and the owning module sources of truth.
 
-[docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) owns current proof status and claim boundaries. Moving to a later phase requires evidence — bounded verification, repeated use, or real-user feedback — not only completed code.
+[PROOFS.md](../proofs/PROOFS.md) owns what is currently demonstrated and the related claim boundaries. Moving to a later phase requires evidence — bounded verification, repeated use, or real-user feedback — not only implementation completion.
 
-If you need to decide whether Intergrax fits your problem today, start with [docs/project/overview/USE_CASES.md](USE_CASES.md) and [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md).
+If you need to decide whether Intergrax fits your problem today, start with [USE_CASES.md](USE_CASES.md).
 
 ```mermaid
 flowchart LR
-    A[Bounded product proof]
-    A --> B[Repeatable LKW workflow]
-    B --> C[Complete end-to-end knowledge experience]
-    C --> D[Real-user validation]
+    A[Current bounded product proof]
+    A --> B[Repeatable primary workflow]
+    B --> C[Complete intended knowledge outcome]
+    C --> D[Real-user value and repeat use]
     D --> E[Evidence-driven expansion]
-    E --> F[Product hardening and packaging]
+    E --> F[Validated hardening and packaging]
 ```
 
-The sequence above is conceptual. Each step requires named evidence before the next is treated as achieved.
+The sequence is conceptual and has no dates. Each transition requires evidence before the next stage is treated as achieved.
 
-## Now — Make LKW repeatable
+## NOW — Make the primary workflow repeatable
 
-Focus: user-visible outcomes that make LKW dependable enough for external evaluation and design-partner trials.
+**User / product outcome:** LKW becomes a dependable supported workflow that an evaluator can run, repeat, restart, and recover without ad hoc developer reconstruction.
 
-| User result | Why it matters | Proof required before calling it complete |
-|-------------|----------------|-------------------------------------------|
-| Durable workspace configuration | Users should not lose setup on restart | Documented create/configure/restart path with persisted state |
-| Predictable indexed sources | Approved sources can be added, indexed, disabled and recovered | Bounded lifecycle proof across documented source types |
-| Grounded Ask over indexed knowledge | Answers cite indexed evidence | Repeatable Ask with citations and evidence in named environment |
-| Durable Slack DM interaction | Slack should not depend on temporary in-memory state | Restart-safe conversational path for documented Slack DM scope |
-| Setup, restart and recovery | Evaluators should not need ad hoc developer reconstruction | Repeatable setup guide and recovery without manual repair |
-| Reproducible public proof path | External readers can verify claims | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) remains runnable in documented environment |
+| User / product outcome | Evidence required before calling it achieved |
+|-------------------------|-----------------------------------------------|
+| Persistent workspace and configuration | A documented create, configure, restart, and resume path preserves the required state |
+| Predictable approved-source lifecycle | A bounded source lifecycle can be repeated for documented sources, including disable and recovery |
+| Repeatable grounded indexed Ask | A supported Ask run returns reviewable citations and evidence from indexed knowledge |
+| Setup, restart, and recovery | A non-maintainer evaluator can follow the documented path without manual repair or reconstruction |
+| Runnable public proof | The [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) is reproducible in its documented environment |
 
-Not every outcome above is complete today. See [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) for current status.
+The stage is achieved only when the documented workflow is repeatable as a user-facing proof, not merely when its implementation exists. See [PROOFS.md](../proofs/PROOFS.md) for current evidence.
 
-## Next — Validate the complete knowledge workflow
+## NEXT — Prove the complete intended knowledge outcome
 
-These are **target outcomes** for the next validation gate. None are claimed as finished.
+**User / product outcome:** a user can combine indexed knowledge with authorized live evidence and receive a grounded answer with coherent, reviewable provenance.
 
-| Target outcome | Evidence required |
-|----------------|-------------------|
-| Complete connected Slack knowledge workflow | End-to-end proof: Slack as interaction surface and approved knowledge source with grounded answers |
-| Hybrid Ask combining indexed and live evidence | Authorized live evidence joins indexed RAG in one grounded answer with unified provenance — **Hybrid Ask is not complete** |
-| First governed Google Workspace LKW proof | Bounded Google Workspace knowledge inside LKW after prerequisite product proof — **not complete** |
-| Repeatable design-partner setup | A real user can start and try LKW without ad hoc developer reconstruction |
-| Initial real-user validation | Structured trials with knowledge workers — **real-user validation incomplete** |
-| Usefulness and trust metrics | Measure citation correctness, repeated use, trust and blockers — not yet baselined |
+**Current precise boundary:** A bounded indexed Ask path exists. Mixed indexed + authorized live Hybrid Ask remains incomplete. Complete live-provider access remains incomplete.
 
-## Supporting platform track
+| User / product outcome | Evidence required before calling it achieved |
+|-------------------------|-----------------------------------------------|
+| Complete intended knowledge outcome | A bounded end-to-end proof shows indexed and authorized live evidence used together with reviewable provenance |
+| Repeatable evaluator setup | A non-maintainer evaluator can set up and use the workflow without developer reconstruction |
+| Coherent evidence and provenance | Users and reviewers can inspect which evidence supports the answer and how authorization applies |
+| End-to-end product workflow | The supported workflow can be completed from setup through answer and recovery without an open product gap |
 
-Shared platform work is justified by real product requirements from LKW — not by abstract platform expansion.
+The next stage is a product outcome, not a commitment to a particular provider, interaction surface, or engineering order.
 
-**Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status. It demonstrates deterministic prompt and context optimization with bounded evidence. Performance promotion requires bounded evidence and approved claim gates. **Universal savings are not claimed**; production-proven savings are not claimed.
+## VALIDATE — Establish real-user value and repeat use
 
-Platform expansion does not override the primary LKW workflow. See [Token Optimization guide](../capabilities/token_optimization/README.md).
+Real-user validation is a distinct gate. Internal tests, maintainers, and technical evaluators do not by themselves constitute external validation.
 
-## Later — Expand from evidence
+**User / product outcomes to learn:**
 
-Future directions depend on validated demand and evidence — not preset commitments:
+- Can target users complete the supported workflow?
+- Do the answers and evidence meet their needs?
+- Do users return to the workflow?
+- Where does trust break?
+- Where do setup or recovery block users?
+- What would users actually continue using?
 
-- Additional knowledge providers when a concrete user workflow justifies integration breadth
-- Another conversational frontend when user demand justifies it
-- Improved self-hosted installation, diagnostics and recovery
-- Product security and operational hardening
-- Production-oriented packaging for explicitly authorized partners
-- Long-term commercial or source-available packaging decisions after validation
+| User / product outcome | Evidence required before calling it achieved |
+|-------------------------|-----------------------------------------------|
+| Users can complete the workflow | Observed real-user evaluation and documented feedback on completion, setup, and recovery |
+| Answers and evidence are useful and trusted | User feedback identifies whether answers, provenance, and boundaries meet the intended need |
+| Repeat use is meaningful | Evidence shows whether users return and what they would continue using |
+| Friction and trust failures are understood | Observed blockers and trust breaks are recorded well enough to choose the next product decision |
 
-Not every direction above will be pursued. Demand and evidence gate each decision.
+This gate begins only after the intended workflow is usable end-to-end. No internal testing result is presented as real-user validation.
+
+## EXPAND — Evidence-driven expansion
+
+Expansion follows this decision path:
+
+**validated workflow → observed demand → accepted evidence → expansion decision**
+
+Potential expansion outcomes are deliberately generic:
+
+- additional knowledge providers when a validated workflow requires them;
+- additional interaction surfaces when users demonstrate demand;
+- better deployment, diagnostics, and recovery;
+- additional reusable platform capabilities when a product need drives them.
+
+| User / product outcome | Evidence required before calling it achieved |
+|-------------------------|-----------------------------------------------|
+| Broader capability serves a validated workflow | Observed demand and an explicit outcome-based reason to expand |
+| Expansion is safe to claim publicly | Accepted evidence, stated limitations, and a decision that the breadth improves the supported workflow |
+
+No provider, surface, or breadth item is promised in advance.
+
+## HARDEN / PACKAGE — Improve operations after validated use
+
+**User / product outcome:** recurring validated use justifies improvements to operational reliability, deployment, diagnostics, permissions, supportability, or product packaging.
+
+**Evidence required:** real-user or partner use has exposed a concrete recurring need, and bounded evidence supports the proposed hardening or packaging decision. This stage does not create a general production-ready claim.
+
+## Supporting platform work
+
+Product need drives platform work. **Token Optimization** remains a **Featured platform-capability proof** with **PARTIAL** status and bounded evidence. It is a supporting reusable capability, not a separate public roadmap phase. **Universal savings are not claimed**.
+
+See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
 ## Decision principles
 
-- **Application first** — product workflow drives platform work
-- **Evidence before promotion** — proof paths and claim gates before broader public wording
-- **Demand before integration breadth** — providers follow validated workflows
-- **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md)
-- **No expansion without a concrete user workflow**
-- **No release-date promises without a validated delivery basis**
+- **Application first** — product workflow drives platform work.
+- **Evidence before promotion** — bounded proof and claim boundaries precede broader wording.
+- **Demand before integration breadth** — breadth follows a validated workflow.
+- **Explicit permission and responsibility boundaries** — see [LICENSE](../../../LICENSE) and [COLLABORATION.md](../community/COLLABORATION.md).
+- **No expansion without a concrete user workflow.**
+- **No release-date promises without a validated basis.**
 
 ## What is not promised
 
-- No finished hosted SaaS
-- No claim that Hybrid Ask is complete
-- No claim of a complete provider catalog
-- No completed real-user validation
-- No completed commercial validation
-- No claim of universal production readiness
-- No universal token-savings claim
-- No fixed release-date commitment
+- No finished hosted SaaS.
+- No claim that mixed indexed + authorized live Hybrid Ask is complete.
+- No claim of complete live-provider access or a complete provider catalog.
+- No completed real-user validation.
+- No completed commercial validation.
+- No claim of universal production readiness.
+- No universal token-savings claim.
+- No fixed release-date commitment.
 
-## Follow progress
+## Reader routes
 
-| Need | Document |
-|------|----------|
-| Current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| LKW guided proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Use-case fit | [docs/project/overview/USE_CASES.md](USE_CASES.md) |
-| Build or evaluate | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
-| Public navigation | [Public documentation map](../community/PUBLIC_DOCUMENTATION_MAP.md) |
-| Technical implementation detail | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
+| Reader need | Start here |
+|-------------|------------|
+| Current evidence | [PROOFS.md](../proofs/PROOFS.md) |
+| Verify the bounded LKW proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
+| Current workflow fit | [USE_CASES.md](USE_CASES.md) |
+| Build or inspect a bounded workflow | [BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
+| Bounded evaluation | [Evaluation Guide](../builders/EVALUATION_GUIDE.md) |
+| Pilot or partner route | [Partners](../community/PARTNERS.md) |
+| Public navigation | [Public Documentation Map](../community/PUBLIC_DOCUMENTATION_MAP.md) |
+| Deep technical sequencing (secondary route) | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) and the owning module documentation |
