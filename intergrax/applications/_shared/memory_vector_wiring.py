@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.user_profile_manager import UserProfileManager
@@ -36,7 +39,9 @@ def resolve_rag_stack_for_memory_wiring(
     llm_adapter: object | None = None,
 ) -> RagStack | None:
     """Resolve RAG stack for memory vector indexes — independent of ``enable_rag``."""
-    from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_stack_for_environment
+    from intergrax.applications._shared.rag_runtime_bridge import (
+        resolve_rag_stack_for_environment,
+    )
     from intergrax.rag.bootstrap.rag_stack_bootstrap import create_default_rag_stack
 
     if not memory_vector_flags_require_backend(env):
@@ -82,15 +87,7 @@ def build_user_profile_manager(
     if not (profile.enable_user_memory or profile.enable_long_term_memory):
         return None
 
-    # Profile persistence can be constructed before a request tenant is known.
-    # A vector-backed manager remains tenant-strict; the profile-only path uses
-    # UserProfileManager's documented default namespace until request wiring
-    # supplies a tenant-scoped vector stack.
-    resolved_tenant_id = (
-        _require_runtime_tenant(tenant_id)
-        if rag_stack is not None
-        else (tenant_id.strip() if isinstance(tenant_id, str) and tenant_id.strip() else "default")
-    )
+    resolved_tenant_id = _require_runtime_tenant(tenant_id)
     kwargs: dict[str, object] = {
         "tenant_id": resolved_tenant_id,
         "vector_index_namespace": profile.vector_index_namespace,

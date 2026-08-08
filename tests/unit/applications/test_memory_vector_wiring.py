@@ -10,13 +10,14 @@ import pytest
 
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
+    build_user_profile_manager,
     memory_vector_flags_require_backend,
 )
-from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
+from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
 from intergrax.rag.profiles.rag_profile import RagProfile
 
@@ -54,3 +55,22 @@ def test_assert_memory_vector_backend_available_with_stack() -> None:
         retrieval_service=MagicMock(),
     )
     assert_memory_vector_backend_available(env, stack)
+
+
+def test_build_user_profile_manager_requires_and_preserves_runtime_tenant() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.profile.tenant")
+    env.memory_profile = MemoryProfile(enable_user_memory=True)
+
+    with pytest.raises(MemoryVectorBackendUnavailableError) as exc_info:
+        build_user_profile_manager(MagicMock(), env)
+
+    assert exc_info.value.reason == "tenant_required"
+
+    manager = build_user_profile_manager(
+        MagicMock(),
+        env,
+        tenant_id="tenant-explicit",
+    )
+
+    assert manager is not None
+    assert manager._tenant_id == "tenant-explicit"
