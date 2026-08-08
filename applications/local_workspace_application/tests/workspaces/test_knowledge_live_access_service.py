@@ -199,9 +199,12 @@ class _FakeCatalog:
     def __init__(self, descriptors: tuple[LiveCapabilityDescriptorV1, ...]) -> None:
         self._descriptors = descriptors
         self.call_count = 0
+        self.error: Exception | None = None
 
     def list_capabilities(self, *, tenant_id: str, connection_ref: str, remote_resource_id: str | None):
         self.call_count += 1
+        if self.error is not None:
+            raise self.error
         return self._descriptors
 
 
@@ -321,6 +324,18 @@ def _disable_cmd(**overrides: object) -> DisableWorkspaceLiveAccessBindingComman
     }
     payload.update(overrides)
     return DisableWorkspaceLiveAccessBindingCommand(**payload)
+
+
+def _enable_cmd(**overrides: object) -> EnableWorkspaceLiveAccessBindingCommand:
+    payload = {
+        "tenant_id": _TENANT,
+        "workspace_id": _WORKSPACE,
+        "live_access_binding_id": _BINDING_ID,
+        "expected_revision": 3,
+        "idempotency_key_hash": _SHA256_C,
+    }
+    payload.update(overrides)
+    return EnableWorkspaceLiveAccessBindingCommand(**payload)
 
 
 def _lifecycle(attach_svc, live_svc) -> LiveAccessLifecycleService:
@@ -547,6 +562,91 @@ async def test_lifecycle_attach_disable_enable_detach_and_restart_view() -> None
 
 
 @pytest.mark.asyncio
+async def test_enable_reuses_durable_identity_when_connection_unavailable() -> None:
+    attach, service, _, _, _, _ = _build_stack()
+    rev = _attach(attach)
+    await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    disabled = service.disable_live_access_binding(_disable_cmd(expected_revision=rev + 1))
+    port = service._tenant_connection_port
+    port._result = _safe_connection(
+        administrative_status=TenantConnectionAdministrativeStatus.DISABLED
+    )
+    calls_before_enable = port.call_count
+
+    enabled = await service.enable_live_access_binding(
+        _enable_cmd(expected_revision=disabled.configuration_revision)
+    )
+
+    assert enabled.binding.live_access_binding_id == _BINDING_ID
+    assert enabled.binding.status is LiveAccessBindingStatusV1.ACTIVE
+    assert port.call_count == calls_before_enable
+
+    restarted = _lifecycle(attach, service)
+    unavailable = restarted.get(
+        GetLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+        )
+    )
+    assert unavailable.enabled is True
+    assert unavailable.lifecycle_state.value == "ready"
+    assert unavailable.runtime_available is False
+    assert unavailable.last_error_code == "connection_unavailable"
+
+    port._result = _safe_connection()
+    recovered = restarted.get(
+        GetLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+        )
+    )
+    assert recovered.live_access_binding_id == _BINDING_ID
+    assert recovered.lifecycle_state.value == "active"
+    assert recovered.runtime_available is True
+
+
+@pytest.mark.asyncio
+async def test_enable_reuses_durable_identity_when_capability_catalog_unavailable() -> None:
+    attach, service, _, catalog, _, _ = _build_stack()
+    rev = _attach(attach)
+    await service.create_live_access_binding(_create_cmd(expected_revision=rev))
+    disabled = service.disable_live_access_binding(_disable_cmd(expected_revision=rev + 1))
+    catalog.error = RuntimeError("catalog unavailable")
+    calls_before_enable = catalog.call_count
+
+    enabled = await service.enable_live_access_binding(
+        _enable_cmd(expected_revision=disabled.configuration_revision)
+    )
+
+    assert enabled.binding.status is LiveAccessBindingStatusV1.ACTIVE
+    assert catalog.call_count == calls_before_enable
+    lifecycle = _lifecycle(attach, service)
+    unavailable = lifecycle.get(
+        GetLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+        )
+    )
+    assert unavailable.lifecycle_state.value == "ready"
+    assert unavailable.runtime_available is False
+    assert unavailable.last_error_code == "capability_catalog_unavailable"
+
+    catalog.error = None
+    recovered = lifecycle.get(
+        GetLiveAccessCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            live_access_binding_id=_BINDING_ID,
+        )
+    )
+    assert recovered.lifecycle_state.value == "active"
+    assert recovered.runtime_available is True
+
+
+@pytest.mark.asyncio
 async def test_runtime_authority_rejects_disabled_connection() -> None:
     attach, service, _, _, _, _ = _build_stack()
     rev = _attach(attach)
@@ -560,6 +660,7 @@ async def test_runtime_authority_rejects_disabled_connection() -> None:
     port._result = _safe_connection(
         administrative_status=TenantConnectionAdministrativeStatus.DISABLED
     )
+    provider_call_count = 0
     assert authority.is_usable(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -567,6 +668,15 @@ async def test_runtime_authority_rejects_disabled_connection() -> None:
         connection_ref=_CONNECTION,
         capability_id=_CAP_READ,
     ) is False
+    if authority.is_usable(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        live_access_binding_id=_BINDING_ID,
+        connection_ref=_CONNECTION,
+        capability_id=_CAP_READ,
+    ):
+        provider_call_count += 1
+    assert provider_call_count == 0
 
 
 @pytest.mark.asyncio

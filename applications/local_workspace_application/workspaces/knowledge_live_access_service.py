@@ -376,16 +376,6 @@ class WorkspaceLiveAccessBindingService:
         configuration = self._configuration_service.get_configuration(tenant_id=tenant_id, workspace_id=workspace_id)
         if configuration is None:
             raise WorkspaceLiveAccessBindingError("workspace_not_found")
-        attachments = [a for a in configuration.connection_attachments if a.connection_ref == connection_ref]
-        if len(attachments) != 1:
-            raise WorkspaceLiveAccessBindingError("connection_not_attached")
-        if attachments[0].status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED:
-            raise WorkspaceLiveAccessBindingError(
-                "connection_not_attached"
-                if attachments[0].status is WorkspaceConnectionAttachmentStatusV1.DETACHED
-                else "connection_unavailable"
-            )
-        connection = self._resolve_connection(tenant_id=tenant_id, connection_ref=connection_ref)
         historical = next(
             (
                 item
@@ -406,18 +396,22 @@ class WorkspaceLiveAccessBindingService:
             raise WorkspaceLiveAccessBindingError("live_access_binding_conflict")
         if not _validate_runtime and historical is None:
             raise WorkspaceLiveAccessBindingError("live_access_binding_not_found")
+        attachments = [a for a in configuration.connection_attachments if a.connection_ref == connection_ref]
+        if len(attachments) != 1:
+            raise WorkspaceLiveAccessBindingError("connection_not_attached")
+        if attachments[0].status is not WorkspaceConnectionAttachmentStatusV1.ATTACHED:
+            raise WorkspaceLiveAccessBindingError(
+                "connection_not_attached"
+                if attachments[0].status is WorkspaceConnectionAttachmentStatusV1.DETACHED
+                else "connection_unavailable"
+            )
         if not _validate_runtime and historical is not None:
-            if (
-                historical.semantic_identity_hash != semantic_hash
-                or historical.connection_ref != connection_ref
-                or historical.remote_resource_id != resource_id
-                or historical.allowed_capability_ids != capabilities
-                or historical.audience_eligibility is not command.audience_eligibility
-            ):
-                raise WorkspaceLiveAccessBindingError("live_access_binding_conflict")
+            derived_provider_id = historical.derived_provider_id
+            derived_integration_kind = historical.derived_integration_kind
             derived_type = historical.derived_resource_type
             derived_label = historical.derived_safe_display_label
         else:
+            connection = self._resolve_connection(tenant_id=tenant_id, connection_ref=connection_ref)
             try:
                 descriptors = self._capability_catalog.list_capabilities(
                     tenant_id=tenant_id, connection_ref=connection_ref, remote_resource_id=resource_id,
@@ -434,6 +428,8 @@ class WorkspaceLiveAccessBindingService:
                     connection=connection, selected_capabilities=capabilities, catalog=catalog,
                 )
                 derived_type, derived_label = resource.resource_type, resource.safe_display_label
+            derived_provider_id = connection.provider_id
+            derived_integration_kind = connection.integration_kind
         had_binding = any(
             v.live_access_binding_id == binding_id
             for v in self._repository.list_knowledge_live_access_versions(
@@ -443,7 +439,7 @@ class WorkspaceLiveAccessBindingService:
         create_intent = CreateLiveAccessBindingMutationIntent(
             connection_ref=connection_ref, remote_resource_id=resource_id,
             allowed_capability_ids=capabilities, audience_eligibility=command.audience_eligibility,
-            derived_provider_id=connection.provider_id, derived_integration_kind=connection.integration_kind,
+            derived_provider_id=derived_provider_id, derived_integration_kind=derived_integration_kind,
             derived_resource_type=derived_type, derived_safe_display_label=derived_label,
         )
         manifest_hash = live_access_binding_stage_manifest_hash(
@@ -454,8 +450,8 @@ class WorkspaceLiveAccessBindingService:
             remote_resource_id=resource_id,
             allowed_capability_ids=capabilities,
             audience_eligibility=command.audience_eligibility,
-            derived_provider_id=connection.provider_id,
-            derived_integration_kind=connection.integration_kind,
+            derived_provider_id=derived_provider_id,
+            derived_integration_kind=derived_integration_kind,
             derived_resource_type=derived_type,
             derived_safe_display_label=derived_label,
         )
