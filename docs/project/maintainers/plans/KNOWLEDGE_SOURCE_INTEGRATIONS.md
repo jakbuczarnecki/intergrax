@@ -1,6 +1,6 @@
 # Vendor Knowledge Facade — Implementation Plan
 
-**Status:** `ACTIVE`  
+**Status:** `ACCEPTED / CLOSED`
 **Branch:** `development`  
 **Architecture:** [`../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../../architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md)
 **Reuse audit:** [`../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md`](../audit/KNOWLEDGE_SOURCE_INTEGRATIONS.md)  
@@ -610,7 +610,11 @@ implementation into the generic platform contract.
 
 ---
 
-## 2. Current position
+## 2. Historical status ledger (superseded)
+
+This status ledger is retained for traceability only. The current authority is
+the VK-9 platform closeout and the VK-6 provider/source-kind capability matrix;
+entries below must not be interpreted as current roadmap sequencing.
 
 ```text
 DONE:     VENDOR-KNOWLEDGE-FACADE-ARCH-1

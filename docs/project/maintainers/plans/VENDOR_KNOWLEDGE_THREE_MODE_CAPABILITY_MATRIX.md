@@ -348,19 +348,21 @@ re-read here; they prove adapter/sync layers, not the higher application modes.
 
 ---
 
-## 13. Unified live capability rollout matrix
+## 13. Historical unified live capability rollout evidence — SUPERSEDED BY VK-6/VK-9
 
 ### `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1`
 
 **Status:** `ACCEPTED / CLOSED`
 
-Canonical architecture:
+Historical architecture reference:
 [`VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md`](../../architecture/VENDOR_KNOWLEDGE_LIVE_CAPABILITY_ROLLOUT.md)
 — `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-ARCH-1` —
 `READY_FOR_REVIEW`.
 
-This addendum is the canonical live-rollout planning view. It does not convert
-any `FOUNDATION_ONLY` row into an implemented provider capability.
+This addendum is retained for historical traceability only. The VK-6 matrix
+above is authoritative for current selective capability status; this evidence
+does not convert any `FOUNDATION_ONLY` row into an implemented provider
+capability or create current sequencing.
 
 Shared live foundation:
 
@@ -581,9 +583,13 @@ errors/evidence, safe locators, private receipts, credential non-disclosure,
 contract tests and production proof. Google additionally proves that all seven
 handlers reuse the existing shared `GoogleWorkspaceCollaborationSuiteIntegration`.
 
-### Canonical rollout order and final audit
+### Historical Live rollout evidence — SUPERSEDED BY VK-6/VK-9
 
-Immediate next task:
+The following rollout order and status record is retained for traceability only.
+It is superseded by the accepted VK-6 capability matrix and VK-9 platform
+closeout and must not be interpreted as current sequencing or active work.
+
+Historical rollout sequence:
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1 — ACCEPTED / CLOSED
@@ -595,7 +601,7 @@ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR — ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT — READY_FOR_REVIEW
 ```
 
-The complete order is frozen in
+Historically, the complete order was frozen in
 `KNOWLEDGE_SOURCE_INTEGRATIONS.md`, from this rollout plan through `ARCH-1`,
 the shared `FOUNDATION-1`, Graph, Slack, Jira, Confluence, the Google
 readiness gate and independently gated Google source tasks, to both family
@@ -605,12 +611,11 @@ closeouts and:
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FAMILY-AUDIT-1 — PLANNED
 ```
 
-The final audit matrix must retain the columns shown above and include all
-source kinds that passed their readiness gates plus every explicitly deferred
-source kind and its reason. Databricks remains excluded because no exact
-`source_kind` has been selected; Power BI and Atlan are outside this rollout.
+That historical audit intent is superseded. The current capability truth is
+the VK-6 matrix above; future Jira, Confluence or Google implementation is
+separate provider/product expansion and is not VK-10.
 
-### Rollout status
+### Historical rollout status — SUPERSEDED / TRACEABILITY ONLY
 
 ```text
 VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1: ACCEPTED / CLOSED
@@ -642,6 +647,14 @@ provider/source-kind matrix above remains authoritative for selective coverage:
 `ACCEPTED`, `FOUNDATION_ONLY`, `UNSUPPORTED` and `NOT IMPLEMENTED` are truthful
 capability statuses, not platform defects.
 
+Current canonical authority is:
+
+- VK-9 platform closeout reconciliation — authoritative for platform state;
+- the VK-6 provider/source-kind capability matrix — authoritative for current
+  selective capability status;
+- historical Live rollout sections — superseded and retained for traceability
+  only.
+
 The matrix is consumed together with the final closeout in
 [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md). The
 platform has zero `PLATFORM_BLOCKER` items. Durable, Indexed and Live remain
@@ -649,5 +662,13 @@ independently composable through explicit plugin mode declarations; provider
 ACL, deletion/tombstone, content/history, commercial and SDK/API packaging
 limitations remain outside the platform-completeness claim.
 
-The roadmap is complete at VK-9. Future provider/source-kind expansion is
-separate product work and must not be represented as VK-10.
+The authoritative roadmap state is:
+
+```text
+VENDOR KNOWLEDGE PLATFORM
+VK-1 through VK-9 — COMPLETE
+NEXT: NONE
+```
+
+Future provider/source-kind expansion is separate provider/product work only
+and must not be represented as VK-10.
