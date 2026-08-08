@@ -142,9 +142,9 @@ The canonical platform discovery boundary is
   `teams_chat` now proves Durable + Indexed + Live.
 
 Descriptors are immutable, reject tenant/credential/connection state and do not
-execute any mode lifecycle. Application-specific migration, generic Indexed
-bridging, broader provider coverage and LKW/frontend decoupling remain deferred
-to their roadmap tasks.
+execute any mode lifecycle. Generic Indexed bridging is accepted and closed
+through VK-4; application-specific migration, broader provider coverage and
+LKW/frontend decoupling remain deferred to their roadmap tasks.
 
 Validation closeout confirmed plugin contract, registry compatibility,
 representative Slack/Graph proofs, and Slack Connected Source contract/E2E.
@@ -488,13 +488,13 @@ evidence.
 
 | Area | Status | Current truth |
 |---|---|---|
-| Plugin model | `PARTIAL` | Provider/source-keyed adapter, connection and live/sync registries exist, but there is no single authoritative three-mode plugin bootstrap. |
-| Capability model | `PARTIAL` | Adapter, indexed-eligibility and live capability metadata are separate; Indexed/Durable/Live support is not one explicit source-kind declaration. |
+| Plugin model | `ACCEPTED / CLOSED` | Authoritative provider/source plugin registry; explicit provider/category/source-kind identity; deterministic registration/discovery; runtime execution registries remain separate intentionally. |
+| Capability model | `ACCEPTED / CLOSED` | Each source plugin explicitly declares supported modes; mode-specific runtime refs/capability refs remain separate; unsupported modes remain valid. |
 | Durable | `ACCEPTED / CLOSED` | Provider-neutral durable coordinator, `KnowledgeSyncSink` and `DocumentStoreDurableKnowledgeSyncSink` are accepted, with representative Slack + Microsoft Graph Teams Chat proof; broader provider coverage remains VK-6/VK-8. |
 | Indexed / RAG | `ACCEPTED / CLOSED` | Provider-neutral generic Indexed bridge is accepted, with representative Slack + Microsoft Graph Teams Chat proof through canonical `KnowledgeDocument`; full provider coverage remains VK-6 and complete cross-provider product E2E remains VK-8. |
 | Live / Realtime | `ACCEPTED / CLOSED` | Provider-neutral registration/bootstrap now feeds the existing validated executor and tenant catalog; capability coverage remains selective by design. |
 | Frontend neutrality | `PARTIAL` | Generic LKW Live composition is provider-neutral; Slack-specific Ask orchestration and materialization paths remain application-owned. |
-| Identity / ownership | `PARTIAL` | Tenant, connection, provider/source identity and indexed ownership are fenced; Live bindings derive source identity through capability IDs rather than sharing an explicit source-kind field. |
+| Identity / ownership | `PARTIAL` | Canonical provider/category/source-kind identity is accepted and reused across modes; remaining partial status reflects broader provider/application ownership proof, not missing Live source identity. |
 | Public platform surface | `PARTIAL` | Runtime contracts are reusable and exported, but indexed consumption and parts of live execution remain application-owned rather than one coherent public facade. |
 
 The remaining concrete new-provider boundaries concern broader provider/source-kind
