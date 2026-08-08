@@ -50,21 +50,8 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
 )
-from intergrax.runtime.vendor_knowledge.adapters import (
-    register_confluence_pages_knowledge_adapter,
-    register_google_workspace_calendar_knowledge_adapter,
-    register_google_workspace_docs_knowledge_adapter,
-    register_google_workspace_drive_knowledge_adapter,
-    register_google_workspace_sheets_knowledge_adapter,
-    register_jira_issues_knowledge_adapter,
-    register_msgraph_calendar_knowledge_adapter,
-    register_msgraph_drive_knowledge_adapter,
-    register_msgraph_mail_knowledge_adapter,
-    register_msgraph_teams_channel_knowledge_adapter,
-    register_msgraph_teams_chat_knowledge_adapter,
-)
-from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
-    register_slack_conversation_knowledge_adapter,
+from intergrax.runtime.vendor_knowledge.adapter_composition import (
+    build_default_vendor_knowledge_adapter_registry,
 )
 from intergrax.runtime.vendor_knowledge.binding_document_store import (
     DocumentStoreKnowledgeSourceBindingRepository,
@@ -75,7 +62,6 @@ from intergrax.runtime.vendor_knowledge.bindings import (
 )
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
 from intergrax.runtime.vendor_knowledge.facade import VendorKnowledgeFacadeService
-from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 
 class _ConnectionAwareResolver:
@@ -143,19 +129,7 @@ def build_connected_source_wiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
     )
-    adapter_registry = KnowledgeAdapterRegistry()
-    register_confluence_pages_knowledge_adapter(adapter_registry)
-    register_google_workspace_calendar_knowledge_adapter(adapter_registry)
-    register_google_workspace_docs_knowledge_adapter(adapter_registry)
-    register_google_workspace_drive_knowledge_adapter(adapter_registry)
-    register_google_workspace_sheets_knowledge_adapter(adapter_registry)
-    register_jira_issues_knowledge_adapter(adapter_registry)
-    register_msgraph_calendar_knowledge_adapter(adapter_registry)
-    register_msgraph_drive_knowledge_adapter(adapter_registry)
-    register_msgraph_mail_knowledge_adapter(adapter_registry)
-    register_msgraph_teams_channel_knowledge_adapter(adapter_registry)
-    register_msgraph_teams_chat_knowledge_adapter(adapter_registry)
-    register_slack_conversation_knowledge_adapter(adapter_registry)
+    adapter_registry = build_default_vendor_knowledge_adapter_registry()
     binding_repo = DocumentStoreKnowledgeSourceBindingRepository(repository.document_store)
     resolver = _ConnectionAwareResolver(registry)
 

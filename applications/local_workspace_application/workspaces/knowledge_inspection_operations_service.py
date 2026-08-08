@@ -224,32 +224,37 @@ class KnowledgeInspectionService:
     def list_items(self, *, tenant_id: str, workspace_id: str) -> KnowledgeInventoryV1:
         configuration = self._configuration(tenant_id=tenant_id, workspace_id=workspace_id)
         items: list[KnowledgeInventoryItemV1] = []
-        for binding in configuration.indexed_sources:
-            view = self._indexed_lifecycle.get(
-                tenant_id=tenant_id,
-                workspace_id=workspace_id,
-                indexed_source_binding_id=binding.indexed_source_binding_id,
-            )
-            items.append(
-                self._indexed_item(
-                    view,
-                    display_label=binding.cached_safe_display_label,
-                )
-            )
-        for binding in configuration.live_access_bindings:
-            view = self._live_lifecycle.get(
-                GetLiveAccessCommand(
+        try:
+            for binding in configuration.indexed_sources:
+                view = self._indexed_lifecycle.get(
                     tenant_id=tenant_id,
                     workspace_id=workspace_id,
-                    live_access_binding_id=binding.live_access_binding_id,
+                    indexed_source_binding_id=binding.indexed_source_binding_id,
                 )
-            )
-            items.append(
-                self._live_item(
-                    view,
-                    display_label=binding.derived_safe_display_label,
+                items.append(
+                    self._indexed_item(
+                        view,
+                        display_label=binding.cached_safe_display_label,
+                    )
                 )
-            )
+            for binding in configuration.live_access_bindings:
+                view = self._live_lifecycle.get(
+                    GetLiveAccessCommand(
+                        tenant_id=tenant_id,
+                        workspace_id=workspace_id,
+                        live_access_binding_id=binding.live_access_binding_id,
+                    )
+                )
+                items.append(
+                    self._live_item(
+                        view,
+                        display_label=binding.derived_safe_display_label,
+                    )
+                )
+        except (WorkspaceIndexedSourceLifecycleError, WorkspaceLiveAccessBindingError) as exc:
+            raise KnowledgeInventoryError(self._map_error(exc.error_code)) from exc
+        except Exception as exc:
+            raise KnowledgeInventoryError("knowledge_inventory_unavailable") from exc
         ordered = tuple(
             sorted(
                 items,
@@ -450,6 +455,8 @@ class KnowledgeOperationsService:
             )
         except KnowledgeInventoryError as exc:
             raise KnowledgeOperationError(exc.error_code) from exc
+        if command.expected_revision != item.revision:
+            raise KnowledgeOperationError("knowledge_operation_conflict")
         if command.operation not in item.available_actions:
             if command.operation is KnowledgeOperationV1.RETRY_SYNC and command.operation_id is None:
                 raise KnowledgeOperationError("knowledge_operation_retry_target_required")

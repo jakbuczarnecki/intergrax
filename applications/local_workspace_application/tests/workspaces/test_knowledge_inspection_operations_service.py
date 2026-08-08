@@ -240,6 +240,30 @@ def test_empty_workspace_returns_empty_inventory() -> None:
     assert inventory.summary.total == 0
 
 
+def test_list_items_maps_indexed_lifecycle_failure_to_inventory_error() -> None:
+    inspection, _, indexed, _ = _services()
+
+    def failing_get(**kwargs: object):
+        raise WorkspaceIndexedSourceLifecycleError("indexed_source_not_found")
+
+    indexed.get = failing_get
+
+    with pytest.raises(KnowledgeInventoryError, match="knowledge_item_not_found"):
+        inspection.list_items(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
+def test_list_items_maps_unexpected_live_lifecycle_failure_to_inventory_unavailable() -> None:
+    inspection, _, _, live = _services()
+
+    def failing_get(command: object):
+        raise RuntimeError("lifecycle storage unavailable")
+
+    live.get = failing_get
+
+    with pytest.raises(KnowledgeInventoryError, match="knowledge_inventory_unavailable"):
+        inspection.list_items(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+
+
 def test_inventory_projects_both_modes_with_deterministic_order_and_revision_authority() -> None:
     inspection, _, _, _ = _services()
 
@@ -475,6 +499,51 @@ async def test_stale_revision_maps_to_stable_conflict() -> None:
                 revision=2,
             )
         )
+    assert [name for name, _ in indexed.calls if name != "get"] == []
+
+
+@pytest.mark.asyncio
+async def test_indexed_stale_revision_wins_over_current_unsupported_action() -> None:
+    _inspection, operations, indexed, _ = _services(
+        indexed_view=_indexed_view(
+            IndexedSourceLifecycleStateV1.DISABLED,
+            revision=4,
+            enabled=False,
+        )
+    )
+
+    with pytest.raises(KnowledgeOperationError, match="knowledge_operation_conflict"):
+        await operations.execute(
+            _command(
+                indexed_knowledge_item_id(_INDEXED_ID),
+                KnowledgeOperationV1.DISABLE,
+                revision=3,
+            )
+        )
+
+    assert [name for name, _ in indexed.calls if name != "get"] == []
+
+
+@pytest.mark.asyncio
+async def test_current_revision_unsupported_action_maps_to_not_supported() -> None:
+    _inspection, operations, indexed, _ = _services(
+        indexed_view=_indexed_view(
+            IndexedSourceLifecycleStateV1.DISABLED,
+            revision=4,
+            enabled=False,
+        )
+    )
+
+    with pytest.raises(KnowledgeOperationError, match="knowledge_operation_not_supported"):
+        await operations.execute(
+            _command(
+                indexed_knowledge_item_id(_INDEXED_ID),
+                KnowledgeOperationV1.DISABLE,
+                revision=4,
+            )
+        )
+
+    assert [name for name, _ in indexed.calls if name != "get"] == []
 
 
 @pytest.mark.asyncio
@@ -494,6 +563,28 @@ async def test_live_stale_configuration_revision_maps_to_stable_conflict() -> No
                 revision=3,
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_live_stale_revision_wins_over_current_unsupported_action() -> None:
+    _inspection, operations, _, live = _services(
+        live_view=_live_view(
+            LiveAccessLifecycleStateV1.DISABLED,
+            revision=5,
+            enabled=False,
+        )
+    )
+
+    with pytest.raises(KnowledgeOperationError, match="knowledge_operation_conflict"):
+        await operations.execute(
+            _command(
+                live_knowledge_item_id(_LIVE_ID),
+                KnowledgeOperationV1.DISABLE,
+                revision=4,
+            )
+        )
+
+    assert [name for name, _ in live.calls if name != "get"] == []
 
 
 def test_reconstructed_services_rebuild_inventory_without_process_state() -> None:

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import inspect
+
+from applications.local_workspace_application.workspaces import connected_source_wiring
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
@@ -52,19 +55,8 @@ from intergrax.integrations.providers.wiki_knowledge.confluence.integration impo
 from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read import (
     CONFLUENCE_PAGES_SOURCE_KIND,
 )
-from intergrax.runtime.vendor_knowledge.adapters import (
-    register_confluence_pages_knowledge_adapter,
-    register_google_workspace_calendar_knowledge_adapter,
-    register_google_workspace_docs_knowledge_adapter,
-    register_google_workspace_drive_knowledge_adapter,
-    register_google_workspace_sheets_knowledge_adapter,
-    register_jira_issues_knowledge_adapter,
-    register_msgraph_calendar_knowledge_adapter,
-    register_msgraph_drive_knowledge_adapter,
-    register_msgraph_mail_knowledge_adapter,
-    register_msgraph_teams_channel_knowledge_adapter,
-    register_msgraph_teams_chat_knowledge_adapter,
-    register_slack_conversation_knowledge_adapter,
+from intergrax.runtime.vendor_knowledge.adapter_composition import (
+    build_default_vendor_knowledge_adapter_registry,
 )
 from intergrax.runtime.vendor_knowledge.live.bootstrap import (
     build_vendor_knowledge_live_registration_registry,
@@ -76,7 +68,6 @@ from intergrax.runtime.vendor_knowledge.plugin import (
 from intergrax.runtime.vendor_knowledge.plugin_composition import (
     build_default_vendor_knowledge_source_plugin_registry,
 )
-from intergrax.runtime.vendor_knowledge.registry import KnowledgeAdapterRegistry
 
 
 def test_default_plugin_catalog_matches_all_implemented_source_adapters() -> None:
@@ -122,22 +113,69 @@ def test_default_plugin_catalog_matches_all_implemented_source_adapters() -> Non
 
 
 def test_durable_plugin_declarations_have_registered_adapter_runtime() -> None:
-    adapters = KnowledgeAdapterRegistry()
-    for register in (
-        register_confluence_pages_knowledge_adapter,
-        register_google_workspace_calendar_knowledge_adapter,
-        register_google_workspace_docs_knowledge_adapter,
-        register_google_workspace_drive_knowledge_adapter,
-        register_google_workspace_sheets_knowledge_adapter,
-        register_jira_issues_knowledge_adapter,
-        register_msgraph_calendar_knowledge_adapter,
-        register_msgraph_drive_knowledge_adapter,
-        register_msgraph_mail_knowledge_adapter,
-        register_msgraph_teams_channel_knowledge_adapter,
-        register_msgraph_teams_chat_knowledge_adapter,
-        register_slack_conversation_knowledge_adapter,
-    ):
-        register(adapters)
+    adapters = build_default_vendor_knowledge_adapter_registry()
+    assert adapters.registered_keys() == (
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_DRIVE_SOURCE_KIND,
+        ),
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_MAIL_SOURCE_KIND,
+        ),
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+        ),
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+        ),
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_CALENDAR_SOURCE_KIND,
+        ),
+        (
+            SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            IntegrationCategory.CONVERSATION_CHANNEL,
+            SLACK_CONVERSATION_SOURCE_KIND,
+        ),
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_DRIVE_SOURCE_KIND,
+        ),
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_DOCS_SOURCE_KIND,
+        ),
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_SHEETS_SOURCE_KIND,
+        ),
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_CALENDAR_SOURCE_KIND,
+        ),
+        (
+            JIRA_ISSUE_TRACKER_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+            JIRA_ISSUES_SOURCE_KIND,
+        ),
+        (
+            CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+            IntegrationCategory.WIKI_KNOWLEDGE,
+            CONFLUENCE_PAGES_SOURCE_KIND,
+        ),
+    )
 
     plugins = build_default_vendor_knowledge_source_plugin_registry()
     for plugin in plugins.list_plugins():
@@ -149,6 +187,16 @@ def test_durable_plugin_declarations_have_registered_adapter_runtime() -> None:
         )
         assert durable.runtime_ref == expected_runtime_ref
         assert plugin.identity.key in adapters.registered_keys()
+
+
+def test_lkw_wiring_delegates_adapter_composition_to_vendor_knowledge() -> None:
+    source = inspect.getsource(connected_source_wiring)
+
+    assert "build_default_vendor_knowledge_adapter_registry" in source
+    assert not any(
+        "register_" in line and "knowledge_adapter" in line
+        for line in source.splitlines()
+    )
 
 
 def test_indexed_declarations_resolve_only_existing_materializers() -> None:
