@@ -6,147 +6,100 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Architecture Overview
 
-A concise view of how Intergrax separates product workflows, orchestration, agent decisions, governed execution, and evidence.
+How Intergrax separates the specialized product application, its application operating layer, model or agent behavior, governed access to knowledge and tools, and reviewable evidence.
 
 > [!NOTE]
-> This document explains **responsibility boundaries** and **system flow**. It is **not** the complete architecture canon or a production-readiness claim. Deep technical readers should use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md).
+> Intergrax is source-available and in active R&D. This overview explains **responsibility boundaries** and **governed execution**; it is not the complete architecture canon or a production-readiness, security-certification, or commercial-validation claim. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) for deep implementation architecture.
 
-Primary audience: Architect or platform engineer evaluating responsibility boundaries, governance placement and current proof limits.
-
-<picture>
-  <source
-    media="(prefers-color-scheme: dark)"
-    srcset="../assets/public/intergrax-hero-dark.svg"
-  >
-  <source
-    media="(prefers-color-scheme: light)"
-    srcset="../assets/public/intergrax-hero-light.svg"
-  >
-  <img
-    alt="Intergrax connects specialized agent applications with reusable policy, knowledge, evidence, integration and execution foundations."
-    src="../assets/public/intergrax-hero-light.svg"
-  >
-</picture>
+Primary audience: external architects, Principal or Staff engineers, CTOs, and technical evaluators comparing application operating boundaries.
 
 ---
 
 ## At a glance
 
-| Part | Owns | Does not own |
-| ---- | ---- | ------------ |
-| **Specialized application** | User workflow, product context, product permissions, and acceptance criteria | Governed execution internals, provider integration details, or shared evidence infrastructure |
-| **Orchestration** | Coordinating work across agents and steps | Domain decisions or product UX |
-| **Agent** | Domain decisions inside a bounded session | Policy enforcement, shared tool-execution infrastructure, or cross-product hosting |
-| **Governed execution harness** | Execution cycle, policy, budgets, trace, and evidence collection | Product-specific business rules outside shared boundaries |
-| **Knowledge, tools and model systems** | Retrieval, integrations, and model access behind shared boundaries | The product workflow or end-user experience |
-| **Trace and evidence** | Receipts, observability, and reviewable execution records | Product certification or commercial validation |
+| Boundary | Responsibility | Ownership limit |
+| -------- | -------------- | --------------- |
+| **Specialized product application** | Domain workflow, UX, product semantics, required identity and permissions, business acceptance, and deployment choices | Defines the business rule and product outcome; does not need to rebuild shared execution controls |
+| **Intergrax application operating layer** | Policy and approval mechanisms, context and knowledge boundaries, governed execution, tool and integration boundaries, runtime controls, recovery, observability, and evidence/provenance | Provides reusable enforcement mechanisms; does not decide the product's business permissions or acceptance criteria |
+| **Agent and model behavior** | Reasoning, inference, decision generation, and agent-specific domain behavior | Operates within the supplied context and governed execution; does not own policy, permissions, or evidence |
+| **Knowledge, tools, integrations, and model systems** | Source data, remote services, business systems, tool effects, and model access | Are selected behind configured boundaries; they do not own the product workflow or end-user experience |
+| **Evidence and provenance** | Receipts, traces, provenance, and records for review, debugging, and governance | Is produced during execution; it does not certify production readiness, security, or commercial validation |
 
----
+## The operating model
 
-## Architect review path
+```mermaid
+flowchart TB
+    APP[Specialized product application]
 
-| Step | Question | Primary source |
-| ---- | -------- | -------------- |
-| 1 | Are application, orchestration, agent and governed-execution responsibilities separated clearly? | This Architecture Overview |
-| 2 | Which mechanisms and product paths have current bounded evidence? | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| 3 | Does a bounded evaluation justify deeper review? | [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
-| 4 | Is deeper implementation-level due diligence required? | [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) |
+    subgraph IX[Intergrax application operating layer]
+        POLICY[Policy and approval boundaries]
+        CONTEXT[Context and knowledge boundaries]
+        EXEC[Governed execution]
+        EVIDENCE[Evidence and provenance]
+    end
 
-The primary architect next action after understanding the boundaries is to [review the current proof status](../proofs/PROOFS.md).
+    AGENT[Agent and model behavior]
+    KNOWLEDGE[Knowledge sources]
+    TOOLS[Tools and integrations]
+    MODELS[Model systems]
+    REVIEW[Review, debugging, and governance]
 
----
+    APP --> IX
+    IX -->|governed interaction| AGENT
+    IX -->|selected source| KNOWLEDGE
+    IX -->|authorized integration| TOOLS
+    IX -->|selected model| MODELS
+    EVIDENCE --> APP
+    EVIDENCE --> REVIEW
+```
 
-## The system flow
+Intergrax surrounds the application's execution boundaries. A request may use only the model, knowledge source, or tool that its product context and configured controls select; the diagram does not mean every request invokes every resource. Agent or model behavior supplies reasoning and decisions, while the operating layer bounds how that behavior receives context, accesses resources, produces effects, and leaves evidence.
+
+**Harness AI** is useful category shorthand for this operating or execution layer around model and agent behavior. Intergrax is therefore not merely a model provider, an agent reasoning framework, or the product's UX and business workflow.
+
+## Who defines policy and who enforces it?
+
+- **The product team owns** what the business rule means, who should have permission, which actions require approval, the required identity and tenant context, and whether the product outcome is acceptable.
+- **Intergrax provides** reusable mechanisms to propagate that identity and context, apply configured policy and approval boundaries, constrain execution and tool access, recover and observe runtime behavior, and record evidence.
+- **Agent and model behavior does not replace either responsibility.** It can propose a decision or action, but it does not grant business permission or bypass the governed boundary.
+
+This division lets products keep their domain accountability while sharing an application operating layer instead of rebuilding controls around each workflow.
+
+## Request and evidence flow
 
 ```mermaid
 flowchart LR
-    U[User or system request] --> APP[Specialized application]
-    APP --> O[Orchestration]
-    O --> A[Agent decision]
-    A --> H[Governed execution]
-    H --> K[Knowledge and memory]
-    H --> T[Tools and integrations]
-    H --> M[Models]
-    H --> E[Trace and evidence]
-    E --> APP
+    REQUEST[Request] --> INTENT[Product intent and context]
+    INTENT --> EXECUTION[Governed execution]
+    EXECUTION -->|selected resources only| RESOURCE[Model, knowledge, or tool interaction]
+    RESOURCE --> RESULT[Result]
+    RESULT --> RECEIPT[Evidence and provenance]
+    RECEIPT --> RESPONSE[Product response or review]
 ```
 
-A specialized application hosts the concrete workflow. Orchestration coordinates work; agents make domain decisions; the harness governs execution, policy, and evidence around knowledge, tools, and models. Trace and evidence return to the application so reviewers can inspect what happened without inferring control flow from ad hoc logs.
+The lifecycle is conceptual: the operating layer selects the resources needed for the request, then returns the result with evidence/provenance that can be inspected for debugging, review, and governance. Evidence is a first-class execution output, not an afterthought or an inference reconstructed from ad hoc logs.
 
-This flow describes responsibility boundaries, not every deployment topology or internal component name.
-
----
-
-## Responsibility boundaries
-
-The architecture uses five clear responsibility boundaries:
-
-- **Applications** own the concrete product environment.
-- **Orchestration** coordinates work.
-- **Agents** make domain decisions.
-- **The harness** controls execution, policy, and evidence.
-- **External systems** provide models, tools, and organizational knowledge.
-
-The separation matters because product-specific rules stay in the product; agents do not become hidden operating systems; policy and evidence are execution concerns, not optional decorations; and integrations remain replaceable behind shared boundaries.
-
----
-
-## Shared foundation versus product ownership
-
-| Intergrax reusable foundation | Product application |
-| ----------------------------- | ------------------- |
-| Governed execution | User workflow |
-| Policy and human approval | Identity and tenant context |
-| Trace and evidence | Product permissions |
-| Knowledge, retrieval, grounding, and memory | Product configuration |
-| Tool and integration boundaries | User experience |
-| Model portability | Product acceptance criteria |
-| Runtime verification | Product-specific business rules |
-
-Products compose platform capabilities; they do not reimplement the harness for each new workflow.
-
----
-
-## How LKW uses the architecture
+## LKW as a product example
 
 Local Knowledge Workspace (LKW) is the **Primary product proof** at **Backend Product Alpha / MVP** with **PARTIAL** public proof status.
 
-LKW supplies the workspace workflow. Intergrax supplies reusable ingest, knowledge, execution, policy, evidence, and hosting foundations.
+| LKW-specific product responsibility | Shared Intergrax foundation |
+| ---------------------------------- | ---------------------------- |
+| Workspace workflow, approved-source choice, user-facing Ask, and product acceptance | Ingest and knowledge boundaries, governed Ask execution, evidence/provenance, and hosting/runtime mechanisms |
 
-```mermaid
-flowchart LR
-    S[Local files or approved Web URLs]
-    S --> I[Background ingest]
-    I --> K[Persistent knowledge index]
-    K --> Q[Ask over indexed knowledge]
-    Q --> R[Grounded result and evidence]
-    R --> T[Trace and persisted evidence]
-```
+The accepted indexed path demonstrates bounded ingest, indexed knowledge, grounded Ask, source references, and persisted execution evidence. Mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access, real-user validation, and commercial validation are not established. See [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) and the [PROOFS dashboard](../proofs/PROOFS.md).
 
-LKW does not demonstrate finished SaaS, complete Hybrid Ask, or completed commercial validation. Bounded proof details: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md).
+## Token Optimization as a secondary capability example
 
----
+Token Optimization is a **Featured platform-capability proof** with **PARTIAL** public status. It operates inside governed execution as a reusable capability for policy-governed context and prompt optimization, protected-region validation, receipts, and observability. It is not a separate product layer, and universal token savings or production-proven savings are not claimed.
 
-## How Token Optimization fits
+Details belong in the owning [Token Optimization guide](../capabilities/token_optimization/README.md) and its [claim guardrails](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md).
 
-Token Optimization is a **Featured platform-capability proof** used within governed execution — a shared platform mechanism for deterministic prompt and context optimization under policy, not a generic prompt-shortening utility. Public status remains **PARTIAL**.
+## Architect review path
 
-It operates inside the harness execution path alongside policy, protected-region validation, receipts, and observability. Detailed phase status and claim guardrails live in the owning guides — not duplicated here.
+1. Understand this Architecture Overview as the project-level mental model.
+2. Make [PROOFS](../proofs/PROOFS.md) the primary next action: check what has current bounded evidence and what remains incomplete.
+3. Use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md) for a bounded technical evaluation.
+4. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) to route deeper implementation questions to the canonical architecture material it indexes, including the [Harness narrative](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) and [runtime architecture hub](../architecture/intergrax_runtime_architecture.md).
 
-**Go deeper:** [Token Optimization guide](../capabilities/token_optimization/README.md) · [Claim guardrails](../capabilities/TOKEN_OPTIMIZATION_CLAIMS.md)
-
----
-
-## Go deeper
-
-| Topic | Document |
-| ----- | -------- |
-| Foundation architecture narrative | [INTERGRAX_HARNESS_NARRATIVE.md](../technical/guides/INTERGRAX_HARNESS_NARRATIVE.md) |
-| Technical documentation map | [DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) |
-| Public proof dashboard | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| LKW product proof | [LKW_PLATFORM_PROOF.md](../proofs/LKW_PLATFORM_PROOF.md) |
-| Token Optimization | [Token Optimization guide](../capabilities/token_optimization/README.md) |
-
-Primary next action: review current evidence in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
-
-Then choose a bounded evaluation through [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md), or deep technical review through [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md). For a builder-specific route, use [docs/project/builders/BUILDER_QUICKSTART.md](../builders/BUILDER_QUICKSTART.md) as a secondary path.
+The overview summarizes the architecture; the proof documents establish current evidence; the technical map routes implementation-level due diligence. None of these routes turns bounded evidence into a production, security, real-user, or commercial validation claim.

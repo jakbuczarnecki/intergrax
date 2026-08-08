@@ -35,8 +35,9 @@ _LEGAL_HEADER = (
 _READER_PATHS = (WHY_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
 
 _ARCH_OPENING = (
-    "A concise view of how Intergrax separates product workflows, orchestration, "
-    "agent decisions, governed execution, and evidence."
+    "How Intergrax separates the specialized product application, its application "
+    "operating layer, model or agent behavior, governed access to knowledge and tools, "
+    "and reviewable evidence."
 )
 
 _BUILD_OPENING = (
@@ -101,8 +102,10 @@ _BOUNDARY_PHRASES_WHY = (
 )
 
 _BOUNDARY_PHRASES_ARCH = (
+    "application operating layer",
     "production-readiness",
     "responsibility boundaries",
+    "evidence and provenance",
 )
 
 _BOUNDARY_PHRASES_BUILD = (
@@ -227,16 +230,10 @@ def test_mermaid_diagrams(why_text: str, arch_text: str, build_text: str) -> Non
                 assert token not in block, f"{name}: forbidden Mermaid token {token!r}"
 
 
-def test_hero_reuse(arch_text: str) -> None:
-    assert "../assets/public/intergrax-hero-light.svg" in arch_text
-    assert "../assets/public/intergrax-hero-dark.svg" in arch_text
-    assert "<picture>" in arch_text
-    assert 'alt="Intergrax connects specialized agent applications' in arch_text
-    assert HERO_LIGHT_PATH.is_file()
-    assert HERO_DARK_PATH.is_file()
-    assert "intergrax-hero" not in arch_text.replace("intergrax-hero-light.svg", "").replace(
-        "intergrax-hero-dark.svg", ""
-    )
+def test_architecture_uses_conceptual_model_not_generic_hero(arch_text: str) -> None:
+    assert "```mermaid" in arch_text
+    assert "../assets/public/intergrax-hero-light.svg" not in arch_text
+    assert "../assets/public/intergrax-hero-dark.svg" not in arch_text
 
 
 def test_required_canonical_links() -> None:
@@ -274,6 +271,27 @@ def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> N
     assert "Primary product proof" in build_text
     assert "Featured platform-capability proof" in build_text
     assert "PARTIAL" in build_text
+
+
+def test_architecture_operating_layer_contract(arch_text: str) -> None:
+    normalized = " ".join(_normalize(arch_text).split())
+    for phrase in (
+        "specialized product application",
+        "application operating layer",
+        "governed execution",
+        "agent and model behavior",
+        "knowledge and tools",
+        "policy and approval boundaries",
+        "evidence and provenance",
+        "business rule",
+        "required identity and permissions",
+        "primary next action",
+        "technical documentation map",
+    ):
+        assert phrase in normalized, f"ARCHITECTURE missing semantic marker: {phrase}"
+
+    assert "does not decide the product's business permissions" in normalized
+    assert "selected resources only" in normalized
 
 
 def test_unsupported_claims_not_positive() -> None:
