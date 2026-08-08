@@ -49,8 +49,8 @@ _ARCH_OPENING = (
 )
 
 _BUILD_OPENING = (
-    "Choose the right path to evaluate Intergrax, inspect its proof, "
-    "or begin building a specialized application."
+    "You have completed the [Builder Quick Start](BUILDER_QUICKSTART.md) checkpoint. "
+    "Now turn the workflow into a bounded application composition plan on Intergrax."
 )
 
 _FORBIDDEN_MAINTAINER_PHRASES = (
@@ -119,7 +119,7 @@ _BOUNDARY_PHRASES_ARCH = (
 _BOUNDARY_PHRASES_BUILD = (
     "active r&d",
     "bounded",
-    "production permission",
+    "production use",
     "license",
 )
 
@@ -235,7 +235,7 @@ def test_legal_header() -> None:
 def test_required_h1_titles() -> None:
     assert _read(WHY_PATH).splitlines()[6].strip() == "# Why Intergrax"
     assert _read(ARCHITECTURE_OVERVIEW_PATH).splitlines()[6].strip() == "# Intergrax Architecture Overview"
-    assert _read(BUILD_PATH).splitlines()[6].strip() == "# Build and Evaluate with Intergrax"
+    assert _read(BUILD_PATH).splitlines()[6].strip() == "# Build With Intergrax"
     assert _read(BUILDER_QUICKSTART_PATH).splitlines()[6].strip() == "# Build with Intergrax — Builder Quick Start"
 
 
@@ -310,9 +310,20 @@ def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> N
     assert "Featured platform-capability proof" in arch_text
     assert "PARTIAL" in arch_text
 
-    assert "Primary product proof" in build_text
-    assert "Featured platform-capability proof" in build_text
-    assert "PARTIAL" in build_text
+    build_normalized = " ".join(_normalize(build_text).split())
+    for phrase in (
+        "concrete product workflow",
+        "product responsibilities",
+        "agent and model behavior",
+        "knowledge and context",
+        "tools and effects",
+        "evidence and provenance",
+        "failure and recovery",
+        "nearest existing contract",
+    ):
+        assert phrase in build_normalized, f"BUILD missing planning marker: {phrase}"
+    assert "evaluation guide" in build_normalized
+    assert "proofs" in build_normalized
 
 
 def test_architecture_operating_layer_contract(arch_text: str) -> None:
