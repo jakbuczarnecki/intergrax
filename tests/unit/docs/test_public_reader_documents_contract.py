@@ -21,6 +21,8 @@ PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMEN
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
 HERO_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-dark.svg"
+CATEGORY_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-light.svg"
+CATEGORY_DARK_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-category-map-dark.svg"
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -28,12 +30,6 @@ _LEGAL_HEADER = (
     "Intergrax is source-available under the Intergrax Evaluation and Collaboration License 1.0.\n"
     "See LICENSE for permitted evaluation, collaboration, and contribution use.\n"
     "-->"
-)
-
-_PRIMARY_SENTENCE = (
-    "Intergrax helps teams build specialized agent applications without "
-    "rebuilding the same policy, knowledge, evidence, integration, and "
-    "execution foundations for every product."
 )
 
 _READER_PATHS = (WHY_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
@@ -453,5 +449,36 @@ def test_hero_assets_exist() -> None:
     assert HERO_DARK_PATH.is_file()
 
 
-def test_why_canonical_sentence(why_text: str) -> None:
-    assert _PRIMARY_SENTENCE in why_text
+def test_why_problem_category_and_reader_fit(why_text: str) -> None:
+    normalized = _normalize(why_text)
+    for phrase in (
+        "rebuild controlled knowledge access",
+        "reusable governed foundation",
+        "product team still owns",
+        "agent framework or model api",
+        "another approach may fit better",
+        "usecases.md",
+        "active r&d",
+        "mixed indexed + authorized live hybrid ask remains incomplete",
+    ):
+        assert phrase in normalized, f"WHY missing reader-fit invariant: {phrase}"
+
+
+def test_why_category_map_assets_and_alt_text(why_text: str) -> None:
+    assert CATEGORY_LIGHT_PATH.is_file()
+    assert CATEGORY_DARK_PATH.is_file()
+    assert "intergrax-category-map-light.svg" in why_text
+    assert "intergrax-category-map-dark.svg" in why_text
+    assert 'alt="Responsibility map comparing' in why_text
+
+
+def test_why_canonical_opening(why_text: str) -> None:
+    opening = _normalize("\n".join(why_text.splitlines()[:13]))
+    for phrase in (
+        "intergrax exists for teams building specialized agent applications",
+        "controlled knowledge access",
+        "reusable governed foundation",
+        "active r&d",
+        "bounded current evidence",
+    ):
+        assert phrase in opening, f"WHY opening missing semantic marker: {phrase}"

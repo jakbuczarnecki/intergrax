@@ -6,12 +6,10 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Why Intergrax
 
-Intergrax helps teams understand whether reusable governed foundations fit the problem they are trying to solve.
-
-Intergrax helps teams build specialized agent applications without rebuilding the same policy, knowledge, evidence, integration, and execution foundations for every product.
+Intergrax exists for teams building specialized agent applications that would otherwise rebuild controlled knowledge access, policy, tools, evidence, context, approvals, recovery, and observability around every model-driven workflow. It is a reusable governed foundation for those application operating boundaries; the project is source-available and in active R&D, with bounded current evidence rather than a universal production-readiness claim.
 
 > [!NOTE]
-> Intergrax is **source-available** and under **active R&D**. LKW is the current **primary product proof** and remains **Backend Product Alpha / MVP**. **Real-user** and **commercial validation** are incomplete.
+> This page explains the problem category and evaluation boundary. See [PROOFS.md](../proofs/PROOFS.md) for detailed evidence and claim limits.
 
 ---
 
@@ -19,33 +17,44 @@ Intergrax helps teams build specialized agent applications without rebuilding th
 
 | Question | Answer |
 | -------- | ------ |
-| What is Intergrax? | A reusable foundation for governed AI applications. |
-| What problem does it address? | Teams repeatedly rebuild permissions, policy, knowledge, tools, evidence, and operational boundaries for every new agent product. |
+| What is Intergrax? | A reusable governed foundation for specialized AI applications. |
+| What problem does it address? | Each product otherwise assembles its own control and execution infrastructure around model behavior. |
 | Who is it for? | Teams building specialized agent-backed applications, platform engineers evaluating reusable infrastructure, and technical design partners with a concrete workflow to validate. |
-| Current proof | LKW as **Primary product proof**; Token Optimization as **Featured platform-capability proof** — both **PARTIAL**. |
-| Current maturity | **Source-available**, **active R&D**; bounded proof paths, not universal production readiness. |
-| Where does it fit? | A reusable governed application foundation — not a finished SaaS, no-code builder, single-purpose retrieval component or standalone agent framework |
+| What remains with the product team? | Workflow semantics, UX, deployment choices, required permissions, product-specific validation, and business responsibility. |
+| Where does it fit? | Around model or agent behavior, as reusable governed application infrastructure. |
 
 ---
 
 ## The repeated problem
 
-Building an impressive agent demo is relatively easy. Delivering a controlled application that a team can review, operate, and trust is difficult.
+Model calls and agent behavior are only one part of a specialized application. A product also commonly needs:
 
-Every new product tends to need the same foundations again: permissions and identity, knowledge access, policy enforcement, human-in-the-loop gates, tool and integration boundaries, trace and evidence collection, testing, and runtime governance. Rebuilding these separately for each product creates inconsistency, slows delivery, and makes governance harder to audit across applications.
+- identity and permissions;
+- controlled knowledge access;
+- policy and human approval;
+- tool and integration boundaries;
+- context and runtime controls;
+- evidence and provenance;
+- failure handling and recovery; and
+- observability.
+
+These are recurring engineering responsibilities, not a claim that every mechanism above is universally production-proven. Without a reusable operating foundation, each application rebuilds substantial control and execution infrastructure, with the resulting inconsistency and maintenance burden spread across products.
 
 ---
 
-## The Intergrax approach
+## What Intergrax is
 
-Intergrax concentrates repeatable infrastructure into one governed foundation so product teams can focus on the concrete workflow.
+Intergrax is a reusable governed foundation, or application operating layer, for specialized AI applications. It concentrates repeatable boundaries around knowledge, policy, tools, evidence, context, and execution so product teams can focus on the concrete domain workflow.
 
-| Differentiator | What it means |
-| -------------- | ------------- |
-| **Application-first** | Real applications and user workflows lead development. |
-| **Governed execution by default** | Policy, budgets, human review, and trace surround execution — not bolted on after the demo works. |
-| **Reusable delivery foundation** | Multiple products reuse shared knowledge, evidence, integration, and execution infrastructure. |
-| **Explicit responsibility boundaries** | Applications, orchestration, agents, and the harness each own a clear slice of the system. |
+Some teams use **Harness AI** to describe this category: an operating layer around model or agent behavior that constrains, coordinates, records, and recovers execution. The term is useful shorthand, not a universal industry taxonomy.
+
+| Layer | Primary responsibility |
+| ----- | ---------------------- |
+| Model or agent framework | Model access, agent behavior, and reasoning or orchestration primitives. |
+| Intergrax | Reusable application operating boundaries around knowledge, policy, tools, evidence, context, and governed execution. |
+| Product application | Domain workflow, UX, deployment, required permissions, and product-specific validation. |
+
+An agent framework or model API can help an application reason and act, but it does not by itself settle how knowledge is bounded, which tools may execute, what evidence is retained, when a person must approve an action, or how failures are recovered and reviewed.
 
 ```mermaid
 flowchart LR
@@ -63,13 +72,35 @@ The diagram contrasts rebuilding foundations per product with reusing one govern
 
 ---
 
+## Responsibility boundary
+
+Intergrax aims to centralize reusable application foundations:
+
+- policy and governance mechanisms;
+- knowledge, context, and evidence boundaries;
+- integration and tool-execution boundaries; and
+- runtime controls for governed execution.
+
+The adopting product team still owns:
+
+- workflow and product semantics;
+- UX and deployment choices;
+- required identity, tenant, and product permissions;
+- product-specific validation and acceptance criteria; and
+- business responsibility for the product and its outcomes.
+
+Intergrax does not remove those responsibilities. It is intended to reduce repeated foundation-building, not to make a domain product or its risk decisions automatic.
+
+---
+
 ## Who it is for
 
-1. Teams building specialized agent-backed applications that need governance, evidence, knowledge access, or controlled tool execution.
-2. AI platform engineers and architects evaluating reusable agent-application infrastructure.
-3. Technical design partners with a concrete workflow worth validating.
+Intergrax is for:
 
-Intergrax is not aimed at every possible AI project, generic consumers, or teams that only need a one-off demo.
+1. Teams building specialized agent-backed applications that need governance, evidence, knowledge access, or controlled tool execution.
+2. Platform or AI engineers evaluating reusable application infrastructure.
+3. Architects who need controlled execution and evidence boundaries.
+4. Technical design partners with a concrete workflow worth validating.
 
 ---
 
@@ -77,7 +108,7 @@ Intergrax is not aimed at every possible AI project, generic consumers, or teams
 
 These approaches are not mutually exclusive. A real system may combine several of them, and the comparison is about primary responsibility rather than a feature scorecard or superiority claim.
 
-The right choice depends on the product and responsibility boundary the team wants to own. Consider the approach that best matches the outcome, control, and maintenance burden required for the work.
+The question is: which layer of responsibility are you trying to buy or build?
 
 <picture>
   <source
@@ -105,7 +136,7 @@ This neutral map explains primary responsibility. Categories overlap, and no uni
 | Retrieval or knowledge toolkit | Retrieval, indexing and grounding components | Product, orchestration, policy and operations | You need retrieval and grounding components |
 | Agent framework | Compose agent behavior and orchestration | Product controls, runtime governance and evidence | You need agent behavior and orchestration |
 | Custom in-house foundation | Maximum design control | Every shared layer and its maintenance | You need complete design control and can maintain the platform |
-| Intergrax | Reusable governed foundation for specialized AI applications | Product workflow, UX, deployment choices, product-specific validation and all required permissions remain the product team's responsibility. | You need to build a specialized governed AI application on reusable policy, knowledge, integration, execution and evidence foundations |
+| Intergrax | Reusable governed foundation for specialized AI applications | Product workflow, UX, deployment choices, required permissions, product-specific validation, and business responsibility | You need to build a specialized governed AI application on reusable policy, knowledge, integration, execution, and evidence foundations |
 
 ### A simple decision flow
 
@@ -131,46 +162,34 @@ flowchart TD
 | You are evaluating infrastructure for multiple agent-backed applications | You expect a no-code workflow builder |
 | You can accept bounded proof and active R&D | You require an unrestricted open-source license |
 | Governance, policy, and evidence matter to your reviewers | You have no governance or evidence requirements |
+| You want to own a specialized application while reusing its operating foundation | You do not want to own an application or its product-specific validation |
 
 Other frameworks and tools may suit different needs. This guide does not dismiss them.
 
 Intergrax may coexist with model providers, retrieval systems, integration tools and application-specific components. The category map does not claim that these approaches are mutually exclusive.
 
-**Primary next action after apparent fit:** [Check your concrete workflow in docs/project/overview/USE_CASES.md](USE_CASES.md).
-
 ---
 
-## What exists today
+## Current evidence and limits
 
 | Area | Classification | Status | Notes |
 | ---- | -------------- | ------ | ----- |
 | **LKW** | **Primary product proof** | **PARTIAL** | **Backend Product Alpha / MVP** — bounded application and platform proof. |
 | **Token Optimization** | **Featured platform-capability proof** | **PARTIAL** | Implemented mechanisms plus **bounded vLLM** proof. |
 
-**Evidence and detail:** [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) · [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md)
+**Evidence and detail:** [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [Token Optimization guide](../capabilities/token_optimization/README.md) · [PROOFS.md](../proofs/PROOFS.md)
+
+The bounded indexed Hybrid Ask path is not the same as a completed mixed indexed + authorized live workflow: **mixed indexed + authorized live Hybrid Ask remains incomplete**. Real-user validation and commercial validation are incomplete. Universal production readiness and universal token savings are not claimed.
+
+Detailed evidence and claim boundaries belong in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md), not in this category overview.
 
 ---
 
-## What Intergrax does not currently claim
+## What to read next
 
-Intergrax does **not** currently claim:
+**Primary next action:** [Check your concrete workflow in Use Cases](USE_CASES.md).
 
-- a finished SaaS;
-- completed real-user validation;
-- completed commercial validation;
-- universal production readiness;
-- completed Hybrid Ask;
-- universal token savings or production-proven savings.
-
-Detailed proof matrices and claim boundaries remain in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md).
-
----
-
-## Primary next action
-
-**Check concrete workflow fit:** [docs/project/overview/USE_CASES.md](USE_CASES.md)
-
-## Other routes
+If the category appears relevant:
 
 | Route | Use it for |
 |-------|------------|
