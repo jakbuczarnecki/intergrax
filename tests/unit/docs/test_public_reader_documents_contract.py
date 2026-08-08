@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
+USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
 ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "ARCHITECTURE_OVERVIEW.md"
 BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
@@ -32,7 +33,7 @@ _LEGAL_HEADER = (
     "-->"
 )
 
-_READER_PATHS = (WHY_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
+_READER_PATHS = (WHY_PATH, USE_CASES_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
 
 _ARCH_OPENING = (
     "How Intergrax separates the specialized product application, its application "
@@ -146,6 +147,16 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
         "../architecture/ARCHITECTURE_OVERVIEW.md",
         "../technical/DOCUMENTATION_MAP.md",
     ),
+    USE_CASES_PATH: (
+        "../proofs/PROOFS.md",
+        "ROADMAP.md",
+        "../builders/EVALUATION_GUIDE.md",
+        "../community/PARTNERS.md",
+        "../community/COLLABORATION.md",
+        "../architecture/ARCHITECTURE_OVERVIEW.md",
+        "../builders/BUILD_WITH_INTERGRAX.md",
+        "../capabilities/token_optimization/README.md",
+    ),
 }
 
 _LINK_CHECK_PATHS = (
@@ -153,6 +164,7 @@ _LINK_CHECK_PATHS = (
     WHY_PATH,
     ARCHITECTURE_OVERVIEW_PATH,
     BUILD_PATH,
+    USE_CASES_PATH,
     README_PATH,
     PUBLIC_MAP_PATH,
 )
@@ -220,7 +232,12 @@ def test_first_screen_maturity_boundaries(
 
 
 def test_mermaid_diagrams(why_text: str, arch_text: str, build_text: str) -> None:
-    docs = {"WHY": why_text, "ARCHITECTURE": arch_text, "BUILD": build_text}
+    docs = {
+        "WHY": why_text,
+        "USE_CASES": _read(USE_CASES_PATH),
+        "ARCHITECTURE": arch_text,
+        "BUILD": build_text,
+    }
     forbidden_tokens = ("classDef", "style", "%%{init", "theme", "http://", "https://")
     for name, text in docs.items():
         blocks = _MERMAID_FENCE.findall(text)
@@ -480,6 +497,49 @@ def test_why_problem_category_and_reader_fit(why_text: str) -> None:
         "mixed indexed + authorized live hybrid ask remains incomplete",
     ):
         assert phrase in normalized, f"WHY missing reader-fit invariant: {phrase}"
+
+
+def test_use_cases_workflow_fit_and_ownership_contract() -> None:
+    normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
+    for phrase in (
+        "does intergrax fit my workflow",
+        "strongest current fit",
+        "bounded technical fit",
+        "not yet proven",
+        "not a fit",
+        "private governed knowledge workspace",
+        "primary product proof",
+        "backend product alpha / mvp",
+        "partial",
+        "product team remains responsible",
+        "another approach may fit better",
+        "primary next action is proofs",
+        "evaluation guide",
+        "evidence separation",
+    ):
+        assert phrase in normalized, f"USE_CASES missing reader-fit marker: {phrase}"
+
+    assert "mixed indexed + authorized live hybrid ask" in normalized
+    assert "remains incomplete" in normalized
+    assert "complete live-provider access is incomplete" in normalized
+
+
+def test_use_cases_does_not_track_provider_rollouts() -> None:
+    normalized = " ".join(_normalize(_read(USE_CASES_PATH)).split())
+    forbidden_roadmap_phrases = (
+        "use cases to validate next",
+        "next product fit to validate",
+        "durable connected slack knowledge workflow",
+        "slack as interaction surface and approved knowledge source",
+        "governed google workspace knowledge inside lkw",
+        "first bounded google workspace proof",
+        "provider-specific rollout",
+        "provider rollout expectations",
+    )
+    for phrase in forbidden_roadmap_phrases:
+        assert phrase not in normalized, (
+            f"USE_CASES contains provider roadmap detail: {phrase}"
+        )
 
 
 def test_why_category_map_assets_and_alt_text(why_text: str) -> None:

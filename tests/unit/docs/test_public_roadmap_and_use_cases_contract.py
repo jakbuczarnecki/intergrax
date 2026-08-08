@@ -304,22 +304,35 @@ def test_no_internal_architecture_language(roadmap_text: str, use_cases_text: st
 
 
 def test_use_case_classifications(use_cases_text: str) -> None:
-    required = (
-        "Primary product proof",
-        "Featured platform-capability proof",
-        "Strongest current fit",
-        "Reasonable technical evaluation",
-        "Not a fit today",
-    )
-    for phrase in required:
-        assert phrase in use_cases_text, f"USE_CASES missing classification: {phrase}"
-
     fit_matrix = _fit_matrix_section(use_cases_text)
-    assert fit_matrix.count("**Planned fit**") >= 2, (
-        "Fit matrix must contain at least two **Planned fit** rows"
+    normalized = _normalize(fit_matrix)
+    for phrase in (
+        "strongest current fit",
+        "bounded technical fit",
+        "not yet proven",
+        "not a fit",
+    ):
+        assert phrase in normalized, f"USE_CASES fit matrix missing class: {phrase}"
+
+    assert "indexed knowledge combined with authorized live evidence" in normalized
+    assert "mixed indexed + authorized live" in _normalize(use_cases_text)
+    assert "remains incomplete" in _normalize(use_cases_text)
+    assert "planned fit" not in normalized, (
+        "USE_CASES must not use ambiguous Planned fit classification"
     )
-    assert "Multi-source" in fit_matrix, "Fit matrix missing multi-source planned scenario"
-    assert "Google Workspace" in fit_matrix, "Fit matrix missing Google Workspace planned scenario"
+
+    forbidden_provider_rows = (
+        "durable connected slack knowledge workflow",
+        "slack as interaction surface and approved knowledge source",
+        "governed google workspace knowledge inside lkw",
+        "first bounded google workspace proof",
+        "provider rollout",
+        "next product milestone",
+    )
+    for phrase in forbidden_provider_rows:
+        assert phrase not in normalized, (
+            f"USE_CASES fit matrix contains provider roadmap detail: {phrase}"
+        )
 
 
 def test_reader_facing_copy(use_cases_text: str) -> None:

@@ -6,112 +6,132 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Use Cases
 
-This document helps you determine whether Intergrax fits a concrete governed agent or knowledge-workflow problem — with honest boundaries about what is proven, partial, or planned.
+This is the canonical decision guide for a concrete question: **does Intergrax fit my workflow?** It evaluates stable user problems and responsibility fit. It does not replace the proof record, an outcome roadmap, or a product-specific evaluation.
 
-> [!NOTE]
-> Intergrax is **source-available** and under active R&D. LKW is the strongest current product use case — **Primary product proof**, **Backend Product Alpha / MVP** — with **PARTIAL** proof status. Other use cases range from bounded platform support to planned validation.
-
-Primary decision audience: CTO, product lead or technical buyer assessing fit, maturity, risk and the next bounded evaluation step.
+Intergrax is source-available and in active R&D. Current evidence is bounded; it is not a universal production-readiness, real-user, commercial-validation, or finished-SaaS claim.
 
 ## At a glance
 
-| Question | Answer |
-|----------|--------|
-| Strongest current fit | Governed private knowledge workspace |
-| Best public proof | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Best fit for platform evaluators | Specialized applications requiring policy, evidence, knowledge or controlled tools |
-| Next product fit to validate | Multi-source indexed + authorized live evidence workflow |
-| Not a fit today | Finished SaaS, generic no-code builder or unrestricted open-source framework |
-| Primary next action after apparent fit | Review the current proof status in [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
+| Decision question | Current answer |
+|-------------------|----------------|
+| Strongest current fit | Private governed knowledge workspace — **Primary product proof**, **Backend Product Alpha / MVP**, **PARTIAL** |
+| Bounded technical fit | Specialized governed applications and context workflows; a **Reasonable technical evaluation** may be appropriate |
+| Not a fit today | Finished SaaS immediately, no-code automation, retrieval primitives only, or unrestricted OSS — another approach may fit better |
+| Primary next action | Review [PROOFS](../proofs/PROOFS.md) before evaluation or partner discussion |
 
-## Buyer decision path
+## Start with your workflow
 
-| Decision question | Where to check | Decision output |
-| ----------------- | -------------- | --------------- |
-| Does the concrete workflow fit the current product or platform direction? | This Use Cases guide | Fit, bounded fit, planned fit or not a fit |
-| What is actually implemented or boundedly proven? | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) | Current evidence and claim limits |
-| Which important capabilities remain incomplete? | Current boundaries in this guide and [docs/project/overview/ROADMAP.md](ROADMAP.md) | Known product and validation risk |
-| Is a non-production technical evaluation justified? | [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) | Proceed, defer or stop |
-| Does the intended activity require a pilot or written permission? | [docs/project/community/PARTNERS.md](../community/PARTNERS.md), [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) | Correct partner and permission route |
+Intergrax is more likely to fit when the workflow needs several of these responsibilities:
 
-The primary buyer next action after confirming apparent fit is to [review the current proof status](../proofs/PROOFS.md) before starting a pilot or commercial discussion.
+- explicit identity, permissions, or tenant context;
+- governed knowledge access and grounded results;
+- controlled tool or integration execution;
+- human approval boundaries;
+- evidence, provenance, receipts, or trace;
+- recovery and observability;
+- reusable foundations across more than one workflow.
 
-Need category-level orientation before assessing a concrete workflow? See [Where Intergrax fits](WHY_INTERGRAX.md#where-intergrax-fits).
+These are fit signals, not a requirement that every workflow use every mechanism. Ask:
+
+1. What does a person do from the first request to the accepted outcome?
+2. Which knowledge and external actions are allowed, and which are forbidden?
+3. What must a reviewer be able to inspect afterward?
+4. Can the product team own the domain workflow and validate the result in a bounded evaluation?
+
+Use this stable vocabulary:
+
+- **STRONGEST CURRENT FIT** — current product proof directly represents a similar workflow.
+- **BOUNDED TECHNICAL FIT** — architecture and supporting mechanisms are plausible, but product-specific validation remains necessary.
+- **NOT YET PROVEN** — the user outcome is structurally plausible, but the required end-to-end outcome is not established.
+- **NOT A FIT** — another class of solution is more appropriate.
 
 ```mermaid
 flowchart TD
-    A[What are you trying to build?]
-    A --> B[Private governed knowledge workspace]
+    A[Concrete workflow] --> B[Private governed knowledge workspace]
     A --> C[Specialized agent application]
-    A --> D[Controlled context optimization]
-    A --> E[Simple prototype without governance]
+    A --> D[Evidence-aware automation or integration]
+    A --> E[Governed context optimization]
+    A --> F[Simple prototype or ready-made product]
 
-    B --> F[LKW product proof]
-    C --> G[Intergrax reusable foundation]
-    D --> H[Token Optimization capability proof]
-    E --> I[Another approach may fit better]
+    B --> G[STRONGEST CURRENT FIT]
+    C --> H[BOUNDED TECHNICAL FIT]
+    D --> H
+    E --> H
+    F --> I[NOT A FIT]
 ```
 
-The diagram shows **evaluation routes**, not completed commercial products. Follow links below for current proof status.
+The diagram is a responsibility-based evaluation route, not a list of completed products. The textual sections below are the authoritative explanation.
 
-## Primary use case today — Private Knowledge Workspace
+## Strongest current fit
 
-### The problem
+### Private governed knowledge workspace
 
-Knowledge is distributed across private files, Web sources and organizational systems. Answers need citations and evidence. Source access must be controlled. Indexing, live access and permissions must not be mixed implicitly. Deployment and storage should remain user-controlled.
+**User problem:** private or controlled knowledge is distributed across approved sources. People need grounded answers with source references, while access boundaries, persistence, and reviewability remain explicit.
 
-### What LKW aims to provide
+**Responsibility fit:** Intergrax can provide reusable mechanisms around approved indexed sources, grounded Ask execution, evidence and provenance, controlled access context, persistence, and reviewable execution. The product team still defines the workspace workflow, source approval, user experience, business permissions, deployment, and acceptance criteria.
 
-- Durable workspace configuration
-- Approved indexed sources
-- Grounded Ask with citations and evidence
-- Controlled conversational access (Slack DM today, partial)
-- Future authorized live evidence combined with indexed evidence through Hybrid Ask — **combining indexed and authorized live evidence is not complete**
+**Current evidence class:** **STRONGEST CURRENT FIT**
 
-### Current boundary
+LKW is the **Primary Product Proof**, **Backend Product Alpha / MVP**, with **PARTIAL** proof status. Bounded indexed Ask evidence exists, including the indexed path through production Hybrid Ask. Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established. Mixed indexed + authorized live Hybrid Ask remains incomplete, and complete live-provider access is incomplete. This is not a finished SaaS claim.
 
-**Primary product proof** · **Backend Product Alpha / MVP** · **PARTIAL**
+Canonical verification route: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) via [PROOFS — LKW Primary Product Proof](../proofs/PROOFS.md#lkw--primary-product-proof).
 
-Verify: [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) · [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md)
+## Other bounded technical fits
 
-Indexed Ask through production Hybrid Ask is boundedly demonstrated; authorized live evidence combined with indexed evidence is not yet established.
+### Governed knowledge application
 
-## Current bounded-fit use cases
+**Need:** controlled sources, grounded answers, evidence, and explicit access boundaries in a specialized application.
 
-| Use case | User outcome | Current support | Verify |
-|----------|--------------|-----------------|--------|
-| Governed knowledge assistant over indexed sources | Ask over approved indexed knowledge with citations | Bounded through LKW indexed knowledge proof, including production Hybrid Ask indexed path | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Reusable foundation for a specialized agent application | Build a product on shared policy, knowledge and evidence foundations | Shared platform mechanisms with bounded supporting evidence; product-specific validation still required | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
-| Evidence-aware agent or integration workflow | Inspect runs with trace, receipts and boundary evidence | Bounded supporting paths; not a certification or compliance claim | [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md) |
-| Governed prompt and context optimization | Deterministic optimization under policy with receipts | **Featured platform-capability proof**; **PARTIAL** with bounded vLLM evidence | [Token Optimization guide](../capabilities/token_optimization/README.md) |
+**Fit:** **BOUNDED TECHNICAL FIT** when the product team can validate its own sources, permissions, user workflow, and acceptance criteria. The LKW evidence is the closest current product reference, but it does not automatically validate another product.
 
-Universal savings are not claimed for Token Optimization.
+### Specialized agent application
 
-## Use cases to validate next
+**Need:** reusable policy, tool boundaries, knowledge and context controls, human approval, and evidence or provenance around model-driven behavior.
 
-| Desired user result | What remains unproven |
-|---------------------|----------------------|
-| Multi-source knowledge investigation combining indexed and authorized live evidence | Hybrid Ask combining indexed and authorized live evidence with unified provenance — **not complete** |
-| Slack as interaction surface and approved knowledge source | Durable connected Slack knowledge workflow |
-| Governed Google Workspace knowledge inside LKW | First bounded Google Workspace proof after prerequisite product proof |
-| Repeatable design-partner deployment | Self-serve setup without ad hoc developer reconstruction |
-| Recurring knowledge-workspace usage by real users | Real-user validation incomplete; commercial validation incomplete |
+**Fit:** **BOUNDED TECHNICAL FIT**. Intergrax supplies reusable application operating mechanisms; the adopting team builds and validates the specialized product. Start with [Build With Intergrax](../builders/BUILD_WITH_INTERGRAX.md).
 
-See [docs/project/overview/ROADMAP.md](ROADMAP.md) for outcome-gated direction.
+### Evidence-aware automation or integration workflow
+
+**Need:** controlled external actions, receipts, trace, reviewability, and clear failure or recovery boundaries.
+
+**Fit:** **BOUNDED TECHNICAL FIT** for a bounded technical evaluation. Supporting evidence does not amount to certification, compliance approval, legal attestation, or universal operational readiness. See the [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) for the responsibility boundary.
+
+Supporting verification route: [BoundaryAttest case study](case-studies/BOUNDARYATTEST_ATTESTATION_POC.md).
+
+### Governed context and prompt optimization
+
+**Need:** deterministic, policy-bounded optimization with receipts or evidence and protected regions.
+
+**Fit:** **BOUNDED TECHNICAL FIT**. Token Optimization is a **Featured platform-capability proof**, **PARTIAL**, with bounded evidence; universal token or cost reduction is not claimed. See the [Token Optimization guide](../capabilities/token_optimization/README.md).
+
+## Not yet proven
+
+The stable outcome **“combine indexed knowledge with authorized live evidence”** is **NOT YET PROVEN**. Bounded indexed Ask evidence exists, but mixed indexed + authorized live Hybrid Ask with unified provenance remains incomplete. Complete live-provider access also remains incomplete.
+
+This distinction is about evidence, not whether the problem is meaningful. Real-user validation and commercial validation are incomplete. Universal production readiness is not claimed.
+
+## When another approach is better
+
+Another approach may fit better if the team only needs:
+
+- a simple prototype or prompt demonstration;
+- a finished SaaS immediately, without owning a custom application;
+- no-code automation;
+- retrieval primitives only;
+- an unrestricted open-source framework;
+- no responsibility for product-specific validation, deployment, or business outcomes.
+
+Intergrax is a reusable foundation, not a universal replacement for a finished product, an automation platform, a retrieval toolkit, or an unrestricted framework.
 
 ## Fit matrix
 
-| Your need | Current fit | Why | Best next step |
-|-----------|-------------|-----|----------------|
-| Private governed knowledge workspace | **Strongest current fit** | LKW is the Primary product proof with bounded indexed-knowledge path | [LKW Platform Proof](../proofs/LKW_PLATFORM_PROOF.md) |
-| Specialized application requiring policy and evidence | **Reasonable technical evaluation** | Shared foundations exist; your product still needs its own validation | [docs/project/builders/BUILD_WITH_INTERGRAX.md](../builders/BUILD_WITH_INTERGRAX.md) |
-| Multiple agent applications sharing foundations | **Reasonable technical evaluation** | Reusable mechanisms with bounded evidence; not a finished platform product | [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) |
-| Full multi-provider live assistant needed immediately | **Not a fit today** | Complete live-provider access and Hybrid Ask combining indexed and authorized live evidence remain incomplete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
-| Multi-source investigation combining indexed and authorized live evidence | **Planned fit** | Hybrid Ask combining indexed and authorized live evidence remains incomplete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
-| Governed Google Workspace knowledge inside LKW | **Planned fit** | The first bounded Google Workspace LKW proof is not complete | [docs/project/overview/ROADMAP.md](ROADMAP.md) |
-| Generic chatbot prototype | **Not a fit today** | Intergrax targets governed applications, not quick chat demos | Another approach may fit better |
-| Finished no-code SaaS offering | **Not a fit today** | No finished hosted product; active R&D | [docs/project/community/PARTNERS.md](../community/PARTNERS.md) for authorized discussions |
-| Unrestricted open-source framework | **Not a fit today** | Source-available under evaluation license, not unrestricted OSS | [LICENSE](../../../LICENSE) |
+| Workflow need | Fit class | Decision implication |
+|--------------|-----------|----------------------|
+| Private governed knowledge workspace | **STRONGEST CURRENT FIT** | Inspect the LKW proof and its limits |
+| Specialized governed application | **BOUNDED TECHNICAL FIT** | A reasonable technical evaluation may be appropriate |
+| Shared foundations across multiple applications | **BOUNDED TECHNICAL FIT** | Product-specific validation remains required |
+| Indexed knowledge combined with authorized live evidence | **NOT YET PROVEN** | Defer unless the bounded evidence is sufficient for evaluation |
+| Generic prototype or finished SaaS needed immediately | **NOT A FIT** | Another approach may fit better |
 
 ## What Intergrax does not currently offer
 
@@ -124,30 +144,52 @@ See [docs/project/overview/ROADMAP.md](ROADMAP.md) for outcome-gated direction.
 - No universal token or cost reduction
 - No automatic acceptance of every proposed use case
 
+## Responsibility check
+
+Intergrax helps centralize reusable mechanisms for:
+
+- policy and approval boundaries;
+- knowledge, context, identity, and tool-access controls;
+- governed execution, recovery, and observability;
+- evidence, provenance, receipts, and review surfaces.
+
+The product team remains responsible for:
+
+- domain workflow and business semantics;
+- UX and product behavior;
+- permission decisions and required identity context;
+- deployment and operating choices;
+- product-specific validation and acceptance;
+- business responsibility for the product and its outcomes.
+
+Fit therefore means that Intergrax can reduce repeated foundation-building. It does not transfer ownership of the product or its risk decisions.
+
 ## Define a useful evaluation
 
-A good evaluation description should capture:
+Before proceeding, define one bounded workflow:
 
-- **Concrete user workflow** — what a person does start to finish
-- **Data and knowledge sources** — what may be read or indexed
-- **Allowed actions** — what the system may do autonomously
-- **Forbidden actions** — what must never happen without approval
-- **Required evidence** — citations, receipts, trace or audit surfaces
-- **Human approvals** — where a person must confirm
-- **Success criteria** — what would make the trial worthwhile
-- **Repeated-use criteria** — what would make someone return
+- **Workflow:** what a person does from request to accepted outcome.
+- **Data:** which sources may be read, indexed, or used live.
+- **Allowed actions:** what the system may do autonomously.
+- **Forbidden actions:** what must never happen without approval.
+- **Approvals:** where a person must confirm or reject.
+- **Evidence:** citations, receipts, trace, provenance, and review surfaces required.
+- **Success:** the measurable result that makes the evaluation worthwhile.
+- **Repeat use:** what would make the team return to the workflow.
 
-## Decision summary
+## Evidence separation and decision
 
-| Current conclusion | Next action |
-| ------------------ | ----------- |
-| Strong or bounded fit, but evidence not yet reviewed | Review [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
-| Evidence is relevant and a technical trial is justified | Use [docs/project/builders/EVALUATION_GUIDE.md](../builders/EVALUATION_GUIDE.md) |
-| A partner, pilot or operational discussion is needed | Use [docs/project/community/PARTNERS.md](../community/PARTNERS.md) |
-| The use case is currently not supported | Stop or choose another approach |
-| Unsure which class of solution matches the need | Compare common approaches in [docs/project/overview/WHY_INTERGRAX.md](WHY_INTERGRAX.md#where-intergrax-fits) |
-| Rights or permission are unclear | Review [docs/project/community/COLLABORATION.md](../community/COLLABORATION.md) and [LICENSE](../../../LICENSE) |
+Each document answers a different question:
 
-**Primary next action after apparent fit:** [Review the current proof status](../proofs/PROOFS.md).
+- **USE_CASES:** conceptual and current workflow fit.
+- **[PROOFS](../proofs/PROOFS.md):** current evidence status and claim limits.
+- **[ROADMAP](ROADMAP.md):** outcome direction, not a provider or module tracker here.
+- **[Evaluation Guide](../builders/EVALUATION_GUIDE.md):** how to run a bounded evaluation.
+- **[Partners](../community/PARTNERS.md):** pilot or operational discussion route.
 
-Then use the decision summary above to choose a bounded evaluation, partner route, permission review, defer decision, or stop.
+After apparent fit, the primary next action is **PROOFS**: [review the current evidence status](../proofs/PROOFS.md).
+
+1. If relevant evidence exists, use the [Evaluation Guide](../builders/EVALUATION_GUIDE.md).
+2. If a pilot or operational discussion is appropriate, use [Partners](../community/PARTNERS.md) and review [Collaboration](../community/COLLABORATION.md) as needed.
+3. If evidence is insufficient, defer.
+4. If the responsibility class is wrong, stop and choose another approach.
