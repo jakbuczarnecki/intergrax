@@ -13,6 +13,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
+PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
+LKW_PRODUCT_TOUR_PATH = REPO_ROOT / "docs" / "project" / "product" / "lkw" / "LKW_PRODUCT_TOUR.md"
 HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
@@ -185,6 +187,8 @@ _LINK_CHECK_PATHS = (
     USE_CASES_PATH,
     README_PATH,
     PUBLIC_MAP_PATH,
+    PROOFS_PATH,
+    LKW_PRODUCT_TOUR_PATH,
 )
 
 
@@ -299,6 +303,44 @@ def test_relative_link_integrity() -> None:
                 continue
             resolved = (base / clean).resolve()
             assert resolved.exists(), f"Broken link in {doc_path.name}: {target}"
+
+
+def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
+    proofs_text = _read(PROOFS_PATH)
+    tour_text = _read(LKW_PRODUCT_TOUR_PATH)
+    proofs = " ".join(_normalize(proofs_text).split())
+    tour = " ".join(_normalize(tour_text).split())
+
+    for text, name in ((proofs, "PROOFS"), (tour, "LKW Product Tour")):
+        assert "primary product proof" in text, f"{name} omits LKW proof role"
+        assert "backend product alpha / mvp" in text, f"{name} omits LKW maturity"
+        assert "partial" in text, f"{name} omits LKW partial status"
+        assert "real-user validation" in text, f"{name} omits real-user boundary"
+        assert "commercial validation" in text, f"{name} omits commercial boundary"
+        assert "complete live-provider access" in text, f"{name} omits live-provider boundary"
+
+    assert "production indexed ask path through hybrid ask" in proofs
+    assert "mixed indexed + authorized live hybrid ask remains incomplete" in proofs
+    assert "bounded production indexed ask path through hybrid ask" in tour
+    assert "mixed indexed + authorized live hybrid ask" in tour
+    assert not re.search(r"does not represent:\s*-\s*hybrid ask\b", tour_text, re.IGNORECASE)
+
+    assert "supporting-foundation evidence is capability-specific" in proofs
+    assert not re.search(
+        r"shared platform foundations.*implemented|implemented.*shared platform foundations",
+        proofs,
+    )
+    assert "complete slack connected-knowledge product proof" not in proofs
+    assert "google workspace lkw product proof" not in proofs
+
+    assert "token optimization" in proofs
+    assert "partial" in proofs
+    assert "universal token reduction" in proofs
+    assert "production-proven savings" in proofs
+    assert not _INTERNAL_TASK_PATTERN.search(proofs_text)
+    assert not _INTERNAL_TASK_PATTERN.search(tour_text)
+    assert "lkw-grounded-result-light.svg" in tour_text
+    assert "lkw-grounded-result-dark.svg" in tour_text
 
 
 def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> None:

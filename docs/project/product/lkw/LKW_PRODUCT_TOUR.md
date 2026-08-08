@@ -4,7 +4,7 @@ Local Knowledge Workspace (LKW) is the primary Intergrax product path: a workspa
 
 This tour explains the supported indexed-knowledge experience without requiring installation or a local run. It is a product walkthrough, not a screenshot of a finished application UI. Readers who want to run the path should use the [LKW Quick Start](QUICKSTART.md); technical reviewers should use the [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md).
 
-LKW is currently a **Backend Product Alpha / MVP**. The tour covers indexed knowledge, while real-user validation and commercial validation remain incomplete.
+LKW is the **Primary Product Proof** and currently a **Backend Product Alpha / MVP** with **PARTIAL** status. The tour covers indexed knowledge, while real-user validation and commercial validation remain incomplete.
 
 ## At a glance
 
@@ -90,6 +90,7 @@ The result includes a source reference so you can see where the answer came from
 
 This tour represents:
 
+- the bounded production indexed Ask path through Hybrid Ask over documented indexed evidence;
 - indexed knowledge;
 - managed sample upload;
 - grounded Ask;
@@ -98,7 +99,7 @@ This tour represents:
 
 It does not represent:
 
-- Hybrid Ask;
+- mixed indexed + authorized live Hybrid Ask;
 - complete live-provider access;
 - finished end-user UI;
 - finished SaaS;
@@ -118,4 +119,5 @@ It does not represent:
 | [LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md) | Inspect deeper technical evidence |
 | [docs/project/proofs/PROOFS.md](../../proofs/PROOFS.md) | Check current evidence status |
 | [docs/project/overview/USE_CASES.md](../../overview/USE_CASES.md) | Check whether the use case fits |
+| [Evaluation Guide](../../builders/EVALUATION_GUIDE.md) | Evaluate one bounded claim fairly |
 | [README.md](../../../../README.md) | Return to the project overview |

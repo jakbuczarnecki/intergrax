@@ -58,10 +58,13 @@ without copying either roadmap.
 |------------|------------------------|----------------------|----------------------|--------|------------------|
 | **LKW** | Primary product proof | 🟡 **PARTIAL** (Backend Product Alpha / MVP) | Bounded end-to-end application and platform behavior, indexed knowledge, background ingest, hosting, observability | [LKW Platform Proof](LKW_PLATFORM_PROOF.md) | [LKW implementation plan](../technical/applications/local_workspace_application/IMPLEMENTATION_PLAN.md) |
 | **Token Optimization** | Featured platform-capability proof | 🟡 **PARTIAL** | Deterministic optimization pipeline, cache-aware execution, bounded vLLM prefix-cache proof | [Token Optimization guide](../capabilities/token_optimization/README.md) | [Token Optimization plan](../capabilities/plan/TOKEN_OPTIMIZATION.md) |
-| **Shared platform foundations** | Supporting evidence | ✅ **IMPLEMENTED** (bounded) | Retrieval and grounding, observability, persisted execution evidence, application hosting contracts exercised by LKW | [Public documentation map](../community/PUBLIC_DOCUMENTATION_MAP.md) | — |
 
 `Verify` answers **what has been demonstrated?**
 `Detailed roadmap` answers **what is being implemented and what comes next?**
+
+Supporting-foundation evidence is capability-specific. The LKW proof exercises
+only the reusable mechanisms named in its accepted evidence; other reusable
+foundations do not inherit a blanket platform-wide **IMPLEMENTED** status.
 
 ---
 
@@ -69,19 +72,21 @@ without copying either roadmap.
 
 **Role:** Primary product proof · **Product status:** Backend Product Alpha / MVP
 
+The bounded indexed path is demonstrated through the production Hybrid Ask
+indexed-evidence path. Mixed indexed + authorized live Hybrid Ask remains
+incomplete, and complete live-provider access remains incomplete.
+
 | Capability | Status | What it demonstrates | Limitation |
 |------------|--------|----------------------|------------|
 | Core application and platform proof | 🧪 **BOUNDED PROOF** | Real application startup, observability, ingest, hosting, persisted execution evidence | Bounded to documented certification profiles; not full live platform proof |
-| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production Hybrid Ask indexed evidence path, grounded Ask with citation/evidence | Not live external-website certification; Hybrid Ask combining indexed and authorized live evidence is not established; complete live-provider access is not established |
+| Web URL knowledge intake | 🧪 **BOUNDED PROOF** | End-to-end WEB_URL intake, real RAG ingest, exact tenant/workspace vector scope, production indexed Ask path through Hybrid Ask over documented indexed evidence, grounded Ask with citation/evidence | Not live external-website certification; mixed indexed + authorized live Hybrid Ask remains incomplete; complete live-provider access remains incomplete |
 | Ollama / vLLM model runtime portability | 🧪 **BOUNDED PROOF** | Same workspace workflows on Ollama and vLLM without reindexing | Not complete product parity across all features |
 
 ### Not established by the accepted public proof
 
-- Hybrid Ask combining indexed and authorized live evidence is not established by the accepted public proof.
-- Complete live-provider access is not established.
-- A complete Slack connected-knowledge product proof is not established.
-- A Google Workspace LKW product proof is not established.
-- The complete multi-source live platform proof is not established.
+- Mixed indexed + authorized live Hybrid Ask remains incomplete.
+- Complete live-provider access remains incomplete.
+- Complete multi-source live capability remains incomplete.
 - Real-user validation is not established.
 - Commercial validation is not established.
 
