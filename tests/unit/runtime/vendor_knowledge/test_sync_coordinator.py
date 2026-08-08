@@ -1125,13 +1125,15 @@ async def test_lease_token_identity_mismatch_is_rejected(
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_valid_lease_token_still_runs_full_flow() -> None:
+    token = KnowledgeSourceLeaseToken(
+        tenant_id="tenant-1",
+        binding_id="binding-1",
+        owner_id="owner-1",
+        token="ok-token",
+    )
     lease = InMemoryLeaseRepository(
-        forced_token=KnowledgeSourceLeaseToken(
-            tenant_id="tenant-1",
-            binding_id="binding-1",
-            owner_id="owner-1",
-            token="ok-token",
-        )
+        held={("tenant-1", "binding-1"): token},
+        forced_token=token,
     )
     coordinator, _, facade, lease_repo, checkpoint, state, sink = _coordinator(
         lease=lease

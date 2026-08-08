@@ -76,6 +76,7 @@ _ACTIVE_INDEX_MANIFEST_ROW = "manifest"
 _ACTIVE_INDEX_SCHEMA = "vendor_knowledge.active_item_index.v1"
 _COMPLETENESS_CLEAN = "CLEAN"
 _COMPLETENESS_DIRTY = "DIRTY"
+_DOCUMENT_STORE_QUERY_MAX_LIMIT = 5_000
 
 _MAX_LEASE_ACQUIRE_ATTEMPTS = 4
 _MARKER_STATUS_APPLYING = "applying"
@@ -1432,6 +1433,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             delivery_id=delivery_id,
             batch_fingerprint=batch_fingerprint,
             prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            states=ordered,
         )
         for state in ordered:
             self._apply_one_state(partition_key=partition_key, state=state)
@@ -1471,6 +1473,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             delivery_id=delivery_id,
             batch_fingerprint=batch_fingerprint,
             prepared_state_mutations_fingerprint=prepared_state_mutations_fingerprint,
+            states=states,
         )
         for state in states:
             self._sync_active_index_entry(state=state)
@@ -1720,6 +1723,37 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
             expected_configuration_version=expected_configuration_version,
         )
 
+    def _legacy_item_rows_match_replay(
+        self,
+        *,
+        tenant_id: str,
+        binding_id: str,
+        states: tuple[KnowledgeRemoteItemState, ...],
+    ) -> bool:
+        if not states or len(states) + 1 > _DOCUMENT_STORE_QUERY_MAX_LIMIT:
+            return False
+        item_partition = _item_partition_key(tenant_id=tenant_id, binding_id=binding_id)
+        documents = self._store.query(
+            item_partition,
+            limit=len(states) + 1,
+            row_key_prefix="item:",
+        ).documents
+        if len(documents) > len(states):
+            return False
+        expected_by_row = {_item_row_key(state.remote_id): state for state in states}
+        for document in documents:
+            expected = expected_by_row.get(document.row_key)
+            if expected is None:
+                return False
+            state, _version = self._parse_state(
+                document,
+                expected_tenant=tenant_id,
+                expected_binding=binding_id,
+            )
+            if expected != state:
+                return False
+        return True
+
     def _legacy_item_rows_exist(
         self,
         *,
@@ -1741,6 +1775,7 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         delivery_id: str,
         batch_fingerprint: str,
         prepared_state_mutations_fingerprint: str | None = None,
+        states: tuple[KnowledgeRemoteItemState, ...] = (),
     ) -> None:
         cleaned_delivery = _require_sha256_hex(delivery_id, field_name="delivery_id")
         cleaned_batch = _require_sha256_hex(
@@ -1755,9 +1790,14 @@ class DocumentStoreKnowledgeRemoteItemStateRepository:
         manifest = self._store.get(index_partition, _ACTIVE_INDEX_MANIFEST_ROW)
         if manifest is None:
             if self._legacy_item_rows_exist(tenant_id=tenant_id, binding_id=binding_id):
-                raise KnowledgeCandidateInventoryIncomplete(
-                    "legacy active inventory lacks completeness proof"
-                )
+                if not self._legacy_item_rows_match_replay(
+                    tenant_id=tenant_id,
+                    binding_id=binding_id,
+                    states=states,
+                ):
+                    raise KnowledgeCandidateInventoryIncomplete(
+                        "legacy active inventory lacks completeness proof"
+                    )
             dirty = self._manifest_document(
                 tenant_id=tenant_id,
                 binding_id=binding_id,
@@ -2090,7 +2130,7 @@ _ALLOWED_RECOVERY_CAS_TRANSITIONS: frozenset[
 class DocumentStoreKnowledgeReconciliationCandidateInventoryRepository:
     """Active-only candidate inventory backed by a maintained index."""
 
-    _DOCUMENT_STORE_QUERY_PAGE_LIMIT = 5_000
+    _DOCUMENT_STORE_QUERY_PAGE_LIMIT = _DOCUMENT_STORE_QUERY_MAX_LIMIT
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._store = _require_conditional_document_store(document_store)

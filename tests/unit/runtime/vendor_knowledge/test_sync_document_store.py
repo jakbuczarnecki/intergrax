@@ -714,6 +714,7 @@ def test_remote_item_cas_conflict_does_not_overwrite() -> None:
         states=(state,),
     )
     partition = "vendor_knowledge.remote_item.v1:tenant-1:binding-1"
+    index_partition = "vendor_knowledge.active_item_index.v1:tenant-1:binding-1:v1"
 
     class _ConflictStore(InMemoryDocumentStore):
         def replace_if_match(
@@ -727,8 +728,9 @@ def test_remote_item_cas_conflict_does_not_overwrite() -> None:
             return super().replace_if_match(expected=expected, replacement=replacement)
 
     conflict_store = _ConflictStore()
-    for doc in store.query(partition, limit=100).documents:
-        conflict_store.put(doc)
+    for source_partition in (partition, index_partition):
+        for doc in store.query(source_partition, limit=100).documents:
+            conflict_store.put(doc)
     conflict_repo = DocumentStoreKnowledgeRemoteItemStateRepository(conflict_store)
     with pytest.raises(KnowledgeSyncCorruptState):
         conflict_repo.apply_batch(

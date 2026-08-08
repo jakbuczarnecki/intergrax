@@ -432,7 +432,14 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
             )
 
         def apply_batch(
-            self, *, tenant_id: str, binding_id: str, delivery_id: str, states
+            self,
+            *,
+            tenant_id: str,
+            binding_id: str,
+            delivery_id: str,
+            states,
+            expected_publication_fence=None,
+            publication_permit=None,
         ):
             if not self._failed:
                 self._failed = True
@@ -443,6 +450,8 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
                         binding_id=binding_id,
                         delivery_id=delivery_id,
                         states=(first,),
+                        expected_publication_fence=expected_publication_fence,
+                        publication_permit=publication_permit,
                     )
                     # Remove marker so batch looks incomplete after crash.
                     store.delete(
@@ -455,6 +464,8 @@ async def test_document_store_replay_after_state_crash_before_marker() -> None:
                 binding_id=binding_id,
                 delivery_id=delivery_id,
                 states=states,
+                expected_publication_fence=expected_publication_fence,
+                publication_permit=publication_permit,
             )
 
     sink = IdempotentRecordingSink()
@@ -512,13 +523,22 @@ async def test_document_store_replay_after_checkpoint_crash() -> None:
         def get(self, *, tenant_id: str, binding_id: str):
             return inner_checkpoint.get(tenant_id=tenant_id, binding_id=binding_id)
 
-        def commit(self, checkpoint, *, expected_previous):
+        def commit(
+            self,
+            checkpoint,
+            *,
+            expected_previous,
+            expected_publication_fence=None,
+            publication_permit=None,
+        ):
             if not self._failed:
                 self._failed = True
                 raise RuntimeError("crash before checkpoint commit")
             return inner_checkpoint.commit(
                 checkpoint,
                 expected_previous=expected_previous,
+                expected_publication_fence=expected_publication_fence,
+                publication_permit=publication_permit,
             )
 
     sink = IdempotentRecordingSink()

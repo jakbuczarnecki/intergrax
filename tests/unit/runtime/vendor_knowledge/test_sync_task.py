@@ -216,9 +216,17 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
             binding_id: str,
             page_size: int,
             restart: bool,
+            operation_id: str | None = None,
+            trigger_delivery_id: str | None = None,
         ) -> KnowledgeSyncRunResult:
             self.reconcile_calls.append(
-                {"binding_id": binding_id, "page_size": page_size, "restart": restart}
+                {
+                    "binding_id": binding_id,
+                    "page_size": page_size,
+                    "restart": restart,
+                    "operation_id": operation_id,
+                    "trigger_delivery_id": trigger_delivery_id,
+                }
             )
             return _completed_result(mode=KnowledgeSyncMode.RECONCILIATION)
 
@@ -259,7 +267,13 @@ def test_handler_incremental_and_reconciliation_dispatch() -> None:
     )
     assert reconciliation.success is True
     assert coordinator.reconcile_calls == [
-        {"binding_id": "binding-1", "page_size": 10, "restart": True}
+        {
+            "binding_id": "binding-1",
+            "page_size": 10,
+            "restart": True,
+            "operation_id": "op-1",
+            "trigger_delivery_id": None,
+        }
     ]
 
 
