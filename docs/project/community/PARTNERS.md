@@ -49,11 +49,13 @@ flowchart TD
     A[Concrete workflow] --> B[Check fit and current evidence]
     B --> C[Classify intended use]
     C -->|Evaluation-only| D[Prepare pilot brief]
-    C -->|Operational or commercial| E[Permission route]
-    D --> F[Evaluation Guide]
-    E --> F
-    F --> G[Run bounded evaluation or authorized pilot]
-    G --> H[Review decision and next step]
+    C -->|Operational or commercial| D
+    D -->|Bounded evaluation| E[Evaluation Guide]
+    E --> F[Run bounded evaluation]
+    D -->|Permission / agreement route| G[Collaboration + LICENSE]
+    G -->|If authorized| H[Run authorized pilot]
+    F --> I[Review decision and next step]
+    H --> I
 ```
 
 Labels such as **pilot**, **sandbox**, **test**, or **proof of concept** do **not** determine permission status. Actual activity and the terms of [LICENSE](../../../LICENSE) control.

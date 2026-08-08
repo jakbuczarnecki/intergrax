@@ -215,6 +215,24 @@ def test_partner_decision_flow_mermaid(partners_text: str) -> None:
             assert token not in block, f"PARTNERS: forbidden Mermaid token {token!r}"
 
 
+def test_partner_decision_flow_separates_evaluation_and_authorized_routes(
+    partners_text: str,
+) -> None:
+    block = _MERMAID_FENCE.findall(partners_text)[0]
+
+    assert block.count("Prepare pilot brief") == 1
+    assert "C -->|Evaluation-only| D[Prepare pilot brief]" in block
+    assert "D -->|Bounded evaluation| E[Evaluation Guide]" in block
+    assert "E --> F[Run bounded evaluation]" in block
+    assert "C -->|Operational or commercial| D" in block
+    assert "D -->|Permission / agreement route| G[Collaboration + LICENSE]" in block
+    assert "G -->|If authorized| H[Run authorized pilot]" in block
+    assert "G --> E" not in block
+    assert "E --> H" not in block
+    assert "F --> I[Review decision and next step]" in block
+    assert "H --> I" in block
+
+
 def test_partner_pilot_modes(partners_text: str) -> None:
     norm = _normalize(partners_text)
     for phrase in (
