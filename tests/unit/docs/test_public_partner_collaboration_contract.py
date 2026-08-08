@@ -21,6 +21,31 @@ PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMEN
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 CONTRIBUTING_PATH = REPO_ROOT / "CONTRIBUTING.md"
 SECURITY_PATH = REPO_ROOT / "SECURITY.md"
+ISSUE_TEMPLATE_PATHS = tuple(
+    REPO_ROOT / ".github" / "ISSUE_TEMPLATE" / name
+    for name in (
+        "bug_report.yml",
+        "config.yml",
+        "design_partner_interest.yml",
+        "integration_proposal.yml",
+        "proof_path_feedback.yml",
+    )
+)
+
+_COLLABORATION_URL = (
+    "https://github.com/jakbuczarnecki/intergrax/blob/main/"
+    "docs/project/community/COLLABORATION.md"
+)
+_ROADMAP_URL = (
+    "https://github.com/jakbuczarnecki/intergrax/blob/main/"
+    "docs/project/overview/ROADMAP.md"
+)
+_OLD_COLLABORATION_URL = (
+    "https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md"
+)
+_OLD_ROADMAP_URL = (
+    "https://github.com/jakbuczarnecki/intergrax/blob/main/ROADMAP.md"
+)
 
 _LEGAL_HEADER = (
     "<!--\n"
@@ -136,6 +161,22 @@ def test_files_and_legal_headers() -> None:
     for path in _READER_DOCS:
         assert path.is_file(), f"Missing document: {path}"
         assert _read(path).startswith(_LEGAL_HEADER), f"Missing legal header in {path.name}"
+
+
+def test_issue_template_github_documentation_targets() -> None:
+    texts = {}
+    for path in ISSUE_TEMPLATE_PATHS:
+        assert path.is_file(), f"Missing issue-template file: {path}"
+        texts[path.name] = _read(path)
+
+    for text in texts.values():
+        assert _OLD_COLLABORATION_URL not in text
+        assert _OLD_ROADMAP_URL not in text
+
+    for name, text in texts.items():
+        if "COLLABORATION.md" in text:
+            assert _COLLABORATION_URL in text, f"{name} has a stale Collaboration URL"
+    assert _ROADMAP_URL in texts["design_partner_interest.yml"]
 
 
 def test_required_h1_titles(

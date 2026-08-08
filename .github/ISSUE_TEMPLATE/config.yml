@@ -4,8 +4,8 @@ contact_links:
     url: mailto:jakbu.czarnecki.83@gmail.com
     about: Contact the maintainer for licensing, production deployment, and partnership inquiries
   - name: Collaboration model
-    url: https://github.com/jakbuczarnecki/intergrax/blob/main/COLLABORATION.md
+    url: https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/community/COLLABORATION.md
     about: What you may do, what requires permission, and how we collaborate
   - name: Public adoption roadmap
-    url: https://github.com/jakbuczarnecki/intergrax/blob/main/ROADMAP.md
+    url: https://github.com/jakbuczarnecki/intergrax/blob/main/docs/project/overview/ROADMAP.md
     about: Current public adoption status and planned milestones
