@@ -18,6 +18,7 @@ WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
 ARCHITECTURE_OVERVIEW_PATH = REPO_ROOT / "docs" / "project" / "architecture" / "ARCHITECTURE_OVERVIEW.md"
 BUILD_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILD_WITH_INTERGRAX.md"
+BUILDER_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "builders" / "BUILDER_QUICKSTART.md"
 PUBLIC_MAP_PATH = REPO_ROOT / "docs" / "project" / "community" / "PUBLIC_DOCUMENTATION_MAP.md"
 PUBLIC_ARCHITECTURE_PATH = REPO_ROOT / "docs" / "project" / "maintainers" / "public-adoption" / "PUBLIC_DOCUMENTATION_ARCHITECTURE.md"
 HERO_LIGHT_PATH = REPO_ROOT / "docs" / "project" / "assets" / "public" / "intergrax-hero-light.svg"
@@ -33,7 +34,13 @@ _LEGAL_HEADER = (
     "-->"
 )
 
-_READER_PATHS = (WHY_PATH, USE_CASES_PATH, ARCHITECTURE_OVERVIEW_PATH, BUILD_PATH)
+_READER_PATHS = (
+    WHY_PATH,
+    USE_CASES_PATH,
+    ARCHITECTURE_OVERVIEW_PATH,
+    BUILD_PATH,
+    BUILDER_QUICKSTART_PATH,
+)
 
 _ARCH_OPENING = (
     "How Intergrax separates the specialized product application, its application "
@@ -147,6 +154,16 @@ _LINK_TARGETS_BY_DOC: dict[Path, tuple[str, ...]] = {
         "../architecture/ARCHITECTURE_OVERVIEW.md",
         "../technical/DOCUMENTATION_MAP.md",
     ),
+    BUILDER_QUICKSTART_PATH: (
+        "BUILD_WITH_INTERGRAX.md",
+        "EVALUATION_GUIDE.md",
+        "../architecture/ARCHITECTURE_OVERVIEW.md",
+        "../technical/applications/local_workspace_application/ARCHITECTURE.md",
+        "../technical/guides/AGENT_CREATION_GUIDE.md",
+        "../../../applications/USAGE.md",
+        "../technical/DOCUMENTATION_MAP.md",
+        "../product/lkw/QUICKSTART.md",
+    ),
     USE_CASES_PATH: (
         "../proofs/PROOFS.md",
         "ROADMAP.md",
@@ -164,6 +181,7 @@ _LINK_CHECK_PATHS = (
     WHY_PATH,
     ARCHITECTURE_OVERVIEW_PATH,
     BUILD_PATH,
+    BUILDER_QUICKSTART_PATH,
     USE_CASES_PATH,
     README_PATH,
     PUBLIC_MAP_PATH,
@@ -194,6 +212,11 @@ def build_text() -> str:
 
 
 @pytest.fixture(scope="module")
+def builder_quickstart_text() -> str:
+    return _read(BUILDER_QUICKSTART_PATH)
+
+
+@pytest.fixture(scope="module")
 def readme_text() -> str:
     return _read(README_PATH)
 
@@ -213,6 +236,7 @@ def test_required_h1_titles() -> None:
     assert _read(WHY_PATH).splitlines()[6].strip() == "# Why Intergrax"
     assert _read(ARCHITECTURE_OVERVIEW_PATH).splitlines()[6].strip() == "# Intergrax Architecture Overview"
     assert _read(BUILD_PATH).splitlines()[6].strip() == "# Build and Evaluate with Intergrax"
+    assert _read(BUILDER_QUICKSTART_PATH).splitlines()[6].strip() == "# Build with Intergrax — Builder Quick Start"
 
 
 def test_first_screen_maturity_boundaries(
@@ -237,6 +261,7 @@ def test_mermaid_diagrams(why_text: str, arch_text: str, build_text: str) -> Non
         "USE_CASES": _read(USE_CASES_PATH),
         "ARCHITECTURE": arch_text,
         "BUILD": build_text,
+        "BUILDER_QUICKSTART": _read(BUILDER_QUICKSTART_PATH),
     }
     forbidden_tokens = ("classDef", "style", "%%{init", "theme", "http://", "https://")
     for name, text in docs.items():
@@ -448,6 +473,34 @@ def test_public_reader_opening_copy(arch_text: str, build_text: str) -> None:
     assert _BUILD_OPENING in build_text
 
 
+def test_builder_quickstart_first_checkpoint_contract(builder_quickstart_text: str) -> None:
+    normalized = " ".join(_normalize(builder_quickstart_text).split())
+    for phrase in (
+        "canonical first builder entry point",
+        "one user workflow",
+        "product/application-specific",
+        "reusable cross-application foundation",
+        "starting surface",
+        "smallest coherent change",
+        "verification",
+        "setup and verification are route-owned",
+        "first verify the behavior at its nearest existing contract",
+        "build with intergrax",
+        "evaluation guide",
+        "lkw quick start",
+    ):
+        assert phrase in normalized, f"BUILDER_QUICKSTART missing semantic marker: {phrase}"
+
+    assert "sibling evaluation route, not a mandatory step for every builder" in normalized
+    assert "not to begin builder onboarding" in normalized
+    assert "no generic project scaffold" in normalized
+    assert "universal application template" in normalized
+    assert "stable universal public sdk" in normalized
+    assert "uv sync --extra dev" not in builder_quickstart_text
+    assert "uv run intergrax doctor" not in builder_quickstart_text
+    assert "uv run pytest -m gate -q" not in builder_quickstart_text
+
+
 def test_readme_install_sequence(readme_text: str) -> None:
     for chain in _FORBIDDEN_INSTALL_CHAINS:
         assert chain not in readme_text, f"README chains install commands: {chain!r}"
@@ -472,6 +525,7 @@ def test_brevity() -> None:
         WHY_PATH: 240,
         ARCHITECTURE_OVERVIEW_PATH: 280,
         BUILD_PATH: 300,
+        BUILDER_QUICKSTART_PATH: 220,
         README_PATH: 300,
     }
     for path, max_lines in limits.items():

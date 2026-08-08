@@ -6,144 +6,112 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Build with Intergrax — Builder Quick Start
 
-This guide is for AI engineers and application developers who want to build or extend an application using the existing Intergrax foundation.
+This is the canonical first builder entry point for AI engineers and application developers who want to build or extend something with Intergrax.
 
-Intergrax is intended to support specialized applications built on reusable foundations. This page helps you choose a small, reviewable first build and identify the right ownership boundary before you go deeper.
+Before changing code, define one user workflow and answer five questions: what outcome should change, who owns it, which existing surface is closest, what is the smallest coherent first change, and which existing contract should verify it.
 
-It does not create a new scaffold or a new execution contract. All setup and verification steps below come from existing canonical repository documentation.
+Intergrax supports specialized applications built on reusable foundations. This page is orientation, not a scaffold, SDK reference, repository-wide setup guide, or implementation manual.
 
 ## At a glance
 
 | Item | Meaning |
 |------|---------|
 | Audience | AI engineers and application developers |
-| Goal | Begin one small, bounded application change |
-| First decision | Extend an application, compose a new workflow, or evaluate a foundation |
-| Expected outcome | Know where the change belongs and what to verify |
-| Primary next action | Plan the first bounded build in [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Product trial | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
-| Deeper builder guide | [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md) |
-| Broader evaluation | [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) |
-| Technical depth | [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) |
+| First checkpoint | Workflow → ownership → closest surface → bounded change → nearest verification |
+| Primary next document | [Build With Intergrax](BUILD_WITH_INTERGRAX.md), after the checkpoint is clear |
+| Separate product trial | [LKW Quick Start](../product/lkw/QUICKSTART.md) |
+| Separate evaluation route | [Evaluation Guide](EVALUATION_GUIDE.md) |
 
-## Builder flow
+## The first builder decision
 
 ```mermaid
 flowchart LR
-    A[Choose a concrete workflow] --> B[Choose the application boundary]
-    B --> C[Reuse one Intergrax foundation]
-    C --> D[Make one small change]
-    D --> E[Run the nearest existing check]
-    E --> F[Review the result and go deeper]
+    A[Define one user workflow] --> B[Decide ownership]
+    B --> C[Find the closest existing surface]
+    C --> D[Make one bounded change]
+    D --> E[Verify the nearest contract]
+    E --> F[Continue to the deeper route]
 ```
 
-This is the recommended progression, not a claim that all applications use an identical implementation.
+In plain language: start from the user outcome, not from a platform module. Decide whether the behavior is product-specific or reusable, then inspect the nearest application, guide, or capability before considering a broader foundation change.
 
-## Choose your starting route
+## First builder contract
 
-### Extend Local Knowledge Workspace
+Answer these before broad platform changes:
 
-Change or extend the existing specialized LKW application while preserving the separation between application workflow and reusable platform foundations.
+1. **User workflow:** What does the user do from request to accepted outcome? What outcome should change?
+2. **Ownership:** Is the behavior product/application-specific, or is it a reusable cross-application foundation?
+3. **Starting surface:** Which existing application, guide, or capability is closest?
+4. **First change:** What is the smallest coherent change that demonstrates the intended behavior?
+5. **Verification:** What existing test, proof, or documented check is nearest to that behavior?
 
-Primary deeper references:
+If one of these answers is missing, keep orienting rather than modifying platform core.
 
-- [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md)
-- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
+## Application or reusable foundation?
 
-### Build a specialized application
+The application or product typically owns:
 
-Start with a concrete workflow and compose existing Intergrax capabilities around it rather than modifying the platform core first.
+- domain workflow and product semantics;
+- UX and user-visible behavior;
+- product-specific configuration;
+- product permission decisions and required identity context;
+- product acceptance behavior.
 
-Primary references:
+The reusable Intergrax foundation may own:
 
-- [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
-- [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
+- reusable contracts and policy/enforcement mechanisms;
+- shared knowledge and context mechanisms;
+- shared evidence and provenance mechanisms;
+- reusable integration/tool boundaries;
+- runtime and platform mechanisms.
 
-### Evaluate a foundation before building
+Do not move a function into `intergrax/` merely because it looks reusable. Responsibility comes first; the path follows the architecture. A product-specific change should reuse existing foundations where possible and should not modify platform core merely to demonstrate an application workflow.
 
-Run an existing bounded evaluation before deciding whether a platform capability fits the intended application.
+The [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) explains these responsibility boundaries. The owning architecture document remains canonical for a concrete module or domain.
 
-Primary reference:
+## Choose one starting route
 
-- [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
+| Route | Use it when | Closest canonical source |
+|------|-------------|--------------------------|
+| **A — Extend an existing application** | The requested behavior is specific to an existing product workflow. The current primary example is LKW. | [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md) |
+| **B — Build a specialized application** | You are creating a distinct product workflow on reusable Intergrax foundations. | [Build With Intergrax](BUILD_WITH_INTERGRAX.md), then the [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md); use the [Agent Creation Guide](../technical/guides/AGENT_CREATION_GUIDE.md) or [applications usage](../../../applications/USAGE.md) only when deeper technical material is required. |
+| **C — Evaluate before building** | You do not yet know whether the foundation fits the intended workflow. | [Evaluation Guide](EVALUATION_GUIDE.md) |
 
-This guide does not duplicate the evaluation catalog.
+Route A means extending LKW's application-owned workflow, not reproducing its architecture here. Route B means planning before composing or extending reusable capabilities. Route C is a sibling evaluation route, not a mandatory step for every builder.
 
-## Where the change belongs
+## Make the first change bounded
 
-| Change type | Primary location | Reason |
-|-------------|------------------|--------|
-| Product workflow or application behavior | `applications/` | Keeps specialized product logic outside reusable platform foundations |
-| Reusable capability or contract | `intergrax/` | Makes the capability reusable across applications |
-| Evidence for changed behavior | Nearest existing test or proof boundary | Keeps verification close to the behavior |
-| Public explanation | Owning public document | Prevents duplicated or drifting claims |
+A good first change:
 
-The application/platform boundary is a decision to make for each change; not every change automatically belongs in `intergrax/`.
+- represents one user-visible or contract-level behavior;
+- stays within one clear ownership boundary;
+- reuses existing abstractions where possible;
+- has an existing or naturally adjacent verification boundary;
+- does not create a new subsystem just to test Intergrax;
+- does not require touching unrelated modules.
 
-## First builder checkpoint
+For example, if a knowledge application needs a new product-specific behavior, keep the workflow semantics in the application, reuse the existing governed knowledge and execution mechanisms, change only the application-owned behavior first, and verify the nearest application contract. Only a verified shared need should open a deeper platform question. This is a conceptual example, not an implemented tutorial.
 
-1. Choose one concrete user workflow.
-2. Select the existing application or reusable foundation closest to it.
-3. Read only the nearest architecture document.
-4. Prepare the repository using the current canonical public setup.
-5. Make one small change inside the correct ownership boundary.
-6. Run the nearest existing documented verification.
-7. Continue to deeper references only when the first checkpoint is clear.
+## Verify the nearest existing contract first
 
-### Setup and verification truth rule
+**First verify the behavior at its nearest existing contract.**
 
-The public documents do not define one universal builder setup command. They expose route-specific setup instead.
+- Application behavior → application-focused test or proof.
+- Reusable contract → the owning contract test.
+- Public claim or evidence behavior → the owning proof or document contract.
+- Repository-wide gate → a broader confidence check, not automatically the first validation of every edit.
 
-For an existing bounded repository evaluation, [docs/project/builders/EVALUATION_GUIDE.md § 30-minute bounded technical evaluation](EVALUATION_GUIDE.md#30-minute-bounded-technical-evaluation) documents this exact setup and verification sequence:
+Setup and verification are route-owned. There is no universal builder setup command on this page. Follow the commands and prerequisites in the canonical documentation for the selected application, capability, or evaluation route. The [Evaluation Guide](EVALUATION_GUIDE.md#30-minute-bounded-technical-evaluation) owns its 30-minute repository evaluation sequence; it is not a generic builder acceptance check.
 
-```text
-uv sync --extra dev
-uv run intergrax doctor
-uv run pytest -m gate -q
-```
+## Continue when the checkpoint is clear
 
-These commands are owned by the Evaluation Guide. They are a documented evaluation path, not a generic builder acceptance check, product trial, platform certification, or production-readiness claim. If the intended change has a closer documented check, use that route's own documentation instead.
+Once you can state the workflow, ownership boundary, starting surface, bounded first change, and verification owner, continue to [Build With Intergrax](BUILD_WITH_INTERGRAX.md). It owns deeper route selection and build planning.
 
-## Progressive disclosure
-
-Start here:
-[docs/project/builders/BUILDER_QUICKSTART.md](BUILDER_QUICKSTART.md)
-
-Choose and understand the builder route:
-[docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
-
-Run broader evaluations:
-[docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md)
-
-Understand public architecture:
-[docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md)
-
-Perform deep technical review:
-[docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md)
-
-Internal plans and maintainer controls are not normal first-step builder documentation. Use them only when the public route has made the next technical question clear.
+For the selected route, follow its architecture or implementation guide. Use the [Technical Documentation Map](../technical/DOCUMENTATION_MAP.md) only when a deeper technical question needs routing. Use the [LKW Quick Start](../product/lkw/QUICKSTART.md) only when the goal is to try the LKW product, not to begin builder onboarding.
 
 ## Current boundaries
 
-- No project scaffold is promised.
-- No stable universal public SDK is claimed.
-- No fixed onboarding time is validated.
-- Application-specific prerequisites may differ.
-- Existing tests or proofs demonstrate bounded behavior, not universal production readiness.
-- The builder route is distinct from the LKW product trial.
-- No production-ready application template is claimed.
-
-## Primary next action
-
-**Plan the first bounded build:** [docs/project/builders/BUILD_WITH_INTERGRAX.md](BUILD_WITH_INTERGRAX.md)
-
-## Other routes
-
-| Route | Use it for |
-|-------|------------|
-| [LKW application architecture](../technical/applications/local_workspace_application/ARCHITECTURE.md) | Extending LKW |
-| [docs/project/builders/EVALUATION_GUIDE.md](EVALUATION_GUIDE.md) | Running a broader evaluation |
-| [docs/project/architecture/ARCHITECTURE_OVERVIEW.md](../architecture/ARCHITECTURE_OVERVIEW.md) | Understanding the platform shape |
-| [docs/project/technical/DOCUMENTATION_MAP.md](../technical/DOCUMENTATION_MAP.md) | Deep technical review |
-| [LKW Quick Start](../product/lkw/QUICKSTART.md) | Trying LKW instead |
-| [README.md](../../../README.md) | Returning to the project overview |
+- No generic project scaffold, universal application template, or stable universal public SDK is promised.
+- No universal builder setup or fixed onboarding duration is claimed.
+- Route-specific prerequisites differ.
+- Bounded tests and proofs do not imply universal production readiness.
