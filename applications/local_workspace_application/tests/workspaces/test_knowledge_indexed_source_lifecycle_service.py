@@ -66,7 +66,9 @@ from local_workspace_application.workspaces.knowledge_indexed_source_lifecycle_s
 )
 from local_workspace_application.workspaces.models import (
     Workspace,
+    WorkspaceOperation,
     WorkspaceOperationStatus,
+    WorkspaceOperationType,
     WorkspaceSource,
     WorkspaceSourceStatus,
     WorkspaceSourceType,
@@ -240,6 +242,15 @@ def _build_stack(
     return attach, lifecycle, repo, binding_port, engine
 
 
+def _restart_lifecycle(repo, lifecycle, binding_port, engine):
+    return WorkspaceIndexedSourceLifecycleService(
+        repository=repo,
+        configuration_service=lifecycle._configuration_service,
+        mutation_engine=engine,
+        tenant_binding_port=binding_port,
+    )
+
+
 def _attach(attach_svc, *, rev: int = 0) -> int:
     return attach_svc.attach_connection(
         AttachWorkspaceConnectionCommand(
@@ -353,6 +364,203 @@ def test_production_lifecycle_projection_sync_disable_enable() -> None:
         )
     )
     assert enabled.view.lifecycle_state is IndexedSourceLifecycleStateV1.SYNCING
+
+
+def test_disable_retry_repairs_configuration_after_fence_only_crash(monkeypatch) -> None:
+    attach, lifecycle, repo, binding_port, engine = _build_stack()
+    _seed_active(lifecycle, attach)
+    active = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    original = lifecycle._disable_publication_fence
+
+    def crash_after_fence(**kwargs):
+        original(**kwargs)
+        raise RuntimeError("crash_after_fence")
+
+    monkeypatch.setattr(lifecycle, "_disable_publication_fence", crash_after_fence)
+    command = IndexedSourceLifecycleCommand(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+        expected_revision=active.lifecycle_revision,
+        idempotency_key_hash=_SHA256_C,
+    )
+    with pytest.raises(RuntimeError, match="crash_after_fence"):
+        lifecycle.disable(command)
+
+    restarted = _restart_lifecycle(repo, lifecycle, binding_port, engine)
+    result = restarted.disable(command)
+    fence = restarted._publication_fence_port.read_fence(
+        tenant_id=_TENANT,
+        binding_id=_KSB_REF,
+    )
+    configuration = restarted._configuration_service.get_configuration(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert fence is not None and fence.enabled is False
+    assert configuration is not None
+    assert configuration.indexed_sources[0].status is WorkspaceIndexedSourceBindingStatusV1.DISABLED
+    assert result.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert result.view.lifecycle_revision == fence.lifecycle_revision
+
+
+def test_disable_before_fence_cas_leaves_no_partial_mutation(monkeypatch) -> None:
+    attach, lifecycle, repo, binding_port, engine = _build_stack()
+    _seed_active(lifecycle, attach)
+    active = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    command = IndexedSourceLifecycleCommand(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+        expected_revision=active.lifecycle_revision,
+        idempotency_key_hash=_SHA256_C,
+    )
+
+    def crash_before_fence(**kwargs):
+        raise RuntimeError("crash_before_fence")
+
+    monkeypatch.setattr(lifecycle, "_disable_publication_fence", crash_before_fence)
+    with pytest.raises(RuntimeError, match="crash_before_fence"):
+        lifecycle.disable(command)
+    fence = lifecycle._publication_fence_port.read_fence(
+        tenant_id=_TENANT,
+        binding_id=_KSB_REF,
+    )
+    configuration = lifecycle._configuration_service.get_configuration(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert fence is not None and fence.enabled is True
+    assert configuration is not None
+    assert configuration.indexed_sources[0].status is WorkspaceIndexedSourceBindingStatusV1.ACTIVE
+
+    restarted = _restart_lifecycle(repo, lifecycle, binding_port, engine)
+    assert restarted.disable(command).view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+
+
+def test_disable_retry_replays_after_configuration_commit_crash(monkeypatch) -> None:
+    attach, lifecycle, repo, binding_port, engine = _build_stack()
+    _seed_active(lifecycle, attach)
+    active = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    command = IndexedSourceLifecycleCommand(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+        expected_revision=active.lifecycle_revision,
+        idempotency_key_hash=_SHA256_C,
+    )
+    original = lifecycle.disable_indexed_source
+
+    def crash_after_configuration(command):
+        original(command)
+        raise RuntimeError("crash_after_configuration")
+
+    monkeypatch.setattr(lifecycle, "disable_indexed_source", crash_after_configuration)
+    with pytest.raises(RuntimeError, match="crash_after_configuration"):
+        lifecycle.disable(command)
+
+    restarted = _restart_lifecycle(repo, lifecycle, binding_port, engine)
+    result = restarted.disable(command)
+    assert result.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert result.mutation_id is not None
+
+
+def test_disable_is_idempotent_when_fence_and_configuration_are_disabled() -> None:
+    attach, lifecycle, _, _, _ = _build_stack()
+    _seed_active(lifecycle, attach)
+    active = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    command = IndexedSourceLifecycleCommand(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+        expected_revision=active.lifecycle_revision,
+        idempotency_key_hash=_SHA256_C,
+    )
+    first = lifecycle.disable(command)
+    second = lifecycle.disable(command)
+    assert first.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert second.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert second.view.lifecycle_revision == first.view.lifecycle_revision
+
+
+def test_two_independent_disable_services_converge() -> None:
+    attach, lifecycle, repo, binding_port, engine = _build_stack()
+    _seed_active(lifecycle, attach)
+    active = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    command = IndexedSourceLifecycleCommand(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+        expected_revision=active.lifecycle_revision,
+        idempotency_key_hash=_SHA256_C,
+    )
+    other = _restart_lifecycle(repo, lifecycle, binding_port, engine)
+    first = lifecycle.disable(command)
+    second = other.disable(command)
+    assert first.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert second.view.lifecycle_state is IndexedSourceLifecycleStateV1.DISABLED
+    assert second.view.lifecycle_revision == first.view.lifecycle_revision
+
+
+def test_lifecycle_get_uses_exact_source_operation_pointer(monkeypatch) -> None:
+    attach, lifecycle, repo, _, _ = _build_stack()
+    _seed_active(lifecycle, attach)
+    service = lifecycle._sync_request_port
+    target_operations = [
+        service.create_sync_operation(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            source_id=_SOURCE_ID,
+            allow_concurrent=True,
+        )
+        for _ in range(3)
+    ]
+    latest = target_operations[-1]
+    repo.put_operation(latest.model_copy(update={"status": WorkspaceOperationStatus.FAILED}))
+    for index in range(1001):
+        repo.put_operation(
+            WorkspaceOperation(
+                operation_id=f"unrelated-{index}",
+                tenant_id=_TENANT,
+                workspace_id=f"unrelated-workspace-{index}",
+                source_id=f"unrelated-source-{index}",
+                operation_type=WorkspaceOperationType.SOURCE_SYNC,
+                status=WorkspaceOperationStatus.RUNNING,
+                created_at=_NOW,
+            )
+        )
+
+    def tenant_scan_forbidden(*, tenant_id: str):
+        raise AssertionError(f"tenant operation scan: {tenant_id}")
+
+    monkeypatch.setattr(repo, "list_operations", tenant_scan_forbidden)
+    view = lifecycle.get(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        indexed_source_binding_id=_BINDING_ID,
+    )
+    assert view.sync_state is not None
+    assert view.sync_state.value == "failed"
 
 
 def test_detach_is_durable_and_enable_after_detach_is_forbidden() -> None:

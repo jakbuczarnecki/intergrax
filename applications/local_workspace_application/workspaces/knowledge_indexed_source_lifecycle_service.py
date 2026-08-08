@@ -434,15 +434,40 @@ class WorkspaceIndexedSourceLifecycleService:
         if fence is None:
             raise WorkspaceIndexedSourceLifecycleError("publication_fence_missing")
 
-        operations = [
-            operation
-            for operation in self._repository.list_operations(tenant_id=tenant_id)
+        operations = []
+        operation_page = self._repository.list_source_sync_operations_page(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            source_id=binding.source_id,
+            limit=1,
+        )
+        for record in operation_page.documents:
+            data = dict(record.data)
+            if any(
+                data.get(field) != expected
+                for field, expected in (
+                    ("tenant_id", tenant_id),
+                    ("workspace_id", workspace_id),
+                    ("source_id", binding.source_id),
+                    ("operation_type", "source_sync"),
+                )
+            ):
+                continue
+            operation_id = data.get("operation_id")
+            if not isinstance(operation_id, str) or not operation_id.strip():
+                continue
+            operation = self._repository.get_operation(
+                tenant_id=tenant_id,
+                operation_id=operation_id,
+            )
             if (
-                operation.workspace_id == workspace_id
+                operation is not None
+                and operation.tenant_id == tenant_id
+                and operation.workspace_id == workspace_id
                 and operation.source_id == binding.source_id
                 and operation.operation_type.value == "source_sync"
-            )
-        ]
+            ):
+                operations.append(operation)
         latest_operation = max(
             operations,
             key=lambda operation: (
@@ -661,20 +686,15 @@ class WorkspaceIndexedSourceLifecycleService:
             workspace_id=command.workspace_id,
             indexed_source_binding_id=command.indexed_source_binding_id,
         )
-        self._assert_current_revision(view, command.expected_revision)
         if view.detached:
             raise WorkspaceIndexedSourceLifecycleError("indexed_source_detached")
+        if view.enabled or view.lifecycle_revision < command.expected_revision:
+            self._assert_current_revision(view, command.expected_revision)
         self._disable_publication_fence(
             tenant_id=command.tenant_id,
             binding_ref=view.knowledge_source_binding_ref,
-            expected_revision=command.expected_revision,
+            expected_revision=view.lifecycle_revision,
         )
-        if not view.enabled:
-            return IndexedSourceLifecycleResultV1(view=self.get(
-                tenant_id=command.tenant_id,
-                workspace_id=command.workspace_id,
-                indexed_source_binding_id=command.indexed_source_binding_id,
-            ))
         configuration = self._configuration_service.get_configuration(
             tenant_id=command.tenant_id,
             workspace_id=command.workspace_id,
@@ -895,6 +915,12 @@ class WorkspaceIndexedSourceLifecycleService:
                 "publication_in_progress"
             ) from exc
         except KnowledgeSyncPublicationFenceConflict as exc:
+            reloaded = self._publication_fence_port.read_fence(
+                tenant_id=tenant_id,
+                binding_id=binding_ref,
+            )
+            if reloaded is not None and not reloaded.enabled and not reloaded.detached:
+                return
             raise WorkspaceIndexedSourceLifecycleError("lifecycle_conflict") from exc
 
     def _set_publication_fence(
