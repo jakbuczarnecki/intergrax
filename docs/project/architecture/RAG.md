@@ -35,6 +35,43 @@ Load **only** the satellite matching your task or cited §.
 | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | pipelines detail |
 | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | **Native Knowledge Document Contract** (`KnowledgeDocument`) — LCI-1A source of truth |
 
+## RAG-CLOSE-5 production qualification (2026-08-09)
+
+**Final status:** **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**
+
+The canonical native path is qualified for offline production-gate behavior:
+recursive native chunking, deterministic file-ingest E2E retrieval, dense
+vector similarity, built-in in-memory hybrid retrieval, graph indexing and
+retrieval in the harness graph store, graph unlink/delete lifecycle, tenant
+isolation, same-filename identity isolation, and opt-in external chunker,
+retriever, and reranker runtime wiring. The plugin closeout gate also proves
+an entry-point chunker can run through `IngestPipeline`, embedding, vector
+storage, and `RetrievalService` without changing RAG core.
+
+Explicit limitations:
+
+- hierarchical/parent-child mode is implemented and profile-selectable, but
+  remains **IMPLEMENTED_BUT_UNQUALIFIED** for a complete final-content and
+  parent-linkage production gate;
+- repeated ingest has deterministic/provider upsert behavior, but there is no
+  separate source-scoped reingest contract and gate;
+- tenant filtering is qualified; namespace/workspace propagation and provider
+  predicates are covered, but independent negative leakage gates are not;
+- the Qdrant provider contract and ID normalization are covered by offline
+  tests, and the live tenant-isolation probe passed; the broader backend
+  lifecycle suite is **TEST_ASSUMPTION_DEFECT** because its integration
+  wrapper calls methods outside the provider contract; live production graph
+  services are likewise not claimed here;
+- LangChain recursive chunking remains optional and is not required by core;
+  the optional splitter dependency is present in this environment but is not
+  used by the canonical native gate.
+
+Evidence commands:
+`uv run pytest tests/unit/rag/document_splitters/test_native_strategies.py -q -k recursive`,
+`uv run pytest tests/e2e/rag/test_native_rag_retrieval_qualification.py -q`,
+`uv run pytest tests/unit/rag/evaluation/test_golden_retrieval_gate.py tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py tests/unit/rag/graph/test_graph_rag_retriever_hardening.py tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py tests/unit/rag/profiles/test_production_graph_rag_profile.py -q`,
+and `uv run pytest tests/unit/rag/test_rag_plugin_discovery.py -q`.
+
 ## Native Knowledge Document Contract
 
 RAG is the **functional owner** of the platform knowledge document ABI. The canonical type is **`KnowledgeDocument`**, implemented in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (LCI-1B), public import: `from intergrax.knowledge.contracts import KnowledgeDocument`.

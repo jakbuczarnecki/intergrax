@@ -3,9 +3,13 @@ from __future__ import annotations
 import importlib.metadata
 from collections.abc import Sequence
 
+import numpy as np
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import (
     create_default_document_splitter,
 )
@@ -19,6 +23,11 @@ from intergrax.rag.document_splitters.registry.strategy_registry import (
 from intergrax.rag.document_splitters.strategies.recursive_chunking_strategy import (
     RecursiveChunkingStrategy,
 )
+from intergrax.rag.embedding.contracts.base_embedding_manager import (
+    BaseEmbeddingManager,
+)
+from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
@@ -45,6 +54,8 @@ from intergrax.rag.rerankers.contracts.reranker_types import (
 )
 from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 from intergrax.rag.rerankers.registry.reranker_registry import RerankerRegistry
+from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 pytestmark = pytest.mark.unit
 
@@ -84,7 +95,14 @@ def _patch_entry_points(
     )
 
 
-def _source(document_id: str = "doc-plugin") -> KnowledgeDocument:
+def _source(
+    document_id: str = "doc-plugin",
+    *,
+    namespace: str | None = None,
+) -> KnowledgeDocument:
+    scope = {"tenant_id": "tenant.plugin"}
+    if namespace is not None:
+        scope["namespace"] = namespace
     return KnowledgeDocument.model_validate(
         {
             "schema_version": 1,
@@ -92,7 +110,7 @@ def _source(document_id: str = "doc-plugin") -> KnowledgeDocument:
                 "document_id": document_id,
                 "root_document_id": document_id,
             },
-            "scope": {"tenant_id": "tenant.plugin"},
+            "scope": scope,
             "content": "external plugin content",
             "metadata": {"source": document_id},
             "provenance": {
@@ -121,6 +139,39 @@ class _ExternalChunker(BaseChunkingStrategy):
             )
             for document in documents
         ]
+
+
+class _ExternalLoader:
+    def __init__(self, document: KnowledgeDocument | None = None) -> None:
+        self.document = document or _source("doc-plugin-ingest")
+
+    def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+        del source, kwargs
+        return [self.document]
+
+
+class _OfflineEmbeddingManager(BaseEmbeddingManager):
+    def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
+        return np.asarray(
+            [
+                [float("external" in text), float("plugin" in text)]
+                for text in texts
+            ],
+            dtype=np.float32,
+        )
+
+    def embed_one(self, text: str) -> np.ndarray:
+        return self.embed_texts([text])[0]
+
+    def embed_documents(
+        self,
+        documents: Sequence[KnowledgeDocument],
+    ) -> EmbeddingResult:
+        documents_tuple = tuple(documents)
+        return EmbeddingResult(
+            documents=documents_tuple,
+            embeddings=self.embed_texts([doc.content for doc in documents_tuple]),
+        )
 
 
 class _ConflictingChunker(_ExternalChunker):
@@ -280,6 +331,92 @@ def test_external_chunker_entry_point_uses_normal_splitter_and_profile(
     assert len(chunks) == 1
     assert isinstance(chunks[0], KnowledgeDocument)
     assert chunks[0].content == "external:external plugin content"
+
+
+def test_external_chunker_entry_point_flows_through_ingest_and_retrieval(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    _patch_entry_points(
+        monkeypatch,
+        {"intergrax.rag.chunkers": (_ExternalChunker,)},
+    )
+    profile = RagProfile(
+        chunking_strategy_id="external_chunker",
+        retriever_id="vector_similarity",
+        fast_retriever_id="vector_similarity",
+        deep_retriever_id="vector_similarity",
+        enable_rerank=False,
+        route_mode="off",
+        query_expansion="off",
+        native_hybrid_enabled=False,
+    )
+    scope = VectorStoreScope(
+        tenant_id="tenant.plugin",
+        namespace="plugin",
+        workspace_id="workspace.plugin",
+    )
+    embedding_manager = _OfflineEmbeddingManager()
+    vectorstore = VectorstoreManager(
+        store=InMemoryVectorStore(tenant_id=scope.tenant_id),
+        scope=scope,
+    )
+    splitter = create_default_document_splitter(discover_entry_points=True)
+    source = tmp_path / "plugin.txt"
+    source.write_text("plugin fixture", encoding="utf-8")
+    pipeline = IngestPipeline(
+        loader=_ExternalLoader(
+            _source("doc-plugin-ingest", namespace=scope.namespace)
+        ),
+        splitter=splitter,
+        embedding_manager=embedding_manager,
+        vectorstore=vectorstore,
+        profile=profile,
+    )
+
+    ingest = pipeline.run(
+        IngestRequest(
+            source_path=str(source),
+            base_metadata={
+                "tenant_id": scope.tenant_id,
+                "namespace": scope.namespace,
+            },
+            workspace_id=scope.workspace_id,
+        )
+    )
+
+    assert ingest.used is True
+    assert ingest.vector_ids
+    assert ingest.num_chunks == 1
+
+    retriever_manager = create_default_retriever_manager(
+        vector_store=vectorstore,
+        embedding_manager=embedding_manager,
+        profile=profile,
+        discover_entry_points=False,
+    )
+    service = RetrievalService(
+        retriever_manager=retriever_manager,
+        profile=profile,
+    )
+    result = service.retrieve(
+        RetrievalRequest(
+            query="external plugin content",
+            final_top_k=1,
+            prefetch_k=1,
+            scope=scope,
+            route_tier_override="standard",
+        )
+    )
+
+    assert result.used is True
+    assert result.chunks[0].text == "external:external plugin content"
+    assert result.chunks[0].metadata["chunk_strategy"] == "external_chunker"
+    assert result.chunks[0].scope == {
+        "tenant_id": scope.tenant_id,
+        "namespace": scope.namespace,
+        "workspace_id": scope.workspace_id,
+    }
 
 
 def test_external_retriever_entry_point_uses_retrieval_service(

@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess
 import sys
 import textwrap
+import tomllib
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -17,6 +19,26 @@ def _run_python(script: str) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
         check=False,
+    )
+
+
+def test_ollama_extras_separate_native_and_compatibility_dependencies() -> None:
+    pyproject = tomllib.loads(
+        (Path(__file__).parents[3] / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    project = pyproject["project"]
+    optional = project["optional-dependencies"]
+
+    assert all(
+        not dependency.startswith("langchain-ollama")
+        for dependency in project["dependencies"]
+    )
+    assert optional["llm-ollama"] == ["ollama>=0.1", "tiktoken>=0.7"]
+    assert optional["llm-langchain-ollama"] == ["langchain-ollama>=0.2,<2.0"]
+    assert optional["rag-langchain-embeddings"] == ["langchain-ollama>=0.2,<2.0"]
+    assert all(
+        not dependency.startswith("langchain-ollama")
+        for dependency in optional["llm-all"]
     )
 
 

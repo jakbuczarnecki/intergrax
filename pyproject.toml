@@ -208,7 +208,7 @@ langgraph-legacy = ["langgraph>=0.0.40"]
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
 llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]
 llm-mistral = ["mistralai>=0.4", "tiktoken>=0.7"]
-llm-ollama = ["ollama>=0.1", "langchain-ollama>=0.2,<2.0", "langchain-core>=0.3,<2.0", "tiktoken>=0.7"]
+llm-ollama = ["ollama>=0.1", "tiktoken>=0.7"]
 # Explicit compatibility surface for LangChainOllamaAdapter.
 llm-langchain-ollama = ["langchain-ollama>=0.2,<2.0"]
 llm-gemini = ["google-genai>=0.3", "tiktoken>=0.7"]
@@ -227,7 +227,6 @@ llm-all = [
   "boto3>=1.34",
   "botocore>=1.34",
   "mypy-boto3-bedrock-runtime>=1.34",
-  "langchain-ollama>=0.2,<2.0",
   "tiktoken>=0.7",
 ]
 dev = [
