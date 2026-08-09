@@ -11,6 +11,9 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.mail_folders import (
+    MSGRAPH_MAIL_SOURCE_KIND,
+)
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
 )
@@ -36,6 +39,7 @@ from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
 )
 from intergrax.runtime.vendor_knowledge.live.ms365_graph.registration import (
     build_msgraph_live_registration_bundles,
+    build_msgraph_mail_vendor_knowledge_source_plugin,
     build_msgraph_teams_chat_vendor_knowledge_source_plugin,
 )
 from intergrax.runtime.vendor_knowledge.live.registration import (
@@ -81,6 +85,7 @@ def _mode(
 def test_identity_and_mode_subsets_are_explicit() -> None:
     slack = build_slack_vendor_knowledge_source_plugin()
     graph = build_msgraph_teams_chat_vendor_knowledge_source_plugin()
+    graph_mail = build_msgraph_mail_vendor_knowledge_source_plugin()
 
     assert slack.identity.key == (
         SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -98,6 +103,10 @@ def test_identity_and_mode_subsets_are_explicit() -> None:
     assert graph.supports(VendorKnowledgeMode.DURABLE)
     assert graph.supports(VendorKnowledgeMode.LIVE)
     assert graph.supports(VendorKnowledgeMode.INDEXED)
+    assert graph_mail.identity.source_kind == MSGRAPH_MAIL_SOURCE_KIND
+    assert graph_mail.supports(VendorKnowledgeMode.DURABLE)
+    assert graph_mail.supports(VendorKnowledgeMode.LIVE)
+    assert graph_mail.supports(VendorKnowledgeMode.INDEXED)
 
 
 def test_live_capability_refs_are_existing_registrations() -> None:

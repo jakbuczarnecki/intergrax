@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 from local_workspace_application.workspaces.connected_source_materializer import (
     ConnectedSourceContentMaterializerRegistry,
+    MsGraphMailStructuredRecordMaterializer,
     MsGraphTeamsChatStructuredRecordMaterializer,
     SlackConversationStructuredRecordMaterializer,
     default_connected_source_materializer_registry,
@@ -34,6 +35,9 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.mail_folders import (
+    MSGRAPH_MAIL_SOURCE_KIND,
 )
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -117,6 +121,38 @@ def _graph_content() -> KnowledgeContent:
     )
 
 
+def _graph_mail_content(*, body_text: str = "Mail body") -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema": "msgraph.mail.message.knowledge.v1",
+            "subject": "Quarterly report",
+            "conversation_id": "conversation-1",
+            "internet_message_id": "<message-1@example.test>",
+            "body_text": body_text,
+            "unique_body_text": "Mail",
+            "from": {"display_name": "Sender", "address": "sender@example.test"},
+            "sender": {"display_name": "Sender", "address": "sender@example.test"},
+            "reply_to": [],
+            "to_recipients": [{"display_name": "Recipient", "address": "recipient@example.test"}],
+            "cc_recipients": [],
+            "bcc_recipients": [],
+            "created_at": "2026-01-02T12:00:00+00:00",
+            "last_modified_at": "2026-01-02T12:00:00+00:00",
+            "received_at": "2026-01-02T12:00:00+00:00",
+            "sent_at": "2026-01-02T12:00:00+00:00",
+            "is_read": True,
+            "is_draft": False,
+            "importance": "normal",
+            "attachments": {
+                "has_attachments": True,
+                "inventory_included": False,
+                "binary_content_included": False,
+            },
+        },
+    )
+
+
 def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
     registry = default_connected_source_materializer_registry()
     materializer = registry.resolve(
@@ -138,6 +174,16 @@ def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
         schema_name="msgraph.teams-chat.message.knowledge.v1",
     )
     assert isinstance(graph, MsGraphTeamsChatStructuredRecordMaterializer)
+
+    mail = registry.resolve(
+        _source(
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        ),
+        schema_name="msgraph.mail.message.knowledge.v1",
+    )
+    assert isinstance(mail, MsGraphMailStructuredRecordMaterializer)
 
 
 def test_missing_indexed_runtime_registration_fails_closed() -> None:
@@ -245,6 +291,33 @@ def test_graph_uses_same_canonical_bridge_and_preserves_provenance() -> None:
     assert document.scope.workspace_id == "workspace-1"
     assert document.provenance.provider_id == MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID
     assert document.provenance.source_kind == MSGRAPH_TEAMS_CHAT_SOURCE_KIND
+
+
+def test_graph_mail_materializer_preserves_mail_scope_and_exclusions() -> None:
+    source = _source(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+    )
+    document = MsGraphMailStructuredRecordMaterializer().materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="graph-mail-remote-1",
+        content=_graph_mail_content(),
+        revision=KnowledgeItemRevision(version="mail-1"),
+        permissions=None,
+    ).knowledge_document
+
+    assert "Mail body" in document.content
+    assert "Thread: conversation membership metadata only" in document.content
+    assert "attachment inventory and binary content are not included" in document.content
+    assert document.scope.tenant_id == "tenant-1"
+    assert document.provenance.provider_id == MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID
+    assert document.provenance.source_kind == MSGRAPH_MAIL_SOURCE_KIND
+    assert document.provenance.source_id == "graph-mail-remote-1"
 
 
 @pytest.mark.asyncio

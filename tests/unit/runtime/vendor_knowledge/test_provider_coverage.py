@@ -218,6 +218,11 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
         (
             MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
             IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_MAIL_SOURCE_KIND,
+        ): "indexed-source:ms365_graph:mail",
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
             MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
         ): "indexed-source:ms365_graph:teams_chat",
     }

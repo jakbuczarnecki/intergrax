@@ -245,6 +245,7 @@ def build_msgraph_mail_vendor_knowledge_source_plugin() -> VendorKnowledgeSource
         source_kind=MSGRAPH_MAIL_SOURCE_KIND,
         live_runtime_ref="live-registration:ms365_graph:mail",
         durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:mail",
+        indexed_runtime_ref="indexed-source:ms365_graph:mail",
     )
 
 

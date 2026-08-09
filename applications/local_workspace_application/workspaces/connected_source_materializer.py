@@ -5,14 +5,8 @@
 from __future__ import annotations
 
 import hashlib
-import json
-from dataclasses import dataclass
 from typing import Literal, Protocol, runtime_checkable
 
-from local_workspace_application.workspaces.connected_source_ids import (
-    connected_document_id,
-    connected_logical_path,
-)
 from local_workspace_application.workspaces.connected_source_models import (
     ConnectedSourceSyncSinkError,
 )
@@ -31,11 +25,12 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
     SLACK_CONVERSATION_SOURCE_KIND,
 )
-from intergrax.knowledge.contracts import (
-    KnowledgeDocument,
-    KnowledgeDocumentIdentity,
-    KnowledgeDocumentProvenance,
-    KnowledgeDocumentScope,
+from intergrax.runtime.vendor_knowledge.indexed_materialization import (
+    MaterializedConnectedSourceDocument,
+    build_materialized_connected_source_document,
+)
+from intergrax.runtime.vendor_knowledge.ms365_graph_indexed_materializers import (
+    MsGraphMailStructuredRecordMaterializer,
 )
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContent,
@@ -67,8 +62,6 @@ _MSGRAPH_TEAMS_CHAT_IDENTITY = VendorKnowledgeSourceIdentity(
     integration_category=IntegrationCategory.COLLABORATION_SUITE,
     source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
 )
-
-
 class _SlackConversationMessageKnowledgeRecord(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True, strict=True)
 
@@ -104,17 +97,6 @@ class _MsGraphTeamsChatMessageKnowledgeRecord(BaseModel):
     importance: str
     locale: str | None = None
     attachments: dict[str, object] = Field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
-class MaterializedConnectedSourceDocument:
-    knowledge_document: KnowledgeDocument
-    logical_source_path: str
-    safe_file_name: str
-    markdown: str
-    content_hash: str
-    document_id: str
-    source_revision: KnowledgeItemRevision | None
 
 
 @runtime_checkable
@@ -345,70 +327,18 @@ def _build_materialized_document(
     revision: KnowledgeItemRevision | None,
     permissions: KnowledgePermissions | None,
 ) -> MaterializedConnectedSourceDocument:
-    markdown_bytes = markdown.encode("utf-8")
-    content_hash = hashlib.sha256(markdown_bytes).hexdigest()
-    document_id = connected_document_id(
+    return build_materialized_connected_source_document(
+        identity=identity,
+        source=source,
         tenant_id=tenant_id,
         workspace_id=workspace_id,
-        provider_id=identity.provider_id,
-        integration_kind=identity.integration_category.value,
-        source_kind=identity.source_kind,
         binding_id=binding_id,
+        source_id=source_id,
         remote_id=remote_id,
-    )
-    revision_token = None
-    if revision is not None:
-        revision_token = hashlib.sha256(
-            json.dumps(
-                revision.model_dump(mode="json"),
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-        ).hexdigest()
-    metadata: dict[str, object] = {
-        "vendor_knowledge_provider_id": identity.provider_id,
-        "vendor_knowledge_integration_kind": identity.integration_category.value,
-        "vendor_knowledge_source_kind": identity.source_kind,
-        "vendor_knowledge_connection_ref": source.connection_ref,
-        "vendor_knowledge_binding_id": binding_id,
-        "vendor_knowledge_remote_id": remote_id,
-    }
-    if permissions is not None:
-        metadata["permissions"] = permissions.model_dump(mode="json")
-    document = KnowledgeDocument(
-        schema_version=1,
-        identity=KnowledgeDocumentIdentity(
-            document_id=document_id,
-            root_document_id=document_id,
-        ),
-        scope=KnowledgeDocumentScope(
-            tenant_id=tenant_id,
-            namespace=binding_id,
-            workspace_id=workspace_id,
-        ),
-        content=markdown,
-        metadata=metadata,
-        provenance=KnowledgeDocumentProvenance(
-            source_kind=identity.source_kind,
-            source_id=remote_id,
-            source_parent_id=source_id,
-            provider_id=identity.provider_id,
-            source_revision=revision_token,
-            content_hash=content_hash,
-        ),
-    )
-    return MaterializedConnectedSourceDocument(
-        knowledge_document=document,
-        logical_source_path=connected_logical_path(
-            source_id=source_id,
-            remote_id=remote_id,
-            source_kind=identity.source_kind,
-        ),
-        safe_file_name=safe_file_name,
         markdown=markdown,
-        content_hash=content_hash,
-        document_id=document_id,
-        source_revision=revision,
+        safe_file_name=safe_file_name,
+        revision=revision,
+        permissions=permissions,
     )
 
 
@@ -489,6 +419,7 @@ def default_connected_source_materializer_registry() -> ConnectedSourceContentMa
         materializers=(
             SlackConversationStructuredRecordMaterializer(),
             MsGraphTeamsChatStructuredRecordMaterializer(),
+            MsGraphMailStructuredRecordMaterializer(),
         )
     )
 
