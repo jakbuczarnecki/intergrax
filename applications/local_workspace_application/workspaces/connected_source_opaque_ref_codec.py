@@ -21,6 +21,7 @@ from local_workspace_application.workspaces.connected_source_models import (
 _ENVELOPE_SCHEMA = "lkw.remote_resource_opaque_ref.v1"
 _CANDIDATE_PAYLOAD_SCHEMA = "lkw.slack_conversation_candidate.v1"
 _MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_teams_chat_candidate.v1"
+_MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_mail_folder_candidate.v1"
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -63,6 +64,19 @@ class MsGraphTeamsChatCandidatePayload(BaseModel):
     resource_type: RemoteResourceTypeV1
     mailbox_user_id: str = Field(..., min_length=1, max_length=256)
     chat_remote_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphMailFolderCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    mailbox_user_id: str = Field(..., min_length=1, max_length=256)
+    folder_id: str = Field(..., min_length=1, max_length=256)
     safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
@@ -242,6 +256,40 @@ class RemoteResourceOpaqueRefCodec:
         except (ValueError, RemoteResourceOpaqueRefCodecError):
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
         if payload.schema_version != _MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_mail_folder_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        mailbox_user_id: str,
+        folder_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphMailFolderCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_MAIL_FOLDER,
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_mail_folder_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphMailFolderCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphMailFolderCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA:
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 

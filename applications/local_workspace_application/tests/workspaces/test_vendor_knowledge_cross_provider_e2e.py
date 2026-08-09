@@ -8,6 +8,7 @@ import asyncio
 import json
 import time
 from datetime import UTC, datetime
+from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,7 +24,13 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.integratio
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MSGRAPH_MAIL_SOURCE_KIND,
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+    MsGraphMailFolder,
+    MsGraphMailFolderPage,
+    MsGraphMailMessageDeltaPage,
+    MsGraphKnowledgeContinuation,
+    MsGraphKnowledgeContinuationKind,
     MsGraphTeamsChat,
     MsGraphTeamsChatPage,
     MsGraphTeamsChatType,
@@ -37,7 +44,9 @@ from intergrax.runtime.vendor_knowledge.live import (
     LiveResultRetentionV1,
 )
 from intergrax.runtime.vendor_knowledge.live.ms365_graph import (
+    MSGRAPH_MAIL_LIST_CAPABILITY_ID,
     MSGRAPH_TEAMS_CHAT_LIST_CAPABILITY_ID,
+    MsGraphMailListLiveRequestV1,
     MsGraphTeamsChatListLiveRequestV1,
 )
 from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
@@ -78,6 +87,10 @@ from tests.unit.runtime.vendor_knowledge.test_msgraph_teams_chat_knowledge_sync 
     _TeamsChatTestIntegration,
     _active_message,
     _snapshot_page,
+)
+from tests.unit.runtime.vendor_knowledge.test_msgraph_mail_knowledge_sync import (
+    _FOLDER_ID,
+    _MailFakeCollaborationSuite,
 )
 
 pytest_plugins = (
@@ -139,6 +152,82 @@ class _CrossProviderGraphClient(_TeamsChatFakeCollaborationSuite):
                 ),
             ),
         )
+
+
+class _MailApplicationGraphClient(_MailFakeCollaborationSuite):
+    def _mail_delta_continuation(
+        self,
+        *,
+        mailbox_user_id: str,
+        folder_id: str,
+    ) -> MsGraphKnowledgeContinuation:
+        return MsGraphKnowledgeContinuation(
+            kind=MsGraphKnowledgeContinuationKind.DELTA,
+            url=(
+                "https://graph.microsoft.com/v1.0/users/"
+                f"{quote(mailbox_user_id, safe='')}/mailFolders/"
+                f"{quote(folder_id, safe='')}/messages/delta?$deltatoken=app-token"
+            ),
+        )
+
+    def read_mail_folders_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        parent_folder_id: str | None,
+        continuation,
+        limit: int,
+    ) -> MsGraphMailFolderPage:
+        _ = parent_folder_id, continuation, limit
+        return MsGraphMailFolderPage(
+            items=(
+                MsGraphMailFolder(
+                    mailbox_user_id=mailbox_user_id,
+                    remote_id=_FOLDER_ID,
+                    parent_remote_id=None,
+                    display_name="Inbox",
+                    child_folder_count=0,
+                    total_item_count=3,
+                    unread_item_count=1,
+                    is_hidden=False,
+                ),
+            ),
+            continuation=None,
+        )
+
+    def read_mail_messages_delta_page(
+        self,
+        *,
+        mailbox_user_id: str,
+        folder_id: str,
+        continuation,
+        limit: int,
+    ):
+        continuation_url = self._mail_delta_continuation(
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+        )
+        if continuation is not None:
+            return MsGraphMailMessageDeltaPage(items=(), continuation=continuation_url)
+        page = super().read_mail_messages_delta_page(
+            mailbox_user_id=mailbox_user_id,
+            folder_id=folder_id,
+            continuation=continuation,
+            limit=limit,
+        )
+        return page.model_copy(
+            update={
+                "items": tuple(
+                    item.model_copy(update={"mailbox_user_id": mailbox_user_id})
+                    for item in page.items
+                ),
+                "continuation": continuation_url,
+            }
+        )
+
+    def read_mail_message_content(self, *, message, max_chars: int):
+        content = super().read_mail_message_content(message=message, max_chars=max_chars)
+        return content.model_copy(update={"mailbox_user_id": message.mailbox_user_id})
 
 
 class _GraphRestartSecretsStore:
@@ -292,6 +381,60 @@ async def _run_live(
         ),
     ).execute(
         run_id="vk8-graph-live-run",
+        tenant_id=tenant_id,
+        workspace_id=_WORKSPACE,
+        call=call,
+        audience=KnowledgeQueryAudienceV1.PERSONAL,
+        retention=LiveResultRetentionV1.EPHEMERAL,
+    )
+
+
+async def _run_mail_live(*, wiring, binding_id: str, tenant_id: str = _TENANT) -> object:
+    binding = wiring.tenant_binding_port.get_binding(
+        tenant_id=_TENANT,
+        binding_id=binding_id,
+    )
+    assert binding is not None
+    scope_id = binding.scope.remote_scope_id
+    from intergrax.runtime.vendor_knowledge.live.bootstrap import (
+        build_vendor_knowledge_live_registration_registry,
+    )
+
+    published = build_vendor_knowledge_live_registration_registry().publish()
+    call = ExecutableLiveCallV1(
+        call_id="mail-lkw-live",
+        capability_id=MSGRAPH_MAIL_LIST_CAPABILITY_ID,
+        contract_version="1",
+        connection_ref=_GRAPH_CONNECTION,
+        live_access_binding_id=binding_id,
+        remote_resource_id=scope_id,
+        validated_request=MsGraphMailListLiveRequestV1(page_size=5),
+        effective_budget=EffectiveLiveCallBudgetV1(
+            max_live_calls=1,
+            max_total_duration_ms=30_000,
+            max_result_items=5,
+            max_result_bytes=32_768,
+            max_provider_pages=1,
+            max_provider_requests=1,
+            max_upstream_items=5,
+            max_provider_page_size=5,
+            max_content_bytes_per_item=4096,
+        ),
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+        resolved_resource_scope=ResolvedLiveResourceScopeV1(
+            remote_resource_id=scope_id,
+            scope_token=scope_id,
+        ),
+    )
+    return await LiveCapabilityExecutorV1(
+        published_registration=published,
+        integration_resolver=KnowledgeConnectionRegistryIntegrationResolverV1(
+            wiring.connection_registry
+        ),
+    ).execute(
+        run_id="mail-lkw-live-run",
         tenant_id=tenant_id,
         workspace_id=_WORKSPACE,
         call=call,
@@ -599,3 +742,169 @@ def test_cross_provider_three_mode_e2e(rag_e2e_env) -> None:
     )
     assert other_tenant.status_code in {403, 404}
     assert backend.history_calls > 0
+
+
+def test_graph_mail_application_lkw_e2e(rag_e2e_env) -> None:
+    client: TestClient = rag_e2e_env["client"]
+    wiring = rag_e2e_env["wiring"]
+    repo = rag_e2e_env["repo"]
+    runtime = rag_e2e_env["runtime"]
+    llm = rag_e2e_env["llm"]
+
+    with pytest.raises(VendorKnowledgeError):
+        wiring.connection_registry.resolve(
+            tenant_id=_TENANT,
+            connection_ref=_GRAPH_CONNECTION,
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+
+    connection_repository = DocumentStoreTenantConnectionRepository(repo.document_store)
+    TenantConnectionService(
+        tenant_id=_TENANT,
+        repository=connection_repository,
+    ).create(
+        TenantConnection(
+            connection_ref=_GRAPH_CONNECTION,
+            tenant_id=_TENANT,
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            safe_display_name="Microsoft Graph",
+            administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+            credential_ref=_GRAPH_CREDENTIAL_REF,
+            validated_secret_free_config={
+                "client_id": "graph-client-id",
+                "default_user": "user-abc-123",
+            },
+            configuration_version=1,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
+    )
+    _attach_graph_connection(repo)
+
+    graph_runtime_instances: list[_TeamsChatTestIntegration] = []
+
+    def build_graph_runtime(config):
+        assert config.client_id == "graph-client-id"
+        assert config.client_secret == "graph-client-secret"
+        integration = _TeamsChatTestIntegration.from_client(
+            _MailApplicationGraphClient(),
+            enabled=True,
+        )
+        graph_runtime_instances.append(integration)
+        return integration
+
+    graph_secrets = _GraphRestartSecretsStore()
+    factory_registry = build_default_vendor_knowledge_connection_factory_registry(
+        slack_runtime_builder=lambda _config: rag_e2e_env["integration"],
+        msgraph_runtime_builder=build_graph_runtime,
+    )
+    rehydration = TenantConnectionRehydrator(
+        repository=connection_repository,
+        secrets_store=graph_secrets,
+        integration_factory=factory_registry,
+        connection_registry=wiring.connection_registry,
+    ).rehydrate_tenant(tenant_id=_TENANT)
+    graph_rehydration = next(
+        result
+        for result in rehydration
+        if result.connection.connection_ref == _GRAPH_CONNECTION
+    )
+    assert graph_rehydration.status is TenantConnectionRehydrationStatus.REGISTERED
+    assert graph_secrets.calls.count(_GRAPH_CREDENTIAL_REF) == 1
+    assert len(graph_runtime_instances) == 1
+
+    mail_capabilities = rag_e2e_env["source_catalog"].list_source_kind_capabilities(
+        tenant_id=_TENANT,
+        connection_ref=_GRAPH_CONNECTION,
+    )
+    mail = next(
+        item for item in mail_capabilities if item.identity.source_kind == MSGRAPH_MAIL_SOURCE_KIND
+    )
+    assert set(mail.modes) == {
+        VendorKnowledgeMode.DURABLE,
+        VendorKnowledgeMode.INDEXED,
+        VendorKnowledgeMode.LIVE,
+    }
+
+    candidate = _discover(
+        client,
+        connection=_GRAPH_CONNECTION,
+        resource_type="mail_folder",
+    )
+    configuration_head = repo.get_knowledge_configuration_head(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert configuration_head is not None
+    created = _create(
+        client,
+        connection=_GRAPH_CONNECTION,
+        candidate=candidate["opaque_candidate_ref"],
+        oldest=_GRAPH_SCOPE_START,
+        latest=_GRAPH_SCOPE_END,
+        expected_revision=configuration_head.committed_revision,
+        idempotency="mail-lkw-create",
+    )
+    assert created["safe_display_label"] == "Inbox"
+
+    sync = client.post(
+        f"/v1/local_workspace/workspaces/{_WORKSPACE}/knowledge/indexed-sources/"
+        f"{created['indexed_source_binding_id']}/sync",
+        headers={"X-Tenant-Id": _TENANT},
+    )
+    assert sync.status_code == 202, sync.text
+    completed = _drain(client, runtime, repo, sync.json()["operation_id"])
+    assert completed["status"] == "completed", completed
+
+    refs = repo.list_document_refs(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    assert refs
+    assert any(
+        ref.source_id == created["source_id"]
+        and ref.materialization_ownership is not None
+        for ref in refs
+    )
+    assert any(
+        call["folder_id"] == _FOLDER_ID
+        for call in graph_runtime_instances[0]._client.delta_calls
+    )
+
+    search = client.post(
+        f"/v1/local_workspace/workspaces/{_WORKSPACE}/search",
+        headers={"X-Tenant-Id": _TENANT},
+        json={"query": "body-a", "limit": 10},
+    )
+    assert search.status_code == 200, search.text
+    assert search.json()["results"]
+    assert all(
+        hit["source_id"] == created["source_id"] for hit in search.json()["results"]
+    )
+
+    llm._fixed_text = '{"status":"completed","answer":"mail","used_evidence_ids":["E1"]}'
+    ask = client.post(
+        f"/v1/local_workspace/workspaces/{_WORKSPACE}/ask",
+        headers={"X-Tenant-Id": _TENANT, "Idempotency-Key": "mail-lkw-ask"},
+        json={"question": "What is in the mail?"},
+    )
+    assert ask.status_code == 200, ask.text
+    assert ask.json()["citations"]
+    assert ask.json()["citations"][0]["source_id"] == created["source_id"]
+
+    live = asyncio.run(
+        _run_mail_live(
+            wiring=wiring,
+            binding_id=created["knowledge_source_binding_ref"],
+        )
+    )
+    assert live.normalized_outcome in {
+        LiveExecutionOutcomeV1.COMPLETED,
+        LiveExecutionOutcomeV1.TRUNCATED,
+    }
+    assert live.source_kind == MSGRAPH_MAIL_SOURCE_KIND
+
+    inventory = client.app.state.lkw_knowledge_inspection_service.list_items(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+    )
+    assert any(item.display_label == "Inbox" for item in inventory.items)

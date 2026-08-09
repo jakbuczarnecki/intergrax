@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 class RemoteResourceTypeV1(StrEnum):
     SLACK_CONVERSATION = "slack_conversation"
     MSGRAPH_TEAMS_CHAT = "teams_chat"
+    MSGRAPH_MAIL_FOLDER = "mail_folder"
 
 
 class SlackConversationKindV1(StrEnum):

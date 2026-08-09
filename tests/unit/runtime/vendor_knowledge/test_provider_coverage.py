@@ -223,8 +223,18 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
         (
             MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
             IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+        ): "indexed-source:ms365_graph:teams_channel",
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
             MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
         ): "indexed-source:ms365_graph:teams_chat",
+        (
+            MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            MSGRAPH_CALENDAR_SOURCE_KIND,
+        ): "indexed-source:ms365_graph:calendar",
     }
 
 

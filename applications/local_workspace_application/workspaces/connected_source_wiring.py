@@ -12,6 +12,7 @@ from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
 )
 from local_workspace_application.workspaces.connected_source_discovery_msgraph import (
+    MsGraphMailFolderDiscoveryStrategy,
     MsGraphTeamsChatDiscoveryStrategy,
 )
 from local_workspace_application.workspaces.connected_source_discovery_slack import (
@@ -137,6 +138,11 @@ def build_default_remote_resource_discovery_registry(
                 opaque_ref_codec=opaque_ref_codec,
             ),
             MsGraphTeamsChatDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                mailbox_user_id=msgraph_mailbox_user_id,
+            ),
+            MsGraphMailFolderDiscoveryStrategy(
                 connection_registry=connection_registry,
                 opaque_ref_codec=opaque_ref_codec,
                 mailbox_user_id=msgraph_mailbox_user_id,

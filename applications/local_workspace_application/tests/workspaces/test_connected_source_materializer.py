@@ -10,7 +10,9 @@ from types import SimpleNamespace
 import pytest
 from local_workspace_application.workspaces.connected_source_materializer import (
     ConnectedSourceContentMaterializerRegistry,
+    MsGraphCalendarStructuredRecordMaterializer,
     MsGraphMailStructuredRecordMaterializer,
+    MsGraphTeamsChannelStructuredRecordMaterializer,
     MsGraphTeamsChatStructuredRecordMaterializer,
     SlackConversationStructuredRecordMaterializer,
     default_connected_source_materializer_registry,
@@ -33,6 +35,12 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
 )
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.calendar_inventory import (
+    MSGRAPH_CALENDAR_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_channel_inventory import (
+    MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read.teams_chat_inventory import (
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
 )
@@ -54,6 +62,9 @@ from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeItemRevision,
     KnowledgeSourceRef,
     KnowledgeSourceScope,
+)
+from intergrax.runtime.vendor_knowledge.indexed_materialization import (
+    VendorKnowledgeMaterializationError,
 )
 from intergrax.runtime.vendor_knowledge.plugin import (
     VendorKnowledgeSourcePluginRegistry,
@@ -153,6 +164,89 @@ def _graph_mail_content(*, body_text: str = "Mail body") -> KnowledgeContent:
     )
 
 
+def _graph_teams_channel_content(
+    *,
+    body: str = "Channel root post",
+    message_kind: str = "root",
+) -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema": "msgraph.teams-channel.message.knowledge.v1",
+            "message_kind": message_kind,
+            "state": "active",
+            "subject": "Channel update",
+            "body": {"kind": "text", "content": body},
+            "sender": {"display_name": "Alex", "address": "alex@example.test"},
+            "created_at": "2026-01-02T12:00:00+00:00",
+            "last_modified_at": "2026-01-02T12:05:00+00:00",
+            "last_edited_at": None,
+            "message_type": "message",
+            "importance": "normal",
+            "locale": "en-US",
+            "event_detail_type": None,
+            "mentions": [],
+            "reactions": [],
+            "attachments": {
+                "inventory_included": True,
+                "binary_content_included": False,
+                "hosted_content_included": False,
+                "reference_urls_included": False,
+                "items": [],
+            },
+        },
+    )
+
+
+def _graph_calendar_content(*, body: str = "Calendar event body") -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema": "msgraph.calendar.event.knowledge.v1",
+            "event_type": "single_instance",
+            "subject": "Planning meeting",
+            "body": {"kind": "text", "content": body, "preview": body},
+            "start_at": "2026-01-02T12:00:00+00:00",
+            "end_at": "2026-01-02T13:00:00+00:00",
+            "original_start_at": None,
+            "original_start_time_zone": None,
+            "original_end_time_zone": None,
+            "created_at": "2026-01-01T12:00:00+00:00",
+            "last_modified_at": "2026-01-02T11:00:00+00:00",
+            "organizer": {"display_name": "Alex", "address": "alex@example.test"},
+            "attendees": [],
+            "location": {"display_name": "Room 1"},
+            "locations": [],
+            "recurrence": None,
+            "series_master_id": None,
+            "cancelled_occurrence_ids": [],
+            "categories": [],
+            "i_cal_uid": "event-1@example.test",
+            "importance": "normal",
+            "sensitivity": "normal",
+            "show_as": "busy",
+            "response_status": {"response": "organizer", "responded_at": None},
+            "is_all_day": False,
+            "is_cancelled": False,
+            "is_draft": False,
+            "is_organizer": True,
+            "is_online_meeting": False,
+            "online_meeting_provider": "unknown",
+            "has_attachments": False,
+            "hide_attendees": False,
+            "allow_new_time_proposals": True,
+            "response_requested": True,
+            "is_reminder_on": True,
+            "reminder_minutes_before_start": 15,
+            "attachments": {
+                "attachment_inventory_included": False,
+                "attachment_binary_content_included": False,
+                "items": [],
+            },
+        },
+    )
+
+
 def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
     registry = default_connected_source_materializer_registry()
     materializer = registry.resolve(
@@ -184,6 +278,26 @@ def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
         schema_name="msgraph.mail.message.knowledge.v1",
     )
     assert isinstance(mail, MsGraphMailStructuredRecordMaterializer)
+
+    channel = registry.resolve(
+        _source(
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+        ),
+        schema_name="msgraph.teams-channel.message.knowledge.v1",
+    )
+    assert isinstance(channel, MsGraphTeamsChannelStructuredRecordMaterializer)
+
+    calendar = registry.resolve(
+        _source(
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
+        ),
+        schema_name="msgraph.calendar.event.knowledge.v1",
+    )
+    assert isinstance(calendar, MsGraphCalendarStructuredRecordMaterializer)
 
 
 def test_missing_indexed_runtime_registration_fails_closed() -> None:
@@ -318,6 +432,80 @@ def test_graph_mail_materializer_preserves_mail_scope_and_exclusions() -> None:
     assert document.provenance.provider_id == MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID
     assert document.provenance.source_kind == MSGRAPH_MAIL_SOURCE_KIND
     assert document.provenance.source_id == "graph-mail-remote-1"
+
+
+def test_graph_teams_channel_materializer_keeps_root_projection_bounded() -> None:
+    source = _source(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+    )
+    materializer = MsGraphTeamsChannelStructuredRecordMaterializer()
+    document = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="channel-root-1",
+        content=_graph_teams_channel_content(),
+        revision=KnowledgeItemRevision(version="channel-1"),
+        permissions=None,
+    ).knowledge_document
+
+    assert "Channel root post" in document.content
+    assert "deletedDateTime" in document.content
+    assert "hosted content" in document.content
+    assert document.provenance.source_id == "channel-root-1"
+
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            source=source,
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            binding_id="binding-1",
+            source_id="source-1",
+            remote_id="channel-reply-1",
+            content=_graph_teams_channel_content(message_kind="reply"),
+            revision=KnowledgeItemRevision(version="reply-1"),
+            permissions=None,
+        )
+
+
+def test_graph_calendar_materializer_preserves_identity_across_revision() -> None:
+    source = _source(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
+    )
+    materializer = MsGraphCalendarStructuredRecordMaterializer()
+    first = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="calendar-event-1",
+        content=_graph_calendar_content(),
+        revision=KnowledgeItemRevision(version="calendar-1"),
+        permissions=None,
+    )
+    newer = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="calendar-event-1",
+        content=_graph_calendar_content(body="Updated event body"),
+        revision=KnowledgeItemRevision(version="calendar-2"),
+        permissions=None,
+    )
+
+    assert first.document_id == newer.document_id
+    assert first.content_hash != newer.content_hash
+    assert "Planning meeting" in newer.markdown
+    assert "binary content is not included" in newer.markdown
 
 
 @pytest.mark.asyncio

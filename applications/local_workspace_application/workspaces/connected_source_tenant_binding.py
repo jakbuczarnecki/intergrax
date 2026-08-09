@@ -28,6 +28,7 @@ from local_workspace_application.workspaces.connected_source_opaque_ref_codec im
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MSGRAPH_MAIL_SOURCE_KIND,
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
     MsGraphTeamsChatMessageWindow,
 )
@@ -45,6 +46,10 @@ from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
 from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_chat import (
     MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
     encode_msgraph_teams_chat_scope_id,
+)
+from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
+    MSGRAPH_MAIL_SCOPE_TYPE,
+    encode_msgraph_mail_folder_scope_id,
 )
 from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
@@ -129,6 +134,12 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
         except ConnectedSourceDiscoveryError:
             return None
 
+    def _mail_payload(self, opaque_candidate_ref: str):
+        try:
+            return self._codec.decode_msgraph_mail_folder_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
     def build_binding(
         self,
         *,
@@ -141,59 +152,102 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
         safe_display_name: str | None = None,
     ) -> KnowledgeSourceBinding:
         graph = self._graph_payload(opaque_candidate_ref)
-        if graph is None:
-            return self._slack.build_binding(
+        if graph is not None:
+            _validate_candidate_scope_values(
+                graph.tenant_id,
+                graph.workspace_id,
+                graph.connection_ref,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
-                opaque_candidate_ref=opaque_candidate_ref,
-                root_oldest=root_oldest,
-                root_latest=root_latest,
-                safe_display_name=safe_display_name,
             )
-        _validate_candidate_scope_values(
-            graph.tenant_id,
-            graph.workspace_id,
-            graph.connection_ref,
+            try:
+                window = MsGraphTeamsChatMessageWindow(
+                    start_at=_parse_datetime(root_oldest),
+                    end_at=_parse_datetime(root_latest),
+                )
+                scope_id = encode_msgraph_teams_chat_scope_id(
+                    mailbox_user_id=graph.mailbox_user_id,
+                    chat_remote_id=graph.chat_remote_id,
+                    window=window,
+                )
+            except (ValueError, TypeError):
+                raise ConnectedSourceBindingError("candidate_inaccessible") from None
+            return KnowledgeSourceBinding(
+                binding_id=tenant_binding_id(
+                    tenant_id=tenant_id,
+                    connection_ref=connection_ref,
+                    provider_id="ms365_graph",
+                    integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
+                    source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                    encoded_scope=scope_id,
+                ),
+                tenant_id=tenant_id,
+                provider_id="ms365_graph",
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+                connection_ref=connection_ref,
+                safe_display_name=safe_display_name or graph.safe_display_label,
+                scope=KnowledgeSourceScope(
+                    remote_scope_id=scope_id,
+                    remote_scope_type=MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
+                    safe_display_name=safe_display_name or graph.safe_display_label,
+                    parameters={},
+                ),
+                status=KnowledgeSourceBindingStatus.ACTIVE,
+                configuration_version=1,
+            )
+
+        mail = self._mail_payload(opaque_candidate_ref)
+        if mail is not None:
+            _validate_candidate_scope_values(
+                mail.tenant_id,
+                mail.workspace_id,
+                mail.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            try:
+                scope_id = encode_msgraph_mail_folder_scope_id(
+                    mailbox_user_id=mail.mailbox_user_id,
+                    folder_id=mail.folder_id,
+                )
+            except (ValueError, TypeError):
+                raise ConnectedSourceBindingError("candidate_inaccessible") from None
+            return KnowledgeSourceBinding(
+                binding_id=tenant_binding_id(
+                    tenant_id=tenant_id,
+                    connection_ref=connection_ref,
+                    provider_id="ms365_graph",
+                    integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
+                    source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+                    encoded_scope=scope_id,
+                ),
+                tenant_id=tenant_id,
+                provider_id="ms365_graph",
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=MSGRAPH_MAIL_SOURCE_KIND,
+                connection_ref=connection_ref,
+                safe_display_name=safe_display_name or mail.safe_display_label,
+                scope=KnowledgeSourceScope(
+                    remote_scope_id=scope_id,
+                    remote_scope_type=MSGRAPH_MAIL_SCOPE_TYPE,
+                    safe_display_name=safe_display_name or mail.safe_display_label,
+                    parameters={},
+                ),
+                status=KnowledgeSourceBindingStatus.ACTIVE,
+                configuration_version=1,
+            )
+
+        return self._slack.build_binding(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
-        )
-        try:
-            window = MsGraphTeamsChatMessageWindow(
-                start_at=_parse_datetime(root_oldest),
-                end_at=_parse_datetime(root_latest),
-            )
-            scope_id = encode_msgraph_teams_chat_scope_id(
-                mailbox_user_id=graph.mailbox_user_id,
-                chat_remote_id=graph.chat_remote_id,
-                window=window,
-            )
-        except (ValueError, TypeError):
-            raise ConnectedSourceBindingError("candidate_inaccessible") from None
-        return KnowledgeSourceBinding(
-            binding_id=tenant_binding_id(
-                tenant_id=tenant_id,
-                connection_ref=connection_ref,
-                provider_id="ms365_graph",
-                integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
-                source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
-                encoded_scope=scope_id,
-            ),
-            tenant_id=tenant_id,
-            provider_id="ms365_graph",
-            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
-            source_kind=MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
-            connection_ref=connection_ref,
-            safe_display_name=safe_display_name or graph.safe_display_label,
-            scope=KnowledgeSourceScope(
-                remote_scope_id=scope_id,
-                remote_scope_type=MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
-                safe_display_name=safe_display_name or graph.safe_display_label,
-                parameters={},
-            ),
-            status=KnowledgeSourceBindingStatus.ACTIVE,
-            configuration_version=1,
+            opaque_candidate_ref=opaque_candidate_ref,
+            root_oldest=root_oldest,
+            root_latest=root_latest,
+            safe_display_name=safe_display_name,
         )
 
     async def revalidate_candidate_label(
@@ -205,26 +259,45 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
         opaque_candidate_ref: str,
     ) -> str:
         graph = self._graph_payload(opaque_candidate_ref)
-        if graph is None:
-            return await self._slack.revalidate_candidate_label(
+        if graph is not None:
+            _validate_candidate_scope_values(
+                graph.tenant_id,
+                graph.workspace_id,
+                graph.connection_ref,
                 tenant_id=tenant_id,
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
                 opaque_candidate_ref=opaque_candidate_ref,
             )
-        _validate_candidate_scope_values(
-            graph.tenant_id,
-            graph.workspace_id,
-            graph.connection_ref,
+
+        mail = self._mail_payload(opaque_candidate_ref)
+        if mail is not None:
+            _validate_candidate_scope_values(
+                mail.tenant_id,
+                mail.workspace_id,
+                mail.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.MSGRAPH_MAIL_FOLDER,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        return await self._slack.revalidate_candidate_label(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
             connection_ref=connection_ref,
-        )
-        return await self._discovery.revalidate_candidate_label(
-            tenant_id=tenant_id,
-            workspace_id=workspace_id,
-            connection_ref=connection_ref,
-            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHAT,
             opaque_candidate_ref=opaque_candidate_ref,
         )
 

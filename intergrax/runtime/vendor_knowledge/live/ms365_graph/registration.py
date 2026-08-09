@@ -254,6 +254,7 @@ def build_msgraph_teams_channel_vendor_knowledge_source_plugin() -> VendorKnowle
         source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
         live_runtime_ref="live-registration:ms365_graph:teams_channel",
         durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:teams_channel",
+        indexed_runtime_ref="indexed-source:ms365_graph:teams_channel",
     )
 
 
@@ -271,4 +272,5 @@ def build_msgraph_calendar_vendor_knowledge_source_plugin() -> VendorKnowledgeSo
         source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
         live_runtime_ref="live-registration:ms365_graph:calendar",
         durable_runtime_ref="knowledge-adapter:ms365_graph:collaboration_suite:calendar",
+        indexed_runtime_ref="indexed-source:ms365_graph:calendar",
     )
