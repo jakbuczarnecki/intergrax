@@ -458,6 +458,11 @@ def validate_evidence_plan(
                 plan.budget_snapshot.max_result_bytes,
                 effective_policy.max_result_bytes,
             ),
+            max_provider_pages=HARD_MAX_PROVIDER_PAGES,
+            max_provider_requests=HARD_MAX_PROVIDER_REQUESTS,
+            max_upstream_items=HARD_MAX_UPSTREAM_ITEMS,
+            max_provider_page_size=HARD_MAX_PROVIDER_PAGE_SIZE,
+            max_content_bytes_per_item=HARD_MAX_CONTENT_BYTES_PER_ITEM,
         )
 
     for proposal in plan.ordered_live_call_proposals:
@@ -563,6 +568,11 @@ def validate_evidence_plan(
                 plan.budget_snapshot.max_result_bytes,
                 effective_policy.max_result_bytes,
             ),
+            max_provider_pages=HARD_MAX_PROVIDER_PAGES,
+            max_provider_requests=HARD_MAX_PROVIDER_REQUESTS,
+            max_upstream_items=HARD_MAX_UPSTREAM_ITEMS,
+            max_provider_page_size=HARD_MAX_PROVIDER_PAGE_SIZE,
+            max_content_bytes_per_item=HARD_MAX_CONTENT_BYTES_PER_ITEM,
         )
 
     return ValidatedEvidencePlanV1(

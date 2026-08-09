@@ -27,6 +27,9 @@ from local_workspace_application.workspaces.knowledge_live_access_service import
     WorkspaceLiveAccessBindingError,
     WorkspaceLiveAccessBindingService,
 )
+from local_workspace_application.workspaces.knowledge_configuration_models import (
+    WorkspaceLiveAccessBinding,
+)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 
@@ -79,7 +82,7 @@ def _resolve_historical_live_binding(
     workspace_id: str,
     live_access_binding_id: str,
     configuration_revision: int,
-) -> object:
+) -> WorkspaceLiveAccessBinding:
     binding = None
     for version in repository.list_knowledge_live_access_versions(
         tenant_id=tenant_id,
@@ -101,7 +104,7 @@ def _resolve_historical_live_binding(
 def _live_access_response(
     *,
     workspace_id: str,
-    binding: object,
+    binding: WorkspaceLiveAccessBinding,
     configuration_revision: int,
 ) -> WorkspaceLiveAccessBindingResponseV1:
     return WorkspaceLiveAccessBindingResponseV1(

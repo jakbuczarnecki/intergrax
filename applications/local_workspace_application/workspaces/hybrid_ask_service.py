@@ -59,6 +59,13 @@ from local_workspace_application.workspaces.service import ManagedWorkspaceServi
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.vendor_knowledge.live.contracts import (
+    HARD_MAX_CONTENT_BYTES_PER_ITEM,
+    HARD_MAX_PROVIDER_PAGE_SIZE,
+    HARD_MAX_PROVIDER_PAGES,
+    HARD_MAX_PROVIDER_REQUESTS,
+    HARD_MAX_UPSTREAM_ITEMS,
+)
 from intergrax.runtime.vendor_knowledge.live.schemas import SchemaRegistryV1
 from intergrax.runtime.vendor_knowledge.tenant_connection_capabilities import (
     LiveCapabilityDescriptorV1,
@@ -80,6 +87,20 @@ class WorkspaceAskV2LookupError(WorkspaceAskV2Error):
 
 class WorkspaceAskV2PersistenceError(RuntimeError):
     """A V2 run could not be durably persisted."""
+
+
+WorkspaceEvidence = IndexedWorkspaceEvidenceV1 | LiveWorkspaceEvidenceV1
+
+
+def _validate_provider_evidence(value: object) -> tuple[WorkspaceEvidence, ...]:
+    if not isinstance(value, tuple):
+        raise WorkspaceAskV2Error("citation_validation_failed")
+    validated: list[WorkspaceEvidence] = []
+    for item in value:
+        if not isinstance(item, (IndexedWorkspaceEvidenceV1, LiveWorkspaceEvidenceV1)):
+            raise WorkspaceAskV2Error("citation_validation_failed")
+        validated.append(item)
+    return tuple(validated)
 
 
 class WorkspaceAskProviderStrategy(Protocol):
@@ -324,7 +345,7 @@ class WorkspaceAskServiceV2:
         if provider_expansion is not None:
             include_evidence = getattr(provider_expansion, "include_evidence", None)
             if callable(include_evidence):
-                evidence = include_evidence(evidence)
+                evidence = _validate_provider_evidence(include_evidence(evidence))
         try:
             assembler = HybridAskAnswerAssemblerV2(self.llm_adapter)
             assembly = assembler.assemble(question=command.question, evidence=evidence)
@@ -425,6 +446,11 @@ class WorkspaceAskServiceV2:
                 max_total_duration_ms=effective_policy.max_total_duration_ms,
                 max_result_items=effective_policy.max_result_items,
                 max_result_bytes=effective_policy.max_result_bytes,
+                max_provider_pages=HARD_MAX_PROVIDER_PAGES,
+                max_provider_requests=HARD_MAX_PROVIDER_REQUESTS,
+                max_upstream_items=HARD_MAX_UPSTREAM_ITEMS,
+                max_provider_page_size=HARD_MAX_PROVIDER_PAGE_SIZE,
+                max_content_bytes_per_item=HARD_MAX_CONTENT_BYTES_PER_ITEM,
             ),
             audience_context=command.audience_context,
         )
@@ -608,7 +634,7 @@ class WorkspaceAskServiceV2:
         self,
         used_ids: list[str],
         *,
-        evidence: tuple[Any, ...],
+        evidence: tuple[WorkspaceEvidence, ...],
         configuration: WorkspaceKnowledgeConfigurationV1,
         receipts: tuple[Any, ...],
     ) -> list[Any]:

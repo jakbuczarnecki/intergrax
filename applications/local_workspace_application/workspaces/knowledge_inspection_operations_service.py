@@ -552,8 +552,11 @@ class KnowledgeOperationsService:
         if command.operation is KnowledgeOperationV1.SYNC:
             return self._indexed_lifecycle.request_sync(IndexedSourceSyncCommand(**common))
         if command.operation is KnowledgeOperationV1.RETRY_SYNC:
+            operation_id = command.operation_id
+            if operation_id is None:
+                raise KnowledgeOperationError("knowledge_operation_retry_target_required")
             return self._indexed_lifecycle.retry_sync(
-                IndexedSourceRetryCommand(**common, operation_id=command.operation_id)
+                IndexedSourceRetryCommand(**common, operation_id=operation_id)
             )
         lifecycle_command = IndexedSourceLifecycleCommand(**common)
         if command.operation is KnowledgeOperationV1.DISABLE:
@@ -577,6 +580,8 @@ class KnowledgeOperationsService:
             KnowledgeOperationV1.DETACH,
         }:
             raise KnowledgeOperationError("knowledge_operation_not_supported")
+        if self._live_lifecycle is None:
+            raise KnowledgeOperationError("live_access_unavailable")
         common = {
             "tenant_id": command.tenant_id,
             "workspace_id": command.workspace_id,

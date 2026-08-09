@@ -301,6 +301,8 @@ def _resolve_historical_binding(
         ):
             raise _incomplete()
     elif mutation.outcome is WorkspaceKnowledgeMutationOutcomeV1.EXISTING_RESULT:
+        if mutation.committed_revision is None:
+            raise _incomplete()
         if mutation.target_revision is not None or binding.effective_revision > mutation.committed_revision:
             raise _incomplete()
     else:
@@ -503,6 +505,8 @@ class WorkspaceLiveAccessBindingService:
             if current.status is LiveAccessBindingStatusV1.REVOKED:
                 raise WorkspaceLiveAccessBindingError("live_access_detached")
             semantic_hash = current.semantic_identity_hash
+        if semantic_hash is None:
+            raise WorkspaceLiveAccessBindingError("configuration_recovery_required")
         result = self._mutation_engine.execute(
             tenant_id=tenant_id, workspace_id=workspace_id,
             operation=WorkspaceKnowledgeMutationOperationV1.DISABLE_LIVE_ACCESS_BINDING,

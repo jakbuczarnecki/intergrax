@@ -131,6 +131,7 @@ class KnowledgeAdministrationIntentInterpreterPort(Protocol):
         context: KnowledgeAdministrationContextV1,
     ) -> KnowledgeAdministrationIntentV1:
         """Interpret an utterance without selecting or mutating a target."""
+        ...
 
 
 class KnowledgeAdministrationIdempotencyKeyFactoryPort(Protocol):
@@ -144,14 +145,17 @@ class KnowledgeAdministrationIdempotencyKeyFactoryPort(Protocol):
         request_id: str,
     ) -> str:
         """Return the hash accepted by KnowledgeOperationsService."""
+        ...
 
 
 class KnowledgeAdministrationConfirmationPort(Protocol):
     def issue(self, confirmation: KnowledgeAdministrationConfirmationV1) -> str:
         """Issue a tamper-resistant confirmation token."""
+        ...
 
     def verify(self, token: str) -> KnowledgeAdministrationConfirmationV1:
         """Verify signature, shape and expiry."""
+        ...
 
 
 class KnowledgeAdministrationConfirmationError(RuntimeError):

@@ -296,6 +296,8 @@ def _resolve_historical_binding(
         ):
             raise _incomplete()
     elif mutation.outcome is WorkspaceKnowledgeMutationOutcomeV1.EXISTING_RESULT:
+        if mutation.committed_revision is None:
+            raise _incomplete()
         if mutation.target_revision is not None or binding.effective_revision > mutation.committed_revision:
             raise _incomplete()
     else:

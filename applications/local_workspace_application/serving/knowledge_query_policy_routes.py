@@ -28,6 +28,7 @@ from local_workspace_application.workspaces.knowledge_configuration_models impor
     QueryPolicyModeV1,
     WorkspaceKnowledgeConfigurationV1,
     WorkspaceQueryPolicy,
+    WorkspaceQueryPolicyV2,
 )
 from local_workspace_application.workspaces.knowledge_configuration_mutation_engine import (
     WorkspaceKnowledgeConfigurationMutationError,
@@ -136,7 +137,9 @@ def _query_policy_response(
     )
 
 
-def _query_policy_projection(policy: WorkspaceQueryPolicy) -> QueryPolicyProjectionV1:
+def _query_policy_projection(
+    policy: WorkspaceQueryPolicy | WorkspaceQueryPolicyV2,
+) -> QueryPolicyProjectionV1:
     return QueryPolicyProjectionV1(
         mode=policy.mode.value,
         allowed_connection_refs=policy.allowed_connection_refs,
