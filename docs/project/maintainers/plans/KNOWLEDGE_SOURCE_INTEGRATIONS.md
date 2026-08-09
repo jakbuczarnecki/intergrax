@@ -547,9 +547,14 @@ Microsoft Graph has five accepted bounded Live registrations. Drive declares
 only `DURABLE` and `LIVE`, with both Indexed and readiness at
 `FOUNDATION_ONLY`; Mail, Teams Channel, Teams Chat and Calendar each declare
 `DURABLE`, `INDEXED` and `LIVE`, with readiness `LKW_READY`.
-Google, Jira and Confluence remain Durable `FOUNDATION_ONLY` with Indexed
-foundation only and Live `UNSUPPORTED` until separately proven. Atlan and Power
-BI have no Vendor Knowledge implementation. Databricks has only a relational
+Google Workspace `docs`, `sheets` and `calendar` each declare `DURABLE` and
+`INDEXED`, with both modes `ACCEPTED` and readiness `LKW_READY`; Live is
+`UNSUPPORTED`. Google Workspace `drive` declares `DURABLE` only, with Durable
+`ACCEPTED`, Indexed and readiness `FOUNDATION_ONLY`, and Live `UNSUPPORTED`.
+Its blocker is `REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY`.
+Jira and Confluence remain Durable `FOUNDATION_ONLY` with Indexed foundation
+only and Live `UNSUPPORTED` until separately proven. Atlan and Power BI have
+no Vendor Knowledge implementation. Databricks has only a relational
 integration and no selected Vendor Knowledge source kind.
 
 The exact new-provider requirements are intentionally small:
@@ -569,6 +574,43 @@ cross-provider product E2E remains VK-8.
 **CLOSED** by the authoritative matrix. This closeout means the coverage is
 truthful and platform-aligned; it does not claim every provider supports every
 mode.
+
+#### Google Workspace family closeout — current authoritative status
+
+The current productionized Google Workspace family slice is
+**ACCEPTED / CLOSED** for bounded `drive`, `docs`, `sheets` and `calendar`
+source scopes. Its sole canonical Vendor Knowledge identity is
+`provider_id=google_workspace` with integration category
+`COLLABORATION_SUITE`; external aliases, if accepted at configuration
+boundaries, must be normalized before entering Vendor Knowledge.
+
+All four source kinds reuse one `TenantConnection` and `credential_ref`
+through `GoogleWorkspaceTenantConnectionIntegrationFactory`,
+`TenantConnectionRehydrator` and `KnowledgeConnectionRegistry`. Source kinds
+are bindings/configuration over the shared provider connection, not separate
+credential lifecycles. The generic LKW/application path contains zero Google
+credentials, direct Google execution, Google-specific Search/Ask branches or
+business-level provider switches; provider composition owns the factory,
+discovery/resource strategy, adapter and materializer registrations.
+
+```text
+source      adapter     DURABLE          INDEXED          LIVE          readiness
+calendar    ACCEPTED    ACCEPTED         ACCEPTED         UNSUPPORTED    LKW_READY
+docs        ACCEPTED    ACCEPTED         ACCEPTED         UNSUPPORTED    LKW_READY
+sheets      ACCEPTED    ACCEPTED         ACCEPTED         UNSUPPORTED    LKW_READY
+drive       ACCEPTED    ACCEPTED         FOUNDATION_ONLY UNSUPPORTED    FOUNDATION_ONLY
+```
+
+`LKW_READY` is evaluated against declared/required modes. It does not imply
+Live support, complete ACL coverage or commercial GA/SLA. Google item/user ACL
+completeness remains `UNPROVEN`. Docs and Sheets remain known-resource,
+bounded structured projections without broad discovery or authoritative
+deletion from ordinary snapshot absence. Calendar remains a bounded event
+projection with source-owned incremental token, cancellation/tombstone and
+reconciliation semantics. Drive remains a reconciliation foundation with
+`BINARY` blob/native-export content; folders and shortcuts do not provide
+canonical textual content, ordinary inventory absence is not deletion, and no
+metadata-only Indexed claim is made.
 
 #### VK-7 — Frontend neutrality proof
 

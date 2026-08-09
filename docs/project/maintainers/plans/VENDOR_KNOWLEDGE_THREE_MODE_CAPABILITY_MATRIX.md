@@ -27,8 +27,8 @@ indexed ingestion or live access. Current repository evidence proves:
   `VENDOR-KNOWLEDGE-LIVE-CAPABILITY-FOUNDATION-1`;
 - accepted provider-neutral Indexed bridge proofs for Slack
   `slack_conversation`, Microsoft Graph `teams_chat`, `mail`, `teams_channel`
-  and `calendar` provider-owned materialization bridges, with application
-  Search/Ask closeout for the Graph family;
+  and `calendar`, plus bounded Google Workspace `docs`, `sheets` and
+  `calendar` provider-owned materializers with application Search/Ask closeout;
 - provider/source-kind live handlers and registrations are implemented for the
   five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
   Teams Chat and Calendar, plus the three Slack conversation live capabilities;
@@ -138,9 +138,11 @@ Google Workspace TenantConnection, provider-owned exact-resource
 resolution/binding, sync, application materialization and the generic
 KnowledgeDocument/index/Search/Ask path. Live remains intentionally
 `UNSUPPORTED`; this readiness label does not imply Live or complete ACL
-coverage. Google Workspace `drive` remains
-`FOUNDATION_ONLY` for Indexed because its accepted content contract is binary
-for blobs and Google-native exports; no generic binary extraction is claimed.
+coverage. Google Workspace `drive` has an accepted Durable reconciliation
+foundation but remains `FOUNDATION_ONLY` for Indexed and readiness because its
+accepted content contract is binary for blobs and Google-native exports; no
+generic binary extraction is claimed. Its exact blocker is
+`REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY`.
 
 ### Microsoft Graph family closeout
 
@@ -171,7 +173,7 @@ ACL coverage or exhaustive Microsoft Graph feature coverage.
 | Google Workspace | `drive` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter + generic durable path | FOCUSED_TESTS | explicit change/tombstone; inventory absence is not authoritative | provider, tenant, source binding; item ACL UNPROVEN | plain-text/PDF/Office/arbitrary blobs and Google-native Docs, Sheets, Slides, drawing and script exports are exposed as `BINARY`; folders, shortcuts and unsupported native types have no content projection; exact blocker `REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY` | `test_google_workspace_drive_knowledge_adapter.py`, `test_google_workspace_drive_knowledge_sync.py` |
 | Google Workspace | `docs` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-document scope; structured tabs/segments are bounded; no broad discovery, organization-wide traversal, authoritative deletion, item ACL projection or Live handler | `test_google_workspace_docs_knowledge_adapter.py`, `test_google_workspace_docs_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Google Workspace | `sheets` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-spreadsheet scope; bounded structured/tabular values; formulas are not evaluated, XLSX extraction is not claimed, arbitrary ranges and item ACL projection are excluded | `test_google_workspace_sheets_knowledge_adapter.py`, `test_google_workspace_sheets_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
-| Google Workspace | `calendar` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | cancellation/tombstone and reconciliation semantics remain source-owned; snapshot absence is not authoritative | provider, tenant, source binding; item ACL UNPROVEN | bounded structured event projection; attachment bytes, external document bodies, complete recurrence expansion, conference transcripts, historical versions and organization-wide attendee ACLs excluded; Live intentionally unsupported; commercial GA/SLA not implied | `test_google_workspace_calendar_knowledge_adapter.py`, `test_google_workspace_calendar_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `test_provider_coverage.py` |
+| Google Workspace | `calendar` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | cancellation/tombstone and reconciliation semantics remain source-owned; snapshot absence is not authoritative | provider, tenant, source binding; item ACL UNPROVEN | bounded structured event projection; attachment bytes, external document bodies, complete recurrence expansion, conference transcripts, historical versions and organization-wide attendee ACLs excluded; Live intentionally unsupported; commercial GA/SLA not implied | `test_google_workspace_calendar_knowledge_adapter.py`, `test_google_workspace_calendar_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Jira | `issues` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | project reconciliation only; no incremental feed, index bridge or live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py` |
 | Confluence | `pages` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | space reconciliation only; no incremental feed, index bridge or live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py` |
 
@@ -221,8 +223,9 @@ query snapshots remain hypothetical and are not classified here.
 ## 6. Indexed-mode findings
 
 The repository has a real generic index/RAG path and a real LKW connected
-source path. The accepted provider-specific materializers cover Slack and
-Microsoft Graph Teams Chat:
+source path. The accepted provider-specific materializers cover Slack,
+Microsoft Graph `mail`, `teams_channel`, `teams_chat` and `calendar`, and
+Google Workspace `docs`, `sheets` and `calendar`:
 
 - `connected_source_wiring.py` registers all implemented Vendor Knowledge
   adapters and binds the sync/index services;
@@ -236,14 +239,15 @@ Microsoft Graph Teams Chat:
 - the Slack application task is `ACCEPTED / CLOSED` through its focused
   continuation, recovery, materialization and indexed Search/Ask proof.
 
-Google, Jira and Confluence source kinds have no exact provider-to-index bridge
-in the inspected application wiring. Generic LKW local-file indexing and
-generic RAG infrastructure are not transferred to those rows.
+Google Workspace `drive`, Jira and Confluence remain without an exact
+provider-to-index bridge. Generic LKW local-file indexing and generic RAG
+infrastructure are not transferred to those rows.
 
 Removal propagation is deliberately not inferred from adapter reconciliation.
-Slack has no removal tombstones in the accepted audit; Graph removal semantics
-remain source-specific; Google Docs/Sheets, Jira and Confluence lack the
-required provider/application removal path.
+Slack has no removal tombstones in the accepted audit; Graph, Google Calendar
+and Google Drive removal semantics remain source-specific; Google Docs/Sheets,
+Jira and Confluence do not claim authoritative deletion from ordinary snapshot
+absence.
 
 ## 7. Durable-materialization findings
 
@@ -251,13 +255,15 @@ The generic runtime provides a conditional DocumentStore sink, delivery
 identity, item state, checkpoints, source leases, reconciliation runs,
 queue/worker continuation and recovery states. Provider adapters and focused
 sync tests exist for the accepted Graph family, Slack, Google
-`drive`/`docs`/`sheets`, Jira and Confluence.
+`drive`/`docs`/`sheets`/`calendar`, Jira and Confluence.
 
-Representative application-owned materialization/index proof covers Slack and
-Microsoft Graph Teams Chat through the provider-neutral coordinator→sink path.
-For adapter rows without that representative proof, `FOUNDATION_ONLY` means
-adapter/reconciliation layers are present while application materialization is
-not proven; this is an intentional VK-6 boundary, not a platform regression.
+Application-owned materialization/index proof covers Slack, Microsoft Graph
+`teams_chat` and the bounded Google Workspace `docs`/`sheets`/`calendar`
+paths through the provider-neutral coordinator→sink and
+KnowledgeDocument→index paths. For adapter rows without that proof,
+`FOUNDATION_ONLY` means adapter/reconciliation layers are present while
+application materialization is not proven; this remains the boundary for
+Google Drive, Jira and Confluence.
 
 The DocumentStore runtime itself is not counted as provider-specific
 application materialization.
@@ -297,7 +303,8 @@ arbitrary token-accessible channel discovery, files/attachments or organization-
 Current commercial claims must remain source-kind specific:
 
 - **Indexed:** no broad Vendor Knowledge commercial claim.
-  Slack `slack_conversation` and Microsoft Graph `teams_chat` have accepted
+  Slack `slack_conversation`, Microsoft Graph `teams_chat` and the bounded
+  Google Workspace `docs`/`sheets`/`calendar` paths have accepted
   provider-neutral indexed bridge proofs; this does not establish full provider
   coverage.
 - **Durable materialization:** provider-neutral durable application
@@ -317,21 +324,25 @@ access.
 ## 10. Cross-provider gaps
 
 1. The provider-neutral indexed bridge is accepted for Slack
-   `slack_conversation` and Microsoft Graph `teams_chat`; broader application
-   wiring remains to expand (→ VK-6/VK-8).
+   `slack_conversation`, Microsoft Graph `teams_chat` and Google Workspace
+   `docs`/`sheets`/`calendar`; broader application wiring remains to expand
+   (→ VK-6/VK-8).
 2. Provider adapters and reconciliation are connected to a provider-neutral
    durable sink port; broader production application hosts beyond the DocumentStore
    durable sink and representative Slack/Teams Chat indexed paths remain to
    expand (→ VK-6/VK-8).
 3. VK-6 proves registration completeness for the accepted Graph and Slack Live
-   source kinds; Google, Jira and Confluence remain explicitly unsupported.
+   source kinds; Google, Jira and Confluence remain explicitly unsupported for
+   Live.
 4. Indexed removal, provenance-preserving refresh and application query proof
    are established for the representative Slack and Teams Chat bridge paths;
    broader product E2E proof remains deferred to VK-8.
 5. Google `drive`, `docs`, `sheets` and `calendar` have Vendor Knowledge
-   adapter implementations despite stale roadmap wording; they still lack
-   provider-neutral application-owned indexed wiring and all four remain
-   explicitly unsupported for Live.
+   adapter implementations. `docs`, `sheets` and `calendar` have accepted
+   provider-neutral application-owned Durable/Indexed wiring and remain
+   explicitly unsupported for Live; `drive` remains Durable
+   `FOUNDATION_ONLY` and Indexed `FOUNDATION_ONLY` behind the binary-content
+   extraction blocker.
 6. Microsoft Graph Mail low-level attachment reads must remain distinct from
    adapter-level attachment inventory and from any three-mode claim.
 7. Databricks source-kind selection is still a roadmap decision.
@@ -366,7 +377,7 @@ for any of them. The accepted Slack connected-source result remains
   evidence references.
 - [`KNOWLEDGE_SOURCE_INTEGRATIONS.md`](KNOWLEDGE_SOURCE_INTEGRATIONS.md)
   — roadmap status, Slack LKW correction state, generic durable/live plans
-  and Google contradiction.
+  and the Google Workspace family closeout.
 
 ### Generic platform and application surfaces
 
@@ -389,6 +400,23 @@ for any of them. The accepted Slack connected-source result remains
   — provider-neutral live binding validation and safe configuration lifecycle.
 - `applications/local_workspace_application/tests/workspaces/test_knowledge_access_indexed_live_reuse_proof.py`
   — provider-neutral indexed/live reuse and boundary proof.
+- `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_tenant_connection_factory.py`
+  and `tests/unit/runtime/vendor_knowledge/test_tenant_connections.py`
+  — shared Google Workspace connection factory and restart rehydration proof.
+- `tests/unit/runtime/vendor_knowledge/test_google_workspace_calendar_knowledge_adapter.py`
+  and `tests/unit/runtime/vendor_knowledge/test_google_workspace_calendar_knowledge_sync.py`
+  — accepted Calendar adapter/sync proof.
+- `tests/unit/runtime/vendor_knowledge/test_google_workspace_docs_knowledge_adapter.py`
+  and `tests/unit/runtime/vendor_knowledge/test_google_workspace_docs_knowledge_sync.py`
+  — accepted Docs adapter/sync proof.
+- `tests/unit/runtime/vendor_knowledge/test_google_workspace_sheets_knowledge_adapter.py`
+  and `tests/unit/runtime/vendor_knowledge/test_google_workspace_sheets_knowledge_sync.py`
+  — accepted Sheets adapter/sync proof.
+- `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`
+  and `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py`
+  — Google LKW Search/Ask and provider-coverage proof.
+- `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_drive_content.py`
+  — Drive binary-content contract evidence.
 - `tests/unit/integrations/providers/collaboration_suite/google_workspace/test_calendar.py`
   — current Google Calendar exact read/integration proof; not Vendor Knowledge
   adapter or mode proof.
