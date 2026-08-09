@@ -139,6 +139,7 @@ def _connected_logical_path(*, source_id: str, remote_id: str, source_kind: str)
         {"source_id": source_id.strip(), "remote_id": remote_id.strip()},
         sort_keys=True,
         separators=(",", ":"),
+        ensure_ascii=False,
     ).encode("utf-8")
     safe_kind = re.sub(r"[^a-z0-9_-]+", "-", source_kind.strip().lower()).strip("-")
     if not safe_kind:
@@ -169,5 +170,6 @@ def _connected_document_id(
         },
         sort_keys=True,
         separators=(",", ":"),
+        ensure_ascii=False,
     ).encode("utf-8")
     return f"lkwdoc:{hashlib.sha256(payload).hexdigest()[:32]}"
