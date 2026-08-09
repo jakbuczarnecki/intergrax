@@ -105,6 +105,17 @@ class InmemoryVectorStoreIntegration(VectorStoreIntegrationContract):
     def count(self, *, scope: VectorStoreScope) -> int:
         return self._require_inner().count(scope=scope)
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        return self._require_inner().list_source_record_ids(
+            source_id=source_id,
+            scope=scope,
+        )
+
 
     def _require_inner(self) -> VectorStore:
         if self._inner is None:

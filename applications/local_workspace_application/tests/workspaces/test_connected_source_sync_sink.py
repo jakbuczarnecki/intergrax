@@ -84,6 +84,7 @@ from intergrax.runtime.vendor_knowledge.sync_models import (
     KnowledgeSyncBatch,
     KnowledgeSyncEnvelope,
     KnowledgeSyncMode,
+    KnowledgeSyncSinkReceiptStatus,
 )
 from intergrax.runtime.vendor_knowledge.sync_publication_fence import (
     DocumentStoreKnowledgeSyncPublicationFenceRepository,
@@ -676,6 +677,41 @@ async def test_empty_batch_completes_receipt(sink_env) -> None:
     assert receipt.status is ConnectedSourceDeliveryStatus.COMPLETED
     assert receipt.completed_at is not None
     assert receipt.items_failed == 0
+
+
+@pytest.mark.asyncio
+async def test_in_progress_receipt_is_replayed_instead_of_reported_unavailable(sink_env) -> None:
+    repo, sink, indexing = sink_env
+    batch = _batch(envelopes=(_envelope(KnowledgeChangeKind.UPSERT),))
+    indexing.index_connected_source_one.side_effect = RuntimeError("temporary failure")
+    with pytest.raises(ConnectedSourceSyncSinkError):
+        await sink.apply_batch(batch=batch)
+
+    inspected = sink.inspect_receipt(
+        tenant_id=_TENANT,
+        binding_id=_BINDING,
+        delivery_id=batch.delivery_id,
+        prepared_batch_payload_fingerprint="b" * 64,
+    )
+    assert inspected.status is KnowledgeSyncSinkReceiptStatus.ABSENT
+
+    indexing.index_connected_source_one.side_effect = None
+    indexing.index_connected_source_one.return_value = WorkspaceDocumentIndexingResult(
+        indexed=True,
+        unchanged=False,
+        document_id="doc-recovered",
+        documents_indexed=1,
+    )
+    result = await sink.apply_batch(batch=batch)
+    assert result.replayed is False
+    receipt = repo.get_connected_source_delivery_receipt(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        source_id=_SOURCE,
+        delivery_id=batch.delivery_id,
+    )
+    assert receipt is not None
+    assert receipt.status is ConnectedSourceDeliveryStatus.COMPLETED
 
 
 @pytest.mark.asyncio

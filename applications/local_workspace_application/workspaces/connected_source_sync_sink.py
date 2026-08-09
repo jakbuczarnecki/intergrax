@@ -196,6 +196,8 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             )
             if existing is None:
                 return KnowledgeSyncSinkReceipt(status=KnowledgeSyncSinkReceiptStatus.ABSENT)
+            if existing.status is ConnectedSourceDeliveryStatus.IN_PROGRESS:
+                return KnowledgeSyncSinkReceipt(status=KnowledgeSyncSinkReceiptStatus.ABSENT)
             return KnowledgeSyncSinkReceipt(
                 status=KnowledgeSyncSinkReceiptStatus.UNKNOWN,
                 delivery_id=delivery_id,
