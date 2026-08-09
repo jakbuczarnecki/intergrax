@@ -7,6 +7,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
+    MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.collaboration_suite.ms365_graph.tenant_connection_factory import (
+    Ms365GraphRuntimeBuilder,
+    Ms365GraphTenantConnectionIntegrationFactory,
+)
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
     SlackConversationChannelIntegration,
@@ -32,9 +39,17 @@ class VendorKnowledgeLegacyLocalBootstrap:
 def build_default_vendor_knowledge_connection_factory_registry(
     *,
     slack_runtime_builder: SlackRuntimeBuilder | None = None,
+    msgraph_runtime_builder: Ms365GraphRuntimeBuilder | None = None,
 ) -> TenantConnectionIntegrationFactoryRegistry:
     """Compose provider-owned connection factories behind a generic registry."""
     registry = TenantConnectionIntegrationFactoryRegistry()
+    registry.register(
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        factory=Ms365GraphTenantConnectionIntegrationFactory(
+            runtime_builder=msgraph_runtime_builder,
+        ),
+    )
     registry.register(
         provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,

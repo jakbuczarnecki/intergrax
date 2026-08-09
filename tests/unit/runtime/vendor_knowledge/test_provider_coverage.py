@@ -68,6 +68,9 @@ from intergrax.runtime.vendor_knowledge.plugin import (
 from intergrax.runtime.vendor_knowledge.plugin_composition import (
     build_default_vendor_knowledge_source_plugin_registry,
 )
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_vendor_knowledge_connection_factory_registry,
+)
 
 
 def test_default_plugin_catalog_matches_all_implemented_source_adapters() -> None:
@@ -243,3 +246,29 @@ def test_graph_and_slack_live_plugins_are_registered_by_generic_bootstrap() -> N
             source_kind=SLACK_CONVERSATION_SOURCE_KIND,
         )
     )
+
+
+def test_default_connection_factory_registry_routes_msgraph_by_canonical_identity() -> None:
+    captured = {}
+
+    def runtime_builder(config):
+        captured["config"] = config
+        return config
+
+    registry = build_default_vendor_knowledge_connection_factory_registry(
+        msgraph_runtime_builder=runtime_builder,
+    )
+    integration = registry.create_integration(
+        tenant_id="tenant-1",
+        connection_ref="connection-1",
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        credential_ref="secret-1",
+        credential="client-secret",
+        secret_free_config={"client_id": "client-id"},
+    )
+
+    assert integration is captured["config"]
+    assert integration.tenant_id == "tenant-1"
+    assert integration.client_id == "client-id"
+    assert integration.client_secret == "client-secret"
