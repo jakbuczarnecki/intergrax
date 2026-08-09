@@ -1,8 +1,8 @@
-# LCI-7C â€” LangChain compatibility installation gate
+# LCI-7C — LangChain compatibility installation gate
 
 ## Verdict
 
-**READY_FOR_REVIEW**
+**LCI-7C — REQUALIFIED / READY_FOR_REVIEW**
 
 Validated checkout SHA: `a61f091e3e2717990a0ee2a24961d5f9d8ed023e`
 Platform: Windows 10 (`win32`)
@@ -32,7 +32,7 @@ No production or RAG files were changed, and LCI-7D was not started.
 - `langchain-core`: `1.2.7`
 - first failing import: none; `torch`, `transformers`,
   `sentence_transformers`, and `langchain_text_splitters` all imported
-- classification: **E â€” different actual root cause / prior failure
+- classification: **E — different actual root cause / prior failure
   non-reproducible**
 
 The prior defect report named `NameError: name 'torch' is not defined`, but did
@@ -114,12 +114,43 @@ drift. No RAG implementation or RAG test path was modified.
 
 LCI-7A: **APPROVED**
 LCI-7B: **APPROVED**
-LCI-7C: **READY_FOR_REVIEW**
+LCI-7C: **LCI-7C — REQUALIFIED / READY_FOR_REVIEW**
 LCI-7D: **NOT STARTED**
-## Stability re-opened â€” 2026-08-09
+## Stability re-opened — 2026-08-09
 
 The subsequent final system gate reproduced the loader and splitter failure in fresh isolated environments. The earlier classification as stale or non-reproducible is superseded. LCI-7C stability qualification is reopened under `LCI-7C-STABILITY-1-REPRODUCIBLE-TORCH-IMPORT-FAILURE-FORENSICS`.
 
 The exact upstream traceback is `transformers/integrations/tensor_parallel.py:465`, where `_AllReduceBackward(torch.autograd.Function)` is evaluated while `transformers 5.14.1` has disabled Torch availability for installed `torch 2.2.2+cpu`. The prior PASS used a different resolved tuple (`transformers 4.57.6`, `sentence-transformers 5.2.0`, `langchain-core 1.2.7`, and related compatibility versions). See `LANGCHAIN_COMPATIBILITY_STABILITY_FORENSICS.md` for the reproducibility matrix and package provenance.
 
 No packaging or runtime change was made. A dependency constraint decision is required before requalification; LCI-8A remains not started.
+
+## Chronological stability correction — LCI-7C-STABILITY-2
+
+The receipt above preserves the initial LCI-7C PASS and its then-current
+resolution. The subsequent stability investigation reopened qualification after
+the failure was reproduced deterministically:
+
+1. Initial qualification passed with a different resolved dependency tuple.
+2. Later fresh installations selected `transformers 5.14.1` with the pinned
+   `torch 2.2.2+cpu`; Transformers disabled Torch below 2.4 while
+   `tensor_parallel.py` still referenced `torch`, producing the `NameError`.
+3. The operator decision was to keep `torch==2.2.2` and add
+   `transformers>=4.41,<5`; `sentence-transformers>=3.0` and all compatibility
+   extra ownership remained unchanged.
+4. The lock resolved `transformers 4.57.6`, with the post-fix tuple:
+   `torch 2.2.2+cpu`, `sentence-transformers 5.7.0`, `tokenizers 0.22.2`,
+   `langchain-core 1.5.3`, `langchain-community 0.4.2` in loaders, and
+   `langchain-text-splitters 1.1.2`.
+5. Fresh-environment requalification passed 3/3 for loaders and 3/3 for
+   splitters. The direct upstream probe passed in one fresh environment per
+   family: all required imports succeeded, `is_torch_available() == True`, and
+   `transformers.integrations.tensor_parallel` imported successfully.
+6. Fresh `llm-langchain-ollama`, `rag-langchain-embeddings`, and
+   `langgraph-legacy` qualification passed once each. Native Ollama remained
+   the registry default and native RAG splitting remained the default.
+7. The fresh 7B clean-core control passed with 0 installed `langchain*` and
+   0 installed `langgraph*` distributions. Targeted regression tests passed
+   (`62 passed`); inventory, boundary, and `uv lock --check` passed.
+
+**Current status:** `LCI-7C — REQUALIFIED / READY_FOR_REVIEW`.
+The Final System Gate has not been run, and `LCI-8A` has not started.

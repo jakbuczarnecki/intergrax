@@ -80,6 +80,8 @@ dependencies = [
   "qdrant-client>=1.9",
   "pinecone>=3.0",
   "sentence-transformers>=3.0",
+  # Transformers v5 requires newer Torch; keep v4 while core pins torch 2.2.2.
+  "transformers>=4.41,<5",
   # -----------------
   # Data / parsing
   # -----------------

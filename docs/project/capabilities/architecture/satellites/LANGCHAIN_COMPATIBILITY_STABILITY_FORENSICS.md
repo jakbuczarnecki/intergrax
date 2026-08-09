@@ -6,7 +6,7 @@
 **Python:** 3.12.11
 **uv:** 0.8.15
 **Validated HEAD:** `924478ee499b182bf12cd0ff2567a16194b802d6`
-**Status:** `DEPENDENCY_CONSTRAINT_DECISION_REQUIRED`
+**Status:** `ROOT_CAUSE_RESOLVED — READY_FOR_FINAL_GATE_RERUN`
 
 ## Preflight and scope
 
@@ -16,7 +16,7 @@ No production runtime, `pyproject.toml`, `uv.lock`, or RAG path was modified by 
 
 ## Reproduction matrix
 
-Every run used a unique task-owned temporary virtual environment, Python 3.12.11, a fresh Python process for each probe, and `PYTHONNOUSERSITE=1`. Runs 1â€“4 used the normal uv cache; run 5 used a task-owned isolated uv cache.
+Every run used a unique task-owned temporary virtual environment, Python 3.12.11, a fresh Python process for each probe, and `PYTHONNOUSERSITE=1`. Runs 1–4 used the normal uv cache; run 5 used a task-owned isolated uv cache.
 
 | Family | Run | Environment | Canonical case | Cache | Result |
 |---|---:|---|---|---|---|
@@ -55,7 +55,7 @@ sys.modules["torch"] = torch.__init__ from the fresh venv
 sys.modules["torch"].__version__ = "2.2.2+cpu"
 ```
 
-Loader import chain reaches the failure through `langchain_community.document_loaders` â†’ `langchain_core.document_loaders` â†’ `langchain_text_splitters` â†’ `sentence_transformers` â†’ `transformers`. Splitter import chain reaches it through Intergrax's default embedding bootstrap â†’ `hf_embedding_provider` â†’ `sentence_transformers` â†’ `transformers`.
+Loader import chain reaches the failure through `langchain_community.document_loaders` → `langchain_core.document_loaders` → `langchain_text_splitters` → `sentence_transformers` → `transformers`. Splitter import chain reaches it through Intergrax's default embedding bootstrap → `hf_embedding_provider` → `sentence_transformers` → `transformers`.
 
 The installed `transformers/utils/import_utils.py:150-156` reports `is_torch_available() == False` because it explicitly disables PyTorch below `2.4.0`, while `transformers/integrations/tensor_parallel.py:28-35` imports `torch` only inside `if is_torch_available():`. The class at line 465 is nevertheless unconditional. This is an upstream conditional-import defect exposed by the incompatible version tuple.
 
@@ -120,7 +120,7 @@ Loader case E, splitter case F, and direct splitter case D all PASS; `uv pip che
 DIFFERENT_RESOLUTION
 ```
 
-The earlier PASS was not the same resolved dependency set. The current unbounded `uv pip install` resolves a newer Transformers release whose own availability gate rejects the pinned Torch version, while its import surface still references the missing global. The cache comparison does not support `E â€” uv/cache resolution instability` as the root cause.
+The earlier PASS was not the same resolved dependency set. The current unbounded `uv pip install` resolves a newer Transformers release whose own availability gate rejects the pinned Torch version, while its import surface still references the missing global. The cache comparison does not support `E — uv/cache resolution instability` as the root cause.
 
 ## Invocation and lifecycle audit
 
@@ -136,7 +136,7 @@ The two accepted historical PASS environments and the current failing environmen
 
 ## Root cause and decision
 
-**Category: `A â€” dependency version incompatibility`.**
+**Category: `A — dependency version incompatibility`.**
 
 The project pins `torch==2.2.2` and allows `sentence-transformers>=3.0`; it does not constrain the transitive Transformers major line. Current resolution selects `transformers 5.14.1`, whose `is_torch_available()` policy requires Torch `>=2.4`, but whose tensor-parallel module still unconditionally evaluates `torch.autograd.Function`. This is why both compatibility families fail through their shared sentence-transformers import surface.
 
@@ -150,4 +150,48 @@ No production, RAG, gate, `pyproject.toml`, or lockfile fix was applied. A packa
 
 ## Conclusion
 
-The former classification `E â€” prior failure non-reproducible` is superseded. The failure is recurrent and deterministic for the current resolution: 5/5 fresh loader environments and 5/5 fresh splitter environments fail with the same upstream traceback. Final system gate rerun is not authorized until the dependency constraint decision and compatibility requalification are complete. `LCI-8A` was not started.
+The former classification `E — prior failure non-reproducible` is superseded. The failure is recurrent and deterministic for the current resolution: 5/5 fresh loader environments and 5/5 fresh splitter environments fail with the same upstream traceback. Final system gate rerun is not authorized until the dependency constraint decision and compatibility requalification are complete. `LCI-8A` was not started.
+
+## LCI-7C-STABILITY-2 requalification
+
+**Operator decision:** keep `torch==2.2.2`; add the direct compatibility constraint
+`transformers>=4.41,<5`. `sentence-transformers>=3.0` remains unchanged. Torch
+was not upgraded because the project support matrix intentionally retains the
+2.2.2 CPU runtime; the failure crossed the Transformers major-version
+compatibility boundary, so constraining that existing transitive runtime
+dependency is the minimal repair.
+
+The lock resolver selected this same tuple on Windows and Linux markers:
+
+| Package | Resolved version |
+|---|---|
+| `torch` | `2.2.2+cpu` |
+| `sentence-transformers` | `5.7.0` |
+| `transformers` | `4.57.6` |
+| `tokenizers` | `0.22.2` |
+| `langchain-core` | `1.5.3` |
+| `langchain-community` | `0.4.2` in loaders |
+| `langchain-text-splitters` | `1.1.2` |
+
+Three unique fresh Python 3.12 environments were installed and qualified for
+each target family, outside the checkout, with `PYTHONNOUSERSITE=1`:
+
+- `rag-langchain-loaders`: 3/3 PASS
+- `rag-langchain-splitters`: 3/3 PASS
+
+In the first fresh environment of each target family, the direct regression
+probe imported `torch`, `transformers`, `sentence_transformers`, and
+`langchain_text_splitters`; `transformers.utils.is_torch_available()` returned
+`True`; and `transformers.integrations.tensor_parallel` imported successfully.
+
+The remaining 7C families also passed once each in fresh environments:
+`llm-langchain-ollama`, `rag-langchain-embeddings`, and `langgraph-legacy`.
+Native Ollama remained the registry default and the native RAG splitter
+remained the default.
+
+The fresh 7B clean-core gate passed with zero installed LangChain and LangGraph
+distributions. Targeted regression tests passed (`62 passed`), and inventory,
+boundary, and `uv lock --check` audits passed.
+
+**Current status:** `ROOT_CAUSE_RESOLVED — READY_FOR_FINAL_GATE_RERUN`.
+The Final System Gate was not started and `LCI-8A` was not started.
