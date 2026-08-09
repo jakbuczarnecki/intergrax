@@ -82,13 +82,13 @@ class _RecordingGraphIndexer:
         self.chunk_ids = list(chunk_ids or [])
 
 
-def _native_document(source: Path) -> KnowledgeDocument:
+def _native_document(source: Path, document_id: str = "document-1") -> KnowledgeDocument:
     return KnowledgeDocument.model_validate(
         {
             "schema_version": 1,
             "identity": {
-                "document_id": "document-1",
-                "root_document_id": "document-1",
+                "document_id": document_id,
+                "root_document_id": document_id,
             },
             "scope": {"tenant_id": "tenant-a", "namespace": "docs"},
             "content": "native document content",
@@ -176,6 +176,13 @@ def test_ingest_passes_native_chunks_to_graph_in_all_index_modes(
     )
 
     assert result.used is True
+    persisted_records = pipeline._vectorstore.records  # type: ignore[attr-defined]
+    persisted_ids = [record.vector_id for record in persisted_records]
+    assert result.vector_ids == persisted_ids
+    assert all(
+        record.vector_id == record.document.identity.document_id
+        for record in persisted_records
+    )
     assert graph_indexer.documents is not None
     assert graph_indexer.chunk_ids == result.vector_ids
     assert all(isinstance(document, KnowledgeDocument) for document in graph_indexer.documents)
@@ -191,6 +198,48 @@ def test_ingest_passes_native_chunks_to_graph_in_all_index_modes(
     assert "workspace_id" not in graph_indexer.documents[0].metadata
     assert original_document.model_dump(mode="python") == original_payload
     assert factory_calls == [(graph_store, pipeline._profile)]  # type: ignore[attr-defined]
+
+
+def test_ingest_ids_are_not_based_on_same_stem_for_distinct_documents(
+    tmp_path: Path,
+) -> None:
+    first_source = tmp_path / "first" / "same.txt"
+    second_source = tmp_path / "second" / "same.txt"
+    first_source.parent.mkdir()
+    second_source.parent.mkdir()
+    first_source.write_text("first", encoding="utf-8")
+    second_source.write_text("second", encoding="utf-8")
+
+    pipeline, _original_document, _splitter, _graph_indexer = _build_pipeline(
+        source=first_source,
+        dual_index=False,
+        graph_store=None,
+        graph_rag_enabled=False,
+    )
+    loader = pipeline._loader  # type: ignore[attr-defined]
+
+    first_result = pipeline.run(
+        IngestRequest(
+            source_path=str(first_source),
+            base_metadata={"tenant_id": "tenant-a"},
+            chunking_strategy_id="recursive",
+        )
+    )
+
+    loader.document = _native_document(second_source, document_id="document-2")
+    second_result = pipeline.run(
+        IngestRequest(
+            source_path=str(second_source),
+            base_metadata={"tenant_id": "tenant-a"},
+            chunking_strategy_id="recursive",
+        )
+    )
+
+    assert first_result.vector_ids != second_result.vector_ids
+    assert all(
+        not vector_id.startswith("ingest-same-")
+        for vector_id in first_result.vector_ids + second_result.vector_ids
+    )
 
 
 @pytest.mark.parametrize(

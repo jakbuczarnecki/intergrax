@@ -46,10 +46,10 @@ class DualIndexStrategy(IndexStrategy):
         documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
 
         if not documents:
-            return
+            return []
 
         # -----------------------------
         # Main CHUNK index
@@ -57,7 +57,7 @@ class DualIndexStrategy(IndexStrategy):
 
         main_result = embed_manager.embed_documents(documents)
 
-        self._insert_batches(
+        persisted_chunk_ids = self._insert_batches(
             vectorstore,
             main_result.documents,
             main_result.embeddings,
@@ -89,7 +89,7 @@ class DualIndexStrategy(IndexStrategy):
             sections.setdefault(group_key, doc)
 
         if not sections:
-            return
+            return persisted_chunk_ids
 
         toc_docs: list[KnowledgeDocument] = []
 
@@ -126,15 +126,17 @@ class DualIndexStrategy(IndexStrategy):
             toc_result.documents,
             toc_result.embeddings,
         )
+        return persisted_chunk_ids
 
     def _insert_batches(
         self,
         vectorstore: BaseVectorstoreManager,
         documents: Sequence[KnowledgeDocument],
         embeddings: NDArray[np.float32],
-    ) -> None:
+    ) -> list[str]:
 
         n = len(documents)
+        persisted_ids: list[str] = []
 
         for i in range(0, n, self.batch_size):
 
@@ -150,4 +152,13 @@ class DualIndexStrategy(IndexStrategy):
                 for index, document in enumerate(batch_documents, start=i)
             ]
 
-            vectorstore.add_records(records)
+            stored_ids = vectorstore.add_records(records)
+            if stored_ids is None:
+                persisted_ids.extend(record.vector_id for record in records)
+                continue
+            batch_ids = list(stored_ids)
+            if len(batch_ids) != len(records):
+                raise ValueError("vectorstore returned an unexpected number of vector IDs")
+            persisted_ids.extend(batch_ids)
+
+        return persisted_ids

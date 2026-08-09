@@ -218,7 +218,6 @@ class IngestPipeline:
                 add_native_metadata(chunk, base_metadata) for chunk in native_chunks
             ]
             texts = [chunk.content for chunk in native_chunks]
-            ids = [f"ingest-{path.stem}-{i}" for i in range(len(native_chunks))]
 
             with rag_span(
                 "rag.ingest.index",
@@ -229,19 +228,22 @@ class IngestPipeline:
             ):
                 if self._uses_dual_index():
                     assert self._toc_vectorstore is not None
-                    IndexingManager(
-                        embed_manager=self._embedding_manager,
-                        vectorstore=self._vectorstore,
-                        strategy=DualIndexStrategy(toc_vectorstore=self._toc_vectorstore),
-                    ).index_documents(native_chunks)
-                    vector_ids = ids
+                    vector_ids = list(
+                        IndexingManager(
+                            embed_manager=self._embedding_manager,
+                            vectorstore=self._vectorstore,
+                            strategy=DualIndexStrategy(
+                                toc_vectorstore=self._toc_vectorstore
+                            ),
+                        ).index_documents(native_chunks)
+                    )
                 else:
                     embeddings = self._embedding_manager.embed_texts(texts)
                     records = [
                         VectorStoreRecord(
                             document=chunk,
                             embedding=embeddings[index],
-                            vector_id=ids[index],
+                            vector_id=chunk.identity.document_id,
                         )
                         for index, chunk in enumerate(native_chunks)
                     ]
@@ -249,7 +251,14 @@ class IngestPipeline:
                         records,
                         scope=VectorStoreScope.from_document(records[0].document),
                     )
-                    vector_ids = list(stored_ids) if stored_ids is not None else ids
+                    if stored_ids is None:
+                        vector_ids = [record.vector_id for record in records]
+                    else:
+                        vector_ids = list(stored_ids)
+                        if len(vector_ids) != len(records):
+                            raise ValueError(
+                                "vectorstore returned an unexpected number of vector IDs"
+                            )
 
             if self._graph_store is not None and self._profile.graph_rag_enabled:
                 with rag_span("rag.ingest.graph_index"):

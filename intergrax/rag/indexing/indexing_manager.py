@@ -45,14 +45,14 @@ class IndexingManager:
     def index_documents(
         self,
         documents: Sequence[KnowledgeDocument],
-    ) -> None:
+    ) -> Sequence[str]:
         """
-        Execute indexing for provided documents.
+        Execute indexing for provided documents and return persisted vector IDs.
         """
 
         materialized_documents = tuple(documents)
         if not materialized_documents:
-            return
+            return []
 
         validated_documents: list[KnowledgeDocument] = []
         for document in materialized_documents:
@@ -62,7 +62,7 @@ class IndexingManager:
                 KnowledgeDocument.model_validate(document.model_dump(mode="python"))
             )
 
-        self.pipeline.run(
+        return self.pipeline.run(
             documents=tuple(validated_documents),
             embed_manager=self.embed_manager,
             vectorstore=self.vectorstore,

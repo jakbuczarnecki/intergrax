@@ -62,8 +62,9 @@ class FakeVectorstore(BaseVectorstoreManager):
         records: Sequence[VectorStoreRecord],
         *,
         scope: VectorStoreScope | None = None,
-    ) -> None:
+    ) -> Sequence[str]:
         self.records.extend(records)
+        return [record.vector_id for record in records]
     
     def query(
         self,
@@ -98,9 +99,10 @@ class CapturingStrategy(IndexStrategy):
         documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
         del embed_manager, vectorstore
         self.received = documents
+        return []
 
 
 def test_indexing_manager_indexes_documents():
@@ -116,9 +118,10 @@ def test_indexing_manager_indexes_documents():
         strategy=SingleIndexStrategy(),
     )
 
-    manager.index_documents(docs)
+    persisted_ids = manager.index_documents(docs)
 
     assert store.count() == 1
+    assert list(persisted_ids) == [docs[0].identity.document_id]
     assert isinstance(store.records[0], VectorStoreRecord)
     assert store.records[0].document.content == "doc"
 

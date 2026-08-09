@@ -14,6 +14,7 @@ from intergrax.rag.document_splitters.registry.strategy_registry import Chunking
 from intergrax.rag.document_splitters.strategies.langchain_recursive_chunking_strategy import (
     LangChainRecursiveChunkingStrategy,
 )
+from intergrax.rag.profiles.rag_profile import RagProfile
 
 
 pytestmark = pytest.mark.unit
@@ -96,10 +97,12 @@ def test_default_bootstrap_is_core_safe_without_optional_splitter(
     bootstrap = importlib.import_module(bootstrap_module_name)
     splitter = bootstrap.create_default_document_splitter()
     source = _source("doc-default", "abcdefghij" * 20)
+    profile = RagProfile()
 
-    chunks = splitter.split_documents([source])
+    chunks = splitter.split_documents([source], strategy_id=profile.chunking_strategy_id)
 
     assert chunks
+    assert profile.chunking_strategy_id == "recursive"
     assert all(chunk.metadata["chunk_strategy"] == "recursive" for chunk in chunks)
     with pytest.raises(RuntimeError, match="Chunking strategy not registered"):
         splitter.split_documents([source], strategy_id="langchain_recursive")

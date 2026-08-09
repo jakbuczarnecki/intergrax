@@ -34,9 +34,10 @@ class IndexStrategy(ABC):
         documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
         """
-        Build a vector index from the provided documents.
+        Build a vector index from the provided documents and return the
+        persisted vector IDs for those documents.
 
         Parameters
         ----------

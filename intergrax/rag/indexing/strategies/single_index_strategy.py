@@ -29,10 +29,10 @@ class SingleIndexStrategy(IndexStrategy):
         documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
 
         if not documents:
-            return
+            return []
 
         result = embed_manager.embed_documents(documents)
         records = [
@@ -43,4 +43,10 @@ class SingleIndexStrategy(IndexStrategy):
             )
             for index, document in enumerate(result.documents)
         ]
-        vectorstore.add_records(records)
+        stored_ids = vectorstore.add_records(records)
+        if stored_ids is None:
+            return [record.vector_id for record in records]
+        persisted_ids = list(stored_ids)
+        if len(persisted_ids) != len(records):
+            raise ValueError("vectorstore returned an unexpected number of vector IDs")
+        return persisted_ids

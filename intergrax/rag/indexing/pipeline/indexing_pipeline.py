@@ -32,12 +32,12 @@ class IndexingPipeline:
         documents: Sequence[KnowledgeDocument],
         embed_manager: BaseEmbeddingManager,
         vectorstore: BaseVectorstoreManager,
-    ) -> None:
+    ) -> Sequence[str]:
 
         if not documents:
-            return
+            return []
 
-        self.strategy.build_index(
+        return self.strategy.build_index(
             documents=documents,
             embed_manager=embed_manager,
             vectorstore=vectorstore,
