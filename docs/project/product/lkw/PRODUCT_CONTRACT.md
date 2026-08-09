@@ -193,19 +193,39 @@ this contract as production-readiness claims.
 
 ## Roadmap implications: PRODUCT-2…PRODUCT-12
 
-Future product tasks must prove the contract in user-journey order:
+Future product tasks must prove the contract in this canonical order:
 
-- PRODUCT-2: establish the daily-use workspace, source, Ask, evidence, state,
-  and attention model;
-- PRODUCT-3: prove installation and first-run usability for the installation
-  persona;
-- PRODUCT-4: prove durable configuration/state and restart/upgrade behavior;
-- PRODUCT-5: verify Slack, Google Workspace, and Microsoft 365 end to end
-  before claiming public vendor support;
-- PRODUCT-6…PRODUCT-9: prove synchronization, freshness, source lifecycle,
-  outage preservation, recovery, and failure guidance;
-- PRODUCT-10…PRODUCT-12: prove thin-client/API reuse, real-user acceptance,
-  and release readiness against these gates.
+- **PRODUCT-2 — ZERO-TO-VALUE INSTALLATION:** User can install/start LKW and
+  reach a working application without Intergrax internal knowledge.
+- **PRODUCT-3 — FIRST-RUN ONBOARDING:** Guide the user from first launch
+  through workspace creation, connecting/providing own data, synchronization
+  and first useful grounded answer.
+- **PRODUCT-4 — REAL PRODUCT UI:** Provide the real daily-use interface for
+  workspaces, knowledge/sources, connections/state, Ask, activity/problems and
+  settings using existing reusable backend/API contracts.
+- **PRODUCT-5 — REAL VENDOR EXPERIENCE:** Verify and productize Slack, Google
+  Workspace and Microsoft 365 end to end before claiming public support.
+- **PRODUCT-6 — DAILY KNOWLEDGE EXPERIENCE:** Prove the core daily Ask
+  experience: grounded answers, citations/source opening, freshness, source
+  scoping, refresh, Indexed/Live visibility where supported, and
+  insufficient-evidence behavior.
+- **PRODUCT-7 — BACKGROUND OPERATION:** Prove scheduled/incremental/on-demand
+  synchronization, retry behavior, last/next sync and stale indication
+  without repetitive manual intervention.
+- **PRODUCT-8 — HUMAN FAILURE RECOVERY:** Map technical failures to
+  understandable user-facing state, recommended actions, retryability and
+  attention-required behavior.
+- **PRODUCT-9 — UPDATE / MIGRATION / BACKUP EXPERIENCE:** Define and prove
+  persistence across supported updates, schema/config migration,
+  compatibility, backup guidance and rollback expectations.
+- **PRODUCT-10 — HUMAN OBSERVABILITY:** Expose clear user-facing health/status
+  for the application, dependencies, connections and source synchronization
+  state.
+- **PRODUCT-11 — REAL-USER ACCEPTANCE:** A real user unfamiliar with the
+  repository must independently install, configure, connect own data, ask,
+  inspect citations, operate source lifecycle, restart and continue.
+- **PRODUCT-12 — VALUE PROOF:** Demonstrate strong real-world use cases
+  showing that LKW is useful, not merely technically functional.
 
 Exact implementation status and production readiness remain validation work.
 When a gap is found, the next task must identify the smallest reusable
