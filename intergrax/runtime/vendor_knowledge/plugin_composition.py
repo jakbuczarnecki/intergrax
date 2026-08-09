@@ -137,6 +137,7 @@ def build_confluence_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePl
         integration_category=IntegrationCategory.WIKI_KNOWLEDGE,
         source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
         runtime_ref="knowledge-adapter:confluence:wiki_knowledge:pages",
+        indexed_runtime_ref="indexed-source:confluence:pages",
     )
 
 

@@ -35,6 +35,12 @@ from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
+    CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read import (
+    CONFLUENCE_PAGES_SOURCE_KIND,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
     GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
 )
@@ -81,6 +87,10 @@ from intergrax.runtime.vendor_knowledge.models import (
 from intergrax.runtime.vendor_knowledge.indexed_materialization import (
     VendorKnowledgeMaterializationError,
 )
+from intergrax.runtime.vendor_knowledge.confluence_indexed_materializers import (
+    CONFLUENCE_PAGES_RICH_TEXT_SCHEMA,
+    ConfluencePageRichTextMaterializer,
+)
 from intergrax.runtime.vendor_knowledge.plugin import (
     VendorKnowledgeSourcePluginRegistry,
 )
@@ -105,6 +115,33 @@ def _source(
             remote_scope_type=source_kind,
             safe_display_name="Knowledge source",
         ),
+    )
+
+
+def _confluence_source() -> KnowledgeSourceRef:
+    source = _source(
+        provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
+        source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
+    )
+    return source.model_copy(
+        update={
+            "scope": source.scope.model_copy(
+                update={
+                    "remote_scope_id": "10000",
+                    "remote_scope_type": "confluence_space",
+                }
+            )
+        }
+    )
+
+
+def _confluence_content(*, body: str = "<p>Confluence indexed content</p>") -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.RICH_TEXT,
+        rich_text=f"<h1>Confluence page</h1>{body}",
+        mime_type=CONFLUENCE_PAGES_RICH_TEXT_SCHEMA,
+        encoding="utf-8",
     )
 
 
@@ -883,6 +920,143 @@ async def test_graph_document_enters_existing_generic_index_service(tmp_path: Pa
     )
     assert result.indexed
     assert result.document_id == document.identity.document_id
+
+
+def test_confluence_materializer_normalizes_storage_and_preserves_page_identity() -> None:
+    source = _confluence_source()
+    materializer = ConfluencePageRichTextMaterializer()
+    first = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="20001",
+        content=_confluence_content(
+            body=(
+                "<p>Page body marker</p><table><tr><td>Cell A</td>"
+                "<td>Cell B</td></tr></table><script>do_not_index()</script>"
+            )
+        ),
+        revision=KnowledgeItemRevision(version="3"),
+        permissions=None,
+    )
+    newer = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="20001",
+        content=_confluence_content(body="<p>Updated page body marker</p>"),
+        revision=KnowledgeItemRevision(version="4"),
+        permissions=None,
+    )
+
+    assert first.document_id == newer.document_id
+    assert first.content_hash != newer.content_hash
+    assert first.source_revision != newer.source_revision
+    assert "# Confluence page" in first.markdown
+    assert "Page body marker" in first.markdown
+    assert "Cell A | Cell B" in first.markdown
+    assert "do_not_index" not in first.markdown
+    assert first.knowledge_document.provenance.source_id == "20001"
+
+
+def test_confluence_materializer_registry_and_fail_closed_contract() -> None:
+    source = _confluence_source()
+    registry = default_connected_source_materializer_registry()
+    materializer = registry.resolve(
+        source,
+        schema_name=CONFLUENCE_PAGES_RICH_TEXT_SCHEMA,
+    )
+    assert isinstance(materializer, ConfluencePageRichTextMaterializer)
+
+    kwargs = {
+        "source": source,
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1",
+        "binding_id": "binding-1",
+        "source_id": "source-1",
+        "remote_id": "20001",
+        "content": _confluence_content(),
+        "revision": KnowledgeItemRevision(version="3"),
+        "permissions": None,
+    }
+    for invalid in (
+        {"source": source.model_copy(update={"provider_id": "other"})},
+        {
+            "content": _confluence_content().model_copy(
+                update={"mode": KnowledgeContentMode.BINARY}
+            )
+        },
+        {
+            "content": _confluence_content().model_copy(
+                update={"mime_type": "text/plain"}
+            )
+        },
+        {"remote_id": "not-a-page-id"},
+        {
+            "content": _confluence_content(
+                body="<script>only unhelpful content</script>"
+            )
+        },
+    ):
+        with pytest.raises(VendorKnowledgeMaterializationError):
+            materializer.materialize(**{**kwargs, **invalid})
+
+
+@pytest.mark.asyncio
+async def test_confluence_materializer_reaches_generic_index_service(tmp_path: Path) -> None:
+    materialized = ConfluencePageRichTextMaterializer().materialize(
+        source=_confluence_source(),
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="20001",
+        content=_confluence_content(body="<p>Search body marker</p>"),
+        revision=KnowledgeItemRevision(version="3"),
+        permissions=None,
+    )
+    physical_path = tmp_path / materialized.safe_file_name
+    physical_path.write_text(materialized.markdown, encoding="utf-8")
+
+    class _Executor:
+        async def execute(self, _task):
+            return SimpleNamespace(
+                metadata={"ingest_summary": {"used": True, "num_chunks": 1}}
+            )
+
+    indexing = WorkspaceDocumentIndexingService(
+        ManagedWorkspaceRepository(InMemoryDocumentStore()),
+        _Executor(),
+    )
+    result = await indexing.index_connected_source_one(
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        source_id="source-1",
+        operation_id="operation-confluence-1",
+        physical_path=physical_path,
+        logical_source_path=materialized.logical_source_path,
+        safe_file_name=materialized.safe_file_name,
+        content_hash=materialized.content_hash,
+        document_id=materialized.document_id,
+        materialization_ownership=KnowledgeMaterializationOwnershipV1.connected(
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            source_id="source-1",
+            indexed_source_binding_id="indexed-binding-1",
+            knowledge_source_binding_ref="binding-1",
+            delivery_id="delivery-confluence-1",
+            remote_id="20001",
+            materialization_sequence=1,
+        ),
+    )
+
+    assert result.indexed
+    assert result.document_id == materialized.document_id
+    assert "Search body marker" in physical_path.read_text(encoding="utf-8")
 
 
 async def _assert_google_materialized_document_indexed(

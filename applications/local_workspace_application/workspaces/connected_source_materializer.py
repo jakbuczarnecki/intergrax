@@ -29,6 +29,9 @@ from intergrax.runtime.vendor_knowledge.indexed_materialization import (
     MaterializedConnectedSourceDocument,
     build_materialized_connected_source_document,
 )
+from intergrax.runtime.vendor_knowledge.confluence_indexed_materializers import (
+    ConfluencePageRichTextMaterializer,
+)
 from intergrax.runtime.vendor_knowledge.ms365_graph_indexed_materializers import (
     MsGraphCalendarStructuredRecordMaterializer,
     MsGraphMailStructuredRecordMaterializer,
@@ -424,6 +427,7 @@ def _render_slack_message_markdown(
 def default_connected_source_materializer_registry() -> ConnectedSourceContentMaterializerRegistry:
     return ConnectedSourceContentMaterializerRegistry(
         materializers=(
+            ConfluencePageRichTextMaterializer(),
             SlackConversationStructuredRecordMaterializer(),
             MsGraphTeamsChatStructuredRecordMaterializer(),
             MsGraphMailStructuredRecordMaterializer(),

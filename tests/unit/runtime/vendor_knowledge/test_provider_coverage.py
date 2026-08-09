@@ -250,6 +250,11 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
             IntegrationCategory.COLLABORATION_SUITE,
             GOOGLE_SHEETS_SOURCE_KIND,
         ): "indexed-source:google_workspace:sheets",
+        (
+            CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+            IntegrationCategory.WIKI_KNOWLEDGE,
+            CONFLUENCE_PAGES_SOURCE_KIND,
+        ): "indexed-source:confluence:pages",
     }
 
 
