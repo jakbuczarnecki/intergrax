@@ -222,6 +222,35 @@ jobs:
           && uv run --frozen python scripts/maintenance/check_harness_evaluation_wiring.py
           && uv run --frozen intergrax doctor --ci
 
+  langchain-free-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Create isolated clean environment
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
+          uv venv --python 3.12 "${gate_env}"
+          uv pip install --python "${gate_env}/bin/python" .
+
+      - name: Run LangChain-free core gate
+        env:
+          PYTHONNOUSERSITE: "1"
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
+          "${gate_env}/bin/python" scripts/ci/check_langchain_free_core_install.py
+
   gate-closeout:
     needs:
       - gate-tests
