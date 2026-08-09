@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from datetime import UTC, datetime
 
@@ -39,11 +40,25 @@ from intergrax.runtime.vendor_knowledge.live.ms365_graph import (
     MSGRAPH_TEAMS_CHAT_LIST_CAPABILITY_ID,
     MsGraphTeamsChatListLiveRequestV1,
 )
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
+from intergrax.runtime.vendor_knowledge.plugin import VendorKnowledgeMode
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_vendor_knowledge_connection_factory_registry,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_rehydration import (
+    TenantConnectionRehydrationStatus,
+    TenantConnectionRehydrator,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+    TenantConnectionService,
+)
 from local_workspace_application.serving.workspace_routes import (
     KnowledgeConnectionRegistryIntegrationResolverV1,
-)
-from local_workspace_application.workspaces.connected_source_wiring import (
-    register_msgraph_connection_integration,
 )
 from local_workspace_application.workspaces.hybrid_ask_execution import (
     LiveCapabilityExecutorV1,
@@ -75,6 +90,7 @@ _GRAPH_MARKER = "vk8-graph-marker"
 _SLACK_MARKER = "deployment of project Atlas failed because of database timeout"
 _GRAPH_SCOPE_START = "2024-01-01T00:00:00+00:00"
 _GRAPH_SCOPE_END = "2024-02-01T00:00:00+00:00"
+_GRAPH_CREDENTIAL_REF = "secrets/tenant-a/msgraph"
 
 
 class _CrossProviderGraphClient(_TeamsChatFakeCollaborationSuite):
@@ -123,6 +139,24 @@ class _CrossProviderGraphClient(_TeamsChatFakeCollaborationSuite):
                 ),
             ),
         )
+
+
+class _GraphRestartSecretsStore:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
+        _ = version
+        self.calls.append(path)
+        if path == _GRAPH_CREDENTIAL_REF:
+            return "graph-client-secret"
+        return json.dumps({"app_token": "xapp-test", "bot_token": "xoxb-test"})
+
+    def put_secret(self, path: str, value: str) -> None:
+        _ = path, value
+
+    def delete_secret(self, path: str) -> None:
+        _ = path
 
 
 def _attach_graph_connection(repo) -> None:
@@ -274,18 +308,101 @@ def test_cross_provider_three_mode_e2e(rag_e2e_env) -> None:
     runtime = rag_e2e_env["runtime"]
     llm = rag_e2e_env["llm"]
 
-    graph_client = _CrossProviderGraphClient()
-    graph_integration = _TeamsChatTestIntegration.from_client(
-        graph_client,
-        enabled=True,
-    )
-    register_msgraph_connection_integration(
-        wiring=wiring,
+    with pytest.raises(VendorKnowledgeError):
+        wiring.connection_registry.resolve(
+            tenant_id=_TENANT,
+            connection_ref=_GRAPH_CONNECTION,
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        )
+
+    connection_repository = DocumentStoreTenantConnectionRepository(repo.document_store)
+    TenantConnectionService(
         tenant_id=_TENANT,
-        connection_ref=_GRAPH_CONNECTION,
-        integration=graph_integration,
+        repository=connection_repository,
+    ).create(
+        TenantConnection(
+            connection_ref=_GRAPH_CONNECTION,
+            tenant_id=_TENANT,
+            provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            safe_display_name="Microsoft Graph",
+            administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+            credential_ref=_GRAPH_CREDENTIAL_REF,
+            validated_secret_free_config={
+                "client_id": "graph-client-id",
+                "default_user": "user-abc-123",
+            },
+            configuration_version=1,
+            created_at=_NOW,
+            updated_at=_NOW,
+        )
     )
     _attach_graph_connection(repo)
+
+    graph_runtime_instances: list[
+        tuple[_CrossProviderGraphClient, _TeamsChatTestIntegration]
+    ] = []
+
+    def build_graph_runtime(config):
+        assert config.client_id == "graph-client-id"
+        assert config.client_secret == "graph-client-secret"
+        graph_client = _CrossProviderGraphClient()
+        graph_integration = _TeamsChatTestIntegration.from_client(
+            graph_client,
+            enabled=True,
+        )
+        graph_runtime_instances.append((graph_client, graph_integration))
+        return graph_integration
+
+    graph_secrets = _GraphRestartSecretsStore()
+    factory_registry = build_default_vendor_knowledge_connection_factory_registry(
+        slack_runtime_builder=lambda _config: rag_e2e_env["integration"],
+        msgraph_runtime_builder=build_graph_runtime,
+    )
+    rehydration = TenantConnectionRehydrator(
+        repository=connection_repository,
+        secrets_store=graph_secrets,
+        integration_factory=factory_registry,
+        connection_registry=wiring.connection_registry,
+    ).rehydrate_tenant(tenant_id=_TENANT)
+    graph_rehydration = next(
+        result
+        for result in rehydration
+        if result.connection.connection_ref == _GRAPH_CONNECTION
+    )
+    assert graph_rehydration.status is TenantConnectionRehydrationStatus.REGISTERED
+    assert graph_rehydration.error_code is None
+    assert graph_secrets.calls.count(_GRAPH_CREDENTIAL_REF) == 1
+    assert len(graph_runtime_instances) == 1
+    graph_client, graph_integration = graph_runtime_instances[0]
+    assert (
+        connection_repository.get(
+            tenant_id=_TENANT,
+            connection_ref=_GRAPH_CONNECTION,
+        ).validated_secret_free_config
+        == {"client_id": "graph-client-id", "default_user": "user-abc-123"}
+    )
+    assert graph_integration is wiring.connection_registry.resolve(
+        tenant_id=_TENANT,
+        connection_ref=_GRAPH_CONNECTION,
+        provider_id=MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+    )
+
+    graph_capabilities = rag_e2e_env["source_catalog"].list_source_kind_capabilities(
+        tenant_id=_TENANT,
+        connection_ref=_GRAPH_CONNECTION,
+    )
+    graph_teams_chat = next(
+        item for item in graph_capabilities
+        if item.identity.source_kind == MSGRAPH_TEAMS_CHAT_SOURCE_KIND
+    )
+    assert set(graph_teams_chat.modes) == {
+        VendorKnowledgeMode.DURABLE,
+        VendorKnowledgeMode.INDEXED,
+        VendorKnowledgeMode.LIVE,
+    }
 
     slack_candidate = _discover(
         client,
