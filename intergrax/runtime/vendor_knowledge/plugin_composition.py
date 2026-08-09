@@ -55,22 +55,34 @@ def _build_durable_adapter_plugin(
     integration_category: IntegrationCategory,
     source_kind: str,
     runtime_ref: str,
+    indexed_runtime_ref: str | None = None,
 ) -> VendorKnowledgeSourcePlugin:
+    capabilities = [
+        VendorKnowledgeModeCapability(
+            mode=VendorKnowledgeMode.DURABLE,
+            contract_version="vendor-knowledge.durable.v1",
+            operations=("inventory", "snapshot", "reconciliation", "exact_fetch"),
+            runtime_ref=runtime_ref,
+            constraints={"application_sink": "platform_foundation"},
+        ),
+    ]
+    if indexed_runtime_ref is not None:
+        capabilities.append(
+            VendorKnowledgeModeCapability(
+                mode=VendorKnowledgeMode.INDEXED,
+                contract_version="vendor-knowledge.indexed.v1",
+                operations=("eligible", "materialize", "publish", "index"),
+                runtime_ref=indexed_runtime_ref,
+                constraints={"application_proof": "vk4"},
+            )
+        )
     return VendorKnowledgeSourcePlugin(
         identity=VendorKnowledgeSourceIdentity(
             provider_id=provider_id,
             integration_category=integration_category,
             source_kind=source_kind,
         ),
-        capabilities=(
-            VendorKnowledgeModeCapability(
-                mode=VendorKnowledgeMode.DURABLE,
-                contract_version="vendor-knowledge.durable.v1",
-                operations=("inventory", "snapshot", "reconciliation", "exact_fetch"),
-                runtime_ref=runtime_ref,
-                constraints={"application_sink": "platform_foundation"},
-            ),
-        ),
+        capabilities=tuple(capabilities),
     )
 
 
@@ -103,6 +115,7 @@ def build_google_workspace_vendor_knowledge_source_plugins() -> (
             integration_category=category,
             source_kind=GOOGLE_CALENDAR_SOURCE_KIND,
             runtime_ref="knowledge-adapter:google_workspace:collaboration_suite:calendar",
+            indexed_runtime_ref="indexed-source:google_workspace:calendar",
         ),
     )
 

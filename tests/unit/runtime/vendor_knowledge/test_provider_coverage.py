@@ -235,6 +235,11 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
             IntegrationCategory.COLLABORATION_SUITE,
             MSGRAPH_CALENDAR_SOURCE_KIND,
         ): "indexed-source:ms365_graph:calendar",
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_CALENDAR_SOURCE_KIND,
+        ): "indexed-source:google_workspace:calendar",
     }
 
 

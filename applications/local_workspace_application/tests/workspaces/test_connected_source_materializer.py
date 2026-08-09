@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 from local_workspace_application.workspaces.connected_source_materializer import (
     ConnectedSourceContentMaterializerRegistry,
+    GoogleCalendarStructuredRecordMaterializer,
     MsGraphCalendarStructuredRecordMaterializer,
     MsGraphMailStructuredRecordMaterializer,
     MsGraphTeamsChannelStructuredRecordMaterializer,
@@ -32,6 +33,12 @@ from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
+    GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    GOOGLE_CALENDAR_SOURCE_KIND,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
 )
@@ -247,6 +254,64 @@ def _graph_calendar_content(*, body: str = "Calendar event body") -> KnowledgeCo
     )
 
 
+def _google_calendar_content(*, summary: str = "Planning meeting") -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema": "google_workspace.calendar.event.knowledge.v1",
+            "calendar_id": "team@example.com",
+            "event": {
+                "id": "google-event-1",
+                "etag": '"google-etag-1"',
+                "status": "confirmed",
+                "event_type": "default",
+                "summary": summary,
+                "description": "Calendar event body",
+                "location": "Room 1",
+                "updated": "2026-01-02T11:00:00Z",
+                "sequence": 1,
+                "start": {
+                    "date_time": "2026-01-02T12:00:00Z",
+                    "time_zone": "Europe/Warsaw",
+                },
+                "end": {
+                    "date_time": "2026-01-02T13:00:00Z",
+                    "time_zone": "Europe/Warsaw",
+                },
+                "organizer": {
+                    "email": "organizer@example.test",
+                    "display_name": "Organizer",
+                },
+                "attendees": [
+                    {
+                        "email": "attendee@example.test",
+                        "response_status": "accepted",
+                    }
+                ],
+                "recurrence": [],
+            },
+        },
+    )
+
+
+def _google_calendar_source() -> KnowledgeSourceRef:
+    source = _source(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_CALENDAR_SOURCE_KIND,
+    )
+    return source.model_copy(
+        update={
+            "scope": source.scope.model_copy(
+                update={
+                    "remote_scope_id": "team@example.com",
+                    "remote_scope_type": "google_workspace_calendar",
+                }
+            )
+        }
+    )
+
+
 def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
     registry = default_connected_source_materializer_registry()
     materializer = registry.resolve(
@@ -298,6 +363,16 @@ def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
         schema_name="msgraph.calendar.event.knowledge.v1",
     )
     assert isinstance(calendar, MsGraphCalendarStructuredRecordMaterializer)
+
+    google_calendar = registry.resolve(
+        _source(
+            provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+            source_kind=GOOGLE_CALENDAR_SOURCE_KIND,
+        ),
+        schema_name="google_workspace.calendar.event.knowledge.v1",
+    )
+    assert isinstance(google_calendar, GoogleCalendarStructuredRecordMaterializer)
 
 
 def test_missing_indexed_runtime_registration_fails_closed() -> None:
@@ -508,6 +583,77 @@ def test_graph_calendar_materializer_preserves_identity_across_revision() -> Non
     assert "binary content is not included" in newer.markdown
 
 
+def test_google_calendar_materializer_projects_bounded_content_and_stable_identity() -> None:
+    source = _google_calendar_source()
+    materializer = GoogleCalendarStructuredRecordMaterializer()
+    first = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="google-event-1",
+        content=_google_calendar_content(),
+        revision=KnowledgeItemRevision(version="1", etag='"google-etag-1"'),
+        permissions=None,
+    )
+    newer = materializer.materialize(
+        source=source,
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="google-event-1",
+        content=_google_calendar_content(summary="Updated planning meeting"),
+        revision=KnowledgeItemRevision(version="2", etag='"google-etag-2"'),
+        permissions=None,
+    )
+
+    assert first.document_id == newer.document_id
+    assert first.content_hash != newer.content_hash
+    assert "Updated planning meeting" in newer.markdown
+    assert "Organizer <organizer@example.test>" in newer.markdown
+    assert "attendee@example.test (accepted)" in newer.markdown
+    assert "Attachment bytes" in newer.markdown
+    assert "complete recurrence expansion" not in newer.markdown.lower()
+    assert "absence from an ordinary snapshot is not authoritative deletion" in newer.markdown
+    assert newer.knowledge_document.provenance.provider_id == (
+        GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID
+    )
+    assert newer.knowledge_document.provenance.source_id == "google-event-1"
+
+
+def test_google_calendar_materializer_fails_closed_for_mode_and_identity() -> None:
+    source = _google_calendar_source()
+    materializer = GoogleCalendarStructuredRecordMaterializer()
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            source=source,
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            binding_id="binding-1",
+            source_id="source-1",
+            remote_id="other-event",
+            content=_google_calendar_content(),
+            revision=None,
+            permissions=None,
+        )
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            source=source,
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            binding_id="binding-1",
+            source_id="source-1",
+            remote_id="google-event-1",
+            content=_google_calendar_content().model_copy(
+                update={"mode": KnowledgeContentMode.BINARY}
+            ),
+            revision=None,
+            permissions=None,
+        )
+
+
 @pytest.mark.asyncio
 async def test_graph_document_enters_existing_generic_index_service(tmp_path: Path) -> None:
     source = _source(
@@ -561,6 +707,64 @@ async def test_graph_document_enters_existing_generic_index_service(tmp_path: Pa
             knowledge_source_binding_ref="binding-1",
             delivery_id="delivery-1",
             remote_id="graph-remote-1",
+            materialization_sequence=1,
+        ),
+    )
+    assert result.indexed
+    assert result.document_id == document.identity.document_id
+
+
+@pytest.mark.asyncio
+async def test_google_calendar_document_enters_existing_generic_index_service(
+    tmp_path: Path,
+) -> None:
+    materializer = default_connected_source_materializer_registry().resolve(
+        _google_calendar_source(),
+        schema_name="google_workspace.calendar.event.knowledge.v1",
+    )
+    materialized = materializer.materialize(
+        source=_google_calendar_source(),
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="google-event-1",
+        content=_google_calendar_content(),
+        revision=KnowledgeItemRevision(version="google-1"),
+        permissions=None,
+    )
+    document = materialized.knowledge_document
+    physical_path = tmp_path / materialized.safe_file_name
+    physical_path.write_text(document.content, encoding="utf-8")
+
+    class _Executor:
+        async def execute(self, _task):
+            return SimpleNamespace(
+                metadata={"ingest_summary": {"used": True, "num_chunks": 1}}
+            )
+
+    indexing = WorkspaceDocumentIndexingService(
+        ManagedWorkspaceRepository(InMemoryDocumentStore()),
+        _Executor(),
+    )
+    result = await indexing.index_connected_source_one(
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        source_id="source-1",
+        operation_id="operation-google-1",
+        physical_path=physical_path,
+        logical_source_path=materialized.logical_source_path,
+        safe_file_name=materialized.safe_file_name,
+        content_hash=materialized.content_hash,
+        document_id=materialized.document_id,
+        materialization_ownership=KnowledgeMaterializationOwnershipV1.connected(
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            source_id="source-1",
+            indexed_source_binding_id="indexed-binding-1",
+            knowledge_source_binding_ref="binding-1",
+            delivery_id="delivery-google-1",
+            remote_id="google-event-1",
             materialization_sequence=1,
         ),
     )

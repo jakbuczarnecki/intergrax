@@ -34,6 +34,9 @@ from intergrax.runtime.vendor_knowledge.ms365_graph_indexed_materializers import
     MsGraphMailStructuredRecordMaterializer,
     MsGraphTeamsChannelStructuredRecordMaterializer,
 )
+from intergrax.runtime.vendor_knowledge.google_workspace_indexed_materializers import (
+    GoogleCalendarStructuredRecordMaterializer,
+)
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContent,
     KnowledgeContentMode,
@@ -424,6 +427,7 @@ def default_connected_source_materializer_registry() -> ConnectedSourceContentMa
             MsGraphMailStructuredRecordMaterializer(),
             MsGraphTeamsChannelStructuredRecordMaterializer(),
             MsGraphCalendarStructuredRecordMaterializer(),
+            GoogleCalendarStructuredRecordMaterializer(),
         )
     )
 
