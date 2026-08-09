@@ -29,7 +29,7 @@ cutover; LCI-6E owns compatibility packaging.
 
 ## LCI-6B — Native Ollama adapter implementation
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** LLM_ADAPTERS
 **Implementation:** `intergrax/llm_adapters/providers/native_ollama_adapter.py`
 
@@ -40,6 +40,24 @@ side-by-side request/response evidence for messages, streaming fallback,
 tools, structured output, usage, capabilities, context windows, and blocked
 LangChain imports. Live rows remain assigned to LCI-6C; default resolver,
 LKW, and Token Optimization behavior are unchanged.
+
+## LCI-6C — Native Ollama live parity proof
+
+**Status:** `READY_FOR_REVIEW`
+**Owner:** LLM_ADAPTERS
+**Evidence:** [`OLLAMA_NATIVE_ADAPTER_LIVE_PARITY_EVIDENCE.md`](../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_LIVE_PARITY_EVIDENCE.md)
+
+The mandatory live proof against Ollama `0.32.5` is recorded for the native
+adapter's plain, tools, structured-output, streaming, capability, usage, and
+error surfaces. Rows `040`–`042` remain `LIVE_NOT_REPRODUCIBLE`, rows `043`–
+`044` remain `PROVIDER_PREVENTS_REPRODUCTION`, and the no-tools chat model
+remains `BLOCKED_MODEL_AVAILABILITY`; deterministic LCI-6B evidence supports
+those non-live rows.
+
+## LCI-6D — LKW and Token Optimization native Ollama cutover
+
+**Status:** `NEXT AFTER ACCEPTANCE`
+**Owner:** LLM_ADAPTERS
 
 ---
 
