@@ -51,6 +51,15 @@ class _NoopVectorstore:
         self.received = {"records": records, "scope": scope}
         return ["id-0"]
 
+    def list_source_record_ids(self, *, source_id: str, scope: object) -> tuple[str, ...]:
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        return 0
+
+    def delete(self, ids, *, scope=None) -> None:
+        del ids, scope
+
 
 def test_ingest_pipeline_missing_tenant_skips_loader(tmp_path: Path) -> None:
     source = tmp_path / "sample.txt"
@@ -317,6 +326,20 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
             self.received = {"records": records, "scope": scope}
             return ["id-0"]
 
+        def list_source_record_ids(
+            self,
+            *,
+            source_id: str,
+            scope: object,
+        ) -> tuple[str, ...]:
+            return ()
+
+        def count(self, *, scope: object) -> int:
+            return 0
+
+        def delete(self, ids, *, scope=None) -> None:
+            del ids, scope
+
     loader = _BoundaryLoader()
     splitter = _CapturingSplitter()
     embedding = _CapturingEmbedding()
@@ -415,6 +438,20 @@ def test_ingest_pipeline_propagates_splitter_typeerror_without_retry(tmp_path: P
         def add_records(self, records, *, scope=None) -> list[str]:
             self.called = True
             return ["id-0"]
+
+        def list_source_record_ids(
+            self,
+            *,
+            source_id: str,
+            scope: object,
+        ) -> tuple[str, ...]:
+            return ()
+
+        def count(self, *, scope: object) -> int:
+            return 0
+
+        def delete(self, ids, *, scope=None) -> None:
+            del ids, scope
 
     splitter = _FailingSplitter()
     embedding = _TrackingEmbedding()

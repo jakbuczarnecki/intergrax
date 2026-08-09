@@ -66,6 +66,36 @@ class _VectorstoreManager:
         self.scope = scope
         return [record.vector_id for record in records]  # type: ignore[attr-defined]
 
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: object,
+    ) -> tuple[str, ...]:
+        return tuple(
+            sorted(
+                record.vector_id
+                for record in self.records
+                if record.document.provenance.source_id == source_id  # type: ignore[attr-defined]
+                and scope.matches_document(record.document)  # type: ignore[attr-defined]
+            )
+        )
+
+    def count(self, *, scope: object) -> int:
+        return sum(
+            scope.matches_document(record.document)  # type: ignore[attr-defined]
+            for record in self.records
+        )
+
+    def delete(self, ids: Sequence[str], *, scope: object) -> None:
+        stale_ids = set(ids)
+        self.records = [
+            record
+            for record in self.records
+            if record.vector_id not in stale_ids  # type: ignore[attr-defined]
+            or not scope.matches_document(record.document)  # type: ignore[attr-defined]
+        ]
+
 
 class _RecordingGraphIndexer:
     def __init__(self) -> None:

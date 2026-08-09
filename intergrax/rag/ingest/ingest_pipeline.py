@@ -76,6 +76,9 @@ class IngestResult:
 
 
 class IngestPipeline:
+    _SOURCE_LOOKUP_UNSUPPORTED = "vectorstore_source_record_lookup_not_supported"
+    _SOURCE_REINGEST_UNSUPPORTED = "source_reingest_not_supported"
+
     def __init__(
         self,
         *,
@@ -172,6 +175,34 @@ class IngestPipeline:
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
+            source_id, source_scope, ownership_error = self._source_ownership(native_docs)
+            if ownership_error is not None:
+                return IngestResult(used=False, reason=ownership_error)
+            assert source_id is not None
+            assert source_scope is not None
+
+            try:
+                old_ids = self._list_current_source_ids(
+                    source_id=source_id,
+                    scope=source_scope,
+                )
+            except RuntimeError as exc:
+                if str(exc) == self._SOURCE_REINGEST_UNSUPPORTED:
+                    return IngestResult(
+                        used=False,
+                        reason=self._SOURCE_REINGEST_UNSUPPORTED,
+                    )
+                raise
+
+            if old_ids and (
+                self._uses_dual_index()
+                or (self._graph_store is not None and self._profile.graph_rag_enabled)
+            ):
+                return IngestResult(
+                    used=False,
+                    reason=self._SOURCE_REINGEST_UNSUPPORTED,
+                )
+
             strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
             sem_allowed, sem_reason, _ = semantic_chunking_allowed(
                 docs=native_docs,
@@ -217,6 +248,15 @@ class IngestPipeline:
             native_chunks = [
                 add_native_metadata(chunk, base_metadata) for chunk in native_chunks
             ]
+            if any(
+                VectorStoreScope.from_document(chunk) != source_scope
+                or str(chunk.provenance.source_id) != source_id
+                for chunk in native_chunks
+            ):
+                return IngestResult(
+                    used=False,
+                    reason="source_scope_or_ownership_mismatch",
+                )
             texts = [chunk.content for chunk in native_chunks]
 
             with rag_span(
@@ -249,7 +289,7 @@ class IngestPipeline:
                     ]
                     stored_ids = self._vectorstore.add_records(
                         records,
-                        scope=VectorStoreScope.from_document(records[0].document),
+                        scope=source_scope,
                     )
                     if stored_ids is None:
                         vector_ids = [record.vector_id for record in records]
@@ -259,6 +299,18 @@ class IngestPipeline:
                             raise ValueError(
                                 "vectorstore returned an unexpected number of vector IDs"
                             )
+
+            stale_ids = old_ids - set(vector_ids)
+            if stale_ids:
+                try:
+                    self._vectorstore.delete(
+                        sorted(stale_ids),
+                        scope=source_scope,
+                    )
+                except Exception as exc:
+                    raise RuntimeError(
+                        "source_reingest_stale_delete_failed"
+                    ) from exc
 
             if self._graph_store is not None and self._profile.graph_rag_enabled:
                 with rag_span("rag.ingest.graph_index"):
@@ -279,6 +331,41 @@ class IngestPipeline:
                 version_warnings=list(version_policy.warnings),
                 reindex_recommended=version_policy.reindex_enqueued,
             )
+
+    def _source_ownership(
+        self,
+        documents: list[KnowledgeDocument],
+    ) -> tuple[str | None, VectorStoreScope | None, str | None]:
+        source_ids = {str(document.provenance.source_id) for document in documents}
+        if len(source_ids) != 1:
+            return None, None, "source_ownership_ambiguous"
+
+        scopes = {VectorStoreScope.from_document(document) for document in documents}
+        if len(scopes) != 1:
+            return None, None, "source_scope_or_ownership_mismatch"
+
+        return next(iter(source_ids)), next(iter(scopes)), None
+
+    def _list_current_source_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> set[str]:
+        lookup = getattr(self._vectorstore, "list_source_record_ids", None)
+        if not callable(lookup):
+            lookup_error = RuntimeError(self._SOURCE_LOOKUP_UNSUPPORTED)
+        else:
+            try:
+                return set(lookup(source_id=source_id, scope=scope))
+            except RuntimeError as exc:
+                if str(exc) != self._SOURCE_LOOKUP_UNSUPPORTED:
+                    raise
+                lookup_error = exc
+
+        if self._vectorstore.count(scope=scope) == 0:
+            return set()
+        raise RuntimeError(self._SOURCE_REINGEST_UNSUPPORTED) from lookup_error
 
     def _uses_dual_index(self) -> bool:
         return self._profile.uses_hierarchical_index() and self._toc_vectorstore is not None

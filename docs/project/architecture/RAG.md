@@ -60,8 +60,28 @@ similarity, and no parent-content reconstruction is promised.
 
 Explicit limitations:
 
-- repeated ingest has deterministic/provider upsert behavior, but there is no
-  separate source-scoped reingest contract and gate;
+- canonical single-index source reingest is qualified by
+  RAG-REINGEST-7B: ownership is selected by
+  `VectorStoreScope(tenant_id, namespace, workspace_id)` plus
+  `KnowledgeDocument.provenance.source_id`; the lifecycle snapshots old
+  persisted IDs, publishes the prepared version, uses the returned persisted
+  IDs, and deletes only `old_ids - new_ids` in the same scope;
+- same-content reingest is idempotent for deterministic/provider-upsert IDs,
+  changed same-count content removes old records, changed fewer-count content
+  removes stale tail records, and same-basename sources remain isolated;
+- preparation or embedding failure before publication preserves the old
+  version; publication followed by stale-delete failure is reported as a
+  failed replacement rather than claimed successful;
+- dual-index reingest remains explicitly unqualified because
+  `DualIndexStrategy` returns main-index IDs only and does not safely expose
+  persisted TOC IDs for stale cleanup;
+- GraphRAG reingest remains explicitly unqualified; vector replacement does
+  not claim graph ownership replacement;
+- source providers without ownership lookup may perform a fresh ingest only
+  when the target scope is empty; otherwise the operation fails with
+  `source_reingest_not_supported` rather than appending a changed source;
+- simultaneous writes for one source are not proven serializable by this
+  lifecycle and no source-level distributed lock is claimed;
 - tenant filtering is qualified; namespace/workspace propagation and provider
   predicates are covered, but independent negative leakage gates are not;
 - the Qdrant provider contract and ID normalization are covered by offline

@@ -57,6 +57,15 @@ class _StubVectorstore:
     def add_records(self, records, *, scope=None) -> list[str]:
         return ["id-0"]
 
+    def list_source_record_ids(self, *, source_id: str, scope: object) -> tuple[str, ...]:
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        return 0
+
+    def delete(self, ids, *, scope=None) -> None:
+        del ids, scope
+
 
 def test_ingest_pipeline_records_version_warnings(tmp_path: Path) -> None:
     source = tmp_path / "doc.txt"

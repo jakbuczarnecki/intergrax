@@ -36,6 +36,15 @@ class _NoopVectorstore:
     def add_records(self, records, *, scope=None) -> None:
         raise AssertionError("vectorstore must not run when semantic size guard blocks ingest")
 
+    def list_source_record_ids(self, *, source_id: str, scope: object) -> tuple[str, ...]:
+        return ()
+
+    def count(self, *, scope: object) -> int:
+        return 0
+
+    def delete(self, ids, *, scope=None) -> None:
+        del ids, scope
+
 
 def test_semantic_chunking_allowed_rejects_oversized_document() -> None:
     docs = [_document("a" * 500, "source")]
