@@ -9,6 +9,7 @@ OS launchers are transport-only. Product orchestration and acceptance live here.
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import os
 import platform
@@ -497,6 +498,62 @@ def _running_product_stack() -> bool:
     return False
 
 
+_IPV6_UNSUPPORTED_ERRNOS = frozenset(
+    error
+    for error in (
+        getattr(errno, "EAFNOSUPPORT", None),
+        getattr(errno, "EPROTONOSUPPORT", None),
+        getattr(errno, "ENOPROTOOPT", None),
+        getattr(errno, "EADDRNOTAVAIL", None),
+        10043,  # WSAEPROTONOSUPPORT
+        10047,  # WSAEAFNOSUPPORT
+        10049,  # WSAEADDRNOTAVAIL
+    )
+    if error is not None
+)
+
+
+def _is_unsupported_ipv6_error(error: OSError) -> bool:
+    return error.errno in _IPV6_UNSUPPORTED_ERRNOS
+
+
+def _probe_host_port(port: int) -> None:
+    probes: list[tuple[int, tuple[object, ...]]] = [
+        (socket.AF_INET, ("0.0.0.0", port)),
+    ]
+    ipv6_family = getattr(socket, "AF_INET6", None)
+    if ipv6_family is not None:
+        probes.append((ipv6_family, ("::", port, 0, 0)))
+
+    for family, address in probes:
+        try:
+            probe = socket.socket(family, socket.SOCK_STREAM)
+        except OSError as error:
+            if family == ipv6_family and _is_unsupported_ipv6_error(error):
+                continue
+            raise QuickstartError("port_unavailable", stage="preflight") from None
+        try:
+            exclusive_address_use = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+            if exclusive_address_use is not None and hasattr(
+                probe, "setsockopt"
+            ):
+                try:
+                    probe.setsockopt(
+                        socket.SOL_SOCKET,
+                        exclusive_address_use,
+                        1,
+                    )
+                except OSError:
+                    pass
+            probe.bind(address)
+        except OSError as error:
+            if family == ipv6_family and _is_unsupported_ipv6_error(error):
+                continue
+            raise QuickstartError("port_unavailable", stage="preflight") from None
+        finally:
+            probe.close()
+
+
 def _check_required_ports(
     *,
     mongodb_host_port: int,
@@ -506,14 +563,7 @@ def _check_required_ports(
         return
     required_ports = {_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}
     for port in sorted(required_ports):
-        probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            probe.bind(("127.0.0.1", port))
-        except OSError:
-            raise QuickstartError("port_unavailable", stage="preflight") from None
-        finally:
-            probe.close()
+        _probe_host_port(port)
 
 
 def run_product_preflight(config: QuickstartConfig) -> str:

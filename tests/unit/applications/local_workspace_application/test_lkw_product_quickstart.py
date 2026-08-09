@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import importlib.util
 import io
 import subprocess
@@ -245,6 +246,116 @@ def test_occupied_required_port_has_safe_preflight_reason(
     assert exc.value.reason == "port_unavailable"
 
 
+def test_ipv4_wildcard_conflict_is_rejected_and_socket_is_closed(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sockets: list[Any] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+            self.closed = False
+            sockets.append(self)
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            if (
+                self.family == quick.socket.AF_INET
+                and address == ("0.0.0.0", 27018)
+            ):
+                raise OSError(errno.EADDRINUSE, "port is busy")
+
+        def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_required_ports(
+            mongodb_host_port=27018,
+            allow_running_stack=False,
+        )
+
+    assert exc.value.reason == "port_unavailable"
+    assert all(probe.closed for probe in sockets)
+
+
+def test_ipv6_wildcard_conflict_is_rejected(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sockets: list[Any] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+            self.closed = False
+            sockets.append(self)
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            if (
+                self.family == quick.socket.AF_INET6
+                and address == ("::", 27018, 0, 0)
+            ):
+                raise OSError(errno.EADDRINUSE, "forwarded port is busy")
+
+        def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._probe_host_port(27018)
+
+    assert exc.value.reason == "port_unavailable"
+    assert len(sockets) == 2
+    assert all(probe.closed for probe in sockets)
+
+
+def test_free_port_is_accepted_and_all_probe_sockets_are_closed(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sockets: list[Any] = []
+
+    class _Socket:
+        def __init__(self, *_args: Any) -> None:
+            self.closed = False
+            sockets.append(self)
+
+        def bind(self, _address: tuple[object, ...]) -> None:
+            return None
+
+        def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._probe_host_port(27018)
+
+    assert len(sockets) == 2
+    assert all(probe.closed for probe in sockets)
+
+
+def test_unsupported_ipv6_does_not_reject_free_ipv4_port(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sockets: list[Any] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            if family == quick.socket.AF_INET6:
+                raise OSError(errno.EAFNOSUPPORT, "IPv6 unavailable")
+            self.closed = False
+            sockets.append(self)
+
+        def bind(self, _address: tuple[object, ...]) -> None:
+            return None
+
+        def close(self) -> None:
+            self.closed = True
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._probe_host_port(27018)
+
+    assert len(sockets) == 1
+    assert sockets[0].closed
+
+
 def test_disk_space_failure_has_safe_preflight_reason(
     quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -350,6 +461,20 @@ def test_failure_output_includes_stable_action_without_raw_details(
     assert "failed_stage=preflight" in text
     assert "failure_reason=docker_daemon_unavailable" in text
     assert "recommended_action=Start Docker and rerun." in text
+    assert "Traceback" not in text
+
+
+def test_port_failure_output_has_stable_preflight_contract(
+    quick: ModuleType,
+) -> None:
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        quick._emit_failure("preflight", "port_unavailable")
+    text = buffer.getvalue()
+    assert "lkw_quickstart_result=FAIL" in text
+    assert "failed_stage=preflight" in text
+    assert "failure_reason=port_unavailable" in text
+    assert "recommended_action=Free the required LKW host port" in text
     assert "Traceback" not in text
 
 
