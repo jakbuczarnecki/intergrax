@@ -12,6 +12,7 @@ from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
 )
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
+from intergrax.rag.document_splitters.chunk_document import build_derived_chunk
 from intergrax.rag.document_splitters.contracts.chunk_metadata_key import ChunkMetadataKey
 from intergrax.rag.document_splitters.strategies.docling_chunking_strategy import (
     DoclingChunkingStrategy,
@@ -144,6 +145,30 @@ def test_recursive_strategy_hard_fallback_bounds_unbroken_text() -> None:
 
     assert "".join(chunk.content for chunk in chunks) == source.content
     assert all(0 < len(chunk.content) <= 7 for chunk in chunks)
+
+
+def test_recursive_strategy_preserves_meaningful_content_around_whitespace_gap() -> None:
+    prefix = "meaningful-prefix"
+    suffix = "meaningful-suffix"
+    source = _source("doc-whitespace-gap", prefix + (" " * 32) + suffix)
+    strategy = RecursiveChunkingStrategy(chunk_size=16, chunk_overlap=0)
+
+    chunks = list(strategy.chunk([source]))
+    emitted_content = "".join(chunk.content for chunk in chunks)
+
+    assert chunks
+    assert prefix in emitted_content
+    assert suffix in emitted_content
+    assert emitted_content.index(prefix) < emitted_content.index(suffix)
+    assert all(0 < len(chunk.content) <= 16 for chunk in chunks)
+    assert all(chunk.content.strip() for chunk in chunks)
+    with pytest.raises(ValueError, match="chunk content must be a non-empty string"):
+        build_derived_chunk(
+            source,
+            content=" " * 3,
+            strategy_id=RecursiveChunkingStrategy.strategy_id(),
+            chunk_index=0,
+        )
 
 
 def test_recursive_strategy_overlap_preserves_bounded_context_and_progress() -> None:
