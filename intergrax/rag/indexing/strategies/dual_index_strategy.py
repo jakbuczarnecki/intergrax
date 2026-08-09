@@ -100,6 +100,11 @@ class DualIndexStrategy(IndexStrategy):
             root_document_id,
             section_name,
         ), parent_document in sections.items():
+            parent_chunk_id = parent_document.metadata.get(
+                ChunkMetadataKey.PARENT_CHUNK_ID.value
+            )
+            if not isinstance(parent_chunk_id, str) or not parent_chunk_id.strip():
+                parent_chunk_id = parent_document.identity.document_id
             toc_docs.append(
                 build_derived_chunk(
                     parent_document,
@@ -111,9 +116,7 @@ class DualIndexStrategy(IndexStrategy):
                     ),
                     chunk_index=0,
                     metadata_updates={
-                        ChunkMetadataKey.PARENT_CHUNK_ID.value: (
-                            parent_document.identity.document_id
-                        ),
+                        ChunkMetadataKey.PARENT_CHUNK_ID.value: parent_chunk_id,
                         ChunkMetadataKey.SECTION.value: section_name,
                     },
                 )

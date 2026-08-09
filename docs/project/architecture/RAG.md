@@ -48,11 +48,18 @@ retriever, and reranker runtime wiring. The plugin closeout gate also proves
 an entry-point chunker can run through `IngestPipeline`, embedding, vector
 storage, and `RetrievalService` without changing RAG core.
 
+Hierarchical retrieval is qualified by RAG-HIER-6 for the explicit
+parent-child path. `ParentChildChunkingStrategy` defines the parent as its
+synthetic parent-group identifier; child chunks carry that value in
+`PARENT_CHUNK_ID`, and `DualIndexStrategy` copies the same value into the
+section-name TOC record. The TOC is a section index, not a full parent
+document. `HierarchicalRetriever` returns child chunks; an expanded child is
+ranked with `max(child dense similarity, TOC section similarity)`. This
+propagates the real section-relevance signal without fabricating provider
+similarity, and no parent-content reconstruction is promised.
+
 Explicit limitations:
 
-- hierarchical/parent-child mode is implemented and profile-selectable, but
-  remains **IMPLEMENTED_BUT_UNQUALIFIED** for a complete final-content and
-  parent-linkage production gate;
 - repeated ingest has deterministic/provider upsert behavior, but there is no
   separate source-scoped reingest contract and gate;
 - tenant filtering is qualified; namespace/workspace propagation and provider
@@ -69,6 +76,7 @@ Explicit limitations:
 Evidence commands:
 `uv run pytest tests/unit/rag/document_splitters/test_native_strategies.py -q -k recursive`,
 `uv run pytest tests/e2e/rag/test_native_rag_retrieval_qualification.py -q`,
+`uv run pytest tests/integration/rag/test_hierarchical_retrieval_qualification.py -q`,
 `uv run pytest tests/unit/rag/evaluation/test_golden_retrieval_gate.py tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py tests/unit/rag/graph/test_graph_rag_retriever_hardening.py tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py tests/unit/rag/profiles/test_production_graph_rag_profile.py -q`,
 and `uv run pytest tests/unit/rag/test_rag_plugin_discovery.py -q`.
 
@@ -86,7 +94,7 @@ RAG is the **functional owner** of the platform knowledge document ABI. The cano
 | Dimension | Score | Notes |
 |-----------|-------|-------|
 | Control-plane architecture (single path, typed contracts) | **L3** | `RetrievalService`, `RagProfile`, runtime bridges, 12 `rag.*` catalog tools |
-| Retrieval mode breadth | **L3** | hybrid, fusion, agentic, graph_rag **stable**; hierarchical + dual-index wired via profile (M-RAG.24) |
+| Retrieval mode breadth | **L3** | hybrid, fusion, agentic, graph_rag **stable**; hierarchical + dual-index **qualified** via profile (RAG-HIER-6) |
 | GraphRAG platform (build / maintain / retrieve) | **L3** | Backend registry, lifecycle sync, tenant isolation, stable retriever, maintenance jobs (M-RAG-GRAPH G1–G3) |
 | Strategy selection (autonomous) | **L1.5** | Tier/cost routing only; MIME/size/retriever auto-pick deferred to Tier-3 + AHI |
 | Ingest — short / medium documents | **L3** | Parser catalog, 5 chunking strategies, optional contextual enrich |

@@ -95,6 +95,7 @@ class HierarchicalRetriever(BaseRetriever):
             )
 
             parents: List[str] = []
+            parent_scores: dict[str, float] = {}
             seen = set()
 
             for hit in toc_hits:
@@ -112,10 +113,12 @@ class HierarchicalRetriever(BaseRetriever):
                 parent = str(parent)
 
                 if parent in seen:
+                    parent_scores[parent] = max(parent_scores[parent], native_hit.score)
                     continue
 
                 seen.add(parent)
                 parents.append(parent)
+                parent_scores[parent] = native_hit.score
 
                 if len(parents) >= self._max_toc_parents:
                     break
@@ -141,6 +144,12 @@ class HierarchicalRetriever(BaseRetriever):
                         hit,
                         channel="dense",
                         retriever_name=self.name(),
+                    )
+                    # Preserve provider similarity while allowing the real
+                    # TOC section signal to rank expanded siblings.
+                    native_hit = replace(
+                        native_hit,
+                        score=max(native_hit.score, parent_scores[parent]),
                     )
                     key = (
                         native_hit.document.scope.tenant_id,
