@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-6D — LKW and Token Optimization native Ollama cutover
-**Next task after acceptance:** Native Ollama regression gate, then LCI-6E
+**Current active task:** LCI-6E — LangChain Ollama compatibility optionalization
+**Next task after acceptance:** LCI-7A
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
@@ -505,7 +505,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Mandatory live proof against real Ollama for matrix dimensions marked in-scope. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-6B |
@@ -521,13 +521,13 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Controlled default resolver switch; LKW and Token Optimization regression suite. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md + LKW IMPLEMENTATION_PLAN (client) |
 | **Dependencies** | LCI-6C, LCI-4A, LCI-3C |
 | **Exact scope** | Resolver default change; LKW proof workflows; Token Optimization regression tests |
 | **Explicit out of scope** | Removing LangChain Ollama shim |
-| **Acceptance criteria** | LKW proof and Token Optimization regressions green on native adapter default; native Ollama regression gate is the next checkpoint after acceptance |
+| **Acceptance criteria** | LKW proof and Token Optimization regressions green on native adapter default; native Ollama regression gate accepted |
 | **User-visible outcome** | Product proof paths use native Ollama |
 
 ---
@@ -537,13 +537,13 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | LangChainOllamaAdapter remains optional compatibility provider behind extra. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-6D |
-| **Exact scope** | ollama_adapter.py optional extra; tool_calls_from_langchain_message behind compat boundary |
+| **Exact scope** | ollama_adapter.py optional extra `llm-langchain-ollama`; tool_calls_from_langchain_message behind compat boundary; provider-based multimedia Ollama detection |
 | **Explicit out of scope** | Deleting compatibility shim |
-| **Acceptance criteria** | Core install imports without langchain-ollama; compat extra restores LangChain adapter |
+| **Acceptance criteria** | Core/native imports do not require langchain-ollama; missing extra has a stable configuration error; compat extra restores the LangChain adapter; native registry default remains unchanged |
 | **User-visible outcome** | LangChain Ollama path explicitly optional |
 
 ---

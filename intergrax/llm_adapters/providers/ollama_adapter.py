@@ -6,7 +6,6 @@ from __future__ import annotations
 import json
 import os
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
-from langchain_ollama import ChatOllama
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -22,8 +21,8 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.tool_call import (
-    LLMToolCall,
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.providers._langchain_compat import (
     tool_calls_from_langchain_message,
 )
 from intergrax.llm_adapters.providers._ollama_schema import prepare_ollama_generation_schema
@@ -33,6 +32,20 @@ from intergrax.llm_adapters.providers.ollama_capabilities import (
 )
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 from intergrax.utils import attribute_access
+
+
+def _load_chat_ollama() -> Any:
+    try:
+        from langchain_ollama import ChatOllama
+    except ModuleNotFoundError as exc:
+        if exc.name != "langchain_ollama":
+            raise
+        raise RuntimeError(
+            "LangChainOllamaAdapter requires the optional extra "
+            "'llm-langchain-ollama'. Install it with "
+            "'uv sync --extra llm-langchain-ollama'."
+        ) from exc
+    return ChatOllama
 
 
 class LangChainOllamaAdapter(LLMAdapter):
@@ -106,7 +119,7 @@ class LangChainOllamaAdapter(LLMAdapter):
 
     def __init__(
         self,
-        chat: Optional[ChatOllama] = None,
+        chat: Optional[Any] = None,
         model: Optional[str] = None,
         context_window_tokens: Optional[int] = None,
         *,
@@ -121,7 +134,8 @@ class LangChainOllamaAdapter(LLMAdapter):
         chat_kwargs: Dict[str, Any] = {"model": resolved_model}
         if base_url is not None:
             chat_kwargs["base_url"] = base_url
-        self.chat = chat or ChatOllama(**chat_kwargs)
+        chat_type = _load_chat_ollama()
+        self.chat = chat if chat is not None else chat_type(**chat_kwargs)
         self.defaults = defaults
         self._base_url = base_url
         self._capability_resolver = capability_resolver or OllamaModelCapabilityResolver(

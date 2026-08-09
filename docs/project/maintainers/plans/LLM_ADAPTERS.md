@@ -17,7 +17,8 @@
 **Feature satellite:** [`../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md)
 
 The target `NativeOllamaAdapter` implements the existing `LLMAdapter` ABI.
-`LangChainOllamaAdapter` remains the parity baseline until LCI-6D. The
+`LangChainOllamaAdapter` remains the explicit compatibility parity baseline
+after LCI-6D. The
 satellite freezes message, response, streaming, tool, structured-output,
 capability, context-window, usage, error, Token Optimization, LKW, transport,
 and LCI-6B harness requirements.
@@ -43,7 +44,7 @@ LKW, and Token Optimization behavior are unchanged.
 
 ## LCI-6C — Native Ollama live parity proof
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** LLM_ADAPTERS
 **Evidence:** [`OLLAMA_NATIVE_ADAPTER_LIVE_PARITY_EVIDENCE.md`](../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_LIVE_PARITY_EVIDENCE.md)
 
@@ -56,7 +57,7 @@ those non-live rows.
 
 ## LCI-6D — LKW and Token Optimization native Ollama cutover
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** LLM_ADAPTERS
 
 The canonical `LLMProvider.OLLAMA` registry entry now resolves to
@@ -64,8 +65,19 @@ The canonical `LLMProvider.OLLAMA` registry entry now resolves to
 to consume only the existing `LLMAdapter` ABI, capability signals, structured
 output, usage, and context-window contracts. `LangChainOllamaAdapter` remains
 explicitly constructible for compatibility and parity tests; it is no longer a
-production default. Native Ollama regression gating is the next checkpoint
-after LCI-6D acceptance, before LCI-6E.
+production default. Native Ollama regression gating is complete for LCI-6E.
+
+## LCI-6E — LangChain Ollama compatibility optionalization
+
+**Status:** `READY_FOR_REVIEW`
+**Owner:** LLM_ADAPTERS
+
+`NativeOllamaAdapter` remains the canonical/default Ollama adapter.
+`LangChainOllamaAdapter` is explicitly constructed behind the
+`llm-langchain-ollama` extra, with lazy LangChain imports and a stable missing
+extra error. Multimedia Ollama vision detection uses provider identity and no
+longer imports the compatibility class. LCI-7A remains the next task after
+acceptance.
 
 ---
 

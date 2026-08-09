@@ -7,6 +7,8 @@ from unittest.mock import Mock
 import pytest
 
 from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.multimedia import image_smart_loader
 from intergrax.multimedia.image_smart_loader import ImageSmartLoader
 
@@ -26,6 +28,8 @@ def image_fixture(monkeypatch):
 
 def _ollama_adapter(model: str | None = None) -> LangChainOllamaAdapter:
     adapter = object.__new__(LangChainOllamaAdapter)
+    adapter.provider = LLMProvider.OLLAMA
+    adapter.model = model
     adapter.defaults = {"model": model} if model is not None else {}
     adapter.chat = SimpleNamespace()
     return adapter
@@ -59,6 +63,26 @@ def test_ollama_explicit_model_is_used_for_runtime_and_metadata(
 
     assert caption_call.call_args.kwargs["model"] == "vision-custom:7b"
     assert document.metadata["caption_model_inferred"] == "vision-custom:7b"
+
+
+def test_native_ollama_provider_uses_public_model_for_vision_bridge(
+    monkeypatch, tmp_path, image_fixture
+):
+    adapter = object.__new__(NativeOllamaAdapter)
+    adapter.provider = LLMProvider.OLLAMA
+    adapter.model = "native-vision:7b"
+    adapter.defaults = {}
+    adapter.chat = SimpleNamespace()
+
+    document, caption_call = _load_caption(
+        monkeypatch,
+        tmp_path,
+        adapter,
+        image_fixture,
+    )
+
+    assert caption_call.call_args.kwargs["model"] == "native-vision:7b"
+    assert document.metadata["caption_model_inferred"] == "native-vision:7b"
 
 
 def test_ollama_missing_model_uses_vision_fallback_for_runtime_and_metadata(

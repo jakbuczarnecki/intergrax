@@ -20,6 +20,7 @@ except Exception:
     pytesseract = None
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 class ImageSmartLoader:
     """
@@ -89,20 +90,22 @@ class ImageSmartLoader:
 
     def _resolved_ollama_model(self) -> Optional[str]:
         """
-        Resolve the model name for the LangChainOllamaAdapter.
-        - Prefer adapter.defaults.get("model")
+        Resolve the model name for an Ollama adapter.
+        - Prefer the adapter's stable public model attribute
+        - Then prefer adapter.defaults.get("model")
         - Fallbacks are possible (chat.model)
         - Use the vision bridge default when no model is exposed
         - Return None for non-Ollama adapters
         """
-        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
-
-        if not isinstance(self.caption_llm, LangChainOllamaAdapter):
+        if not self._is_ollama_adapter(self.caption_llm):
             return None
+        model = attribute_access.optional(self.caption_llm, "model", None)
+        if isinstance(model, str) and model.strip():
+            return model.strip()
         defaults = attribute_access.optional(self.caption_llm, "defaults", {}) or {}
         model = defaults.get("model")
-        if model:
-            return model
+        if isinstance(model, str) and model.strip():
+            return model.strip()
         chat = attribute_access.optional(self.caption_llm, "chat", None)
         if chat is not None:
             for attr in ("model", "model_name", "model_id"):
@@ -123,6 +126,11 @@ class ImageSmartLoader:
                 except Exception:
                     pass
         return "llava-llama3:latest"
+
+    @staticmethod
+    def _is_ollama_adapter(adapter: object | None) -> bool:
+        provider = attribute_access.optional(adapter, "provider", None)
+        return provider in (LLMProvider.OLLAMA, LLMProvider.OLLAMA.value)
 
     def _caption_via_ollama(self, img_path: str) -> str:
         """
@@ -147,12 +155,11 @@ class ImageSmartLoader:
         """
         Generic bridge:
         - If adapter exposes describe_image(path) → use it.
-        - Else if it's LangChainOllamaAdapter → use REST vision bridge.
+        - Else if it's an Ollama adapter → use REST vision bridge.
         - Else raise (you can extend here for OpenAI/Gemini Vision).
         """
         if self.caption_llm is None:
             return ""
-        from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
 
         # 1) Native helper, if adapter ją posiada
         if hasattr(self.caption_llm, "describe_image"):
@@ -162,10 +169,10 @@ class ImageSmartLoader:
             except Exception as e:
                 raise RuntimeError(f"LLMAdapter.describe_image failed: {e}")
         # 2) Ollama vision fallback
-        if isinstance(self.caption_llm, LangChainOllamaAdapter):
+        if self._is_ollama_adapter(self.caption_llm):
             return self._caption_via_ollama(img_path)
         # 3) Not supported yet
-        raise ValueError("Captioning supported for adapters exposing describe_image(...) or LangChainOllamaAdapter (vision).")
+        raise ValueError("Captioning supported for adapters exposing describe_image(...) or an Ollama adapter (vision).")
 
     def _exif_dict(self, img: Image) -> dict:
         out = {}
