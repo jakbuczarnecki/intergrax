@@ -78,9 +78,9 @@ Load **only** the satellite matching your task or cited gap ID.
 | LCI-4C-A1 | P1 | APPROVED | canonical workspace-aware KnowledgeDocumentScope ABI propagation | LCI-4D |
 | LCI-4C | P1 | APPROVED | native Graph RAG indexer, isolation and retrieval document contract | LCI-4D |
 | LCI-4D | P1 | APPROVED | native auxiliary memory, multimedia, legacy answer, evaluation and soak document paths | LCI-5A |
-| LCI-5A | P1 | READY_FOR_REVIEW | native plain-text reader emitting ParsedDocumentFragment without LangChain TextLoader | LCI-5B |
-| LCI-5B | P1 | PLANNED / NEXT AFTER ACCEPTANCE | native OpenAI embedding provider | LCI-5C |
-| LCI-5C | P1 | PLANNED | optional provider-local LangChain loaders and embeddings | LCI-6 |
+| LCI-5A | P1 | APPROVED | native plain-text reader emitting ParsedDocumentFragment without LangChain TextLoader | LCI-5B |
+| LCI-5B | P1 | READY_FOR_REVIEW | shared native OpenAI-compatible embeddings transport for OpenAI, vLLM and llama.cpp | LCI-5C |
+| LCI-5C | P1 | PLANNED / NEXT AFTER ACCEPTANCE | optional provider-local LangChain loaders and embeddings | LCI-6 |
 
 LCI-3D closes the vector-store provider boundary. The VectorStore provider port is
 native: active providers accept `VectorStoreRecord` and `VectorStoreScope`, map

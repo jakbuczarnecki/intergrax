@@ -32,7 +32,7 @@ Active retrievers and the retrieval tool now use the native immutable `Retrieval
 
 ## LCI-4D closeout
 
-Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical KnowledgeDocument boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain Document. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6. LCI-4D is READY_FOR_REVIEW; LCI-5A is PLANNED / NEXT AFTER ACCEPTANCE.
+Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical KnowledgeDocument boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain Document. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6. LCI-4D is APPROVED; LCI-5A is APPROVED; LCI-5B is READY_FOR_REVIEW; LCI-5C is PLANNED / NEXT AFTER ACCEPTANCE.
 
 
 Reranker candidate/result contracts and reranker provider adapters now use native Intergrax knowledge documents; the seven eliminated LangChain document import rows were removed from the detailed inventory.
@@ -42,7 +42,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 
 | Metric | Count |
 |--------|------:|
-| direct production/runtime imports | 14 |
+| direct production/runtime imports | 11 |
 | direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
@@ -50,14 +50,14 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | generated lock rows | 1 |
 | core contract leaks | 0 |
 | core implementation dependencies | 0 |
-| provider-bound dependencies | 12 |
+| provider-bound dependencies | 9 |
 | optional compatibility paths | 0 |
 | legacy optional paths | 2 |
 | tooling dependencies | 1 |
 | test-only | 46 |
 | documentation-only | 0 |
 | unclassified occurrences | 0 |
-| total detailed inventory rows | 72 |
+| total detailed inventory rows | 69 |
 
 ## C. Detailed inventory table
 
@@ -72,10 +72,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | LCI-INV-0029 | `langchain_ollama` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 9 | `ChatOllama` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-6B | verified import |
 | LCI-INV-0030 | `langchain_core.messages` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 250 | `AIMessage, HumanMessage, SystemMessage, ToolMessage` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-6B | verified import |
 | LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 34 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional | Optional provider loaded lazily; explicit registry registration | LCI-2E | verified lazy import |
-| LCI-INV-0074 | `langchain_openai` | `intergrax/rag/embedding/providers/llama_cpp_embedding_provider.py` | 12 | `OpenAIEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
 | LCI-INV-0075 | `langchain_ollama` | `intergrax/rag/embedding/providers/ollama_embedding_provider.py` | 13 | `OllamaEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
-| LCI-INV-0076 | `langchain_openai` | `intergrax/rag/embedding/providers/openai_embedding_provider.py` | 13 | `OpenAIEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
-| LCI-INV-0077 | `langchain_openai` | `intergrax/rag/embedding/providers/vllm_embedding_provider.py` | 12 | `OpenAIEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | required (default install) | Provider-local LangChain use; map at boundary; optional extra | LCI-3A | verified import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |
@@ -174,7 +171,7 @@ Direct import counts are from §C import rows only (not packaging rows).
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
 | langchain-core | Document/messages ABI leak | 47 | 51 | 1 | 99 | yes | compat extra only | LCI-7A |
 | langchain-community | Community loader bridges | 3 | 0 | 0 | 3 | yes | integrations extra | LCI-5C |
-| langchain-openai | Embedding wrappers | 3 | 0 | 0 | 3 | yes | native/SDK path | LCI-5B |
+| langchain-openai | Embedding wrappers | 0 | 0 | 0 | 0 | yes | native/SDK path | LCI-5B |
 | langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
 | langchain-text-splitters | Recursive splitter optional provider | 1 | 0 | 0 | 1 | optional | rag-langchain-splitters extra | LCI-2E |
 | langgraph | Legacy orchestration adapters | 2 | 0 | 0 | 2 | optional extra only | retirement review | LCI-8A |

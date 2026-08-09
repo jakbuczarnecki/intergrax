@@ -12,39 +12,12 @@
       ]
     },
     {
-      "inventory_id": "LCI-INV-0074",
-      "path": "intergrax/rag/embedding/providers/llama_cpp_embedding_provider.py",
-      "kind": "from",
-      "module": "langchain_openai",
-      "names": [
-        "OpenAIEmbeddings"
-      ]
-    },
-    {
       "inventory_id": "LCI-INV-0075",
       "path": "intergrax/rag/embedding/providers/ollama_embedding_provider.py",
       "kind": "from",
       "module": "langchain_ollama",
       "names": [
         "OllamaEmbeddings"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0076",
-      "path": "intergrax/rag/embedding/providers/openai_embedding_provider.py",
-      "kind": "from",
-      "module": "langchain_openai",
-      "names": [
-        "OpenAIEmbeddings"
-      ]
-    },
-    {
-      "inventory_id": "LCI-INV-0077",
-      "path": "intergrax/rag/embedding/providers/vllm_embedding_provider.py",
-      "kind": "from",
-      "module": "langchain_openai",
-      "names": [
-        "OpenAIEmbeddings"
       ]
     },
     {

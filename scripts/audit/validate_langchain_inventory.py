@@ -53,6 +53,12 @@ REMOVED_LCI_4B_INVENTORY_IDS = {
     "LCI-INV-0096",
 }
 
+REMOVED_LCI_5B_INVENTORY_IDS = {
+    "LCI-INV-0074",
+    "LCI-INV-0076",
+    "LCI-INV-0077",
+}
+
 
 def _fix_mojibake(text: str) -> str:
     return (
@@ -252,13 +258,15 @@ def validate(text: str) -> None:
     ids = [r["id"] for r in rows]
     assert len(ids) == len(set(ids)), "duplicate inventory IDs"
     assert not REMOVED_LCI_4B_INVENTORY_IDS.intersection(ids), "closed LCI-4B rows reintroduced"
+    assert not REMOVED_LCI_5B_INVENTORY_IDS.intersection(ids), "closed LCI-5B rows reintroduced"
+    assert "LCI-INV-0075" in ids, "unrelated Ollama embedding row removed"
     assert "LCI-INV-0054" not in ids
     assert not any(
         row["path"] == "intergrax/rag/document_loaders/parsers/text_smart_parser.py"
         and row["symbol"] == "TextLoader"
         for row in rows
     ), "closed LCI-5A TextLoader row reintroduced"
-    assert len(ids) == 72, f"expected 72 unique inventory IDs, got {len(ids)}"
+    assert len(ids) == 69, f"expected 69 unique inventory IDs, got {len(ids)}"
 
     splitter_packaging_rows = [row for row in rows if row["id"] == "LCI-INV-0180"]
     assert len(splitter_packaging_rows) == 1
@@ -278,10 +286,10 @@ def validate(text: str) -> None:
     assert not unclassified, f"unclassified rows: {len(unclassified)}"
 
     summary = summary_counts(text)
-    assert summary.get("direct production/runtime imports") == 14
+    assert summary.get("direct production/runtime imports") == 11
     assert summary.get("direct test imports") == 46
-    assert summary.get("provider-bound dependencies") == 12
-    assert summary.get("total detailed inventory rows") == 72
+    assert summary.get("provider-bound dependencies") == 9
+    assert summary.get("total detailed inventory rows") == 69
     assert summary.get("unclassified occurrences") == 0
     assert summary.get("core contract leaks") == 0
     assert summary.get("core implementation dependencies") == 0
@@ -331,7 +339,7 @@ def validate(text: str) -> None:
                 f"{row['id']}: LCI-7B only for core installation gate tests, got {path}"
             )
 
-    print("72 unique inventory IDs")
+    print("69 unique inventory IDs")
     print("0 duplicate path + line + symbol")
     print("0 unclassified")
     print("summary totals match")

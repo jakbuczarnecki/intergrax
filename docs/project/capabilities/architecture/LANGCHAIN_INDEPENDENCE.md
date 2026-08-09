@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **READY_FOR_REVIEW**; LCI-5B **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-5C **PLANNED**; LCI-6 **PLANNED**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **READY_FOR_REVIEW**; LCI-5C **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-6 **PLANNED**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-5A — Native text document loader replacement
+**Current active task:** LCI-5B — Native OpenAI-compatible embedding transport
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -39,6 +39,13 @@ constructs LangChain `TextLoader` or LangChain `Document`. Text decoding
 preserves supported encoding behavior without introducing a new required
 dependency. Provider-local LangChain document loaders remain assigned to
 LCI-5C.
+
+**LCI-5B decision:** OpenAI, vLLM and llama.cpp embedding providers use a shared native
+OpenAI-compatible embeddings transport built on the OpenAI SDK. No LCI-5B provider
+imports or constructs `langchain-openai` `OpenAIEmbeddings`. Provider-specific model,
+base URL and credential semantics remain owned by the provider wrappers.
+The `EmbeddingProvider` ABI, float32 output, shape and lazy dimension resolution
+remain unchanged.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 
