@@ -60,6 +60,9 @@ similarity, and no parent-content reconstruction is promised.
 
 Explicit limitations:
 
+- the portable vector ABI uses the logical persisted ID from
+  `VectorStoreRecord.vector_id` for add results, query hits, ownership
+  enumeration, and delete input; backend-native IDs remain provider internals;
 - canonical single-index source reingest is qualified by
   RAG-REINGEST-7B: ownership is selected by
   `VectorStoreScope(tenant_id, namespace, workspace_id)` plus
@@ -72,9 +75,12 @@ Explicit limitations:
 - preparation or embedding failure before publication preserves the old
   version; publication followed by stale-delete failure is reported as a
   failed replacement rather than claimed successful;
-- dual-index reingest remains explicitly unqualified because
-  `DualIndexStrategy` returns main-index IDs only and does not safely expose
-  persisted TOC IDs for stale cleanup;
+- dual-index source reingest is qualified by RAG-FINAL-10A: the lifecycle
+  snapshots main and TOC ownership, publishes main then TOC, enumerates both
+  stores after publication, and deletes only the source-scoped stale IDs;
+- dual-index publication is non-atomic: if TOC publication or post-publication
+  ownership enumeration/cleanup fails, stale deletion is not claimed
+  transactional and a partial new publication may remain for retry/recovery;
 - GraphRAG reingest remains explicitly unqualified; vector replacement does
   not claim graph ownership replacement;
 - source providers without ownership lookup may perform a fresh ingest only
@@ -87,8 +93,11 @@ Explicit limitations:
   records outside the requested scope are excluded before results are exposed,
   while Qdrant has an offline filter-construction and fake-provider execution
   proof; live Qdrant isolation is not claimed;
-- the Qdrant provider contract and ID normalization are covered by offline
-  tests, and the live tenant-isolation probe passed; the broader backend
+- the Qdrant provider contract, logical/physical ID mapping, and offline
+  source-scoped delete proof are covered by tests; live tenant-isolation is
+  not claimed; historical points without the reserved logical-ID payload fail
+  closed for ownership/result enumeration rather than falling back to a
+  physical ID; the broader backend
   lifecycle suite is **TEST_ASSUMPTION_DEFECT** because its integration
   wrapper calls methods outside the provider contract; live production graph
   services are likewise not claimed here;
@@ -100,6 +109,7 @@ Evidence commands:
 `uv run pytest tests/unit/rag/document_splitters/test_native_strategies.py -q -k recursive`,
 `uv run pytest tests/e2e/rag/test_native_rag_retrieval_qualification.py -q`,
 `uv run pytest tests/integration/rag/test_hierarchical_retrieval_qualification.py -q`,
+`uv run pytest tests/integration/rag/test_dual_index_reingest_qualification.py -q`,
 `uv run pytest tests/unit/rag/evaluation/test_golden_retrieval_gate.py tests/unit/rag/graph/test_hybrid_retrieval_graph_channel.py tests/unit/rag/graph/test_graph_rag_retriever_hardening.py tests/unit/rag/graph/test_graph_provenance_retrieval_trace.py tests/unit/rag/profiles/test_production_graph_rag_profile.py -q`,
 and `uv run pytest tests/unit/rag/test_rag_plugin_discovery.py -q`.
 

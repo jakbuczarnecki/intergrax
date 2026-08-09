@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -73,6 +73,29 @@ class IngestResult:
     parser_trace: dict[str, Any] = field(default_factory=dict)
     version_warnings: list[str] = field(default_factory=list)
     reindex_recommended: bool = False
+
+
+class _RecordingVectorstore:
+    """Capture provider-returned IDs while preserving the vectorstore ABI."""
+
+    def __init__(self, delegate: BaseVectorstoreManager) -> None:
+        self._delegate = delegate
+        self.persisted_ids: set[str] = set()
+
+    def add_records(
+        self,
+        records: Sequence[VectorStoreRecord],
+        *,
+        scope: VectorStoreScope | None = None,
+    ) -> Sequence[str] | None:
+        stored_ids = self._delegate.add_records(records, scope=scope)
+        ids = (
+            list(stored_ids)
+            if stored_ids is not None
+            else [record.vector_id for record in records]
+        )
+        self.persisted_ids.update(ids)
+        return stored_ids
 
 
 class IngestPipeline:
@@ -182,9 +205,18 @@ class IngestPipeline:
             assert source_scope is not None
 
             try:
-                old_ids = self._list_current_source_ids(
+                old_main_ids = self._list_current_source_ids(
                     source_id=source_id,
                     scope=source_scope,
+                )
+                old_toc_ids = (
+                    self._list_current_source_ids(
+                        source_id=source_id,
+                        scope=source_scope,
+                        vectorstore=self._toc_vectorstore,
+                    )
+                    if self._uses_dual_index()
+                    else set()
                 )
             except RuntimeError as exc:
                 if str(exc) == self._SOURCE_REINGEST_UNSUPPORTED:
@@ -194,9 +226,8 @@ class IngestPipeline:
                     )
                 raise
 
-            if old_ids and (
-                self._uses_dual_index()
-                or (self._graph_store is not None and self._profile.graph_rag_enabled)
+            if (old_main_ids or old_toc_ids) and (
+                self._graph_store is not None and self._profile.graph_rag_enabled
             ):
                 return IngestResult(
                     used=False,
@@ -268,12 +299,15 @@ class IngestPipeline:
             ):
                 if self._uses_dual_index():
                     assert self._toc_vectorstore is not None
+                    toc_recording_store = _RecordingVectorstore(
+                        self._toc_vectorstore
+                    )
                     vector_ids = list(
                         IndexingManager(
                             embed_manager=self._embedding_manager,
                             vectorstore=self._vectorstore,
                             strategy=DualIndexStrategy(
-                                toc_vectorstore=self._toc_vectorstore
+                                toc_vectorstore=toc_recording_store  # type: ignore[arg-type]
                             ),
                         ).index_documents(native_chunks)
                     )
@@ -300,16 +334,53 @@ class IngestPipeline:
                                 "vectorstore returned an unexpected number of vector IDs"
                             )
 
-            stale_ids = old_ids - set(vector_ids)
-            if stale_ids:
+            if self._uses_dual_index():
+                published_main_ids = self._list_current_source_ids(
+                    source_id=source_id,
+                    scope=source_scope,
+                )
+                published_toc_ids = self._list_current_source_ids(
+                    source_id=source_id,
+                    scope=source_scope,
+                    vectorstore=self._toc_vectorstore,
+                )
+                new_main_ids = set(vector_ids)
+                new_toc_ids = toc_recording_store.persisted_ids
+                if not new_main_ids.issubset(published_main_ids):
+                    raise RuntimeError(
+                        "source_reingest_main_ownership_mismatch"
+                    )
+                if not new_toc_ids.issubset(published_toc_ids):
+                    raise RuntimeError(
+                        "source_reingest_toc_ownership_mismatch"
+                    )
+            else:
+                new_main_ids = set(vector_ids)
+                new_toc_ids = set()
+
+            stale_main_ids = old_main_ids - new_main_ids
+            if stale_main_ids:
                 try:
                     self._vectorstore.delete(
-                        sorted(stale_ids),
+                        sorted(stale_main_ids),
                         scope=source_scope,
                     )
                 except Exception as exc:
                     raise RuntimeError(
                         "source_reingest_stale_delete_failed"
+                    ) from exc
+
+            stale_toc_ids = old_toc_ids - new_toc_ids
+            if stale_toc_ids:
+                assert self._toc_vectorstore is not None
+                try:
+                    self._toc_vectorstore.delete(
+                        sorted(stale_toc_ids),
+                        scope=source_scope,
+                    )
+                except Exception as exc:
+                    raise RuntimeError(
+                        "source_reingest_toc_stale_delete_failed"
                     ) from exc
 
             if self._graph_store is not None and self._profile.graph_rag_enabled:
@@ -351,8 +422,10 @@ class IngestPipeline:
         *,
         source_id: str,
         scope: VectorStoreScope,
+        vectorstore: BaseVectorstoreManager | None = None,
     ) -> set[str]:
-        lookup = getattr(self._vectorstore, "list_source_record_ids", None)
+        target_vectorstore = vectorstore or self._vectorstore
+        lookup = getattr(target_vectorstore, "list_source_record_ids", None)
         if not callable(lookup):
             lookup_error = RuntimeError(self._SOURCE_LOOKUP_UNSUPPORTED)
         else:
@@ -363,7 +436,7 @@ class IngestPipeline:
                     raise
                 lookup_error = exc
 
-        if self._vectorstore.count(scope=scope) == 0:
+        if target_vectorstore.count(scope=scope) == 0:
             return set()
         raise RuntimeError(self._SOURCE_REINGEST_UNSUPPORTED) from lookup_error
 

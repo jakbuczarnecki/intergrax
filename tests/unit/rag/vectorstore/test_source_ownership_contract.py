@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from types import SimpleNamespace
 
 import pytest
 
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
+)
+from intergrax.integrations.providers.vector_store.pgvector.rag_store import (
+    PgVectorRagStore,
 )
 from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
     QdrantConfig,
@@ -122,6 +126,49 @@ def test_inmemory_returns_complete_persisted_ids_with_exact_source_scope() -> No
     assert manager.list_source_record_ids(source_id="missing", scope=scope_a) == ()
 
 
+@pytest.mark.parametrize(
+    "store_factory",
+    [
+        lambda: InMemoryVectorStore(tenant_id="tenant-a"),
+        lambda: PgVectorRagStore(tenant_id="tenant-a"),
+    ],
+    ids=["inmemory", "pgvector-fallback"],
+)
+def test_add_ownership_delete_uses_one_logical_id_domain(store_factory: Any) -> None:
+    source_id = "C:/docs/lifecycle.md"
+    other_source_id = "D:/docs/other.md"
+    scope = _scope()
+    manager = VectorstoreManager(store_factory(), scope=scope)
+    records = [
+        _record("logical/lifecycle-1", source_id=source_id, scope=scope),
+        _record("logical/lifecycle-2", source_id=source_id, scope=scope),
+    ]
+
+    returned = set(manager.add_records(records, scope=scope))
+    manager.add_records(
+        [_record("logical/other", source_id=other_source_id, scope=scope)],
+        scope=scope,
+    )
+    ownership = set(
+        manager.list_source_record_ids(source_id=source_id, scope=scope)
+    )
+
+    assert returned == ownership == {
+        "logical/lifecycle-1",
+        "logical/lifecycle-2",
+    }
+    lifecycle_ids = {
+        "logical/lifecycle-1",
+        "logical/lifecycle-2",
+    }
+    manager.delete(sorted(lifecycle_ids), scope=scope)
+    assert manager.list_source_record_ids(source_id=source_id, scope=scope) == ()
+    assert manager.list_source_record_ids(
+        source_id=other_source_id,
+        scope=scope,
+    ) == ("logical/other",)
+
+
 def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> None:
     source_id = "C:/docs/report.md"
     scope_a = _scope()
@@ -195,6 +242,7 @@ class _FakeQdrantClient:
         self.points: list[_FakeQdrantPoint] = []
         self.scroll_calls: list[dict[str, Any]] = []
         self.query_calls = 0
+        self.allow_query = False
         self.fail_scroll = False
 
     def get_collection(self, collection_name: str) -> dict[str, str]:
@@ -212,13 +260,31 @@ class _FakeQdrantClient:
             for point in points
         )
 
-    def query_points(self, **_: Any) -> None:
+    def query_points(self, *, query_filter: Any, limit: int, **_: Any) -> Any:
         self.query_calls += 1
-        raise AssertionError("source ownership must not use similarity query")
+        if not self.allow_query:
+            raise AssertionError("source ownership must not use similarity query")
+        selected = [
+            point for point in self.points if self._matches(point, query_filter)
+        ]
+        return SimpleNamespace(
+            points=[
+                SimpleNamespace(
+                    id=point.id,
+                    payload=point.payload,
+                    vector=point.vector,
+                    score=1.0,
+                )
+                for point in selected[:limit]
+            ]
+        )
 
     @staticmethod
     def _matches(point: _FakeQdrantPoint, qfilter: Any) -> bool:
         for condition in getattr(qfilter, "must", []) or []:
+            has_id = getattr(condition, "has_id", None)
+            if has_id is not None and point.id not in has_id:
+                return False
             field = getattr(condition, "key", None)
             match = getattr(condition, "match", None)
             if field is not None and match is not None:
@@ -229,6 +295,19 @@ class _FakeQdrantClient:
                 if is_null.key in point.payload:
                     return False
         return True
+
+    def delete(self, *, points_selector: Any, **_: Any) -> None:
+        qfilter = getattr(points_selector, "filter", None)
+        point_ids = getattr(points_selector, "points", None)
+        self.points = [
+            point
+            for point in self.points
+            if (
+                not self._matches(point, qfilter)
+                if qfilter is not None
+                else point.id not in (point_ids or [])
+            )
+        ]
 
     def scroll(self, *, scroll_filter: Any, offset: Any, **_: Any) -> tuple[list[Any], Any]:
         if self.fail_scroll:
@@ -258,7 +337,7 @@ def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() ->
     scope_b = _scope(workspace_id="workspace-b")
     source_a = "C:/docs/a/report.md"
 
-    store.add_records(
+    returned_ids = store.add_records(
         [
             _record("qdrant/a", source_id=source_a, scope=scope_a),
             _record(
@@ -277,12 +356,8 @@ def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() ->
 
     actual_ids = store.list_source_record_ids(source_id=source_a, scope=scope_a)
 
-    assert actual_ids == sorted(
-        [
-            str(_normalize_point_id("qdrant/a")),
-            str(_normalize_point_id("qdrant/a-2")),
-        ]
-    )
+    assert returned_ids == ["qdrant/a", "qdrant/b", "qdrant/a-2"]
+    assert actual_ids == ["qdrant/a", "qdrant/a-2"]
     assert client.query_calls == 0
     assert len(client.scroll_calls) > 1
     conditions = client.scroll_calls[0]["filter"].must
@@ -306,6 +381,67 @@ def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() ->
         and getattr(getattr(condition, "match", None), "value", None) == source_a
         for condition in conditions
     )
+
+
+def test_qdrant_logical_ids_are_queryable_and_delete_maps_with_scope() -> None:
+    store, client = _qdrant_store()
+    scope_a = _scope()
+    scope_b = _scope(workspace_id="workspace-b")
+    source_id = "C:/docs/a/report.md"
+
+    store.add_records(
+        [_record("logical/a", source_id=source_id, scope=scope_a)],
+        scope=scope_a,
+    )
+    store.add_records(
+        [_record("logical/b", source_id=source_id, scope=scope_b)],
+        scope=scope_b,
+    )
+    client.allow_query = True
+
+    hits = store.query(
+        [1.0, 0.0],
+        scope=scope_a,
+        top_k=5,
+    )
+    assert [hit.vector_id for hit in hits] == ["logical/a"]
+    assert str(_normalize_point_id("logical/a")) != "logical/a"
+
+    store.delete(["logical/a"], scope=scope_a)
+
+    assert not any(
+        point.id == _normalize_point_id("logical/a") for point in client.points
+    )
+    assert any(
+        point.id == _normalize_point_id("logical/b")
+        and point.payload["workspace_id"] == "workspace-b"
+        for point in client.points
+    )
+    assert store.list_source_record_ids(source_id=source_id, scope=scope_a) == []
+    assert store.list_source_record_ids(source_id=source_id, scope=scope_b) == [
+        "logical/b"
+    ]
+
+
+def test_qdrant_source_lookup_fails_closed_without_logical_id() -> None:
+    store, client = _qdrant_store()
+    scope = _scope()
+    source_id = "C:/docs/a/report.md"
+    client.points.append(
+        _FakeQdrantPoint(
+            id=_normalize_point_id("legacy/a"),
+            payload={
+                "tenant_id": scope.tenant_id,
+                "namespace": scope.namespace,
+                "workspace_id": scope.workspace_id,
+                "source_id": source_id,
+            },
+            vector=[1.0, 0.0],
+        )
+    )
+
+    with pytest.raises(VectorStoreContractError, match="logical vector ID"):
+        store.list_source_record_ids(source_id=source_id, scope=scope)
 
 
 def test_qdrant_source_lookup_returns_empty_for_missing_source_and_propagates_failure() -> None:

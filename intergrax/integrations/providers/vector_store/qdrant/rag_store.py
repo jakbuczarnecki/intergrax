@@ -86,6 +86,19 @@ def _normalize_point_id(raw_id: str) -> str | int:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, raw_id))
 
 
+def _logical_vector_id(payload: Dict[str, Any]) -> str:
+    """Read the portable logical ID; never expose a Qdrant point ID."""
+    try:
+        return require_non_empty_str(
+            payload.get(_LOGICAL_ID_METADATA_KEY),
+            field_name=_LOGICAL_ID_METADATA_KEY,
+        )
+    except (TypeError, ValueError) as exc:
+        raise VectorStoreContractError(
+            "qdrant point is missing a valid logical vector ID"
+        ) from exc
+
+
 
 @dataclass(frozen=True)
 class QdrantConfig:
@@ -305,7 +318,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
 
             hits.append(
                 native_hit(
-                    vector_id=str(payload.get(_LOGICAL_ID_METADATA_KEY) or r.id),
+                    vector_id=_logical_vector_id(payload),
                     content=text,
                     metadata=payload,
                     similarity_score=float(r.score),
@@ -413,7 +426,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             payload = r.payload or {}
             hits.append(
                 native_hit(
-                    vector_id=str((r.payload or {}).get(_LOGICAL_ID_METADATA_KEY) or r.id),
+                    vector_id=_logical_vector_id(payload),
                     content=str(payload.get("text", "")),
                     metadata={**payload, "qdrant_hybrid": True},
                     similarity_score=float(r.score),
@@ -506,12 +519,12 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 scroll_filter=qfilter,
                 limit=256,
                 offset=next_offset,
-                with_payload=False,
+                with_payload=[_LOGICAL_ID_METADATA_KEY],
                 with_vectors=False,
             )
             if not records:
                 break
-            ids.extend(str(point.id) for point in records)
+            ids.extend(_logical_vector_id(point.payload or {}) for point in records)
             if next_offset is None:
                 break
         return sorted(ids)
@@ -554,7 +567,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 break
             for point in records:
                 payload = point.payload or {}
-                logical = str(payload.get(_LOGICAL_ID_METADATA_KEY) or point.id)
+                logical = _logical_vector_id(payload)
                 if skipped < target_offset:
                     skipped += 1
                     continue
@@ -591,9 +604,10 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
         if not points:
             return None
         payload = points[0].payload or {}
+        logical = _logical_vector_id(payload)
         metadata = {key: value for key, value in payload.items() if key != "text"}
         return {
-            "id": str(payload.get(_LOGICAL_ID_METADATA_KEY) or logical),
+            "id": logical,
             "text": str(payload.get("text") or ""),
             "metadata": metadata,
         }
@@ -629,7 +643,7 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 break
             for point in records:
                 payload = point.payload or {}
-                logical = str(payload.get(_LOGICAL_ID_METADATA_KEY) or point.id)
+                logical = _logical_vector_id(payload)
                 metadata = {key: value for key, value in payload.items() if key != "text"}
                 results.append(
                     {

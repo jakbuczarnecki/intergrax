@@ -174,9 +174,9 @@ class MetadataFilter:
 class VectorStoreRecord:
     """Immutable native document plus exactly one vector.
 
-    ``vector_id`` is the provider record ID. It may differ from the canonical
-    ``document.identity.document_id`` only for existing call sites that need
-    an external storage ID; the two roles remain explicit.
+    ``vector_id`` is the provider-neutral logical persisted vector ID. Provider
+    implementations may map it to a backend-native physical ID internally, but
+    that physical ID must never cross the portable RAG ABI.
     """
 
     document: KnowledgeDocument
