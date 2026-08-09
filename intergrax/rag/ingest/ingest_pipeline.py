@@ -32,6 +32,9 @@ from intergrax.rag.governance.embedding_version_policy import (
 )
 from intergrax.rag.graph.contracts.graph_store import GraphStore
 from intergrax.rag.graph.indexer.graph_indexer_factory import resolve_graph_indexer
+from intergrax.rag.graph.lifecycle.graph_lifecycle_sync import (
+    sync_graph_delete_documents,
+)
 from intergrax.rag.indexing.indexing_manager import IndexingManager
 from intergrax.rag.indexing.strategies.dual_index_strategy import DualIndexStrategy
 from intergrax.rag.ingest.ingest_policy import (
@@ -140,7 +143,9 @@ class IngestPipeline:
             if not path.exists():
                 return IngestResult(used=False, reason="source_not_found")
 
-            allowed, size_reason, file_size = sync_ingest_allowed(path=path, profile=self._profile)
+            allowed, size_reason, file_size = sync_ingest_allowed(
+                path=path, profile=self._profile
+            )
             if not allowed:
                 return IngestResult(
                     used=False,
@@ -155,23 +160,31 @@ class IngestPipeline:
                 return IngestResult(used=False, reason="missing_tenant_id")
 
             namespace = base_metadata.get("namespace")
-            loader_namespace = namespace if isinstance(namespace, str) and namespace.strip() else None
+            loader_namespace = (
+                namespace if isinstance(namespace, str) and namespace.strip() else None
+            )
 
             version_policy = evaluate_ingest_embedding_version(
                 profile=self._profile,
                 base_metadata=base_metadata,
                 source_path=str(path),
-                indexed_version_hint=base_metadata.get("indexed_embedding_model_version"),
+                indexed_version_hint=base_metadata.get(
+                    "indexed_embedding_model_version"
+                ),
             )
             if self._profile.embedding_model_version:
-                base_metadata["embedding_model_version"] = self._profile.embedding_model_version
+                base_metadata["embedding_model_version"] = (
+                    self._profile.embedding_model_version
+                )
 
             def _cb(doc: Any, source: str) -> dict[str, Any]:
                 if self._metadata_callback is not None:
                     return filter_native_metadata(self._metadata_callback(doc, source))
                 return filter_native_metadata(base_metadata)
 
-            with rag_span("rag.ingest.load", attributes={"rag.ingest.source": str(path)}):
+            with rag_span(
+                "rag.ingest.load", attributes={"rag.ingest.source": str(path)}
+            ):
                 native_docs = self._loader.load_document(
                     str(path),
                     tenant_id=tenant_id,
@@ -198,7 +211,9 @@ class IngestPipeline:
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
-            source_id, source_scope, ownership_error = self._source_ownership(native_docs)
+            source_id, source_scope, ownership_error = self._source_ownership(
+                native_docs
+            )
             if ownership_error is not None:
                 return IngestResult(used=False, reason=ownership_error)
             assert source_id is not None
@@ -226,15 +241,9 @@ class IngestPipeline:
                     )
                 raise
 
-            if (old_main_ids or old_toc_ids) and (
-                self._graph_store is not None and self._profile.graph_rag_enabled
-            ):
-                return IngestResult(
-                    used=False,
-                    reason=self._SOURCE_REINGEST_UNSUPPORTED,
-                )
-
-            strategy_id = request.chunking_strategy_id or self._profile.chunking_strategy_id
+            strategy_id = (
+                request.chunking_strategy_id or self._profile.chunking_strategy_id
+            )
             sem_allowed, sem_reason, _ = semantic_chunking_allowed(
                 docs=native_docs,
                 strategy_id=strategy_id,
@@ -253,7 +262,9 @@ class IngestPipeline:
             first_meta = dict(native_docs[0].metadata)
             if TRACE_METADATA_KEY in first_meta:
                 parser_trace = dict(first_meta.get(TRACE_METADATA_KEY) or {})
-                parser_id = parser_trace.get("parser_id") or first_meta.get("integration_parser_id")
+                parser_id = parser_trace.get("parser_id") or first_meta.get(
+                    "integration_parser_id"
+                )
 
             with rag_span(
                 "rag.ingest.chunk",
@@ -299,9 +310,7 @@ class IngestPipeline:
             ):
                 if self._uses_dual_index():
                     assert self._toc_vectorstore is not None
-                    toc_recording_store = _RecordingVectorstore(
-                        self._toc_vectorstore
-                    )
+                    toc_recording_store = _RecordingVectorstore(self._toc_vectorstore)
                     vector_ids = list(
                         IndexingManager(
                             embed_manager=self._embedding_manager,
@@ -347,16 +356,38 @@ class IngestPipeline:
                 new_main_ids = set(vector_ids)
                 new_toc_ids = toc_recording_store.persisted_ids
                 if not new_main_ids.issubset(published_main_ids):
-                    raise RuntimeError(
-                        "source_reingest_main_ownership_mismatch"
-                    )
+                    raise RuntimeError("source_reingest_main_ownership_mismatch")
                 if not new_toc_ids.issubset(published_toc_ids):
-                    raise RuntimeError(
-                        "source_reingest_toc_ownership_mismatch"
-                    )
+                    raise RuntimeError("source_reingest_toc_ownership_mismatch")
             else:
                 new_main_ids = set(vector_ids)
                 new_toc_ids = set()
+
+            if self._graph_store is not None and self._profile.graph_rag_enabled:
+                with rag_span("rag.ingest.graph_index"):
+                    try:
+                        indexer = resolve_graph_indexer(
+                            self._graph_store,
+                            self._profile,
+                            llm=self._llm_for_graph,
+                        )
+                        indexer.index_documents(native_chunks, chunk_ids=vector_ids)
+                    except Exception as exc:
+                        raise RuntimeError(
+                            "source_reingest_graph_publish_failed"
+                        ) from exc
+
+                stale_graph_ids = old_main_ids - new_main_ids
+                if stale_graph_ids:
+                    try:
+                        sync_graph_delete_documents(
+                            self._graph_store,
+                            sorted(stale_graph_ids),
+                        )
+                    except Exception as exc:
+                        raise RuntimeError(
+                            "source_reingest_graph_stale_unlink_failed"
+                        ) from exc
 
             stale_main_ids = old_main_ids - new_main_ids
             if stale_main_ids:
@@ -366,9 +397,7 @@ class IngestPipeline:
                         scope=source_scope,
                     )
                 except Exception as exc:
-                    raise RuntimeError(
-                        "source_reingest_stale_delete_failed"
-                    ) from exc
+                    raise RuntimeError("source_reingest_stale_delete_failed") from exc
 
             stale_toc_ids = old_toc_ids - new_toc_ids
             if stale_toc_ids:
@@ -382,15 +411,6 @@ class IngestPipeline:
                     raise RuntimeError(
                         "source_reingest_toc_stale_delete_failed"
                     ) from exc
-
-            if self._graph_store is not None and self._profile.graph_rag_enabled:
-                with rag_span("rag.ingest.graph_index"):
-                    indexer = resolve_graph_indexer(
-                        self._graph_store,
-                        self._profile,
-                        llm=self._llm_for_graph,
-                    )
-                    indexer.index_documents(native_chunks, chunk_ids=vector_ids)
 
             return IngestResult(
                 used=True,
@@ -441,4 +461,7 @@ class IngestPipeline:
         raise RuntimeError(self._SOURCE_REINGEST_UNSUPPORTED) from lookup_error
 
     def _uses_dual_index(self) -> bool:
-        return self._profile.uses_hierarchical_index() and self._toc_vectorstore is not None
+        return (
+            self._profile.uses_hierarchical_index()
+            and self._toc_vectorstore is not None
+        )

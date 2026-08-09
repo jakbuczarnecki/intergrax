@@ -14,6 +14,9 @@ class InMemoryGraphStore(GraphStore):
         self._nodes: Dict[str, GraphNode] = {}
         self._adj: Dict[str, Set[str]] = defaultdict(set)
         self._chunk_by_node: Dict[str, Set[str]] = defaultdict(set)
+        self._edge_keys: Set[tuple[str, str, str]] = set()
+        self._unowned_edge_keys: Set[tuple[str, str, str]] = set()
+        self._edge_chunks: Dict[tuple[str, str, str], Set[str]] = defaultdict(set)
 
     @property
     def tenant_id(self) -> str | None:
@@ -38,6 +41,17 @@ class InMemoryGraphStore(GraphStore):
         self._nodes[node.id] = scoped
 
     def upsert_edge(self, edge: GraphEdge) -> None:
+        edge_key = (edge.source_id, edge.target_id, edge.relation)
+        self._edge_keys.add(edge_key)
+        raw_chunk_ids = (edge.metadata or {}).get("chunk_ids")
+        if isinstance(raw_chunk_ids, (list, tuple, set)):
+            self._edge_chunks[edge_key].update(
+                str(chunk_id).strip()
+                for chunk_id in raw_chunk_ids
+                if str(chunk_id).strip()
+            )
+        else:
+            self._unowned_edge_keys.add(edge_key)
         self._adj[edge.source_id].add(edge.target_id)
         self._adj[edge.target_id].add(edge.source_id)
 
@@ -115,6 +129,13 @@ class InMemoryGraphStore(GraphStore):
             affected += before - len(chunks)
             if not chunks:
                 del self._chunk_by_node[node_id]
+        for edge_key, chunks in list(self._edge_chunks.items()):
+            chunks -= target
+            if chunks:
+                continue
+            del self._edge_chunks[edge_key]
+            if edge_key not in self._unowned_edge_keys:
+                self._edge_keys.discard(edge_key)
         orphan_nodes = [
             node_id
             for node_id in list(self._nodes.keys())
@@ -123,9 +144,21 @@ class InMemoryGraphStore(GraphStore):
         for node_id in orphan_nodes:
             del self._nodes[node_id]
             self._adj.pop(node_id, None)
-            for neighbors in self._adj.values():
-                neighbors.discard(node_id)
+        for edge_key in list(self._edge_keys):
+            if edge_key[0] in orphan_nodes or edge_key[1] in orphan_nodes:
+                self._edge_keys.discard(edge_key)
+                self._unowned_edge_keys.discard(edge_key)
+                self._edge_chunks.pop(edge_key, None)
+        self._rebuild_adjacency()
         return affected + len(orphan_nodes)
+
+    def _rebuild_adjacency(self) -> None:
+        self._adj.clear()
+        for source_id, target_id, _relation in self._edge_keys:
+            if source_id not in self._nodes or target_id not in self._nodes:
+                continue
+            self._adj[source_id].add(target_id)
+            self._adj[target_id].add(source_id)
 
     def purge_graph(self, *, tenant_id: str | None = None) -> int:
         scope = (tenant_id or self._tenant_id or "").strip()
@@ -134,6 +167,9 @@ class InMemoryGraphStore(GraphStore):
             self._nodes.clear()
             self._adj.clear()
             self._chunk_by_node.clear()
+            self._edge_keys.clear()
+            self._unowned_edge_keys.clear()
+            self._edge_chunks.clear()
             return count
         removed = 0
         for node_id in list(self._nodes.keys()):
@@ -146,4 +182,10 @@ class InMemoryGraphStore(GraphStore):
         for node_id in list(self._chunk_by_node.keys()):
             if node_id not in self._nodes:
                 del self._chunk_by_node[node_id]
+        for edge_key in list(self._edge_keys):
+            if edge_key[0] not in self._nodes or edge_key[1] not in self._nodes:
+                self._edge_keys.discard(edge_key)
+                self._unowned_edge_keys.discard(edge_key)
+                self._edge_chunks.pop(edge_key, None)
+        self._rebuild_adjacency()
         return removed

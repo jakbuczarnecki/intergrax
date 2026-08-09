@@ -81,8 +81,15 @@ Explicit limitations:
 - dual-index publication is non-atomic: if TOC publication or post-publication
   ownership enumeration/cleanup fails, stale deletion is not claimed
   transactional and a partial new publication may remain for retry/recovery;
-- GraphRAG reingest remains explicitly unqualified; vector replacement does
-  not claim graph ownership replacement;
+- canonical harness GraphRAG source-scoped reingest is qualified: graph chunk
+  ownership uses the same logical IDs as `VectorStoreRecord.vector_id` and
+  `IngestResult.vector_ids`; the new graph version is published before stale
+  chunk unlink; existing unlink/pruning removes stale ownership and orphan
+  graph state while preserving shared evidence from another source;
+- GraphRAG/vector publication and cleanup are separate, non-atomic operations:
+  preparation failure preserves the old version, graph publication failure
+  does not remove old graph ownership, and cleanup failures are explicit and
+  recoverable by retry; live Neo4j reingest is not claimed;
 - source providers without ownership lookup may perform a fresh ingest only
   when the target scope is empty; otherwise the operation fails with
   `source_reingest_not_supported` rather than appending a changed source;

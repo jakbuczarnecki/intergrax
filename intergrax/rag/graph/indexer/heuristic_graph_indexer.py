@@ -42,12 +42,19 @@ class HeuristicGraphIndexer:
         node_ids: list[str] = []
         for label in entities:
             node_id = f"ent:{label.lower().replace(' ', '_')}"
-            self._store.upsert_node(GraphNode(id=node_id, label=label, node_type="entity"))
+            self._store.upsert_node(
+                GraphNode(id=node_id, label=label, node_type="entity")
+            )
             self._store.link_chunk(node_id, chunk_id)
             node_ids.append(node_id)
 
         for i in range(len(node_ids) - 1):
             self._store.upsert_edge(
-                GraphEdge(source_id=node_ids[i], target_id=node_ids[i + 1], relation="co_occurs")
+                GraphEdge(
+                    source_id=node_ids[i],
+                    target_id=node_ids[i + 1],
+                    relation="co_occurs",
+                    metadata={"chunk_ids": [chunk_id]},
+                )
             )
         return len(node_ids)
