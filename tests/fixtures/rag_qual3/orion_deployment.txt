@@ -1,0 +1,15 @@
+Orion deployment operations guide.
+
+The Orion deployment serves the southern platform team.
+Its health checks run after each controlled configuration update.
+Operators compare the deployment manifest with the approved change record.
+The service is isolated from unrelated billing and customer-support systems.
+The deployment dashboard records capacity, latency, and availability signals.
+Every release is reviewed by two operators before it becomes active.
+The rollback procedure keeps the previous image available for one release.
+The control room records handoff notes in the regional operations journal.
+Routine maintenance is scheduled during the low-traffic observation period.
+The team checks certificate expiry and rotates credentials according to policy.
+The deployment uses protocol Vega-42.
+The deployment region is South Harbor.
+The final release note records the owner, timestamp, and approval reference.

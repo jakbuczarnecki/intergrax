@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "aurora_exact_protocol",
+      "query": "Aurora deployment protocol Falcon-17",
+      "source_file": "aurora_deployment.txt",
+      "fact_marker": "protocol Falcon-17",
+      "min_recall_at_1": 1.0,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    },
+    {
+      "name": "aurora_contextual_region",
+      "query": "Aurora deployment region North Ridge",
+      "source_file": "aurora_deployment.txt",
+      "fact_marker": "region is North Ridge",
+      "min_recall_at_1": 1.0,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    },
+    {
+      "name": "orion_exact_protocol",
+      "query": "Orion deployment protocol Vega-42",
+      "source_file": "orion_deployment.txt",
+      "fact_marker": "protocol Vega-42",
+      "min_recall_at_1": 1.0,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    },
+    {
+      "name": "distractor_resistance",
+      "query": "Orion deployment protocol Vega-42",
+      "source_file": "orion_deployment.txt",
+      "fact_marker": "protocol Vega-42",
+      "min_recall_at_1": 1.0,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    },
+    {
+      "name": "chunk_boundary_handoff_code",
+      "query": "Aurora boundary handoff escalation code Glacier-9",
+      "source_file": "aurora_deployment.txt",
+      "fact_marker": "escalation code Glacier-9",
+      "chunk_boundary": true,
+      "min_recall_at_1": 0.5,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    },
+    {
+      "name": "unrelated_billing_fact",
+      "query": "How long may a customer submit a billing dispute?",
+      "source_file": "billing_policy.txt",
+      "fact_marker": "within 30 days",
+      "min_recall_at_1": 1.0,
+      "min_recall_at_3": 1.0,
+      "min_mrr": 1.0
+    }
+  ]
+}
