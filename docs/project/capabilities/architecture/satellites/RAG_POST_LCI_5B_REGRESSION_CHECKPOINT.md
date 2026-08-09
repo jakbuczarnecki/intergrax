@@ -4,7 +4,7 @@ Status: PASS
 
 - Baseline checkpoint: `5379cb9ecd60de0d72744048bb8ea261334d5d09`
 - Required ancestors: `48fbc2121c36d7545c02cbda04d7268827eedae2`, `5379cb9ecd60de0d72744048bb8ea261334d5d09`
-- Fix commit SHA: populated by the closeout commit
+- Fix commit SHA: `537ce6dd443529b4c837b79c403e078fae371f7a`
 - R1 workspace propagation: `PRODUCTION_REGRESSION`, fixed in the document handler and top-level hierarchical bootstrap tenant forwarding.
 - R2 native handles: `TEST_COMPATIBILITY_DEBT`; tests use `native_handle` and `attach_parser_native_handle`, with no `_docling_document` metadata tunnel.
 - R3 lifecycle: `TEST_COMPATIBILITY_DEBT`; fixtures use native records and `add_records`; `add_documents` was not restored.
