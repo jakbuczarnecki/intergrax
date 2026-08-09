@@ -30,6 +30,11 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+from intergrax.llm_adapters.providers.native_ollama_adapter import NativeOllamaAdapter
+from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
+from intergrax.llm_adapters.registry.catalog_capabilities import (
+    unwrap_catalog_capability_adapter,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -175,6 +180,20 @@ def test_create_forwards_kwargs_to_factory(_restore_registry_state: Dict[str, An
     out = LLMAdapterRegistry.create(provider, x=1, y="a")
     assert isinstance(out, _TestAdapter)
     assert out.kwargs == {"x": 1, "y": "a"}
+
+
+def test_ollama_default_resolves_to_native_adapter(
+    _restore_registry_state: Dict[str, Any],
+) -> None:
+    adapter = LLMAdapterRegistry.create(
+        LLMProvider.OLLAMA,
+        client=object(),
+        model="qwen2.5:14b",
+    )
+    concrete = unwrap_catalog_capability_adapter(adapter)
+
+    assert isinstance(concrete, NativeOllamaAdapter)
+    assert not isinstance(concrete, LangChainOllamaAdapter)
 
 
 def test_normalize_provider_rejects_non_string_and_non_enum(_restore_registry_state: Dict[str, Any]) -> None:

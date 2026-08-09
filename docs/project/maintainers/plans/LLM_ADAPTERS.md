@@ -56,8 +56,16 @@ those non-live rows.
 
 ## LCI-6D — LKW and Token Optimization native Ollama cutover
 
-**Status:** `NEXT AFTER ACCEPTANCE`
+**Status:** `READY_FOR_REVIEW`
 **Owner:** LLM_ADAPTERS
+
+The canonical `LLMProvider.OLLAMA` registry entry now resolves to
+`NativeOllamaAdapter`. LKW model-runtime proof and Token Optimization continue
+to consume only the existing `LLMAdapter` ABI, capability signals, structured
+output, usage, and context-window contracts. `LangChainOllamaAdapter` remains
+explicitly constructible for compatibility and parity tests; it is no longer a
+production default. Native Ollama regression gating is the next checkpoint
+after LCI-6D acceptance, before LCI-6E.
 
 ---
 

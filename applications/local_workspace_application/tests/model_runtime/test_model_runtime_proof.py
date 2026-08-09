@@ -1234,7 +1234,7 @@ def test_ollama_health_requires_exact_model_digest(
         lambda *args, **kwargs: _Adapter(),
     )
     monkeypatch.setattr(
-        "local_workspace_application.model_runtime_proof.health.LangChainOllamaAdapter",
+        "local_workspace_application.model_runtime_proof.health.NativeOllamaAdapter",
         _Adapter,
     )
     monkeypatch.setattr(

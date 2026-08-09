@@ -9,10 +9,6 @@ from typing import Any, Literal
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.providers.ollama_adapter import LangChainOllamaAdapter
-from intergrax.llm_adapters.registry.catalog_capabilities import (
-    unwrap_catalog_capability_adapter,
-)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
@@ -237,11 +233,7 @@ def _resolve_tool_choice(
 ) -> tuple[str | dict[str, Any] | None, Literal["forced", "automatic"]]:
     if not force_tool_choice:
         return None, "automatic"
-    inner = unwrap_catalog_capability_adapter(adapter)
-    if (
-        isinstance(inner, LangChainOllamaAdapter)
-        or getattr(adapter, "provider", None) is LLMProvider.OLLAMA
-    ):
+    if getattr(adapter, "provider", None) is LLMProvider.OLLAMA:
         return "required", "forced"
     return {"type": "function", "function": {"name": WORKSPACE_SEARCH_TOOL}}, "forced"
 

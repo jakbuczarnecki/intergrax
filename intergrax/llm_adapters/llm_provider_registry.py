@@ -5,7 +5,7 @@ from __future__ import annotations
 from intergrax.utils import attribute_access
 
 import importlib
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Tuple, Union, cast
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -24,8 +24,8 @@ _BUILTIN_ADAPTERS: Dict[str, Tuple[str, str]] = {
         "VertexGeminiChatAdapter",
     ),
     LLMProvider.OLLAMA.value: (
-        "intergrax.llm_adapters.providers.ollama_adapter",
-        "LangChainOllamaAdapter",
+        "intergrax.llm_adapters.providers.native_ollama_adapter",
+        "NativeOllamaAdapter",
     ),
     LLMProvider.CLAUDE.value: (
         "intergrax.llm_adapters.providers.claude_adapter",
@@ -116,7 +116,10 @@ class LLMAdapterRegistry:
             return
         module_path, class_name = spec
         module = importlib.import_module(module_path)
-        adapter_cls = attribute_access.optional(module, class_name)
+        adapter_cls = cast(
+            Callable[..., LLMAdapter],
+            attribute_access.optional(module, class_name),
+        )
 
         def factory(**kwargs: Any) -> LLMAdapter:
             return adapter_cls(**kwargs)
