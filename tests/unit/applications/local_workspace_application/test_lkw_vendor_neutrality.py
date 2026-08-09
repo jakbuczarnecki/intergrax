@@ -19,6 +19,11 @@ def test_generic_lkw_surfaces_do_not_import_slack_runtime_directly() -> None:
         "slack_sdk",
         "SlackConversationChannelIntegration",
         "intergrax.integrations.providers.conversation_channel.slack",
+        "build_shared_slack_integration_for_host",
+        "build_default_slack_integration_from_env",
+        'provider_id="slack"',
+        "provider_id='slack'",
+        "len(rehydration) == 1",
     )
 
     for path in paths:

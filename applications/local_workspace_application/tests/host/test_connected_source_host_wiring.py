@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -55,12 +56,29 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
     SlackConversationChannelIntegration,
 )
+from intergrax.integrations.providers.conversation_channel.slack.tenant_connection_factory import (
+    SlackTenantConnectionIntegrationFactory,
+)
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
     SlackConversationInventoryPage,
     SlackConversationKind,
     SlackConversationSummary,
 )
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    VendorKnowledgeLegacyLocalBootstrap,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
+    DocumentStoreTenantConnectionRepository,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
+    TenantConnectionIntegrationFactoryRegistry,
+)
+from intergrax.runtime.vendor_knowledge.tenant_connections import (
+    TenantConnection,
+    TenantConnectionAdministrativeStatus,
+)
+from intergrax.runtime.vendor_knowledge.errors import VendorKnowledgeError
 
 pytestmark = pytest.mark.unit
 
@@ -116,6 +134,60 @@ class _FakeBackend:
 
     def health(self) -> HealthStatus:
         return HealthStatus(slug="slack", healthy=True, detail="fake-ok")
+
+
+class _RecordingSecretsStore:
+    def __init__(self, *, missing: set[str] | None = None) -> None:
+        self.missing = missing or set()
+        self.calls: list[str] = []
+
+    def get_secret(self, path: str, *, version: str | None = None) -> str:
+        _ = version
+        self.calls.append(path)
+        if path in self.missing:
+            raise KeyError(path)
+        if path.endswith("/slack"):
+            return json.dumps({"app_token": "xapp-test", "bot_token": "xoxb-test"})
+        return "other-provider-secret"
+
+    def put_secret(self, path: str, value: str) -> None:
+        _ = path, value
+
+    def delete_secret(self, path: str) -> None:
+        _ = path
+
+
+class _OtherProviderIntegration:
+    provider_id = "other-provider"
+    integration_kind = IntegrationCategory.ISSUE_TRACKER.value
+
+
+class _OtherProviderFactory:
+    def create_integration(self, **kwargs: object) -> object:
+        _ = kwargs
+        return _OtherProviderIntegration()
+
+
+def _durable_connection(
+    *,
+    connection_ref: str,
+    provider_id: str,
+    integration_kind: IntegrationCategory,
+    credential_ref: str,
+) -> TenantConnection:
+    return TenantConnection(
+        connection_ref=connection_ref,
+        tenant_id=_TENANT,
+        provider_id=provider_id,
+        integration_kind=integration_kind,
+        safe_display_name=connection_ref,
+        administrative_status=TenantConnectionAdministrativeStatus.ACTIVE,
+        credential_ref=credential_ref,
+        validated_secret_free_config={},
+        configuration_version=1,
+        created_at=_NOW,
+        updated_at=_NOW,
+    )
 
 
 def _host_services(store: InMemoryDocumentStore, settings: LocalWorkspaceBackendSettings):
@@ -174,6 +246,101 @@ def test_build_connected_source_host_bundle_shares_slack_integration() -> None:
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
     )
     assert resolved is integration
+
+
+@pytest.mark.parametrize("other_available", [True, False])
+def test_host_rehydrates_slack_by_identity_with_another_tenant_connection(
+    other_available: bool,
+) -> None:
+    store = InMemoryDocumentStore()
+    settings = LocalWorkspaceBackendSettings(
+        data_home="/tmp/lkw-multi-vendor-host",
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+        slack_tenant_id=_TENANT,
+        connected_source_slack_connection_ref=_CONNECTION,
+    )
+    repo, service, config, mutation_engine, indexing, settings = _host_services(store, settings)
+    connection_repository = DocumentStoreTenantConnectionRepository(store)
+    connection_repository.create(
+        _durable_connection(
+            connection_ref=_CONNECTION,
+            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            credential_ref="secrets/tenant-a/slack",
+        )
+    )
+    connection_repository.create(
+        _durable_connection(
+            connection_ref="conn.other-provider",
+            provider_id="other-provider",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            credential_ref="secrets/tenant-a/other",
+        )
+    )
+
+    factory_registry = TenantConnectionIntegrationFactoryRegistry(
+        [
+            (
+                SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+                IntegrationCategory.CONVERSATION_CHANNEL,
+                SlackTenantConnectionIntegrationFactory(
+                    runtime_builder=lambda config: SlackConversationChannelIntegration.from_backend(
+                        _FakeBackend(),
+                        enabled=True,
+                        config=config,
+                    )
+                ),
+            ),
+            (
+                "other-provider",
+                IntegrationCategory.ISSUE_TRACKER,
+                _OtherProviderFactory(),  # type: ignore[arg-type]
+            ),
+        ]
+    )
+    secrets = _RecordingSecretsStore(
+        missing={"secrets/tenant-a/other"} if not other_available else set()
+    )
+
+    bundle = build_connected_source_host_bundle(
+        settings=settings,
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,
+        tenant_connection_secrets_store=secrets,
+        tenant_connection_factory_registry=factory_registry,
+    )
+
+    assert set(secrets.calls) == {
+        "secrets/tenant-a/slack",
+        "secrets/tenant-a/other",
+    }
+    assert bundle.readiness.state is ConnectedSourceReadinessState.READY
+    assert bundle.wiring is not None
+    slack = bundle.wiring.connection_registry.resolve(
+        tenant_id=_TENANT,
+        connection_ref=_CONNECTION,
+        provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+        integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+    )
+    assert isinstance(slack, SlackConversationChannelIntegration)
+    if other_available:
+        assert bundle.wiring.connection_registry.resolve(
+            tenant_id=_TENANT,
+            connection_ref="conn.other-provider",
+            provider_id="other-provider",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        )
+    else:
+        with pytest.raises(VendorKnowledgeError):
+            bundle.wiring.connection_registry.resolve(
+                tenant_id=_TENANT,
+                connection_ref="conn.other-provider",
+                provider_id="other-provider",
+                integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            )
 
 
 def test_missing_signing_key_returns_no_wiring() -> None:
@@ -251,8 +418,12 @@ def test_create_local_workspace_backend_app_wires_connected_source(
         enabled=True,
     )
     monkeypatch.setattr(
-        "local_workspace_application.workspaces.connected_source_host_wiring.build_shared_slack_integration_for_host",
-        lambda: integration,
+        "local_workspace_application.workspaces.connected_source_host_wiring.build_default_vendor_knowledge_legacy_local_bootstrap",
+        lambda: VendorKnowledgeLegacyLocalBootstrap(
+            provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+            integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+            integration=integration,
+        ),
     )
 
     settings = replace(
@@ -471,8 +642,12 @@ def test_create_local_workspace_backend_app_connected_source_readiness_states(
             enabled=True,
         )
         monkeypatch.setattr(
-            "local_workspace_application.workspaces.connected_source_host_wiring.build_shared_slack_integration_for_host",
-            lambda: integration,
+            "local_workspace_application.workspaces.connected_source_host_wiring.build_default_vendor_knowledge_legacy_local_bootstrap",
+            lambda: VendorKnowledgeLegacyLocalBootstrap(
+                provider_id=SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
+                integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
+                integration=integration,
+            ),
         )
 
     settings = replace(

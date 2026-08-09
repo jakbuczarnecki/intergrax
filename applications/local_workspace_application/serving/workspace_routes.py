@@ -424,6 +424,8 @@ def mount_managed_workspace_routes(
     web_content_capture: Any | None = None,
     indexing_service: WorkspaceDocumentIndexingService | None = None,
     connected_source_wiring: ConnectedSourceWiring | None = None,
+    legacy_local_integration: Any | None = None,
+    # Compatibility alias for callers from the pre-neutral composition boundary.
     shared_slack_integration: Any | None = None,
     tenant_connection_secrets_store: Any | None = None,
     tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
@@ -538,13 +540,14 @@ def mount_managed_workspace_routes(
         configuration_service=configuration_service,
         mutation_engine=mutation_engine,
         indexing_service=indexing_service,
-        slack_integration=shared_slack_integration,
+        legacy_local_integration=legacy_local_integration or shared_slack_integration,
         sync_runtime=sync_runtime,
         tenant_connection_secrets_store=tenant_connection_secrets_store,
         tenant_connection_factory_registry=tenant_connection_factory_registry,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
     )
     app.state.lkw_connected_source_readiness = host_bundle.readiness
+    app.state.lkw_legacy_local_integration = host_bundle.legacy_local_integration
     if connected_wiring is None:
         connected_wiring = host_bundle.wiring
     app.state.lkw_tenant_connection_port = host_bundle.tenant_connection_port
