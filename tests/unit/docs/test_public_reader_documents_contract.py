@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 README_PATH = REPO_ROOT / "README.md"
 PROOFS_PATH = REPO_ROOT / "docs" / "project" / "proofs" / "PROOFS.md"
 LKW_PRODUCT_TOUR_PATH = REPO_ROOT / "docs" / "project" / "product" / "lkw" / "LKW_PRODUCT_TOUR.md"
+LKW_QUICKSTART_PATH = REPO_ROOT / "docs" / "project" / "product" / "lkw" / "QUICKSTART.md"
 HUB_PATH = REPO_ROOT / "docs" / "project" / "README.md"
 WHY_PATH = REPO_ROOT / "docs" / "project" / "overview" / "WHY_INTERGRAX.md"
 USE_CASES_PATH = REPO_ROOT / "docs" / "project" / "overview" / "USE_CASES.md"
@@ -341,6 +342,48 @@ def test_project_projections_synchronize_accepted_lkw_boundaries() -> None:
     assert not _INTERNAL_TASK_PATTERN.search(tour_text)
     assert "lkw-grounded-result-light.svg" in tour_text
     assert "lkw-grounded-result-dark.svg" in tour_text
+
+
+def test_lkw_quickstart_reader_literals_and_routes() -> None:
+    text = _read(LKW_QUICKSTART_PATH)
+    malformed_prefix = "../../technical/applications/local_workspace_application/"
+    for literal in (
+        "uv",
+        "PATH",
+        "INTERGRAX_ALLOWED_READ_ROOTS",
+        "llama3.1:latest",
+        ".env",
+        ".env.example",
+        "sample_docs/lkw_product_quickstart.txt",
+        "127.0.0.1",
+        "localhost",
+        "::1",
+        "status: ok",
+        "--skip-stack-start",
+        "docker compose",
+        "applications/local_workspace_application",
+    ):
+        assert f"{malformed_prefix}{literal}" not in text
+
+    assert (
+        "../../technical/applications/local_workspace_application/"
+        "applications/local_workspace_application"
+    ) not in text
+    for launcher in _LKW_QUICKSTART_SCRIPTS:
+        assert launcher in text, f"Quick Start missing launcher: {launcher!r}"
+    for marker in (
+        "AURORA-17",
+        "lkw_product_quickstart.txt",
+        "persisted_run_verified=true",
+        "[LKW Product Tour](LKW_PRODUCT_TOUR.md)",
+        "[LKW Platform Proof](../../proofs/LKW_PLATFORM_PROOF.md)",
+    ):
+        assert marker in text, f"Quick Start missing canonical marker: {marker!r}"
+
+    assert "From `applications/local_workspace_application`:" in text
+    assert (
+        "docker compose -p intergrax_lkw -f docker/docker-compose.yml down" in text
+    )
 
 
 def test_public_terminology(why_text: str, arch_text: str, build_text: str) -> None:
