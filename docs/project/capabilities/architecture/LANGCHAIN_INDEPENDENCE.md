@@ -127,13 +127,13 @@ Facts verified against repository state at inventory time.
 |---|------|----------|
 | 1 | Intergrax defines native LLM messages independent of LangChain | `intergrax/llm/messages.py` — `ChatMessage`, `MessageRole`, `AttachmentRef` |
 | 2 | LLM adapter public contract is native; providers map at boundary | `intergrax/llm_adapters/contracts/llm_adapter.py` — `LLMAdapter` uses `ChatMessage`, not LangChain messages |
-| 3 | Most non-Ollama LLM providers use native SDKs behind `LLMAdapter` | Provider modules under `intergrax/llm_adapters/providers` (OpenAI, Anthropic, Gemini, etc.) — no `langchain_*` imports except Ollama |
-| 4 | Ollama LLM path is provider-bound LangChain today | `intergrax/llm_adapters/providers/ollama_adapter.py` — `LangChainOllamaAdapter`, `ChatOllama`, lazy `langchain_core.messages` |
-| 5 | `langchain_core.documents.Document` leaks through core RAG contracts | e.g. `intergrax/rag/document_loaders/contracts/base_document_parser.py`, `intergrax/rag/vectorstore/contracts/vector_store.py`, `intergrax/rag/embedding/contracts/base_embedding_manager.py` — **16 contract files** (see inventory satellite §D) |
+| 3 | Canonical/default LLM provider paths use native SDKs; remaining LangChain provider code is explicit compatibility-only | Provider modules under `intergrax/llm_adapters/providers`, the native default resolver, and `pyproject.toml` optional compatibility extras |
+| 4 | `NativeOllamaAdapter` is the canonical/default Ollama LLM path; `LangChainOllamaAdapter` remains an optional compatibility provider behind `llm-langchain-ollama` | `intergrax/llm_adapters/llm_provider_registry.py`, `intergrax/llm_adapters/providers/native_ollama_adapter.py`, `intergrax/llm_adapters/providers/ollama_adapter.py`, `pyproject.toml` |
+| 5 | Core LangChain document contract leaks have been removed. Remaining LangChain production imports are optional provider / compatibility boundaries | `satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md` — **0 core contract leaks** and **0 core implementation dependencies** |
 | 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
 | 7 | Default packaging no longer declares LangChain/LangGraph packages as direct core dependencies after LCI-7A | `pyproject.toml` `[project].dependencies` is free of `langchain*` and `langgraph`; compatibility/provider packages remain in named extras |
 
-**Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports (see inventory satellite §B).
+**Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports · 0 core contract leaks · 0 core implementation dependencies · 0 project core LangChain dependencies (see inventory satellite §B/§D and `pyproject.toml`).
 
 ---
 
