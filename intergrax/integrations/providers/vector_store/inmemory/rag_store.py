@@ -13,6 +13,7 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreRecord,
     VectorStoreScope,
 )
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 from intergrax.rag.vectorstore.hybrid.lexical_hybrid import LexicalHybridSupport
 from intergrax.rag.vectorstore.providers.base_vector_store import BaseVectorStore
 from intergrax.rag.vectorstore.providers.native_provider_boundary import (
@@ -142,6 +143,23 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
             self._payloads.pop(id_, None)
             self._documents.pop(id_, None)
             self._lexical_index.remove(id_)
+
+    # ---------------------------------------------------------
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        validate_scope(scope, tenant_id=self._tenant_id)
+        return sorted(
+            vector_id
+            for vector_id, payload in self._payloads.items()
+            if self._matches_scope(payload, scope)
+            and payload.get("source_id") == canonical_source_id
+        )
 
     # ---------------------------------------------------------
 

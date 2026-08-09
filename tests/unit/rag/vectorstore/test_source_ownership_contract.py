@@ -1,0 +1,321 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import pytest
+
+from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
+    InMemoryVectorStore,
+)
+from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
+    QdrantConfig,
+    QdrantVectorStore,
+    _normalize_point_id,
+)
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreContractError,
+    VectorStoreRecord,
+    VectorStoreScope,
+)
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+
+pytestmark = pytest.mark.unit
+
+
+def _scope(
+    tenant_id: str = "tenant-a",
+    namespace: str | None = "rag",
+    workspace_id: str | None = "workspace-a",
+) -> VectorStoreScope:
+    return VectorStoreScope(
+        tenant_id=tenant_id,
+        namespace=namespace,
+        workspace_id=workspace_id,
+    )
+
+
+def _record(
+    vector_id: str,
+    *,
+    source_id: str,
+    scope: VectorStoreScope,
+    document_id: str | None = None,
+    metadata: dict[str, object] | None = None,
+) -> VectorStoreRecord:
+    document_id = document_id or f"document-{vector_id}"
+    document = KnowledgeDocument.model_validate(
+        {
+            "schema_version": 1,
+            "identity": {
+                "document_id": document_id,
+                "root_document_id": document_id,
+            },
+            "scope": {
+                "tenant_id": scope.tenant_id,
+                "namespace": scope.namespace,
+                "workspace_id": scope.workspace_id,
+            },
+            "content": f"content-{vector_id}",
+            "metadata": metadata or {},
+            "provenance": {
+                "source_kind": "file",
+                "source_id": source_id,
+            },
+        }
+    )
+    return VectorStoreRecord(
+        document=document,
+        embedding=[1.0, 0.0],
+        vector_id=vector_id,
+    )
+
+
+def test_inmemory_returns_complete_persisted_ids_with_exact_source_scope() -> None:
+    source_a = "C:/docs/a/report.md"
+    source_b = "D:/docs/b/report.md"
+    scope_a = _scope()
+    scope_b = _scope(workspace_id="workspace-b")
+    scope_other_namespace = _scope(namespace="other-rag")
+
+    manager = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-a"))
+    manager.add_records(
+        [
+            _record("persisted-a-2", source_id=source_a, scope=scope_a),
+            _record("persisted-a-1", source_id=source_a, scope=scope_a),
+            _record(
+                "persisted-b",
+                source_id=source_b,
+                scope=scope_a,
+                document_id="document-report-b",
+            ),
+        ],
+        scope=scope_a,
+    )
+
+    # A record in the other workspace must be ingested through its own scope.
+    manager.add_records(
+        [_record("persisted-a-other-workspace", source_id=source_a, scope=scope_b)],
+        scope=scope_b,
+    )
+    manager.add_records(
+        [_record("persisted-a-other-namespace", source_id=source_a, scope=scope_other_namespace)],
+        scope=scope_other_namespace,
+    )
+
+    assert manager.list_source_record_ids(source_id=source_a, scope=scope_a) == (
+        "persisted-a-1",
+        "persisted-a-2",
+    )
+    assert manager.list_source_record_ids(source_id=source_b, scope=scope_a) == (
+        "persisted-b",
+    )
+    assert (
+        manager.list_source_record_ids(source_id=source_a, scope=scope_b)
+        == ("persisted-a-other-workspace",)
+    )
+    assert manager.list_source_record_ids(
+        source_id=source_a,
+        scope=scope_other_namespace,
+    ) == ("persisted-a-other-namespace",)
+    assert manager.list_source_record_ids(source_id="missing", scope=scope_a) == ()
+
+
+def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> None:
+    source_id = "C:/docs/report.md"
+    scope_a = _scope()
+    manager_a = VectorstoreManager(
+        InMemoryVectorStore(tenant_id="tenant-a"),
+        scope=scope_a,
+    )
+    manager_a.add_records(
+        [_record("tenant-a-vector", source_id=source_id, scope=scope_a)]
+    )
+
+    assert manager_a.list_source_record_ids(source_id=source_id) == (
+        "tenant-a-vector",
+    )
+    with pytest.raises(VectorStoreContractError):
+        manager_a.list_source_record_ids(
+            source_id=source_id,
+            scope=_scope(tenant_id="tenant-b"),
+        )
+    with pytest.raises(VectorStoreContractError):
+        manager_a.list_source_record_ids(
+            source_id=source_id,
+            scope=_scope(workspace_id="workspace-b"),
+        )
+    with pytest.raises(ValueError, match="source_id"):
+        manager_a.list_source_record_ids(source_id=" ")
+
+    manager_b = VectorstoreManager(InMemoryVectorStore(tenant_id="tenant-b"))
+    scope_b = _scope(tenant_id="tenant-b")
+    manager_b.add_records(
+        [_record("tenant-b-vector", source_id=source_id, scope=scope_b)],
+        scope=scope_b,
+    )
+    assert manager_b.list_source_record_ids(source_id=source_id, scope=scope_b) == (
+        "tenant-b-vector",
+    )
+
+
+def test_source_lookup_reports_unsupported_optional_provider_explicitly() -> None:
+    class _UnsupportedProvider:
+        _tenant_id = "tenant-a"
+
+    manager = VectorstoreManager(_UnsupportedProvider())  # type: ignore[arg-type]
+
+    with pytest.raises(
+        RuntimeError,
+        match="vectorstore_source_record_lookup_not_supported",
+    ):
+        manager.list_source_record_ids(source_id="source", scope=_scope())
+
+
+def test_source_id_is_system_owned_and_cannot_be_spoofed_by_user_metadata() -> None:
+    with pytest.raises(ValueError):
+        _record(
+            "spoofed",
+            source_id="canonical-source",
+            scope=_scope(),
+            metadata={"source_id": "user-spoof"},
+        )
+
+
+@dataclass
+class _FakeQdrantPoint:
+    id: str | int
+    payload: dict[str, Any]
+    vector: list[float]
+
+
+class _FakeQdrantClient:
+    def __init__(self) -> None:
+        self.points: list[_FakeQdrantPoint] = []
+        self.scroll_calls: list[dict[str, Any]] = []
+        self.query_calls = 0
+        self.fail_scroll = False
+
+    def get_collection(self, collection_name: str) -> dict[str, str]:
+        del collection_name
+        return {"name": "fake"}
+
+    def upsert(self, *, collection_name: str, points: list[Any]) -> None:
+        del collection_name
+        self.points.extend(
+            _FakeQdrantPoint(
+                id=point.id,
+                payload=dict(point.payload or {}),
+                vector=list(point.vector),
+            )
+            for point in points
+        )
+
+    def query_points(self, **_: Any) -> None:
+        self.query_calls += 1
+        raise AssertionError("source ownership must not use similarity query")
+
+    @staticmethod
+    def _matches(point: _FakeQdrantPoint, qfilter: Any) -> bool:
+        for condition in getattr(qfilter, "must", []) or []:
+            field = getattr(condition, "key", None)
+            match = getattr(condition, "match", None)
+            if field is not None and match is not None:
+                if point.payload.get(field) != getattr(match, "value", None):
+                    return False
+            is_null = getattr(condition, "is_null", None)
+            if is_null is not None:
+                if is_null.key in point.payload:
+                    return False
+        return True
+
+    def scroll(self, *, scroll_filter: Any, offset: Any, **_: Any) -> tuple[list[Any], Any]:
+        if self.fail_scroll:
+            raise RuntimeError("qdrant backend unavailable")
+        self.scroll_calls.append({"filter": scroll_filter})
+        start = int(offset or 0)
+        selected = [
+            point for point in self.points if self._matches(point, scroll_filter)
+        ]
+        page = selected[start : start + 1]
+        next_offset = start + 1 if start + 1 < len(selected) else None
+        return page, next_offset
+
+
+def _qdrant_store() -> tuple[QdrantVectorStore, _FakeQdrantClient]:
+    store = QdrantVectorStore(
+        QdrantConfig(collection_name="ownership", tenant_id="tenant-a")
+    )
+    client = _FakeQdrantClient()
+    store._client = client  # type: ignore[attr-defined]
+    return store, client
+
+
+def test_qdrant_source_lookup_scrolls_complete_native_ids_with_scope_filter() -> None:
+    store, client = _qdrant_store()
+    scope_a = _scope()
+    scope_b = _scope(workspace_id="workspace-b")
+    source_a = "C:/docs/a/report.md"
+
+    store.add_records(
+        [
+            _record("qdrant/a", source_id=source_a, scope=scope_a),
+            _record(
+                "qdrant/b",
+                source_id="D:/docs/b/report.md",
+                scope=scope_a,
+            ),
+            _record("qdrant/a-2", source_id=source_a, scope=scope_a),
+        ],
+        scope=scope_a,
+    )
+    store.add_records(
+        [_record("qdrant/other-workspace", source_id=source_a, scope=scope_b)],
+        scope=scope_b,
+    )
+
+    actual_ids = store.list_source_record_ids(source_id=source_a, scope=scope_a)
+
+    assert actual_ids == sorted(
+        [
+            str(_normalize_point_id("qdrant/a")),
+            str(_normalize_point_id("qdrant/a-2")),
+        ]
+    )
+    assert client.query_calls == 0
+    assert len(client.scroll_calls) > 1
+    conditions = client.scroll_calls[0]["filter"].must
+    assert any(
+        getattr(condition, "key", None) == "tenant_id"
+        and getattr(getattr(condition, "match", None), "value", None) == "tenant-a"
+        for condition in conditions
+    )
+    assert any(
+        getattr(condition, "key", None) == "namespace"
+        and getattr(getattr(condition, "match", None), "value", None) == "rag"
+        for condition in conditions
+    )
+    assert any(
+        getattr(condition, "key", None) == "workspace_id"
+        and getattr(getattr(condition, "match", None), "value", None) == "workspace-a"
+        for condition in conditions
+    )
+    assert any(
+        getattr(condition, "key", None) == "source_id"
+        and getattr(getattr(condition, "match", None), "value", None) == source_a
+        for condition in conditions
+    )
+
+
+def test_qdrant_source_lookup_returns_empty_for_missing_source_and_propagates_failure() -> None:
+    store, client = _qdrant_store()
+    scope = _scope()
+
+    assert store.list_source_record_ids(source_id="missing", scope=scope) == []
+    with pytest.raises(ValueError, match="source_id"):
+        store.list_source_record_ids(source_id="", scope=scope)
+
+    client.fail_scroll = True
+    with pytest.raises(RuntimeError, match="backend unavailable"):
+        store.list_source_record_ids(source_id="source", scope=scope)

@@ -24,6 +24,7 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     validate_records,
     validate_scope,
 )
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 
 
 class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
@@ -153,6 +154,39 @@ class PgVectorRagStore(InMemoryVectorStore, IntegrationHealthProbe):
                     (row_id, self._tenant_id, scope.namespace, scope.workspace_id),
                 )
             self._connection.commit()
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        if self._connection is None:
+            return super().list_source_record_ids(
+                source_id=canonical_source_id,
+                scope=scope,
+            )
+        validate_scope(scope, tenant_id=self._tenant_id)
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                SELECT id FROM {self._TABLE}
+                WHERE tenant_id = %s
+                  AND payload->>'source_id' = %s
+                  AND payload->>'namespace' IS NOT DISTINCT FROM %s
+                  AND payload->>'workspace_id' IS NOT DISTINCT FROM %s
+                ORDER BY id
+                """,
+                (
+                    self._tenant_id,
+                    canonical_source_id,
+                    scope.namespace,
+                    scope.workspace_id,
+                ),
+            )
+            rows = cursor.fetchall()
+        return [str(row[0]) for row in rows]
 
     def count(self, *, scope: VectorStoreScope) -> int:
         if self._connection is None:

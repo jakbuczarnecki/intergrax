@@ -11,6 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
@@ -324,6 +325,31 @@ class VectorstoreManager(BaseVectorstoreManager):
             raise VectorStoreContractError(
                 "provider does not support scoped delete"
             ) from exc
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+    ) -> Sequence[str]:
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("read", resolved_scope)
+        try:
+            canonical_source_id = require_non_empty_str(
+                source_id,
+                field_name="source_id",
+            )
+        except ValueError as exc:
+            raise VectorStoreContractError("source_id must be a non-empty string") from exc
+
+        provider_lookup = getattr(self._store, "list_source_record_ids", None)
+        if not callable(provider_lookup):
+            raise RuntimeError("vectorstore_source_record_lookup_not_supported")
+        provider_ids = provider_lookup(
+            source_id=canonical_source_id,
+            scope=resolved_scope,
+        )
+        return tuple(sorted(provider_ids))
 
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         resolved_scope = self._resolve_scope(scope)

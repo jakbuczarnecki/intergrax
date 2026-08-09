@@ -26,6 +26,7 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     validate_records,
     validate_scope,
 )
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 
 try:
     from qdrant_client import QdrantClient
@@ -37,6 +38,7 @@ try:
         PointIdsList,
         FilterSelector,
         HasIdCondition,
+        IsNullCondition,
     )
 except ImportError:
     QdrantClient = None  # type: ignore
@@ -47,6 +49,7 @@ except ImportError:
     PointIdsList = None  # type: ignore
     FilterSelector = None  # type: ignore
     HasIdCondition = None  # type: ignore
+    IsNullCondition = None  # type: ignore
 
 try:
     from qdrant_client.http.models import (  # type: ignore[no-redef]
@@ -458,6 +461,60 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             raise VectorStoreContractError(
                 "qdrant scoped delete is unsupported"
             ) from exc
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        canonical_source_id = require_non_empty_str(source_id, field_name="source_id")
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        self._ensure_qdrant_collection()
+        if QFilter is None:
+            raise RuntimeError("qdrant source record lookup is unavailable")
+
+        effective_where: Dict[str, Any] = {
+            "tenant_id": scope.tenant_id,
+            "source_id": canonical_source_id,
+        }
+        if scope.namespace is not None:
+            effective_where["namespace"] = scope.namespace
+        if scope.workspace_id is not None:
+            effective_where["workspace_id"] = scope.workspace_id
+        qfilter = self._qdrant_filter(effective_where)
+        if qfilter is None:
+            raise RuntimeError("qdrant source record lookup filter is unavailable")
+        if IsNullCondition is None:
+            if scope.namespace is None or scope.workspace_id is None:
+                raise RuntimeError("qdrant null-scope filtering is unavailable")
+        else:
+            if scope.namespace is None:
+                qfilter.must.append(
+                    IsNullCondition(is_null={"key": "namespace"})
+                )
+            if scope.workspace_id is None:
+                qfilter.must.append(
+                    IsNullCondition(is_null={"key": "workspace_id"})
+                )
+
+        ids: list[str] = []
+        next_offset: Any = None
+        while True:
+            records, next_offset = self._client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=qfilter,
+                limit=256,
+                offset=next_offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+            if not records:
+                break
+            ids.extend(str(point.id) for point in records)
+            if next_offset is None:
+                break
+        return sorted(ids)
 
 
     def count(self, *, scope: VectorStoreScope) -> int:

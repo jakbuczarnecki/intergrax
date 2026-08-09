@@ -90,5 +90,15 @@ class BaseVectorstoreManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope | None = None,
+    ) -> Sequence[str]:
+        """Return all persisted vector IDs owned by one canonical source."""
+        raise NotImplementedError
+
+    @abstractmethod
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         raise NotImplementedError
