@@ -26,6 +26,7 @@ _MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA = (
     "lkw.msgraph_teams_channel_candidate.v1"
 )
 _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_calendar_candidate.v1"
+_GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.google_workspace_candidate.v1"
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -108,6 +109,18 @@ class MsGraphCalendarCandidatePayload(BaseModel):
     mailbox_user_id: str = Field(..., min_length=1, max_length=256)
     calendar_remote_id: str = Field(..., min_length=1, max_length=256)
     is_default_calendar: bool
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class GoogleWorkspaceCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    remote_resource_id: str = Field(..., min_length=1, max_length=256)
     safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
@@ -391,6 +404,39 @@ class RemoteResourceOpaqueRefCodec:
         except (ValueError, RemoteResourceOpaqueRefCodecError):
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
         if payload.schema_version != _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_google_workspace_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        resource_type: RemoteResourceTypeV1,
+        remote_resource_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = GoogleWorkspaceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=resource_type,
+            remote_resource_id=remote_resource_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_google_workspace_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> GoogleWorkspaceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = GoogleWorkspaceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA:
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 

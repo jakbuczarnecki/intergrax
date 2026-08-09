@@ -9,7 +9,7 @@ import json
 from dataclasses import dataclass
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
@@ -107,7 +107,9 @@ class _GoogleCalendarStructuredRecord(BaseModel):
         populate_by_name=True,
     )
 
-    schema_: Literal["google_workspace.calendar.event.knowledge.v1"] = Field(alias="schema")
+    schema_: Literal["google_workspace.calendar.event.knowledge.v1"] = Field(
+        validation_alias=AliasChoices("schema", "schema_version")
+    )
     calendar_id: str
     event: dict[str, object]
 

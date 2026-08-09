@@ -23,6 +23,7 @@ from local_workspace_application.workspaces.connected_source_models import (
     SlackConversationKindV1,
 )
 from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    GoogleWorkspaceCandidatePayload,
     RemoteResourceOpaqueRefCodec,
 )
 
@@ -36,6 +37,18 @@ from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_
     MsGraphCalendarOnlineMeetingProvider,
     MsGraphCalendarViewWindow,
     MsGraphTeamsChatMessageWindow,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
+    GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
+    GOOGLE_CALENDAR_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GOOGLE_DOCS_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.sheets import (
+    GOOGLE_SHEETS_SOURCE_KIND,
 )
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
     SLACK_CONVERSATION_CHANNEL_PROVIDER_ID,
@@ -63,6 +76,15 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
 from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_calendar import (
     MSGRAPH_CALENDAR_SCOPE_TYPE,
     encode_msgraph_calendar_scope_id,
+)
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_calendar import (
+    GOOGLE_CALENDAR_SCOPE_TYPE,
+)
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_docs import (
+    GOOGLE_DOCS_DOCUMENT_SCOPE_TYPE,
+)
+from intergrax.runtime.vendor_knowledge.adapters.google_workspace_sheets import (
+    GOOGLE_SHEETS_SPREADSHEET_SCOPE_TYPE,
 )
 from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
@@ -162,6 +184,15 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
     def _calendar_payload(self, opaque_candidate_ref: str):
         try:
             return self._codec.decode_msgraph_calendar_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _google_payload(
+        self,
+        opaque_candidate_ref: str,
+    ) -> GoogleWorkspaceCandidatePayload | None:
+        try:
+            return self._codec.decode_google_workspace_candidate(opaque_candidate_ref)
         except ConnectedSourceDiscoveryError:
             return None
 
@@ -366,6 +397,23 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 configuration_version=1,
             )
 
+        google = self._google_payload(opaque_candidate_ref)
+        if google is not None:
+            _validate_candidate_scope_values(
+                google.tenant_id,
+                google.workspace_id,
+                google.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return _google_workspace_binding(
+                payload=google,
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                safe_display_name=safe_display_name,
+            )
+
         return self._slack.build_binding(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -456,6 +504,24 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 opaque_candidate_ref=opaque_candidate_ref,
             )
 
+        google = self._google_payload(opaque_candidate_ref)
+        if google is not None:
+            _validate_candidate_scope_values(
+                google.tenant_id,
+                google.workspace_id,
+                google.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=google.resource_type,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
         return await self._slack.revalidate_candidate_label(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -514,6 +580,57 @@ def _slack_conversation_binding(
         configuration_version=1,
     )
     return binding
+
+
+def _google_workspace_binding(
+    *,
+    payload: GoogleWorkspaceCandidatePayload,
+    tenant_id: str,
+    connection_ref: str,
+    safe_display_name: str | None,
+) -> KnowledgeSourceBinding:
+    source_kind, scope_type = {
+        RemoteResourceTypeV1.GOOGLE_WORKSPACE_CALENDAR: (
+            GOOGLE_CALENDAR_SOURCE_KIND,
+            GOOGLE_CALENDAR_SCOPE_TYPE,
+        ),
+        RemoteResourceTypeV1.GOOGLE_WORKSPACE_DOCS: (
+            GOOGLE_DOCS_SOURCE_KIND,
+            GOOGLE_DOCS_DOCUMENT_SCOPE_TYPE,
+        ),
+        RemoteResourceTypeV1.GOOGLE_WORKSPACE_SHEETS: (
+            GOOGLE_SHEETS_SOURCE_KIND,
+            GOOGLE_SHEETS_SPREADSHEET_SCOPE_TYPE,
+        ),
+    }.get(payload.resource_type, (None, None))
+    if source_kind is None or scope_type is None:
+        raise ConnectedSourceBindingError("candidate_inaccessible")
+    display_name = safe_display_name or payload.safe_display_label
+    binding_id = tenant_binding_id(
+        tenant_id=tenant_id,
+        connection_ref=connection_ref,
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
+        source_kind=source_kind,
+        encoded_scope=payload.remote_resource_id,
+    )
+    return KnowledgeSourceBinding(
+        binding_id=binding_id,
+        tenant_id=tenant_id,
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=source_kind,
+        connection_ref=connection_ref,
+        safe_display_name=display_name,
+        scope=KnowledgeSourceScope(
+            remote_scope_id=payload.remote_resource_id,
+            remote_scope_type=scope_type,
+            safe_display_name=display_name,
+            parameters={},
+        ),
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+        configuration_version=1,
+    )
 
 
 class SlackConnectedSourceCandidateAdapter:

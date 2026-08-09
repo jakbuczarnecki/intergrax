@@ -17,6 +17,10 @@ from local_workspace_application.workspaces.connected_source_discovery_msgraph i
     MsGraphTeamsChannelDiscoveryStrategy,
     MsGraphTeamsChatDiscoveryStrategy,
 )
+from local_workspace_application.workspaces.connected_source_discovery_google_workspace import (
+    GoogleWorkspaceKnownResourceCatalog,
+    GoogleWorkspaceKnownResourceDiscoveryStrategy,
+)
 from local_workspace_application.workspaces.connected_source_discovery_slack import (
     SlackRemoteResourceDiscoveryStrategy,
 )
@@ -38,6 +42,7 @@ from local_workspace_application.workspaces.connected_source_tenant_binding impo
     SlackConnectedSourceCandidateAdapter,
     WorkspaceConnectedSourceTenantBindingService,
 )
+from local_workspace_application.workspaces.connected_source_models import RemoteResourceTypeV1
 from local_workspace_application.workspaces.document_indexing import (
     WorkspaceDocumentIndexingService,
 )
@@ -109,6 +114,7 @@ class _TenantBindingPort:
 class ConnectedSourceWiring:
     connection_registry: KnowledgeConnectionRegistry
     opaque_ref_codec: RemoteResourceOpaqueRefCodec
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog
     discovery_service: WorkspaceRemoteResourceDiscoveryService
     tenant_binding_service: WorkspaceConnectedSourceTenantBindingService
     tenant_binding_port: TenantKnowledgeSourceBindingPort
@@ -129,6 +135,7 @@ def build_default_remote_resource_discovery_registry(
     *,
     connection_registry: KnowledgeConnectionRegistry,
     opaque_ref_codec: RemoteResourceOpaqueRefCodec,
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog,
     msgraph_mailbox_user_id: str | None,
     msgraph_teams_channel_team_id: str | None = None,
 ) -> RemoteResourceDiscoveryStrategyRegistry:
@@ -160,6 +167,27 @@ def build_default_remote_resource_discovery_registry(
                 opaque_ref_codec=opaque_ref_codec,
                 mailbox_user_id=msgraph_mailbox_user_id,
             ),
+            GoogleWorkspaceKnownResourceDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                known_resources=google_known_resource_catalog,
+                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_CALENDAR,
+                safe_description="Google Workspace Calendar",
+            ),
+            GoogleWorkspaceKnownResourceDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                known_resources=google_known_resource_catalog,
+                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_DOCS,
+                safe_description="Google Workspace known document",
+            ),
+            GoogleWorkspaceKnownResourceDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                known_resources=google_known_resource_catalog,
+                resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_SHEETS,
+                safe_description="Google Workspace known spreadsheet",
+            ),
         )
     )
 
@@ -176,14 +204,17 @@ def build_connected_source_wiring(
     opaque_ref_codec: RemoteResourceOpaqueRefCodec | None = None,
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
     materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
+    google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog | None = None,
     msgraph_mailbox_user_id: str | None = None,
     msgraph_teams_channel_team_id: str | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
+    google_resources = google_known_resource_catalog or GoogleWorkspaceKnownResourceCatalog()
     discovery_strategy_registry = build_default_remote_resource_discovery_registry(
         connection_registry=registry,
         opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
         msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
@@ -261,6 +292,7 @@ def build_connected_source_wiring(
     return ConnectedSourceWiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
+        google_known_resource_catalog=google_resources,
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
         tenant_binding_port=tenant_binding_port,

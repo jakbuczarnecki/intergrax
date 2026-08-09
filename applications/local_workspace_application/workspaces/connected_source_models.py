@@ -17,6 +17,9 @@ class RemoteResourceTypeV1(StrEnum):
     MSGRAPH_MAIL_FOLDER = "mail_folder"
     MSGRAPH_TEAMS_CHANNEL = "teams_channel"
     MSGRAPH_CALENDAR = "calendar"
+    GOOGLE_WORKSPACE_CALENDAR = "google_workspace_calendar"
+    GOOGLE_WORKSPACE_DOCS = "google_workspace_docs"
+    GOOGLE_WORKSPACE_SHEETS = "google_workspace_sheets"
 
 
 class SlackConversationKindV1(StrEnum):
