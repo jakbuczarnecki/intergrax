@@ -162,6 +162,33 @@ approved provider composition boundary. `LKW_READY` means the documented
 bounded technical path is accepted; it does not mean commercial GA, complete
 ACL coverage or exhaustive Microsoft Graph feature coverage.
 
+### Atlassian connection topology (4A)
+
+Jira and Confluence retain separate canonical Vendor Knowledge connections. Their
+repository contracts use different provider identities and integration
+categories (`jira` / `ISSUE_TRACKER` and `confluence` / `WIKI_KNOWLEDGE`), and
+their accepted runtimes expose separate REST clients and composition roots.
+The generic `TenantConnection` model, `credential_ref`, `SecretsStore`,
+`TenantConnectionRehydrator` and `KnowledgeConnectionRegistry` are shared
+without introducing an umbrella `atlassian` provider.
+
+Each provider-owned tenant factory receives a secret-free `base_url` and
+provider credential material resolved from its own `credential_ref`. Credential
+material is not persisted in the connection's safe configuration or public
+rehydration result. The Atlassian site relationship does not merge provider
+identities or source lifecycles. This establishes restart-safe connection
+rehydration only; Jira and Confluence remain `FOUNDATION_ONLY` for Indexed and
+Durable production readiness, with Live unsupported.
+
+The selected 4B reference source is Confluence `pages`. Its accepted contract
+has a stable numeric page identity, explicit integer `version_number`, bounded
+space pagination and a meaningful title plus storage-format body that already
+maps to the Vendor Knowledge rich-text content mode. Jira `issues` is rejected
+as the reference for this step because its accepted revision is timestamp-based
+(`updated_at`) and its structured record still needs a provider-owned
+materialization projection from issue fields and description representation.
+Both sources retain the same no-tombstone and unproven item-ACL boundaries.
+
 | provider | source kind | adapter | DURABLE | INDEXED | LIVE | plugin declaration | runtime registration | proof level | deletion semantics | ACL status | known limitations | evidence |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Microsoft Graph | `drive` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | ACCEPTED | DURABLE, LIVE | adapter + Graph live bundle | FOCUSED_TESTS | authoritative delta/removal | provider, tenant, source binding; item/per-user UNPROVEN | files are exposed as `BINARY` and folders/packages have no content representation; no truthful text materializer or binary extraction is claimed; exact blocker `REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY` | `test_msgraph_drive_knowledge_adapter.py`, `test_msgraph_drive_knowledge_sync.py`, `test_msgraph_drive_live.py` |
@@ -174,8 +201,8 @@ ACL coverage or exhaustive Microsoft Graph feature coverage.
 | Google Workspace | `docs` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-document scope; structured tabs/segments are bounded; no broad discovery, organization-wide traversal, authoritative deletion, item ACL projection or Live handler | `test_google_workspace_docs_knowledge_adapter.py`, `test_google_workspace_docs_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Google Workspace | `sheets` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-spreadsheet scope; bounded structured/tabular values; formulas are not evaluated, XLSX extraction is not claimed, arbitrary ranges and item ACL projection are excluded | `test_google_workspace_sheets_knowledge_adapter.py`, `test_google_workspace_sheets_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Google Workspace | `calendar` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | cancellation/tombstone and reconciliation semantics remain source-owned; snapshot absence is not authoritative | provider, tenant, source binding; item ACL UNPROVEN | bounded structured event projection; attachment bytes, external document bodies, complete recurrence expansion, conference transcripts, historical versions and organization-wide attendee ACLs excluded; Live intentionally unsupported; commercial GA/SLA not implied | `test_google_workspace_calendar_knowledge_adapter.py`, `test_google_workspace_calendar_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
-| Jira | `issues` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | project reconciliation only; no incremental feed, index bridge or live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py` |
-| Confluence | `pages` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | space reconciliation only; no incremental feed, index bridge or live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py` |
+| Jira | `issues` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter + Jira tenant factory | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | project reconciliation only; no incremental feed, index bridge or live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py`, `test_atlassian_connection_factory.py` |
+| Confluence | `pages` | ACCEPTED | FOUNDATION_ONLY | FOUNDATION_ONLY | UNSUPPORTED | DURABLE | adapter + Confluence tenant factory | FOCUSED_TESTS | no authoritative tombstones | provider, tenant, source binding; item ACL UNPROVEN | space reconciliation only; no incremental feed, index bridge or live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py`, `test_atlassian_connection_factory.py` |
 
 ### Explicitly unimplemented providers
 

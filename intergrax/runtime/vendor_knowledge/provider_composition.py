@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationDependencyError
 from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
@@ -30,6 +32,22 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
 from intergrax.integrations.providers.conversation_channel.slack.tenant_connection_factory import (
     SlackRuntimeBuilder,
     SlackTenantConnectionIntegrationFactory,
+)
+from intergrax.integrations.providers.issue_tracker.jira.config import JiraIntegrationConfig
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JIRA_ISSUE_TRACKER_PROVIDER_ID,
+)
+from intergrax.integrations.providers.issue_tracker.jira.tenant_connection_factory import (
+    JiraTenantConnectionIntegrationFactory,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.config import (
+    ConfluenceIntegrationConfig,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
+    CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.tenant_connection_factory import (
+    ConfluenceTenantConnectionIntegrationFactory,
 )
 from intergrax.runtime.vendor_knowledge.tenant_connection_factory_registry import (
     TenantConnectionIntegrationFactoryRegistry,
@@ -59,6 +77,8 @@ def build_default_vendor_knowledge_connection_factory_registry(
     slack_runtime_builder: SlackRuntimeBuilder | None = None,
     msgraph_runtime_builder: Ms365GraphRuntimeBuilder | None = None,
     google_client_factory: GoogleWorkspaceClientFactory | None = None,
+    jira_http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
+    confluence_http_client_factory: Callable[[ConfluenceIntegrationConfig], Any] | None = None,
 ) -> TenantConnectionIntegrationFactoryRegistry:
     """Compose provider-owned connection factories behind a generic registry."""
     registry = TenantConnectionIntegrationFactoryRegistry()
@@ -81,6 +101,20 @@ def build_default_vendor_knowledge_connection_factory_registry(
         integration_kind=IntegrationCategory.COLLABORATION_SUITE,
         factory=GoogleWorkspaceTenantConnectionIntegrationFactory(
             client_factory=google_client_factory or _UnavailableGoogleWorkspaceClientFactory(),
+        ),
+    )
+    registry.register(
+        provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+        factory=JiraTenantConnectionIntegrationFactory(
+            http_client_factory=jira_http_client_factory,
+        ),
+    )
+    registry.register(
+        provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
+        factory=ConfluenceTenantConnectionIntegrationFactory(
+            http_client_factory=confluence_http_client_factory,
         ),
     )
     return registry
