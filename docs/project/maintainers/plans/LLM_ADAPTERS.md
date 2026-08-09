@@ -10,6 +10,25 @@
 
 ---
 
+## LCI-6A — Native Ollama adapter architecture and parity matrix
+
+**Status:** `READY_FOR_REVIEW`
+**Owner:** LLM_ADAPTERS
+**Feature satellite:** [`../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md)
+
+The target `NativeOllamaAdapter` implements the existing `LLMAdapter` ABI.
+`LangChainOllamaAdapter` remains the parity baseline until LCI-6D. The
+satellite freezes message, response, streaming, tool, structured-output,
+capability, context-window, usage, error, Token Optimization, LKW, transport,
+and LCI-6B harness requirements.
+
+LCI-6A changes no production code, resolver, LKW path, Token Optimization
+policy, dependency, or tests. LCI-6B is the next task after acceptance; LCI-6C
+is the mandatory live proof; LCI-6D owns controlled cutover; LCI-6E owns
+compatibility packaging.
+
+---
+
 ## Cursor read scope (token budget)
 
 **Do not read this entire file in one session** (LLM_ADAPTERS plan).

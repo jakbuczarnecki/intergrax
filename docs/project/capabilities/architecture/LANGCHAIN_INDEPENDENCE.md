@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **READY_FOR_REVIEW**; LCI-6A **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **READY_FOR_REVIEW**; LCI-6B **NEXT AFTER ACCEPTANCE**; LCI-6C **PLANNED**; LCI-6D **PLANNED**; LCI-6E **PLANNED**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-5C — Provider-local LangChain optionalization
+**Current active task:** LCI-6A — Native Ollama adapter architecture and parity matrix
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -54,11 +54,21 @@ extras raise a stable provider configuration error; core import, registry
 discovery and native RAG contracts remain LangChain-safe. `langchain-ollama`
 remains a core requirement while the chat adapter is assigned to LCI-6.
 
+**LCI-6A decision:** The target `NativeOllamaAdapter` implements the existing
+Intergrax `LLMAdapter` ABI and introduces no second public LLM contract.
+`LangChainOllamaAdapter` remains the parity baseline until LCI-6D. LCI-6B is
+implementation behind a non-default path, LCI-6C supplies mandatory live
+Ollama evidence, LCI-6D may change the default only after mandatory parity
+rows are proven, and LCI-6E moves the LangChain adapter to compatibility-only
+packaging. The full target and matrix are in the LCI-6A satellite.
+
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 
 `ParsedDocumentFragment` is extraction-stage only. `KnowledgeDocument` remains the canonical RAG knowledge ABI.
 
 **Dependency inventory satellite:** [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md)
+
+**LCI-6A parity satellite:** [`satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md)
 
 ---
 

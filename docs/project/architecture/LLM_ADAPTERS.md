@@ -89,6 +89,8 @@ All adapter completion methods return typed envelopes — **not** bare `str` or 
 
 **Ollama model-aware tool capabilities (TOKEN-9 / TOKEN-9-R1):** `LangChainOllamaAdapter.supports_tools()` reflects the installed model's `/api/show` capability list via `intergrax/llm_adapters/providers/ollama_capabilities.py`. There is no static model-name allowlist. Capability resolution is lazy, cached per adapter instance, and fail-closed. Valid resolved states include `capabilities=["completion","tools"]`, `["completion"]`, or `[]`; missing or malformed capability payloads are **unresolved** (`resolved=False`) and must not be treated as ordinary no-tools models. Unresolved capability state never enters structured-output fallback — the Token Optimization router returns `CAPABILITY_RESOLUTION_FAILED`. Structured output remains fallback only for **resolved** models that genuinely lack `tools`. `generate_with_tools()` uses `ChatOllama.bind_tools()` and maps LangChain `AIMessage.tool_calls` to `LLMToolCall`. Native tool calling is preferred by the Token Optimization router. Ollama does not enforce `tool_choice`; the router still requires exactly one valid tool call. Not every Ollama model declares `tools` — there is no universal Ollama-tools claim.
 
+**LCI-6A target:** [`OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md) freezes the native adapter target and side-by-side proof boundary. It does not implement the adapter or change the resolver.
+
 Example:
 
 ```python

@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-5C — Provider-local LangChain optionalization
-**Next task after acceptance:** LCI-6A
+**Current active task:** LCI-6A — Native Ollama adapter architecture and parity matrix
+**Next task after acceptance:** LCI-6B
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
@@ -460,10 +460,10 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | **Acceptance criteria** | Missing optional package fails with clear error; core import unaffected |
 | **User-visible outcome** | LangChain loaders/embeddings explicitly optional |
 
-**Closeout:** LCI-5C is `READY_FOR_REVIEW`. The existing provider IDs,
-registration behavior and `ParsedDocumentFragment` output ABI are preserved.
-LCI-6A is `PLANNED / NEXT AFTER ACCEPTANCE`; this task does not optionalize the
-chat Ollama adapter.
+**Closeout:** LCI-5C is `APPROVED`. The existing provider IDs, registration
+behavior and `ParsedDocumentFragment` output ABI are preserved. LCI-6A is
+`READY_FOR_REVIEW`; LCI-6B is `NEXT AFTER ACCEPTANCE`. This task does not
+optionalize the chat Ollama adapter.
 
 ---
 
@@ -472,14 +472,14 @@ chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Document parity matrix for messages, streaming, tools, structured output, JSON schema, capability resolution, usage, errors, timeouts, Token Optimization interactions. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-1B |
-| **Exact scope** | Architecture spec + parity matrix in LLM_ADAPTERS feature docs |
+| **Exact scope** | Architecture spec + parity matrix in [`../architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](../architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md) |
 | **Explicit out of scope** | Implementation; LKW cutover |
-| **Acceptance criteria** | Approved parity matrix with explicit pass/fail criteria per dimension |
-| **User-visible outcome** | Signed-off native Ollama target behavior |
+| **Acceptance criteria** | Reviewable parity matrix with explicit pass/fail criteria per dimension; no runtime, resolver, LKW, Token Optimization, dependency, or test changes |
+| **User-visible outcome** | Frozen native Ollama target behavior, READY_FOR_REVIEW; implementation and live proof remain pending |
 
 ---
 
@@ -488,7 +488,7 @@ chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | NEXT AFTER ACCEPTANCE |
 | **Purpose** | Implement native Ollama adapter behind LLMAdapter without LKW cutover. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-6A |
