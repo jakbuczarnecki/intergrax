@@ -250,12 +250,53 @@ jobs:
         run: |
           gate_env="${RUNNER_TEMP}/intergrax-langchain-free-core"
           "${gate_env}/bin/python" scripts/ci/check_langchain_free_core_install.py
+          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py --missing-extra
+
+  langchain-compatibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        extra:
+          - llm-langchain-ollama
+          - rag-langchain-loaders
+          - rag-langchain-embeddings
+          - rag-langchain-splitters
+          - langgraph-legacy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Create isolated compatibility environment
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
+          uv venv --python 3.12 "${gate_env}"
+          uv pip install --python "${gate_env}/bin/python" ".[${{ matrix.extra }}]"
+
+      - name: Run isolated compatibility gate
+        env:
+          PYTHONNOUSERSITE: "1"
+        shell: bash
+        run: |
+          gate_env="${RUNNER_TEMP}/intergrax-langchain-${{ matrix.extra }}"
+          "${gate_env}/bin/python" scripts/ci/check_langchain_compatibility_install.py \
+            --family "${{ matrix.extra }}"
 
   gate-closeout:
     needs:
       - gate-tests
       - gate-governance-tier
       - gate-governance-wiring
+      - langchain-compatibility
     if: >-
       (
         github.event_name == 'schedule' ||
@@ -266,7 +307,8 @@ jobs:
       ) &&
       needs.gate-tests.result == 'success' &&
       needs.gate-governance-tier.result == 'success' &&
-      needs.gate-governance-wiring.result == 'success'
+      needs.gate-governance-wiring.result == 'success' &&
+      needs.langchain-compatibility.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
