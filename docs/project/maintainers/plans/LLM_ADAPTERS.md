@@ -12,7 +12,7 @@
 
 ## LCI-6A — Native Ollama adapter architecture and parity matrix
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** LLM_ADAPTERS
 **Feature satellite:** [`../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md`](../../capabilities/architecture/satellites/OLLAMA_NATIVE_ADAPTER_PARITY_MATRIX.md)
 
@@ -23,9 +23,23 @@ capability, context-window, usage, error, Token Optimization, LKW, transport,
 and LCI-6B harness requirements.
 
 LCI-6A changes no production code, resolver, LKW path, Token Optimization
-policy, dependency, or tests. LCI-6B is the next task after acceptance; LCI-6C
-is the mandatory live proof; LCI-6D owns controlled cutover; LCI-6E owns
-compatibility packaging.
+policy, dependency, or tests. LCI-6B implements the native adapter behind a
+non-default path; LCI-6C is the mandatory live proof; LCI-6D owns controlled
+cutover; LCI-6E owns compatibility packaging.
+
+## LCI-6B — Native Ollama adapter implementation
+
+**Status:** `READY_FOR_REVIEW`
+**Owner:** LLM_ADAPTERS
+**Implementation:** `intergrax/llm_adapters/providers/native_ollama_adapter.py`
+
+The official `ollama` client now has a direct, injectable native transport
+implementation of the existing `LLMAdapter` ABI. It preserves the existing
+LangChain adapter as the default baseline and adds deterministic unit and
+side-by-side request/response evidence for messages, streaming fallback,
+tools, structured output, usage, capabilities, context windows, and blocked
+LangChain imports. Live rows remain assigned to LCI-6C; default resolver,
+LKW, and Token Optimization behavior are unchanged.
 
 ---
 

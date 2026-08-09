@@ -6,10 +6,10 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LCI-6A — Native Ollama Adapter Architecture and Parity Matrix
 
-**Status:** READY_FOR_REVIEW
+**Status:** LCI-6B READY_FOR_REVIEW
 **Task:** `LCI-6A-NATIVE-OLLAMA-ADAPTER-ARCHITECTURE-AND-PARITY-MATRIX`
 **Baseline:** `LangChainOllamaAdapter` in `intergrax/llm_adapters/providers/ollama_adapter.py`
-**Implementation status:** not started; no `NativeOllamaAdapter` is introduced here.
+**Implementation status:** LCI-6B implemented behind a non-default path; live proof remains pending.
 
 This satellite freezes the target contract and the observable behavior that LCI-6B must implement and compare. It is an architecture and behavior specification, not a transport implementation, resolver change, LKW cutover, Token Optimization change, packaging change, or LCI-6B kickoff.
 
@@ -42,9 +42,9 @@ LCI-5B — APPROVED
 LCI-5C — APPROVED
 RAG-REGRESSION-GATE-1 — PASS / CLOSED
 
-LCI-6A — READY_FOR_REVIEW
-LCI-6B — NEXT AFTER ACCEPTANCE
-LCI-6C — PLANNED
+LCI-6A — APPROVED
+LCI-6B — READY_FOR_REVIEW
+LCI-6C — NEXT AFTER ACCEPTANCE
 LCI-6D — PLANNED
 LCI-6E — PLANNED
 LCI-7 — PLANNED
@@ -422,6 +422,31 @@ Classification is exactly one of: `MUST_MATCH`, `INTENTIONAL_IMPROVEMENT`, `CURR
 | OLLAMA-PARITY-049 | Token Optimization usage/ABI | Router uses adapter methods, tool calls, schema envelope, usage path. | No private tokenizer or usage tracker. | Reuse contracts; report counter delta. | MUST_MATCH | Existing Token Optimization tests. | Router usage/cache integration. | LCI-6C evidence feeds LCI-6D. | Token Optimization. | P1 |
 | OLLAMA-PARITY-050 | Native transport/counter evidence | LangChain exposes estimate-only behavior; native client may expose prompt/eval counters. | Differences explicit and attributable. | Official client operations plus trustworthy-counter policy. | LIVE_PROOF_REQUIRED | Fake native client contract. | Side-by-side harness. | Real chat/stream/tools/format/show evidence. | LCI-6B/6C gate. | P1 |
 | OLLAMA-PARITY-051 | Streaming capability flag | Current adapter inherits `supports_streaming() == False` even though `stream_messages()` is implemented. | Capability flags must truthfully advertise implemented public surfaces. | Return `True` when native streaming is implemented; no change to event ABI. | INTENTIONAL_IMPROVEMENT | Capability flag assertion. | Consumer capability integration. | No. | Future stream consumers. | P2 |
+
+## LCI-6B UNIT/INTEGRATION EVIDENCE
+
+The following deterministic evidence is implemented in
+`tests/unit/llm_adapters/test_native_ollama_adapter.py`:
+
+```text
+001-012  constructor, identity, context, message mapping, plain generation,
+         typed response and usage lifecycle
+013-017  successful streaming, pre-partial fallback, post-partial failure,
+         final-event ordering and failed-call accounting
+018-024  caller-owned tool schemas, tool_choice validation, canonical tool
+         calls, tool-result correlation, unsupported tool streaming
+025-028  projected structured schema, raw JSON parsing, original-model
+         validation and structured failure lifecycle
+029-033  capability cache/refresh, fail-closed flags, provider counters,
+         estimator fallback and run accounting
+045-049  typed ABI identity, structured/tool surfaces, side-by-side request
+         normalization and unchanged Token Optimization-facing contracts
+051      truthful native streaming capability flag
+```
+
+Rows `034-044` and `050` remain `LIVE-PROOF-PENDING` for LCI-6C. The harness
+uses fake native and LangChain transports and does not claim real-Ollama
+evidence.
 
 ## Matrix summary and gate ownership
 
