@@ -6,12 +6,17 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
 )
 
+if TYPE_CHECKING:
+    from intergrax.rag.embedding.contracts.base_embedding_manager import (
+        BaseEmbeddingManager,
+    )
 
 
 class BaseReranker(ABC):
@@ -48,3 +53,13 @@ class BaseReranker(ABC):
             candidates=candidates,
             limit=limit,
         )
+
+
+class BaseRerankerPlugin(ABC):
+    """Typed construction contract for dependency-aware reranker plugins."""
+
+    @classmethod
+    @abstractmethod
+    def create(cls, *, embedding_manager: BaseEmbeddingManager) -> BaseReranker:
+        """Construct a reranker from the normal RAG embedding dependency."""
+        raise NotImplementedError

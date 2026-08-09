@@ -11,7 +11,10 @@ from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_de
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.query.query_expander import query_expander_from_profile
-from intergrax.rag.retrievers.contracts.base_retriever import BaseRetriever
+from intergrax.rag.retrievers.contracts.base_retriever import (
+    BaseRetriever,
+    BaseRetrieverPlugin,
+)
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.providers.fusion_retriever import FusionRetriever
@@ -33,17 +36,39 @@ from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVec
 def _register_entry_point_retrievers(
     registry: RetrieverRegistry,
     *,
+    vector_store: BaseVectorstoreManager,
+    embedding_manager: BaseEmbeddingManager,
+    toc_vector_store: BaseVectorstoreManager | None,
+    graph_store: GraphStore | None,
+    profile: RagProfile | None,
+    llm_for_query_expansion: LLMAdapter | None,
     discover_entry_points: bool | None,
 ) -> None:
     if discover_entry_points is None:
         discover_entry_points = discover_plugins_enabled()
 
     def _register_entry_point(plugin_type: type) -> None:
-        if not issubclass(plugin_type, BaseRetriever):
-            raise TypeError(
-                f"RAG retriever plugin must subclass BaseRetriever: {plugin_type!r}"
+        if issubclass(plugin_type, BaseRetrieverPlugin):
+            retriever = plugin_type.create(
+                vector_store=vector_store,
+                embedding_manager=embedding_manager,
+                toc_vector_store=toc_vector_store,
+                graph_store=graph_store,
+                profile=profile,
+                llm_for_query_expansion=llm_for_query_expansion,
             )
-        registry.register(plugin_type())
+        elif issubclass(plugin_type, BaseRetriever):
+            retriever = plugin_type()
+        else:
+            raise TypeError(
+                "RAG retriever plugin must subclass BaseRetriever or "
+                f"BaseRetrieverPlugin: {plugin_type!r}"
+            )
+        if not isinstance(retriever, BaseRetriever):
+            raise TypeError(
+                f"RAG retriever plugin factory must return BaseRetriever: {plugin_type!r}"
+            )
+        registry.register(retriever)
 
     register_plugins(
         EP_RAG_RETRIEVERS,
@@ -150,6 +175,12 @@ def create_default_retriever_registry(
 
     _register_entry_point_retrievers(
         registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
         discover_entry_points=discover_entry_points,
     )
 
@@ -190,6 +221,12 @@ def create_default_retriever_engine(
 
     _register_entry_point_retrievers(
         registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
         discover_entry_points=discover_entry_points,
     )
 

@@ -27,6 +27,7 @@ from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
 )
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
+    BaseRetrieverPlugin,
     RetrievalHit,
     RetrieverQuery,
 )
@@ -34,7 +35,10 @@ from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegist
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
 )
-from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
+from intergrax.rag.rerankers.contracts.base_reranker import (
+    BaseReranker,
+    BaseRerankerPlugin,
+)
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
@@ -151,6 +155,48 @@ class _ExternalRetriever(BaseRetriever):
         ]
 
 
+class _DependencyAwareRetriever(BaseRetriever):
+    requires_query_embedding = False
+
+    def __init__(self, vector_store: object) -> None:
+        self.vector_store = vector_store
+
+    @classmethod
+    def name(cls) -> str:
+        return "external_retriever"
+
+    def retrieve(self, query: RetrieverQuery) -> Sequence[RetrievalHit]:
+        return [
+            RetrievalHit(
+                document=_source("retrieved-document"),
+                score=0.91,
+                rank=0,
+                channel="external",
+                retriever_name=self.name(),
+                query_text=query.query_text,
+            )
+        ]
+
+
+class _ExternalRetrieverPlugin(BaseRetrieverPlugin):
+    received_vector_store: object | None = None
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        vector_store: object,
+        embedding_manager: object,
+        graph_store: object | None = None,
+        profile: RagProfile | None = None,
+        llm_for_query_expansion: object | None = None,
+        toc_vector_store: object | None = None,
+    ) -> BaseRetriever:
+        del embedding_manager, graph_store, profile, llm_for_query_expansion, toc_vector_store
+        cls.received_vector_store = vector_store
+        return _DependencyAwareRetriever(vector_store)
+
+
 class _ExternalReranker(BaseReranker):
     @classmethod
     def name(cls) -> str:
@@ -174,6 +220,43 @@ class _ExternalReranker(BaseReranker):
             for index, candidate in enumerate(candidates)
         ]
         return results if limit is None else results[:limit]
+
+
+class _DependencyAwareReranker(BaseReranker):
+    def __init__(self, embedding_manager: object) -> None:
+        self.embedding_manager = embedding_manager
+
+    @classmethod
+    def name(cls) -> str:
+        return "external_reranker"
+
+    def rerank(
+        self,
+        *,
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        limit: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        del query
+        results = [
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=0.99,
+                fusion_score=None,
+                rank=index,
+            )
+            for index, candidate in enumerate(candidates)
+        ]
+        return results if limit is None else results[:limit]
+
+
+class _ExternalRerankerPlugin(BaseRerankerPlugin):
+    received_embedding_manager: object | None = None
+
+    @classmethod
+    def create(cls, *, embedding_manager: object) -> BaseReranker:
+        cls.received_embedding_manager = embedding_manager
+        return _DependencyAwareReranker(embedding_manager)
 
 
 def test_external_chunker_entry_point_uses_normal_splitter_and_profile(
@@ -204,7 +287,7 @@ def test_external_retriever_entry_point_uses_retrieval_service(
 ) -> None:
     _patch_entry_points(
         monkeypatch,
-        {"intergrax.rag.retrievers": (_ExternalRetriever,)},
+        {"intergrax.rag.retrievers": (_ExternalRetrieverPlugin,)},
     )
     profile = RagProfile(
         retriever_id="external_retriever",
@@ -214,10 +297,12 @@ def test_external_retriever_entry_point_uses_retrieval_service(
         route_mode="off",
         query_expansion="off",
     )
+    vector_store = object()
+    registry = RetrieverRegistry()
     manager = create_default_retriever_manager(
-        vector_store=object(),
+        vector_store=vector_store,
         embedding_manager=object(),
-        registry=RetrieverRegistry(),
+        registry=registry,
         profile=profile,
         discover_entry_points=True,
     )
@@ -228,6 +313,8 @@ def test_external_retriever_entry_point_uses_retrieval_service(
     assert result.used is True
     assert result.chunks[0].text == "external plugin content"
     assert result.trace.retriever_id == "external_retriever"
+    assert _ExternalRetrieverPlugin.received_vector_store is vector_store
+    assert registry.get("external_retriever").vector_store is vector_store
 
 
 def test_external_reranker_entry_point_uses_retrieval_service(
@@ -235,7 +322,7 @@ def test_external_reranker_entry_point_uses_retrieval_service(
 ) -> None:
     _patch_entry_points(
         monkeypatch,
-        {"intergrax.rag.rerankers": (_ExternalReranker,)},
+        {"intergrax.rag.rerankers": (_ExternalRerankerPlugin,)},
     )
     profile = RagProfile(
         retriever_id="external_retriever",
@@ -256,8 +343,9 @@ def test_external_reranker_entry_point_uses_retrieval_service(
         discover_entry_points=False,
     )
     reranker_registry = RerankerRegistry()
+    embedding_manager = object()
     reranker_engine = create_default_reranker_engine(
-        embedding_manager=object(),
+        embedding_manager=embedding_manager,
         registry=reranker_registry,
         discover_entry_points=True,
     )
@@ -274,6 +362,11 @@ def test_external_reranker_entry_point_uses_retrieval_service(
     assert result.trace.reranker_id == "external_reranker"
     assert result.trace.rerank_enabled is True
     assert result.chunks[0].score == pytest.approx(0.99)
+    assert _ExternalRerankerPlugin.received_embedding_manager is embedding_manager
+    assert (
+        reranker_registry.get("external_reranker").embedding_manager
+        is embedding_manager
+    )
 
 
 def test_rag_entry_point_discovery_is_opt_in(

@@ -21,7 +21,16 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 )
 
 if TYPE_CHECKING:
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.rag.embedding.contracts.base_embedding_manager import (
+        BaseEmbeddingManager,
+    )
+    from intergrax.rag.graph.contracts.graph_store import GraphStore
+    from intergrax.rag.profiles.rag_profile import RagProfile
     from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
+    from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+        BaseVectorstoreManager,
+    )
 
 
 @dataclass(frozen=True)
@@ -312,6 +321,7 @@ class BaseRetriever(ABC):
         """
         raise NotImplementedError
 
+
     @abstractmethod
     def retrieve(
         self,
@@ -320,4 +330,23 @@ class BaseRetriever(ABC):
         """
         Execute retrieval for a given query context.
         """
+        raise NotImplementedError
+
+
+class BaseRetrieverPlugin(ABC):
+    """Typed construction contract for dependency-aware retriever plugins."""
+
+    @classmethod
+    @abstractmethod
+    def create(
+        cls,
+        *,
+        vector_store: BaseVectorstoreManager,
+        embedding_manager: BaseEmbeddingManager,
+        graph_store: GraphStore | None = None,
+        profile: RagProfile | None = None,
+        llm_for_query_expansion: LLMAdapter | None = None,
+        toc_vector_store: BaseVectorstoreManager | None = None,
+    ) -> BaseRetriever:
+        """Construct a retriever from the normal RAG runtime dependencies."""
         raise NotImplementedError

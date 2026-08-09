@@ -11,7 +11,10 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 
 from intergrax.rag.rerankers.cache.base_rerank_cache import BaseRerankCache
 from intergrax.rag.rerankers.cache.rerank_cache import RerankCache
-from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
+from intergrax.rag.rerankers.contracts.base_reranker import (
+    BaseReranker,
+    BaseRerankerPlugin,
+)
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.providers.cohere_reranker import CohereReranker
 from intergrax.rag.rerankers.providers.cross_encoder_reranker import CrossEncoderReranker
@@ -33,17 +36,27 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 def _register_entry_point_rerankers(
     registry: RerankerRegistry,
     *,
+    embedding_manager: BaseEmbeddingManager,
     discover_entry_points: bool | None,
 ) -> None:
     if discover_entry_points is None:
         discover_entry_points = discover_plugins_enabled()
 
     def _register_entry_point(plugin_type: type) -> None:
-        if not issubclass(plugin_type, BaseReranker):
+        if issubclass(plugin_type, BaseRerankerPlugin):
+            reranker = plugin_type.create(embedding_manager=embedding_manager)
+        elif issubclass(plugin_type, BaseReranker):
+            reranker = plugin_type()
+        else:
             raise TypeError(
-                f"RAG reranker plugin must subclass BaseReranker: {plugin_type!r}"
+                "RAG reranker plugin must subclass BaseReranker or "
+                f"BaseRerankerPlugin: {plugin_type!r}"
             )
-        registry.register(plugin_type())
+        if not isinstance(reranker, BaseReranker):
+            raise TypeError(
+                f"RAG reranker plugin factory must return BaseReranker: {plugin_type!r}"
+            )
+        registry.register(reranker)
 
     register_plugins(
         EP_RAG_RERANKERS,
@@ -100,6 +113,7 @@ def create_default_reranker_registry(
 
     _register_entry_point_rerankers(
         registry,
+        embedding_manager=embedding_manager,
         discover_entry_points=discover_entry_points,
     )
 
@@ -128,6 +142,7 @@ def create_default_reranker_engine(
 
     _register_entry_point_rerankers(
         registry,
+        embedding_manager=embedding_manager,
         discover_entry_points=discover_entry_points,
     )
 
@@ -172,16 +187,17 @@ def create_default_reranker_pipeline(
 
 
 def create_default_reranker_manager(
-        *,
-        engine: RerankerEngine | None = None,
-        discover_entry_points: bool | None = None,
-)->BaseRerankerManager:
-    
+    *,
+    embedding_manager: BaseEmbeddingManager | None = None,
+    engine: RerankerEngine | None = None,
+    discover_entry_points: bool | None = None,
+) -> BaseRerankerManager:
     if engine is None:
         engine = create_default_reranker_engine(
+            embedding_manager=embedding_manager,
             discover_entry_points=discover_entry_points,
         )
 
     return ReRankerManager(
-        engine=engine
+        engine=engine,
     )
