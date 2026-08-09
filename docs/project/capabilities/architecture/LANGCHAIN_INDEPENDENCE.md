@@ -6,12 +6,13 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **READY_FOR_REVIEW**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**; LCI-7B **NEXT AFTER ACCEPTANCE**; LCI-8 **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-6E — LangChain Ollama compatibility optionalization
+**Current active task:** LCI-7A — LangChain optional extras packaging
+**Next task after acceptance:** LCI-7B — LangChain-free core installation gate
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -130,9 +131,9 @@ Facts verified against repository state at inventory time.
 | 4 | Ollama LLM path is provider-bound LangChain today | `intergrax/llm_adapters/providers/ollama_adapter.py` — `LangChainOllamaAdapter`, `ChatOllama`, lazy `langchain_core.messages` |
 | 5 | `langchain_core.documents.Document` leaks through core RAG contracts | e.g. `intergrax/rag/document_loaders/contracts/base_document_parser.py`, `intergrax/rag/vectorstore/contracts/vector_store.py`, `intergrax/rag/embedding/contracts/base_embedding_manager.py` — **16 contract files** (see inventory satellite §D) |
 | 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
-| 7 | Default packaging still installs LangChain packages as core dependencies | `pyproject.toml` `[project].dependencies` — `langchain`, `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters` |
+| 7 | Default packaging no longer declares LangChain/LangGraph packages as direct core dependencies after LCI-7A | `pyproject.toml` `[project].dependencies` is free of `langchain*` and `langgraph`; compatibility/provider packages remain in named extras |
 
-**Import audit scale:** 104 direct production/runtime import statements · 69 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports (see inventory satellite §B).
+**Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports (see inventory satellite §B).
 
 ---
 
@@ -233,7 +234,7 @@ Provider paths are allowed only when:
 | Risk | Description |
 |------|-------------|
 | **Contract lock-in** | `Document` in 16 public contracts couples most of RAG, memory, modality, and integrations to LangChain Core. |
-| **Packaging risk** | Six LangChain packages in default `[project].dependencies` force install surface and security exposure for all users. |
+| **Packaging risk** | Optional compatibility/provider packages must stay out of default `[project].dependencies`; LCI-7B still needs to prove the clean installation gate. |
 | **Version range risk** | Broad `>=0.3` ranges on multiple LangChain packages increase resolver drift and breaking-change exposure. |
 | **Transitive dependency risk** | LangChain meta-packages pull large transitive trees (community, text-splitters, OpenAI shims). |
 | **Migration regression risk** | Dual-model transition (LangChain `Document` vs native document) can silently drop metadata or tenant fields. |

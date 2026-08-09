@@ -15,9 +15,9 @@ Use, modification, or distribution without written permission is prohibited.
 
 | Field | Value |
 |-------|-------|
-| **Audit date** | 2026-08-02 |
+| **Audit date** | 2026-08-09 |
 | **Branch** | `development` |
-| **Commit** | `0d01a6eb96ff29d1e6479fdd2d968d7505f82f94` |
+| **Commit** | `0b53e07fbb9b7cef2507eadf4e5cdd92931eacd9` |
 | **Scope** | `intergrax`, `agents`, `applications`, `tests`, `scripts`, `pyproject.toml`, `uv.lock` (excludes `docker/runtime-context` copies) |
 | **Patterns** | Top-level `from` / `import` of `langchain*`, `langgraph` in Python sources; `pyproject.toml` declarations |
 | **Classifications** | `CORE_CONTRACT_LEAK`, `CORE_IMPLEMENTATION_DEPENDENCY`, `PROVIDER_BOUND_DEPENDENCY`, `OPTIONAL_COMPATIBILITY`, `LEGACY_OPTIONAL`, `TOOLING_DEPENDENCY`, `TEST_ONLY`, `PACKAGING_DEPENDENCY`, `GENERATED_LOCK_ENTRY` |
@@ -46,7 +46,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | direct test imports | 46 |
 | direct tooling imports | 1 |
 | direct LangGraph imports | 2 |
-| packaging declaration rows | 10 |
+| packaging declaration rows | 6 |
 | generated lock rows | 1 |
 | core contract leaks | 0 |
 | core implementation dependencies | 0 |
@@ -122,15 +122,15 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | LCI-INV-0173 | `langchain_core.documents` | `tests/unit/tools/providers/rag/test_rag_scope.py` | 11 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-4A | verified import |
 | LCI-INV-0174 | `langchain_core.documents` | `tests/unit/tools/providers/vector_store/test_vector_store_tools.py` | 6 | `Document` | TEST / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
 | LCI-INV-0175 | `langchain` | `pyproject.toml` | ? | (removed) | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | removed in LCI-0C | optional extra or removed from core | LCI-0C | direct meta-package removed in LCI-0C; zero exact root langchain imports |
-| LCI-INV-0176 | `langchain-core` | `pyproject.toml` | 79 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
-| LCI-INV-0177 | `langchain-community` | `pyproject.toml` | 80 | `langchain-community>=0.3,<0.5` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-loaders | PACKAGING_DEPENDENCY | optional extra | `rag-langchain-loaders` | LCI-5C | declaration in [project.optional-dependencies].rag-langchain-loaders |
-| LCI-INV-0178 | `langchain-openai` | `pyproject.toml` | 81 | `langchain-openai>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
-| LCI-INV-0179 | `langchain-ollama` | `pyproject.toml` | 82 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project].dependencies | PACKAGING_DEPENDENCY | core | optional extra or removed from core | LCI-7A | declaration in [project].dependencies |
-| LCI-INV-0180 | `langchain-text-splitters` | `pyproject.toml` | 180 | `langchain-text-splitters>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-splitters | PACKAGING_DEPENDENCY | optional | optional extra: rag-langchain-splitters | LCI-2E | declaration in [project.optional-dependencies].rag-langchain-splitters |
-| LCI-INV-0181 | `langgraph` | `pyproject.toml` | 187 | `langgraph>=0.0.40` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].langgraph-legacy | PACKAGING_DEPENDENCY | optional extra | optional extra or removed from core | LCI-8A | declaration in [project.optional-dependencies].langgraph-legacy |
-| LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 191 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
-| LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 191 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-ollama | PACKAGING_DEPENDENCY | llm-ollama extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-ollama |
-| LCI-INV-0184 | `langchain-ollama` | `pyproject.toml` | 208 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-all | PACKAGING_DEPENDENCY | llm-all extra | optional extra or removed from core | LCI-6E | declaration in [project.optional-dependencies].llm-all |
+| LCI-INV-0176 | `langchain-core` | `pyproject.toml` | 79 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | removed from [project].dependencies | PACKAGING_DEPENDENCY | removed in LCI-7A | `llm-langchain-ollama` compatibility owner | LCI-7A | historical core declaration; current declaration is LCI-INV-0183 |
+| LCI-INV-0177 | `langchain-community` | `pyproject.toml` | 191 | `langchain-community>=0.3,<0.5` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-loaders | PACKAGING_DEPENDENCY | optional extra | `rag-langchain-loaders` | LCI-5C | declaration in [project.optional-dependencies].rag-langchain-loaders |
+| LCI-INV-0178 | `langchain-openai` | `pyproject.toml` | 81 | (removed) | PLATFORM_FOUNDATION / packaging | removed from [project].dependencies | PACKAGING_DEPENDENCY | removed in LCI-7A | native/SDK path; no compatibility extra required | LCI-7A | no current production owner |
+| LCI-INV-0179 | `langchain-ollama` | `pyproject.toml` | 194 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-embeddings | PACKAGING_DEPENDENCY | optional extra | `rag-langchain-embeddings` | LCI-7A | LCI-6E optionalization; declaration in [project.optional-dependencies].rag-langchain-embeddings |
+| LCI-INV-0180 | `langchain-text-splitters` | `pyproject.toml` | 197 | `langchain-text-splitters>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].rag-langchain-splitters | PACKAGING_DEPENDENCY | optional extra | optional extra: rag-langchain-splitters | LCI-2E | declaration in [project.optional-dependencies].rag-langchain-splitters |
+| LCI-INV-0181 | `langgraph` | `pyproject.toml` | 206 | `langgraph>=0.0.40` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].langgraph-legacy | PACKAGING_DEPENDENCY | optional extra | `langgraph-legacy` | LCI-8A | declaration in [project.optional-dependencies].langgraph-legacy |
+| LCI-INV-0182 | `langchain-ollama` | `pyproject.toml` | 213 | `langchain-ollama>=0.2,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-langchain-ollama | PACKAGING_DEPENDENCY | optional compatibility extra | `llm-langchain-ollama` | LCI-7A | LCI-6E optionalization; declaration in [project.optional-dependencies].llm-langchain-ollama |
+| LCI-INV-0183 | `langchain-core` | `pyproject.toml` | 213 | `langchain-core>=0.3,<2.0` | PLATFORM_FOUNDATION / packaging | [project.optional-dependencies].llm-langchain-ollama | PACKAGING_DEPENDENCY | optional compatibility extra | `llm-langchain-ollama` | LCI-7A | declaration in [project.optional-dependencies].llm-langchain-ollama |
+| LCI-INV-0184 | `langchain-ollama` | `pyproject.toml` | 208 | (removed) | PLATFORM_FOUNDATION / packaging | removed from [project.optional-dependencies].llm-all | PACKAGING_DEPENDENCY | removed in LCI-7A | `llm-langchain-ollama` is explicit compatibility owner | LCI-7A | no default all-provider inclusion |
 | LCI-INV-0185 | `uv.lock` | `uv.lock` | — | `langchain-core`, `langchain-community`, `langchain-openai`, `langchain-ollama`, `langchain-text-splitters`, `langgraph` | PLATFORM_FOUNDATION / lockfile | generated resolver output | GENERATED_LOCK_ENTRY | installed when core/extras resolve | lock regenerated on packaging change | LCI-7A | aggregate row; transitive entries not inventoried individually |
 
 ## D. Public contract leak register
@@ -169,10 +169,10 @@ Direct import counts are from §C import rows only (not packaging rows).
 | Package | Why installed | production/runtime | tests | tooling | total imports | Core today | Target | Task |
 |---------|---------------|-------------------:|------:|--------:|--------------:|------------|--------|------|
 | langchain | Meta alignment (no direct imports) | 0 | 0 | 0 | 0 | yes | remove from core / optional extra | LCI-7A |
-| langchain-core | Document/messages ABI leak | 47 | 51 | 1 | 99 | yes | compat extra only | LCI-7A |
+| langchain-core | Optional Ollama/provider and document compatibility bridge | 6 | 51 | 1 | 58 | no | `llm-langchain-ollama` direct; loader extra transitive | LCI-7A |
 | langchain-community | Community loader bridges | 3 | 0 | 0 | 3 | no | rag-langchain-loaders extra | LCI-5C |
-| langchain-openai | Embedding wrappers | 0 | 0 | 0 | 0 | yes | native/SDK path | LCI-5B |
-| langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | yes | native Ollama + optional compat | LCI-6E |
+| langchain-openai | Historical embedding wrapper | 0 | 0 | 0 | 0 | no | native/SDK path; no compatibility extra required | LCI-7A |
+| langchain-ollama | Chat/embeddings shim | 2 | 0 | 0 | 2 | no | native Ollama + optional compatibility/RAG extras | LCI-6E / LCI-7A |
 | langchain-text-splitters | Recursive splitter optional provider | 1 | 0 | 0 | 1 | optional | rag-langchain-splitters extra | LCI-2E |
 | langgraph | Legacy orchestration adapters | 2 | 0 | 0 | 2 | optional extra only | retirement review | LCI-8A |
 

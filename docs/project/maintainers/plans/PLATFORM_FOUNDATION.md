@@ -22,6 +22,20 @@
 
 ---
 
+## LCI-7A — LangChain optional extras packaging
+
+**Status:** `READY_FOR_REVIEW`
+**Owner:** PLATFORM_FOUNDATION
+
+The package's direct core dependencies contain no normalized `langchain*` or
+`langgraph` names. Compatibility/provider ownership remains explicit in
+`rag-langchain-loaders`, `rag-langchain-embeddings`,
+`rag-langchain-splitters`, `llm-langchain-ollama`, and
+`langgraph-legacy`; the lockfile is regenerated only from this ownership
+change. LCI-7B is the next task after acceptance and is not started here.
+
+---
+
 ## 6. What to implement next
 
 **Default answer (infrastructure):** **[§6.1](.#61-harness-platform-maintenance-default--band-1)** gate green on every PR — CRIT-V and OBS-BUS platform closeouts **Done**.

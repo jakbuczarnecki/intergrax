@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-6E — LangChain Ollama compatibility optionalization
-**Next task after acceptance:** LCI-7A
+**Current active task:** LCI-7A — LangChain optional extras packaging
+**Next task after acceptance:** LCI-7B — LangChain-free core installation gate
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
@@ -537,7 +537,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | LangChainOllamaAdapter remains optional compatibility provider behind extra. |
 | **Owning domain plan** | docs/project/maintainers/plans/LLM_ADAPTERS.md |
 | **Dependencies** | LCI-6D |
@@ -553,13 +553,13 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
-| **Purpose** | Remove langchain* packages from core dependencies; define extras; regenerate lockfile. |
+| **Status** | READY_FOR_REVIEW |
+| **Purpose** | Remove all direct LangChain/LangGraph declarations from core dependencies while preserving explicit compatibility/provider extras; regenerate lockfile. |
 | **Owning domain plan** | docs/project/maintainers/plans/PLATFORM_FOUNDATION.md |
 | **Dependencies** | LCI-6E |
 | **Exact scope** | pyproject.toml dependency moves; extras map; uv.lock regeneration |
 | **Explicit out of scope** | Application packaging |
-| **Acceptance criteria** | pyproject has no langchain* in [project].dependencies; lockfile regenerated in CI |
+| **Acceptance criteria** | `[project].dependencies` has no normalized `langchain*` or `langgraph` package; RAG loader/embedding/splitter, Ollama compatibility, and LangGraph legacy extras retain their owners; packaging invariant, blocked-import smoke, inventory/boundary audits, and lock validation pass |
 | **User-visible outcome** | Smaller default dependency closure on paper |
 
 ---
@@ -569,7 +569,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | NEXT_AFTER_ACCEPTANCE |
 | **Purpose** | Clean environment gate: no langchain* installed; import core; native LLM; minimal native RAG; Nexus/Harness smoke. |
 | **Owning domain plan** | docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-7A, LCI-0B |
