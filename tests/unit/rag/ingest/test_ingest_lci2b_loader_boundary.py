@@ -329,7 +329,11 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     )
 
     result = pipeline.run(
-        IngestRequest(source_path=str(source), base_metadata=base_metadata)
+        IngestRequest(
+            source_path=str(source),
+            base_metadata=base_metadata,
+            workspace_id="workspace-1",
+        )
     )
 
     assert result.used is True
@@ -337,7 +341,6 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     assert loader.custom_metadata is not None
     assert RESERVED_METADATA_KEYS.isdisjoint(loader.custom_metadata)
     assert loader.custom_metadata == {
-        "workspace_id": "workspace-1",
         "operation_id": "operation-1",
         "source_path": str(source),
         "file_name": "managed.txt",
@@ -351,9 +354,11 @@ def test_ingest_pipeline_isolates_reserved_metadata_at_native_boundary(
     assert RESERVED_METADATA_KEYS.isdisjoint(native_metadata)
     assert splitter.received[0].scope.tenant_id == "tenant.test"
     assert splitter.received[0].scope.namespace == "managed"
+    assert splitter.received[0].scope.workspace_id == "workspace-1"
     assert vectorstore.received["scope"].tenant_id == "tenant.test"
     assert vectorstore.received["scope"].namespace == "managed"
-    assert vectorstore.received["records"][0].document.metadata["workspace_id"] == "workspace-1"
+    assert vectorstore.received["scope"].workspace_id == "workspace-1"
+    assert "workspace_id" not in vectorstore.received["records"][0].document.metadata
     assert base_metadata == original_metadata
 
 

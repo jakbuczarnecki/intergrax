@@ -89,6 +89,7 @@ def create_default_rag_stack(
     toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
         profile,
         integration_profile=integration_profile,
+        tenant_id=tenant_id,
         chunks_store=vectorstore_manager,
     )
 

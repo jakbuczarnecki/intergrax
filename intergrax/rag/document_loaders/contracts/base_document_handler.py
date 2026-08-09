@@ -65,6 +65,7 @@ def _fragment_to_knowledge_document(
             "scope": {
                 "tenant_id": scope.tenant_id,
                 "namespace": scope.namespace,
+                "workspace_id": scope.workspace_id,
             },
             "content": fragment.text,
             "metadata": metadata,

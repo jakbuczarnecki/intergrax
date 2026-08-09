@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from typing import Sequence
 
@@ -14,7 +16,7 @@ from intergrax.knowledge.contracts import (
 )
 from intergrax.knowledge.contracts.document import dump_knowledge_document
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
-    to_legacy_rag_document,
+    get_parser_native_handle,
 )
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
     BaseDocumentHandler,
@@ -24,6 +26,9 @@ from intergrax.rag.document_loaders.contracts.base_document_handler import (
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.contracts.document_metadata_key import DocumentMetadataKey
 from intergrax.rag.document_loaders.contracts.metadata_contract import build_loader_metadata
+from intergrax.rag.document_loaders.handlers.text_smart_document_handler import (
+    TextSmartDocumentHandler,
+)
 from intergrax.rag.document_loaders.pipeline.parser_pipeline import (
     TRACE_METADATA_KEY,
     ParserPipeline,
@@ -32,7 +37,11 @@ from intergrax.rag.document_loaders.pipeline.parser_pipeline import (
 
 pytestmark = pytest.mark.unit
 
-_SCOPE = KnowledgeDocumentScope(tenant_id="tenant.test", namespace="ns.test")
+_SCOPE = KnowledgeDocumentScope(
+    tenant_id="tenant.test",
+    namespace="ns.test",
+    workspace_id="workspace.test",
+)
 
 
 class _DummyParser(BaseDocumentParser):
@@ -191,6 +200,7 @@ def test_handler_returns_knowledge_document():
     assert docs[0].content == "hello"
     assert docs[0].scope.tenant_id == "tenant.test"
     assert docs[0].scope.namespace == "ns.test"
+    assert docs[0].scope.workspace_id == "workspace.test"
     assert docs[0].provenance.source_kind == "file"
     assert docs[0].provenance.source_id == "C:\\docs\\a.pdf"
     assert docs[0].provenance.provider_id == "tests.dummy"
@@ -202,6 +212,29 @@ def test_handler_returns_knowledge_document():
         source="C:\\docs\\a.pdf", parser="tests.dummy", position=0
     )["document_id"]
     assert docs[0].identity.document_id == expected_id
+
+
+@pytest.mark.parametrize("workspace_id", ["workspace-a", None])
+def test_text_handler_preserves_full_scope(
+    tmp_path: Path,
+    workspace_id: str | None,
+) -> None:
+    source = tmp_path / "scope.txt"
+    source.write_text("scoped text", encoding="utf-8")
+
+    documents = TextSmartDocumentHandler().load(
+        str(source),
+        scope=KnowledgeDocumentScope(
+            tenant_id="tenant-a",
+            namespace="namespace-a",
+            workspace_id=workspace_id,
+        ),
+    )
+
+    assert documents
+    assert all(document.scope.tenant_id == "tenant-a" for document in documents)
+    assert all(document.scope.namespace == "namespace-a" for document in documents)
+    assert all(document.scope.workspace_id == workspace_id for document in documents)
 
 
 def test_handler_multi_fragment_unique_ids():
@@ -248,10 +281,41 @@ def test_handler_rejects_whitespace_only_content():
 
 def test_handler_rejects_reserved_parser_metadata():
 
-    fragment = _fragment("ok", source="file", position=0, tenant_id="leak")
+    fragment = _fragment(
+        "ok",
+        source="file",
+        position=0,
+        **{"workspace_id": "leak"},
+    )
 
     with pytest.raises(ValueError, match="reserved KnowledgeDocument key"):
         _fragment_to_knowledge_document(fragment, source="file", scope=_SCOPE)
+
+
+@pytest.mark.parametrize("reserved_key", ["tenant_id", "namespace", "workspace_id"])
+def test_handler_rejects_all_reserved_scope_metadata(reserved_key: str):
+
+    fragment = _fragment(
+        "ok",
+        source="file",
+        position=0,
+        **{reserved_key: "leak"},
+    )
+
+    with pytest.raises(ValueError, match="reserved KnowledgeDocument key"):
+        _fragment_to_knowledge_document(fragment, source="file", scope=_SCOPE)
+
+
+def test_handler_preserves_none_workspace():
+
+    fragment = _fragment("ok", source="file", position=0)
+    scope = KnowledgeDocumentScope(tenant_id="tenant.test", namespace="ns.test")
+
+    document = _fragment_to_knowledge_document(fragment, source="file", scope=scope)
+
+    assert document.scope.tenant_id == "tenant.test"
+    assert document.scope.namespace == "ns.test"
+    assert document.scope.workspace_id is None
 
 
 def test_handler_attaches_native_handle_as_private_runtime_state():
@@ -272,9 +336,7 @@ def test_handler_attaches_native_handle_as_private_runtime_state():
     dumped = dump_knowledge_document(docs[0]).decode("utf-8")
     assert '"_docling_document"' not in dumped
 
-    legacy = to_legacy_rag_document(docs[0])
-    assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
-    assert legacy.metadata[DocumentMetadataKey.DOCUMENT_ID.value] == docs[0].identity.document_id
+    assert get_parser_native_handle(docs[0]) is handle
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in docs[0].metadata
 
 

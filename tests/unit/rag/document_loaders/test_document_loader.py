@@ -15,6 +15,7 @@ from intergrax.knowledge.contracts.document import dump_knowledge_document
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     attach_parser_native_handle,
     copy_parser_runtime_state,
+    get_parser_native_handle,
     to_legacy_rag_document,
 )
 from intergrax.rag.document_loaders.bootstrap.default_loader import create_default_normalizer_pipeline
@@ -396,8 +397,7 @@ def test_loader_preserves_parser_runtime_state_through_pipelines():
 
     result = loader.load_document("file.pdf", tenant_id=_TENANT)
 
-    legacy = to_legacy_rag_document(result[0])
-    assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
+    assert get_parser_native_handle(result[0]) is handle
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in result[0].metadata
     assert '"_docling_document"' not in dump_knowledge_document(result[0]).decode("utf-8")
 
@@ -426,8 +426,7 @@ def test_loader_preserves_parser_runtime_state_through_custom_metadata():
         call_custom_metadata=_custom,
     )
 
-    legacy = to_legacy_rag_document(result[0])
-    assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
+    assert get_parser_native_handle(result[0]) is handle
     assert result[0].metadata["custom_key"] == "custom_value"
 
 

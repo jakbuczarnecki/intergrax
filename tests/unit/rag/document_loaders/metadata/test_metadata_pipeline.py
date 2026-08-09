@@ -203,14 +203,10 @@ def test_pipeline_preserves_parser_runtime_handle():
     result = pipeline.enrich(docs, "file.txt")
 
     from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
-        to_legacy_rag_document,
-    )
-    from intergrax.rag.document_loaders.contracts.document_metadata_key import (
-        DocumentMetadataKey,
+        get_parser_native_handle,
     )
 
-    legacy = to_legacy_rag_document(result[0])
-    assert legacy.metadata[DocumentMetadataKey.DOCLING_DOCUMENT_META.value] is handle
+    assert get_parser_native_handle(result[0]) is handle
 
 
 def test_pipeline_rejects_content_change():

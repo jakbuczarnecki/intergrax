@@ -325,7 +325,10 @@ def test_rag_stack_wires_toc_store_when_hierarchical_enabled() -> None:
         enable_rerank=False,
         route_mode="off",
     )
-    stack = create_default_rag_stack(profile=profile)
+    stack = create_default_rag_stack(
+        profile=profile,
+        tenant_id="hierarchical-test",
+    )
     assert stack.toc_vectorstore_manager is not None
     assert stack.toc_vectorstore_manager is not stack.vectorstore_manager
 
