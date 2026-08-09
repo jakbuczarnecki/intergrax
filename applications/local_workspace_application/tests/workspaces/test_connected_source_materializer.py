@@ -11,6 +11,8 @@ import pytest
 from local_workspace_application.workspaces.connected_source_materializer import (
     ConnectedSourceContentMaterializerRegistry,
     GoogleCalendarStructuredRecordMaterializer,
+    GoogleDocsStructuredRecordMaterializer,
+    GoogleSheetsStructuredRecordMaterializer,
     MsGraphCalendarStructuredRecordMaterializer,
     MsGraphMailStructuredRecordMaterializer,
     MsGraphTeamsChannelStructuredRecordMaterializer,
@@ -38,6 +40,12 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.integ
 )
 from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.calendar import (
     GOOGLE_CALENDAR_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.docs import (
+    GOOGLE_DOCS_SOURCE_KIND,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.knowledge_read.sheets import (
+    GOOGLE_SHEETS_SOURCE_KIND,
 )
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
@@ -312,6 +320,157 @@ def _google_calendar_source() -> KnowledgeSourceRef:
     )
 
 
+def _google_docs_source() -> KnowledgeSourceRef:
+    source = _source(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_DOCS_SOURCE_KIND,
+    )
+    return source.model_copy(
+        update={
+            "scope": source.scope.model_copy(
+                update={
+                    "remote_scope_id": "google-doc-1",
+                    "remote_scope_type": "google_workspace_docs_document",
+                }
+            )
+        }
+    )
+
+
+def _google_sheets_source() -> KnowledgeSourceRef:
+    source = _source(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        source_kind=GOOGLE_SHEETS_SOURCE_KIND,
+    )
+    return source.model_copy(
+        update={
+            "scope": source.scope.model_copy(
+                update={
+                    "remote_scope_id": "google-sheet-1",
+                    "remote_scope_type": "google_workspace_sheets_spreadsheet",
+                }
+            )
+        }
+    )
+
+
+def _google_docs_content() -> KnowledgeContent:
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema_version": "google_workspace.docs.document.knowledge.v1",
+            "document_id": "google-doc-1",
+            "title": "Docs indexed proof",
+            "suggestions_view_mode": "PREVIEW_WITHOUT_SUGGESTIONS",
+            "tabs": [
+                {
+                    "tab_id": "tab-1",
+                    "title": "Main",
+                    "parent_tab_id": None,
+                    "index": 0,
+                    "nesting_level": 0,
+                    "list_ids": [],
+                    "inline_object_ids": [],
+                    "positioned_object_ids": [],
+                    "segments": [
+                        {
+                            "kind": "BODY",
+                            "segment_id": None,
+                            "blocks": [
+                                {
+                                    "kind": "PARAGRAPH",
+                                    "start_index": 1,
+                                    "end_index": 24,
+                                    "paragraph": {
+                                        "elements": [
+                                            {
+                                                "kind": "TEXT_RUN",
+                                                "start_index": 1,
+                                                "end_index": 24,
+                                                "text": "Docs indexed content",
+                                                "reference_id": None,
+                                                "auxiliary_text": None,
+                                                "mime_type": None,
+                                            }
+                                        ],
+                                        "named_style_type": "NORMAL_TEXT",
+                                        "heading_id": None,
+                                        "bullet": None,
+                                        "positioned_object_ids": [],
+                                    },
+                                    "table": None,
+                                    "children": [],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+
+def _google_sheets_content() -> KnowledgeContent:
+    string_value = {
+        "kind": "STRING",
+        "text": "Sheets indexed content",
+        "number": None,
+        "boolean": None,
+        "error": None,
+    }
+    return KnowledgeContent(
+        mode=KnowledgeContentMode.STRUCTURED_RECORD,
+        structured_record={
+            "schema_version": "google_workspace.sheets.spreadsheet.knowledge.v1",
+            "spreadsheet_id": "google-sheet-1",
+            "title": "Sheets indexed proof",
+            "locale": "en_US",
+            "time_zone": "UTC",
+            "recalculation_interval": "ON_CHANGE",
+            "sheets": [
+                {
+                    "sheet_id": 1,
+                    "title": "Sheet1",
+                    "index": 0,
+                    "sheet_type": "GRID",
+                    "hidden": False,
+                    "right_to_left": False,
+                    "row_count": 10,
+                    "column_count": 4,
+                    "frozen_row_count": 0,
+                    "frozen_column_count": 0,
+                    "grid_data": [
+                        {
+                            "start_row_index": 0,
+                            "start_column_index": 0,
+                            "rows": [
+                                {
+                                    "row_index": 0,
+                                    "cells": [
+                                        {
+                                            "row_index": 0,
+                                            "column_index": 0,
+                                            "user_entered_value": string_value,
+                                            "effective_value": string_value,
+                                            "formatted_value": None,
+                                            "note": None,
+                                            "effective_number_format": None,
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                    "merged_ranges": [],
+                }
+            ],
+            "named_ranges": [],
+        },
+    )
+
+
 def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
     registry = default_connected_source_materializer_registry()
     materializer = registry.resolve(
@@ -373,6 +532,18 @@ def test_registry_resolves_indexed_materializer_by_source_identity() -> None:
         schema_name="google_workspace.calendar.event.knowledge.v1",
     )
     assert isinstance(google_calendar, GoogleCalendarStructuredRecordMaterializer)
+
+    google_docs = registry.resolve(
+        _google_docs_source(),
+        schema_name="google_workspace.docs.document.knowledge.v1",
+    )
+    assert isinstance(google_docs, GoogleDocsStructuredRecordMaterializer)
+
+    google_sheets = registry.resolve(
+        _google_sheets_source(),
+        schema_name="google_workspace.sheets.spreadsheet.knowledge.v1",
+    )
+    assert isinstance(google_sheets, GoogleSheetsStructuredRecordMaterializer)
 
 
 def test_missing_indexed_runtime_registration_fails_closed() -> None:
@@ -712,6 +883,158 @@ async def test_graph_document_enters_existing_generic_index_service(tmp_path: Pa
     )
     assert result.indexed
     assert result.document_id == document.identity.document_id
+
+
+async def _assert_google_materialized_document_indexed(
+    *,
+    tmp_path: Path,
+    materialized,
+    remote_id: str,
+    operation_id: str,
+) -> None:
+    physical_path = tmp_path / materialized.safe_file_name
+    physical_path.write_text(materialized.markdown, encoding="utf-8")
+
+    class _Executor:
+        async def execute(self, _task):
+            return SimpleNamespace(
+                metadata={"ingest_summary": {"used": True, "num_chunks": 1}}
+            )
+
+    indexing = WorkspaceDocumentIndexingService(
+        ManagedWorkspaceRepository(InMemoryDocumentStore()),
+        _Executor(),
+    )
+    result = await indexing.index_connected_source_one(
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        source_id="source-1",
+        operation_id=operation_id,
+        physical_path=physical_path,
+        logical_source_path=materialized.logical_source_path,
+        safe_file_name=materialized.safe_file_name,
+        content_hash=materialized.content_hash,
+        document_id=materialized.document_id,
+        materialization_ownership=KnowledgeMaterializationOwnershipV1.connected(
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
+            source_id="source-1",
+            indexed_source_binding_id="indexed-binding-1",
+            knowledge_source_binding_ref="binding-1",
+            delivery_id=operation_id,
+            remote_id=remote_id,
+            materialization_sequence=1,
+        ),
+    )
+    assert result.indexed
+    assert result.document_id == materialized.knowledge_document.identity.document_id
+
+
+@pytest.mark.asyncio
+async def test_google_docs_materializer_reaches_generic_index_boundary(tmp_path: Path) -> None:
+    materialized = GoogleDocsStructuredRecordMaterializer().materialize(
+        source=_google_docs_source(),
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="google-doc-1",
+        content=_google_docs_content(),
+        revision=KnowledgeItemRevision(version=None),
+        permissions=None,
+    )
+    assert "Docs indexed content" in materialized.markdown
+    await _assert_google_materialized_document_indexed(
+        tmp_path=tmp_path,
+        materialized=materialized,
+        remote_id="google-doc-1",
+        operation_id="operation-google-docs-1",
+    )
+
+
+@pytest.mark.asyncio
+async def test_google_sheets_materializer_reaches_generic_index_boundary(
+    tmp_path: Path,
+) -> None:
+    materialized = GoogleSheetsStructuredRecordMaterializer().materialize(
+        source=_google_sheets_source(),
+        tenant_id="tenant-1",
+        workspace_id="workspace-1",
+        binding_id="binding-1",
+        source_id="source-1",
+        remote_id="google-sheet-1",
+        content=_google_sheets_content(),
+        revision=KnowledgeItemRevision(version=None),
+        permissions=None,
+    )
+    assert "Sheets indexed content" in materialized.markdown
+    await _assert_google_materialized_document_indexed(
+        tmp_path=tmp_path,
+        materialized=materialized,
+        remote_id="google-sheet-1",
+        operation_id="operation-google-sheets-1",
+    )
+
+
+@pytest.mark.parametrize(
+    ("materializer", "source", "content", "remote_id"),
+    [
+        pytest.param(
+            GoogleDocsStructuredRecordMaterializer(),
+            _google_docs_source(),
+            _google_docs_content(),
+            "google-doc-1",
+            id="docs",
+        ),
+        pytest.param(
+            GoogleSheetsStructuredRecordMaterializer(),
+            _google_sheets_source(),
+            _google_sheets_content(),
+            "google-sheet-1",
+            id="sheets",
+        ),
+    ],
+)
+def test_google_materializers_fail_closed_for_identity_mode_schema_and_content(
+    materializer,
+    source: KnowledgeSourceRef,
+    content: KnowledgeContent,
+    remote_id: str,
+) -> None:
+    kwargs = {
+        "source": source,
+        "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1",
+        "binding_id": "binding-1",
+        "source_id": "source-1",
+        "remote_id": remote_id,
+        "content": content,
+        "revision": None,
+        "permissions": None,
+    }
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            **{**kwargs, "source": source.model_copy(update={"provider_id": "other"})}
+        )
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            **{
+                **kwargs,
+                "content": content.model_copy(
+                    update={"mode": KnowledgeContentMode.BINARY}
+                ),
+            }
+        )
+    malformed = content.model_copy(update={"structured_record": {}})
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(**{**kwargs, "content": malformed})
+    with pytest.raises(VendorKnowledgeMaterializationError):
+        materializer.materialize(
+            **{
+                **kwargs,
+                "remote_id": f"{remote_id}-other",
+            }
+        )
 
 
 @pytest.mark.asyncio

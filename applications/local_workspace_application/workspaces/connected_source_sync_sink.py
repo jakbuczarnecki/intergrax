@@ -432,7 +432,7 @@ class WorkspaceConnectedSourceKnowledgeSyncSink:
             record = envelope.content.structured_record
             if not isinstance(record, dict):
                 raise ConnectedSourceSyncSinkError("connected_source_structured_record_invalid")
-            schema_name = record.get("schema")
+            schema_name = record.get("schema") or record.get("schema_version")
             if not isinstance(schema_name, str) or not schema_name:
                 raise ConnectedSourceSyncSinkError("connected_source_schema_unsupported")
             materializer = self._materializers.resolve(

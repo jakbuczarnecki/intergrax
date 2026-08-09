@@ -240,6 +240,16 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
             IntegrationCategory.COLLABORATION_SUITE,
             GOOGLE_CALENDAR_SOURCE_KIND,
         ): "indexed-source:google_workspace:calendar",
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_DOCS_SOURCE_KIND,
+        ): "indexed-source:google_workspace:docs",
+        (
+            GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+            IntegrationCategory.COLLABORATION_SUITE,
+            GOOGLE_SHEETS_SOURCE_KIND,
+        ): "indexed-source:google_workspace:sheets",
     }
 
 

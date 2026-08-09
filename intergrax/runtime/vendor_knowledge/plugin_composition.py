@@ -103,12 +103,14 @@ def build_google_workspace_vendor_knowledge_source_plugins() -> (
             integration_category=category,
             source_kind=GOOGLE_DOCS_SOURCE_KIND,
             runtime_ref="knowledge-adapter:google_workspace:collaboration_suite:docs",
+            indexed_runtime_ref="indexed-source:google_workspace:docs",
         ),
         _build_durable_adapter_plugin(
             provider_id=provider_id,
             integration_category=category,
             source_kind=GOOGLE_SHEETS_SOURCE_KIND,
             runtime_ref="knowledge-adapter:google_workspace:collaboration_suite:sheets",
+            indexed_runtime_ref="indexed-source:google_workspace:sheets",
         ),
         _build_durable_adapter_plugin(
             provider_id=provider_id,
