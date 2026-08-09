@@ -154,7 +154,7 @@ def test_pass_import_moved_to_different_line_number(tmp_path: Path) -> None:
 def test_pass_allowed_integrations_provider_zone(tmp_path: Path) -> None:
     repo = _make_repo(tmp_path)
     rel = "intergrax/integrations/providers/document_parser/python_docx/opens.py"
-    _write(repo / rel, "from langchain_core.documents import Document\n")
+    _write(repo / rel, "def load():\n    from langchain_core.documents import Document\n    return Document\n")
     inventory = tmp_path / "inventory.md"
     grandfather = tmp_path / "grandfather.json"
     _write_inventory(inventory, [])
@@ -162,6 +162,18 @@ def test_pass_allowed_integrations_provider_zone(tmp_path: Path) -> None:
     result = audit_repository(repo, grandfather_path=grandfather, inventory_path=inventory)
     assert result.problems == {}
     assert len(result.allowed_imports) == 1
+
+
+def test_fail_eager_integrations_provider_import(tmp_path: Path) -> None:
+    repo = _make_repo(tmp_path)
+    rel = "intergrax/integrations/providers/document_parser/python_docx/opens.py"
+    _write(repo / rel, "from langchain_core.documents import Document\n")
+    inventory = tmp_path / "inventory.md"
+    grandfather = tmp_path / "grandfather.json"
+    _write_inventory(inventory, [])
+    _write_grandfather(grandfather, [])
+    result = audit_repository(repo, grandfather_path=grandfather, inventory_path=inventory)
+    assert "EAGER_PROVIDER_IMPORT" in result.problems
 
 
 def test_pass_allowed_llm_provider_zone(tmp_path: Path) -> None:
@@ -359,7 +371,6 @@ def test_fail_stale_grandfather_entry(tmp_path: Path) -> None:
 
 
 def test_fail_duplicate_grandfather_entry(tmp_path: Path) -> None:
-    repo = _make_repo(tmp_path)
     inventory = tmp_path / "inventory.md"
     grandfather = tmp_path / "grandfather.json"
     _write_inventory(inventory, [])

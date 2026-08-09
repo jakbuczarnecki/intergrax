@@ -10,7 +10,16 @@ from intergrax.integrations.providers.document_parser.pymupdf.config import Pymu
 
 
 def parse_pymupdf_file(config: PymupdfIntegrationConfig, source: str) -> list[ParsedDocumentFragment]:
-    from langchain_community.document_loaders import PyMuPDFLoader
+    try:
+        from langchain_community.document_loaders import PyMuPDFLoader
+    except ModuleNotFoundError as exc:
+        if exc.name == "langchain_community":
+            raise RuntimeError(
+                "Provider 'pymupdf' requires optional dependency group "
+                "'rag-langchain-loaders'. Install Intergrax with "
+                "'rag-langchain-loaders'."
+            ) from exc
+        raise
 
     docs = PyMuPDFLoader(source).load()
     if not docs:

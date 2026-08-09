@@ -4,14 +4,15 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
-from typing import Literal, Sequence
+from typing import TYPE_CHECKING, Literal
 
 import docx
-from langchain_community.document_loaders import Docx2txtLoader
-from langchain_core.documents import Document
 
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.integrations.providers.document_parser.python_docx.config import PythonDocxIntegrationConfig
+
+if TYPE_CHECKING:
+    from langchain_core.documents import Document
 
 EXTRACTION_STRATEGY = Literal["auto", "fulltext", "paragraphs", "headings"]
 
@@ -22,6 +23,17 @@ def parse_python_docx_file(config: PythonDocxIntegrationConfig, source: str) -> 
         strategy = "fulltext"
 
     if strategy == "fulltext":
+        try:
+            from langchain_community.document_loaders import Docx2txtLoader
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_community":
+                raise RuntimeError(
+                    "Provider 'python_docx' requires optional dependency group "
+                    "'rag-langchain-loaders'. Install Intergrax with "
+                    "'rag-langchain-loaders'."
+                ) from exc
+            raise
+
         docs = Docx2txtLoader(source).load()
     else:
         docs = _DocxParagraphLoader(source, mode=strategy).load()
@@ -53,6 +65,17 @@ class _DocxParagraphLoader:
         return (False, 0)
 
     def load(self) -> list[Document]:
+        try:
+            from langchain_core.documents import Document
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_core":
+                raise RuntimeError(
+                    "Provider 'python_docx' requires optional dependency group "
+                    "'rag-langchain-loaders'. Install Intergrax with "
+                    "'rag-langchain-loaders'."
+                ) from exc
+            raise
+
         document = docx.Document(self.path)
         items: list[Document] = []
         heading_stack: list[str] = []

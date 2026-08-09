@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **READY_FOR_REVIEW**; LCI-5C **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-6 **PLANNED**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **READY_FOR_REVIEW**; LCI-6A **PLANNED / NEXT AFTER ACCEPTANCE**; LCI-7 **PLANNED**; LCI-8 **PLANNED**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-5B — Native OpenAI-compatible embedding transport
+**Current active task:** LCI-5C — Provider-local LangChain optionalization
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
 
@@ -46,6 +46,13 @@ imports or constructs `langchain-openai` `OpenAIEmbeddings`. Provider-specific m
 base URL and credential semantics remain owned by the provider wrappers.
 The `EmbeddingProvider` ABI, float32 output, shape and lazy dimension resolution
 remain unchanged.
+
+**LCI-5C decision:** Provider-local LangChain document loaders and the Ollama
+embedding shim remain compatibility implementations, but their imports are lazy
+and controlled by `rag-langchain-loaders` / `rag-langchain-embeddings`. Missing
+extras raise a stable provider configuration error; core import, registry
+discovery and native RAG contracts remain LangChain-safe. `langchain-ollama`
+remains a core requirement while the chat adapter is assigned to LCI-6.
 
 **LCI-2E decision:** Native `RecursiveChunkingStrategy` is the default and core-safe baseline. `LangChainRecursiveChunkingStrategy` is an optional provider behind the `rag-langchain-splitters` extra, loaded only on explicit construction or registry registration; missing the extra produces a stable configuration error without silent fallback.
 
@@ -267,6 +274,7 @@ Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDo
 | **Scan roots** | `intergrax`, `agents`, `applications` production `*.py` files |
 | **Excluded paths** | any path containing `tests`, `__pycache__`, non-`*.py` files, `docker/runtime-context` copies |
 | **Allowed production zones** | `intergrax/compat/langchain`, `intergrax/integrations/providers`, `intergrax/llm_adapters/providers`, `intergrax/legacy` |
+| **Provider import rule** | LangChain imports under `intergrax/integrations/providers` must be lazy function-bound imports; `TYPE_CHECKING` imports are deferred-only and accepted. Eager provider imports fail the boundary audit. |
 | **Protected production zones** | all other scanned production paths (contracts, runtime, RAG, memory, modality, integrations shared bridges, agents, applications, etc.) |
 | **Detected namespaces** | `langchain`, `langchain_*`, `langgraph` |
 | **Import forms** | `import`, `from`, nested function imports, literal `importlib.import_module("…")`, literal `__import__("…")` |

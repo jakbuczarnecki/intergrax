@@ -7,7 +7,16 @@ from intergrax.integrations.contracts.document_parser import ParsedDocumentFragm
 
 
 def parse_unstructured_html(source: str) -> list[ParsedDocumentFragment]:
-    from langchain_community.document_loaders import UnstructuredHTMLLoader
+    try:
+        from langchain_community.document_loaders import UnstructuredHTMLLoader
+    except ModuleNotFoundError as exc:
+        if exc.name == "langchain_community":
+            raise RuntimeError(
+                "Provider 'unstructured' requires optional dependency group "
+                "'rag-langchain-loaders'. Install Intergrax with "
+                "'rag-langchain-loaders'."
+            ) from exc
+        raise
 
     docs = UnstructuredHTMLLoader(source).load()
     return [

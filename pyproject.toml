@@ -77,7 +77,6 @@ dependencies = [
   # Orchestration
   # -----------------
   "langchain-core>=0.3,<2.0",
-  "langchain-community>=0.3,<0.5",
   "langchain-openai>=0.3,<2.0",
   "langchain-ollama>=0.2,<2.0",
   # -----------------
@@ -189,6 +188,12 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+rag-langchain-loaders = [
+  "langchain-community>=0.3,<0.5",
+]
+rag-langchain-embeddings = [
+  "langchain-ollama>=0.2,<2.0",
+]
 rag-langchain-splitters = [
   "langchain-text-splitters>=0.3,<2.0",
 ]

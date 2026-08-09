@@ -123,7 +123,16 @@ class _ExcelLoader:
             return "\n".join([header, sep] + rows)
 
     def load(self) -> list:
-        from langchain_core.documents import Document
+        try:
+            from langchain_core.documents import Document
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_core":
+                raise RuntimeError(
+                    "Provider 'openpyxl' requires optional dependency group "
+                    "'rag-langchain-loaders'. Install Intergrax with "
+                    "'rag-langchain-loaders'."
+                ) from exc
+            raise
 
         docs: list[Document] = []
         is_excel = self._is_excel()

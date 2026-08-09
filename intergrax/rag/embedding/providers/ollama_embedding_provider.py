@@ -5,14 +5,15 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
 
-from langchain_ollama import OllamaEmbeddings
-
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
+
+if TYPE_CHECKING:
+    from langchain_ollama import OllamaEmbeddings
 
 
 class OllamaEmbeddingProvider(EmbeddingProvider):
@@ -43,6 +44,17 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
     def _ensure_model(self) -> None:
 
         if self._model is None:
+            try:
+                from langchain_ollama import OllamaEmbeddings
+            except ModuleNotFoundError as exc:
+                if exc.name == "langchain_ollama":
+                    raise RuntimeError(
+                        "Provider 'ollama' requires optional dependency group "
+                        "'rag-langchain-embeddings'. Install Intergrax with "
+                        "'rag-langchain-embeddings'."
+                    ) from exc
+                raise
+
             self._model = OllamaEmbeddings(model=self._model_name)
 
     def _resolve_dim(self) -> None:

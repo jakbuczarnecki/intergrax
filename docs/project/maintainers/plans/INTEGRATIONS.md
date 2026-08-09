@@ -21,7 +21,7 @@
 | **Status** | READY_FOR_REVIEW |
 | **Integration contract reused** | `ParsedDocumentFragment` |
 | **Provider internals changed** | no |
-| **Provider optionalization** | deferred to LCI-5A / LCI-5C |
+| **Provider optionalization** | LCI-5A APPROVED; LCI-5C READY_FOR_REVIEW |
 
 ### LCI-3D — Native vector-store provider adapters
 
