@@ -6,7 +6,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationDependencyError
+from intergrax.integrations.providers.collaboration_suite.google_workspace.contracts import (
+    GoogleWorkspaceClientFactory,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.integration import (
+    GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.collaboration_suite.google_workspace.tenant_connection_factory import (
+    GoogleWorkspaceTenantConnectionIntegrationFactory,
+)
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.integration import (
     MS365_GRAPH_COLLABORATION_SUITE_PROVIDER_ID,
 )
@@ -36,10 +45,20 @@ class VendorKnowledgeLegacyLocalBootstrap:
     integration: object
 
 
+class _UnavailableGoogleWorkspaceClientFactory:
+    """Keep the canonical route present until an auth executor is composed."""
+
+    def create_client_family(self, *, credential_material: object) -> object:
+        raise IntegrationDependencyError(
+            "Google Workspace client family is unavailable in this composition",
+        )
+
+
 def build_default_vendor_knowledge_connection_factory_registry(
     *,
     slack_runtime_builder: SlackRuntimeBuilder | None = None,
     msgraph_runtime_builder: Ms365GraphRuntimeBuilder | None = None,
+    google_client_factory: GoogleWorkspaceClientFactory | None = None,
 ) -> TenantConnectionIntegrationFactoryRegistry:
     """Compose provider-owned connection factories behind a generic registry."""
     registry = TenantConnectionIntegrationFactoryRegistry()
@@ -55,6 +74,13 @@ def build_default_vendor_knowledge_connection_factory_registry(
         integration_kind=IntegrationCategory.CONVERSATION_CHANNEL,
         factory=SlackTenantConnectionIntegrationFactory(
             runtime_builder=slack_runtime_builder,
+        ),
+    )
+    registry.register(
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+        factory=GoogleWorkspaceTenantConnectionIntegrationFactory(
+            client_factory=google_client_factory or _UnavailableGoogleWorkspaceClientFactory(),
         ),
     )
     return registry

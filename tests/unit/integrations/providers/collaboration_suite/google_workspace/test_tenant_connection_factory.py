@@ -12,7 +12,10 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationDependencyError,
+)
 from intergrax.integrations.providers.collaboration_suite.google_workspace.config import (
     GoogleWorkspaceCollaborationSuiteCompositionMode,
 )
@@ -29,6 +32,9 @@ from intergrax.integrations.providers.collaboration_suite.google_workspace.tenan
 )
 from intergrax.runtime.integrations.contracts import PlatformIntegrationStatus
 from intergrax.runtime.vendor_knowledge.connections import KnowledgeConnectionRegistry
+from intergrax.runtime.vendor_knowledge.provider_composition import (
+    build_default_vendor_knowledge_connection_factory_registry,
+)
 from intergrax.runtime.vendor_knowledge.tenant_connection_document_store import (
     DocumentStoreTenantConnectionRepository,
 )
@@ -122,6 +128,15 @@ class _SpyClientFactory:
     ) -> GoogleWorkspaceClientFamily:
         self.calls.append(dict(credential_material))
         return _make_family()
+
+
+class _FailingClientFactory:
+    def create_client_family(
+        self,
+        *,
+        credential_material: Mapping[str, str],
+    ) -> GoogleWorkspaceClientFamily:
+        raise RuntimeError("private client construction detail")
 
 
 class _RecordingSecretsStore:
@@ -224,6 +239,51 @@ def test_restart_rehydration_proof() -> None:
     assert document is not None
     assert "client-id-value" not in str(document.data)
     assert "private-key-value" not in str(document.data)
+
+
+@pytest.mark.integration
+def test_default_registry_routes_google_and_creates_runtime_after_rehydration() -> None:
+    client_factory = _SpyClientFactory()
+    store = ConditionalInMemoryDocumentStore()
+    repository = DocumentStoreTenantConnectionRepository(store)
+    repository.create(_google_connection())
+    connection_registry = KnowledgeConnectionRegistry()
+    factory_registry = build_default_vendor_knowledge_connection_factory_registry(
+        google_client_factory=client_factory,
+    )
+    results = TenantConnectionRehydrator(
+        repository=DocumentStoreTenantConnectionRepository(store),
+        secrets_store=_RecordingSecretsStore(secret=_valid_credential_json()),
+        integration_factory=factory_registry,
+        connection_registry=connection_registry,
+    ).rehydrate_tenant(tenant_id="tenant-1")
+
+    assert results[0].status is TenantConnectionRehydrationStatus.REGISTERED
+    integration = connection_registry.resolve(
+        tenant_id="tenant-1",
+        connection_ref="gw-conn-1",
+        provider_id=GOOGLE_WORKSPACE_COLLABORATION_SUITE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+    )
+    assert isinstance(integration, GoogleWorkspaceCollaborationSuiteIntegration)
+    assert client_factory.calls == []
+    first_runtime = integration.require_client_family()
+    assert first_runtime is integration.require_client_family()
+    assert client_factory.calls == [json.loads(_valid_credential_json())]
+
+
+@pytest.mark.unit
+def test_runtime_construction_failure_is_redacted() -> None:
+    factory = GoogleWorkspaceTenantConnectionIntegrationFactory(
+        client_factory=_FailingClientFactory(),
+    )
+    integration = factory.create_integration(**_factory_kwargs())
+
+    with pytest.raises(IntegrationDependencyError) as exc_info:
+        integration.require_client_family()
+
+    assert "private client construction detail" not in str(exc_info.value)
+    assert "client family could not be created" in str(exc_info.value)
 
 
 @pytest.mark.unit
