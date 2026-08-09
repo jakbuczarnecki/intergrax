@@ -15,6 +15,8 @@ class RemoteResourceTypeV1(StrEnum):
     SLACK_CONVERSATION = "slack_conversation"
     MSGRAPH_TEAMS_CHAT = "teams_chat"
     MSGRAPH_MAIL_FOLDER = "mail_folder"
+    MSGRAPH_TEAMS_CHANNEL = "teams_channel"
+    MSGRAPH_CALENDAR = "calendar"
 
 
 class SlackConversationKindV1(StrEnum):

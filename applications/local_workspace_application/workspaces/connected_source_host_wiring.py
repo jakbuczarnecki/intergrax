@@ -158,6 +158,7 @@ def build_connected_source_host_bundle(
     tenant_connection_secrets_store: SecretsStore | None = None,
     tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
     msgraph_mailbox_user_id: str | None = None,
+    msgraph_teams_channel_team_id: str | None = None,
 ) -> ConnectedSourceHostBundle:
     registry = KnowledgeConnectionRegistry()
     connection_repository = DocumentStoreTenantConnectionRepository(repository.document_store)
@@ -354,6 +355,7 @@ def build_connected_source_host_bundle(
         connection_registry=registry,
         sync_runtime=sync_runtime,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
     if not rehydrated:
         legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(

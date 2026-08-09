@@ -99,6 +99,7 @@ _UNRELATED_MESSAGE = "routine social update: lunch is at noon"
 _CONVERSATION_ID = "C01234567"
 _CONNECTION = "conn.slack"
 _GRAPH_MAILBOX = "user-abc-123"
+_GRAPH_TEAM_ID = "team-abc-123"
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-1"
 _OLDEST = "1704067200.000001"
@@ -454,6 +455,7 @@ def rag_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         tenant_connection_secrets_store=secrets,
         tenant_connection_factory_registry=factory_registry,
         msgraph_mailbox_user_id=_GRAPH_MAILBOX,
+        msgraph_teams_channel_team_id=_GRAPH_TEAM_ID,
         llm_adapter=llm,
         vectorstore_manager=harness_runtime.env_wiring.tool_wiring.wiring_context.vectorstore_manager,
     )

@@ -12,7 +12,9 @@ from local_workspace_application.workspaces.connected_source_discovery import (
     WorkspaceRemoteResourceDiscoveryService,
 )
 from local_workspace_application.workspaces.connected_source_discovery_msgraph import (
+    MsGraphCalendarDiscoveryStrategy,
     MsGraphMailFolderDiscoveryStrategy,
+    MsGraphTeamsChannelDiscoveryStrategy,
     MsGraphTeamsChatDiscoveryStrategy,
 )
 from local_workspace_application.workspaces.connected_source_discovery_slack import (
@@ -128,6 +130,7 @@ def build_default_remote_resource_discovery_registry(
     connection_registry: KnowledgeConnectionRegistry,
     opaque_ref_codec: RemoteResourceOpaqueRefCodec,
     msgraph_mailbox_user_id: str | None,
+    msgraph_teams_channel_team_id: str | None = None,
 ) -> RemoteResourceDiscoveryStrategyRegistry:
     """Compose provider-owned discovery strategies at the application boundary."""
 
@@ -143,6 +146,16 @@ def build_default_remote_resource_discovery_registry(
                 mailbox_user_id=msgraph_mailbox_user_id,
             ),
             MsGraphMailFolderDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                mailbox_user_id=msgraph_mailbox_user_id,
+            ),
+            MsGraphTeamsChannelDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                team_remote_id=msgraph_teams_channel_team_id,
+            ),
+            MsGraphCalendarDiscoveryStrategy(
                 connection_registry=connection_registry,
                 opaque_ref_codec=opaque_ref_codec,
                 mailbox_user_id=msgraph_mailbox_user_id,
@@ -164,6 +177,7 @@ def build_connected_source_wiring(
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
     materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
     msgraph_mailbox_user_id: str | None = None,
+    msgraph_teams_channel_team_id: str | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
@@ -171,6 +185,7 @@ def build_connected_source_wiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
     discovery = WorkspaceRemoteResourceDiscoveryService(
         workspace_lookup=workspace_service,

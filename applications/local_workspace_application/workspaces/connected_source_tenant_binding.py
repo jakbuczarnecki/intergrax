@@ -28,8 +28,13 @@ from local_workspace_application.workspaces.connected_source_opaque_ref_codec im
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.collaboration_suite.ms365_graph.knowledge_read import (
+    MSGRAPH_CALENDAR_SOURCE_KIND,
     MSGRAPH_MAIL_SOURCE_KIND,
+    MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
     MSGRAPH_TEAMS_CHAT_SOURCE_KIND,
+    MsGraphCalendar,
+    MsGraphCalendarOnlineMeetingProvider,
+    MsGraphCalendarViewWindow,
     MsGraphTeamsChatMessageWindow,
 )
 from intergrax.integrations.providers.conversation_channel.slack.integration import (
@@ -47,9 +52,17 @@ from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_chat import (
     MSGRAPH_TEAMS_CHAT_SCOPE_TYPE,
     encode_msgraph_teams_chat_scope_id,
 )
+from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_teams_channel import (
+    MSGRAPH_TEAMS_CHANNEL_SCOPE_TYPE,
+    encode_msgraph_teams_channel_scope_id,
+)
 from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_mail import (
     MSGRAPH_MAIL_SCOPE_TYPE,
     encode_msgraph_mail_folder_scope_id,
+)
+from intergrax.runtime.vendor_knowledge.adapters.ms365_graph_calendar import (
+    MSGRAPH_CALENDAR_SCOPE_TYPE,
+    encode_msgraph_calendar_scope_id,
 )
 from intergrax.runtime.vendor_knowledge.bindings import (
     KnowledgeSourceBinding,
@@ -137,6 +150,18 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
     def _mail_payload(self, opaque_candidate_ref: str):
         try:
             return self._codec.decode_msgraph_mail_folder_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _teams_channel_payload(self, opaque_candidate_ref: str):
+        try:
+            return self._codec.decode_msgraph_teams_channel_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _calendar_payload(self, opaque_candidate_ref: str):
+        try:
+            return self._codec.decode_msgraph_calendar_candidate(opaque_candidate_ref)
         except ConnectedSourceDiscoveryError:
             return None
 
@@ -240,6 +265,107 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 configuration_version=1,
             )
 
+        channel = self._teams_channel_payload(opaque_candidate_ref)
+        if channel is not None:
+            _validate_candidate_scope_values(
+                channel.tenant_id,
+                channel.workspace_id,
+                channel.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            scope_id = encode_msgraph_teams_channel_scope_id(
+                team_remote_id=channel.team_remote_id,
+                channel_remote_id=channel.channel_remote_id,
+            )
+            return KnowledgeSourceBinding(
+                binding_id=tenant_binding_id(
+                    tenant_id=tenant_id,
+                    connection_ref=connection_ref,
+                    provider_id="ms365_graph",
+                    integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
+                    source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+                    encoded_scope=scope_id,
+                ),
+                tenant_id=tenant_id,
+                provider_id="ms365_graph",
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=MSGRAPH_TEAMS_CHANNEL_SOURCE_KIND,
+                connection_ref=connection_ref,
+                safe_display_name=safe_display_name or channel.safe_display_label,
+                scope=KnowledgeSourceScope(
+                    remote_scope_id=scope_id,
+                    remote_scope_type=MSGRAPH_TEAMS_CHANNEL_SCOPE_TYPE,
+                    safe_display_name=safe_display_name or channel.safe_display_label,
+                    parameters={},
+                ),
+                status=KnowledgeSourceBindingStatus.ACTIVE,
+                configuration_version=1,
+            )
+
+        calendar = self._calendar_payload(opaque_candidate_ref)
+        if calendar is not None:
+            _validate_candidate_scope_values(
+                calendar.tenant_id,
+                calendar.workspace_id,
+                calendar.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            try:
+                calendar_model = MsGraphCalendar(
+                    mailbox_user_id=calendar.mailbox_user_id,
+                    remote_id=calendar.calendar_remote_id,
+                    name=calendar.safe_display_label,
+                    change_key="candidate",
+                    is_default_calendar=calendar.is_default_calendar,
+                    can_edit=False,
+                    can_share=False,
+                    can_view_private_items=False,
+                    is_removable=False,
+                    owner=None,
+                    allowed_online_meeting_providers=(),
+                    default_online_meeting_provider=(
+                        MsGraphCalendarOnlineMeetingProvider.UNKNOWN
+                    ),
+                )
+                window = MsGraphCalendarViewWindow(
+                    start_at=_parse_datetime(root_oldest),
+                    end_at=_parse_datetime(root_latest),
+                )
+                scope_id = encode_msgraph_calendar_scope_id(
+                    calendar=calendar_model,
+                    window=window,
+                )
+            except (ValueError, TypeError):
+                raise ConnectedSourceBindingError("candidate_inaccessible") from None
+            return KnowledgeSourceBinding(
+                binding_id=tenant_binding_id(
+                    tenant_id=tenant_id,
+                    connection_ref=connection_ref,
+                    provider_id="ms365_graph",
+                    integration_kind=IntegrationCategory.COLLABORATION_SUITE.value,
+                    source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
+                    encoded_scope=scope_id,
+                ),
+                tenant_id=tenant_id,
+                provider_id="ms365_graph",
+                integration_kind=IntegrationCategory.COLLABORATION_SUITE,
+                source_kind=MSGRAPH_CALENDAR_SOURCE_KIND,
+                connection_ref=connection_ref,
+                safe_display_name=safe_display_name or calendar.safe_display_label,
+                scope=KnowledgeSourceScope(
+                    remote_scope_id=scope_id,
+                    remote_scope_type=MSGRAPH_CALENDAR_SCOPE_TYPE,
+                    safe_display_name=safe_display_name or calendar.safe_display_label,
+                    parameters={},
+                ),
+                status=KnowledgeSourceBindingStatus.ACTIVE,
+                configuration_version=1,
+            )
+
         return self._slack.build_binding(
             tenant_id=tenant_id,
             workspace_id=workspace_id,
@@ -291,6 +417,42 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
                 resource_type=RemoteResourceTypeV1.MSGRAPH_MAIL_FOLDER,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        channel = self._teams_channel_payload(opaque_candidate_ref)
+        if channel is not None:
+            _validate_candidate_scope_values(
+                channel.tenant_id,
+                channel.workspace_id,
+                channel.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHANNEL,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        calendar = self._calendar_payload(opaque_candidate_ref)
+        if calendar is not None:
+            _validate_candidate_scope_values(
+                calendar.tenant_id,
+                calendar.workspace_id,
+                calendar.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.MSGRAPH_CALENDAR,
                 opaque_candidate_ref=opaque_candidate_ref,
             )
 

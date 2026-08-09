@@ -430,6 +430,7 @@ def mount_managed_workspace_routes(
     tenant_connection_secrets_store: Any | None = None,
     tenant_connection_factory_registry: TenantConnectionIntegrationFactory | None = None,
     msgraph_mailbox_user_id: str | None = None,
+    msgraph_teams_channel_team_id: str | None = None,
     tenant_connection_port: TenantConnectionPort | None = None,
     tenant_live_capability_catalog: TenantLiveCapabilityCatalogPort | None = None,
     live_access_remote_resource_lookup_port: LiveAccessRemoteResourceLookupPort | None = None,
@@ -546,6 +547,7 @@ def mount_managed_workspace_routes(
         tenant_connection_secrets_store=tenant_connection_secrets_store,
         tenant_connection_factory_registry=tenant_connection_factory_registry,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
+        msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
     app.state.lkw_connected_source_readiness = host_bundle.readiness
     app.state.lkw_legacy_local_integration = host_bundle.legacy_local_integration

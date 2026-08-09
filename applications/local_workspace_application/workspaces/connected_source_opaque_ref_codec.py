@@ -22,6 +22,10 @@ _ENVELOPE_SCHEMA = "lkw.remote_resource_opaque_ref.v1"
 _CANDIDATE_PAYLOAD_SCHEMA = "lkw.slack_conversation_candidate.v1"
 _MSGRAPH_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_teams_chat_candidate.v1"
 _MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_mail_folder_candidate.v1"
+_MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA = (
+    "lkw.msgraph_teams_channel_candidate.v1"
+)
+_MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_calendar_candidate.v1"
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -77,6 +81,33 @@ class MsGraphMailFolderCandidatePayload(BaseModel):
     resource_type: RemoteResourceTypeV1
     mailbox_user_id: str = Field(..., min_length=1, max_length=256)
     folder_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphTeamsChannelCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    team_remote_id: str = Field(..., min_length=1, max_length=256)
+    channel_remote_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class MsGraphCalendarCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    mailbox_user_id: str = Field(..., min_length=1, max_length=256)
+    calendar_remote_id: str = Field(..., min_length=1, max_length=256)
+    is_default_calendar: bool
     safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
@@ -290,6 +321,76 @@ class RemoteResourceOpaqueRefCodec:
         except (ValueError, RemoteResourceOpaqueRefCodecError):
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
         if payload.schema_version != _MSGRAPH_MAIL_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_teams_channel_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        team_remote_id: str,
+        channel_remote_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphTeamsChannelCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_TEAMS_CHANNEL,
+            team_remote_id=team_remote_id,
+            channel_remote_id=channel_remote_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_teams_channel_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphTeamsChannelCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphTeamsChannelCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_msgraph_calendar_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        mailbox_user_id: str,
+        calendar_remote_id: str,
+        is_default_calendar: bool,
+        safe_display_label: str,
+    ) -> str:
+        payload = MsGraphCalendarCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.MSGRAPH_CALENDAR,
+            mailbox_user_id=mailbox_user_id,
+            calendar_remote_id=calendar_remote_id,
+            is_default_calendar=is_default_calendar,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_msgraph_calendar_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> MsGraphCalendarCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = MsGraphCalendarCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA:
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 
