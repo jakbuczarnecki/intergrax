@@ -82,8 +82,11 @@ Explicit limitations:
   `source_reingest_not_supported` rather than appending a changed source;
 - simultaneous writes for one source are not proven serializable by this
   lifecycle and no source-level distributed lock is claimed;
-- tenant filtering is qualified; namespace/workspace propagation and provider
-  predicates are covered, but independent negative leakage gates are not;
+- tenant, namespace, and workspace isolation are qualified for canonical vector
+  retrieval; the InMemory executable negative gate proves that higher-scoring
+  records outside the requested scope are excluded before results are exposed,
+  while Qdrant has an offline filter-construction and fake-provider execution
+  proof; live Qdrant isolation is not claimed;
 - the Qdrant provider contract and ID normalization are covered by offline
   tests, and the live tenant-isolation probe passed; the broader backend
   lifecycle suite is **TEST_ASSUMPTION_DEFECT** because its integration
