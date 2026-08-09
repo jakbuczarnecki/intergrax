@@ -42,6 +42,9 @@ from intergrax.runtime.vendor_knowledge.google_workspace_indexed_materializers i
     GoogleDocsStructuredRecordMaterializer,
     GoogleSheetsStructuredRecordMaterializer,
 )
+from intergrax.runtime.vendor_knowledge.jira_indexed_materializers import (
+    JiraIssueStructuredRecordMaterializer,
+)
 from intergrax.runtime.vendor_knowledge.models import (
     KnowledgeContent,
     KnowledgeContentMode,
@@ -436,6 +439,7 @@ def default_connected_source_materializer_registry() -> ConnectedSourceContentMa
             GoogleCalendarStructuredRecordMaterializer(),
             GoogleDocsStructuredRecordMaterializer(),
             GoogleSheetsStructuredRecordMaterializer(),
+            JiraIssueStructuredRecordMaterializer(),
         )
     )
 

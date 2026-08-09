@@ -128,6 +128,7 @@ def build_jira_vendor_knowledge_source_plugin() -> VendorKnowledgeSourcePlugin:
         integration_category=IntegrationCategory.ISSUE_TRACKER,
         source_kind=JIRA_ISSUES_SOURCE_KIND,
         runtime_ref="knowledge-adapter:jira:issue_tracker:issues",
+        indexed_runtime_ref="indexed-source:jira:issues",
     )
 
 

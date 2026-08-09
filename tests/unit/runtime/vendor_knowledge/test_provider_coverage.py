@@ -251,6 +251,11 @@ def test_indexed_declarations_resolve_only_existing_materializers() -> None:
             GOOGLE_SHEETS_SOURCE_KIND,
         ): "indexed-source:google_workspace:sheets",
         (
+            JIRA_ISSUE_TRACKER_PROVIDER_ID,
+            IntegrationCategory.ISSUE_TRACKER,
+            JIRA_ISSUES_SOURCE_KIND,
+        ): "indexed-source:jira:issues",
+        (
             CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
             IntegrationCategory.WIKI_KNOWLEDGE,
             CONFLUENCE_PAGES_SOURCE_KIND,
