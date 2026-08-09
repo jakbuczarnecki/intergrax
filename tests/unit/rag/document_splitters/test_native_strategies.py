@@ -59,6 +59,29 @@ def _assert_common_chunk_properties(chunk: KnowledgeDocument, source: KnowledgeD
     assert DocumentMetadataKey.DOCLING_DOCUMENT_META.value not in chunk.metadata
 
 
+def _reconstruct_chunks(
+    chunks: list[KnowledgeDocument],
+    chunk_overlap: int,
+) -> str:
+    if not chunks:
+        return ""
+
+    reconstructed = chunks[0].content
+    for chunk in chunks[1:]:
+        maximum_overlap = min(chunk_overlap, len(reconstructed), len(chunk.content))
+        overlap = next(
+            (
+                length
+                for length in range(maximum_overlap, 0, -1)
+                if reconstructed[-length:] == chunk.content[:length]
+            ),
+            0,
+        )
+        reconstructed += chunk.content[overlap:]
+
+    return reconstructed
+
+
 def test_recursive_strategy_native_contract() -> None:
     source = _source("doc-rec", "abcdefghij" * 30)
     strategy = RecursiveChunkingStrategy(chunk_size=50, chunk_overlap=10)
@@ -72,6 +95,160 @@ def test_recursive_strategy_native_contract() -> None:
     assert first_run == second_run
     for chunk in chunks:
         _assert_common_chunk_properties(chunk, source)
+
+
+def test_recursive_strategy_keeps_short_document_as_one_chunk() -> None:
+    content = "A short document stays intact. " * 20
+    source = _source("doc-short", content)
+
+    chunks = RecursiveChunkingStrategy(chunk_size=700, chunk_overlap=200).chunk([source])
+
+    assert [chunk.content for chunk in chunks] == [content]
+
+
+def test_recursive_strategy_prefers_paragraph_boundaries() -> None:
+    first = "First paragraph has useful context."
+    second = "Second paragraph has more useful context."
+    source = _source("doc-paragraphs", f"{first}\n\n{second}")
+
+    chunks = RecursiveChunkingStrategy(chunk_size=45, chunk_overlap=0).chunk([source])
+
+    assert [chunk.content for chunk in chunks] == [f"{first}\n\n", second]
+
+
+def test_recursive_strategy_prefers_line_boundaries_after_paragraphs() -> None:
+    source = _source(
+        "doc-lines",
+        "First line has words.\nSecond line has words.\nThird line has words.",
+    )
+
+    chunks = RecursiveChunkingStrategy(chunk_size=25, chunk_overlap=0).chunk([source])
+
+    assert len(chunks) == 3
+    assert all(chunk.content.endswith("\n") for chunk in chunks[:2])
+    assert "".join(chunk.content for chunk in chunks) == source.content
+
+
+def test_recursive_strategy_preserves_word_boundaries() -> None:
+    source = _source("doc-words", "alpha beta gamma delta")
+
+    chunks = RecursiveChunkingStrategy(chunk_size=12, chunk_overlap=0).chunk([source])
+
+    assert [chunk.content for chunk in chunks] == ["alpha beta ", "gamma delta"]
+
+
+def test_recursive_strategy_hard_fallback_bounds_unbroken_text() -> None:
+    source = _source("doc-token", "x" * 25)
+
+    chunks = RecursiveChunkingStrategy(chunk_size=7, chunk_overlap=0).chunk([source])
+
+    assert "".join(chunk.content for chunk in chunks) == source.content
+    assert all(0 < len(chunk.content) <= 7 for chunk in chunks)
+
+
+def test_recursive_strategy_overlap_preserves_bounded_context_and_progress() -> None:
+    source = _source(
+        "doc-overlap",
+        "alpha beta gamma delta epsilon zeta eta theta",
+    )
+    strategy = RecursiveChunkingStrategy(chunk_size=20, chunk_overlap=5)
+
+    chunks = list(strategy.chunk([source]))
+
+    assert len(chunks) > 1
+    assert all(0 < len(chunk.content) <= 20 for chunk in chunks)
+    assert all(
+        previous.content[-5:] == current.content[:5]
+        for previous, current in zip(chunks, chunks[1:])
+    )
+    assert all(previous.content != current.content for previous, current in zip(chunks, chunks[1:]))
+
+
+def test_recursive_strategy_zero_overlap_reconstructs_exact_source() -> None:
+    source = _source("doc-zero-overlap", "one two three four five six")
+
+    chunks = RecursiveChunkingStrategy(chunk_size=10, chunk_overlap=0).chunk([source])
+
+    assert _reconstruct_chunks(list(chunks), 0) == source.content
+
+
+@pytest.mark.parametrize(
+    ("chunk_size", "chunk_overlap", "message"),
+    [
+        (0, 0, "chunk_size must be a positive integer"),
+        (-1, 0, "chunk_size must be a positive integer"),
+        (10, -1, "chunk_overlap must be a non-negative integer"),
+        (10, 10, "chunk_overlap must be smaller than chunk_size"),
+        (10, 11, "chunk_overlap must be smaller than chunk_size"),
+    ],
+)
+def test_recursive_strategy_rejects_invalid_configuration(
+    chunk_size: int,
+    chunk_overlap: int,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        RecursiveChunkingStrategy(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+
+
+@pytest.mark.parametrize("content", ["", "   \r\n\t  "])
+def test_recursive_strategy_ignores_empty_and_whitespace_documents(content: str) -> None:
+    source = MagicMock(spec=KnowledgeDocument)
+    source.content = content
+
+    chunks = RecursiveChunkingStrategy(chunk_size=20, chunk_overlap=5).chunk([source])
+
+    assert chunks == []
+
+
+def test_recursive_strategy_supports_unicode_and_crlf_losslessly() -> None:
+    content = "Nagłówek\r\n\r\nTreść — café.\r\nDruga linia."
+    source = _source("doc-unicode", content)
+
+    chunks = RecursiveChunkingStrategy(chunk_size=20, chunk_overlap=0).chunk([source])
+
+    assert "".join(chunk.content for chunk in chunks) == content
+    assert all(len(chunk.content) <= 20 for chunk in chunks)
+    assert chunks[0].content.endswith("\r\n\r\n")
+
+
+def test_recursive_strategy_is_deterministic_in_content_and_identity() -> None:
+    source = _source("doc-deterministic", "alpha beta gamma delta " * 5)
+
+    first_run = RecursiveChunkingStrategy(chunk_size=24, chunk_overlap=6).chunk([source])
+    second_run = RecursiveChunkingStrategy(chunk_size=24, chunk_overlap=6).chunk([source])
+
+    assert [(chunk.content, chunk.identity.document_id) for chunk in first_run] == [
+        (chunk.content, chunk.identity.document_id) for chunk in second_run
+    ]
+
+
+def test_recursive_strategy_preserves_metadata_and_provenance() -> None:
+    source = _source("doc-provenance", "metadata and provenance remain attached")
+
+    chunks = RecursiveChunkingStrategy(chunk_size=20, chunk_overlap=3).chunk([source])
+
+    assert chunks
+    for chunk in chunks:
+        _assert_common_chunk_properties(chunk, source)
+        assert chunk.metadata["source"] == "doc-provenance"
+        assert chunk.metadata[ChunkMetadataKey.CHUNK_STRATEGY.value] == "recursive"
+        assert chunk.metadata[ChunkMetadataKey.CHUNK_SIZE.value] == len(chunk.content)
+        assert chunk.provenance.content_hash
+
+
+def test_recursive_strategy_content_integrity_with_overlap() -> None:
+    content = (
+        "section-00 alpha\n\n"
+        "section-01 beta\n\n"
+        "section-02 gamma\n\n"
+        "section-03 delta"
+    )
+    source = _source("doc-integrity", content)
+
+    chunks = RecursiveChunkingStrategy(chunk_size=28, chunk_overlap=7).chunk([source])
+
+    assert _reconstruct_chunks(list(chunks), 7) == content
 
 
 def test_semantic_strategy_native_contract() -> None:
