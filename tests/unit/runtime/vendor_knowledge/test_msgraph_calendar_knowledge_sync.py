@@ -557,13 +557,23 @@ class _FailingCheckpointRepository:
     def __getattr__(self, name: str) -> object:
         return getattr(self._delegate, name)
 
-    def commit(self, checkpoint: object, *, expected_previous: object) -> None:
+    def commit(
+        self,
+        checkpoint: object,
+        *,
+        expected_previous: object,
+        expected_publication_fence: object | None = None,
+        publication_permit: object | None = None,
+    ) -> None:
+        _ = expected_publication_fence, publication_permit
         if self.fail_times > 0:
             self.fail_times -= 1
             raise RuntimeError("checkpoint boom")
         self._delegate.commit(  # type: ignore[attr-defined]
             checkpoint,
             expected_previous=expected_previous,
+            expected_publication_fence=expected_publication_fence,
+            publication_permit=publication_permit,
         )
         self.successful_commits += 1
 

@@ -83,13 +83,39 @@ isolation. Slack deletion propagation and complete per-user ACL semantics remain
 unproven; other providers retain their VK-6 classifications, and this closeout
 does not imply commercial or GA support.
 
+The Microsoft Graph provider family closeout is also **ACCEPTED / CLOSED** for
+its current bounded source scopes. `ms365_graph` is the sole canonical
+provider identity in `COLLABORATION_SUITE`; Drive, Mail, Teams Channel, Teams
+Chat and Calendar reuse one durable TenantConnection, `credential_ref`,
+`Ms365GraphTenantConnectionIntegrationFactory`, restart rehydration and the
+KnowledgeConnectionRegistry. Mailbox, team and calendar scope configuration is
+source/discovery configuration, not a separate credential lifecycle.
+
+```text
+teams_chat       DURABLE ACCEPTED  INDEXED ACCEPTED  LIVE ACCEPTED  LKW_READY
+mail             DURABLE ACCEPTED  INDEXED ACCEPTED  LIVE ACCEPTED  LKW_READY
+teams_channel    DURABLE ACCEPTED  INDEXED ACCEPTED  LIVE ACCEPTED  LKW_READY
+calendar         DURABLE ACCEPTED  INDEXED ACCEPTED  LIVE ACCEPTED  LKW_READY
+drive            DURABLE FOUNDATION_ONLY  INDEXED FOUNDATION_ONLY
+                 LIVE ACCEPTED  FOUNDATION_ONLY
+```
+
+The Drive blocker remains
+`REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY`: files are `BINARY`,
+while folders/packages have no canonical textual content representation. No
+fake metadata-only Indexed claim is made. `LKW_READY` is a bounded technical
+acceptance label, not commercial GA, complete ACL coverage or exhaustive
+Microsoft Graph feature coverage. Generic LKW remains provider-neutral; Graph
+credentials, direct Graph execution and Graph-specific Search/Ask stay at the
+approved provider composition boundary.
+
 ### VK-9 final platform closeout
 
 `VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` is **ACCEPTED / CLOSED**.
 
 The final audit was performed against current runtime code, composition roots,
 focused VK-2 through VK-8 tests and the accepted Slack plus Microsoft Graph
-Teams Chat proof. No production-code correction was required.
+family proofs. No production-code correction was required.
 
 #### Final platform verdict
 
@@ -517,8 +543,10 @@ plugin declaration, runtime registration, mode status, deletion semantics, ACL
 scope, proof level, limitations and evidence.
 
 The default plugin composition covers all twelve implemented source kinds.
-Microsoft Graph has five accepted bounded Live registrations; Teams Chat and
-Slack retain the accepted Indexed bridge and representative Durable proof.
+Microsoft Graph has five accepted bounded Live registrations. Drive declares
+only `DURABLE` and `LIVE`, with both Indexed and readiness at
+`FOUNDATION_ONLY`; Mail, Teams Channel, Teams Chat and Calendar each declare
+`DURABLE`, `INDEXED` and `LIVE`, with readiness `LKW_READY`.
 Google, Jira and Confluence remain Durable `FOUNDATION_ONLY` with Indexed
 foundation only and Live `UNSUPPORTED` until separately proven. Atlan and Power
 BI have no Vendor Knowledge implementation. Databricks has only a relational
@@ -710,7 +738,7 @@ tasks remain **PLANNED**.
 The canonical current-state classification is
 [`VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md`](VENDOR_KNOWLEDGE_THREE_MODE_CAPABILITY_MATRIX.md),
 task `VENDOR-KNOWLEDGE-THREE-MODE-CAPABILITY-MATRIX-1`, status
-**READY_FOR_REVIEW**. It records the current Google `drive`, `docs` and
+**ACCEPTED / CLOSED**. It records the current Google `drive`, `docs` and
 `sheets` and `calendar` adapter implementations, the current exact Google
 Calendar read surface, and the remaining application-mode gaps without
 activating work. Any older wording that says Google Calendar has no Vendor
@@ -1790,7 +1818,7 @@ This task must not create separate public Microsoft integrations for Drive, mail
 
 #### `MSGRAPH-KNOWLEDGE-ADAPTERS-1`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED / CLOSED`
 
 `MSGRAPH-KNOWLEDGE-ADAPTERS-1A-DRIVE` is **ACCEPTED**.
 
@@ -1808,7 +1836,7 @@ Review Fix 5 correction.
 
 #### `MSGRAPH-KNOWLEDGE-ADAPTERS-1-FAMILY-CLOSEOUT`
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `ACCEPTED / CLOSED`
 
 The Drive, Mail, Teams Channel, Teams Chat and Calendar adapters are verified
 as one Microsoft Graph integration family. Shared durable reconciliation,
@@ -1817,6 +1845,10 @@ and secret-safe public outputs are covered by the provider and focused
 regression suites. Unsupported capabilities remain explicitly unsupported.
 
 **Vendor Knowledge / Microsoft Graph track (independent of Google Workspace):**
+
+The detailed entries below are historical review traceability. They are
+preserved for audit history and do not override the current matrix or the
+accepted family closeout above.
 
 ```text
 VENDOR-KNOWLEDGE-RECONCILIATION-FINALIZATION-ARCH-1 — CHANGES_REQUIRED, correction under review
@@ -2659,7 +2691,7 @@ VENDOR-KNOWLEDGE-LIVE-CAPABILITY-ROLLOUT-PLAN-1
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL  # ACCEPTED / CLOSED
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT  # ACCEPTED / CLOSED
 → MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR  # ACCEPTED / CLOSED
-→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT  # READY_FOR_REVIEW
+→ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT  # ACCEPTED / CLOSED
 
 → SLACK-KNOWLEDGE-LIVE-CAPABILITY-1
 → JIRA-KNOWLEDGE-LIVE-CAPABILITY-1
@@ -2788,7 +2820,7 @@ MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1B-MAIL: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1C-TEAMS-CHANNEL: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1D-TEAMS-CHAT: ACCEPTED / CLOSED
 MSGRAPH-KNOWLEDGE-LIVE-CAPABILITY-1E-CALENDAR: ACCEPTED / CLOSED
-MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT: READY_FOR_REVIEW
+MSGRAPH-KNOWLEDGE-LIVE-CAPABILITIES-1-FAMILY-CLOSEOUT: ACCEPTED / CLOSED
 other Microsoft Graph live tasks: PLANNED
 Slack live family: ACCEPTED / CLOSED
 Jira live task: PLANNED
