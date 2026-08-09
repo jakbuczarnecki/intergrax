@@ -36,6 +36,14 @@ _MACOS_SH = (
     / "applications/local_workspace_application/scripts/"
     / "run-lkw-product-quickstart-macos.sh"
 )
+_WINDOWS_BOOTSTRAP = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/scripts/build-local-docker.bat"
+)
+_SHELL_BOOTSTRAP = (
+    _REPO_ROOT
+    / "applications/local_workspace_application/scripts/build-local-docker.sh"
+)
 
 
 def _load_module() -> ModuleType:
@@ -143,6 +151,36 @@ def test_bootstrap_selected_per_os(quick: ModuleType) -> None:
     assert quick.bootstrap_args(quick.OsFamily.WINDOWS)[0] == "cmd.exe"
     assert quick.bootstrap_args(quick.OsFamily.LINUX)[0] == "sh"
     assert quick.bootstrap_args(quick.OsFamily.MACOS)[0] == "sh"
+    assert quick.bootstrap_args(quick.OsFamily.LINUX)[1] == str(quick._BOOTSTRAP_SH)
+    assert quick.bootstrap_args(quick.OsFamily.MACOS)[1] == str(quick._BOOTSTRAP_SH)
+
+
+def test_bootstrap_compose_and_generation_model_contracts(quick: ModuleType) -> None:
+    windows_source = _WINDOWS_BOOTSTRAP.read_text(encoding="utf-8")
+    shell_source = _SHELL_BOOTSTRAP.read_text(encoding="utf-8")
+
+    assert quick._COMPOSE_PROJECT == "intergrax_lkw"
+    assert quick.compose_exec_args("config")[:6] == [
+        "docker",
+        "compose",
+        "-p",
+        "intergrax_lkw",
+        "-f",
+        str(quick._COMPOSE_FILE),
+    ]
+
+    assert 'set "COMPOSE_PROJECT_NAME=intergrax_lkw"' in windows_source
+    assert 'docker compose -p "%COMPOSE_PROJECT_NAME%" -f "%COMPOSE_FILE%"' in (
+        windows_source
+    )
+    assert 'COMPOSE_PROJECT_NAME="intergrax_lkw"' in shell_source
+    assert (
+        'docker compose -p "$COMPOSE_PROJECT_NAME" -f "$COMPOSE_FILE" up --build -d'
+        in shell_source
+    )
+    assert 'docker compose -f "$COMPOSE_FILE"' not in shell_source
+    assert "ollama pull llama3.1:latest" in windows_source
+    assert "ollama pull llama3.1:latest" in shell_source
 
 
 def test_stack_bootstrap_invokes_embedding_pull(
