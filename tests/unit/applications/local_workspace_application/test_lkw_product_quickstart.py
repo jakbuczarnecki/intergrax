@@ -62,6 +62,23 @@ def quick() -> ModuleType:
     return _load_module()
 
 
+@pytest.fixture(autouse=True)
+def _stub_product_preflight(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "_real_run_product_preflight",
+        quick.run_product_preflight,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        quick,
+        "run_product_preflight",
+        lambda *_args, **_kwargs: "llama3.1:latest",
+    )
+
+
 def _config(quick: ModuleType, **overrides: Any) -> Any:
     values = {
         "os_family": quick.OsFamily.WINDOWS,
@@ -147,6 +164,195 @@ def test_existing_env_never_overwritten(
     assert env_file.read_bytes() == original
 
 
+def _prepare_preflight_files(
+    quick: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    env_text: str,
+) -> None:
+    app_dir = tmp_path / "app"
+    app_dir.mkdir()
+    env_file = app_dir / ".env"
+    env_file.write_text(env_text, encoding="utf-8")
+    example = app_dir / ".env.example"
+    example.write_text("INTERGRAX_LLM_PROVIDER=ollama\n", encoding="utf-8")
+    sample = app_dir / "lkw_product_quickstart.txt"
+    sample.write_text("AURORA-17", encoding="utf-8")
+    monkeypatch.setattr(quick, "_APP_DIR", app_dir)
+    monkeypatch.setattr(quick, "_ENV_FILE", env_file)
+    monkeypatch.setattr(quick, "_ENV_EXAMPLE", example)
+    monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
+
+
+def test_docker_cli_missing_has_safe_preflight_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick.shutil, "which", lambda _name: None)
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_docker_capabilities()
+    assert (exc.value.stage, exc.value.reason) == ("preflight", "docker_cli_missing")
+
+
+def test_daemon_unavailable_has_safe_preflight_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick.shutil, "which", lambda _name: "docker")
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_args, **_kwargs: type("CP", (), {"returncode": 1})(),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_docker_capabilities()
+    assert exc.value.reason == "docker_daemon_unavailable"
+
+
+def test_compose_unavailable_has_safe_preflight_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick.shutil, "which", lambda _name: "docker")
+    results = iter(
+        [
+            type("CP", (), {"returncode": 0})(),
+            type("CP", (), {"returncode": 1})(),
+        ]
+    )
+    monkeypatch.setattr(quick, "run_command", lambda *_a, **_k: next(results))
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_docker_capabilities()
+    assert exc.value.reason == "compose_unavailable"
+
+
+def test_occupied_required_port_has_safe_preflight_reason(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _BusySocket:
+        def setsockopt(self, *_args: Any) -> None:
+            return None
+
+        def bind(self, *_args: Any) -> None:
+            raise OSError("private socket detail")
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _BusySocket())
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_required_ports(
+            mongodb_host_port=27018,
+            allow_running_stack=False,
+        )
+    assert exc.value.reason == "port_unavailable"
+
+
+def test_disk_space_failure_has_safe_preflight_reason(
+    quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _prepare_preflight_files(
+        quick,
+        tmp_path,
+        monkeypatch,
+        "INTERGRAX_LLM_PROVIDER=ollama\n",
+    )
+    monkeypatch.setattr(quick.shutil, "which", lambda _name: "docker")
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type("CP", (), {"returncode": 0})(),
+    )
+    monkeypatch.setattr(
+        quick.shutil,
+        "disk_usage",
+        lambda _path: type("Usage", (), {"free": quick._MIN_FREE_SPACE_BYTES - 1})(),
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._real_run_product_preflight(_config(quick))
+    assert exc.value.reason == "insufficient_disk_space"
+
+
+def test_invalid_generation_configuration_is_not_echoed(
+    quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _prepare_preflight_files(
+        quick,
+        tmp_path,
+        monkeypatch,
+        "INTERGRAX_DEFAULT_OLLAMA_MODEL=bad model secret\n",
+    )
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick.resolve_generation_model()
+    assert exc.value.reason == "invalid_mandatory_configuration"
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        quick._emit_failure(exc.value.stage, exc.value.reason)
+    text = buffer.getvalue()
+    assert "bad model secret" not in text
+    assert "recommended_action=" in text
+    assert "Traceback" not in text
+
+
+def test_generation_model_resolution_honors_configured_and_default_values(
+    quick: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _prepare_preflight_files(
+        quick,
+        tmp_path,
+        monkeypatch,
+        "INTERGRAX_LLM_MODEL=custom/generation:latest\n",
+    )
+    assert quick.resolve_generation_model() == "custom/generation:latest"
+    env_file = Path(quick._ENV_FILE)
+    env_file.write_text("INTERGRAX_LLM_PROVIDER=ollama\n", encoding="utf-8")
+    assert quick.resolve_generation_model() == "llama3.1:latest"
+
+
+def test_running_product_stack_allows_safe_port_reuse(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(quick, "_running_product_stack", lambda: True)
+
+    class _UnexpectedSocket:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            raise AssertionError("port probe must be skipped for running stack")
+
+    monkeypatch.setattr(quick.socket, "socket", _UnexpectedSocket)
+    quick._check_required_ports(
+        mongodb_host_port=27018,
+        allow_running_stack=True,
+    )
+
+
+def test_dependency_state_maps_without_forwarding_raw_output(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": '[{"Service":"qdrant","State":"exited","Health":""}]',
+            },
+        )(),
+    )
+    assert quick._stack_failure_reason() == "qdrant_not_ready"
+
+
+def test_failure_output_includes_stable_action_without_raw_details(
+    quick: ModuleType,
+) -> None:
+    buffer = io.StringIO()
+    with redirect_stdout(buffer):
+        quick._emit_failure("preflight", "docker_daemon_unavailable")
+    text = buffer.getvalue()
+    assert "failed_stage=preflight" in text
+    assert "failure_reason=docker_daemon_unavailable" in text
+    assert "recommended_action=Start Docker and rerun." in text
+    assert "Traceback" not in text
+
+
 def test_bootstrap_selected_per_os(quick: ModuleType) -> None:
     assert quick.bootstrap_args(quick.OsFamily.WINDOWS)[0] == "cmd.exe"
     assert quick.bootstrap_args(quick.OsFamily.LINUX)[0] == "sh"
@@ -179,8 +385,10 @@ def test_bootstrap_compose_and_generation_model_contracts(quick: ModuleType) -> 
         in shell_source
     )
     assert 'docker compose -f "$COMPOSE_FILE"' not in shell_source
-    assert "ollama pull llama3.1:latest" in windows_source
-    assert "ollama pull llama3.1:latest" in shell_source
+    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" in windows_source
+    assert "INTERGRAX_DEFAULT_OLLAMA_MODEL" in shell_source
+    assert "ollama pull" in windows_source
+    assert 'ollama pull "$INTERGRAX_DEFAULT_OLLAMA_MODEL"' in shell_source
 
 
 def test_stack_bootstrap_invokes_embedding_pull(
@@ -764,6 +972,16 @@ def test_failure_output_contract(
     sample.write_text("AURORA-17", encoding="utf-8")
     monkeypatch.setattr(quick, "_SAMPLE_FILE", sample)
     monkeypatch.setattr(quick, "ensure_env_file", lambda: False)
+    monkeypatch.setattr(
+        quick,
+        "resolve_ollama_embedding_model",
+        lambda **_kwargs: "configured-embed-model",
+    )
+    monkeypatch.setattr(
+        quick,
+        "ensure_ollama_embedding_model",
+        lambda *_args, **_kwargs: None,
+    )
     monkeypatch.setattr(quick, "wait_for_health", lambda *_a, **_k: None)
     monkeypatch.setattr(quick, "create_workspace", lambda *_a, **_k: "ws-1")
     monkeypatch.setattr(quick, "upload_sample_file", lambda *_a, **_k: "op-1")

@@ -2,6 +2,23 @@
 
 Want to understand the product experience before running it? See the [LKW Product Tour](LKW_PRODUCT_TOUR.md).
 
+## PRODUCT QUICKSTART — supported entry point
+
+Run exactly one command from the repository root:
+
+| Operating system | Command |
+|---|---|
+| Windows | `applications\local_workspace_application\scripts\run-lkw-product-quickstart-windows.bat` |
+| Linux | `./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh` |
+| macOS | `./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh` |
+
+This is the supported zero-to-value path. Docker Desktop/Engine with Compose and
+`uv` must already be installed by the user; the launcher does not install
+software or use elevated installers. Git is needed to obtain the repository, not
+for each subsequent rerun. Keep at least **20 GiB free** for the bounded
+first-bootstrap check; this is a safety floor, not a prediction of download
+size.
+
 ## What this does
 
 This quickstart is a supported local product-evaluation path. One command starts the canonical local stack (unless you already have it running), uploads a bundled non-sensitive sample document through managed-file Knowledge Intake, waits for indexing, asks a grounded question over indexed knowledge, shows the answer with a source citation, and verifies the persisted Ask run.
@@ -29,30 +46,6 @@ This is indexed-only LKW behavior. It is not Hybrid Ask, not a platform certific
 - Sufficient disk space for Docker images and the configured local model (Ollama pull on first run)
 
 First-run duration depends on image downloads, model download, network speed, and machine performance. A 15-minute target is not yet externally validated.
-
-## Windows
-
-From the repository root:
-
-```bat
-applications\local_workspace_application\scripts\run-lkw-product-quickstart-windows.bat
-```
-
-## Linux
-
-From the repository root:
-
-```sh
-./applications/local_workspace_application/scripts/run-lkw-product-quickstart-linux.sh
-```
-
-## macOS
-
-From the repository root:
-
-```sh
-./applications/local_workspace_application/scripts/run-lkw-product-quickstart-macos.sh
-```
 
 ## What you should see
 
@@ -124,9 +117,12 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 
 - Docker images for the LKW stack may be downloaded on first run.
 - The configured generation model (`llama3.1:latest` by default) may be downloaded by the stack.
+- Generation model resolution is `INTERGRAX_DEFAULT_OLLAMA_MODEL`, then
+  `INTERGRAX_LLM_MODEL`, then `llama3.1:latest`.
 - The quickstart resolves the embedding model configured in the running LKW container and pulls that exact model.
 - An existing `applications/local_workspace_application/.env` is not modified; a missing `applications/local_workspace_application/.env` is created once from `applications/local_workspace_application/.env.example`.
-- Operational failures return a safe stage and reason instead of raw Docker, HTTP or subprocess logs.
+- Operational failures return `failed_stage`, `failure_reason`, and
+  `recommended_action` instead of raw Docker, HTTP or subprocess logs.
 - Duration varies by environment; timing is not claimed as validated until external sessions confirm it.
 
 ## Safety
@@ -138,6 +134,11 @@ You did not need to write API JSON, copy operation IDs manually, or configure `I
 - If `applications/local_workspace_application/.env` is missing, it is created from `applications/local_workspace_application/.env.example` once; an existing `.env` is never overwritten.
 - The stack remains running after success for inspection.
 - Local Docker volumes may retain evaluation data.
+- Rerunning preserves `.env`, downloaded models, and named volumes. A healthy
+  existing stack is reused; a partial start can be retried without deleting
+  volumes or application data.
+- `--skip-stack-start` is an advanced rerun option for an already-running
+  canonical stack; the normal OS launcher starts or reuses the stack.
 
 ### Stop the stack
 
@@ -151,11 +152,14 @@ On Windows, from the repository root, run `cd /d applications\local_workspace_ap
 
 ## Troubleshooting
 
-- Ensure Docker is running and `uv` is on `PATH`.
+- For a normal failure, follow `failed_stage`, `failure_reason`, and
+  `recommended_action`. Docker, Compose, and `uv` remain user-managed
+  prerequisites.
 - From `applications/local_workspace_application`, inspect service status with `docker compose -p intergrax_lkw -f docker/docker-compose.yml ps`.
 - From `applications/local_workspace_application`, inspect logs with `docker compose -p intergrax_lkw -f docker/docker-compose.yml logs --tail 200 local_workspace`.
 - Health check: `http://127.0.0.1:8020/health` should return `status: ok`.
-- Re-run with an already-running stack by passing `--skip-stack-start` to one of the Quick Start launchers (wrappers normally start the stack).
+- Advanced troubleshooting commands above may show Docker details; they are
+  not part of the normal product failure output.
 
 ## What this does not prove
 

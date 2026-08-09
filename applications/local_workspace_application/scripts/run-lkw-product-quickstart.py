@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import queue
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import threading
@@ -39,6 +41,20 @@ _BOOTSTRAP_SH = _SCRIPT_DIR / "build-local-docker.sh"
 _COMPOSE_FILE = _APP_DIR / "docker" / "docker-compose.yml"
 _COMPOSE_PROJECT = "intergrax_lkw"
 _NEW_ENV_OLLAMA_EMBED_MODEL = "nomic-embed-text"
+_DEFAULT_GENERATION_MODEL = "llama3.1:latest"
+_MIN_FREE_SPACE_BYTES = 20 * 1024**3
+_PRODUCT_HOST_PORT = 8020
+_OTEL_HOST_PORT = 4318
+_DEFAULT_MONGODB_HOST_PORT = 27018
+_MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$")
+_ENV_KEYS = frozenset(
+    {
+        "INTERGRAX_DEFAULT_OLLAMA_MODEL",
+        "INTERGRAX_LLM_MODEL",
+        "INTERGRAX_LLM_PROVIDER",
+        "LKW_MONGODB_HOST_PORT",
+    }
+)
 _MODEL_RESOLUTION_CODE = (
     "import os; "
     "from intergrax.rag.embedding.providers.ollama_embedding_provider "
@@ -57,6 +73,32 @@ _ANSWER_MARKER = "AURORA-17"
 _CITATION_FILE = "lkw_product_quickstart.txt"
 _SAFE_REASON = re.compile(r"^[A-Za-z0-9_.-]+$")
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+_FAILURE_ACTIONS = {
+    "docker_cli_missing": "Install Docker Desktop/Engine with Compose and rerun.",
+    "docker_daemon_unavailable": "Start Docker and rerun.",
+    "compose_unavailable": "Install or enable Docker Compose and rerun.",
+    "unsupported_operating_system": "Run the documented launcher on Windows, Linux, or macOS.",
+    "invalid_os_wrapper_pair": "Run the launcher matching the supported operating system.",
+    "operating_system_mismatch": "Run the launcher directly on its matching supported operating system.",
+    "port_unavailable": "Free the required LKW host port or correct supported product configuration, then rerun.",
+    "insufficient_disk_space": "Free disk space for the first Docker/model bootstrap, then rerun.",
+    "invalid_mandatory_configuration": "Correct the supported LKW model/provider or host-port configuration, then rerun.",
+    "env_example_missing": "Restore .env.example from the repository and rerun.",
+    "env_materialization_failed": "Make the application configuration directory writable, then rerun.",
+    "bootstrap_script_missing": "Restore the supported LKW bootstrap scripts and rerun.",
+    "sample_file_missing": "Restore the bundled LKW quickstart sample and rerun.",
+    "stack_start_failed": "Retry the quickstart; if it persists, inspect the documented advanced Docker status commands.",
+    "mongodb_not_ready": "Retry after Docker can start the local dependency stack.",
+    "qdrant_not_ready": "Retry after Docker can start the local dependency stack.",
+    "ollama_not_ready": "Retry after Docker can start the local model service.",
+    "lkw_host_not_ready": "Retry after the local LKW host can start.",
+    "health_timeout": "Retry the quickstart after Docker services finish starting.",
+    "generation_model_pull_failed": "Check local model-service connectivity and rerun.",
+    "embedding_model_resolution_failed": "Retry after the local LKW host is ready.",
+    "embedding_model_pull_failed": "Check local model-service connectivity and rerun.",
+    "invalid_timeout": "Run the launcher with a positive timeout.",
+}
 
 _FORBIDDEN_OUTPUT_SNIPPETS = (
     "storage_key",
@@ -194,10 +236,18 @@ def _print_kv(key: str, value: object) -> None:
 
 
 def _emit_failure(stage: str, reason: str) -> None:
+    safe_stage = stage if _SAFE_REASON.fullmatch(stage) else "unknown"
     safe_reason = reason if _SAFE_REASON.fullmatch(reason) else "unsafe_failure_reason"
     _print_kv("lkw_quickstart_result", "FAIL")
-    _print_kv("failed_stage", stage)
+    _print_kv("failed_stage", safe_stage)
     _print_kv("failure_reason", safe_reason)
+    _print_kv(
+        "recommended_action",
+        _FAILURE_ACTIONS.get(
+            safe_reason,
+            "Retry the documented LKW product quickstart.",
+        ),
+    )
 
 
 def _assert_safe_user_text(text: str) -> None:
@@ -214,6 +264,7 @@ def run_command(
     timeout: int | None = None,
     stage: str = "stack_start",
     progress: ProgressReporter | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     process: subprocess.Popen[str] | None = None
     try:
@@ -226,6 +277,7 @@ def run_command(
             encoding="utf-8",
             errors="replace",
             shell=False,
+            env=dict(env) if env is not None else None,
         )
         started_at = time.monotonic()
         deadline = None if timeout is None else started_at + timeout
@@ -323,6 +375,168 @@ def ensure_env_file() -> bool:
     return True
 
 
+def _read_supported_env_values() -> dict[str, str]:
+    if not _ENV_FILE.is_file():
+        raise QuickstartError("env_materialization_failed", stage="preflight")
+    try:
+        lines = _ENV_FILE.read_text(encoding="utf-8-sig").splitlines()
+    except (OSError, UnicodeError):
+        raise QuickstartError(
+            "invalid_mandatory_configuration",
+            stage="preflight",
+        ) from None
+    values: dict[str, str] = {}
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        key = key.strip()
+        if key not in _ENV_KEYS:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values[key] = value.strip()
+    return values
+
+
+def _configured_value(values: Mapping[str, str], key: str) -> str | None:
+    environment_value = os.environ.get(key)
+    if environment_value is not None:
+        return environment_value.strip()
+    return values.get(key)
+
+
+def resolve_generation_model() -> str:
+    values = _read_supported_env_values()
+    for key in ("INTERGRAX_DEFAULT_OLLAMA_MODEL", "INTERGRAX_LLM_MODEL"):
+        value = _configured_value(values, key)
+        if value is None:
+            continue
+        if not _MODEL_PATTERN.fullmatch(value):
+            raise QuickstartError(
+                "invalid_mandatory_configuration",
+                stage="preflight",
+            )
+        return value
+    return _DEFAULT_GENERATION_MODEL
+
+
+def _resolve_mongodb_host_port(values: Mapping[str, str]) -> int:
+    raw_value = _configured_value(values, "LKW_MONGODB_HOST_PORT")
+    if raw_value is None or not raw_value:
+        return _DEFAULT_MONGODB_HOST_PORT
+    if not raw_value.isdecimal():
+        raise QuickstartError(
+            "invalid_mandatory_configuration",
+            stage="preflight",
+        )
+    port = int(raw_value)
+    if not 1 <= port <= 65535:
+        raise QuickstartError(
+            "invalid_mandatory_configuration",
+            stage="preflight",
+        )
+    return port
+
+
+def _validate_mandatory_configuration() -> str:
+    values = _read_supported_env_values()
+    provider = _configured_value(values, "INTERGRAX_LLM_PROVIDER")
+    if provider is not None and provider.strip().lower() not in {"", "ollama"}:
+        raise QuickstartError(
+            "invalid_mandatory_configuration",
+            stage="preflight",
+        )
+    model = resolve_generation_model()
+    _resolve_mongodb_host_port(values)
+    return model
+
+
+def _check_docker_capabilities() -> None:
+    if shutil.which("docker") is None:
+        raise QuickstartError("docker_cli_missing", stage="preflight")
+    daemon = run_command(
+        ["docker", "info", "--format", "{{.ServerVersion}}"],
+        timeout=30,
+        stage="preflight",
+    )
+    if daemon.returncode != 0:
+        raise QuickstartError("docker_daemon_unavailable", stage="preflight")
+    compose = run_command(
+        ["docker", "compose", "version"],
+        timeout=30,
+        stage="preflight",
+    )
+    if compose.returncode != 0:
+        raise QuickstartError("compose_unavailable", stage="preflight")
+
+
+def _running_product_stack() -> bool:
+    completed = run_command(
+        compose_exec_args("ps", "--format", "json"),
+        timeout=30,
+        stage="preflight",
+    )
+    if completed.returncode != 0:
+        return False
+    try:
+        raw = completed.stdout[:65536]
+        payload = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return False
+    services = payload if isinstance(payload, list) else [payload]
+    for service in services:
+        if not isinstance(service, dict):
+            continue
+        name = str(service.get("Service", service.get("service", ""))).strip()
+        state = str(service.get("State", service.get("state", ""))).strip().lower()
+        if name == "local_workspace" and state in {"running", "up"}:
+            return True
+    return False
+
+
+def _check_required_ports(
+    *,
+    mongodb_host_port: int,
+    allow_running_stack: bool,
+) -> None:
+    if allow_running_stack and _running_product_stack():
+        return
+    required_ports = {_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}
+    for port in sorted(required_ports):
+        probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            raise QuickstartError("port_unavailable", stage="preflight") from None
+        finally:
+            probe.close()
+
+
+def run_product_preflight(config: QuickstartConfig) -> str:
+    validate_os_wrapper_pair(config.os_family, config.wrapper_id)
+    validate_loopback_base_url(config.base_url)
+    if not _SAMPLE_FILE.is_file():
+        raise QuickstartError("sample_file_missing", stage="preflight")
+    if not _ENV_FILE.is_file() and not _ENV_EXAMPLE.is_file():
+        raise QuickstartError("env_example_missing", stage="preflight")
+    ensure_env_file()
+    model = _validate_mandatory_configuration()
+    _check_docker_capabilities()
+    if shutil.disk_usage(_APP_DIR).free < _MIN_FREE_SPACE_BYTES:
+        raise QuickstartError("insufficient_disk_space", stage="preflight")
+    if not config.skip_stack_start:
+        values = _read_supported_env_values()
+        _check_required_ports(
+            mongodb_host_port=_resolve_mongodb_host_port(values),
+            allow_running_stack=True,
+        )
+    return model
+
+
 def bootstrap_args(os_family: OsFamily) -> list[str]:
     if os_family is OsFamily.WINDOWS:
         return ["cmd.exe", "/c", str(_BOOTSTRAP_BAT)]
@@ -339,6 +553,39 @@ def compose_exec_args(*compose_command: str) -> list[str]:
         str(_COMPOSE_FILE),
         *compose_command,
     ]
+
+
+def _stack_failure_reason() -> str:
+    completed = run_command(
+        compose_exec_args("ps", "--format", "json"),
+        timeout=30,
+        stage="stack_start",
+    )
+    if completed.returncode != 0:
+        return "stack_start_failed"
+    try:
+        raw = completed.stdout[:65536]
+        payload = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return "stack_start_failed"
+    services = payload if isinstance(payload, list) else [payload]
+    service_reasons = {
+        "lkw-mongodb": "mongodb_not_ready",
+        "qdrant": "qdrant_not_ready",
+        "ollama": "ollama_not_ready",
+        "local_workspace": "lkw_host_not_ready",
+    }
+    for service in services:
+        if not isinstance(service, dict):
+            continue
+        name = str(service.get("Service", service.get("service", ""))).strip()
+        state = str(service.get("State", service.get("state", ""))).strip().lower()
+        health = str(service.get("Health", service.get("health", ""))).strip().lower()
+        if name in service_reasons and (
+            state in {"exited", "dead", "created"} or health == "unhealthy"
+        ):
+            return service_reasons[name]
+    return "stack_start_failed"
 
 
 def _validate_resolved_embedding_model(output: str) -> str:
@@ -784,11 +1031,9 @@ def run_quickstart(config: QuickstartConfig) -> int:
     progress = ProgressReporter(total_stages=10)
     try:
         progress.start(1, "Checking prerequisites")
-        validate_os_wrapper_pair(config.os_family, config.wrapper_id)
         base_url = validate_loopback_base_url(config.base_url)
-        if not _SAMPLE_FILE.is_file():
-            raise QuickstartError("sample_file_missing", stage="preflight")
-        created_env = ensure_env_file()
+        created_env = not _ENV_FILE.is_file()
+        generation_model = run_product_preflight(config)
         if created_env:
             print(
                 "Created applications/local_workspace_application/.env from .env.example "
@@ -807,9 +1052,16 @@ def run_quickstart(config: QuickstartConfig) -> int:
                 timeout=config.timeout_seconds,
                 stage="stack_start",
                 progress=progress,
+                env={
+                    **os.environ,
+                    "INTERGRAX_DEFAULT_OLLAMA_MODEL": generation_model,
+                },
             )
             if completed.returncode != 0:
-                raise QuickstartError("stack_start_failed", stage="stack_start")
+                raise QuickstartError(
+                    _stack_failure_reason(),
+                    stage="stack_start",
+                )
             progress.complete("Local LKW stack started")
         else:
             progress.start(2, "Reusing local LKW stack")

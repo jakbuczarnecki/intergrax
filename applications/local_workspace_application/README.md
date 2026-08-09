@@ -2,6 +2,13 @@
 
 Tier-3 product host for a private-by-default, tenant-scoped, deployment-neutral **Hybrid Knowledge Workspace**: indexed knowledge, controlled live provider access (planned), semantic search, grounded Ask, and synthesis.
 
+## PRODUCT QUICKSTART
+
+The supported first-run product path is [docs/project/product/lkw/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md).
+Run the documented OS launcher from the repository root. It performs the
+bounded prerequisite checks, starts or reuses the canonical stack, uploads the
+bundled sample, and proves grounded Ask with a citation.
+
 **Product direction:** provider-neutral frontends (Slack, HTTP, MCP); personal/shared conversation context isolation ([`CONVERSATION_CONTEXT_ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/CONVERSATION_CONTEXT_ARCHITECTURE.md) — **ACCEPTED**); Ollama/vLLM conversation runtime portability (`LKW-MODEL-RUNTIME-1` — **ACCEPTED**); Google Workspace knowledge architecture frozen (`GOOGLE-WORKSPACE-KNOWLEDGE-ARCH-1` — **READY_FOR_REVIEW**, runtime **PLANNED** — starts only after `LKW-SLACK-KNOWLEDGE-PROOF-1` becomes **ACCEPTED**); final live platform proof (`LKW-LIVE-PLATFORM-PROOF-1`). Architecture: [`KNOWLEDGE_ACCESS_ARCHITECTURE.md`](../../docs/project/technical/applications/local_workspace_application/KNOWLEDGE_ACCESS_ARCHITECTURE.md) (**ACCEPTED**). Last accepted intake: end-to-end `WEB_URL` Knowledge Intake (`1B-5-2`).
 
 **“Local”** means user-controlled deployment and configuration (full self-hosted / fully local topology remains first-class). It does **not** mean storage must always reside on a single user device. Storage location is selected by configuration and provider wiring — see [ARCHITECTURE.md — Deployment, storage and tenancy model](../../docs/project/technical/applications/local_workspace_application/ARCHITECTURE.md#deployment-storage-and-tenancy-model).
@@ -27,7 +34,10 @@ One command uploads a bundled sample through managed-file intake, waits for inde
 
 ## What LKW proves
 
-For deeper bounded technical review, see the public LKW Platform Proof: [`../../docs/project/proofs/LKW_PLATFORM_PROOF.md`](../../docs/project/proofs/LKW_PLATFORM_PROOF.md). The product quickstart above is the normal first evaluation path; the platform proof is separate.
+For deeper bounded technical review, see the **advanced proof-only path**
+[public LKW Platform Proof](../../docs/project/proofs/LKW_PLATFORM_PROOF.md).
+The product quickstart above is the normal first evaluation path; Platform
+Proof is separate and is not required for product installation.
 
 LKW is not only a local document assistant. It is the first product proof that Intergrax can repeatedly create, configure, run, package, deploy, observe, and evolve agent applications.
 
@@ -56,13 +66,13 @@ The common self-hosted / developer reference topology (not the product definitio
 
 In-memory vector storage is only for tests or temporary development. It is not the reference product default for durable RAG.
 
-## Docker quickstart
+## Advanced and developer routes
 
 ### Supported product quickstart
 
 See [docs/QUICKSTART.md](../../docs/project/product/lkw/QUICKSTART.md) — one command per OS; managed sample upload; indexed Ask with citation.
 
-### Advanced developer path
+### Advanced direct Docker bootstrap
 
 From `applications/local_workspace_application/`:
 
@@ -81,7 +91,7 @@ chmod +x scripts/build-local-docker.sh
 
 The scripts copy `.env.example` to `.env` when needed, build the Docker image, start Ollama, pull the model configured in `.env`, and start the local stack.
 
-## Quickstart
+### Advanced manual uvicorn/API flow
 
 From repository root:
 
@@ -114,7 +124,7 @@ curl -s -X POST http://127.0.0.1:8020/v1/local_workspace/run \
   -d '{"message":"find information about project X","capability":"local.workspace.search"}'
 ```
 
-## Developer first run
+## Developer first run (advanced)
 
 This section defines the minimal first-run path for a new developer after LKW.2
 (graph pipeline + local workspace skills are **closed — pipeline proof passed**).
@@ -134,7 +144,7 @@ This section defines the minimal first-run path for a new developer after LKW.2
 > Full configuration reference: [`BUILD_AND_DEPLOY.md`](../../docs/project/technical/applications/local_workspace_application/BUILD_AND_DEPLOY.md).
 > Conceptual user journey: [`USER_JOURNEY.md`](../../docs/project/product/lkw/USER_JOURNEY.md).
 
-### 1. Start the LKW host
+### 1. Start the LKW host (manual developer flow)
 
 **Local (no Docker):**
 
