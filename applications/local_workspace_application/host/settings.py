@@ -72,6 +72,17 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
     return out
 
 
+def _parse_tenant_ids(raw: str) -> tuple[str, ...]:
+    seen: set[str] = set()
+    tenant_ids: list[str] = []
+    for value in raw.split(","):
+        tenant_id = value.strip()
+        if tenant_id and tenant_id not in seen:
+            seen.add(tenant_id)
+            tenant_ids.append(tenant_id)
+    return tuple(tenant_ids)
+
+
 @dataclass(frozen=True, kw_only=True)
 class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     """Environment for local_workspace_application (scaffolded product profile)."""
@@ -141,6 +152,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     web_url_preflight_timeout_seconds: float = 10.0
     connected_source_opaque_ref_signing_key: str = ""
     connected_source_slack_connection_ref: str = ""
+    tenant_connection_bootstrap_tenant_ids: tuple[str, ...] = ()
     knowledge_admin_confirmation_secret: str = field(default="", repr=False)
     conversation_thread_memory_max_messages: int = 20
     conversation_thread_memory_max_bytes: int = 16 * 1024
@@ -614,6 +626,12 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "CONNECTED_SOURCE_SLACK_CONNECTION_REF",
             default=cls._field_default("connected_source_slack_connection_ref"),  # type: ignore[arg-type]
         )
+        tenant_connection_bootstrap_tenant_ids = _parse_tenant_ids(
+            env.str(
+                "TENANT_CONNECTION_BOOTSTRAP_TENANT_IDS",
+                default="",
+            )
+        )
         knowledge_admin_confirmation_secret = env.str(
             "KNOWLEDGE_ADMIN_CONFIRMATION_SECRET",
             default=cls._field_default("knowledge_admin_confirmation_secret"),  # type: ignore[arg-type]
@@ -691,5 +709,6 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "managed_file_max_batch_files": managed_file_max_batch_files,
             "connected_source_opaque_ref_signing_key": connected_source_opaque_ref_signing_key,
             "connected_source_slack_connection_ref": connected_source_slack_connection_ref,
+            "tenant_connection_bootstrap_tenant_ids": tenant_connection_bootstrap_tenant_ids,
             "knowledge_admin_confirmation_secret": knowledge_admin_confirmation_secret,
         }

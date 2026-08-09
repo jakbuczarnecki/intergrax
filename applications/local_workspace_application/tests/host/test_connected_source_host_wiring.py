@@ -249,15 +249,14 @@ def test_build_connected_source_host_bundle_shares_slack_integration() -> None:
 
 
 @pytest.mark.parametrize("other_available", [True, False])
-def test_host_rehydrates_slack_by_identity_with_another_tenant_connection(
+def test_host_rehydrates_all_durable_connections_without_slack_settings(
     other_available: bool,
 ) -> None:
     store = InMemoryDocumentStore()
     settings = LocalWorkspaceBackendSettings(
         data_home="/tmp/lkw-multi-vendor-host",
         connected_source_opaque_ref_signing_key=_SIGNING_KEY,
-        slack_tenant_id=_TENANT,
-        connected_source_slack_connection_ref=_CONNECTION,
+        tenant_connection_bootstrap_tenant_ids=(_TENANT,),
     )
     repo, service, config, mutation_engine, indexing, settings = _host_services(store, settings)
     connection_repository = DocumentStoreTenantConnectionRepository(store)
@@ -318,6 +317,8 @@ def test_host_rehydrates_slack_by_identity_with_another_tenant_connection(
         "secrets/tenant-a/other",
     }
     assert bundle.readiness.state is ConnectedSourceReadinessState.READY
+    assert bundle.readiness.connection_runtime_available is True
+    assert bundle.readiness.tenant_connections_rehydrated is True
     assert bundle.wiring is not None
     slack = bundle.wiring.connection_registry.resolve(
         tenant_id=_TENANT,
@@ -341,6 +342,55 @@ def test_host_rehydrates_slack_by_identity_with_another_tenant_connection(
                 provider_id="other-provider",
                 integration_kind=IntegrationCategory.ISSUE_TRACKER,
             )
+
+
+def test_host_rehydrates_other_provider_without_any_slack_configuration() -> None:
+    store = InMemoryDocumentStore()
+    settings = LocalWorkspaceBackendSettings(
+        data_home="/tmp/lkw-other-provider-only",
+        connected_source_opaque_ref_signing_key=_SIGNING_KEY,
+        tenant_connection_bootstrap_tenant_ids=(_TENANT,),
+    )
+    repo, service, config, mutation_engine, indexing, settings = _host_services(store, settings)
+    DocumentStoreTenantConnectionRepository(store).create(
+        _durable_connection(
+            connection_ref="conn.other-provider",
+            provider_id="other-provider",
+            integration_kind=IntegrationCategory.ISSUE_TRACKER,
+            credential_ref="secrets/tenant-a/other",
+        )
+    )
+    factory_registry = TenantConnectionIntegrationFactoryRegistry(
+        [
+            (
+                "other-provider",
+                IntegrationCategory.ISSUE_TRACKER,
+                _OtherProviderFactory(),  # type: ignore[arg-type]
+            ),
+        ]
+    )
+
+    bundle = build_connected_source_host_bundle(
+        settings=settings,
+        repository=repo,
+        workspace_service=service,
+        configuration_service=config,
+        mutation_engine=mutation_engine,
+        indexing_service=indexing,
+        tenant_connection_secrets_store=_RecordingSecretsStore(),
+        tenant_connection_factory_registry=factory_registry,
+    )
+
+    assert bundle.wiring is not None
+    assert bundle.slack_integration is None
+    assert bundle.readiness.connection_runtime_available is True
+    assert bundle.readiness.tenant_connections_rehydrated is True
+    assert bundle.wiring.connection_registry.resolve(
+        tenant_id=_TENANT,
+        connection_ref="conn.other-provider",
+        provider_id="other-provider",
+        integration_kind=IntegrationCategory.ISSUE_TRACKER,
+    )
 
 
 def test_missing_signing_key_returns_no_wiring() -> None:

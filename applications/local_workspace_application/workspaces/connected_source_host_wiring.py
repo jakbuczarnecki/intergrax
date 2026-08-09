@@ -67,6 +67,7 @@ class ConnectedSourceHostReadiness:
     tenant_id: str | None
     connection_ref: str | None
     reason: str | None = None
+    tenant_connections_rehydrated: bool = False
 
     @property
     def connection_runtime_available(self) -> bool:
@@ -91,10 +92,19 @@ class ConnectedSourceHostBundle:
 
 
 def connected_source_considered_for_host(settings: LocalWorkspaceBackendSettings) -> bool:
-    """Return whether the legacy local connected-source bootstrap is configured."""
+    """Return whether generic or legacy connected-source bootstrap is configured."""
     return bool(
-        settings.connected_source_opaque_ref_signing_key.strip()
-        or settings.slack_companion_enabled
+        settings.tenant_connection_bootstrap_tenant_ids
+        or settings.connected_source_opaque_ref_signing_key.strip()
+        or _legacy_local_bootstrap_considered(settings)
+    )
+
+
+# LEGACY_LOCAL_BOOTSTRAP: these settings are compatibility-only and are not
+# consulted by the durable provider-neutral bootstrap below.
+def _legacy_local_bootstrap_considered(settings: LocalWorkspaceBackendSettings) -> bool:
+    return bool(
+        settings.slack_companion_enabled
         or settings.slack_tenant_id.strip()
         or settings.connected_source_slack_connection_ref.strip()
     )
@@ -166,9 +176,25 @@ def build_connected_source_host_bundle(
         tenant_connection_factory_registry
         or build_default_vendor_knowledge_connection_factory_registry()
     )
+    legacy_local_integration = legacy_local_integration or slack_integration
     legacy_local_bootstrap = legacy_local_bootstrap or _bootstrap_from_legacy_integration(
-        legacy_local_integration or slack_integration
+        legacy_local_integration
     )
+    production_tenant_ids = tuple(
+        dict.fromkeys(
+            tenant_id.strip()
+            for tenant_id in settings.tenant_connection_bootstrap_tenant_ids
+            if tenant_id.strip()
+        )
+    )
+    if production_tenant_ids:
+        tenant_id = None
+        connection_ref = None
+    else:
+        tenant_id, connection_ref = resolve_connected_source_host_mapping(settings)
+    integration = legacy_local_integration
+    registered_results = []
+
     if not connected_source_considered_for_host(settings):
         return ConnectedSourceHostBundle(
             wiring=None,
@@ -202,23 +228,33 @@ def build_connected_source_host_bundle(
             hybrid_ask_connection_registry=registry,
         )
 
-    tenant_id, connection_ref = resolve_connected_source_host_mapping(settings)
-    integration = legacy_local_integration or slack_integration
-    rehydrated = False
-    if tenant_id and connection_ref:
-        persisted_connection = connection_repository.get(
-            tenant_id=tenant_id,
-            connection_ref=connection_ref,
+    if tenant_connection_secrets_store is not None:
+        rehydrator = TenantConnectionRehydrator(
+            repository=connection_repository,
+            secrets_store=tenant_connection_secrets_store,
+            integration_factory=factory_registry,
+            connection_registry=registry,
         )
-        if persisted_connection is not None:
-            integration = None
-            if tenant_connection_secrets_store is not None:
-                rehydration = TenantConnectionRehydrator(
-                    repository=connection_repository,
-                    secrets_store=tenant_connection_secrets_store,
-                    integration_factory=factory_registry,
-                    connection_registry=registry,
-                ).rehydrate_tenant(tenant_id=tenant_id)
+        if production_tenant_ids:
+            for production_tenant_id in production_tenant_ids:
+                try:
+                    rehydration = rehydrator.rehydrate_tenant(
+                        tenant_id=production_tenant_id,
+                    )
+                except Exception:
+                    continue
+                registered_results.extend(
+                    result
+                    for result in rehydration
+                    if result.status is TenantConnectionRehydrationStatus.REGISTERED
+                )
+        elif tenant_id and connection_ref:
+            persisted_connection = connection_repository.get(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+            )
+            if persisted_connection is not None:
+                rehydration = rehydrator.rehydrate_tenant(tenant_id=tenant_id)
                 target_rehydration = next(
                     (
                         result
@@ -229,33 +265,38 @@ def build_connected_source_host_bundle(
                             and result.connection.provider_id == persisted_connection.provider_id
                             and result.connection.integration_kind
                             == persisted_connection.integration_kind
+                            and result.status is TenantConnectionRehydrationStatus.REGISTERED
                         )
                     ),
                     None,
                 )
-                if (
-                    target_rehydration is not None
-                    and target_rehydration.status
-                    is TenantConnectionRehydrationStatus.REGISTERED
-                ):
+                if target_rehydration is not None:
+                    registered_results.append(target_rehydration)
                     integration = registry.resolve(
                         tenant_id=tenant_id,
                         connection_ref=connection_ref,
                         provider_id=persisted_connection.provider_id,
                         integration_kind=persisted_connection.integration_kind,
                     )
-                    rehydrated = True
+
+    rehydrated = bool(registered_results)
+    if rehydrated:
+        first_registered = registered_results[0].connection
+        if production_tenant_ids:
+            integration = None
+            tenant_id = first_registered.tenant_id
+            connection_ref = first_registered.connection_ref
         else:
-            legacy_local_bootstrap = (
-                legacy_local_bootstrap
-                or build_default_vendor_knowledge_legacy_local_bootstrap()
+            # A durable legacy target remains the compatibility projection.
+            integration = integration or registry.resolve(
+                tenant_id=first_registered.tenant_id,
+                connection_ref=first_registered.connection_ref,
+                provider_id=first_registered.provider_id,
+                integration_kind=first_registered.integration_kind,
             )
-            integration = integration or (
-                legacy_local_bootstrap.integration
-                if legacy_local_bootstrap is not None
-                else None
-            )
-    else:
+
+    # LEGACY_LOCAL_BOOTSTRAP: local injected/env Slack compatibility fallback.
+    if not rehydrated and not production_tenant_ids:
         legacy_local_bootstrap = (
             legacy_local_bootstrap
             or build_default_vendor_knowledge_legacy_local_bootstrap()
@@ -265,7 +306,8 @@ def build_connected_source_host_bundle(
             if legacy_local_bootstrap is not None
             else None
         )
-    if integration is None:
+
+    if integration is None and not rehydrated:
         return ConnectedSourceHostBundle(
             wiring=None,
             slack_integration=None,
@@ -276,13 +318,17 @@ def build_connected_source_host_bundle(
                 mapping_complete=False,
                 tenant_id=tenant_id,
                 connection_ref=connection_ref,
-                reason="slack_integration_unavailable",
+                reason=(
+                    "tenant_connection_runtime_unavailable"
+                    if production_tenant_ids
+                    else "slack_integration_unavailable"
+                ),
             ),
             hybrid_ask_connection_registry=registry,
         )
 
     mapping_complete = bool(tenant_id and connection_ref)
-    if not mapping_complete:
+    if not rehydrated and not mapping_complete:
         return ConnectedSourceHostBundle(
             wiring=None,
             slack_integration=integration,
@@ -341,10 +387,11 @@ def build_connected_source_host_bundle(
         readiness=ConnectedSourceHostReadiness(
             state=ConnectedSourceReadinessState.READY,
             signing_key_configured=True,
-            slack_integration_available=True,
-            mapping_complete=True,
+            slack_integration_available=rehydrated or integration is not None,
+            mapping_complete=mapping_complete or rehydrated,
             tenant_id=tenant_id,
             connection_ref=connection_ref,
+            tenant_connections_rehydrated=rehydrated,
         ),
         hybrid_ask_connection_registry=registry,
         tenant_connection_port=connection_port,

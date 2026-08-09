@@ -531,6 +531,7 @@ def mount_managed_workspace_routes(
     connected_wiring = connected_source_wiring
     from local_workspace_application.workspaces.connected_source_host_wiring import (
         build_connected_source_host_bundle,
+        resolve_connected_source_host_mapping,
     )
 
     host_bundle = build_connected_source_host_bundle(
@@ -567,8 +568,16 @@ def mount_managed_workspace_routes(
         else host_bundle.hybrid_ask_connection_registry
     )
     recovery_tenant_ids: tuple[str, ...] = ()
-    if connected_wiring is not None and settings.slack_tenant_id.strip():
-        recovery_tenant_ids = (settings.slack_tenant_id.strip(),)
+    if connected_wiring is not None:
+        legacy_tenant_id, _ = resolve_connected_source_host_mapping(settings)
+        recovery_tenant_ids = tuple(
+            dict.fromkeys(
+                (
+                    *settings.tenant_connection_bootstrap_tenant_ids,
+                    *((legacy_tenant_id,) if legacy_tenant_id else ()),
+                )
+            )
+        )
     sync_service = ManagedWorkspaceSyncService(
         repository,
         task_executor,
