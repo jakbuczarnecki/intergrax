@@ -2,9 +2,9 @@
 
 > **Application dependencies:** each Tier-3 host owns applications/<app>/pyproject.toml (Intergrax workspace package + selected extras). Sync with uv sync --project applications/<app>. Canon: [docs/project/architecture/APPLICATION_DEPENDENCY_MODEL.md](../../architecture/APPLICATION_DEPENDENCY_MODEL.md).
 
-**Last updated:** 2026-06-17 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
+**Last updated:** 2026-08-09 · RAG-PLUGIN-4 · Phase P-Ext · **H-APP** · §10 policy rules · §11 runtime signals (OBS-EVOL-9)
 
-Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering Tier-1 contracts with Tier-0 shared types). Shipped providers and third-party pip packages register through the same protocols.
+Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry points. Shipped providers and third-party pip packages register through the same discovery protocol.
 
 | Layer | Entry point group | Protocol | Register function | Status |
 |-------|-------------------|----------|-------------------|--------|
@@ -12,6 +12,9 @@ Intergrax exposes four **plugin catalogs** (three Tier-0 + Context Engineering T
 | Tool | `intergrax.tools` | `ToolPlugin` | `register_tool_plugin()` | **Done** |
 | Skill | `intergrax.skills` | `SkillPlugin` | `register_skill_plugin()` | **Done** |
 | Context | `intergrax.context` | `ContextPlugin` | `register_context_plugin()` | **Planned** — [CE-2](../../maintainers/plans/CONTEXT_ENGINEERING.md) |
+| RAG chunker | `intergrax.rag.chunkers` | `BaseChunkingStrategy` | RAG bootstrap registry | **Done** |
+| RAG retriever | `intergrax.rag.retrievers` | `BaseRetriever` | RAG bootstrap registry | **Done** |
+| RAG reranker | `intergrax.rag.rerankers` | `BaseReranker` | RAG bootstrap registry | **Done** |
 
 **Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources — see [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../../maintainers/plans/CONTEXT_ENGINEERING.md). **Invariants:** [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) — Tier-0/Tier-2 boundaries (`SYS-INV-*`).
 
@@ -214,9 +217,24 @@ my_tools = "my_pkg.tool_plugin:MyToolPlugin"
 
 [project.entry-points."intergrax.skills"]
 my_skills = "my_pkg.skill_plugin:MySkillPlugin"
+
+[project.entry-points."intergrax.rag.chunkers"]
+my_recursive = "my_pkg.chunking:MyRecursiveChunker"
+
+[project.entry-points."intergrax.rag.retrievers"]
+my_retriever = "my_pkg.retrieval:MyRetriever"
+
+[project.entry-points."intergrax.rag.rerankers"]
+my_reranker = "my_pkg.reranking:MyReranker"
 ```
 
-Enable discovery: `bootstrap_catalogs(discover_entry_points=True)`.
+Enable discovery during RAG bootstrap with `INTERGRAX_DISCOVER_PLUGINS=true` or the
+bootstrap `discover_entry_points=True` argument. Select the stable component IDs
+through the normal profile configuration, for example
+`RagProfile(chunking_strategy_id="my_recursive", retriever_id="my_retriever",
+reranker_id="my_reranker")`. RAG plugins must implement the existing contract and
+are registered after built-ins; duplicate IDs fail instead of silently replacing
+core defaults.
 
 Catalog slug conflicts when a plugin replaces a shipped provider:
 

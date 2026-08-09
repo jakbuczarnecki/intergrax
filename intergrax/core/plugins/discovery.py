@@ -22,6 +22,9 @@ EP_TOOLS = "intergrax.tools"
 EP_SKILLS = "intergrax.skills"
 EP_MEMORY_STORES = "intergrax.memory_stores"
 EP_CONTEXT = "intergrax.context"
+EP_RAG_CHUNKERS = "intergrax.rag.chunkers"
+EP_RAG_RETRIEVERS = "intergrax.rag.retrievers"
+EP_RAG_RERANKERS = "intergrax.rag.rerankers"
 
 T = TypeVar("T")
 

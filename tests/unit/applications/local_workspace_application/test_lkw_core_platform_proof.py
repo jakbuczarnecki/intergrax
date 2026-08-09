@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import json
+import shutil
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -326,6 +328,140 @@ def test_wrapper_thinness(
             assert forbidden not in text
 
 
+def test_canonical_compose_input_set_is_deterministic_and_valid(
+    core: ModuleType,
+) -> None:
+    assert core._SAMPLE_DOCS_DIR == core._PROOF_DOCS_DIR
+    assert core.discover_compose_files() == [
+        core._BASE_COMPOSE,
+        core._ES_COMPOSE,
+        core._KAFKA_COMPOSE,
+        core._MONGODB_COMPOSE,
+        core._DOCKER_DIR / "docker-compose.sentry.yml",
+    ]
+
+    if shutil.which("docker") is None:
+        pytest.skip("docker is required for canonical compose validation")
+
+    completed = core.run_command(
+        [*core.compose_args(core.discover_compose_files()), "config"],
+        cwd=core._REPO_ROOT,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+    rendered = core.run_command(
+        [*core.compose_args(core.discover_compose_files()), "config", "--format", "json"],
+        cwd=core._REPO_ROOT,
+        timeout=120,
+    )
+    assert rendered.returncode == 0, rendered.stderr
+    services = json.loads(rendered.stdout)["services"]
+    local_workspace = services["local_workspace"]
+    assert (
+        local_workspace["environment"]["INTERGRAX_ALLOWED_READ_ROOTS"]
+        == "/data/user_docs"
+    )
+    assert (
+        local_workspace["environment"]["INTERGRAX_RAG_CHUNKING_STRATEGY"]
+        == "recursive"
+    )
+    assert (
+        services["lkw-background-worker"]["environment"][
+            "INTERGRAX_RAG_CHUNKING_STRATEGY"
+        ]
+        == "recursive"
+    )
+    assert any(
+        volume["target"] == "/data/user_docs"
+        for volume in local_workspace["volumes"]
+    )
+
+
+def test_watcher_uses_materialized_runtime_context(core: ModuleType) -> None:
+    watcher = (
+        _REPO_ROOT
+        / "applications/local_workspace_application/docker/file-watcher-e2e.compose.yml"
+    )
+    text = watcher.read_text(encoding="utf-8")
+    assert "context: ./runtime-context" in text
+    assert "context: ../../.." not in text
+    assert "dockerfile: applications/local_workspace_application/docker/Dockerfile" not in text
+
+
+def test_startup_materializes_runtime_context_before_build(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    monkeypatch.setattr(core, "materialize_runtime_context", lambda: events.append("materialize"))
+    monkeypatch.setattr(core, "compose_config", lambda *_a, **_k: events.append("config"))
+    monkeypatch.setattr(core, "compose_down", lambda *_a, **_k: events.append("down"))
+    monkeypatch.setattr(core, "clear_sentry_runtime_state", lambda: events.append("clear"))
+    monkeypatch.setattr(core, "compose_up", lambda *_a, **_k: events.append("build"))
+    monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
+
+    core.phase_startup(_config(core))
+
+    assert events == ["materialize", "config", "down", "clear", "build"]
+
+
+def test_materialization_uses_canonical_application_builder(
+    core: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], dict[str, Any]]] = []
+
+    def fake_run_command(args: Any, **kwargs: Any) -> Any:
+        calls.append((list(args), kwargs))
+        return type("Completed", (), {"returncode": 0})()
+
+    monkeypatch.setattr(core, "run_command", fake_run_command)
+    core.materialize_runtime_context()
+
+    assert calls == [
+        (
+            [
+                "uv",
+                "run",
+                "python",
+                str(core._APPLICATION_IMAGE_BUILDER),
+                "--application",
+                "local_workspace_application",
+                "--context-dir",
+                str(core._RUNTIME_CONTEXT_DIR),
+                "--materialize-only",
+            ],
+            {"cwd": core._REPO_ROOT, "timeout": 300},
+        )
+    ]
+
+
+def test_background_task_search_payload_preserves_workspace_scope() -> None:
+    child_script = _SCRIPT.parent / "run-lkw-background-task-proof.py"
+    spec = importlib.util.spec_from_file_location(
+        "run_lkw_background_task_proof",
+        child_script,
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    child = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(child)
+
+    payload = child.build_background_task_search_payload(
+        tenant_id="lkw-background-proof",
+        marker="marker",
+        run_id="run-1",
+        task_id="task-1",
+        correlation_id="corr-1",
+        collection_id="local_workspace",
+    )
+
+    assert payload["workspace_id"] == "lkw-background-proof"
+    assert payload["metadata"]["workspace_id"] == "lkw-background-proof"
+    assert payload["metadata"]["collection_id"] == "local_workspace"
+
+
 def test_positive_ingest_and_missing_evidence(core: ModuleType) -> None:
     ok = {
         "metadata": {
@@ -519,12 +655,14 @@ def test_persistence_fails_closed_when_search_missing_reason(
     good_search = _search_response(evidence_count=2)
     bad_search = _search_response(include_reason=False, evidence_count=2)
     search_calls = {"n": 0}
+    index_bodies: list[Mapping[str, Any]] = []
 
     def fake_http_post_json(
         _url: str, body: Mapping[str, Any], **_kwargs: Any
     ) -> dict[str, Any]:
         capability = body.get("capability")
         if capability == "local.workspace.index":
+            index_bodies.append(body)
             return index_response
         if capability == "local.workspace.search":
             search_calls["n"] += 1
@@ -539,12 +677,22 @@ def test_persistence_fails_closed_when_search_missing_reason(
     monkeypatch.setattr(core, "wait_for_lkw_health", lambda *_a, **_k: None)
     monkeypatch.setattr(core, "http_post_json", fake_http_post_json)
     monkeypatch.setattr(core, "compose_restart", lambda *_a, **_k: None)
+    compose_up_calls: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+
+    def fake_compose_up(*args: Any, **kwargs: Any) -> None:
+        compose_up_calls.append((args, kwargs))
+
+    monkeypatch.setattr(core, "compose_up", fake_compose_up)
     monkeypatch.setattr(core, "_SAMPLE_DOCS_DIR", tmp_path)
 
     with pytest.raises(core.CoreProofError) as exc:
         core.phase_persistence(_config(core))
     assert exc.value.reason == "search_results_missing"
     assert search_calls["n"] == (1 if bad_position == "before" else 2)
+    assert index_bodies[0]["metadata"]["chunking_strategy_id"] == "recursive"
+    assert len(compose_up_calls) == 1
+    assert compose_up_calls[0][0][1] == ["local_workspace"]
+    assert compose_up_calls[0][1]["build"] is False
 
 
 def test_search_retrieve_ready_accepts_zero_hit_complete(core: ModuleType) -> None:

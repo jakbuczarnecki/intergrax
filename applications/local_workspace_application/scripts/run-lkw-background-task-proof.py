@@ -403,6 +403,37 @@ def _print_pass_output(
     print("direct_pymongo_from_lkw=false")
 
 
+def build_background_task_search_payload(
+    *,
+    tenant_id: str,
+    marker: str,
+    run_id: str,
+    task_id: str,
+    correlation_id: str,
+    collection_id: str,
+) -> dict[str, object]:
+    return {
+        "tenant_id": tenant_id,
+        "workspace_id": tenant_id,
+        "user_id": _PROOF_REQUESTED_BY,
+        "message": marker,
+        "capability": "local.workspace.search",
+        "metadata": {
+            "proof": "LKW_PLATFORM_PROOF",
+            "proof_helper": _PROOF_RUNNER,
+            "background_task_run_id": run_id,
+            "background_task_id": task_id,
+            "background_task_correlation_id": correlation_id,
+            "tenant_id": tenant_id,
+            "user_id": _PROOF_REQUESTED_BY,
+            "workspace_id": tenant_id,
+            "collection_id": collection_id,
+            "query": marker,
+            "top_k": 5,
+        },
+    }
+
+
 def main() -> int:
     args = _parse_args()
     base = args.base_url.rstrip("/")
@@ -485,24 +516,14 @@ def main() -> int:
     if not has_result:
         return _fail("task_result_missing")
 
-    search_body = {
-        "tenant_id": tenant_id,
-        "user_id": _PROOF_REQUESTED_BY,
-        "message": marker,
-        "capability": "local.workspace.search",
-        "metadata": {
-            "proof": "LKW_PLATFORM_PROOF",
-            "proof_helper": _PROOF_RUNNER,
-            "background_task_run_id": run_id,
-            "background_task_id": task_id,
-            "background_task_correlation_id": correlation_id,
-            "tenant_id": tenant_id,
-            "user_id": _PROOF_REQUESTED_BY,
-            "collection_id": collection_id,
-            "query": marker,
-            "top_k": 5,
-        },
-    }
+    search_body = build_background_task_search_payload(
+        tenant_id=tenant_id,
+        marker=marker,
+        run_id=run_id,
+        task_id=task_id,
+        correlation_id=correlation_id,
+        collection_id=collection_id,
+    )
     try:
         search_response = _request_json(
             f"{base}/v1/local_workspace/run",

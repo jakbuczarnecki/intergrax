@@ -10,8 +10,8 @@
 services:
   lkw-file-watcher:
     build:
-      context: ../../..
-      dockerfile: applications/local_workspace_application/docker/Dockerfile
+      context: ./runtime-context
+      dockerfile: Dockerfile
     image: local_workspace-application:latest
     command:
       - python

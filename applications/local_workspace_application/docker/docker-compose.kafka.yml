@@ -9,6 +9,8 @@
 services:
   local_workspace:
     environment:
+      INTERGRAX_ALLOWED_READ_ROOTS: /data/user_docs
+      INTERGRAX_RAG_CHUNKING_STRATEGY: recursive
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
@@ -51,6 +53,7 @@ services:
       LOCAL_WORKSPACE_ENABLE_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_KAFKA_MESSAGE_BUS: "true"
       LOCAL_WORKSPACE_ENABLE_REDIS: "true"
+      INTERGRAX_RAG_CHUNKING_STRATEGY: recursive
       LOCAL_WORKSPACE_VECTOR_STORE: qdrant
       INTERGRAX_QDRANT_URL: http://qdrant:6333
       INTERGRAX_QDRANT_COLLECTION: local_workspace
@@ -132,5 +135,7 @@ services:
       - lkw-kafka-topics
 
 volumes:
+  lkw_sqlite:
+  lkw_shadow:
   lkw_redis_data:
   lkw_kafka_data:

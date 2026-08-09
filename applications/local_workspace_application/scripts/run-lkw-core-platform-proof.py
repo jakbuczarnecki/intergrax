@@ -32,10 +32,13 @@ _BASE_COMPOSE = _DOCKER_DIR / "docker-compose.yml"
 _ES_COMPOSE = _DOCKER_DIR / "docker-compose.elasticsearch.yml"
 _KAFKA_COMPOSE = _DOCKER_DIR / "docker-compose.kafka.yml"
 _MONGODB_COMPOSE = _DOCKER_DIR / "docker-compose.mongodb.yml"
+_SENTRY_COMPOSE = _DOCKER_DIR / "docker-compose.sentry.yml"
 _WATCHER_COMPOSE = _DOCKER_DIR / "file-watcher-e2e.compose.yml"
+_RUNTIME_CONTEXT_DIR = _DOCKER_DIR / "runtime-context"
+_APPLICATION_IMAGE_BUILDER = _REPO_ROOT / "scripts" / "build" / "build_application_image.py"
 _SENTRY_PROOF_DIR = _DOCKER_DIR / "sentry-proof"
-_SAMPLE_DOCS_DIR = _APP_DIR / "sample_docs"
 _PROOF_DOCS_DIR = _APP_DIR / ".proof_docs"
+_SAMPLE_DOCS_DIR = _PROOF_DOCS_DIR
 _WATCHER_STATE_DIR = _APP_DIR / ".file_watcher_e2e_state"
 
 _SENTRY_PROOF_PY = _SCRIPT_DIR / "run-sentry-observability-proof.py"
@@ -327,10 +330,13 @@ def wait_for_lkw_health(base_url: str, *, timeout_seconds: int) -> None:
 
 
 def discover_compose_files() -> list[Path]:
-    files = [_BASE_COMPOSE]
-    extras = sorted(_DOCKER_DIR.glob("docker-compose.*.yml"))
-    files.extend(extras)
-    return files
+    return [
+        _BASE_COMPOSE,
+        _ES_COMPOSE,
+        _KAFKA_COMPOSE,
+        _MONGODB_COMPOSE,
+        _SENTRY_COMPOSE,
+    ]
 
 
 def compose_args(compose_files: Sequence[Path]) -> list[str]:
@@ -351,6 +357,30 @@ def compose_config(compose_files: Sequence[Path], *, cwd: Path) -> None:
             "compose_config_failed",
             child_exit_code=completed.returncode,
         )
+
+
+def materialize_runtime_context() -> None:
+    completed = run_command(
+        [
+            "uv",
+            "run",
+            "python",
+            str(_APPLICATION_IMAGE_BUILDER),
+            "--application",
+            "local_workspace_application",
+            "--context-dir",
+            str(_RUNTIME_CONTEXT_DIR),
+            "--materialize-only",
+        ],
+        cwd=_REPO_ROOT,
+        timeout=300,
+    )
+    if completed.returncode != 0:
+        raise CoreProofError(
+            "runtime_context_materialization_failed",
+            child_exit_code=completed.returncode,
+        )
+    _print_kv("runtime_context_materialized", "true")
 
 
 def compose_up(
@@ -896,6 +926,7 @@ def phase_startup(config: ProofConfig) -> PhaseOutcome:
     for path in compose_files:
         if not path.is_file():
             raise CoreProofError("required_path_missing")
+    materialize_runtime_context()
     compose_config(compose_files, cwd=_REPO_ROOT)
     compose_down(compose_files, cwd=_REPO_ROOT, volumes=True, remove_orphans=True)
     clear_sentry_runtime_state()
@@ -1014,6 +1045,7 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
         ),
         encoding="utf-8",
     )
+    compose_up(compose_files, ["local_workspace"], cwd=_REPO_ROOT, build=False)
     wait_for_lkw_health(config.base_url, timeout_seconds=config.phase_timeout_seconds)
     index_response = http_post_json(
         f"{config.base_url.rstrip('/')}/v1/local_workspace/run",
@@ -1025,6 +1057,7 @@ def phase_persistence(config: ProofConfig) -> PhaseOutcome:
             "metadata": {
                 "source_paths": [container_source_path],
                 "collection_id": collection_id,
+                "chunking_strategy_id": "recursive",
             },
         },
         timeout=300.0,
