@@ -108,7 +108,7 @@ The closeout makes no RAG implementation or test claim.
 - Boundary audit — `PASS`
 - Packaging declaration check — `PASS`
 - LangGraph guard — `EXPECTED_EXISTING_FINDINGS / NON_BLOCKING_FOR_7D`
-- Documentation diff — pending final staging check
+- Documentation diff/staging validation — `PASS`
 
 **LCI-7D verdict:** `READY_FOR_REVIEW`
 **Next:** `FINAL SYSTEM GATE`, then `LCI-8A` after acceptance
