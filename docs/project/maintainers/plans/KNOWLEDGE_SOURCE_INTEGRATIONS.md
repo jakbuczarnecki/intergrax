@@ -69,10 +69,40 @@ traceability, but any future sequencing that conflicts with this section is
 **SUPERSEDED**.
 
 **CURRENT:**
-`VENDOR-KNOWLEDGE-PLATFORM-CLOSEOUT-1` — `ACCEPTED / CLOSED`
+`PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT` — `ACCEPTED / CLOSED`
 
 **NEXT:**
-`PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT`
+`NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED`
+
+### Provider productionization final closeout
+
+```text
+PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT
+  ACCEPTED / CLOSED
+
+PROVIDER PRODUCTIONIZATION TRACK
+  ACCEPTED / CLOSED
+
+NEXT:
+  NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED
+```
+
+The implemented Slack, Microsoft Graph, Google Workspace, Jira and
+Confluence source identities coexist behind provider-neutral application
+discovery, binding, Search and Ask paths. Databricks remains a connection
+foundation only; it has no Vendor Knowledge source contract or plugin.
+
+Partial capabilities remain partial: Graph Drive remains
+`FOUNDATION_ONLY` with the exact
+`REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY` boundary, and Google
+Drive preserves the same binary-content extraction requirement. Atlan and
+Power BI remain `NOT IMPLEMENTED`, `DEFERRED` and `UNSUPPORTED`.
+
+This closeout makes no universal mode-support claim, no complete ACL-coverage
+claim (`ACL completeness = UNPROVEN`), and no commercial GA/SLA claim. The
+security closeout is accepted for tenant, workspace, connection, binding,
+credential, opaque-reference, mismatch, scoped-cleanup, Search-evidence and
+Ask-evidence isolation boundaries.
 
 VK-8 is closed by the focused product-level proof for Slack
 `slack_conversation` and Microsoft Graph `teams_chat` coexisting in the same
@@ -344,7 +374,7 @@ Power BI
   external research:      DEFERRED
 
 PROVIDER-PROD-5: ACCEPTED / CLOSED
-NEXT: PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT
+NEXT (superseded by final closeout): PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT
 ```
 
 The Atlan and Power BI research deferral means that no repository-proven

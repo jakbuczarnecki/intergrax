@@ -42,6 +42,31 @@ Microsoft Graph Drive, Mail, Teams Channel, Teams Chat and Calendar live access
 and Slack `slack_conversation` live access are `ACCEPTED / CLOSED`; all other
 live provider/source-kind rows remain conservative and unimplemented.
 
+## Provider productionization final closeout
+
+```text
+PROVIDER-PROD-6-CROSS-PROVIDER-APPLICATION-CLOSEOUT
+  ACCEPTED / CLOSED
+
+PROVIDER PRODUCTIONIZATION TRACK
+  ACCEPTED / CLOSED
+
+NEXT:
+  NONE — PROVIDER PRODUCTIONIZATION TRACK CLOSED
+```
+
+Implemented Slack, Microsoft Graph, Google Workspace, Jira and Confluence
+source identities coexist behind provider-neutral application paths. Partial
+capabilities remain partial: Graph Drive remains `FOUNDATION_ONLY` with
+`REQUIRES_GENERIC_BINARY_CONTENT_EXTRACTION_CAPABILITY`, and Google Drive
+preserves the same exact boundary. Databricks remains
+`FOUNDATION_ONLY` connection infrastructure only, with no Vendor Knowledge
+source contract or plugin. Atlan and Power BI remain
+`NOT IMPLEMENTED` / `DEFERRED` / `UNSUPPORTED`.
+
+The closeout makes no universal mode-support claim, no complete ACL-coverage
+claim (`ACL completeness = UNPROVEN`), and no commercial GA/SLA claim.
+
 The canonical mode names for this roadmap are **Indexed / RAG**, **Durable /
 Storage / Materialization** and **Live / Realtime**. The machine-readable
 column identifiers `indexed`, `durable` and `live` below are retained for
