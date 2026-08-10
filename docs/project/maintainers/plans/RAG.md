@@ -52,8 +52,10 @@ canonical source of truth is `docs/project/architecture/RAG.md`; this plan
 must not be used to infer live provider qualification or a full-production
 decision.
 
-Next roadmap items are **RAG-DEV-12**, **RAG-PROD-13** and **RAG-PROD-14**.
-RAG-DEV-12 is a future developer/plugin guide and is not started by DOCS-11.
+The historical roadmap items **RAG-PROD-13** and **RAG-PROD-14** are closed;
+the final decision is recorded in
+[`qualification/RAG_PRODUCTION_HANDOFF.md`](../qualification/RAG_PRODUCTION_HANDOFF.md).
+This plan does not create or imply a next RAG roadmap item.
 
 The detailed historical audit register remains in
 [`satellites/RAG_audit_history.md`](satellites/RAG_audit_history.md).

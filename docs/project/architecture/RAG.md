@@ -4,12 +4,12 @@
 **Scope:** native Intergrax RAG architecture and qualification boundary after RAG-FINAL-10A–10D
 **Implementation:** `intergrax/rag`
 **Plan/history:** [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md)
-**Next roadmap items:** RAG-DEV-12, RAG-PROD-13, RAG-PROD-14
+**Production handoff:** [`RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md)
 
 This document is the current source of truth for RAG architecture, provider
 taxonomy, qualification status and failure boundaries. The accepted RAG-PROD-13
-result is recorded here and in the linked qualification artifact; RAG-PROD-14
-remains ready and not started.
+result and the closed RAG-PROD-14 production handoff are recorded here and in
+the linked qualification artifacts.
 
 ## Navigation and documentation inventory
 
@@ -18,6 +18,7 @@ remains ready and not started.
 | **CANONICAL** | `docs/project/architecture/RAG.md` | Current RAG architecture and qualification |
 | **DEVELOPER GUIDE** | [`../technical/guides/RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) | RAG extension topology and authoring contracts |
 | **QUALIFICATION RECORD** | [`../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md`](../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md) | RAG-PROD-13 executable production evidence |
+| **FINAL HANDOFF** | [`../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md`](../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) | RAG-PROD-14 final production decision and deployment contract |
 | **SATELLITE** | [`satellites/RAG_pipelines_detail.md`](satellites/RAG_pipelines_detail.md) | Pipeline/module detail; current status points here |
 | **SATELLITE** | [`../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | `KnowledgeDocument` ABI |
 | **HISTORICAL / PLAN** | [`../maintainers/plans/RAG.md`](../maintainers/plans/RAG.md) | Implementation history and roadmap; not runtime truth |
@@ -259,7 +260,7 @@ behavior for changed sources, not append behavior.
 | Source ownership | Qualified | exact scoped enumeration | providers without lookup fail closed |
 | Stable vector providers | Qdrant live-qualified; PgVector/Chroma offline contract + blocked environment | RAG-PROD-13 live Qdrant plus native contracts | PgVector/Chroma live environments unavailable |
 | Namespace/workspace isolation | Contract-qualified; Qdrant live-qualified | native scope/harness and RAG-PROD-13 Qdrant gate | other stable providers remain offline-only |
-| Plugins | Qualified extension surface | native registry/plugin gate | authoring guide is RAG-DEV-12 |
+| Plugins | Qualified extension surface | native registry/plugin gate | [`RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) |
 | LangChain optionality | Qualified architecture | native ABI and boundary docs | optional compatibility paths remain |
 
 Live Neo4j remains `BLOCKED_ENVIRONMENT`; live GraphRAG generation fencing is
@@ -277,9 +278,9 @@ The current evidence still does **not** claim:
 - transactional or exactly-once source replacement.
 
 The global status remains **PRODUCTION_QUALIFIED_WITH_LIMITATIONS**.
-RAG-PROD-13 evidence is recorded in the linked qualification artifact;
-RAG-PROD-14 remains ready and not started. RAG-DEV-12 owns the future
-plugin/developer guide. No DOCS-11 text starts that work.
+RAG-PROD-13 evidence and the closed RAG-PROD-14 handoff are recorded in the
+linked qualification artifacts. The production handoff is closed; no new RAG
+roadmap item is implied by this document.
 
 ## 9. LangChain boundary
 
