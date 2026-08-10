@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from intergrax.integrations._shared.catalog_object_storage import CatalogObjectStorage
-from intergrax.integrations._shared.cloud_task_queue import CloudTaskQueue
 from intergrax.integrations._shared.p2.clients import SqlRelationalStore
 from intergrax.integrations._shared.p2.configs import HttpIntegrationConfig, QueueIntegrationConfig, SqlIntegrationConfig
 from intergrax.integrations._shared.p2.factories import (
@@ -536,7 +535,7 @@ def _open_temporal_client(config: QueueIntegrationConfig) -> Any:
     if not config.connection_string:
         raise IntegrationConfigurationError("Temporal requires INTERGRAX_TEMPORAL_CONNECTION_STRING")
     try:
-        from temporalio.client import Client
+        __import__("temporalio.client")
     except ImportError as exc:
         raise IntegrationConfigurationError("Temporal requires temporalio") from exc
 
