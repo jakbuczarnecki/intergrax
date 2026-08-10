@@ -157,7 +157,7 @@ Facts verified against repository state at inventory time.
 
 **LCI-7B evidence:** [`satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md`](satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md) records the default-install proof: zero `langchain*` and `langgraph*` distributions, native/core/RAG/Nexus/Harness smoke PASS.
 
-**LCI-7C evidence:** [`satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md`](satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md) records PASS for all five compatibility families while native defaults remain native. The earlier Torch/Transformers failure is recorded there as non-reproducible, not as an active known issue.
+**LCI-7C evidence:** [`satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md`](satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md) records PASS for all five compatibility families while native defaults remain native. It also records the later deterministic Torch/Transformers incompatibility, caused by Transformers v5 resolving against supported torch 2.2.2, repaired with `transformers>=4.41,<5`, and successfully requalified.
 
 ---
 
