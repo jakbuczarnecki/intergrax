@@ -4,7 +4,7 @@
 **Production deployment:** `APPROVED WITH EXPLICIT LIMITATIONS`
 **Canonical runtime defect:** `NONE OPEN FROM PROD-13`
 **Qualification date:** 2026-08-10
-**Evidence owner:** RAG-PROD-13 qualification record
+**Evidence owner:** RAG-PROD-13 and append-only RAG-LIVE-15A-R2 records
 
 This is the final RAG-PROD-14 handoff. It closes the qualification decision; it
 does not promote the platform to unrestricted `PRODUCTION_QUALIFIED`.
@@ -22,6 +22,11 @@ development history. The commits after it were reviewed as follows:
   identity, scope, ownership, replacement or generation semantics.
 
 No post-PROD-13 commit materially changed canonical RAG behavior.
+
+RAG-LIVE-15A-R2 subsequently qualified the native PgVector provider against
+the repository-owned PostgreSQL + pgvector Docker service. This is an
+append-only live evidence update; it does not rewrite the historical PROD-13
+record.
 
 ## Approved production surface
 
@@ -48,7 +53,8 @@ contract evidence, canonical harness evidence and the Qdrant live gate.
 
 ## Live-qualified surface
 
-`LIVE_QUALIFIED` applies to **Qdrant only**. The live scope covered:
+`LIVE_QUALIFIED` applies to **Qdrant and PgVector** under their separate
+qualification records. The Qdrant live scope covered:
 
 - tenant, namespace, workspace and combined-scope isolation;
 - exact source ownership;
@@ -59,13 +65,19 @@ contract evidence, canonical harness evidence and the Qdrant live gate.
 - bounded soak.
 
 This evidence does not generalize to every Qdrant deployment, network or
-storage topology, to PgVector or Chroma, or to universal production capacity
-and SLO claims.
+storage topology, or to universal production capacity and SLO claims.
+
+The PgVector live scope covered the repository-owned PostgreSQL + pgvector
+Docker service, explicit native vector dimension, server-side tenant,
+namespace and workspace isolation, exact logical-ID ownership, source
+replacement, same-basename preservation, scoped delete, metadata filtering,
+fail-closed behavior and a bounded 50-record/5-round soak. See the
+[`RAG-LIVE-15A-R2 record`](RAG_PGVECTOR_LIVE_QUALIFICATION.md).
 
 ## Offline and harness-only surfaces
 
-- **PgVector:** `QUALIFIED_OFFLINE_CONTRACT`; live =
-  `BLOCKED_ENVIRONMENT`.
+- **PgVector:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` for the
+  repository-owned qualification environment.
 - **Chroma:** `QUALIFIED_OFFLINE_CONTRACT`; live =
   `BLOCKED_ENVIRONMENT`.
 - **Canonical GraphRAG:** `CANONICAL_HARNESS_QUALIFIED`.
@@ -119,7 +131,7 @@ Production operators must:
 | Distributed cross-store transaction | Vector, TOC and graph writes are not one transaction |
 | Automatic rollback of every partial publication | Recovery is an operator/application responsibility |
 | Zero stale physical records | Reclamation may be required |
-| Live PgVector or Chroma behavior | Not live-qualified in PROD-13 |
+| Universal live PgVector or Chroma behavior | Qualification is environment-specific; Chroma remains unqualified |
 | Live Neo4j generation fencing | No live evidence |
 | Universal Qdrant performance | No universal capacity or SLO claim |
 | Multi-process safety with the default coordinator | Durable coordination is required |
@@ -132,7 +144,7 @@ See [`RAG.md`](../../architecture/RAG.md) for the detailed capability matrix.
 | Provider | Catalog | Offline evidence | Live deployment decision |
 |---|---|---|---|
 | Qdrant | `STABLE` | Qualified | Live-qualified; recommended when the qualified live path is required |
-| PgVector | `STABLE` | Qualified | Live not qualified in the PROD-13 environment |
+| PgVector | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15A-R2 in the repository-owned environment |
 | Chroma | `STABLE` | Qualified | Live not qualified in the PROD-13 environment |
 | Weaviate / LanceDB / Typesense | `BETA` | — | Source replacement unsupported |
 | Pinecone / Milvus / Vespa | `BETA` | — | No live qualification claim |
@@ -188,11 +200,13 @@ optional implementation behind native contracts.
    taxonomy.
 2. [`RAG_PRODUCTION_QUALIFICATION.md`](RAG_PRODUCTION_QUALIFICATION.md) —
    detailed RAG-PROD-13 evidence ledger.
-3. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
+3. [`RAG_PGVECTOR_LIVE_QUALIFICATION.md`](RAG_PGVECTOR_LIVE_QUALIFICATION.md) —
+   RAG-LIVE-15A-R2 PgVector live evidence.
+4. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
    extension and plugin contracts.
-4. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+5. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
    — `KnowledgeDocument` ABI detail.
-5. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
+6. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
 
 Accepted PROD-13 evidence commits are
 `a93c68c138fea4a8758df9e3aca43fd454f521c0` and
@@ -223,5 +237,6 @@ qualification.
 ## Closure
 
 **Roadmap:** `RAG-PROD-14 CLOSED`
+**Current live qualification:** `RAG-LIVE-15A-R2 COMPLETE`
 **Global status remains:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
-No next RAG task is created by this handoff.
+**Next:** `RAG-LIVE-15B NOT STARTED`
