@@ -6,13 +6,14 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **READY_FOR_REVIEW**.
+**Status:** LCI-0A–0C **APPROVED**; LCI-1A–1D **APPROVED**; LCI-2A–2F **APPROVED**; LCI-3A–3D **APPROVED**; LCI-4A–4D **APPROVED**; LCI-5A–5C **APPROVED**; LCI-6A–6E **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-7A–7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **APPROVED**; LangChain Independence **COMPLETE / APPROVED**.
+**Roadmap status:** COMPLETE / APPROVED — no active implementation task remains.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-8A — LangGraph legacy retirement review
-**Next task after acceptance:** No removal task — retain the optional legacy boundary; any future deprecation/removal requires a separately approved task
+**Current active task:** NONE — PROGRAM CLOSED
+**LangGraph decision:** KEEP_OPTIONAL — retain the optional legacy boundary; any future deprecation/removal requires a separately approved product/architecture decision
+**Next task after acceptance:** NONE — PROGRAM CLOSED
 
 **LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. The native RAG path continues through embedding, indexing, vector storage and retrieval; LangChain loaders, embeddings and splitters remain optional provider-local compatibility paths.
 
@@ -213,7 +214,7 @@ Enforcement begins at **`LCI-0B`** (architecture boundary guard). See [LCI-0B en
 Only behind explicit, reviewable boundaries:
 
 ```text
-intergrax/compat/langchain/          (LCI-1C — READY_FOR_REVIEW)
+intergrax/compat/langchain/          (LCI-1C — APPROVED)
 intergrax/integrations/providers/.../
 intergrax/llm_adapters/providers/.../
 intergrax/legacy/
@@ -277,9 +278,21 @@ Provider paths are allowed only when:
 
 ## Final acceptance definition (full LCI program)
 
-The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** only
-after the remaining roadmap decisions are accepted. The current closeout has
-validated the following gates:
+The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **COMPLETE /
+APPROVED**. All listed implementation tasks, the Native Ollama regression gate,
+and the FINAL SYSTEM GATE are accepted.
+
+Final architecture statement:
+
+- Default/core installation requires no LangChain.
+- Default/core installation requires no LangGraph.
+- Native Intergrax contracts/providers are canonical.
+- `NativeOllamaAdapter` is the default Ollama adapter.
+- Native RAG uses `KnowledgeDocument`.
+- Selected LangChain providers remain explicit optional compatibility extras.
+- `langgraph-legacy` remains optional under the accepted `KEEP_OPTIONAL` decision.
+
+The validated gates are:
 
 1. Public Intergrax contracts expose **no** LangChain types.
 2. Default `pip install` / `uv sync` **does not** require any `langchain*` package for core import of `intergrax`.
@@ -288,7 +301,7 @@ validated the following gates:
 5. Ollama LLM and embedding paths have **native adapters** with parity proof; LangChain Ollama shims are optional extras only.
 6. `check_langchain_boundary` (or successor) passes in CI for forbidden zones (`LCI-0B`); LangChain-free core install gate passes (`LCI-7B`).
 7. LangChain compatibility is isolated under `compat` and/or provider modules with optional extras.
-8. LangGraph remains optional; retirement decision recorded under `LCI-8A`.
+8. LangGraph remains optional under the accepted `KEEP_OPTIONAL` decision.
 9. LKW proof workload passes on LangChain-free core install (LKW as client, not owner).
 10. Domain plan rows updated; inventory satellite shows `unclassified occurrences = 0` and zero core contract leaks.
 
