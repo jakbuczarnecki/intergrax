@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
+from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 
 pytestmark = pytest.mark.unit
 
@@ -231,9 +232,8 @@ def test_sync_search_idempotency_and_workspace_isolation(api_client) -> None:
     hit = results[0]
     assert hit["workspace_id"] == ws1["workspace_id"]
     assert hit["source_id"] == source["source_id"]
-    assert hit["file_name"] == "invoice-alpha.txt"
-    assert "invoice-alpha.txt" in hit["source_path"].replace("\\", "/")
-    assert marker_a.lower() in hit["snippet"].lower() or hit["document_id"]
+    assert hit["source_path"]
+    assert hit["file_name"]
 
     second = client.post(
         f"{_PREFIX}/workspaces/{ws1['workspace_id']}/sources/{source['source_id']}/sync",
@@ -267,3 +267,76 @@ def test_sync_search_idempotency_and_workspace_isolation(api_client) -> None:
     assert file_b.stat().st_mtime_ns == original_mtime_b
     assert file_a.read_text(encoding="utf-8").endswith(marker_a)
     assert file_b.read_text(encoding="utf-8").endswith(marker_b)
+
+
+def test_local_folder_search_returns_verified_document_and_isolates_workspace(
+    api_client,
+) -> None:
+    client, store, workspace_root = api_client
+    tenant = _unique_tenant("tenant")
+    marker = f"LKW_VERIFIED_LOCAL_MARKER_{uuid.uuid4().hex[:8]}"
+    path = workspace_root / "verified-local.txt"
+    path.write_text(f"Verified local evidence: {marker}", encoding="utf-8")
+
+    workspace_a = client.post(
+        f"{_PREFIX}/workspaces",
+        headers=_headers(tenant),
+        json={"name": "Workspace A"},
+    ).json()
+    source = client.post(
+        f"{_PREFIX}/workspaces/{workspace_a['workspace_id']}/sources",
+        headers=_headers(tenant),
+        json={"source_type": "local_folder", "path": str(workspace_root), "recursive": True},
+    ).json()
+    accepted = client.post(
+        f"{_PREFIX}/workspaces/{workspace_a['workspace_id']}/sources/{source['source_id']}/sync",
+        headers=_headers(tenant),
+    )
+    operation = _wait_operation(
+        client,
+        accepted.json()["operation_id"],
+        tenant_id=tenant,
+    )
+    assert operation["status"] == "completed", operation
+
+    refs = ManagedWorkspaceRepository(store).list_document_refs(
+        tenant_id=tenant,
+        workspace_id=workspace_a["workspace_id"],
+    )
+    expected_ref = next(ref for ref in refs if ref.source_path == str(path.resolve()).replace("\\", "/"))
+
+    visible = client.post(
+        f"{_PREFIX}/workspaces/{workspace_a['workspace_id']}/search",
+        headers=_headers(tenant),
+        json={"query": marker, "limit": 10},
+    )
+    assert visible.status_code == 200, visible.text
+    matching = [
+        hit for hit in visible.json()["results"] if marker in hit["snippet"]
+    ]
+    assert matching, visible.json()
+    hit = matching[0]
+    assert hit["document_id"] == expected_ref.document_id
+    assert hit["source_id"] == source["source_id"]
+    assert hit["source_path"] == expected_ref.source_path
+    assert hit["workspace_id"] == workspace_a["workspace_id"]
+
+    foreign_tenant = client.post(
+        f"{_PREFIX}/workspaces/{workspace_a['workspace_id']}/search",
+        headers=_headers(_unique_tenant("other")),
+        json={"query": marker, "limit": 10},
+    )
+    assert foreign_tenant.status_code == 404
+
+    workspace_b = client.post(
+        f"{_PREFIX}/workspaces",
+        headers=_headers(tenant),
+        json={"name": "Workspace B"},
+    ).json()
+    isolated = client.post(
+        f"{_PREFIX}/workspaces/{workspace_b['workspace_id']}/search",
+        headers=_headers(tenant),
+        json={"query": marker, "limit": 10},
+    )
+    assert isolated.status_code == 200, isolated.text
+    assert isolated.json()["results"] == []

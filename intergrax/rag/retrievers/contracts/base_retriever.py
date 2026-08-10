@@ -227,6 +227,8 @@ def retrieval_hit_to_chunk(hit: RetrievalHit) -> RetrievalChunk:
     from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 
     user_metadata = dict(hit.document.metadata)
+    provenance = hit.document.provenance.model_dump(mode="json")
+    provenance["root_document_id"] = hit.document.identity.root_document_id
     return RetrievalChunk(
         id=hit.document.identity.document_id,
         text=hit.document.content,
@@ -235,7 +237,7 @@ def retrieval_hit_to_chunk(hit: RetrievalHit) -> RetrievalChunk:
         channel=hit.channel,
         vector_id=hit.vector_id,
         scope=hit.document.scope.model_dump(mode="json"),
-        provenance=hit.document.provenance.model_dump(mode="json"),
+        provenance=provenance,
         user_metadata=dict(user_metadata),
         metadata=dict(user_metadata),
     )

@@ -85,19 +85,17 @@ class IngestResult:
     reindex_recommended: bool = False
 
 
-def _restore_connected_source_identity(
+def _restore_managed_workspace_identity(
     documents: list[KnowledgeDocument],
     *,
     base_metadata: dict[str, Any],
 ) -> list[KnowledgeDocument]:
-    """Restore safe canonical identity after loading a materialized source file."""
+    """Restore managed-workspace identity after loading a source file."""
     materialization_scope = base_metadata.get("materialization_scope")
     document_id = base_metadata.get("document_id")
     source_id = base_metadata.get("source_id")
     if not (
-        isinstance(materialization_scope, str)
-        and materialization_scope.strip()
-        and isinstance(document_id, str)
+        isinstance(document_id, str)
         and document_id.strip()
         and isinstance(source_id, str)
         and source_id.strip()
@@ -114,10 +112,13 @@ def _restore_connected_source_identity(
         "root_document_id": canonical_document_id,
     }
     provenance = dict(payload["provenance"])
+    if not (isinstance(materialization_scope, str) and materialization_scope.strip()):
+        provenance["source_id"] = canonical_source_id
     provenance["source_uri"] = None
     payload["provenance"] = provenance
     metadata = dict(payload["metadata"])
-    metadata["lkw_source_id"] = canonical_source_id
+    if isinstance(materialization_scope, str) and materialization_scope.strip():
+        metadata["lkw_source_id"] = canonical_source_id
     payload["metadata"] = metadata
     return [KnowledgeDocument.model_validate(payload)]
 
@@ -278,7 +279,7 @@ class IngestPipeline:
                         )
                     )
                 native_docs = scoped_docs
-            native_docs = _restore_connected_source_identity(
+            native_docs = _restore_managed_workspace_identity(
                 native_docs,
                 base_metadata=base_metadata,
             )

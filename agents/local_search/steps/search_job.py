@@ -109,6 +109,10 @@ def _format_evidence(
         raw_score = chunk.get("score")
         if not isinstance(raw_score, (int, float)):
             raw_score = meta.get("score")
+        raw_document_id = (
+            provenance_map.get("root_document_id")
+            or meta.get("document_id")
+        )
         item_workspace = (
             str(meta["workspace_id"])
             if meta.get("workspace_id")
@@ -119,7 +123,7 @@ def _format_evidence(
             source_path=str(source_path) if source_path else None,
             chunk_id=str(chunk.get("id")) if chunk.get("id") is not None else None,
             score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
-            document_id=str(meta["document_id"]) if meta.get("document_id") else None,
+            document_id=str(raw_document_id) if raw_document_id else None,
             source_id=(
                 str(meta["lkw_source_id"])
                 if meta.get("lkw_source_id")
