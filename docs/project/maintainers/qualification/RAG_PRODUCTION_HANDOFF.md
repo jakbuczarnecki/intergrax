@@ -4,8 +4,8 @@
 **Production deployment:** `APPROVED WITH EXPLICIT LIMITATIONS`
 **Canonical runtime defect:** `NONE OPEN FROM PROD-13`
 **Qualification date:** 2026-08-10
-**Evidence owner:** RAG-PROD-13 and append-only RAG-LIVE-15A-R2 and
-RAG-LIVE-15B-R2 records
+**Evidence owner:** RAG-PROD-13 and append-only RAG-LIVE-15A-R2,
+RAG-LIVE-15B-R2 and RAG-LIVE-15C-R2 records
 
 This is the final RAG-PROD-14 handoff. It closes the qualification decision; it
 does not promote the platform to unrestricted `PRODUCTION_QUALIFIED`.
@@ -29,6 +29,11 @@ the repository-owned PostgreSQL + pgvector Docker service. RAG-LIVE-15B-R2
 subsequently qualified the native Chroma provider against the repository-owned
 Chroma 1.4.1 HTTP service. These are append-only live evidence updates; they
 do not rewrite the historical PROD-13 record.
+
+RAG-LIVE-15C-R2 subsequently qualified the accepted Neo4j GraphRAG baseline
+against the repository-owned Neo4j 5.26 Community Docker service. This is an
+append-only live evidence update; it does not qualify publication-generation
+fencing or rewrite the historical PROD-13 record.
 
 ## Approved production surface
 
@@ -90,10 +95,10 @@ failure behavior and a bounded 50-record/5-round soak. See the
 - **Chroma:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` for the
   repository-owned qualification environment.
 - **Canonical GraphRAG:** `CANONICAL_HARNESS_QUALIFIED`.
-- **Neo4j:** live = `BLOCKED_ENVIRONMENT`.
-- **Neo4j publication-generation fencing:** `NOT_QUALIFIED`.
+- **Neo4j GraphRAG baseline:** `LIVE_QUALIFIED_BASELINE`.
+- **Neo4j publication-generation fencing:** `NOT LIVE_QUALIFIED`.
 
-`BLOCKED_ENVIRONMENT` is an evidence boundary, not a runtime defect.
+`NOT LIVE_QUALIFIED` is an evidence boundary, not a runtime defect.
 
 ## Deployment contract
 
@@ -155,6 +160,7 @@ See [`RAG.md`](../../architecture/RAG.md) for the detailed capability matrix.
 | Qdrant | `STABLE` | Qualified | Live-qualified; recommended when the qualified live path is required |
 | PgVector | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15A-R2 in the repository-owned environment |
 | Chroma | `STABLE` | Qualified | Live-qualified by RAG-LIVE-15B-R2 in the repository-owned environment |
+| Neo4j GraphRAG baseline | `STABLE` | Canonical harness qualified | `LIVE_QUALIFIED_BASELINE` by RAG-LIVE-15C-R2 in the repository-owned environment |
 | Weaviate / LanceDB / Typesense | `BETA` | — | Source replacement unsupported |
 | Pinecone / Milvus / Vespa | `BETA` | — | No live qualification claim |
 | InMemory | Harness/test taxonomy | Canonical harness use | Use for harness/tests according to current taxonomy |
@@ -169,12 +175,12 @@ Approved at canonical-harness level:
 - stale topology fencing;
 - shared evidence preservation.
 
-Evidence is from the canonical `InMemoryGraphStore` harness. The PROD-13
-environment did not qualify a live Neo4j baseline, live Neo4j source
-replacement or live Neo4j publication-generation fencing. Production owners
-enabling durable GraphRAG must perform a dedicated live backend qualification
-before making those live claims. Neo4j limitations do not block the native RAG
-platform as a whole.
+Evidence combines the canonical `InMemoryGraphStore` harness with the
+RAG-LIVE-15C-R2 live Neo4j baseline. The live gate covered scoped indexing,
+exact source ownership, shared evidence, source replacement, safe unlink,
+canonical traversal, failure semantics and cleanup. It did not qualify
+publication-generation fencing, concurrent generation takeover or visibility
+handoff. Neo4j limitations do not block the native RAG platform as a whole.
 
 ## Extension handoff
 
@@ -213,11 +219,13 @@ optional implementation behind native contracts.
    RAG-LIVE-15A-R2 PgVector live evidence.
 4. [`RAG_CHROMA_LIVE_QUALIFICATION.md`](RAG_CHROMA_LIVE_QUALIFICATION.md) —
    RAG-LIVE-15B-R2 Chroma live evidence.
-5. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
+5. [`RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md`](RAG_NEO4J_LIVE_BASELINE_QUALIFICATION.md) —
+  RAG-LIVE-15C-R2 Neo4j GraphRAG live baseline evidence.
+6. [`RAG_EXTENSION_GUIDE.md`](../../technical/guides/RAG_EXTENSION_GUIDE.md) —
    extension and plugin contracts.
-6. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
+7. [`LANGCHAIN_INDEPENDENCE_native_document_contract.md`](../../capabilities/architecture/satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md)
    — `KnowledgeDocument` ABI detail.
-6. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
+8. [`RAG.md` historical plan](../plans/RAG.md) — implementation history only.
 
 Accepted PROD-13 evidence commits are
 `a93c68c138fea4a8758df9e3aca43fd454f521c0` and
@@ -248,6 +256,7 @@ qualification.
 ## Closure
 
 **Roadmap:** `RAG-PROD-14 CLOSED`
-**Current live qualification:** `RAG-LIVE-15A-R2 and RAG-LIVE-15B-R2 COMPLETE`
+**Current live qualification:** `RAG-LIVE-15A-R2, RAG-LIVE-15B-R2 and
+RAG-LIVE-15C-R2 COMPLETE`
 **Global status remains:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
-**Next:** `RAG-LIVE-15C NOT STARTED`
+**Next:** `RAG-LIVE-15D NOT STARTED`
