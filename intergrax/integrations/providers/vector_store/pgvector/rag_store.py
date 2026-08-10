@@ -116,9 +116,9 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                         ),
                     )
             connection.commit()
-        except Exception as exc:  # noqa: BLE001 — provider boundary
+        except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError("pgvector insert/upsert failed") from exc
+            raise
         return id_list
 
     def query(
@@ -159,9 +159,9 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                     (vector.tolist(), *where_params, vector.tolist(), limit),
                 )
                 rows = cursor.fetchall()
-        except Exception as exc:  # noqa: BLE001 — provider boundary
+        except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError("pgvector query failed") from exc
+            raise
 
         hits: list[VectorStoreHit] = []
         for rank, row in enumerate(rows):
@@ -208,9 +208,9 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                     ),
                 )
             connection.commit()
-        except Exception as exc:  # noqa: BLE001 — provider boundary
+        except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError("pgvector scoped delete failed") from exc
+            raise
 
     def list_source_record_ids(
         self,
@@ -240,11 +240,9 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                     ),
                 )
                 rows = cursor.fetchall()
-        except Exception as exc:  # noqa: BLE001 — provider boundary
+        except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError(
-                "pgvector source ownership lookup failed"
-            ) from exc
+            raise
         return [str(row[0]) for row in rows]
 
     def count(self, *, scope: VectorStoreScope) -> int:
@@ -262,9 +260,9 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                     (self._tenant_id, scope.namespace, scope.workspace_id),
                 )
                 row = cursor.fetchone()
-        except Exception as exc:  # noqa: BLE001 — provider boundary
+        except Exception:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError("pgvector count failed") from exc
+            raise
         return int(row[0]) if row else 0
 
     def list_collections(self) -> list[str]:
@@ -329,8 +327,10 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
                     connection.close()
                 except Exception:
                     pass
-            raise IntegrationDependencyError(
-                "pgvector could not connect to PostgreSQL or register its vector adapter"
+            if self._is_connection_failure(exc):
+                raise
+            raise IntegrationConfigurationError(
+                "pgvector DSN is invalid or PostgreSQL connection configuration failed"
             ) from exc
 
     def _ensure_schema(self) -> None:
@@ -395,7 +395,7 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
             raise
         except Exception as exc:  # noqa: BLE001 — provider boundary
             self._rollback(connection)
-            raise IntegrationDependencyError(
+            raise IntegrationConfigurationError(
                 "pgvector extension or schema preparation failed"
             ) from exc
 
@@ -481,6 +481,16 @@ class PgVectorRagStore(VectorStore, IntegrationHealthProbe):
             connection.rollback()
         except Exception:
             pass
+
+    @staticmethod
+    def _is_connection_failure(exc: Exception) -> bool:
+        if isinstance(exc, (ConnectionError, TimeoutError)):
+            return True
+        error_type = type(exc)
+        return (
+            error_type.__module__.startswith(("psycopg", "psycopg2"))
+            and error_type.__name__ in {"OperationalError", "InterfaceError"}
+        )
 
     @staticmethod
     def _payload_mapping(payload: object) -> Mapping[str, object]:

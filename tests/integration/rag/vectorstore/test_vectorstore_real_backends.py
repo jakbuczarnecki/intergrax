@@ -77,14 +77,19 @@ def _record(
     )
 
 
-def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
-    """Return True only for dependency, configuration, or connection absence."""
-    if isinstance(
+def _is_known_environment_failure(
+    slug: str,
+    exc: Exception,
+    *,
+    during_open: bool,
+) -> bool:
+    """Return True only for failures known to prevent backend opening."""
+    if during_open and isinstance(
         exc,
         (
             ImportError,
             IntegrationConfigurationError,
-        IntegrationDependencyError,
+            IntegrationDependencyError,
             ConnectionError,
             TimeoutError,
         ),
@@ -94,12 +99,12 @@ def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
     error_type = type(exc)
     module = error_type.__module__
     name = error_type.__name__
-    if slug == "pgvector":
+    if during_open and slug == "pgvector":
         return module.startswith(("psycopg", "psycopg2")) and name in {
             "OperationalError",
             "InterfaceError",
         }
-    if slug in {"chroma", "qdrant"}:
+    if during_open and slug in {"chroma", "qdrant"}:
         if (
             slug == "chroma"
             and isinstance(exc, ValueError)
@@ -119,7 +124,7 @@ def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
 
     # A few clients expose connection refusal as a plain RuntimeError. Keep
     # this deliberately narrow; arbitrary RuntimeError remains a test failure.
-    if (
+    if during_open and (
         error_type is RuntimeError
         and slug in {"chroma", "qdrant", "pgvector"}
     ):
@@ -137,8 +142,13 @@ def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
     return False
 
 
-def _skip_or_raise_backend_failure(slug: str, exc: Exception) -> NoReturn:
-    if _is_known_environment_failure(slug, exc):
+def _skip_or_raise_backend_failure(
+    slug: str,
+    exc: Exception,
+    *,
+    during_open: bool,
+) -> NoReturn:
+    if _is_known_environment_failure(slug, exc, during_open=during_open):
         pytest.skip(f"{slug} backend unavailable: {exc}")
     raise exc
 
@@ -170,13 +180,10 @@ def _open_stable_store(slug: str) -> _Backend:
         integration = builders[slug]()
         native_store = getattr(integration, "rag_store", integration)
     except Exception as exc:
-        _skip_or_raise_backend_failure(slug, exc)
+        _skip_or_raise_backend_failure(slug, exc, during_open=True)
 
     backend = _Backend(slug=slug, store=native_store, scope=scope)
-    try:
-        backend.store.count(scope=backend.scope)
-    except Exception as exc:
-        _skip_or_raise_backend_failure(slug, exc)
+    backend.store.count(scope=backend.scope)
     return backend
 
 
