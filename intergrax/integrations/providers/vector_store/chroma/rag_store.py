@@ -4,13 +4,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-import os
-from typing import Any, Dict, List, Literal, Optional, Sequence
+from typing import Any, Literal
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     VectorStoreHit,
@@ -25,7 +24,6 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     validate_records,
     validate_scope,
 )
-from intergrax.knowledge.contracts.validation import require_non_empty_str
 
 
 @dataclass(frozen=True)
@@ -33,21 +31,21 @@ class ChromaConfig:
     """
     Configuration model for Chroma vector store provider.
 
-    The provider is responsible for creating and managing
-    the Chroma client instance based on this configuration.
+    The opener creates the client; this store only manages the collection
+    and vector-store contract operations.
     """
 
     collection_name: str
     tenant_id: str
-    persist_directory: Optional[str] = None
-    settings: Optional[ChromaSettings] = None
+    persist_directory: str | None = None
+    settings: Any | None = None
     batch_size: int = 256
     metric: Literal["cosine", "l2"] = "cosine"
 
-    mode: Literal["embedded", "http"] = "embedded"
+    mode: Literal["embedded", "http"] = "http"
     http_host: str = "localhost"
     http_port: int = 8000
-    
+
 
 class ChromaVectorStore(BaseVectorStore):
     """
@@ -61,33 +59,15 @@ class ChromaVectorStore(BaseVectorStore):
 
         self._client = client
         self._collection = None
-        self._dim: Optional[int] = None
+        self._dim: int | None = None
 
         self._init_chroma()
 
     def _init_chroma(self) -> None:
-        if self._client is not None:
-            self._collection = self._client.get_or_create_collection(
-                name=self.collection_name,
+        if self._client is None:
+            raise IntegrationConfigurationError(
+                "ChromaVectorStore requires a client built by the Chroma opener",
             )
-            return
-        settings = self.cfg.settings or ChromaSettings()
-
-        if self.cfg.mode == "http":
-            self._client = chromadb.HttpClient(
-                host=self.cfg.http_host,
-                port=self.cfg.http_port,
-            )
-        else:
-            persist_dir = self.cfg.persist_directory
-            if persist_dir:
-                os.makedirs(persist_dir, exist_ok=True)
-                self._client = chromadb.PersistentClient(
-                    path=persist_dir,
-                    settings=settings,
-                )
-            else:
-                self._client = chromadb.Client(settings=settings)
 
         space = "cosine" if self.cfg.metric == "cosine" else "l2"
 
@@ -103,24 +83,15 @@ class ChromaVectorStore(BaseVectorStore):
         self,
         ids: Sequence[str],
         embeddings: Sequence[Sequence[float]],
-        metadatas: Sequence[Dict[str, Any]],
+        metadatas: Sequence[dict[str, Any]],
         documents: Sequence[str],
     ) -> None:
-        try:
-            self._collection.upsert(
-                ids=list(ids),
-                embeddings=list(embeddings),
-                metadatas=list(metadatas),
-                documents=list(documents),
-            )
-        except AttributeError:
-            self._collection.add(
-                ids=list(ids),
-                embeddings=list(embeddings),
-                metadatas=list(metadatas),
-                documents=list(documents),
-            )
-
+        self._collection.upsert(
+            ids=list(ids),
+            embeddings=list(embeddings),
+            metadatas=list(metadatas),
+            documents=list(documents),
+        )
 
     def add_records(
         self,
@@ -162,9 +133,9 @@ class ChromaVectorStore(BaseVectorStore):
         *,
         scope: VectorStoreScope,
         top_k: int,
-        metadata_filter: Optional[MetadataFilter] = None,
+        metadata_filter: MetadataFilter | None = None,
         include_embeddings: bool = False,
-    ) -> List[VectorStoreHit]:
+    ) -> list[VectorStoreHit]:
         vector, limit = validate_query(query_embedding, top_k=top_k)
         validate_scope(scope, tenant_id=self.cfg.tenant_id)
         Q = [vector.tolist()]
@@ -190,24 +161,20 @@ class ChromaVectorStore(BaseVectorStore):
             scores = [[1.0 - float(d) for d in row] for row in distances]
         else:
             # L2 normalization
-            scores = [[1.0 / (1.0 + float(d)) for d in row] for row in distances]        
+            scores = [[1.0 / (1.0 + float(d)) for d in row] for row in distances]
 
         ids_out = res.get("ids", [[]])
         metadatas_out = res.get("metadatas", [[]])
         documents_out = res.get("documents", [[]])
-        embeddings_out = (
-            res.get("embeddings", [[]]) if include_embeddings else [[]]
-        )
+        embeddings_out = res.get("embeddings", [[]]) if include_embeddings else [[]]
 
-        hits: List[VectorStoreHit] = []
+        hits: list[VectorStoreHit] = []
 
         row_ids = ids_out[0] if ids_out else []
         row_scores = scores[0] if scores else []
         row_metas = metadatas_out[0] if metadatas_out else []
         row_docs = documents_out[0] if documents_out else []
-        row_embs = (
-            embeddings_out[0] if include_embeddings and embeddings_out else []
-        )
+        row_embs = embeddings_out[0] if include_embeddings and embeddings_out else []
 
         for rank in range(
             min(len(row_ids), len(row_scores), len(row_metas), len(row_docs))
@@ -221,17 +188,16 @@ class ChromaVectorStore(BaseVectorStore):
                     rank=rank,
                     scope=scope,
                     embedding=(
-                        row_embs[rank]
-                        if include_embeddings and row_embs
-                        else None
+                        row_embs[rank] if include_embeddings and row_embs else None
                     ),
                 )
             )
 
         return hits
-    
 
-    def _normalize_chroma_where(self, where: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _normalize_chroma_where(
+        self, where: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
         """
         Chroma expects `where` to have exactly one top-level operator when multiple
         conditions are present. We support a friendly dict form and convert it.
@@ -249,7 +215,7 @@ class ChromaVectorStore(BaseVectorStore):
             return None
 
         # Already operator-based (user may pass {"$and": [...]} etc.)
-        if any(isinstance(k, str) and k.startswith("$") for k in where.keys()):
+        if any(isinstance(k, str) and k.startswith("$") for k in where):
             return where
 
         items = list(where.items())
@@ -262,7 +228,6 @@ class ChromaVectorStore(BaseVectorStore):
         # Multiple conditions -> $and
         and_terms = [{str(k): {"$eq": v}} for k, v in items]
         return {"$and": and_terms}
-    
 
     def delete(self, ids: Sequence[str], *, scope: VectorStoreScope) -> None:
         if not ids:
@@ -304,7 +269,7 @@ class ChromaVectorStore(BaseVectorStore):
         )
         return len(result.get("ids", []))
 
-    def list_collections(self) -> List[str]:
+    def list_collections(self) -> list[str]:
         if self._client is None:
             return [self.collection_name]
         return [collection.name for collection in self._client.list_collections()]

@@ -74,8 +74,7 @@ class _FakeChromaCollection:
         if "$and" in where:
             return all(cls._matches(metadata, item) for item in where["$and"])
         return all(
-            metadata.get(key) == condition["$eq"]
-            for key, condition in where.items()
+            metadata.get(key) == condition["$eq"] for key, condition in where.items()
         )
 
 
@@ -95,7 +94,9 @@ def _scope(workspace_id: str) -> VectorStoreScope:
     )
 
 
-def _record(vector_id: str, source_id: str, scope: VectorStoreScope) -> VectorStoreRecord:
+def _record(
+    vector_id: str, source_id: str, scope: VectorStoreScope
+) -> VectorStoreRecord:
     document = KnowledgeDocument.model_validate(
         {
             "schema_version": 1,
@@ -160,3 +161,36 @@ def test_chroma_source_lookup_uses_exact_metadata_get_and_logical_ids() -> None:
     assert collection.where_calls
     assert "source_id" in str(collection.where_calls[0])
     assert "workspace-a" in str(collection.where_calls[0])
+
+
+def test_chroma_runtime_errors_after_open_are_not_suppressed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    collection = _FakeChromaCollection()
+    store = ChromaVectorStore(
+        ChromaConfig(collection_name="runtime", tenant_id="tenant-a"),
+        client=_FakeChromaClient(collection),
+    )
+    scope = _scope("workspace-runtime")
+    record = _record("runtime-id", "source://runtime", scope)
+
+    def fail(*_: Any, **__: Any) -> None:
+        raise RuntimeError("backend runtime failure")
+
+    monkeypatch.setattr(collection, "upsert", fail)
+    with pytest.raises(RuntimeError, match="backend runtime failure"):
+        store.add_records([record], scope=scope)
+
+    monkeypatch.setattr(collection, "query", fail)
+    with pytest.raises(RuntimeError, match="backend runtime failure"):
+        store.query([1.0, 0.0], scope=scope, top_k=1)
+
+    monkeypatch.setattr(collection, "get", fail)
+    with pytest.raises(RuntimeError, match="backend runtime failure"):
+        store.count(scope=scope)
+    with pytest.raises(RuntimeError, match="backend runtime failure"):
+        store.list_source_record_ids(source_id="source://runtime", scope=scope)
+
+    monkeypatch.setattr(collection, "delete", fail, raising=False)
+    with pytest.raises(RuntimeError, match="backend runtime failure"):
+        store.delete(["runtime-id"], scope=scope)

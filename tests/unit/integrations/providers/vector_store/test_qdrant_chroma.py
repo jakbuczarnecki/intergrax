@@ -11,23 +11,53 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations._shared.conformance import assert_vector_store
-from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
-from intergrax.integrations.contracts.vector_store import MetadataFilter, VectorStore, VectorStoreHit
-from intergrax.integrations.providers.vector_store.chroma.integration import ChromaVectorStoreIntegration
-from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
-from intergrax.integrations.providers.vector_store.chroma.config import ChromaIntegrationConfig
-from intergrax.integrations.providers.vector_store.chroma.register import register_chroma_integration
-from intergrax.integrations.providers.vector_store.qdrant.integration import QdrantVectorStoreIntegration
-from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
-from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
-from intergrax.integrations.providers.vector_store.qdrant.register import register_qdrant_integration
-from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+    IntegrationDependencyError,
+)
+from intergrax.integrations.contracts.vector_store import (
+    MetadataFilter,
+    VectorStore,
+    VectorStoreHit,
+)
+from intergrax.integrations.providers.vector_store.chroma.bundle import (
+    create_chroma_vector_store,
+)
+from intergrax.integrations.providers.vector_store.chroma.config import (
+    ChromaIntegrationConfig,
+)
+from intergrax.integrations.providers.vector_store.chroma.integration import (
+    ChromaVectorStoreIntegration,
+)
+from intergrax.integrations.providers.vector_store.chroma.register import (
+    register_chroma_integration,
+)
+from intergrax.integrations.providers.vector_store.qdrant.bundle import (
+    create_qdrant_vector_store,
+)
+from intergrax.integrations.providers.vector_store.qdrant.config import (
+    QdrantIntegrationConfig,
+)
+from intergrax.integrations.providers.vector_store.qdrant.integration import (
+    QdrantVectorStoreIntegration,
+)
+from intergrax.integrations.providers.vector_store.qdrant.register import (
+    register_qdrant_integration,
+)
+from intergrax.integrations.registry.bootstrap import (
+    register_default_integrations,
+    reset_default_integrations_state,
+)
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord, VectorStoreScope
+from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.vectorstore.contracts.native_vectorstore import (
+    VectorStoreRecord,
+    VectorStoreScope,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -87,7 +117,9 @@ def _document(*, tenant_id: str = "t1") -> KnowledgeDocument:
 
 
 def _record() -> VectorStoreRecord:
-    return VectorStoreRecord(document=_document(), embedding=[0.1, 0.2], vector_id="doc-1")
+    return VectorStoreRecord(
+        document=_document(), embedding=[0.1, 0.2], vector_id="doc-1"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -112,14 +144,20 @@ def test_qdrant_opens_imports_client_and_builds_rag_store() -> None:
     config = QdrantIntegrationConfig(collection_name="coll", tenant_id="t1")
     mock_rag_store = MagicMock()
 
-    with patch("intergrax.integrations.providers.vector_store.qdrant.opens._import_qdrant_client") as import_mock:
-        with patch(
+    with (
+        patch(
+            "intergrax.integrations.providers.vector_store.qdrant.opens._import_qdrant_client"
+        ) as import_mock,
+        patch(
             "intergrax.integrations.providers.vector_store.qdrant.rag_store.QdrantVectorStore",
             return_value=mock_rag_store,
-        ) as rag_cls:
-            from intergrax.integrations.providers.vector_store.qdrant.opens import open_qdrant_vector_store
+        ) as rag_cls,
+    ):
+        from intergrax.integrations.providers.vector_store.qdrant.opens import (
+            open_qdrant_vector_store,
+        )
 
-            result = open_qdrant_vector_store(config)
+        result = open_qdrant_vector_store(config)
 
     import_mock.assert_called_once()
     rag_cls.assert_called_once()
@@ -131,19 +169,118 @@ def test_chroma_opens_imports_chromadb_and_builds_rag_store() -> None:
     config = ChromaIntegrationConfig(collection_name="coll", tenant_id="t1")
     mock_rag_store = MagicMock()
 
-    with patch("intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb") as import_mock:
-        with patch(
+    with (
+        patch(
+            "intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb"
+        ) as import_mock,
+        patch(
             "intergrax.integrations.providers.vector_store.chroma.rag_store.ChromaVectorStore",
             return_value=mock_rag_store,
-        ) as rag_cls:
-            from intergrax.integrations.providers.vector_store.chroma.opens import open_chroma_vector_store
+        ) as rag_cls,
+    ):
+        from intergrax.integrations.providers.vector_store.chroma.opens import (
+            open_chroma_vector_store,
+        )
 
-            result = open_chroma_vector_store(config)
+        result = open_chroma_vector_store(config)
 
     import_mock.assert_called_once()
+    import_mock.return_value.HttpClient.assert_called_once_with(
+        host="localhost", port=8000
+    )
+    import_mock.return_value.Client.assert_not_called()
+    import_mock.return_value.PersistentClient.assert_not_called()
     rag_cls.assert_called_once()
     assert isinstance(result, ChromaVectorStoreIntegration)
     assert result.rag_store is mock_rag_store
+
+
+def test_chroma_default_configuration_is_http_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for env_name in (
+        "INTERGRAX_CHROMA_MODE",
+        "INTERGRAX_CHROMA_HOST",
+        "INTERGRAX_CHROMA_PORT",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+
+    config = ChromaIntegrationConfig.from_env()
+
+    assert config.mode == "http"
+    assert config.http_host == "localhost"
+    assert config.http_port == 8000
+
+
+def test_chroma_explicit_embedded_mode_is_the_only_local_opt_in() -> None:
+    config = ChromaIntegrationConfig(
+        collection_name="coll",
+        tenant_id="t1",
+        mode="embedded",
+        persist_directory="test-data/chroma",
+    )
+    sdk = MagicMock()
+
+    with (
+        patch(
+            "intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb",
+            return_value=sdk,
+        ),
+        patch(
+            "intergrax.integrations.providers.vector_store.chroma.rag_store.ChromaVectorStore",
+            return_value=MagicMock(),
+        ),
+    ):
+        from intergrax.integrations.providers.vector_store.chroma.opens import (
+            open_chroma_vector_store,
+        )
+
+        open_chroma_vector_store(config)
+
+    sdk.PersistentClient.assert_called_once_with(path="test-data/chroma")
+    sdk.HttpClient.assert_not_called()
+    sdk.Client.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    (
+        ("mode", "invalid"),
+        ("http_host", ""),
+        ("http_port", 0),
+        ("collection_name", ""),
+        ("tenant_id", ""),
+    ),
+)
+def test_chroma_invalid_runtime_configuration_fails_closed(
+    field_name: str,
+    value: object,
+) -> None:
+    payload: dict[str, object] = {
+        "collection_name": "coll",
+        "tenant_id": "t1",
+    }
+    payload[field_name] = value
+
+    with pytest.raises(IntegrationConfigurationError, match="Chroma"):
+        ChromaIntegrationConfig(**payload)
+
+
+def test_chroma_unreachable_http_server_is_dependency_failure() -> None:
+    config = ChromaIntegrationConfig(collection_name="coll", tenant_id="t1")
+    sdk = MagicMock()
+    sdk.HttpClient.side_effect = ConnectionError("connection refused")
+
+    with patch(
+        "intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb",
+        return_value=sdk,
+    ):
+        from intergrax.integrations.providers.vector_store.chroma.opens import (
+            open_chroma_vector_store,
+        )
+
+        with pytest.raises(IntegrationDependencyError, match="unavailable"):
+            open_chroma_vector_store(config)
 
 
 def test_qdrant_register_and_resolve() -> None:
@@ -177,7 +314,11 @@ def test_register_default_integrations_includes_qdrant_and_chroma() -> None:
         store = resolve(
             IntegrationCategory.VECTOR_STORE,
             profile=IntegrationProfile(vector_store=slug),
-            config={"collection_name": "c1", "tenant_id": "t1", "store_factory": factory},
+            config={
+                "collection_name": "c1",
+                "tenant_id": "t1",
+                "store_factory": factory,
+            },
         )
         assert_vector_store(store)
 
@@ -188,7 +329,9 @@ def test_chroma_missing_package_raises_configuration_error() -> None:
         "intergrax.integrations.providers.vector_store.chroma.opens._import_chromadb",
         side_effect=IntegrationConfigurationError("missing chromadb"),
     ):
-        from intergrax.integrations.providers.vector_store.chroma.opens import open_chroma_vector_store
+        from intergrax.integrations.providers.vector_store.chroma.opens import (
+            open_chroma_vector_store,
+        )
 
         with pytest.raises(IntegrationConfigurationError, match="missing chromadb"):
             open_chroma_vector_store(config)
@@ -199,7 +342,8 @@ def test_qdrant_sdk_only_in_opens_module() -> None:
     violations = [
         path.name
         for path in pkg.glob("*.py")
-        if path.name != "opens.py" and "qdrant_client" in path.read_text(encoding="utf-8")
+        if path.name != "opens.py"
+        and "qdrant_client" in path.read_text(encoding="utf-8")
     ]
     assert violations == []
 
@@ -216,13 +360,17 @@ def test_chromadb_only_in_opens_module() -> None:
 
 def test_create_qdrant_vector_store_delegates() -> None:
     factory, inner = _store_factory()
-    store = create_qdrant_vector_store(collection_name="c1", tenant_id="t1", store_factory=factory)
+    store = create_qdrant_vector_store(
+        collection_name="c1", tenant_id="t1", store_factory=factory
+    )
     store.add_records([_record()], scope=VectorStoreScope(tenant_id="t1"))
     assert inner.records
 
 
 def test_create_chroma_vector_store_delegates() -> None:
     factory, inner = _store_factory()
-    store = create_chroma_vector_store(collection_name="c1", tenant_id="t1", store_factory=factory)
+    store = create_chroma_vector_store(
+        collection_name="c1", tenant_id="t1", store_factory=factory
+    )
     store.add_records([_record()], scope=VectorStoreScope(tenant_id="t1"))
     assert inner.records
