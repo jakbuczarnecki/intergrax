@@ -27,6 +27,8 @@ _MSGRAPH_TEAMS_CHANNEL_CANDIDATE_PAYLOAD_SCHEMA = (
 )
 _MSGRAPH_CALENDAR_CANDIDATE_PAYLOAD_SCHEMA = "lkw.msgraph_calendar_candidate.v1"
 _GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.google_workspace_candidate.v1"
+_JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA = "lkw.jira_project_candidate.v1"
+_CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA = "lkw.confluence_space_candidate.v1"
 _PAGINATION_PAYLOAD_SCHEMA = "lkw.remote_resource_pagination.v1"
 _MAX_TOKEN_LEN = 1024
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -121,6 +123,30 @@ class GoogleWorkspaceCandidatePayload(BaseModel):
     connection_ref: str = Field(..., min_length=1, max_length=128)
     resource_type: RemoteResourceTypeV1
     remote_resource_id: str = Field(..., min_length=1, max_length=256)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class JiraProjectCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    project_key: str = Field(..., min_length=1, max_length=64)
+    safe_display_label: str = Field(..., min_length=1, max_length=256)
+
+
+class ConfluenceSpaceCandidatePayload(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: str = Field(default=_CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA)
+    tenant_id: str = Field(..., min_length=1, max_length=128)
+    workspace_id: str = Field(..., min_length=1, max_length=128)
+    connection_ref: str = Field(..., min_length=1, max_length=128)
+    resource_type: RemoteResourceTypeV1
+    space_id: str = Field(..., min_length=1, max_length=64)
     safe_display_label: str = Field(..., min_length=1, max_length=256)
 
 
@@ -437,6 +463,70 @@ class RemoteResourceOpaqueRefCodec:
         except (ValueError, RemoteResourceOpaqueRefCodecError):
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
         if payload.schema_version != _GOOGLE_WORKSPACE_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_jira_project_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        project_key: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = JiraProjectCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.JIRA_PROJECT,
+            project_key=project_key,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_jira_project_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> JiraProjectCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = JiraProjectCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _JIRA_PROJECT_CANDIDATE_PAYLOAD_SCHEMA:
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
+        return payload
+
+    def encode_confluence_space_candidate(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        connection_ref: str,
+        space_id: str,
+        safe_display_label: str,
+    ) -> str:
+        payload = ConfluenceSpaceCandidatePayload(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            connection_ref=connection_ref,
+            resource_type=RemoteResourceTypeV1.CONFLUENCE_SPACE,
+            space_id=space_id,
+            safe_display_label=safe_display_label,
+        )
+        return self._encode_payload(payload.model_dump(mode="json"))
+
+    def decode_confluence_space_candidate(
+        self,
+        opaque_candidate_ref: str,
+    ) -> ConfluenceSpaceCandidatePayload:
+        try:
+            data = self._decode_payload(opaque_candidate_ref)
+            payload = ConfluenceSpaceCandidatePayload.model_validate(data)
+        except (ValueError, RemoteResourceOpaqueRefCodecError):
+            raise ConnectedSourceDiscoveryError("candidate_ref_invalid") from None
+        if payload.schema_version != _CONFLUENCE_SPACE_CANDIDATE_PAYLOAD_SCHEMA:
             raise ConnectedSourceDiscoveryError("candidate_ref_invalid")
         return payload
 

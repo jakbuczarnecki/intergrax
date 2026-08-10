@@ -20,6 +20,8 @@ class RemoteResourceTypeV1(StrEnum):
     GOOGLE_WORKSPACE_CALENDAR = "google_workspace_calendar"
     GOOGLE_WORKSPACE_DOCS = "google_workspace_docs"
     GOOGLE_WORKSPACE_SHEETS = "google_workspace_sheets"
+    JIRA_PROJECT = "jira_project"
+    CONFLUENCE_SPACE = "confluence_space"
 
 
 class SlackConversationKindV1(StrEnum):

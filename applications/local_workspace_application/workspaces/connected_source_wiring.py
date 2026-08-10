@@ -21,6 +21,12 @@ from local_workspace_application.workspaces.connected_source_discovery_google_wo
     GoogleWorkspaceKnownResourceCatalog,
     GoogleWorkspaceKnownResourceDiscoveryStrategy,
 )
+from local_workspace_application.workspaces.connected_source_discovery_atlassian import (
+    ConfluenceKnownSpaceCatalog,
+    ConfluenceSpaceDiscoveryStrategy,
+    JiraKnownProjectCatalog,
+    JiraProjectDiscoveryStrategy,
+)
 from local_workspace_application.workspaces.connected_source_discovery_slack import (
     SlackRemoteResourceDiscoveryStrategy,
 )
@@ -115,6 +121,8 @@ class ConnectedSourceWiring:
     connection_registry: KnowledgeConnectionRegistry
     opaque_ref_codec: RemoteResourceOpaqueRefCodec
     google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog
+    jira_known_project_catalog: JiraKnownProjectCatalog
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog
     discovery_service: WorkspaceRemoteResourceDiscoveryService
     tenant_binding_service: WorkspaceConnectedSourceTenantBindingService
     tenant_binding_port: TenantKnowledgeSourceBindingPort
@@ -136,6 +144,8 @@ def build_default_remote_resource_discovery_registry(
     connection_registry: KnowledgeConnectionRegistry,
     opaque_ref_codec: RemoteResourceOpaqueRefCodec,
     google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog,
+    jira_known_project_catalog: JiraKnownProjectCatalog,
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog,
     msgraph_mailbox_user_id: str | None,
     msgraph_teams_channel_team_id: str | None = None,
 ) -> RemoteResourceDiscoveryStrategyRegistry:
@@ -188,6 +198,16 @@ def build_default_remote_resource_discovery_registry(
                 resource_type=RemoteResourceTypeV1.GOOGLE_WORKSPACE_SHEETS,
                 safe_description="Google Workspace known spreadsheet",
             ),
+            JiraProjectDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                known_projects=jira_known_project_catalog,
+            ),
+            ConfluenceSpaceDiscoveryStrategy(
+                connection_registry=connection_registry,
+                opaque_ref_codec=opaque_ref_codec,
+                known_spaces=confluence_known_space_catalog,
+            ),
         )
     )
 
@@ -205,16 +225,22 @@ def build_connected_source_wiring(
     sync_runtime: ManagedWorkspaceSyncRuntime | None = None,
     materializer_registry: ConnectedSourceContentMaterializerRegistry | None = None,
     google_known_resource_catalog: GoogleWorkspaceKnownResourceCatalog | None = None,
+    jira_known_project_catalog: JiraKnownProjectCatalog | None = None,
+    confluence_known_space_catalog: ConfluenceKnownSpaceCatalog | None = None,
     msgraph_mailbox_user_id: str | None = None,
     msgraph_teams_channel_team_id: str | None = None,
 ) -> ConnectedSourceWiring:
     registry = connection_registry or KnowledgeConnectionRegistry()
     codec = opaque_ref_codec or build_connected_source_opaque_ref_codec(settings)
     google_resources = google_known_resource_catalog or GoogleWorkspaceKnownResourceCatalog()
+    jira_projects = jira_known_project_catalog or JiraKnownProjectCatalog()
+    confluence_spaces = confluence_known_space_catalog or ConfluenceKnownSpaceCatalog()
     discovery_strategy_registry = build_default_remote_resource_discovery_registry(
         connection_registry=registry,
         opaque_ref_codec=codec,
         google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
         msgraph_mailbox_user_id=msgraph_mailbox_user_id,
         msgraph_teams_channel_team_id=msgraph_teams_channel_team_id,
     )
@@ -293,6 +319,8 @@ def build_connected_source_wiring(
         connection_registry=registry,
         opaque_ref_codec=codec,
         google_known_resource_catalog=google_resources,
+        jira_known_project_catalog=jira_projects,
+        confluence_known_space_catalog=confluence_spaces,
         discovery_service=discovery,
         tenant_binding_service=tenant_binding_service,
         tenant_binding_port=tenant_binding_port,

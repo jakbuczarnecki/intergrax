@@ -28,7 +28,8 @@ indexed ingestion or live access. Current repository evidence proves:
 - accepted provider-neutral Indexed bridge proofs for Slack
   `slack_conversation`, Microsoft Graph `teams_chat`, `mail`, `teams_channel`
   and `calendar`, plus bounded Google Workspace `docs`, `sheets` and
-  `calendar` provider-owned materializers with application Search/Ask closeout;
+  `calendar` provider-owned materializers with application Search/Ask closeout,
+  and Jira `issues` plus Confluence `pages` application Search/Ask closeout;
 - provider/source-kind live handlers and registrations are implemented for the
   five Microsoft Graph bounded list capabilities: Drive, Mail, Teams Channel,
   Teams Chat and Calendar, plus the three Slack conversation live capabilities;
@@ -176,18 +177,19 @@ Each provider-owned tenant factory receives a secret-free `base_url` and
 provider credential material resolved from its own `credential_ref`. Credential
 material is not persisted in the connection's safe configuration or public
 rehydration result. The Atlassian site relationship does not merge provider
-identities or source lifecycles. This establishes restart-safe connection
-rehydration only; Jira remains `FOUNDATION_ONLY`, while Confluence `pages` is
-`NEAR_READY` for its accepted Durable and Indexed path. Live remains unsupported
-for both sources.
+identities or source lifecycles. Restart rehydration, bounded
+discovery/binding, sync, materialization, generic indexing and generic
+Search/Ask are proven for both sources; Jira `issues` and Confluence `pages` are now
+`LKW_READY` for their accepted Durable and Indexed paths. Live remains
+unsupported for both sources.
 
 The selected 4B reference source is Confluence `pages`. Its accepted contract
 has a stable numeric page identity, explicit integer `version_number`, bounded
 space pagination and a meaningful title plus storage-format body that already
 maps to the Vendor Knowledge rich-text content mode. Jira `issues` is rejected
 as the reference for this step because its accepted revision is timestamp-based
-(`updated_at`) and its structured record still needs a provider-owned
-materialization projection from issue fields and description representation.
+(`updated_at`) and its structured record uses a provider-owned materialization
+projection from issue fields and description representation.
 Both sources retain the same no-tombstone and unproven item-ACL boundaries.
 
 | provider | source kind | adapter | DURABLE | INDEXED | LIVE | plugin declaration | runtime registration | proof level | deletion semantics | ACL status | known limitations | evidence |
@@ -202,8 +204,8 @@ Both sources retain the same no-tombstone and unproven item-ACL boundaries.
 | Google Workspace | `docs` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-document scope; structured tabs/segments are bounded; no broad discovery, organization-wide traversal, authoritative deletion, item ACL projection or Live handler | `test_google_workspace_docs_knowledge_adapter.py`, `test_google_workspace_docs_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Google Workspace | `sheets` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | snapshot absence is not authoritative; no invented tombstones | provider, tenant, source binding; item ACL UNPROVEN | known-spreadsheet scope; bounded structured/tabular values; formulas are not evaluated, XLSX extraction is not claimed, arbitrary ranges and item ACL projection are excluded | `test_google_workspace_sheets_knowledge_adapter.py`, `test_google_workspace_sheets_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
 | Google Workspace | `calendar` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + exact known-resource strategy + provider materializer + generic bridge | LKW_READY / FOCUSED_TESTS | cancellation/tombstone and reconciliation semantics remain source-owned; snapshot absence is not authoritative | provider, tenant, source binding; item ACL UNPROVEN | bounded structured event projection; attachment bytes, external document bodies, complete recurrence expansion, conference transcripts, historical versions and organization-wide attendee ACLs excluded; Live intentionally unsupported; commercial GA/SLA not implied | `test_google_workspace_calendar_knowledge_adapter.py`, `test_google_workspace_calendar_knowledge_sync.py`, `applications/local_workspace_application/tests/workspaces/test_google_workspace_lkw_e2e.py`, `tests/unit/runtime/vendor_knowledge/test_provider_coverage.py` |
-| Jira | `issues` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + Jira tenant factory + provider structured-record materializer + generic sink/index bridge | NEAR_READY / FOCUSED_TESTS | no authoritative tombstones; project reconciliation absence is not authoritative deletion | provider, tenant, source binding; item ACL UNPROVEN | project-scoped paginated reconciliation; `updated_at` timestamp revisions; bounded plain-text description projection; generic Search/Ask application binding remains deferred to 4D; no Live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py`, `test_atlassian_connection_factory.py`, `test_jira_indexed_materializer.py`, `test_provider_coverage.py` |
-| Confluence | `pages` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + Confluence tenant factory + provider rich-text materializer + generic sink/index bridge | NEAR_READY / FOCUSED_TESTS | no authoritative tombstones; reconciliation absence is not deletion | provider, tenant, source binding; item ACL UNPROVEN | space reconciliation only; integer `version_number` revisions; bounded deterministic storage-format text projection; HTML-like markup is normalized without executing macros or fetching embeds/attachments; no incremental feed or Live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py`, `test_atlassian_connection_factory.py`, `test_connected_source_materializer.py`, `test_provider_coverage.py` |
+| Jira | `issues` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + Jira tenant factory + exact project strategy/binding + provider structured-record materializer + generic sink/index bridge | LKW_READY / FOCUSED_TESTS | no authoritative tombstones; project reconciliation absence is not authoritative deletion | provider, tenant, source binding; item ACL UNPROVEN | project-scoped reconciliation; `updated_at` timestamp revisions; bounded plain-text description projection; exact project selection only, no broad discovery; application proof uses generic Search/Ask and Jira body marker; no Live handler | `test_jira_knowledge_adapter.py`, `test_jira_knowledge_sync.py`, `test_atlassian_connection_factory.py`, `test_jira_indexed_materializer.py`, `applications/local_workspace_application/tests/workspaces/test_atlassian_lkw_e2e.py`, `test_provider_coverage.py` |
+| Confluence | `pages` | ACCEPTED | ACCEPTED | ACCEPTED | UNSUPPORTED | DURABLE, INDEXED | adapter + Confluence tenant factory + exact space strategy/binding + provider rich-text materializer + generic sink/index bridge | LKW_READY / FOCUSED_TESTS | no authoritative tombstones; reconciliation absence is not deletion | provider, tenant, source binding; item ACL UNPROVEN | space-scoped reconciliation; integer `version_number` revisions; bounded deterministic storage-format text projection; exact space selection only, no broad discovery; application proof uses generic Search/Ask and Confluence body marker; no Live handler | `test_confluence_knowledge_adapter.py`, `test_confluence_knowledge_sync.py`, `test_atlassian_connection_factory.py`, `test_connected_source_materializer.py`, `applications/local_workspace_application/tests/workspaces/test_atlassian_lkw_e2e.py`, `test_provider_coverage.py` |
 
 ### Explicitly unimplemented providers
 
@@ -286,12 +288,12 @@ sync tests exist for the accepted Graph family, Slack, Google
 `drive`/`docs`/`sheets`/`calendar`, Jira and Confluence.
 
 Application-owned materialization/index proof covers Slack, Microsoft Graph
-`teams_chat` and the bounded Google Workspace `docs`/`sheets`/`calendar`
-paths through the provider-neutral coordinator→sink and
-KnowledgeDocument→index paths. For adapter rows without that proof,
-`FOUNDATION_ONLY` means adapter/reconciliation layers are present while
-application materialization is not proven; this remains the boundary for
-Google Drive, Jira and Confluence.
+`teams_chat`, the bounded Google Workspace `docs`/`sheets`/`calendar` paths,
+Jira `issues` and Confluence `pages` through the provider-neutral
+coordinator→sink and KnowledgeDocument→index paths. For adapter rows without
+that proof, `FOUNDATION_ONLY` means adapter/reconciliation layers are present
+while application materialization is not proven; this remains the boundary for
+Google Drive.
 
 The DocumentStore runtime itself is not counted as provider-specific
 application materialization.

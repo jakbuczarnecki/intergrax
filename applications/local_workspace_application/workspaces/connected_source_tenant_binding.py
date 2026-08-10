@@ -23,7 +23,9 @@ from local_workspace_application.workspaces.connected_source_models import (
     SlackConversationKindV1,
 )
 from local_workspace_application.workspaces.connected_source_opaque_ref_codec import (
+    ConfluenceSpaceCandidatePayload,
     GoogleWorkspaceCandidatePayload,
+    JiraProjectCandidatePayload,
     RemoteResourceOpaqueRefCodec,
 )
 
@@ -56,6 +58,20 @@ from intergrax.integrations.providers.conversation_channel.slack.integration imp
 from intergrax.integrations.providers.conversation_channel.slack.knowledge_read import (
     SLACK_CONVERSATION_SOURCE_KIND,
     SlackConversationKind,
+)
+from intergrax.integrations.providers.issue_tracker.jira.integration import (
+    JIRA_ISSUE_TRACKER_PROVIDER_ID,
+)
+from intergrax.integrations.providers.issue_tracker.jira.knowledge_read import (
+    JIRA_ISSUES_SOURCE_KIND,
+    JIRA_PROJECT_SCOPE_TYPE,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.integration import (
+    CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.wiki_knowledge.confluence.knowledge_read import (
+    CONFLUENCE_PAGES_SOURCE_KIND,
+    CONFLUENCE_SPACE_SCOPE_TYPE,
 )
 from intergrax.runtime.vendor_knowledge.adapters.slack_conversation import (
     SLACK_CONVERSATION_SCOPE_TYPE,
@@ -193,6 +209,24 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
     ) -> GoogleWorkspaceCandidatePayload | None:
         try:
             return self._codec.decode_google_workspace_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _jira_payload(
+        self,
+        opaque_candidate_ref: str,
+    ) -> JiraProjectCandidatePayload | None:
+        try:
+            return self._codec.decode_jira_project_candidate(opaque_candidate_ref)
+        except ConnectedSourceDiscoveryError:
+            return None
+
+    def _confluence_payload(
+        self,
+        opaque_candidate_ref: str,
+    ) -> ConfluenceSpaceCandidatePayload | None:
+        try:
+            return self._codec.decode_confluence_space_candidate(opaque_candidate_ref)
         except ConnectedSourceDiscoveryError:
             return None
 
@@ -397,6 +431,48 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 configuration_version=1,
             )
 
+        jira = self._jira_payload(opaque_candidate_ref)
+        if jira is not None:
+            _validate_candidate_scope_values(
+                jira.tenant_id,
+                jira.workspace_id,
+                jira.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return _scoped_vendor_binding(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                provider_id=JIRA_ISSUE_TRACKER_PROVIDER_ID,
+                integration_kind=IntegrationCategory.ISSUE_TRACKER,
+                source_kind=JIRA_ISSUES_SOURCE_KIND,
+                scope_type=JIRA_PROJECT_SCOPE_TYPE,
+                scope_id=jira.project_key,
+                safe_display_name=safe_display_name or jira.safe_display_label,
+            )
+
+        confluence = self._confluence_payload(opaque_candidate_ref)
+        if confluence is not None:
+            _validate_candidate_scope_values(
+                confluence.tenant_id,
+                confluence.workspace_id,
+                confluence.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return _scoped_vendor_binding(
+                tenant_id=tenant_id,
+                connection_ref=connection_ref,
+                provider_id=CONFLUENCE_WIKI_KNOWLEDGE_PROVIDER_ID,
+                integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
+                source_kind=CONFLUENCE_PAGES_SOURCE_KIND,
+                scope_type=CONFLUENCE_SPACE_SCOPE_TYPE,
+                scope_id=confluence.space_id,
+                safe_display_name=safe_display_name or confluence.safe_display_label,
+            )
+
         google = self._google_payload(opaque_candidate_ref)
         if google is not None:
             _validate_candidate_scope_values(
@@ -501,6 +577,42 @@ class ProviderNeutralConnectedSourceCandidateAdapter:
                 workspace_id=workspace_id,
                 connection_ref=connection_ref,
                 resource_type=RemoteResourceTypeV1.MSGRAPH_CALENDAR,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        jira = self._jira_payload(opaque_candidate_ref)
+        if jira is not None:
+            _validate_candidate_scope_values(
+                jira.tenant_id,
+                jira.workspace_id,
+                jira.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.JIRA_PROJECT,
+                opaque_candidate_ref=opaque_candidate_ref,
+            )
+
+        confluence = self._confluence_payload(opaque_candidate_ref)
+        if confluence is not None:
+            _validate_candidate_scope_values(
+                confluence.tenant_id,
+                confluence.workspace_id,
+                confluence.connection_ref,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+            )
+            return await self._discovery.revalidate_candidate_label(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                connection_ref=connection_ref,
+                resource_type=RemoteResourceTypeV1.CONFLUENCE_SPACE,
                 opaque_candidate_ref=opaque_candidate_ref,
             )
 
@@ -626,6 +738,44 @@ def _google_workspace_binding(
             remote_scope_id=payload.remote_resource_id,
             remote_scope_type=scope_type,
             safe_display_name=display_name,
+            parameters={},
+        ),
+        status=KnowledgeSourceBindingStatus.ACTIVE,
+        configuration_version=1,
+    )
+
+
+def _scoped_vendor_binding(
+    *,
+    tenant_id: str,
+    connection_ref: str,
+    provider_id: str,
+    integration_kind: IntegrationCategory,
+    source_kind: str,
+    scope_type: str,
+    scope_id: str,
+    safe_display_name: str,
+) -> KnowledgeSourceBinding:
+    binding_id = tenant_binding_id(
+        tenant_id=tenant_id,
+        connection_ref=connection_ref,
+        provider_id=provider_id,
+        integration_kind=integration_kind.value,
+        source_kind=source_kind,
+        encoded_scope=scope_id,
+    )
+    return KnowledgeSourceBinding(
+        binding_id=binding_id,
+        tenant_id=tenant_id,
+        provider_id=provider_id,
+        integration_kind=integration_kind,
+        source_kind=source_kind,
+        connection_ref=connection_ref,
+        safe_display_name=safe_display_name,
+        scope=KnowledgeSourceScope(
+            remote_scope_id=scope_id,
+            remote_scope_type=scope_type,
+            safe_display_name=safe_display_name,
             parameters={},
         ),
         status=KnowledgeSourceBindingStatus.ACTIVE,
