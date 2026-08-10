@@ -24,15 +24,24 @@
 
 ## LCI-7A — LangChain optional extras packaging
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** PLATFORM_FOUNDATION
 
 The package's direct core dependencies contain no normalized `langchain*` or
 `langgraph` names. Compatibility/provider ownership remains explicit in
 `rag-langchain-loaders`, `rag-langchain-embeddings`,
 `rag-langchain-splitters`, `llm-langchain-ollama`, and
-`langgraph-legacy`; the lockfile is regenerated only from this ownership
-change. LCI-7B is the next task after acceptance and is not started here.
+`langgraph-legacy`. The clean-core and compatibility installation gates are
+closed under LCI-7B and LCI-7C; documentation closeout is LCI-7D.
+
+## LCI-7D — LangChain independence documentation closeout
+
+**Status:** `READY_FOR_REVIEW`
+
+The feature architecture and dependency inventory now distinguish native/core
+defaults, optional compatibility providers, and legacy optional LangGraph
+paths. LCI-8A remains the next task after acceptance; no production runtime,
+RAG implementation, or packaging declaration changes belong to this closeout.
 
 ---
 

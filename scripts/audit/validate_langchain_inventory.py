@@ -288,12 +288,17 @@ def validate(text: str) -> None:
     summary = summary_counts(text)
     assert summary.get("direct production/runtime imports") == 11
     assert summary.get("direct test imports") == 46
-    assert summary.get("provider-bound dependencies") == 9
+    assert summary.get("optional provider imports") == 7
+    assert summary.get("compatibility-only imports") == 2
+    assert summary.get("legacy optional imports") == 2
     assert summary.get("total detailed inventory rows") == 69
     assert summary.get("unclassified occurrences") == 0
     assert summary.get("core contract leaks") == 0
     assert summary.get("core implementation dependencies") == 0
     assert classification_counts(rows)["CORE_CONTRACT_LEAK"] == summary.get("core contract leaks")
+    assert classification_counts(rows)["OPTIONAL_PROVIDER"] == summary.get("optional provider imports")
+    assert classification_counts(rows)["COMPATIBILITY_ONLY"] == summary.get("compatibility-only imports")
+    assert classification_counts(rows)["LEGACY_OPTIONAL"] == summary.get("legacy optional imports")
     assert classification_counts(rows)["TEST_ONLY"] == summary.get("test-only")
 
   # all tasks exist

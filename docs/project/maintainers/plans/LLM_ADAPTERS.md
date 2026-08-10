@@ -69,15 +69,15 @@ production default. Native Ollama regression gating is complete for LCI-6E.
 
 ## LCI-6E — LangChain Ollama compatibility optionalization
 
-**Status:** `READY_FOR_REVIEW`
+**Status:** `APPROVED`
 **Owner:** LLM_ADAPTERS
 
 `NativeOllamaAdapter` remains the canonical/default Ollama adapter.
 `LangChainOllamaAdapter` is explicitly constructed behind the
 `llm-langchain-ollama` extra, with lazy LangChain imports and a stable missing
 extra error. Multimedia Ollama vision detection uses provider identity and no
-longer imports the compatibility class. LCI-7A remains the next task after
-acceptance.
+longer imports the compatibility class. LCI-7A–LCI-7C are accepted; LCI-7D
+documents the resulting core/default and compatibility boundary.
 
 ---
 

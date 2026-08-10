@@ -17,10 +17,10 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **Audit date** | 2026-08-09 |
 | **Branch** | `development` |
-| **Commit** | `0b53e07fbb9b7cef2507eadf4e5cdd92931eacd9` |
+| **Commit** | `20bc04d249f4956c2616cfee222cb10fb067cc2f` |
 | **Scope** | `intergrax`, `agents`, `applications`, `tests`, `scripts`, `pyproject.toml`, `uv.lock` (excludes `docker/runtime-context` copies) |
 | **Patterns** | Top-level `from` / `import` of `langchain*`, `langgraph` in Python sources; `pyproject.toml` declarations |
-| **Classifications** | `CORE_CONTRACT_LEAK`, `CORE_IMPLEMENTATION_DEPENDENCY`, `PROVIDER_BOUND_DEPENDENCY`, `OPTIONAL_COMPATIBILITY`, `LEGACY_OPTIONAL`, `TOOLING_DEPENDENCY`, `TEST_ONLY`, `PACKAGING_DEPENDENCY`, `GENERATED_LOCK_ENTRY` |
+| **Classifications** | `CORE_CONTRACT_LEAK`, `CORE_IMPLEMENTATION_DEPENDENCY`, `OPTIONAL_PROVIDER`, `COMPATIBILITY_ONLY`, `LEGACY_OPTIONAL`, `TOOLING_DEPENDENCY`, `TEST_ONLY`, `PACKAGING_DEPENDENCY`, `GENERATED_LOCK_ENTRY` |
 | **Tooling definition** | Executable repository tooling or generators import LangChain, but the dependency is not part of production runtime or a documentation-only textual mention. |
 | **Generated files** | `uv.lock` summarized as one `GENERATED_LOCK_ENTRY` row (resolver output; individual transitive packages are not separate migration decisions). |
 
@@ -32,7 +32,7 @@ Active retrievers and the retrieval tool now use the native immutable `Retrieval
 
 ## LCI-4D closeout
 
-Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical KnowledgeDocument boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain Document. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6. LCI-4D is APPROVED; LCI-5A is APPROVED; LCI-5B is READY_FOR_REVIEW; LCI-5C is PLANNED / NEXT AFTER ACCEPTANCE.
+Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical KnowledgeDocument boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain Document. Provider-local loaders and embedding dependencies remain optional compatibility surfaces. LCI-4D, LCI-5A, LCI-5B and LCI-5C are APPROVED.
 
 
 Reranker candidate/result contracts and reranker provider adapters now use native Intergrax knowledge documents; the seven eliminated LangChain document import rows were removed from the detailed inventory.
@@ -50,8 +50,9 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | generated lock rows | 1 |
 | core contract leaks | 0 |
 | core implementation dependencies | 0 |
-| provider-bound dependencies | 9 |
-| optional compatibility paths | 0 |
+| optional provider imports | 7 |
+| compatibility-only imports | 2 |
+| legacy optional imports | 2 |
 | legacy optional paths | 2 |
 | tooling dependencies | 1 |
 | test-only | 46 |
@@ -64,15 +65,15 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 | Inventory ID | Package/module | Path | Line | Symbol or usage | Layer/domain | Dependency exposure | Classification | Current requirement status | Target state | Migration task | Evidence/notes |
 |--------------|----------------|------|-----:|-----------------|--------------|---------------------|----------------|----------------------------|--------------|----------------|----------------|
 | LCI-INV-0001 | `langchain_core.documents` | `applications/local_workspace_application/tests/workspaces/test_workspace_lifecycle.py` | 3 | `Document` | APPLICATION / test | test-only | TEST_ONLY | test only | Tests use native fixtures; compatibility tests under LCI-7C | LCI-3C | verified import |
-| LCI-INV-0007 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/openpyxl/opens.py` | 127 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
-| LCI-INV-0008 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/pymupdf/opens.py` | 14 | `PyMuPDFLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
-| LCI-INV-0009 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 27 | `Docx2txtLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
-| LCI-INV-0010 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 69 | `Document` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
-| LCI-INV-0011 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/unstructured/opens.py` | 11 | `UnstructuredHTMLLoader` | INTEGRATIONS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
-| LCI-INV-0029 | `langchain_ollama` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 39 | `ChatOllama` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`llm-langchain-ollama`) | Compatibility-only provider; lazy import; explicit construction; not default | LCI-6E | verified lazy import and missing-extra error |
-| LCI-INV-0030 | `langchain_core.messages` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 264 | `AIMessage, HumanMessage, SystemMessage, ToolMessage` | LLM_ADAPTERS / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`llm-langchain-ollama`; core retained elsewhere) | Compatibility-only provider; lazy import; explicit construction; not default | LCI-6E | verified lazy import |
-| LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 34 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional | Optional provider loaded lazily; explicit registry registration | LCI-2E | verified lazy import |
-| LCI-INV-0075 | `langchain_ollama` | `intergrax/rag/embedding/providers/ollama_embedding_provider.py` | 48 | `OllamaEmbeddings` | RAG / production | runtime | PROVIDER_BOUND_DEPENDENCY | optional (`rag-langchain-embeddings`; package retained for LCI-6) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0007 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/openpyxl/opens.py` | 127 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0008 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/pymupdf/opens.py` | 14 | `PyMuPDFLoader` | INTEGRATIONS / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0009 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 27 | `Docx2txtLoader` | INTEGRATIONS / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0010 | `langchain_core.documents` | `intergrax/integrations/providers/document_parser/python_docx/opens.py` | 69 | `Document` | INTEGRATIONS / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0011 | `langchain_community.document_loaders` | `intergrax/integrations/providers/document_parser/unstructured/opens.py` | 11 | `UnstructuredHTMLLoader` | INTEGRATIONS / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-loaders`) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
+| LCI-INV-0029 | `langchain_ollama` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 39 | `ChatOllama` | LLM_ADAPTERS / production | runtime | COMPATIBILITY_ONLY | optional (`llm-langchain-ollama`) | Compatibility-only provider; lazy import; explicit construction; not default | LCI-6E | verified lazy import and missing-extra error |
+| LCI-INV-0030 | `langchain_core.messages` | `intergrax/llm_adapters/providers/ollama_adapter.py` | 264 | `AIMessage, HumanMessage, SystemMessage, ToolMessage` | LLM_ADAPTERS / production | runtime | COMPATIBILITY_ONLY | optional (`llm-langchain-ollama`; core retained elsewhere) | Compatibility-only provider; lazy import; explicit construction; not default | LCI-6E | verified lazy import |
+| LCI-INV-0066 | `langchain_text_splitters` | `intergrax/rag/document_splitters/strategies/langchain_recursive_chunking_strategy.py` | 34 | `RecursiveCharacterTextSplitter` | RAG / production | runtime | OPTIONAL_PROVIDER | optional | Optional provider loaded lazily; explicit registry registration | LCI-2E | verified lazy import |
+| LCI-INV-0075 | `langchain_ollama` | `intergrax/rag/embedding/providers/ollama_embedding_provider.py` | 48 | `OllamaEmbeddings` | RAG / production | runtime | OPTIONAL_PROVIDER | optional (`rag-langchain-embeddings`; package retained for LCI-6) | Provider-local LangChain use; lazy import; optional extra | LCI-5C | verified lazy import |
 | LCI-INV-0104 | `langgraph.graph` | `intergrax/supervisor/supervisor_to_state_graph.py` | 198 | `END, StateGraph` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0105 | `langgraph.graph.message` | `intergrax/websearch/integration/langgraph_nodes.py` | 11 | `add_messages` | ORCHESTRATION / production | runtime | LEGACY_OPTIONAL | required (default install) | Legacy path retired or isolated under optional extra | LCI-8A | verified import |
 | LCI-INV-0106 | `langchain_core.documents` | `scripts/docs/generate_integration_usage_docs.py` | 422 | `Document` | PLATFORM_FOUNDATION / tooling | tooling | TOOLING_DEPENDENCY | tooling only | Generator uses native types or optional LangChain extra | LCI-7D | verified import |
@@ -135,7 +136,7 @@ Reranker candidate/result contracts and reranker provider adapters now use nativ
 
 ## D. Public contract leak register
 
-Only real leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks — see §E.
+Historical contract-leak rows retained for traceability; current audit reports 0 core contract leaks. No current leaks through public or shared core contracts (LangChain types in Intergrax ABI). Provider-local LangChain messages inside `LangChainOllamaAdapter` are **not** public contract leaks — see §E.
 
 | Leaked type | Contract signature / location | Producers | Consumers | Future native contract | Architecture prerequisite | Implementation migration | Migration risk |
 |-------------|------------------------------|-----------|-----------|------------------------|----------------|----------------|
@@ -156,11 +157,11 @@ Only real leaks through public or shared core contracts (LangChain types in Inte
 
 | Item | Location | Classification | Migration task | Notes |
 |------|----------|----------------|----------------|-------|
-| LangChain messages (`AIMessage`, etc.) | `LangChainOllamaAdapter` (provider-local) | PROVIDER_BOUND_DEPENDENCY | LCI-6B / LCI-6E | Not a public contract leak; stays inside provider until optionalized |
+| LangChain messages (`AIMessage`, etc.) | `LangChainOllamaAdapter` (provider-local) | COMPATIBILITY_ONLY | LCI-6B / LCI-6E | Not a public contract leak; stays inside provider until optionalized |
 | `tool_calls_from_langchain_message` | `intergrax/llm_adapters/contracts/tool_call.py` | Migration candidate (no direct LangChain import) | LCI-6E | `Any`-typed helper; does not import `langchain*` |
 | Integration shared bridges | `intergrax/integrations/_shared/*` | OPTIONAL_COMPATIBILITY | LCI-3D | Map native records at boundary |
-| LangChain community loaders | document parser providers | PROVIDER_BOUND_DEPENDENCY | LCI-5C | Optional extras with lazy import |
-| LangChain recursive splitter | `langchain_recursive_chunking_strategy.py` | PROVIDER_BOUND_DEPENDENCY | LCI-2E | Optional provider behind `rag-langchain-splitters`; native recursive strategy is baseline; explicit registry registration |
+| LangChain community loaders | document parser providers | OPTIONAL_PROVIDER | LCI-5C | Optional extras with lazy import |
+| LangChain recursive splitter | `langchain_recursive_chunking_strategy.py` | OPTIONAL_PROVIDER | LCI-2E | Optional provider behind `rag-langchain-splitters`; native recursive strategy is baseline; explicit registry registration |
 
 ## F. Dependency package register
 
@@ -189,10 +190,10 @@ Guard: `scripts/maintenance/check_langgraph_not_required.py`. Each lazy import h
 
 | Metric | Value |
 |--------|------:|
-| production files scanned | 4393 |
-| allowed-zone imports | 15 |
-| grandfathered guarded imports | 21 |
-| grandfather entries | 21 |
+| production files scanned | 4435 |
+| allowed-zone imports | 10 |
+| grandfathered guarded imports | 5 |
+| grandfather entries | 5 |
 | new forbidden imports | 0 |
 | stale grandfather entries | 0 |
 | register path | `scripts/maintenance/langchain_boundary_grandfather.json` |
@@ -203,7 +204,7 @@ The JSON file is the executable grandfather subset for protected production zone
 
 ## I. Unverified items
 
-Ollama native parity (`LCI-6C`), embedding numeric parity, vector store live round-trip: **UNVERIFIED** until respective proof tasks execute.
+Historical inventory note: Ollama native parity and related live-provider checks were unverified at the initial inventory snapshot; accepted phase gates and current closeout evidence supersede that historical note.
 
 ## LCI-3C boundary note
 
