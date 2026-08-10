@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from intergrax.distributed.source_operation import SourceOperationCoordinator
 from intergrax.rag.embedding.contracts.base_embedding_manager import (
     BaseEmbeddingManager,
 )
@@ -51,6 +52,7 @@ class GraphRagRetriever(BaseRetriever):
         seed_top_k: int = 5,
         graph_hops: int = 1,
         hybrid_fusion_enabled: bool = True,
+        source_coordinator: SourceOperationCoordinator | None = None,
     ) -> None:
         self._vs = vector_store
         self._em = embedding_manager
@@ -59,6 +61,14 @@ class GraphRagRetriever(BaseRetriever):
         self._graph_hops = int(graph_hops)
         self._hybrid_fusion_enabled = bool(hybrid_fusion_enabled)
         self._last_trace: GraphRetrieverTrace | None = None
+        if source_coordinator is not None:
+            configure = getattr(
+                self._graph,
+                "set_source_operation_coordinator",
+                None,
+            )
+            if callable(configure):
+                configure(source_coordinator)
 
     @property
     def last_graph_trace(self) -> GraphRetrieverTrace | None:

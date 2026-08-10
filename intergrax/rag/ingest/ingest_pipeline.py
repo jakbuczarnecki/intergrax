@@ -148,6 +148,13 @@ class IngestPipeline:
             )
             if callable(configure):
                 configure(self._source_coordinator)
+        configure_graph = getattr(
+            self._graph_store,
+            "set_source_operation_coordinator",
+            None,
+        )
+        if callable(configure_graph):
+            configure_graph(self._source_coordinator)
 
     def run(self, request: IngestRequest) -> IngestResult:
         path = Path(request.source_path)

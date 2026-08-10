@@ -25,8 +25,11 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import (
     BaseEmbeddingManager,
 )
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
+from intergrax.rag.graph.providers.inmemory_graph_store import InMemoryGraphStore
 from intergrax.rag.ingest.ingest_pipeline import IngestPipeline, IngestRequest
 from intergrax.rag.profiles.rag_profile import RagProfile
+from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
+from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
@@ -110,6 +113,86 @@ class _Embedding(BaseEmbeddingManager):
         )
 
 
+GRAPH_SOURCE_A = "graph-race-source-a"
+GRAPH_SOURCE_B = "graph-race-source-b"
+
+
+class _GraphRaceLoader:
+    def load_document(self, source: str, **kwargs: object) -> list[KnowledgeDocument]:
+        del kwargs
+        source_path = Path(source).resolve()
+        source_id = GRAPH_SOURCE_A if source_path.name == "source-a.txt" else GRAPH_SOURCE_B
+        if source_id == GRAPH_SOURCE_A:
+            content = (
+                "Old Entity supports Shared Entity"
+                if threading.current_thread().name == "G1"
+                else "New Entity supports Shared Entity"
+            )
+        else:
+            content = "Source B supports Shared Entity"
+        root_id = "root-" + hashlib.sha256(source_id.encode()).hexdigest()[:16]
+        return [
+            KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {"document_id": root_id, "root_document_id": root_id},
+                    "scope": {
+                        "tenant_id": TENANT_ID,
+                        "namespace": NAMESPACE,
+                        "workspace_id": WORKSPACE_ID,
+                    },
+                    "content": content,
+                    "metadata": {},
+                    "provenance": {"source_kind": "test", "source_id": source_id},
+                }
+            )
+        ]
+
+
+class _GraphRaceSplitter:
+    def split_documents(
+        self,
+        documents: Sequence[KnowledgeDocument],
+        strategy_id: str | None = None,
+    ) -> list[KnowledgeDocument]:
+        del strategy_id
+        return [
+            build_derived_chunk(
+                document,
+                content=document.content,
+                strategy_id="graph-race-10c",
+                chunk_index=0,
+            )
+            for document in documents
+        ]
+
+
+class _GraphRaceEmbedding(_Embedding):
+    def embed_texts(self, texts: Sequence[str]) -> np.ndarray:
+        return np.asarray(
+            [
+                [1.0, 0.0]
+                if "Old Entity" in text
+                else [0.0, 1.0]
+                for text in texts
+            ],
+            dtype=np.float32,
+        )
+
+
+class _BlockingGraphStore(InMemoryGraphStore):
+    def __init__(self) -> None:
+        super().__init__(tenant_id=TENANT_ID)
+        self.write_started = threading.Event()
+        self.allow_g1_write = threading.Event()
+
+    def upsert_node(self, node) -> None:
+        if threading.current_thread().name == "G1" and not self.write_started.is_set():
+            self.write_started.set()
+            assert self.allow_g1_write.wait(timeout=5)
+        super().upsert_node(node)
+
+
 class _SnapshotRaceVectorstore(VectorstoreManager):
     def __init__(self) -> None:
         super().__init__(InMemoryVectorStore(tenant_id=TENANT_ID), scope=SCOPE)
@@ -173,6 +256,31 @@ def _pipeline(
             retriever_id="vector_similarity",
             fast_retriever_id="vector_similarity",
             deep_retriever_id="vector_similarity",
+            enable_rerank=False,
+            route_mode="off",
+            native_hybrid_enabled=False,
+        ),
+        source_coordinator=coordinator,
+    )
+
+
+def _graph_pipeline(
+    vectorstore: VectorstoreManager,
+    graph: InMemoryGraphStore,
+    coordinator: SourceOperationCoordinator,
+) -> IngestPipeline:
+    return IngestPipeline(
+        loader=_GraphRaceLoader(),
+        splitter=_GraphRaceSplitter(),
+        embedding_manager=_GraphRaceEmbedding(),
+        vectorstore=vectorstore,
+        graph_store=graph,
+        profile=RagProfile(
+            retriever_id="graph_rag",
+            fast_retriever_id="graph_rag",
+            deep_retriever_id="graph_rag",
+            graph_rag_enabled=True,
+            graph_store_backend="inmemory",
             enable_rerank=False,
             route_mode="off",
             native_hybrid_enabled=False,
@@ -337,6 +445,139 @@ def test_stale_inflight_publication_cannot_become_active_after_takeover(
             "__intergrax_source_publication_generation"
         ]
     )
+
+
+def test_stale_graph_topology_is_inactive_after_generation_takeover(
+    tmp_path: Path,
+) -> None:
+    source_a = tmp_path / "source-a.txt"
+    source_b = tmp_path / "source-b.txt"
+    source_a.write_text("unused", encoding="utf-8")
+    source_b.write_text("unused", encoding="utf-8")
+    vectorstore = _SnapshotRaceVectorstore()
+    graph = _BlockingGraphStore()
+    document_store = InMemoryDocumentStore()
+    clock = {"now": 100.0}
+    first_coordinator = DocumentStoreSourceOperationCoordinator(
+        document_store,
+        owner_id="graph-worker-1",
+        ttl_seconds=5,
+        clock=lambda: clock["now"],
+        token_factory=lambda: "graph-generation-1-token",
+        version_factory=lambda: "graph-lease-version-1",
+    )
+    second_coordinator = DocumentStoreSourceOperationCoordinator(
+        document_store,
+        owner_id="graph-worker-2",
+        ttl_seconds=5,
+        clock=lambda: clock["now"],
+        token_factory=lambda: "graph-generation-2-token",
+        version_factory=lambda: "graph-lease-version-2",
+    )
+    first_pipeline = _graph_pipeline(vectorstore, graph, first_coordinator)
+    second_pipeline = _graph_pipeline(vectorstore, graph, second_coordinator)
+    b_result = second_pipeline.run(
+        IngestRequest(
+            source_path=str(source_b),
+            base_metadata={"tenant_id": TENANT_ID, "namespace": NAMESPACE},
+            workspace_id=WORKSPACE_ID,
+        )
+    )
+    assert b_result.reason == "ok"
+
+    results: dict[str, object] = {}
+
+    def _run(name: str, pipeline: IngestPipeline) -> None:
+        try:
+            results[name] = pipeline.run(
+                IngestRequest(
+                    source_path=str(source_a),
+                    base_metadata={"tenant_id": TENANT_ID, "namespace": NAMESPACE},
+                    workspace_id=WORKSPACE_ID,
+                )
+            )
+        except BaseException as exc:
+            results[name] = exc
+
+    first_thread = threading.Thread(
+        target=_run,
+        args=("G1", first_pipeline),
+        name="G1",
+    )
+    first_thread.start()
+    assert graph.write_started.wait(timeout=5)
+    g1_ids = set(
+        vectorstore.list_source_record_ids(
+            source_id=GRAPH_SOURCE_A,
+            scope=SCOPE,
+        )
+    )
+    assert g1_ids
+
+    clock["now"] = 106.0
+    second_thread = threading.Thread(
+        target=_run,
+        args=("G2", second_pipeline),
+        name="G2",
+    )
+    second_thread.start()
+    second_thread.join(timeout=10)
+    assert not second_thread.is_alive()
+    assert getattr(results["G2"], "reason", None) == "ok"
+
+    graph.allow_g1_write.set()
+    first_thread.join(timeout=10)
+    assert not first_thread.is_alive()
+    assert isinstance(results["G1"], RuntimeError)
+    assert str(results["G1"]) == "source_ingest_conflict"
+
+    assert "ent:old_entity" in graph._nodes
+    assert graph.node_ids_for_chunks(g1_ids) == set()
+    assert graph.find_nodes(label_contains="Old", limit=10) == []
+    assert all(
+        node.id != "ent:old_entity"
+        for node in graph.neighbors("ent:shared_entity", max_hops=1)
+    )
+
+    retriever = GraphRagRetriever(
+        vectorstore,
+        _GraphRaceEmbedding(),
+        graph,
+        seed_top_k=1,
+        graph_hops=1,
+        source_coordinator=second_coordinator,
+    )
+    old_hits = retriever.retrieve(
+        RetrieverQuery(
+            query_text="Old Entity",
+            query_embedding=[1.0, 0.0],
+            top_k=10,
+            scope=SCOPE,
+        )
+    )
+    assert retriever.last_graph_trace is not None
+    assert "ent:old_entity" not in retriever.last_graph_trace.expanded_node_ids
+    assert all("Old Entity" not in hit.document.content for hit in old_hits)
+
+    new_hits = retriever.retrieve(
+        RetrieverQuery(
+            query_text="New Entity",
+            query_embedding=[0.0, 1.0],
+            top_k=10,
+            scope=SCOPE,
+        )
+    )
+    assert any("New Entity" in hit.document.content for hit in new_hits)
+
+    shared_hits = retriever.retrieve(
+        RetrieverQuery(
+            query_text="Shared Entity",
+            query_embedding=[0.0, 1.0],
+            top_k=10,
+            scope=SCOPE,
+        )
+    )
+    assert any("Source B" in hit.document.content for hit in shared_hits)
 
 
 def test_source_operation_keys_allow_independent_sources_and_scopes() -> None:

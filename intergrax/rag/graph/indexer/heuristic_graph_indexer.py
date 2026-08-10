@@ -8,6 +8,9 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from intergrax.distributed.source_operation import (
+    SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
+)
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.graph.contracts.graph_store import GraphEdge, GraphNode, GraphStore
 from intergrax.rag.graph.indexer.validation import validate_graph_index_batch
@@ -39,11 +42,17 @@ class HeuristicGraphIndexer:
         if len(entities) < 2:
             return 0
 
+        publication_metadata = self._publication_metadata(doc)
         node_ids: list[str] = []
         for label in entities:
             node_id = f"ent:{label.lower().replace(' ', '_')}"
             self._store.upsert_node(
-                GraphNode(id=node_id, label=label, node_type="entity")
+                GraphNode(
+                    id=node_id,
+                    label=label,
+                    node_type="entity",
+                    metadata=publication_metadata,
+                )
             )
             self._store.link_chunk(node_id, chunk_id)
             node_ids.append(node_id)
@@ -54,7 +63,21 @@ class HeuristicGraphIndexer:
                     source_id=node_ids[i],
                     target_id=node_ids[i + 1],
                     relation="co_occurs",
-                    metadata={"chunk_ids": [chunk_id]},
+                    metadata={"chunk_ids": [chunk_id], **publication_metadata},
                 )
             )
         return len(node_ids)
+
+    @staticmethod
+    def _publication_metadata(doc: KnowledgeDocument) -> dict[str, object]:
+        if SOURCE_PUBLICATION_GENERATION_METADATA_KEY not in doc.metadata:
+            return {}
+        return {
+            SOURCE_PUBLICATION_GENERATION_METADATA_KEY: doc.metadata.get(
+                SOURCE_PUBLICATION_GENERATION_METADATA_KEY
+            ),
+            "tenant_id": doc.scope.tenant_id,
+            "namespace": doc.scope.namespace,
+            "workspace_id": doc.scope.workspace_id,
+            "source_id": str(doc.provenance.source_id),
+        }

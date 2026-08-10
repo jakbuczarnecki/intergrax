@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence, Set
+from typing import TYPE_CHECKING, Dict, List, Sequence, Set
+
+if TYPE_CHECKING:
+    from intergrax.distributed.source_operation import SourceOperationCoordinator
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,17 @@ class GraphEdge:
 
 
 class GraphStore(ABC):
+    def set_source_operation_coordinator(
+        self,
+        coordinator: "SourceOperationCoordinator | None",
+    ) -> None:
+        """Bind publication visibility to the canonical source coordinator.
+
+        Providers that do not implement generation-aware evidence retain their
+        existing behavior until they add this optional capability.
+        """
+        del coordinator
+
     @property
     def tenant_id(self) -> str | None:
         """Optional tenant namespace for graph isolation (M-RAG.41)."""

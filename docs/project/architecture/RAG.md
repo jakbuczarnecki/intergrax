@@ -100,16 +100,24 @@ Explicit limitations:
   publish, or clean up;
 - the default coordinator is thread-safe and process-local; production
   composition can inject the durable `ConditionalDocumentStore` coordinator.
-  The lease token and expiry fence only govern operation ownership, release,
-  and cleanup; a CAS lease alone does not fence a backend write that has
-  already started;
-- every source replacement receives a monotonic publication generation. Vector
-  and TOC records, plus the chunk IDs used by GraphRAG publication, carry that
-  generation. After all writes are prepared, the coordinator CAS-promotes one
-  active generation; retrieval exposes only records matching that active
-  generation, including graph-resolved chunk evidence. A stale in-flight write
-  therefore remains non-active and reclaimable after takeover, while the same
-  generation governs vector, TOC and GraphRAG replacement;
+  Lease ownership is the owner/token/expiry decision for publish, release and
+  cleanup; a CAS lease alone does not fence a backend write that has already
+  started;
+- every source replacement receives a monotonic publication generation from
+  that same coordinator. Publication generation is distinct from lease
+  ownership: after preparation, the coordinator CAS-promotes one active
+  generation;
+- vector and TOC visibility is filtered by the exact active generation for
+  each source. Their logical vector IDs remain unchanged, and stale physical
+  records remain reclaimable;
+- GraphRAG graph nodes, edges and chunk ownership carry source publication
+  evidence. Canonical harness traversal resolves each evidence record through
+  the same coordinator and ignores inactive or unresolved versioned evidence;
+  shared nodes/edges remain visible when another active generation supports
+  them. Unversioned legacy graph evidence retains its prior behavior. This
+  generation-aware graph evidence fence is qualified for the harness
+  `InMemoryGraphStore`; live Neo4j reingest and live provider fencing are not
+  claimed;
 - different source IDs, workspaces, namespaces, and tenants use independent
   keys; this is live-operation serialization, not cross-store transaction
   atomicity or exactly-once ingestion. Partial vector/TOC/GraphRAG
