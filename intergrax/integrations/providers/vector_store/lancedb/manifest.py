@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="lancedb",
     categories=(IntegrationCategory.VECTOR_STORE,),
-    status=IntegrationStatus.STABLE,
+    status=IntegrationStatus.BETA,
     env_prefix='INTERGRAX_LANCEDB',
-    description='lancedb integration (Phase M.7 P7)',
+    description='lancedb integration (BETA: native ownership ABI is incomplete)',
 )

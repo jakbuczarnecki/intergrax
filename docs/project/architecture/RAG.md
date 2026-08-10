@@ -139,6 +139,27 @@ Explicit limitations:
   the optional splitter dependency is present in this environment but is not
   used by the canonical native gate.
 
+### Stable vector backend lifecycle matrix (RAG-FINAL-10D)
+
+The matrix describes the native ABI, not live service qualification.
+
+| Provider | Stability | Core native ABI | Exact scope | Logical ID parity | Ownership lookup | Source replacement | Evidence |
+|---|---|---|---|---|---|---|---|
+| Qdrant | STABLE | full | yes | yes | exact server-side scroll | supported | QUALIFIED_OFFLINE_CONTRACT |
+| PgVector | STABLE | full | yes | yes | exact SQL predicate | supported | QUALIFIED_OFFLINE_CONTRACT |
+| Chroma | STABLE | full | yes | yes | exact metadata `get` | supported | QUALIFIED_OFFLINE_CONTRACT |
+| Weaviate | BETA | incomplete scoped delete | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
+| LanceDB | BETA | adapter contract only | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
+| Typesense | BETA | scoped delete/count unavailable | partial | not qualified | unavailable | UNSUPPORTED_FOR_SOURCE_REPLACEMENT | reclassified; no live claim |
+
+`QUALIFIED_OFFLINE_CONTRACT`: native records, scope, logical IDs and exact
+ownership behavior are covered by offline provider/fake tests.
+`LIVE_QUALIFIED`: none in RAG-FINAL-10D. `OPTIONAL_CAPABILITY_LIMITATION`
+applies only when a provider remains stable for core retrieval while an
+optional lifecycle capability is explicitly unsupported; no such provider is
+currently in the stable matrix. Reclassified providers must fail closed for
+source replacement rather than append a changed source.
+
 Evidence commands:
 `uv run pytest tests/unit/rag/document_splitters/test_native_strategies.py -q -k recursive`,
 `uv run pytest tests/e2e/rag/test_native_rag_retrieval_qualification.py -q`,
@@ -170,7 +191,7 @@ RAG is the **functional owner** of the platform knowledge document ABI. The cano
 | Observability | **L3** | `RetrievalTrace`, parser trace, OTel spans default-on; metrics default-on when OTel spine enabled (M-RAG.57) |
 | Security (poisoning) | **L3** | Nexus `rag.retrieve` (catalog) + catalog `rag.retrieve` when `security_profile` wired (M-RAG.25) |
 | Citations | **L3** | Formal `Citation` on `RetrievalResult` + `RagRetrieveOutput.citations` (M-RAG.29) |
-| Vector backends (prod SLO) | **L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`, `weaviate`, `lancedb`, `typesense`; **beta:** `pinecone`, `milvus`, `vespa`, `inmemory`; soak gates M-RAG.30/56 |
+| Vector backends (prod SLO) | **L3** | Catalog **stable:** `qdrant`, `pgvector`, `chroma`; **beta:** `weaviate`, `lancedb`, `typesense`, `pinecone`, `milvus`, `vespa`, `inmemory`; soak gates M-RAG.30/56 |
 | Multi-tenant isolation | **L3** | Cross-backend contract tests vector (`inmemory`, `pgvector`, `weaviate`, `qdrant`, `chroma`, `lancedb`, `typesense` — M-RAG.62) + graph (M-RAG.35, M-RAG.41) |
 | Evaluation depth | **L3** | Golden harness + `run_retrieval_load_soak` CI gate (M-RAG.36) |
 
@@ -223,7 +244,7 @@ Full findings from architecture + implementation review. **Category:** `gap` = m
 | GAP-RAG-09b | below_prod_bar | ~~RAG metrics opt-in vs OTel default-on~~ — **closed M-RAG.57**: metrics default follows `INTERGRAX_RAG_OTEL_SPANS_ENABLED` when unset | **P2** | M-RAG.57 **Done** | 14.7 |
 | GAP-RAG-07b | incomplete_wiring | ~~Beta vector slugs lack harness soak gate~~ — **closed M-RAG.56**: `run_beta_adapter_soak` + gate for pinecone/milvus/vespa | **P2** | M-RAG.56 **Done** | — |
 | GAP-RAG-39 | incomplete_wiring | ~~`rag.retrieve` diagnostics omit graph trace fields~~ — **closed M-RAG.60**: `channel_contributions`, `graph_provenance_records` on tool diagnostics | **P2** | M-RAG.60 **Done** | — |
-| GAP-RAG-40 | incomplete_wiring | ~~`STABLE_PROD_SLO_SLUGS` omits `lancedb`/`typesense`~~ — **closed M-RAG.61**: tuple aligned with stable manifests | **P3** | M-RAG.61 **Done** | — |
+| GAP-RAG-40 | incomplete_wiring | ~~`STABLE_PROD_SLO_SLUGS` omits `lancedb`/`typesense`~~ — **superseded RAG-FINAL-10D**: tuple now contains only ABI-qualified stable manifests; `weaviate`, `lancedb` and `typesense` are explicitly reclassified | **P3** | RAG-FINAL-10D **Done** | — |
 
 **Traceability rule:** no open GAP-RAG row without a **Planned** M-RAG.\* deliverable in [`plan/RAG.md`](../maintainers/plans/RAG.md). **GAP-RAG-15** and **GAP-RAG-34** are explicit architectural boundaries, not harness defects.
 

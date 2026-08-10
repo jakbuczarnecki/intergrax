@@ -25,6 +25,7 @@ from intergrax.rag.vectorstore.providers.native_provider_boundary import (
     validate_records,
     validate_scope,
 )
+from intergrax.knowledge.contracts.validation import require_non_empty_str
 
 
 @dataclass(frozen=True)
@@ -273,6 +274,25 @@ class ChromaVectorStore(BaseVectorStore):
                 MetadataFilter.for_scope(scope, None).conditions
             ),
         )
+
+    def list_source_record_ids(
+        self,
+        *,
+        source_id: str,
+        scope: VectorStoreScope,
+    ) -> Sequence[str]:
+        canonical_source_id = require_non_empty_str(
+            source_id,
+            field_name="source_id",
+        )
+        validate_scope(scope, tenant_id=self.cfg.tenant_id)
+        conditions = dict(MetadataFilter.for_scope(scope, None).conditions)
+        conditions["source_id"] = canonical_source_id
+        result = self._collection.get(
+            where=self._normalize_chroma_where(conditions),
+            include=[],
+        )
+        return tuple(sorted(str(vector_id) for vector_id in result.get("ids", [])))
 
     def count(self, *, scope: VectorStoreScope) -> int:
         validate_scope(scope, tenant_id=self.cfg.tenant_id)

@@ -24,9 +24,6 @@ STABLE_PROD_SLO_SLUGS: tuple[str, ...] = (
     "qdrant",
     "pgvector",
     "chroma",
-    "weaviate",
-    "lancedb",
-    "typesense",
 )
 
 BETA_PROMOTION_CANDIDATE_SLUGS: tuple[str, ...] = ("pinecone", "milvus", "vespa")

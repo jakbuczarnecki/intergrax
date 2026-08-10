@@ -11,7 +11,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 MANIFEST = IntegrationManifest(
     slug="typesense",
     categories=(IntegrationCategory.VECTOR_STORE,),
-    status=IntegrationStatus.STABLE,
+    status=IntegrationStatus.BETA,
     env_prefix='INTERGRAX_TYPESENSE',
-    description='typesense integration (Phase M.6 P6)',
+    description='typesense integration (BETA: scoped delete and count are incomplete)',
 )

@@ -40,9 +40,10 @@ def _record(vector_id: str, scope: VectorStoreScope) -> VectorStoreRecord:
             "scope": {
                 "tenant_id": scope.tenant_id,
                 "namespace": scope.namespace,
+                "workspace_id": scope.workspace_id,
             },
             "content": f"content-{vector_id}",
-            "metadata": {"owner": "test", "workspace_id": "spoofed"},
+            "metadata": {"owner": "test"},
             "provenance": {"source_kind": "test", "source_id": vector_id},
         }
     )
@@ -219,7 +220,7 @@ def test_scope_is_injected_and_native_hits_reconstruct_documents(provider_name: 
     )
     assert hits[0].document.scope.tenant_id == "tenant-a"
     assert hits[0].document.scope.namespace == "namespace-a"
-    assert hits[0].document.metadata["workspace_id"] == "workspace-a"
+    assert hits[0].document.scope.workspace_id == "workspace-a"
 
     if provider_name == "vespa":
         fields = client.fed[0]["fields"]
