@@ -98,6 +98,10 @@ def _format_evidence(
             continue
         metadata = chunk.get("metadata")
         meta: dict[str, Any] = metadata if isinstance(metadata, dict) else {}
+        provenance = chunk.get("provenance")
+        provenance_map: dict[str, Any] = (
+            provenance if isinstance(provenance, dict) else {}
+        )
         source_path = meta.get("source_path") or meta.get("source") or meta.get("file")
         file_name = meta.get("file_name")
         if not file_name and source_path:
@@ -116,7 +120,15 @@ def _format_evidence(
             chunk_id=str(chunk.get("id")) if chunk.get("id") is not None else None,
             score=float(raw_score) if isinstance(raw_score, (int, float)) else None,
             document_id=str(meta["document_id"]) if meta.get("document_id") else None,
-            source_id=str(meta["source_id"]) if meta.get("source_id") else None,
+            source_id=(
+                str(meta["lkw_source_id"])
+                if meta.get("lkw_source_id")
+                else str(provenance_map["source_id"])
+                if provenance_map.get("source_id")
+                else str(meta["source_id"])
+                if meta.get("source_id")
+                else None
+            ),
             workspace_id=item_workspace,
             file_name=str(file_name) if file_name else None,
             metadata=meta,

@@ -572,6 +572,11 @@ class WorkspaceDocumentIndexingService:
                 "content_hash": content_hash,
                 "operation_id": operation_id,
                 "requested_by": "lkw.managed_workspace.index",
+                **(
+                    {"materialization_scope": materialization_scope}
+                    if materialization_scope is not None
+                    else {}
+                ),
             },
         )
         result = await self._task_executor.execute(task)

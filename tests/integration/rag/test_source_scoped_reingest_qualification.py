@@ -178,6 +178,52 @@ def _ingest(pipeline: IngestPipeline, path: Path) -> list[str]:
     return result.vector_ids
 
 
+def test_connected_source_index_preserves_content_and_safe_provenance(
+    tmp_path: Path,
+) -> None:
+    pipeline, _embedding, vectorstore, retrieval = _build()
+    source = tmp_path / "connected.md"
+    marker = "canonical connected source marker"
+    document_id = "lkwdoc:canonical-connected"
+    source_id = "src:canonical-connected"
+    _write(source, marker)
+
+    result = pipeline.run(
+        IngestRequest(
+            source_path=str(source),
+            base_metadata={
+                "tenant_id": TENANT_ID,
+                "namespace": NAMESPACE,
+                "source_id": source_id,
+                "document_id": document_id,
+                "materialization_scope": "connected:binding-1",
+            },
+            workspace_id=WORKSPACE_ID,
+        )
+    )
+
+    assert result.used is True
+    assert vectorstore.list_source_record_ids(
+        source_id=str(source.resolve()),
+        scope=SCOPE,
+    )
+    retrieved = retrieval.retrieve(
+        RetrievalRequest(
+            query=marker,
+            scope=SCOPE,
+            final_top_k=5,
+            prefetch_k=5,
+            route_tier_override="standard",
+        )
+    )
+    assert retrieved.used is True
+    assert any(marker in chunk.text for chunk in retrieved.chunks)
+    assert any(
+        chunk.metadata.get("lkw_source_id") == source_id
+        for chunk in retrieved.chunks
+    )
+
+
 def _source_ids(vectorstore: VectorstoreManager, path: Path) -> set[str]:
     return set(
         vectorstore.list_source_record_ids(

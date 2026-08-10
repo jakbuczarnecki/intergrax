@@ -35,6 +35,7 @@ _LKW_INDEX_METADATA_KEYS = frozenset(
         "operation_id",
         "logical_source_path",
         "display_file_name",
+        "materialization_scope",
     }
 )
 
@@ -126,6 +127,9 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
             ingest_metadata["workspace_id"] = workspace_id
         if chunking := metadata.get("chunking_strategy_id"):
             ingest_metadata["chunking_strategy_id"] = chunking
+        materialization_scope = metadata.get("materialization_scope")
+        if materialization_scope is not None and str(materialization_scope).strip():
+            ingest_metadata["materialization_scope"] = str(materialization_scope).strip()
         for key in _INGEST_PROVENANCE_METADATA_KEYS:
             if key == "workspace_id":
                 continue

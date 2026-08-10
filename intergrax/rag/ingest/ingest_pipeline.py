@@ -85,6 +85,43 @@ class IngestResult:
     reindex_recommended: bool = False
 
 
+def _restore_connected_source_identity(
+    documents: list[KnowledgeDocument],
+    *,
+    base_metadata: dict[str, Any],
+) -> list[KnowledgeDocument]:
+    """Restore safe canonical identity after loading a materialized source file."""
+    materialization_scope = base_metadata.get("materialization_scope")
+    document_id = base_metadata.get("document_id")
+    source_id = base_metadata.get("source_id")
+    if not (
+        isinstance(materialization_scope, str)
+        and materialization_scope.strip()
+        and isinstance(document_id, str)
+        and document_id.strip()
+        and isinstance(source_id, str)
+        and source_id.strip()
+    ):
+        return documents
+    if len(documents) != 1:
+        return documents
+
+    payload = documents[0].model_dump(mode="python")
+    canonical_document_id = document_id.strip()
+    canonical_source_id = source_id.strip()
+    payload["identity"] = {
+        "document_id": canonical_document_id,
+        "root_document_id": canonical_document_id,
+    }
+    provenance = dict(payload["provenance"])
+    provenance["source_uri"] = None
+    payload["provenance"] = provenance
+    metadata = dict(payload["metadata"])
+    metadata["lkw_source_id"] = canonical_source_id
+    payload["metadata"] = metadata
+    return [KnowledgeDocument.model_validate(payload)]
+
+
 class _RecordingVectorstore:
     """Capture provider-returned IDs while preserving the vectorstore ABI."""
 
@@ -137,8 +174,15 @@ class IngestPipeline:
         self._graph_store = graph_store
         self._llm_for_graph = llm_for_graph
         self._metadata_callback = metadata_callback
+        existing_source_coordinator = getattr(
+            vectorstore,
+            "_source_coordinator",
+            None,
+        )
         self._source_coordinator = (
-            source_coordinator or InProcessSourceOperationCoordinator()
+            source_coordinator
+            or existing_source_coordinator
+            or InProcessSourceOperationCoordinator()
         )
         for publication_store in (self._vectorstore, self._toc_vectorstore):
             configure = getattr(
@@ -234,6 +278,10 @@ class IngestPipeline:
                         )
                     )
                 native_docs = scoped_docs
+            native_docs = _restore_connected_source_identity(
+                native_docs,
+                base_metadata=base_metadata,
+            )
             if not native_docs:
                 return IngestResult(used=False, reason="no_documents_loaded")
 
