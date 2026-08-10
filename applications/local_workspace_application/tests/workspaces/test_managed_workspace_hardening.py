@@ -380,20 +380,33 @@ def test_map_search_hits_requires_complete_evidence(tmp_path: Path) -> None:
 def test_map_search_hits_maps_complete_evidence_without_file_read(tmp_path: Path) -> None:
     from datetime import UTC, datetime
 
-    path = tmp_path / "a.txt"
+    root = tmp_path / "docs"
+    root.mkdir()
+    path = root / "a.txt"
     path.write_text("secret body", encoding="utf-8")
     repo = ManagedWorkspaceRepository(InMemoryDocumentStore())
+    service = ManagedWorkspaceService(
+        repo,
+        allowlist_roots=frozenset({str(root.resolve())}),
+    )
+    workspace = service.create_workspace(tenant_id="t1", name="Case")
+    source = service.register_local_folder_source(
+        tenant_id="t1",
+        workspace_id=workspace.workspace_id,
+        path=str(root),
+    )
+    document = WorkspaceDocumentReference(
+        document_id="doc-1",
+        tenant_id="t1",
+        workspace_id=workspace.workspace_id,
+        source_id=source.source_id,
+        source_path=str(path.resolve()),
+        file_name="a.txt",
+        content_hash="sha256:abc",
+        indexed_at=datetime.now(UTC),
+    )
     repo.put_document_ref(
-        WorkspaceDocumentReference(
-            document_id="doc-1",
-            tenant_id="t1",
-            workspace_id="w1",
-            source_id="s1",
-            source_path=str(path.resolve()),
-            file_name="a.txt",
-            content_hash="sha256:abc",
-            indexed_at=datetime.now(UTC),
-        )
+        document
     )
     result = TaskResult(
         task_id="r1",
@@ -408,14 +421,14 @@ def test_map_search_hits_maps_complete_evidence_without_file_read(tmp_path: Path
             structured_data={
                 "search_summary": {
                     "query": "q",
-                    "workspace_id": "w1",
+                    "workspace_id": workspace.workspace_id,
                     "result_count": 1,
                     "evidence": [
                         {
-                            "document_id": "doc-1",
-                            "source_id": "s1",
-                            "workspace_id": "w1",
-                            "source_path": str(path.resolve()),
+                            "document_id": document.document_id,
+                            "source_id": source.source_id,
+                            "workspace_id": workspace.workspace_id,
+                            "source_path": document.source_path,
                             "file_name": "a.txt",
                             "score": 0.91,
                             "snippet": "platform snippet",
@@ -429,14 +442,19 @@ def test_map_search_hits_maps_complete_evidence_without_file_read(tmp_path: Path
     hits = _map_search_hits(
         repository=repo,
         tenant_id="t1",
-        workspace_id="w1",
+        workspace_id=workspace.workspace_id,
         task_result=result,
         limit=10,
     )
     assert len(hits) == 1
     assert hits[0].snippet == "platform snippet"
     assert hits[0].score == 0.91
-    assert hits[0].document_id == "doc-1"
+    assert hits[0].document_id == document.document_id
+    assert hits[0].source_id == source.source_id
+    assert hits[0].workspace_id == workspace.workspace_id
+    assert hits[0].source_path == document.source_path
+    assert hits[0].file_name == document.file_name
+    assert hits[0].metadata == {"k": "v"}
 
 
 @pytest.mark.unit
