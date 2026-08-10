@@ -1,8 +1,8 @@
 # RAG-LIVE-15A-R2 — PgVector Live Qualification
 
-**Status:** `READY_FOR_REVIEW`  
-**Provider status:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED`  
-**Global status:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`  
+**Status:** `READY_FOR_REVIEW`
+**Provider status:** `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED`
+**Global status:** `PRODUCTION_QUALIFIED_WITH_LIMITATIONS`
 **Qualification date:** 2026-08-10
 
 This is an append-only live qualification record. It does not rewrite the
