@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, NoReturn
 
 import pytest
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
 from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
@@ -73,6 +74,71 @@ def _record(
     )
 
 
+def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
+    """Return True only for dependency, configuration, or connection absence."""
+    if isinstance(
+        exc,
+        (
+            ImportError,
+            IntegrationConfigurationError,
+            ConnectionError,
+            TimeoutError,
+        ),
+    ):
+        return True
+
+    error_type = type(exc)
+    module = error_type.__module__
+    name = error_type.__name__
+    if slug == "pgvector":
+        return module.startswith(("psycopg", "psycopg2")) and name in {
+            "OperationalError",
+            "InterfaceError",
+        }
+    if slug in {"chroma", "qdrant"}:
+        if (
+            slug == "chroma"
+            and isinstance(exc, ValueError)
+            and str(exc).startswith("Could not connect to a Chroma server.")
+        ):
+            return True
+        if module.startswith(("httpcore", "httpx")) and name in {
+            "ConnectError",
+            "ConnectTimeout",
+        }:
+            return True
+        if slug == "qdrant" and module.startswith("qdrant_client") and name in {
+            "ResponseHandlingException",
+            "UnexpectedResponse",
+        }:
+            return True
+
+    # A few clients expose connection refusal as a plain RuntimeError. Keep
+    # this deliberately narrow; arbitrary RuntimeError remains a test failure.
+    if (
+        error_type is RuntimeError
+        and slug in {"chroma", "qdrant", "pgvector"}
+    ):
+        message = str(exc).lower()
+        return any(
+            marker in message
+            for marker in (
+                "connection refused",
+                "connection reset",
+                "failed to connect",
+                "could not connect",
+                "service unavailable",
+            )
+        )
+    return False
+
+
+def _skip_or_raise_backend_failure(slug: str, exc: Exception) -> NoReturn:
+    if _is_known_environment_failure(slug, exc):
+        pytest.skip(f"{slug} backend unavailable: {exc}")
+    raise exc
+
+
 def _open_stable_store(slug: str) -> _Backend:
     name = _unique_name(f"it_{slug}")
     scope = VectorStoreScope(
@@ -99,9 +165,15 @@ def _open_stable_store(slug: str) -> _Backend:
     try:
         integration = builders[slug]()
         native_store = getattr(integration, "rag_store", integration)
-        return _Backend(slug=slug, store=native_store, scope=scope)
     except Exception as exc:
-        pytest.skip(f"{slug} backend unavailable: {exc}")
+        _skip_or_raise_backend_failure(slug, exc)
+
+    backend = _Backend(slug=slug, store=native_store, scope=scope)
+    try:
+        backend.store.count(scope=backend.scope)
+    except Exception as exc:
+        _skip_or_raise_backend_failure(slug, exc)
+    return backend
 
 
 @pytest.fixture(params=list(STABLE_PROD_SLO_SLUGS))
@@ -110,7 +182,7 @@ def backend(request: pytest.FixtureRequest) -> _Backend:
     return _open_stable_store(slug)
 
 
-def test_full_lifecycle(backend: _Backend) -> None:
+def _run_full_lifecycle(backend: _Backend) -> None:
     source_id = f"source://{backend.slug}/lifecycle"
     records = [
         _record(
@@ -122,10 +194,7 @@ def test_full_lifecycle(backend: _Backend) -> None:
         for index in range(10)
     ]
 
-    try:
-        returned_ids = backend.store.add_records(records, scope=backend.scope)
-    except Exception as exc:
-        pytest.skip(f"{backend.slug} native add_records failed: {exc}")
+    returned_ids = backend.store.add_records(records, scope=backend.scope)
     assert tuple(returned_ids) == tuple(record.vector_id for record in records)
     assert backend.store.count(scope=backend.scope) == 10
     assert tuple(
@@ -161,6 +230,10 @@ def test_full_lifecycle(backend: _Backend) -> None:
             scope=backend.scope,
         )
     ) == ()
+
+
+def test_full_lifecycle(backend: _Backend) -> None:
+    _run_full_lifecycle(backend)
 
 
 def test_source_replacement_and_scope_negative_gate(backend: _Backend) -> None:
@@ -271,19 +344,14 @@ def test_tenant_isolation_qdrant_live() -> None:
     def _qdrant_factory(tenant_id: str, collection_name: str):
         return create_qdrant_vector_store(collection_name=collection_name, tenant_id=tenant_id)
 
-    try:
-        result = run_tenant_isolation_contract(
-            _qdrant_factory,
-            slug="qdrant",
-            collection_name=name,
-            tenant_a="tenant_A",
-            tenant_b="tenant_B",
-        )
-    except Exception as exc:
-        pytest.skip(f"qdrant backend unavailable: {exc}")
-
-    if not result.cross_query_isolated and result.reason.startswith("tenant_a_ingest_failed"):
-        pytest.skip(f"qdrant tenant probe failed: {result.reason}")
+    _open_stable_store("qdrant")
+    result = run_tenant_isolation_contract(
+        _qdrant_factory,
+        slug="qdrant",
+        collection_name=name,
+        tenant_a="tenant_A",
+        tenant_b="tenant_B",
+    )
 
     assert result.cross_query_isolated is True, result.reason
     assert result.ingest_mismatch_rejected is True, result.reason
@@ -291,24 +359,18 @@ def test_tenant_isolation_qdrant_live() -> None:
 
 @pytest.mark.parametrize("slug", list(STABLE_PROD_SLO_SLUGS))
 def test_prod_slo_soak_gate(slug: str) -> None:
-    """M-RAG.30 — stable backend soak; skipped when service is not reachable."""
+    """M-RAG.30 — stable backend soak; skips only when unavailable at open."""
     backend = _open_stable_store(slug)
-    try:
-        result = run_vectorstore_soak(
-            backend.store,
-            slug=slug,
-            config=SoakConfig(
-                document_count=30,
-                query_rounds=4,
-                top_k=5,
-                max_p95_query_ms=5_000.0,
-            ),
-        )
-    except Exception as exc:
-        pytest.skip(f"{slug} soak probe failed: {exc}")
-
-    if not result.passed and result.reason.startswith(("ingest_failed", "query_failed", "count_failed")):
-        pytest.skip(f"{slug} soak unavailable: {result.reason}")
+    result = run_vectorstore_soak(
+        backend.store,
+        slug=slug,
+        config=SoakConfig(
+            document_count=30,
+            query_rounds=4,
+            top_k=5,
+            max_p95_query_ms=5_000.0,
+        ),
+    )
 
     assert result.passed is True, result.reason
     assert result.p95_query_ms <= 5_000.0
