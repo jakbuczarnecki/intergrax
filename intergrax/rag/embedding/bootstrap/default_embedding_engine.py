@@ -24,6 +24,7 @@ def create_default_registry() -> EmbeddingProviderRegistry:
             module_name="intergrax.rag.embedding.providers.hf_embedding_provider",
             class_name="HFEmbeddingProvider",
             dependency_name="sentence-transformers",
+            extra_name="rag-local-embeddings",
         ),
     )
     registry.register_factory(

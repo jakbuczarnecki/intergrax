@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from transformers import AutoTokenizer
-
 from intergrax.tokenizers.contracts.tokenizer import Tokenizer
 
 
@@ -30,6 +28,16 @@ class HFTokenizer(Tokenizer):
     def _ensure_loaded(self):
 
         if self._tokenizer is None:
+            try:
+                from transformers import AutoTokenizer
+            except ModuleNotFoundError as exc:
+                if exc.name != "transformers":
+                    raise
+                raise RuntimeError(
+                    "HFTokenizer requires the optional extra "
+                    "'rag-local-embeddings'. Install it with "
+                    "'uv sync --extra rag-local-embeddings'."
+                ) from exc
             self._tokenizer = AutoTokenizer.from_pretrained(
                 self._model
             )

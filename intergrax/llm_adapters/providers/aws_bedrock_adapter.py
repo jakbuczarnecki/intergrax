@@ -11,7 +11,6 @@ import os
 from typing import Any, Dict, Iterable, List, Optional, Protocol, Sequence, Union
 
 import boto3
-from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -43,6 +42,22 @@ from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
+
+
+class BedrockRuntimeClient(Protocol):
+    """Minimal Bedrock Runtime client surface used by this adapter."""
+
+    def invoke_model(self, **kwargs: Any) -> Any:
+        ...
+
+    def invoke_model_with_response_stream(self, **kwargs: Any) -> Any:
+        ...
+
+    def converse(self, **kwargs: Any) -> Any:
+        ...
+
+    def converse_stream(self, **kwargs: Any) -> Any:
+        ...
 
 
 class BedrockModelFamily(str, Enum):

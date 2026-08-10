@@ -31,3 +31,29 @@ Use of a dependency by a provider-specific implementation alone does not
 justify default-core ownership. Later DEP tasks must move such dependencies
 behind the provider's explicit selection/import boundary and preserve a
 controlled missing-dependency error.
+
+## DEP-2 decisions
+
+DEP-2 makes the native LLM extras and `rag-local-embeddings` actual selection
+boundaries:
+
+- `torch`, `sentence-transformers`, and `transformers` are
+  `LOCAL_ML_OPTIONAL` and owned by `rag-local-embeddings`.
+- `openai-whisper` is `MEDIA_OPTIONAL` and owned by `media-whisper`. DEP-2
+  moves this one media dependency early because its transitive Torch ownership
+  blocked the clean-core local-ML invariant; no other DEP-3 media or parser
+  ownership moves are included.
+- `anthropic`, `mistralai`, `ollama`, `google-genai`, and `cohere` are
+  `PROVIDER_OPTIONAL` and owned by their native `llm-*` extras.
+- `mypy-boto3-bedrock-runtime` has no runtime owner after the Bedrock adapter
+  uses one local minimal protocol. `boto3` remains `CORE_SERVER` /
+  `INTEGRATION_OPTIONAL` because AWS and S3 integration paths import it.
+- `openai` remains core because native embedding and vector-related paths use
+  it directly. The OpenAI-family extras therefore remain explicit provider
+  metadata but are blocked from becoming sole ownership boundaries until that
+  core owner is addressed.
+- `tiktoken` remains `CORE_FOUNDATION` because the base LLM adapter performs
+  canonical token accounting through it.
+
+`llm-all` contains native SDKs only; LangChain remains confined to
+`llm-langchain-ollama` and the existing RAG compatibility extras.

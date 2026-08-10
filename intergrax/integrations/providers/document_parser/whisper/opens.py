@@ -8,23 +8,47 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
-from intergrax.integrations.providers.document_parser.whisper.config import WhisperIntegrationConfig
-from intergrax.integrations.providers.document_parser.yt_dlp.config import YtDlpIntegrationConfig
-from intergrax.integrations.providers.document_parser.yt_dlp.opens import download_youtube_audio
+from intergrax.integrations.providers.document_parser.whisper.config import (
+    WhisperIntegrationConfig,
+)
+from intergrax.integrations.providers.document_parser.yt_dlp.config import (
+    YtDlpIntegrationConfig,
+)
+from intergrax.integrations.providers.document_parser.yt_dlp.opens import (
+    download_youtube_audio,
+)
+
+
+def _import_whisper() -> Any:
+    try:
+        import whisper
+    except ModuleNotFoundError as exc:
+        if exc.name in {"whisper", "torch"}:
+            raise IntegrationDependencyError(
+                "Provider 'whisper' requires optional dependency 'openai-whisper'. "
+                "Install Intergrax-ai[media-whisper].",
+                integration_name="whisper",
+            ) from exc
+        raise
+    return whisper
 
 
 def transcribe_audio_file(config: WhisperIntegrationConfig, audio_path: str | Path) -> dict[str, Any]:
-    import whisper
-
+    whisper = _import_whisper()
     model = whisper.load_model(config.model)
     task = "translate" if config.translate else "transcribe"
-    options: dict[str, Any] = dict(task=task, best_of=1, language=config.language)
+    options: dict[str, Any] = {
+        "task": task,
+        "best_of": 1,
+        "language": config.language,
+    }
     return model.transcribe(str(audio_path), **options)
 
 
 def _resolve_audio_path(config: WhisperIntegrationConfig, source: str) -> Path:
-    if source.startswith("http://") or source.startswith("https://"):
+    if source.startswith(("http://", "https://")):
         yt_config = YtDlpIntegrationConfig(
             out_dir=config.out_dir,
             audio_format=config.audio_format,
@@ -38,10 +62,9 @@ def _resolve_audio_path(config: WhisperIntegrationConfig, source: str) -> Path:
 
 def whisper_is_available() -> bool:
     try:
-        import whisper  # noqa: F401
-
+        _import_whisper()
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001 - availability probes must fail closed
         return False
 
 
@@ -93,9 +116,9 @@ def transcribe_media_to_vtt(
     output_vtt_path: Path | None = None,
 ) -> Path:
     import webvtt
-    import whisper
     from tqdm.auto import tqdm
 
+    whisper = _import_whisper()
     input_media_path = Path(input_media_path)
     target = output_vtt_path or input_media_path.with_suffix(".vtt")
     target = Path(target)

@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional
-
-from sentence_transformers import CrossEncoder
+from typing import Any, Optional
 
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
@@ -30,10 +28,20 @@ class _CrossEncoderBaseReranker(BaseReranker):
     ) -> None:
         self._model_name = model_name or self.DEFAULT_MODEL
         self._max_length = max_length
-        self._model: Optional[CrossEncoder] = None        
+        self._model: Any = None
 
     def _ensure_cross_encoder(self):
         if self._model is None:
+            try:
+                from sentence_transformers import CrossEncoder
+            except ModuleNotFoundError as exc:
+                if exc.name != "sentence_transformers":
+                    raise
+                raise RuntimeError(
+                    "CrossEncoderReranker requires the optional extra "
+                    "'rag-local-embeddings'. Install it with "
+                    "'uv sync --extra rag-local-embeddings'."
+                ) from exc
             self._model = CrossEncoder(
                 self._model_name,
                 max_length=self._max_length,

@@ -49,7 +49,6 @@ dependencies = [
   # -----------------
   # Runtime / Server
   # -----------------
-  "torch==2.2.2",
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "starlette>=0.41",
@@ -64,24 +63,14 @@ dependencies = [
   # LLM providers
   # -----------------
   "openai>=1.0",
-  "anthropic>=0.25",
-  "mistralai>=0.4",
-  "ollama>=0.1",
   "tiktoken>=0.7",
   "boto3>=1.34",
-  "botocore>=1.34",
-  "mypy-boto3-bedrock-runtime>=1.34",
-  "google-genai>=0.3",
-  "cohere>=5.5",
   # -----------------
   # RAG / Vector DBs
   # -----------------
   "chromadb==1.4.1",
   "qdrant-client>=1.9",
   "pinecone>=3.0",
-  "sentence-transformers>=3.0",
-  # Transformers v5 requires newer Torch; keep v4 while core pins torch 2.2.2.
-  "transformers>=4.41,<5",
   # -----------------
   # Data / parsing
   # -----------------
@@ -99,7 +88,6 @@ dependencies = [
   # -----------------
   # Media / ingestion
   # -----------------
-  "openai-whisper>=20240930,<20250626",
   "yt-dlp>=2024.0",
   "webvtt-py>=0.4",
   "opencv-python-headless==4.9.0.80",
@@ -184,6 +172,15 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+media-whisper = [
+  "openai-whisper>=20240930,<20250626",
+]
+rag-local-embeddings = [
+  "torch==2.2.2",
+  "sentence-transformers>=3.0",
+  # Transformers v5 requires newer Torch; keep v4 with the pinned Torch runtime.
+  "transformers>=4.41,<5",
+]
 rag-langchain-loaders = [
   "langchain-community>=0.3,<0.5",
 ]
@@ -201,7 +198,7 @@ harness-author = [
 ]
 # Optional legacy adapters only — not required for Nexus / Harness runtime.
 langgraph-legacy = ["langgraph>=0.0.40"]
-# Minimal LLM provider subsets (core package still installs all providers by default).
+# Explicit native LLM provider ownership boundaries.
 llm-openai = ["openai>=1.0", "tiktoken>=0.7"]
 llm-anthropic = ["anthropic>=0.25", "tiktoken>=0.7"]
 llm-mistral = ["mistralai>=0.4", "tiktoken>=0.7"]
@@ -210,7 +207,7 @@ llm-ollama = ["ollama>=0.1", "tiktoken>=0.7"]
 # LangChain message types.
 llm-langchain-ollama = ["langchain-core>=0.3,<2.0", "langchain-ollama>=0.2,<2.0"]
 llm-gemini = ["google-genai>=0.3", "tiktoken>=0.7"]
-llm-bedrock = ["boto3>=1.34", "botocore>=1.34", "mypy-boto3-bedrock-runtime>=1.34", "tiktoken>=0.7"]
+llm-bedrock = ["boto3>=1.34", "tiktoken>=0.7"]
 llm-groq = ["openai>=1.0", "tiktoken>=0.7"]
 llm-vllm = ["openai>=1.0", "tiktoken>=0.7"]
 llm-compat = ["openai>=1.0", "tiktoken>=0.7"]
@@ -223,8 +220,7 @@ llm-all = [
   "ollama>=0.1",
   "google-genai>=0.3",
   "boto3>=1.34",
-  "botocore>=1.34",
-  "mypy-boto3-bedrock-runtime>=1.34",
+  "cohere>=5.5",
   "tiktoken>=0.7",
 ]
 dev = [
