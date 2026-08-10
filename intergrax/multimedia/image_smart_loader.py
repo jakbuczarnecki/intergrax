@@ -8,19 +8,41 @@ import json
 import hashlib
 import os
 from pathlib import Path
-from typing import Literal, Optional
-from PIL import Image, ExifTags
+from typing import Any, Literal, Optional
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.knowledge.contracts import KnowledgeDocument
-
-
-try:
-    import pytesseract
-except Exception:
-    pytesseract = None
-
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+
+class _PillowModuleProxy:
+    def open(self, *args: Any, **kwargs: Any):
+        return _import_pillow()[0].open(*args, **kwargs)
+
+
+class _PillowExifTagsProxy:
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_import_pillow()[1], name)
+
+
+def _import_pillow():
+    try:
+        from PIL import ExifTags, Image as PillowImage
+    except ModuleNotFoundError as exc:
+        if exc.name == "PIL":
+            raise IntegrationDependencyError(
+                "Image parsing requires optional dependency 'pillow'. "
+                "Install Intergrax-ai[media-image].",
+                integration_name="image",
+            ) from exc
+        raise
+    return PillowImage, ExifTags
+
+
+Image = _PillowModuleProxy()
+ExifTags = _PillowExifTagsProxy()
+pytesseract = None
 
 class ImageSmartLoader:
     """
@@ -64,7 +86,7 @@ class ImageSmartLoader:
         self.workspace_id = workspace_id
 
     # ---------- helpers ----------
-    def _resize_if_needed(self, img: Image) -> Image:
+    def _resize_if_needed(self, img: Any) -> Any:
         if self.max_image_dim is None:
             return img
         w, h = img.size
@@ -74,7 +96,7 @@ class ImageSmartLoader:
         new_size = (int(w * ratio), int(h * ratio))
         return img.resize(new_size)
 
-    def _ocr(self, img: Image) -> str:
+    def _ocr(self, img: Any) -> str:
         if pytesseract is None:
             return ""
         cfg_parts = []
@@ -174,7 +196,7 @@ class ImageSmartLoader:
         # 3) Not supported yet
         raise ValueError("Captioning supported for adapters exposing describe_image(...) or an Ollama adapter (vision).")
 
-    def _exif_dict(self, img: Image) -> dict:
+    def _exif_dict(self, img: Any) -> dict:
         out = {}
         if not (self.extract_exif and ExifTags and hasattr(img, "_getexif")):
             return out

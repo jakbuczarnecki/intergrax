@@ -24,7 +24,7 @@ def _import_qdrant_client() -> Any:
     except ImportError as exc:
         raise IntegrationConfigurationError(
             "Qdrant integration requires qdrant-client. "
-            "Install with: uv sync  (qdrant-client is a main project dependency)"
+            "Install with: Intergrax-ai[vector-qdrant]."
         ) from exc
     return QdrantClient
 

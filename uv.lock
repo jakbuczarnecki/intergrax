@@ -469,19 +469,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cattrs"
-version = "25.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "attrs", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "typing-extensions", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6e/00/2432bb2d445b39b5407f0a90e01b9a271475eea7caf913d7a86bcb956385/cattrs-25.3.0.tar.gz", hash = "sha256:1ac88d9e5eda10436c4517e390a4142d88638fe682c436c93db7ce4a277b884a", size = 509321, upload-time = "2025-10-07T12:26:08.737Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/2b/a40e1488fdfa02d3f9a653a61a5935ea08b3c2225ee818db6a76c7ba9695/cattrs-25.3.0-py3-none-any.whl", hash = "sha256:9896e84e0a5bf723bc7b4b68f4481785367ce07a8a02e7e9ee6eb2819bc306ff", size = 70738, upload-time = "2025-10-07T12:26:06.603Z" },
-]
-
-[[package]]
 name = "celery"
 version = "5.6.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1639,40 +1626,22 @@ name = "intergrax-ai"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "beautifulsoup4", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "boto3", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "chardet", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "chromadb", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "cryptography", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "fastmcp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "httpx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "mcp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "numpy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "openai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "opencv-python-headless", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "openpyxl", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "pillow", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "pinecone", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "pymupdf", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "pytesseract", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "python-docx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dotenv", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-multipart", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pyyaml", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "requests-cache", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "starlette", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "streamlit", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tqdm", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "trafilatura", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "webvtt-py", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "xlrd", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "yt-dlp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.optional-dependencies]
@@ -1722,6 +1691,10 @@ integrations-kafka = [
 ]
 integrations-mongodb = [
     { name = "pymongo", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+integrations-pgvector = [
+    { name = "pgvector", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "psycopg", extra = ["binary"], marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 integrations-sentry = [
     { name = "sentry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1791,8 +1764,45 @@ llm-vllm = [
     { name = "openai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+mcp = [
+    { name = "fastmcp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+media-image = [
+    { name = "pillow", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+media-ocr = [
+    { name = "pillow", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pytesseract", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+media-video = [
+    { name = "opencv-python-headless", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "webvtt-py", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 media-whisper = [
     { name = "openai-whisper", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "webvtt-py", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+media-youtube = [
+    { name = "yt-dlp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+parsing-ocr = [
+    { name = "pillow", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pytesseract", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+parsing-office = [
+    { name = "docx2txt", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-community", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "openpyxl", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "python-docx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "xlrd", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+parsing-pdf = [
+    { name = "langchain-community", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pymupdf", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+parsing-web = [
+    { name = "beautifulsoup4", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "trafilatura", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 rag-langchain-embeddings = [
     { name = "langchain-ollama", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1808,6 +1818,18 @@ rag-local-embeddings = [
     { name = "torch", version = "2.2.2", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
     { name = "torch", version = "2.2.2+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or sys_platform == 'win32'" },
     { name = "transformers", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+ui-streamlit = [
+    { name = "streamlit", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+vector-chroma = [
+    { name = "chromadb", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+vector-pinecone = [
+    { name = "pinecone", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+vector-qdrant = [
+    { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [package.dev-dependencies]
@@ -1826,7 +1848,7 @@ requires-dist = [
     { name = "anthropic", marker = "extra == 'llm-all'", specifier = ">=0.25" },
     { name = "anthropic", marker = "extra == 'llm-anthropic'", specifier = ">=0.25" },
     { name = "azure-identity", marker = "extra == 'dev'", specifier = ">=1.19" },
-    { name = "beautifulsoup4", specifier = ">=4.12" },
+    { name = "beautifulsoup4", marker = "extra == 'parsing-web'", specifier = ">=4.12" },
     { name = "boto3", specifier = ">=1.34" },
     { name = "boto3", marker = "extra == 'llm-all'", specifier = ">=1.34" },
     { name = "boto3", marker = "extra == 'llm-bedrock'", specifier = ">=1.34" },
@@ -1834,7 +1856,7 @@ requires-dist = [
     { name = "celery", marker = "extra == 'dev'", specifier = ">=5.3" },
     { name = "celery", marker = "extra == 'dev-ci'", specifier = ">=5.3" },
     { name = "chardet", specifier = ">=5.2,<6" },
-    { name = "chromadb", specifier = "==1.4.1" },
+    { name = "chromadb", marker = "extra == 'vector-chroma'", specifier = "==1.4.1" },
     { name = "cohere", marker = "extra == 'llm-all'", specifier = ">=5.5" },
     { name = "cohere", marker = "extra == 'llm-cohere-native'", specifier = ">=5.5" },
     { name = "confluent-kafka", marker = "extra == 'dev'", specifier = ">=2.3.0" },
@@ -1843,21 +1865,23 @@ requires-dist = [
     { name = "databricks-sql-connector", marker = "extra == 'dev'", specifier = ">=3.6" },
     { name = "docling", extras = ["all"], marker = "extra == 'dev'", specifier = "==2.76.0" },
     { name = "docx2txt", marker = "extra == 'dev'", specifier = ">=0.8" },
+    { name = "docx2txt", marker = "extra == 'parsing-office'", specifier = ">=0.8" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "fastapi", marker = "extra == 'harness-author'", specifier = ">=0.115" },
-    { name = "fastmcp", specifier = ">=3.3.1" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.3.1" },
     { name = "google-auth", marker = "extra == 'dev'", specifier = ">=2.29" },
     { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3" },
     { name = "google-genai", marker = "extra == 'llm-gemini'", specifier = ">=0.3" },
     { name = "google-genai", marker = "extra == 'llm-vertex'", specifier = ">=0.3" },
     { name = "httpx", specifier = ">=0.27" },
+    { name = "langchain-community", marker = "extra == 'parsing-office'", specifier = ">=0.3,<0.5" },
+    { name = "langchain-community", marker = "extra == 'parsing-pdf'", specifier = ">=0.3,<0.5" },
     { name = "langchain-community", marker = "extra == 'rag-langchain-loaders'", specifier = ">=0.3,<0.5" },
     { name = "langchain-core", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.3,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.2,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'rag-langchain-embeddings'", specifier = ">=0.2,<2.0" },
     { name = "langchain-text-splitters", marker = "extra == 'rag-langchain-splitters'", specifier = ">=0.3,<2.0" },
     { name = "langgraph", marker = "extra == 'langgraph-legacy'", specifier = ">=0.0.40" },
-    { name = "mcp", specifier = ">=1.0" },
     { name = "mistralai", marker = "extra == 'llm-all'", specifier = ">=0.4" },
     { name = "mistralai", marker = "extra == 'llm-mistral'", specifier = ">=0.4" },
     { name = "numpy", specifier = "==1.26.4" },
@@ -1870,45 +1894,49 @@ requires-dist = [
     { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.0" },
     { name = "openai", marker = "extra == 'llm-vllm'", specifier = ">=1.0" },
     { name = "openai-whisper", marker = "extra == 'media-whisper'", specifier = ">=20240930,<20250626" },
-    { name = "opencv-python-headless", specifier = "==4.9.0.80" },
-    { name = "openpyxl", specifier = ">=3.1" },
+    { name = "opencv-python-headless", marker = "extra == 'media-video'", specifier = "==4.9.0.80" },
+    { name = "openpyxl", marker = "extra == 'parsing-office'", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },
+    { name = "pgvector", marker = "extra == 'integrations-pgvector'", specifier = ">=0.3" },
     { name = "pika", marker = "extra == 'dev'", specifier = ">=1.3.2" },
-    { name = "pillow", specifier = ">=11.0" },
-    { name = "pinecone", specifier = ">=3.0" },
+    { name = "pillow", marker = "extra == 'media-image'", specifier = ">=11.0" },
+    { name = "pillow", marker = "extra == 'media-ocr'", specifier = ">=11.0" },
+    { name = "pillow", marker = "extra == 'parsing-ocr'", specifier = ">=11.0" },
+    { name = "pinecone", marker = "extra == 'vector-pinecone'", specifier = ">=3.0" },
     { name = "presidio-analyzer", marker = "extra == 'integrations-guardrails'", specifier = ">=2.2" },
     { name = "presidio-anonymizer", marker = "extra == 'integrations-guardrails'", specifier = ">=2.2" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'dev'", specifier = ">=3.1" },
+    { name = "psycopg", extras = ["binary"], marker = "extra == 'integrations-pgvector'", specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pymongo", marker = "extra == 'dev'", specifier = ">=4.6" },
     { name = "pymongo", marker = "extra == 'integrations-mongodb'", specifier = ">=4.6" },
-    { name = "pymupdf", specifier = ">=1.23" },
+    { name = "pymupdf", marker = "extra == 'parsing-pdf'", specifier = ">=1.23" },
     { name = "pymysql", marker = "extra == 'dev'", specifier = ">=1.1" },
     { name = "pyright", marker = "extra == 'dev'" },
-    { name = "pytesseract", specifier = ">=0.3" },
+    { name = "pytesseract", marker = "extra == 'media-ocr'", specifier = ">=0.3" },
+    { name = "pytesseract", marker = "extra == 'parsing-ocr'", specifier = ">=0.3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4,<9" },
     { name = "pytest", marker = "extra == 'dev-ci'", specifier = ">=8.4,<9" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23,<0.24" },
     { name = "pytest-asyncio", marker = "extra == 'dev-ci'", specifier = ">=0.23,<0.24" },
     { name = "pytest-xdist", marker = "extra == 'dev-ci'", specifier = ">=3.6,<4" },
-    { name = "python-docx", specifier = ">=1.1" },
+    { name = "python-docx", marker = "extra == 'parsing-office'", specifier = ">=1.1" },
     { name = "python-dotenv", specifier = ">=1.0" },
     { name = "python-dotenv", marker = "extra == 'harness-author'", specifier = ">=1.0" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "pyyaml", marker = "extra == 'harness-author'", specifier = ">=6.0" },
-    { name = "qdrant-client", specifier = ">=1.9" },
+    { name = "qdrant-client", marker = "extra == 'vector-qdrant'", specifier = ">=1.9" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'dev-ci'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'integrations-kafka'", specifier = ">=5.0" },
-    { name = "requests-cache", specifier = ">=1.2" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "sentence-transformers", marker = "extra == 'rag-local-embeddings'", specifier = ">=3.0" },
     { name = "sentry-sdk", marker = "extra == 'integrations-harness'", specifier = ">=2.0" },
     { name = "sentry-sdk", marker = "extra == 'integrations-sentry'", specifier = ">=2.0" },
     { name = "slack-sdk", marker = "extra == 'integrations-slack'", specifier = ">=3.33.4" },
     { name = "starlette", specifier = ">=0.41" },
-    { name = "streamlit", specifier = ">=1.39" },
+    { name = "streamlit", marker = "extra == 'ui-streamlit'", specifier = ">=1.39" },
     { name = "tiktoken", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-all'", specifier = ">=0.7" },
     { name = "tiktoken", marker = "extra == 'llm-anthropic'", specifier = ">=0.7" },
@@ -1924,16 +1952,17 @@ requires-dist = [
     { name = "tiktoken", marker = "extra == 'llm-vllm'", specifier = ">=0.7" },
     { name = "torch", marker = "extra == 'rag-local-embeddings'", specifier = "==2.2.2", index = "https://download.pytorch.org/whl/cpu" },
     { name = "tqdm", specifier = ">=4.66" },
-    { name = "trafilatura", specifier = ">=1.8" },
+    { name = "trafilatura", marker = "extra == 'parsing-web'", specifier = ">=1.8" },
     { name = "transformers", marker = "extra == 'rag-local-embeddings'", specifier = ">=4.41,<5" },
     { name = "unstructured", marker = "extra == 'dev'", specifier = ">=0.12" },
     { name = "uvicorn", specifier = ">=0.30" },
     { name = "uvicorn", marker = "extra == 'harness-author'", specifier = ">=0.30" },
-    { name = "webvtt-py", specifier = ">=0.4" },
-    { name = "xlrd", specifier = ">=2.0" },
-    { name = "yt-dlp", specifier = ">=2024.0" },
+    { name = "webvtt-py", marker = "extra == 'media-video'", specifier = ">=0.4" },
+    { name = "webvtt-py", marker = "extra == 'media-whisper'", specifier = ">=0.4" },
+    { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0" },
+    { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0" },
 ]
-provides-extras = ["media-whisper", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 quality = [
@@ -3463,6 +3492,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pgvector"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/ec/6eb80aebc728200f95229219882994c1b0585b956ca47da5edb9d062627a/pgvector-0.5.0.tar.gz", hash = "sha256:07a9dcf735696879406983afc6eba9a787cef7c0cf6c367ca1a5779f036dee74", size = 35170, upload-time = "2026-07-06T18:27:27.767Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5c/e4/a5573f2c579ca9ad133293bfb624148ba0893674ca4a6eeec85ced9a6a09/pgvector-0.5.0-py3-none-any.whl", hash = "sha256:fedc9800894e6da2be51358d7b7c574bf34f247ca741a5a09513622135f5964f", size = 30958, upload-time = "2026-07-06T18:27:26.797Z" },
+]
+
+[[package]]
 name = "phonenumbers"
 version = "9.0.33"
 source = { registry = "https://pypi.org/simple" }
@@ -4381,23 +4419,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
-]
-
-[[package]]
-name = "requests-cache"
-version = "1.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "attrs", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "cattrs", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "platformdirs", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "requests", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "url-normalize", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "urllib3", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/be/7b2a95a9e7a7c3e774e43d067c51244e61dea8b120ae2deff7089a93fb2b/requests_cache-1.2.1.tar.gz", hash = "sha256:68abc986fdc5b8d0911318fbb5f7c80eebcd4d01bfacc6685ecf8876052511d1", size = 3018209, upload-time = "2024-06-18T17:18:03.774Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/2e/8f4051119f460cfc786aa91f212165bb6e643283b533db572d7b33952bd2/requests_cache-1.2.1-py3-none-any.whl", hash = "sha256:1285151cddf5331067baa82598afe2d47c7495a1334bfe7a7d329b43e9fd3603", size = 61425, upload-time = "2024-06-18T17:17:45Z" },
 ]
 
 [[package]]
@@ -5399,18 +5420,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/69/c6/bbc79efa9365fa8aecf353794a1253355eccf17468be3e6fb45a050e30d7/unstructured_client-0.45.0.tar.gz", hash = "sha256:3ffdaebdc27d2f043712dfeaee49cd38b990b480bed72e96255bf6245c0cc790", size = 94490, upload-time = "2026-06-05T21:36:51.635Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/66/e6/f1a9b2e1edc49665acaece9d806294945818fd46e969d66fe9a08fdb822f/unstructured_client-0.45.0-py3-none-any.whl", hash = "sha256:bf8f406f16d333a434aac601761d8794e518cf4cd21e424c196beef04e747786", size = 160590, upload-time = "2026-06-05T21:36:49.99Z" },
-]
-
-[[package]]
-name = "url-normalize"
-version = "2.2.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "idna", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/80/31/febb777441e5fcdaacb4522316bf2a527c44551430a4873b052d545e3279/url_normalize-2.2.1.tar.gz", hash = "sha256:74a540a3b6eba1d95bdc610c24f2c0141639f3ba903501e61a52a8730247ff37", size = 18846, upload-time = "2025-04-26T20:37:58.553Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bc/d9/5ec15501b675f7bc07c5d16aa70d8d778b12375686b6efd47656efdc67cd/url_normalize-2.2.1-py3-none-any.whl", hash = "sha256:3deb687587dc91f7b25c9ae5162ffc0f057ae85d22b1e15cf5698311247f567b", size = 14728, upload-time = "2025-04-26T20:37:57.217Z" },
 ]
 
 [[package]]

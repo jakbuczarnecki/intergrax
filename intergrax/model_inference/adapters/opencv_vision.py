@@ -7,8 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-import cv2
-
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.model_inference.contracts import (
     ExtendedVisionInferenceAdapter,
     ModelArtifact,
@@ -21,6 +20,20 @@ from intergrax.model_inference.contracts import (
     VisionSegment,
     VisionSegmentationResult,
 )
+
+
+def _import_cv2():
+    try:
+        import cv2
+    except ModuleNotFoundError as exc:
+        if exc.name == "cv2":
+            raise IntegrationDependencyError(
+                "OpenCV vision requires optional dependency 'opencv-python-headless'. "
+                "Install Intergrax-ai[media-video].",
+                integration_name="opencv",
+            ) from exc
+        raise
+    return cv2
 
 
 class OpenCvVisionInferenceAdapter(ExtendedVisionInferenceAdapter):
@@ -77,6 +90,7 @@ class _ContourRegion:
 
 
 def _contour_regions(media_uri: str, *, top_k: int) -> list[_ContourRegion]:
+    cv2 = _import_cv2()
     image_path = _resolve_media_path(media_uri)
     image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
     if image is None:
@@ -109,7 +123,7 @@ def _ocr_text(image_path: Path) -> str:
         import pytesseract
     except ImportError:
         return "[opencv ocr stub]"
-    image = cv2.imread(str(image_path))
+    image = _import_cv2().imread(str(image_path))
     if image is None:
         return ""
     return (pytesseract.image_to_string(image) or "").strip() or "[empty]"

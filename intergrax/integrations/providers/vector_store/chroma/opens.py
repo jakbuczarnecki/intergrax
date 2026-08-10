@@ -23,7 +23,7 @@ def _import_chromadb() -> Any:
     except ImportError as exc:
         raise IntegrationConfigurationError(
             "Chroma integration requires chromadb. "
-            "Install with: uv sync  (chromadb is a main project dependency)"
+            "Install with: Intergrax-ai[vector-chroma]."
         ) from exc
     return chromadb
 

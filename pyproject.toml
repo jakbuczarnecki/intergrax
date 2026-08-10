@@ -66,38 +66,14 @@ dependencies = [
   "tiktoken>=0.7",
   "boto3>=1.34",
   # -----------------
-  # RAG / Vector DBs
-  # -----------------
-  "chromadb==1.4.1",
-  "qdrant-client>=1.9",
-  "pinecone>=3.0",
-  # -----------------
   # Data / parsing
   # -----------------
   "numpy==1.26.4",
   "pandas>=2.1.4,<3.0.0",
-  "beautifulsoup4>=4.12",
-  "trafilatura>=1.8",
-  "python-docx>=1.1",
-  "openpyxl>=3.1",
-  "xlrd>=2.0",
-  "pytesseract>=0.3",
-  "pillow>=11.0",
-  "PyMuPDF>=1.23",
-  "requests-cache>=1.2",
   # -----------------
   # Media / ingestion
   # -----------------
-  "yt-dlp>=2024.0",
-  "webvtt-py>=0.4",
-  "opencv-python-headless==4.9.0.80",
   "chardet>=5.2,<6",
-  # -----------------
-  # UI
-  # -----------------
-  "streamlit>=1.39",
-  "fastmcp>=3.3.1",
-  "mcp>=1.0",
 ]
 
 [dependency-groups]
@@ -172,8 +148,57 @@ intergrax = "intergrax.cli.main:main"
 builtin = "intergrax.context.providers.builtin:BuiltinContextPlugin"
 
 [project.optional-dependencies]
+vector-chroma = [
+  "chromadb==1.4.1",
+]
+vector-qdrant = [
+  "qdrant-client>=1.9",
+]
+vector-pinecone = [
+  "pinecone>=3.0",
+]
+parsing-web = [
+  "beautifulsoup4>=4.12",
+  "trafilatura>=1.8",
+]
+parsing-office = [
+  "python-docx>=1.1",
+  "openpyxl>=3.1",
+  "xlrd>=2.0",
+  "docx2txt>=0.8",
+  "langchain-community>=0.3,<0.5",
+]
+parsing-pdf = [
+  "PyMuPDF>=1.23",
+  "langchain-community>=0.3,<0.5",
+]
+parsing-ocr = [
+  "pytesseract>=0.3",
+  "pillow>=11.0",
+]
+media-youtube = [
+  "yt-dlp>=2024.0",
+]
+media-video = [
+  "opencv-python-headless==4.9.0.80",
+  "webvtt-py>=0.4",
+]
+media-image = [
+  "pillow>=11.0",
+]
+media-ocr = [
+  "pytesseract>=0.3",
+  "pillow>=11.0",
+]
 media-whisper = [
   "openai-whisper>=20240930,<20250626",
+  "webvtt-py>=0.4",
+]
+ui-streamlit = [
+  "streamlit>=1.39",
+]
+mcp = [
+  "fastmcp>=3.3.1",
 ]
 rag-local-embeddings = [
   "torch==2.2.2",

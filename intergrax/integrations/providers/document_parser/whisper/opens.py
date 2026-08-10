@@ -115,7 +115,16 @@ def transcribe_media_to_vtt(
     input_media_path: str | Path,
     output_vtt_path: Path | None = None,
 ) -> Path:
-    import webvtt
+    try:
+        import webvtt
+    except ModuleNotFoundError as exc:
+        if exc.name == "webvtt":
+            raise IntegrationDependencyError(
+                "Provider 'whisper' VTT output requires optional dependency 'webvtt-py'. "
+                "Install Intergrax-ai[media-whisper].",
+                integration_name="whisper",
+            ) from exc
+        raise
     from tqdm.auto import tqdm
 
     whisper = _import_whisper()

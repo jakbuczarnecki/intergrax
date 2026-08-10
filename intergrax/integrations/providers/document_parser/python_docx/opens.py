@@ -6,8 +6,7 @@ from intergrax.utils import attribute_access
 
 from typing import TYPE_CHECKING, Literal
 
-import docx
-
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.contracts.document_parser import ParsedDocumentFragment
 from intergrax.integrations.providers.document_parser.python_docx.config import PythonDocxIntegrationConfig
 
@@ -73,6 +72,17 @@ class _DocxParagraphLoader:
                     "Provider 'python_docx' requires optional dependency group "
                     "'rag-langchain-loaders'. Install Intergrax with "
                     "'rag-langchain-loaders'."
+                ) from exc
+            raise
+
+        try:
+            import docx
+        except ModuleNotFoundError as exc:
+            if exc.name == "docx":
+                raise IntegrationDependencyError(
+                    "Provider 'python_docx' requires optional dependency 'python-docx'. "
+                    "Install Intergrax-ai[parsing-office].",
+                    integration_name="python_docx",
                 ) from exc
             raise
 

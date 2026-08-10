@@ -10,10 +10,24 @@ from intergrax.integrations.providers.document_parser.whisper.config import Whis
 from intergrax.integrations.providers.document_parser.whisper.opens import transcribe_media_to_vtt
 from intergrax.integrations.providers.document_parser.yt_dlp.config import YtDlpIntegrationConfig
 from intergrax.integrations.providers.document_parser.yt_dlp.opens import download_youtube_video
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from tqdm.auto import tqdm
-import cv2
 import os
 import json
+
+
+def _import_cv2():
+    try:
+        import cv2
+    except ModuleNotFoundError as exc:
+        if exc.name == "cv2":
+            raise IntegrationDependencyError(
+                "Video processing requires optional dependency 'opencv-python-headless'. "
+                "Install Intergrax-ai[media-video].",
+                integration_name="video",
+            ) from exc
+        raise
+    return cv2
 
 
 def yt_download_video(youtube_url: str, out_dir: str | Path) -> Path:
@@ -52,8 +66,17 @@ def extract_frames_and_metadata(
     path_to_save_metadatas :str,
     save_metadata:bool=True
 ):
-    
-    import webvtt
+    cv2 = _import_cv2()
+    try:
+        import webvtt
+    except ModuleNotFoundError as exc:
+        if exc.name == "webvtt":
+            raise IntegrationDependencyError(
+                "Video transcript processing requires optional dependency 'webvtt-py'. "
+                "Install Intergrax-ai[media-video].",
+                integration_name="video",
+            ) from exc
+        raise
 
     def time_str_to_ms(time_str: str) -> int:
         time_str = time_str.strip().replace(',', '.')
@@ -146,7 +169,7 @@ def extract_frames_from_video(
     target_height: int = 350,
     limit: int | None = None,
 ):
-    
+    cv2 = _import_cv2()
     path_to_video = str(path_to_video)
     out_dir = Path(path_to_save_extracted_frames)
     out_dir.mkdir(parents=True, exist_ok=True)

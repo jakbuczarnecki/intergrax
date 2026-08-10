@@ -4,16 +4,44 @@
 
 from __future__ import annotations
 from typing import Dict, Any, Optional
-from bs4 import BeautifulSoup
 
+from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.websearch.schemas.page_content import PageContent
 
 
-try:
-    import trafilatura
+HAS_TRAFILATURA = None
+trafilatura = None
+
+
+def _beautiful_soup(html: str):
+    try:
+        from bs4 import BeautifulSoup
+    except ModuleNotFoundError as exc:
+        if exc.name == "bs4":
+            raise IntegrationDependencyError(
+                "Web parsing requires optional dependency 'beautifulsoup4'. "
+                "Install Intergrax-ai[parsing-web].",
+                integration_name="web_parser",
+            ) from exc
+        raise
+    return BeautifulSoup(html, "lxml")
+
+
+def _load_trafilatura():
+    global HAS_TRAFILATURA, trafilatura
+    if HAS_TRAFILATURA is False:
+        return None
+    if HAS_TRAFILATURA and trafilatura is not None:
+        return trafilatura
+    try:
+        import trafilatura as module
+    except ImportError:
+        HAS_TRAFILATURA = False
+        trafilatura = None
+        return None
     HAS_TRAFILATURA = True
-except ImportError:
-    HAS_TRAFILATURA = False
+    trafilatura = module
+    return module
 
 
 def extract_basic(page: PageContent) -> PageContent:
@@ -34,7 +62,7 @@ def extract_basic(page: PageContent) -> PageContent:
     if not page or not page.html:
         return page
 
-    soup = BeautifulSoup(page.html, "lxml")
+    soup = _beautiful_soup(page.html)
 
     # Title
     if not page.title:
@@ -109,9 +137,10 @@ def extract_advanced(
     # ---------------------------------
     # STEP 1: Try readability extraction via trafilatura (if installed)
     # ---------------------------------
-    if HAS_TRAFILATURA:
+    trafilatura_module = _load_trafilatura()
+    if trafilatura_module is not None:
         try:
-            extracted_text = trafilatura.extract(
+            extracted_text = trafilatura_module.extract(
                 html,
                 url=page.final_url or None,
                 include_comments=False,
@@ -126,7 +155,7 @@ def extract_advanced(
     # STEP 2: Fallback to manual HTML cleanup and extraction
     # ---------------------------------
     if not extracted_text:
-        soup = BeautifulSoup(html, "lxml")
+        soup = _beautiful_soup(html)
 
         # Remove non-content HTML nodes
         for tag in soup(

@@ -25,7 +25,7 @@ def _import_pinecone() -> Any:
     except ImportError as exc:
         raise IntegrationConfigurationError(
             "Pinecone integration requires the pinecone package. "
-            "Install with: uv sync  (pinecone is a main project dependency)"
+            "Install with: Intergrax-ai[vector-pinecone]."
         ) from exc
     return Pinecone
 
