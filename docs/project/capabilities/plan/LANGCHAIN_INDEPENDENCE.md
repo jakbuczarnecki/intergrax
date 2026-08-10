@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Plan
 
-**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **READY_FOR_REVIEW**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**
+**Status:** LCI-0A **APPROVED**; LCI-0B **APPROVED**; LCI-0C **APPROVED**; LCI-1A **APPROVED**; LCI-1B **APPROVED**; LCI-1C **APPROVED**; LCI-1D **APPROVED**; LCI-2A **APPROVED**; LCI-2B **APPROVED**; LCI-2C **APPROVED**; LCI-2D **APPROVED**; LCI-2E **APPROVED**; LCI-2F **APPROVED**; LCI-3A **APPROVED**; LCI-3B **APPROVED**; LCI-3C **APPROVED**; LCI-3D-1 **APPROVED**; LCI-3D-2 **APPROVED**; LCI-3D-3 **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **READY_FOR_REVIEW**
 **Feature architecture (1:1):** [../architecture/LANGCHAIN_INDEPENDENCE.md](../architecture/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** RAG
 **Related domains:** LLM_ADAPTERS, INTEGRATIONS, MEMORY, MODALITY, ORCHESTRATION, PLATFORM_FOUNDATION, EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE
-**Current active task:** LCI-7A — LangChain optional extras packaging
-**Next task after acceptance:** LCI-7B — LangChain-free core installation gate
+**Current active task:** LCI-8A — LangGraph legacy retirement review
+**Next task after acceptance:** No removal task — retain the optional legacy boundary; any future deprecation/removal requires a separately approved task
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
@@ -297,7 +297,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Indexing manager, pipeline, and strategies use native `KnowledgeDocument`. |
 | **Owning domain plan** | docs/project/maintainers/plans/RAG.md |
 | **Dependencies** | LCI-3A |
@@ -333,7 +333,7 @@ LCI-1D is not the full LangChain-free core installation proof. That remains LCI-
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Providers and integration bridges map native records to SDK/vendor structures; tenant isolation proofs at provider boundary. |
 | **Owning domain plan** | docs/project/maintainers/plans/RAG.md + docs/project/maintainers/plans/INTEGRATIONS.md |
 | **Dependencies** | LCI-3C |
@@ -553,7 +553,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | APPROVED |
 | **Purpose** | Remove all direct LangChain/LangGraph declarations from core dependencies while preserving explicit compatibility/provider extras; regenerate lockfile. |
 | **Owning domain plan** | docs/project/maintainers/plans/PLATFORM_FOUNDATION.md |
 | **Dependencies** | LCI-6E |
@@ -569,7 +569,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | NEXT_AFTER_ACCEPTANCE |
+| **Status** | APPROVED |
 | **Purpose** | Clean environment gate: no langchain* installed; import core; native LLM; minimal native RAG; Nexus/Harness smoke. |
 | **Owning domain plan** | docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-7A, LCI-0B |
@@ -585,7 +585,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | APPROVED |
 | **Purpose** | Separate extras install and compatibility bridge/provider tests. |
 | **Owning domain plan** | docs/project/maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md |
 | **Dependencies** | LCI-7A |
@@ -601,11 +601,11 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED |
+| **Status** | APPROVED |
 | **Purpose** | Update documentation, generators, extension guide, final inventory, and claims. |
 | **Owning domain plan** | docs/project/maintainers/plans/PLATFORM_FOUNDATION.md |
 | **Dependencies** | LCI-7B, LCI-7C |
-| **Exact scope** | scripts/docs/generate_integration_usage_docs.py; docs/generators; extension guide; inventory refresh |
+| **Exact scope** | feature architecture/plan docs; installation-gate links; final inventory and claim refresh; generator stale-claim review |
 | **Explicit out of scope** | Migrating production contracts (already owned by earlier tasks) |
 | **Acceptance criteria** | Doc generators run without required LangChain import; final inventory shows zero core contract leaks |
 | **User-visible outcome** | Accurate public documentation and claims |
@@ -617,7 +617,7 @@ This task does not optionalize the chat Ollama adapter.
 | Field | Value |
 |-------|-------|
 | **Priority** | Optional |
-| **Status** | PLANNED |
+| **Status** | READY_FOR_REVIEW |
 | **Purpose** | Keep/remove decision after critical path complete. |
 | **Owning domain plan** | docs/project/maintainers/plans/ORCHESTRATION.md |
 | **Dependencies** | LCI-7D |

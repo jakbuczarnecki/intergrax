@@ -6,15 +6,15 @@ Use, modification, or distribution without written permission is prohibited.
 
 # LangChain Independence — Multi-layer Feature Architecture
 
-**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**.
-**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **READY_FOR_REVIEW**; LCI-7B **NEXT AFTER ACCEPTANCE**; LCI-8 **PLANNED**.
+**Status:** LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **READY_FOR_REVIEW**.
+**Roadmap status:** LCI-3C **APPROVED**; LCI-3D **APPROVED**; LCI-4A **APPROVED**; LCI-4B **APPROVED**; LCI-4C-A1 **APPROVED**; LCI-4C **APPROVED**; LCI-4D **APPROVED**; LCI-5A **APPROVED**; LCI-5B **APPROVED**; LCI-5C **APPROVED**; LCI-6A **APPROVED**; LCI-6B **APPROVED**; LCI-6C **APPROVED**; LCI-6D **APPROVED**; Native Ollama regression gate **APPROVED**; LCI-6E **APPROVED**; LCI-7A **APPROVED**; LCI-7B **APPROVED**; LCI-7C **APPROVED / REQUALIFIED**; LCI-7D **APPROVED**; FINAL SYSTEM GATE **APPROVED**; LCI-8A **READY_FOR_REVIEW**.
 **Feature plan (1:1):** [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md)
 **Primary anchor domain:** `RAG`
 **Related domains:** `LLM_ADAPTERS`, `INTEGRATIONS`, `MEMORY`, `MODALITY`, `ORCHESTRATION`, `PLATFORM_FOUNDATION`, `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE`
-**Current active task:** LCI-7A — LangChain optional extras packaging
-**Next task after acceptance:** LCI-7B — LangChain-free core installation gate
+**Current active task:** LCI-8A — LangGraph legacy retirement review
+**Next task after acceptance:** No removal task — retain the optional legacy boundary; any future deprecation/removal requires a separately approved task
 
-**LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. `embed_texts` receives native chunk content; conversion through `to_legacy_rag_document()` occurs only immediately before the still-LangChain indexing, vector-store, and Graph consumers. Embedding contracts remain LCI-3A and indexing remains LCI-3B.
+**LCI-2F decision:** Loader output, normalization, metadata enrichment, chunking, and contextual enrichment remain `KnowledgeDocument` stages. The native RAG path continues through embedding, indexing, vector storage and retrieval; LangChain loaders, embeddings and splitters remain optional provider-local compatibility paths.
 
 **LCI-3A decision:** The embedding API accepts `KnowledgeDocument`; `EmbeddingResult` stores native documents and readonly float32 vectors separately. Vectors are never stored in native metadata.
 
@@ -32,7 +32,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 **LCI-4C-A1 decision:** `workspace_id` is a canonical system-owned `KnowledgeDocumentScope` field. The canonical identity boundary is `tenant_id + namespace + workspace_id + document_id`; missing `workspace_id` remains backward-compatible and means no explicit workspace partition. User metadata cannot provide or override `workspace_id`. Indexing, vector storage, retrieval, reranking and Graph RAG preserve workspace scope without using metadata as a transport tunnel.
 
-**LCI-4D decision:** Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical `KnowledgeDocument` boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain `Document`. Provider-local loaders and embedding dependencies remain assigned to LCI-5 and LCI-6.
+**LCI-4D decision:** Memory indexing, multimedia document loaders, legacy RAG answer contracts, evaluation harnesses and soak tooling use the canonical `KnowledgeDocument` boundary. Auxiliary runtime paths preserve canonical identity, tenant, namespace, workspace and provenance without using user metadata as system transport. No active LCI-4D production module imports or exposes LangChain `Document`. Provider-local loaders and embedding dependencies remain optional compatibility surfaces.
 
 **LCI-5A decision:** Plain-text parsing uses a native Intergrax reader and emits
 `ParsedDocumentFragment` directly. The default text parser no longer imports or
@@ -106,16 +106,36 @@ LangChain-free core + optional LangChain compatibility/providers.
 |------|---------|
 | **Core rule** | No LangChain/LangGraph type may appear in Intergrax public or shared core contracts after migration. |
 | **Compatibility rule** | LangChain may remain behind explicit provider or `compat` boundaries, optional extras, and legacy loaders. |
-| **LangGraph position** | Not a core dependency today; optional `langgraph-legacy` extra only; retirement reviewed under `LCI-8A`. |
+| **LangGraph position** | Not a core dependency today; optional `langgraph-legacy` extra only; LCI-8A decision is `KEEP_OPTIONAL`. |
 | **LKW position** | Proof client only; migration ownership stays in Tier-0/Tier-1 domain and feature plans. |
 
-Forbidden documentation claims (targets only, not current state):
+### Current capability classification
+
+| Surface | Current classification | Contract and packaging rule |
+|---|---|---|
+| **CORE / DEFAULT** | Native Intergrax contracts and providers | Default installation requires none of the LangChain/LangGraph extras. Native LLM paths, native Ollama, and native RAG contracts are canonical. |
+| **OPTIONAL COMPATIBILITY** | Selected LangChain loaders, embeddings, splitters, and `LangChainOllamaAdapter` | Keep behind a provider/compatibility boundary, lazy import, named extra, and controlled missing-extra error. |
+| **LEGACY OPTIONAL** | LangGraph supervisor/web-search adapters | Not a core dependency; retain under `langgraph-legacy` as the `LCI-8A` optional compatibility boundary. |
+
+Current packaging extras are `llm-langchain-ollama`, `rag-langchain-loaders`,
+`rag-langchain-embeddings`, `rag-langchain-splitters`, and
+`langgraph-legacy`. Explicit opt-in enables these compatibility paths; the
+default installation enables none of them. Transitive package versions are
+resolver output, not a stable public contract.
+
+**LCI-8A decision:** `KEEP_OPTIONAL`. The LangGraph package remains isolated
+behind explicit opt-in; Nexus, Harness, agent execution and default
+application runtime do not require it. The native LangGraph-compatible
+skill-pack importer remains a profile-gated format compatibility path and
+does not import the package.
+
+Historical or invalid claims that must not be emitted as current state:
 
 - LangChain has been fully removed.
-- Default Intergrax install is LangChain-free.
-- RAG is already LangChain-independent.
-- Native Ollama adapter already exists.
-- All integrations are already optional.
+- Intergrax contains no LangChain code.
+- LangChain is required by the default/core installation.
+- `LangChainOllamaAdapter` is the default Ollama provider.
+- `langchain_core.documents.Document` is a native RAG core contract.
 
 ---
 
@@ -133,7 +153,11 @@ Facts verified against repository state at inventory time.
 | 6 | LangGraph is not a core dependency; guard exists | `scripts/maintenance/check_langgraph_not_required.py`; `pyproject.toml` — `langgraph` only under `[project.optional-dependencies] langgraph-legacy` |
 | 7 | Default packaging no longer declares LangChain/LangGraph packages as direct core dependencies after LCI-7A | `pyproject.toml` `[project].dependencies` is free of `langchain*` and `langgraph`; compatibility/provider packages remain in named extras |
 
-**Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports · 0 core contract leaks · 0 core implementation dependencies · 0 project core LangChain dependencies (see inventory satellite §B/§D and `pyproject.toml`).
+**Import audit scale:** 11 direct production/runtime import statements · 46 direct test import statements · 1 direct tooling import · 2 direct LangGraph lazy imports · 0 core contract leaks · 0 core implementation dependencies · 0 project core LangChain dependencies (see inventory satellite §B/§D and `pyproject.toml`). All remaining production imports are optional providers, compatibility-only adapters, or legacy optional orchestration.
+
+**LCI-7B evidence:** [`satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md`](satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md) records the default-install proof: zero `langchain*` and `langgraph*` distributions, native/core/RAG/Nexus/Harness smoke PASS.
+
+**LCI-7C evidence:** [`satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md`](satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md) records PASS for all five compatibility families while native defaults remain native. The earlier Torch/Transformers failure is recorded there as non-reproducible, not as an active known issue.
 
 ---
 
@@ -156,6 +180,14 @@ LangChain type → Intergrax public/core contract
 ```
 
 Native document, message, and tool-call types are defined and versioned by Intergrax first. Provider adapters translate at the outer boundary only.
+
+### Extension guidance
+
+New native/core providers implement the native Intergrax contract. A LangChain
+integration belongs behind an optional provider or compatibility boundary with
+a lazy import, a named extra, and a controlled missing-extra error. It must
+not make LangChain a core dependency or expose LangChain types through a
+canonical contract.
 
 ---
 
@@ -195,7 +227,7 @@ Provider paths are allowed only when:
 3. Provider maps outward/inward to native Intergrax types at the boundary.
 4. No provider object escapes the provider module.
 
-**Note:** `intergrax/compat/langchain` provides the isolated LangChain `Document` bridge (`LCI-1C`, **APPROVED**); canonical native type remains `KnowledgeDocument`; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; full dependency optionalization remains later (**LCI-7A** / **LCI-7B**).
+**Note:** `intergrax/compat/langchain` provides the isolated LangChain `Document` bridge (`LCI-1C`, **APPROVED**); canonical native type remains `KnowledgeDocument`; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; dependency optionalization and both installation gates are **APPROVED** under **LCI-7A**–**LCI-7C**.
 
 ---
 
@@ -233,19 +265,21 @@ Provider paths are allowed only when:
 
 | Risk | Description |
 |------|-------------|
-| **Contract lock-in** | `Document` in 16 public contracts couples most of RAG, memory, modality, and integrations to LangChain Core. |
-| **Packaging risk** | Optional compatibility/provider packages must stay out of default `[project].dependencies`; LCI-7B still needs to prove the clean installation gate. |
+| **Contract lock-in** | Historical migration risk: `Document` once appeared in 16 public contracts; the current inventory reports zero core contract leaks. |
+| **Packaging risk** | Optional compatibility/provider packages must stay out of default `[project].dependencies`; LCI-7B clean-install evidence is PASS. |
 | **Version range risk** | Broad `>=0.3` ranges on multiple LangChain packages increase resolver drift and breaking-change exposure. |
 | **Transitive dependency risk** | LangChain meta-packages pull large transitive trees (community, text-splitters, OpenAI shims). |
 | **Migration regression risk** | Dual-model transition (LangChain `Document` vs native document) can silently drop metadata or tenant fields. |
 | **Dual-model transition risk** | Parallel types during migration require strict conversion tests (`LCI-1D`, conformance gate). |
-| **LKW/Ollama parity risk** | LKW proof paths use the native default after `LCI-6D`; the LangChain adapter remains an explicit compatibility baseline until `LCI-6E`. |
+| **LKW/Ollama parity risk** | LKW proof paths use the native default after `LCI-6D`; the LangChain adapter remains an explicit compatibility baseline, not the default. |
 
 ---
 
 ## Final acceptance definition (full LCI program)
 
-The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when all of the following are true (none are true today):
+The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** only
+after the remaining roadmap decisions are accepted. The current closeout has
+validated the following gates:
 
 1. Public Intergrax contracts expose **no** LangChain types.
 2. Default `pip install` / `uv sync` **does not** require any `langchain*` package for core import of `intergrax`.
@@ -262,7 +296,7 @@ The LangChain Independence program (`LCI-0A` … `LCI-8A`) is **complete** when 
 
 ## LCI-1A — Native knowledge document contract (summary)
 
-Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **APPROVED**). KnowledgeDocument remains canonical; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; full dependency optionalization remains later (**LCI-7A** / **LCI-7B**).
+Canonical ABI: **`KnowledgeDocument`** in neutral Tier-0 module `intergrax/knowledge/contracts/document.py` (implementation: **LCI-1B**, status **APPROVED**). KnowledgeDocument remains canonical; the LangChain bridge remains compatibility-only; **LCI-1D** enforces native document ABI; dependency optionalization and both installation gates are **APPROVED** under **LCI-7A**–**LCI-7C**.
 
 | Decision | Value |
 |----------|-------|
@@ -306,6 +340,9 @@ Sub-models: `KnowledgeDocumentIdentity` (persistent IDs + lineage), `KnowledgeDo
 |----------|------|
 | [`../plan/LANGCHAIN_INDEPENDENCE.md`](../plan/LANGCHAIN_INDEPENDENCE.md) | Task roadmap `LCI-0A`–`LCI-8A` |
 | [`satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md`](satellites/LANGCHAIN_INDEPENDENCE_dependency_inventory.md) | Evidence-backed import and package inventory |
+| [`satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md`](satellites/LANGCHAIN_FREE_CORE_INSTALLATION_GATE.md) | LCI-7B default-install evidence |
+| [`satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md`](satellites/LANGCHAIN_COMPATIBILITY_INSTALLATION_GATE.md) | LCI-7C optional compatibility evidence |
+| [`satellites/LANGCHAIN_INDEPENDENCE_CLOSEOUT.md`](satellites/LANGCHAIN_INDEPENDENCE_CLOSEOUT.md) | LCI-7D closeout receipt |
 | [`satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md`](satellites/LANGCHAIN_INDEPENDENCE_native_document_contract.md) | Native `KnowledgeDocument` contract spec (LCI-1A) |
 | [`../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md`](../plan/satellites/LANGCHAIN_INDEPENDENCE_domain_plan_cross_references.md) | Domain plan routing for future rows |
 | [`../../architecture/RAG.md`](../../architecture/RAG.md) | Primary anchor domain architecture |
