@@ -213,7 +213,7 @@ Both sources retain the same no-tombstone and unproven item-ACL boundaries.
 |---|---|---|---|
 | Atlan | no Vendor Knowledge adapter, plugin or runtime | none | UNSUPPORTED / NOT IMPLEMENTED |
 | Power BI | no Vendor Knowledge adapter, plugin or runtime | none | UNSUPPORTED / NOT IMPLEMENTED |
-| Databricks | relational-store integration exists, but no Vendor Knowledge adapter and no source kind is selected | none | UNSUPPORTED / NOT IMPLEMENTED |
+| Databricks | relational-store integration and restart-safe TenantConnection factory foundation exist; no Vendor Knowledge adapter and no source kind is selected | none | FOUNDATION_ONLY / NOT IMPLEMENTED |
 
 `VK1-GAP-07` is **CLOSED**: provider coverage is now deterministic, truthful and
 aligned with the accepted platform boundaries. Frontend neutrality remains
@@ -249,6 +249,15 @@ source-kind selection**. The explicit provider decision above is authoritative;
 the roadmap must select exactly one source kind before a provider/source-kind
 mode row is created. Unity Catalog metadata, workspace tree, volume files and
 query snapshots remain hypothetical and are not classified here.
+
+The 5A connection result is deliberately limited to the existing
+`databricks / relational_store` runtime: a persisted secret-free
+`TenantConnection` is rehydrated through `credential_ref` → `SecretsStore` →
+the default provider factory registry → `KnowledgeConnectionRegistry`.
+Accordingly, Databricks remains `adapter=NOT_IMPLEMENTED`,
+`Durable=FOUNDATION_ONLY / NOT_IMPLEMENTED`, `Indexed=UNSUPPORTED`,
+`Live=UNSUPPORTED`, with overall readiness `FOUNDATION_ONLY`. No Vendor
+Knowledge plugin is registered.
 
 ## 6. Indexed-mode findings
 

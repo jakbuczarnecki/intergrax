@@ -40,6 +40,12 @@ from intergrax.integrations.providers.issue_tracker.jira.integration import (
 from intergrax.integrations.providers.issue_tracker.jira.tenant_connection_factory import (
     JiraTenantConnectionIntegrationFactory,
 )
+from intergrax.integrations.providers.relational_store.databricks.integration import (
+    DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+)
+from intergrax.integrations.providers.relational_store.databricks.tenant_connection_factory import (
+    DatabricksTenantConnectionIntegrationFactory,
+)
 from intergrax.integrations.providers.wiki_knowledge.confluence.config import (
     ConfluenceIntegrationConfig,
 )
@@ -79,6 +85,7 @@ def build_default_vendor_knowledge_connection_factory_registry(
     google_client_factory: GoogleWorkspaceClientFactory | None = None,
     jira_http_client_factory: Callable[[JiraIntegrationConfig], Any] | None = None,
     confluence_http_client_factory: Callable[[ConfluenceIntegrationConfig], Any] | None = None,
+    databricks_connection_factory: Callable[[], Any] | None = None,
 ) -> TenantConnectionIntegrationFactoryRegistry:
     """Compose provider-owned connection factories behind a generic registry."""
     registry = TenantConnectionIntegrationFactoryRegistry()
@@ -115,6 +122,13 @@ def build_default_vendor_knowledge_connection_factory_registry(
         integration_kind=IntegrationCategory.WIKI_KNOWLEDGE,
         factory=ConfluenceTenantConnectionIntegrationFactory(
             http_client_factory=confluence_http_client_factory,
+        ),
+    )
+    registry.register(
+        provider_id=DATABRICKS_RELATIONAL_STORE_PROVIDER_ID,
+        integration_kind=IntegrationCategory.RELATIONAL_STORE,
+        factory=DatabricksTenantConnectionIntegrationFactory(
+            connection_factory=databricks_connection_factory,
         ),
     )
     return registry
