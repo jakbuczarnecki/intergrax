@@ -2,6 +2,10 @@
 
 Category: `vector_store`
 
+**Operator guide:** [`docs/project/technical/guides/RAG_OPERATOR_GUIDE.md`](../../../../../docs/project/technical/guides/RAG_OPERATOR_GUIDE.md)
+
+Provider status: `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` (RAG-PROD-13).
+
 ## Single public entrypoint
 
 - **`QdrantVectorStoreIntegration`** in `integration.py` is the only public provider class.

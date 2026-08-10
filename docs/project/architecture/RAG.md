@@ -16,6 +16,7 @@ the linked qualification artifacts.
 | Classification | File | Ownership |
 |---|---|---|
 | **CANONICAL** | `docs/project/architecture/RAG.md` | Current RAG architecture and qualification |
+| **OPERATOR / DEPLOYMENT** | [`../technical/guides/RAG_OPERATOR_GUIDE.md`](../technical/guides/RAG_OPERATOR_GUIDE.md) | Production deployment, health, observability, recovery and incident response |
 | **DEVELOPER GUIDE** | [`../technical/guides/RAG_EXTENSION_GUIDE.md`](../technical/guides/RAG_EXTENSION_GUIDE.md) | RAG extension topology and authoring contracts |
 | **QUALIFICATION RECORD** | [`../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md`](../maintainers/qualification/RAG_PRODUCTION_QUALIFICATION.md) | RAG-PROD-13 executable production evidence |
 | **LIVE QUALIFICATION** | [`../maintainers/qualification/RAG_PGVECTOR_LIVE_QUALIFICATION.md`](../maintainers/qualification/RAG_PGVECTOR_LIVE_QUALIFICATION.md) | RAG-LIVE-15A-R2 PgVector live evidence |

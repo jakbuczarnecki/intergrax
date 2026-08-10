@@ -2,6 +2,8 @@
 
 Category: `vector_store`
 
+**Operator guide:** [`docs/project/technical/guides/RAG_OPERATOR_GUIDE.md`](../../../../../docs/project/technical/guides/RAG_OPERATOR_GUIDE.md)
+
 ## Single public entrypoint
 
 - **`ChromaVectorStoreIntegration`** in `integration.py` is the only public provider class.
@@ -28,6 +30,7 @@ production or live-qualification evidence.
 The repo-owned qualification service is:
 `infra/docker/chromadb/docker-compose.yml`, using the pinned pair
 `chromadb==1.4.1` and the `chromadb/chroma:1.4.1`-based qualification image.
-Chroma remains
-`QUALIFIED_OFFLINE_CONTRACT`; live qualification is pending
-`RAG-LIVE-15B-R2`.
+
+Provider status: `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` (RAG-LIVE-15B-R2).
+Live evidence is environment-specific; see
+[`RAG_CHROMA_LIVE_QUALIFICATION.md`](../../../../../docs/project/maintainers/qualification/RAG_CHROMA_LIVE_QUALIFICATION.md).

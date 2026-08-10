@@ -2,6 +2,8 @@
 
 Category: `vector_store`
 
+**Operator guide:** [`docs/project/technical/guides/RAG_OPERATOR_GUIDE.md`](../../../../../docs/project/technical/guides/RAG_OPERATOR_GUIDE.md)
+
 ## Single public entrypoint
 
 - **`PgvectorVectorStoreIntegration`** in `integration.py` is the only public provider class.
@@ -22,6 +24,9 @@ ranking in PostgreSQL, and applies tenant/namespace/workspace predicates in
 SQL. It never falls back to `InMemoryVectorStore`; use the explicit `inmemory`
 provider for local or unit-test memory storage.
 
+Health probe: `SELECT 1` plus `pg_extension` check for `vector` (see
+`PgVectorRagStore.health()`).
+
 The repository-owned qualification service is available independently with:
 
 ```text
@@ -34,5 +39,6 @@ Its DSN is:
 Existing JSONB `intergrax_pgvector` tables are treated as incompatible legacy
 schemas. They are not migrated or dropped automatically.
 
-Provider status: `QUALIFIED_OFFLINE_CONTRACT`; live qualification is pending
-`RAG-LIVE-15A-R2`.
+Provider status: `QUALIFIED_OFFLINE_CONTRACT + LIVE_QUALIFIED` (RAG-LIVE-15A-R2).
+Live evidence is environment-specific; see
+[`RAG_PGVECTOR_LIVE_QUALIFICATION.md`](../../../../../docs/project/maintainers/qualification/RAG_PGVECTOR_LIVE_QUALIFICATION.md).
