@@ -249,6 +249,8 @@ _BACKENDS: dict[str, Any] = {
 
 @pytest.mark.parametrize("slug", list(TENANT_ISOLATION_CONTRACT_BACKENDS))
 def test_vectorstore_tenant_isolation_contract(slug: str) -> None:
+    if slug == "pgvector":
+        pytest.skip("PgVector requires the explicit Docker-backed runtime in integration tests")
     result = run_tenant_isolation_contract(
         _BACKENDS[slug],
         slug=slug,

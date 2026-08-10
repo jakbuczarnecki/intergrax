@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Generator, Optional
 
 import pytest
 
@@ -14,20 +14,19 @@ from intergrax.integrations._shared.conformance import (
     assert_cloud_platform,
     assert_feature_flag_backend,
     assert_graph_store,
-    assert_interaction_surface,
     assert_issue_tracker,
-    assert_message_bus,
     assert_notification_channel,
     assert_object_storage,
     assert_observability_backend,
     assert_relational_store,
     assert_secrets_store,
-    assert_vector_store,
 )
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+)
 from intergrax.integrations.contracts.ci_cd import CheckSuiteRecord, WorkflowRunRecord
 from intergrax.integrations.contracts.feature_flag import FeatureFlagEvaluation
-from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRecord, IssueSearchResult
 from intergrax.integrations.contracts.observability_backend import MetricQueryResult, MetricPoint, MetricSeries, TraceQueryResult, TraceRecord
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import catalog_snapshot, clear_catalog
@@ -66,10 +65,11 @@ M6_P4_SLUGS = (
     "huggingface_hub",
     "ollama",
 )
+M6_P4_HEALTH_SLUGS = tuple(slug for slug in M6_P4_SLUGS if slug != "pgvector")
 
 
 @pytest.fixture(autouse=True)
-def _clean_catalog() -> None:
+def _clean_catalog() -> Generator[None, None, None]:
     clear_catalog()
     reset_default_integrations_state()
     yield
@@ -219,12 +219,8 @@ def test_m6_p4_slugs_registered(slug: str) -> None:
 def test_pgvector_vector_store() -> None:
     from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
 
-    store = create_pgvector_vector_store()
-    assert_vector_store(store)
-    assert store.count() == 0
-    health = store.health()
-    assert health.healthy is True
-    assert health.slug == "pgvector"
+    with pytest.raises(IntegrationConfigurationError, match="DSN"):
+        create_pgvector_vector_store()
 
 
 def test_duckdb_relational_store() -> None:
@@ -439,8 +435,6 @@ def _p4_shell_probe_targets() -> dict[str, object]:
     from intergrax.integrations.providers.secrets_store.azure_key_vault.bundle import create_azure_key_vault_secrets_store
     from intergrax.integrations.providers.secrets_store.doppler.bundle import create_doppler_secrets_store
     from intergrax.integrations.providers.secrets_store.gcp_secret_manager.bundle import create_gcp_secret_manager_secrets_store
-    from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
-
     class _K8s:
         def health(self) -> bool:
             return True
@@ -452,7 +446,6 @@ def _p4_shell_probe_targets() -> dict[str, object]:
         sent.append(message)
 
     return {
-        "pgvector": create_pgvector_vector_store(),
         "duckdb": create_duckdb_relational_store(connection=_FakeSqlConnection(), dsn=":memory:"),
         "influxdb": create_influxdb_observability_backend(observability_backend=client),
         "timescaledb": create_timescaledb_relational_store(connection=_FakeSqlConnection()),
@@ -485,7 +478,7 @@ def _p4_shell_probe_targets() -> dict[str, object]:
     }
 
 
-@pytest.mark.parametrize("slug", M6_P4_SLUGS)
+@pytest.mark.parametrize("slug", M6_P4_HEALTH_SLUGS)
 def test_p4_shell_health_probe(slug: str) -> None:
     from intergrax.integrations._shared.health import probe_client_health
 

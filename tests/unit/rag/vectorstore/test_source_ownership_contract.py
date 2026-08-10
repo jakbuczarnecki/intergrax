@@ -6,11 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
-)
-from intergrax.integrations.providers.vector_store.pgvector.rag_store import (
-    PgVectorRagStore,
 )
 from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
     QdrantConfig,
@@ -130,9 +128,8 @@ def test_inmemory_returns_complete_persisted_ids_with_exact_source_scope() -> No
     "store_factory",
     [
         lambda: InMemoryVectorStore(tenant_id="tenant-a"),
-        lambda: PgVectorRagStore(tenant_id="tenant-a"),
     ],
-    ids=["inmemory", "pgvector-fallback"],
+    ids=["inmemory"],
 )
 def test_add_ownership_delete_uses_one_logical_id_domain(store_factory: Any) -> None:
     source_id = "C:/docs/lifecycle.md"
@@ -167,6 +164,15 @@ def test_add_ownership_delete_uses_one_logical_id_domain(store_factory: Any) -> 
         source_id=other_source_id,
         scope=scope,
     ) == ("logical/other",)
+
+
+def test_pgvector_without_dsn_fails_closed_instead_of_using_memory() -> None:
+    from intergrax.integrations.providers.vector_store.pgvector.rag_store import (
+        PgVectorRagStore,
+    )
+
+    with pytest.raises(IntegrationConfigurationError, match="DSN"):
+        PgVectorRagStore(tenant_id="tenant-a")
 
 
 def test_source_lookup_is_tenant_isolated_and_bound_scope_cannot_escape() -> None:
@@ -455,3 +461,112 @@ def test_qdrant_source_lookup_returns_empty_for_missing_source_and_propagates_fa
     client.fail_scroll = True
     with pytest.raises(RuntimeError, match="backend unavailable"):
         store.list_source_record_ids(source_id="source", scope=scope)
+
+
+class _FakePgVectorCursor:
+    def __init__(self, rows: list[tuple[Any, ...]] | None = None) -> None:
+        self.rows = rows or []
+        self.executed: list[tuple[str, tuple[Any, ...]]] = []
+
+    def __enter__(self) -> _FakePgVectorCursor:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
+
+    def execute(self, statement: str, params: tuple[Any, ...]) -> None:
+        self.executed.append((statement, params))
+
+    def fetchall(self) -> list[tuple[Any, ...]]:
+        return self.rows
+
+
+class _FakePgVectorConnection:
+    def __init__(self, rows: list[tuple[Any, ...]] | None = None) -> None:
+        self.cursor_instance = _FakePgVectorCursor(rows)
+        self.commits = 0
+        self.rollbacks = 0
+
+    def cursor(self) -> _FakePgVectorCursor:
+        return self.cursor_instance
+
+    def commit(self) -> None:
+        self.commits += 1
+
+    def rollback(self) -> None:
+        self.rollbacks += 1
+
+
+def _uninitialized_pgvector_store(
+    connection: _FakePgVectorConnection,
+) -> Any:
+    from intergrax.integrations.providers.vector_store.pgvector.rag_store import (
+        PgVectorRagStore,
+    )
+
+    store = object.__new__(PgVectorRagStore)
+    store._tenant_id = "tenant-a"
+    store._dimension = 2
+    store._connection = connection
+    return store
+
+
+def test_pgvector_uses_server_side_scope_and_cosine_query() -> None:
+    connection = _FakePgVectorConnection()
+    store = _uninitialized_pgvector_store(connection)
+    scope = _scope()
+
+    assert store.query(
+        [1.0, 0.0],
+        scope=scope,
+        top_k=3,
+        metadata_filter=None,
+    ) == []
+
+    statement, params = connection.cursor_instance.executed[0]
+    assert "<=>" in statement
+    assert "ORDER BY embedding <=>" in statement
+    assert "tenant_id = %s" in statement
+    assert "namespace IS NOT DISTINCT FROM %s" in statement
+    assert "workspace_id IS NOT DISTINCT FROM %s" in statement
+    assert params[1:4] == ("tenant-a", "rag", "workspace-a")
+
+
+def test_pgvector_source_ownership_and_delete_are_scoped_sql_operations() -> None:
+    connection = _FakePgVectorConnection(rows=[("logical-1",), ("logical-2",)])
+    store = _uninitialized_pgvector_store(connection)
+    scope = _scope()
+
+    assert store.list_source_record_ids(source_id="source-a", scope=scope) == [
+        "logical-1",
+        "logical-2",
+    ]
+    ownership_statement, ownership_params = connection.cursor_instance.executed[0]
+    assert "SELECT logical_id" in ownership_statement
+    assert "source_id = %s" in ownership_statement
+    assert "payload->>" not in ownership_statement
+    assert ownership_params == ("tenant-a", "rag", "workspace-a", "source-a")
+
+    store.delete(["logical-1"], scope=scope)
+    delete_statement, delete_params = connection.cursor_instance.executed[1]
+    assert "logical_id = ANY(%s)" in delete_statement
+    assert "tenant_id = %s" in delete_statement
+    assert "namespace IS NOT DISTINCT FROM %s" in delete_statement
+    assert "workspace_id IS NOT DISTINCT FROM %s" in delete_statement
+    assert delete_params == (["logical-1"], "tenant-a", "rag", "workspace-a")
+    assert connection.commits == 1
+
+
+def test_pgvector_rejects_incompatible_embedding_dimension() -> None:
+    connection = _FakePgVectorConnection()
+    store = _uninitialized_pgvector_store(connection)
+    scope = _scope()
+    two_dimensional = _record("two-dimensional", source_id="source-a", scope=scope)
+    invalid = VectorStoreRecord(
+        document=two_dimensional.document,
+        embedding=[1.0, 0.0, 0.0],
+        vector_id="three-dimensional",
+    )
+
+    with pytest.raises(IntegrationConfigurationError, match="dimension"):
+        store._validate_record_dimensions([invalid])

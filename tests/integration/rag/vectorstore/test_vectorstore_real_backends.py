@@ -7,7 +7,10 @@ from typing import Callable, NoReturn
 
 import pytest
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationConfigurationError,
+    IntegrationDependencyError,
+)
 from intergrax.integrations.providers.vector_store.chroma.bundle import create_chroma_vector_store
 from intergrax.integrations.providers.vector_store.pgvector.bundle import create_pgvector_vector_store
 from intergrax.integrations.providers.vector_store.qdrant.bundle import create_qdrant_vector_store
@@ -81,6 +84,7 @@ def _is_known_environment_failure(slug: str, exc: Exception) -> bool:
         (
             ImportError,
             IntegrationConfigurationError,
+        IntegrationDependencyError,
             ConnectionError,
             TimeoutError,
         ),
