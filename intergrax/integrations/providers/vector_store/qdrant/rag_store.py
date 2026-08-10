@@ -157,6 +157,26 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
             return None
         return int(vectors.size)
 
+    @staticmethod
+    def _collection_point_count(collection_info: Any) -> int | None:
+        try:
+            count = collection_info.points_count
+            if count is None:
+                return None
+            return int(count)
+        except Exception:
+            return None
+
+    def _raise_embedding_dimension_mismatch(self) -> None:
+        raise VectorStoreContractError("qdrant_embedding_dimension_mismatch")
+
+    def _recreate_empty_incompatible_collection(self, collection_info: Any) -> None:
+        point_count = self._collection_point_count(collection_info)
+        if point_count is None or point_count > 0:
+            self._raise_embedding_dimension_mismatch()
+        assert self._client is not None
+        self._client.delete_collection(self.collection_name)
+
     def _init_qdrant(self) -> None:
         if QdrantClient is None:
             raise ImportError("qdrant-client is not installed. `pip install qdrant-client`")
@@ -174,24 +194,9 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 api_key=self.cfg.qdrant_api_key,
             )
 
-    def _ensure_qdrant_collection(self) -> None:
+    def _create_qdrant_collection(self) -> None:
         assert self._client is not None
-
-        try:
-            info = self._client.get_collection(self.collection_name)
-            if self._dim is not None:
-                existing_dim = self._collection_vector_size(info)
-                if existing_dim is not None and existing_dim != self._dim:
-                    self._client.delete_collection(self.collection_name)
-                else:
-                    return
-            else:
-                return
-        except Exception:
-            pass
-
-        if self._dim is None:
-            return
+        assert self._dim is not None
 
         metric_map = {
             "cosine": Distance.COSINE,
@@ -215,6 +220,32 @@ class QdrantVectorStore(LexicalHybridSupport, BaseVectorStore):
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(size=self._dim, distance=dist),
             )
+
+    def _ensure_qdrant_collection(self) -> None:
+        assert self._client is not None
+
+        info = None
+        try:
+            info = self._client.get_collection(self.collection_name)
+        except VectorStoreContractError:
+            raise
+        except Exception:
+            info = None
+
+        if info is not None:
+            if self._dim is not None:
+                existing_dim = self._collection_vector_size(info)
+                if existing_dim is not None and existing_dim != self._dim:
+                    self._recreate_empty_incompatible_collection(info)
+                else:
+                    return
+            else:
+                return
+
+        if self._dim is None:
+            return
+
+        self._create_qdrant_collection()
 
     def _qdrant_filter(self, where: Optional[Dict[str, Any]]) -> Optional[QFilter]:  # type: ignore
         """Lightweight helper: simple dict -> Filter(must=[FieldCondition(...)])."""
