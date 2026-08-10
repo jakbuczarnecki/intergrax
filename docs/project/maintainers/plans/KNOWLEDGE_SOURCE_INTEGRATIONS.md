@@ -276,6 +276,51 @@ implementation, Databricks source-kind selection, full ACL propagation and
 commercial API packaging are separate provider/product tasks. They are not
 `VK-10` and do not reopen this architecture roadmap.
 
+#### PROVIDER-PROD-5C — Atlan / Power BI selection gate
+
+The repository-grounded selection gate result is:
+
+```text
+Atlan     → DEFERRED
+Power BI  → DEFERRED
+```
+
+Both providers remain **`UNSUPPORTED / NOT IMPLEMENTED`**. Neither has an
+existing provider runtime or a repository-proven bounded Vendor Knowledge
+source contract. External provider-contract research is therefore deferred
+until one provider is deliberately reopened; external API semantics are
+required before implementation selection. This is an intentional roadmap
+deferral, not a claim that either provider is impossible and not a blocked
+implementation task.
+
+#### Authoritative additional-provider current state
+
+```text
+Databricks
+  provider_id:        databricks
+  category:           RELATIONAL_STORE
+  relational runtime: EXISTS
+  TenantConnection:   restart-safe foundation ACCEPTED
+  VK adapter:         NOT IMPLEMENTED
+  source kind:        UNRESOLVED / DEFERRED
+  source contract:    DEFERRED
+  VK plugin:          none
+  Durable:            FOUNDATION_ONLY / NOT IMPLEMENTED
+  Indexed:            UNSUPPORTED
+  Live:               UNSUPPORTED
+  readiness:          FOUNDATION_ONLY
+
+Atlan
+  status:             UNSUPPORTED / NOT IMPLEMENTED
+  provider selection: DEFERRED
+  external research:  DEFERRED; required before reopening
+
+Power BI
+  status:             UNSUPPORTED / NOT IMPLEMENTED
+  provider selection: DEFERRED
+  external research:  DEFERRED; required before reopening
+```
+
 ### VK-4 indexed bridge acceptance proof
 
 The accepted VK-4 proof covers:
@@ -557,8 +602,9 @@ Indexed both `ACCEPTED`; Live remains `UNSUPPORTED`. They retain separate
 canonical provider connections (`jira` / `ISSUE_TRACKER` and `confluence` /
 `WIKI_KNOWLEDGE`) and use bounded project/space discovery, provider-owned
 materialization and the generic application Search/Ask path. Atlan and Power BI
-have no Vendor Knowledge implementation. Databricks has only a relational
-integration and no selected Vendor Knowledge source kind.
+have no Vendor Knowledge implementation. Databricks has a relational runtime
+and an accepted restart-safe TenantConnection foundation, but no selected
+Vendor Knowledge source kind, source contract or Vendor Knowledge plugin.
 
 The exact new-provider requirements are intentionally small:
 
