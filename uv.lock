@@ -1657,6 +1657,7 @@ dependencies = [
     { name = "numpy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "ollama", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "openai", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "openai-whisper", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opencv-python-headless", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "openpyxl", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1682,7 +1683,6 @@ dependencies = [
     { name = "transformers", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "webvtt-py", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "whisper", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "xlrd", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "yt-dlp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1885,6 +1885,7 @@ requires-dist = [
     { name = "openai", marker = "extra == 'llm-groq'", specifier = ">=1.0" },
     { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.0" },
     { name = "openai", marker = "extra == 'llm-vllm'", specifier = ">=1.0" },
+    { name = "openai-whisper", specifier = ">=20240930,<20250626" },
     { name = "opencv-python-headless", specifier = "==4.9.0.80" },
     { name = "openpyxl", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },
@@ -1945,7 +1946,6 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.30" },
     { name = "uvicorn", marker = "extra == 'harness-author'", specifier = ">=0.30" },
     { name = "webvtt-py", specifier = ">=0.4" },
-    { name = "whisper", specifier = ">=1.1" },
     { name = "xlrd", specifier = ">=2.0" },
     { name = "yt-dlp", specifier = ">=2024.0" },
 ]
@@ -3233,6 +3233,22 @@ sdist = { url = "https://files.pythonhosted.org/packages/94/f4/4690ecb5d70023ce6
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b5/df/c306f7375d42bafb379934c2df4c2fa3964656c8c782bac75ee10c102818/openai-2.15.0-py3-none-any.whl", hash = "sha256:6ae23b932cd7230f7244e52954daa6602716d6b9bf235401a107af731baea6c3", size = 1067879, upload-time = "2026-01-09T22:10:06.446Z" },
 ]
+
+[[package]]
+name = "openai-whisper"
+version = "20250625"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "more-itertools", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "numba", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "numpy", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "tiktoken", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "torch", version = "2.2.2", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "torch", version = "2.2.2+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or sys_platform == 'win32'" },
+    { name = "tqdm", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "triton", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/8e/d36f8880bcf18ec026a55807d02fe4c7357da9f25aebd92f85178000c0dc/openai_whisper-20250625.tar.gz", hash = "sha256:37a91a3921809d9f44748ffc73c0a55c9f366c85a3ef5c2ae0cc09540432eb96", size = 803191, upload-time = "2025-06-26T01:06:13.34Z" }
 
 [[package]]
 name = "openapi-pydantic"
@@ -5260,6 +5276,14 @@ wheels = [
 ]
 
 [[package]]
+name = "triton"
+version = "3.7.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c4/6f/fb96d15db6f36d6eae4cafb998c2e0353bf59d7c4ea1662d7497f269134a/triton-3.7.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7e40869937a68206ec70d7f25bb7ec6433cb083f9135e1f36dbd318dc449a728", size = 197719725, upload-time = "2026-06-17T19:53:20.419Z" },
+]
+
+[[package]]
 name = "typer"
 version = "0.21.1"
 source = { registry = "https://pypi.org/simple" }
@@ -5612,15 +5636,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/5e/f6/7c9c964681fb148e0
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f3/ed/aad7e0f5a462d679f7b4d2e0d8502c3096740c883b5bbed5103146480937/webvtt_py-0.5.1-py3-none-any.whl", hash = "sha256:9d517d286cfe7fc7825e9d4e2079647ce32f5678eb58e39ef544ffbb932610b7", size = 19802, upload-time = "2024-05-30T13:40:14.661Z" },
 ]
-
-[[package]]
-name = "whisper"
-version = "1.1.10"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/c3/913cdd13ef3d882fa483981378a08cd0f018fd8dd95b6bf006b9bf1cfbc9/whisper-1.1.10.tar.gz", hash = "sha256:435b4fb843c4c752719bdf0511a652d5be710e9bb35ad9ebe3b133268ee31c44", size = 42835, upload-time = "2022-05-22T18:19:54.839Z" }
 
 [[package]]
 name = "wrapt"

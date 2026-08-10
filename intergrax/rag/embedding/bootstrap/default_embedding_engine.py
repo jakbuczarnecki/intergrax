@@ -9,21 +9,59 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
-from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-from intergrax.rag.embedding.providers.ollama_embedding_provider import OllamaEmbeddingProvider
-from intergrax.rag.embedding.providers.openai_embedding_provider import OpenAIEmbeddingProvider
-from intergrax.rag.embedding.providers.llama_cpp_embedding_provider import LlamaCppEmbeddingProvider
-from intergrax.rag.embedding.providers.vllm_embedding_provider import VllmEmbeddingProvider
-from intergrax.rag.embedding.registry.embedding_provider_registry import EmbeddingProviderRegistry
+from intergrax.rag.embedding.registry.embedding_provider_registry import (
+    EmbeddingProviderRegistry,
+    lazy_import_provider_factory,
+)
 
 
-def create_default_registry()-> EmbeddingProviderRegistry:
+def create_default_registry() -> EmbeddingProviderRegistry:
     registry = EmbeddingProviderRegistry()
-    registry.register(HFEmbeddingProvider())
-    registry.register(OpenAIEmbeddingProvider())
-    registry.register(OllamaEmbeddingProvider())
-    registry.register(VllmEmbeddingProvider())
-    registry.register(LlamaCppEmbeddingProvider())
+    registry.register_factory(
+        "hf",
+        lazy_import_provider_factory(
+            provider_id="hf",
+            module_name="intergrax.rag.embedding.providers.hf_embedding_provider",
+            class_name="HFEmbeddingProvider",
+            dependency_name="sentence-transformers",
+        ),
+    )
+    registry.register_factory(
+        "openai",
+        lazy_import_provider_factory(
+            provider_id="openai",
+            module_name="intergrax.rag.embedding.providers.openai_embedding_provider",
+            class_name="OpenAIEmbeddingProvider",
+            dependency_name="openai",
+        ),
+    )
+    registry.register_factory(
+        "ollama",
+        lazy_import_provider_factory(
+            provider_id="ollama",
+            module_name="intergrax.rag.embedding.providers.ollama_embedding_provider",
+            class_name="OllamaEmbeddingProvider",
+            dependency_name="langchain-ollama",
+        ),
+    )
+    registry.register_factory(
+        "vllm",
+        lazy_import_provider_factory(
+            provider_id="vllm",
+            module_name="intergrax.rag.embedding.providers.vllm_embedding_provider",
+            class_name="VllmEmbeddingProvider",
+            dependency_name="openai",
+        ),
+    )
+    registry.register_factory(
+        "llama_cpp",
+        lazy_import_provider_factory(
+            provider_id="llama_cpp",
+            module_name="intergrax.rag.embedding.providers.llama_cpp_embedding_provider",
+            class_name="LlamaCppEmbeddingProvider",
+            dependency_name="openai",
+        ),
+    )
     return registry
 
 

@@ -99,7 +99,7 @@ dependencies = [
   # -----------------
   # Media / ingestion
   # -----------------
-  "whisper>=1.1",
+  "openai-whisper>=20240930,<20250626",
   "yt-dlp>=2024.0",
   "webvtt-py>=0.4",
   "opencv-python-headless==4.9.0.80",
