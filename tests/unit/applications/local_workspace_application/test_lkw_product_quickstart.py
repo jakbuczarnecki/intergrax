@@ -417,14 +417,363 @@ def test_generation_model_resolution_honors_configured_and_default_values(
     assert quick.resolve_generation_model() == "llama3.1:latest"
 
 
-def test_running_product_stack_allows_safe_port_reuse(
+def _compose_ps_stdout(*services: dict[str, Any]) -> str:
+    import json
+
+    return json.dumps(list(services))
+
+
+def _canonical_service(
+    name: str,
+    *,
+    state: str = "running",
+    published_ports: list[int] | None = None,
+) -> dict[str, Any]:
+    publishers = [
+        {
+            "URL": "0.0.0.0",
+            "TargetPort": port,
+            "PublishedPort": port,
+            "Protocol": "tcp",
+        }
+        for port in (published_ports or [])
+    ]
+    return {"Service": name, "State": state, "Publishers": publishers}
+
+
+def test_canonical_running_local_workspace_owns_8020(
     quick: ModuleType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(quick, "_running_product_stack", lambda: True)
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "local_workspace",
+                        state="running",
+                        published_ports=[8020],
+                    ),
+                    _canonical_service("lkw-mongodb", published_ports=[27018]),
+                    _canonical_service("otel-collector", published_ports=[4318]),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert probed == []
+
+
+def test_canonical_restarting_local_workspace_owns_8020(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "local_workspace",
+                        state="restarting",
+                        published_ports=[8020],
+                    ),
+                    _canonical_service("lkw-mongodb", published_ports=[27018]),
+                    _canonical_service("otel-collector", published_ports=[4318]),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _Socket())
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert probed == []
+
+
+def test_canonical_partial_stack_mongo_owns_configured_port(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "lkw-mongodb",
+                        state="running",
+                        published_ports=[27019],
+                    ),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._check_required_ports(mongodb_host_port=27019, allow_running_stack=True)
+    assert sorted(probed) == [4318, 4318, 8020, 8020]
+
+
+def test_canonical_otel_owns_4318(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "otel-collector",
+                        state="running",
+                        published_ports=[4318],
+                    ),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert 4318 not in probed
+    assert 8020 in probed
+    assert 27018 in probed
+
+
+def test_foreign_compose_project_ownership_is_not_canonical(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "_canonical_product_owned_host_ports",
+        lambda: frozenset(),
+    )
+
+    class _BusySocket:
+        def bind(self, address: tuple[object, ...]) -> None:
+            if int(address[1]) == 8020:
+                raise OSError("foreign docker project owns port")
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", lambda *_a, **_k: _BusySocket())
+    with pytest.raises(quick.QuickstartError) as exc:
+        quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert exc.value.reason == "port_unavailable"
+
+
+def test_port_not_in_canonical_publishers_still_probes(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "local_workspace",
+                        state="exited",
+                        published_ports=[],
+                    ),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert sorted(probed) == [4318, 4318, 8020, 8020, 27018, 27018]
+
+
+def test_malformed_compose_response_falls_back_to_generic_probe(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {"returncode": 0, "stdout": "not-json"},
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert sorted(probed) == [4318, 4318, 8020, 8020, 27018, 27018]
+
+
+def test_canonical_ownership_for_one_port_does_not_skip_other_ports(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "local_workspace",
+                        state="running",
+                        published_ports=[8020],
+                    ),
+                ),
+            },
+        )(),
+    )
+    probed: list[int] = []
+
+    class _Socket:
+        def __init__(self, family: int, *_args: Any) -> None:
+            self.family = family
+
+        def bind(self, address: tuple[object, ...]) -> None:
+            probed.append(int(address[1]))
+
+        def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(quick.socket, "socket", _Socket)
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+    assert 8020 not in probed
+    assert 4318 in probed
+    assert 27018 in probed
+
+
+def test_compose_ndjson_ps_output_is_parsed_for_canonical_ownership(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ndjson = "\n".join(
+        [
+            '{"Service":"lkw-mongodb","State":"running","Ports":"0.0.0.0:27018->27017/tcp","Publishers":[{"PublishedPort":27018}]}',
+            '{"Service":"local_workspace","State":"restarting","Ports":"0.0.0.0:8020->8020/tcp","Publishers":[{"PublishedPort":8020}]}',
+            '{"Service":"otel-collector","State":"running","Ports":"0.0.0.0:4318->4318/tcp","Publishers":[{"PublishedPort":4318}]}',
+        ]
+    )
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type("CP", (), {"returncode": 0, "stdout": ndjson})(),
+    )
 
     class _UnexpectedSocket:
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
-            raise AssertionError("port probe must be skipped for running stack")
+            raise AssertionError("port probe must be skipped for canonical ownership")
+
+    monkeypatch.setattr(quick.socket, "socket", _UnexpectedSocket)
+    quick._check_required_ports(mongodb_host_port=27018, allow_running_stack=True)
+
+
+def test_running_product_stack_allows_safe_port_reuse(
+    quick: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        quick,
+        "run_command",
+        lambda *_a, **_k: type(
+            "CP",
+            (),
+            {
+                "returncode": 0,
+                "stdout": _compose_ps_stdout(
+                    _canonical_service(
+                        "local_workspace",
+                        state="running",
+                        published_ports=[8020],
+                    ),
+                    _canonical_service("lkw-mongodb", published_ports=[27018]),
+                    _canonical_service("otel-collector", published_ports=[4318]),
+                ),
+            },
+        )(),
+    )
+
+    class _UnexpectedSocket:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            raise AssertionError("port probe must be skipped for canonical ownership")
 
     monkeypatch.setattr(quick.socket, "socket", _UnexpectedSocket)
     quick._check_required_ports(

@@ -474,6 +474,97 @@ def _check_docker_capabilities() -> None:
         raise QuickstartError("compose_unavailable", stage="preflight")
 
 
+def _parse_compose_ps_services(stdout: str) -> list[dict[str, Any]] | None:
+    raw = stdout[:65536].strip()
+    if not raw:
+        return []
+    try:
+        payload = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        services: list[dict[str, Any]] = []
+        for line in raw.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                item = json.loads(stripped)
+            except json.JSONDecodeError:
+                return None
+            if isinstance(item, dict):
+                services.append(item)
+        return services
+    if isinstance(payload, dict):
+        return [payload]
+    if isinstance(payload, list):
+        services: list[dict[str, Any]] = []
+        for item in payload:
+            if isinstance(item, dict):
+                services.append(item)
+        return services
+    return None
+
+
+def _host_ports_from_compose_ports_field(ports_field: str) -> set[int]:
+    ports: set[int] = set()
+    for fragment in str(ports_field).split(","):
+        fragment = fragment.strip()
+        if "->" not in fragment:
+            continue
+        host_mapping = fragment.split("->", 1)[0]
+        host_port_text = host_mapping.rsplit(":", 1)[-1].strip()
+        if not host_port_text.isdecimal():
+            continue
+        port = int(host_port_text)
+        if 1 <= port <= 65535:
+            ports.add(port)
+    return ports
+
+
+def _host_ports_from_compose_service(service: Mapping[str, Any]) -> set[int]:
+    ports = _host_ports_from_compose_publishers(service)
+    ports_field = service.get("Ports", service.get("ports"))
+    if isinstance(ports_field, str):
+        ports.update(_host_ports_from_compose_ports_field(ports_field))
+    return ports
+
+
+def _host_ports_from_compose_publishers(service: Mapping[str, Any]) -> set[int]:
+    ports: set[int] = set()
+    publishers = service.get("Publishers", service.get("publishers"))
+    if not isinstance(publishers, list):
+        return ports
+    for entry in publishers:
+        if not isinstance(entry, dict):
+            continue
+        published = entry.get("PublishedPort", entry.get("publishedPort"))
+        if isinstance(published, bool):
+            continue
+        try:
+            port = int(published)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if 1 <= port <= 65535:
+            ports.add(port)
+    return ports
+
+
+def _canonical_product_owned_host_ports() -> frozenset[int] | None:
+    completed = run_command(
+        compose_exec_args("ps", "-a", "--format", "json"),
+        timeout=30,
+        stage="preflight",
+    )
+    if completed.returncode != 0:
+        return None
+    services = _parse_compose_ps_services(completed.stdout)
+    if services is None:
+        return None
+    owned: set[int] = set()
+    for service in services:
+        owned.update(_host_ports_from_compose_service(service))
+    return frozenset(owned)
+
+
 def _running_product_stack() -> bool:
     completed = run_command(
         compose_exec_args("ps", "--format", "json"),
@@ -482,15 +573,10 @@ def _running_product_stack() -> bool:
     )
     if completed.returncode != 0:
         return False
-    try:
-        raw = completed.stdout[:65536]
-        payload = json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
+    services = _parse_compose_ps_services(completed.stdout)
+    if services is None:
         return False
-    services = payload if isinstance(payload, list) else [payload]
     for service in services:
-        if not isinstance(service, dict):
-            continue
         name = str(service.get("Service", service.get("service", ""))).strip()
         state = str(service.get("State", service.get("state", ""))).strip().lower()
         if name == "local_workspace" and state in {"running", "up"}:
@@ -559,10 +645,13 @@ def _check_required_ports(
     mongodb_host_port: int,
     allow_running_stack: bool,
 ) -> None:
-    if allow_running_stack and _running_product_stack():
-        return
+    canonical_owned: frozenset[int] | None = None
+    if allow_running_stack:
+        canonical_owned = _canonical_product_owned_host_ports()
     required_ports = {_PRODUCT_HOST_PORT, _OTEL_HOST_PORT, mongodb_host_port}
     for port in sorted(required_ports):
+        if canonical_owned is not None and port in canonical_owned:
+            continue
         _probe_host_port(port)
 
 
@@ -613,12 +702,9 @@ def _stack_failure_reason() -> str:
     )
     if completed.returncode != 0:
         return "stack_start_failed"
-    try:
-        raw = completed.stdout[:65536]
-        payload = json.loads(raw)
-    except (TypeError, json.JSONDecodeError):
+    services = _parse_compose_ps_services(completed.stdout)
+    if services is None:
         return "stack_start_failed"
-    services = payload if isinstance(payload, list) else [payload]
     service_reasons = {
         "lkw-mongodb": "mongodb_not_ready",
         "qdrant": "qdrant_not_ready",
