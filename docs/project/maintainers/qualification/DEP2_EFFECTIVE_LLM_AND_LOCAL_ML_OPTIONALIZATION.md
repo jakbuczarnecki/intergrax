@@ -88,3 +88,27 @@ runtime regression was observed.
 
 - moved media dependencies: `openai-whisper` only
 - other DEP-3 dependency ownership moves: `0`
+
+## Chronological review-fix: Harness import regression forensics
+
+- original measurement: `17.703 s` for `import intergrax.harness`
+- reproduction: fresh Python 3.12.11 environments, five fresh subprocesses per
+  package; current DEP-2 cold runs were `5.597`, `2.265`, `2.247`, `2.353`,
+  and `2.446 s` (min `2.247 s`, median `2.353 s`, max `5.597 s`); the same
+  installed environment repeated with five fresh processes was min `2.268 s`,
+  median `2.295 s`, max `2.624 s`; exact DEP-1 commit `987547708a19e0f88c30c49f2559160f00d27466`
+  measured min `2.258 s`, median `2.508 s`, max `4.714 s`
+- root cause: the `17.703 s` result was not reproducible; the bounded Harness
+  import chain has no eager optional provider or local-ML SDK import
+- classification: `MEASUREMENT_VARIANCE`
+- final median: `2.353 s` for current DEP-2 cold fresh-process runs
+- import-profile findings: standard `-X importtime` reported
+  `intergrax.harness` at `2.195 s` cumulative, owned mainly by
+  `intergrax.applications.contracts.graph_builder` (`2.052 s`),
+  `intergrax.applications.contracts.agent_ref` (`1.704 s`), and
+  `intergrax.runtime.nexus.engine.runtime_context` (`0.982 s`); local ML
+  modules and optional LLM SDKs were absent; `numpy` was present, while
+  `openai` and `boto3` were absent after the Harness import
+- runtime change required: `no`; stale Bedrock registry metadata for
+  `mypy_boto3_bedrock_runtime` was removed because the adapter imports only
+  `boto3`

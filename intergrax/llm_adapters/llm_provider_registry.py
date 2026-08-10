@@ -109,7 +109,7 @@ _BUILTIN_OPTIONAL_DEPENDENCIES: Dict[str, Tuple[Tuple[str, ...], str, str]] = {
     LLMProvider.MISTRAL.value: (("mistralai",), "mistralai", "llm-mistral"),
     LLMProvider.AZURE_OPENAI.value: (("openai",), "openai", "llm-openai"),
     LLMProvider.AWS_BEDROCK.value: (
-        ("boto3", "mypy_boto3_bedrock_runtime"),
+        ("boto3",),
         "boto3",
         "llm-bedrock",
     ),
