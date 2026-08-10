@@ -1,6 +1,6 @@
 # RAG Operator Guide
 
-**Status:** canonical operator / deployment surface · **RAG-ENT-2**
+**Status:** canonical operator / deployment surface · **RAG-ENT-3 CLOSED**
 **Audience:** platform engineer · SRE · production operator · deployment engineer · incident responder
 **Architecture:** [`docs/project/architecture/RAG.md`](../../architecture/RAG.md)
 **Developer extensions:** [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) — not this document
@@ -693,7 +693,7 @@ Explicit non-guarantees (must remain visible to operators):
 | Plugins not sandboxed | Supply-chain and install policy is deployment responsibility |
 | Mixed-version concurrent writers | Not assumed safe across contract changes |
 
-**RAG-LIVE:** `CLOSED` — next enterprise handoff track is RAG-ENT-3 (not started by this document).
+**RAG-LIVE:** `CLOSED` · **RAG enterprise track:** `CLOSED` (RAG-ENT-3) — no next RAG task.
 
 ---
 
@@ -704,5 +704,6 @@ Explicit non-guarantees (must remain visible to operators):
 | Architecture & qualification matrix | [`RAG.md`](../../architecture/RAG.md) |
 | Production decision & handoff | [`RAG_PRODUCTION_HANDOFF.md`](../../maintainers/qualification/RAG_PRODUCTION_HANDOFF.md) |
 | Live closeout | [`RAG_LIVE_BACKEND_CLOSEOUT.md`](../../maintainers/qualification/RAG_LIVE_BACKEND_CLOSEOUT.md) |
+| Enterprise handoff | [`RAG_ENTERPRISE_HANDOFF.md`](../../maintainers/qualification/RAG_ENTERPRISE_HANDOFF.md) |
 | Developer extensions | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) |
 | Catalog tools | [`rag/USAGE.md`](../../../../intergrax/tools/providers/rag/USAGE.md) |
