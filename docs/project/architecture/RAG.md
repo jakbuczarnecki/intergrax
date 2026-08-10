@@ -93,8 +93,19 @@ Explicit limitations:
 - source providers without ownership lookup may perform a fresh ingest only
   when the target scope is empty; otherwise the operation fails with
   `source_reingest_not_supported` rather than appending a changed source;
-- simultaneous writes for one source are not proven serializable by this
-  lifecycle and no source-level distributed lock is claimed;
+- canonical source replacement is serialized by the exact
+  `tenant_id`, `namespace`, `workspace_id`, and
+  `provenance.source_id` ownership key; an active same-source operation
+  returns `source_ingest_conflict` and cannot independently snapshot,
+  publish, or clean up;
+- the default coordinator is thread-safe and process-local; production
+  composition can inject the durable `ConditionalDocumentStore` coordinator,
+  whose CAS lease token and expiry fencing prevent a stale owner from
+  releasing a newer owner or continuing destructive cleanup;
+- different source IDs, workspaces, namespaces, and tenants use independent
+  keys; this is live-operation serialization, not cross-store transaction
+  atomicity or exactly-once ingestion. Partial vector/TOC/GraphRAG
+  publication remains governed by the existing retry and recovery semantics;
 - tenant, namespace, and workspace isolation are qualified for canonical vector
   retrieval; the InMemory executable negative gate proves that higher-scoring
   records outside the requested scope are excluded before results are exposed,

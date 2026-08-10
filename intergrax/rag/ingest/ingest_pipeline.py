@@ -10,6 +10,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from intergrax.distributed.source_operation import (
+    InProcessSourceOperationCoordinator,
+    RagSourceOperationKey,
+    SourceOperationCoordinator,
+    SourceOperationLease,
+)
 from intergrax.knowledge.contracts import KnowledgeDocument, KnowledgeDocumentScope
 from intergrax.knowledge.contracts.validation import knowledge_metadata_to_plain
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -118,6 +124,7 @@ class IngestPipeline:
         graph_store: GraphStore | None = None,
         llm_for_graph: LLMAdapter | None = None,
         metadata_callback: Callable[..., dict[str, Any]] | None = None,
+        source_coordinator: SourceOperationCoordinator | None = None,
     ) -> None:
         self._loader = loader
         self._splitter = splitter
@@ -129,6 +136,9 @@ class IngestPipeline:
         self._graph_store = graph_store
         self._llm_for_graph = llm_for_graph
         self._metadata_callback = metadata_callback
+        self._source_coordinator = (
+            source_coordinator or InProcessSourceOperationCoordinator()
+        )
 
     def run(self, request: IngestRequest) -> IngestResult:
         path = Path(request.source_path)
@@ -219,6 +229,38 @@ class IngestPipeline:
             assert source_id is not None
             assert source_scope is not None
 
+            return self._run_source_replacement(
+                source_id=source_id,
+                source_scope=source_scope,
+                native_docs=native_docs,
+                base_metadata=base_metadata,
+                file_size=file_size,
+                version_policy=version_policy,
+                strategy_id=request.chunking_strategy_id
+                or self._profile.chunking_strategy_id,
+            )
+
+    def _run_source_replacement(
+        self,
+        *,
+        source_id: str,
+        source_scope: VectorStoreScope,
+        native_docs: list[KnowledgeDocument],
+        base_metadata: dict[str, Any],
+        file_size: int,
+        version_policy: Any,
+        strategy_id: str,
+    ) -> IngestResult:
+        key = RagSourceOperationKey(
+            tenant_id=source_scope.tenant_id,
+            namespace=source_scope.namespace,
+            workspace_id=source_scope.workspace_id,
+            source_id=source_id,
+        )
+        lease = self._source_coordinator.acquire(key=key)
+        if lease is None:
+            return IngestResult(used=False, reason="source_ingest_conflict")
+        try:
             try:
                 old_main_ids = self._list_current_source_ids(
                     source_id=source_id,
@@ -241,9 +283,6 @@ class IngestPipeline:
                     )
                 raise
 
-            strategy_id = (
-                request.chunking_strategy_id or self._profile.chunking_strategy_id
-            )
             sem_allowed, sem_reason, _ = semantic_chunking_allowed(
                 docs=native_docs,
                 strategy_id=strategy_id,
@@ -299,6 +338,7 @@ class IngestPipeline:
                     used=False,
                     reason="source_scope_or_ownership_mismatch",
                 )
+            self._ensure_source_lease(lease)
             texts = [chunk.content for chunk in native_chunks]
 
             with rag_span(
@@ -343,6 +383,7 @@ class IngestPipeline:
                                 "vectorstore returned an unexpected number of vector IDs"
                             )
 
+            self._ensure_source_lease(lease)
             if self._uses_dual_index():
                 published_main_ids = self._list_current_source_ids(
                     source_id=source_id,
@@ -363,6 +404,7 @@ class IngestPipeline:
                 new_main_ids = set(vector_ids)
                 new_toc_ids = set()
 
+            self._ensure_source_lease(lease)
             if self._graph_store is not None and self._profile.graph_rag_enabled:
                 with rag_span("rag.ingest.graph_index"):
                     try:
@@ -377,6 +419,7 @@ class IngestPipeline:
                             "source_reingest_graph_publish_failed"
                         ) from exc
 
+                self._ensure_source_lease(lease)
                 stale_graph_ids = old_main_ids - new_main_ids
                 if stale_graph_ids:
                     try:
@@ -389,6 +432,7 @@ class IngestPipeline:
                             "source_reingest_graph_stale_unlink_failed"
                         ) from exc
 
+            self._ensure_source_lease(lease)
             stale_main_ids = old_main_ids - new_main_ids
             if stale_main_ids:
                 try:
@@ -399,6 +443,7 @@ class IngestPipeline:
                 except Exception as exc:
                     raise RuntimeError("source_reingest_stale_delete_failed") from exc
 
+            self._ensure_source_lease(lease)
             stale_toc_ids = old_toc_ids - new_toc_ids
             if stale_toc_ids:
                 assert self._toc_vectorstore is not None
@@ -412,6 +457,7 @@ class IngestPipeline:
                         "source_reingest_toc_stale_delete_failed"
                     ) from exc
 
+            self._ensure_source_lease(lease)
             return IngestResult(
                 used=True,
                 reason="ok",
@@ -422,6 +468,12 @@ class IngestPipeline:
                 version_warnings=list(version_policy.warnings),
                 reindex_recommended=version_policy.reindex_enqueued,
             )
+        finally:
+            self._source_coordinator.release(lease=lease)
+
+    def _ensure_source_lease(self, lease: SourceOperationLease) -> None:
+        if not self._source_coordinator.is_owned(lease=lease):
+            raise RuntimeError("source_ingest_conflict")
 
     def _source_ownership(
         self,
